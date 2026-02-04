@@ -202,10 +202,14 @@ final class Kernel
         // Register discovery cache
         $this->container->singleton(DiscoveryCache::class, fn() => new DiscoveryCache($this->wpTempestConfig));
 
-        // Register the discovery runner with cache support
+        // Register the discovery runner with cache support and app path
         $this->container->singleton(
             DiscoveryRunner::class,
-            fn() => new DiscoveryRunner($this->container, $this->container->get(DiscoveryCache::class)),
+            fn() => new DiscoveryRunner(
+                $this->container,
+                $this->container->get(DiscoveryCache::class),
+                $this->appPath,
+            ),
         );
     }
 
