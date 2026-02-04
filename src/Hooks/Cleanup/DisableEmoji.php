@@ -53,8 +53,8 @@ final class DisableEmoji
     /**
      * Remove TinyMCE emoji plugin.
      *
-     * @param array<string, string> $plugins
-     * @return array<string, string>
+     * @param list<string> $plugins
+     * @return list<string>
      */
     #[AsFilter('tiny_mce_plugins')]
     public function removeTinyMceEmoji(array $plugins): array
