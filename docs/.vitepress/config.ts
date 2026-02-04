@@ -7,7 +7,7 @@ export default defineConfig({
 
   base: "/foehn/",
 
-  head: [["link", { rel: "icon", href: "/foehn/favicon.ico" }]],
+  head: [["link", { rel: "icon", type: "image/png", href: "/foehn/favicon.png" }]],
 
   themeConfig: {
     logo: "/logo.svg",
