@@ -1,0 +1,39 @@
+php-version = "8.4"
+
+[source]
+paths = ["src", "tests"]
+
+[formatter]
+print-width = 120
+
+[linter.rules]
+cyclomatic-complexity = { threshold = 10 }
+kan-defect = { threshold = 1.9 }
+halstead = { effort-threshold = 7000 }
+too-many-enum-cases = { threshold = 30 }
+too-many-methods = { threshold = 15 }
+
+# Disable rules that don't fit WordPress patterns
+literal-named-argument = { enabled = false }  # WP functions use positional args
+no-else-clause = { level = "help" }           # Keep as suggestion only
+
+# Enable disabled-by-default rules
+no-redundant-use = { enabled = true }
+no-variable-variable = { enabled = true }
+no-redundant-readonly = { enabled = true }
+sensitive-parameter = { enabled = true }
+
+[analyzer]
+find-unused-expressions = true
+find-unused-definitions = true
+analyze-dead-code = true
+check-missing-override = true
+find-unused-parameters = true
+check-missing-type-hints = true
+check-closure-missing-type-hints = true
+check-arrow-function-missing-type-hints = true
+strict-list-index-checks = true
+no-boolean-literal-comparison = true
+allow-possibly-undefined-array-keys = false
+trust-existence-checks = false
+check-use-statements = true
