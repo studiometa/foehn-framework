@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fix root path passed to Tempest causing "Could not locate composer.json" error (f0b4f27, #5)
+
 ### Added
 
 - Add discovery cache for production performance (adc01ed, !2)
