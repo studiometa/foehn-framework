@@ -4,7 +4,7 @@ WP Tempest is a modern WordPress framework powered by [Tempest Framework](https:
 
 ## Why WP Tempest?
 
-Traditional WordPress development requires manually registering every hook, post type, and block. WP Tempest changes this with PHP 8 attributes:
+Traditional WordPress development requires manually registering every hook, post type, and block. It also lacks modern OOP practices like dependency injection and autowiring. WP Tempest changes this with PHP 8 attributes and a powerful DI container:
 
 **Before (Traditional WordPress):**
 
@@ -36,6 +36,11 @@ final class Product extends Post {}
 // app/Hooks/ThemeHooks.php
 final class ThemeHooks
 {
+    // Dependencies are autowired
+    public function __construct(
+        private readonly MyService $service,
+    ) {}
+
     #[AsAction('after_setup_theme')]
     public function setupTheme(): void
     {
