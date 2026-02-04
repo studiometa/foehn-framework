@@ -43,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add discovery cache for production performance ([adc01ed], [#2])
 - Add VitePress documentation with guides and API reference ([d80fe88], [#3])
 - Document `#[AsTimberModel]`, `timber_templates_dir`, `hooks` config, and built-in hooks ([3ec60b1], [!17])
+- Document `VideoEmbed` helper, ACF field transformation, and `make:controller`/`make:hooks` CLI commands ([433abae], [!21])
 - Add GitHub Pages deployment workflow ([02d6425], [#3])
 
 [b6fd69a]: https://github.com/studiometa/wp-tempest/commit/b6fd69a
@@ -74,3 +75,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [45a067d]: https://github.com/studiometa/wp-tempest/commit/45a067d
 [3ec60b1]: https://github.com/studiometa/wp-tempest/commit/3ec60b1
 [!17]: https://github.com/studiometa/wp-tempest/pull/17
+[!21]: https://github.com/studiometa/wp-tempest/pull/21
+[433abae]: https://github.com/studiometa/wp-tempest/commit/433abae
