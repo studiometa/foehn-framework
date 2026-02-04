@@ -50,6 +50,13 @@ final readonly class FoehnConfig
          * Set to null to only require authentication (is_user_logged_in).
          */
         public ?string $restDefaultCapability = 'edit_posts',
+
+        /**
+         * Enable debug mode for discovery.
+         * When enabled, reflection failures are logged via trigger_error().
+         * Defaults to WP_DEBUG constant value.
+         */
+        public bool $debug = false,
     ) {}
 
     /**
@@ -76,6 +83,9 @@ final readonly class FoehnConfig
             ? $config['rest_default_capability']
             : 'edit_posts';
 
+        // Default debug to WP_DEBUG constant if not explicitly set
+        $debug = $config['debug'] ?? defined('WP_DEBUG') && constant('WP_DEBUG');
+
         return new self(
             discoveryCacheStrategy: $strategy,
             discoveryCachePath: $config['discovery_cache_path'] ?? null,
@@ -83,7 +93,16 @@ final readonly class FoehnConfig
             hooks: $hooks,
             acfTransformFields: $config['acf_transform_fields'] ?? true,
             restDefaultCapability: $restDefaultCapability,
+            debug: (bool) $debug,
         );
+    }
+
+    /**
+     * Check if debug mode is enabled.
+     */
+    public function isDebugEnabled(): bool
+    {
+        return $this->debug;
     }
 
     /**

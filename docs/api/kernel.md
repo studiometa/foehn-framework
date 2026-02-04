@@ -97,12 +97,13 @@ Kernel::boot(__DIR__ . '/app', [
 
 ### Configuration Options
 
-| Option                 | Type             | Default         | Description                               |
-| ---------------------- | ---------------- | --------------- | ----------------------------------------- |
-| `discovery_cache`      | `string\|bool`   | `'none'`        | Cache strategy: 'full', 'partial', 'none' |
-| `discovery_cache_path` | `string\|null`   | `null`          | Custom path for cache files               |
-| `timber_templates_dir` | `string[]`       | `['templates']` | Timber templates directory names          |
-| `hooks`                | `class-string[]` | `[]`            | Opt-in hook classes to activate           |
+| Option                 | Type             | Default      | Description                                       |
+| ---------------------- | ---------------- | ------------ | ------------------------------------------------- |
+| `discovery_cache`      | `string\|bool`   | `'none'`     | Cache strategy: 'full', 'partial', 'none'         |
+| `discovery_cache_path` | `string\|null`   | `null`       | Custom path for cache files                       |
+| `timber_templates_dir` | `string[]`       | `['templates']` | Timber templates directory names               |
+| `hooks`                | `class-string[]` | `[]`         | Opt-in hook classes to activate                   |
+| `debug`                | `bool`           | `WP_DEBUG`   | Enable debug logging for discovery failures       |
 
 See [Discovery Cache](/guide/discovery-cache) and [Built-in Hooks](/guide/hooks#built-in-hooks) for details.
 

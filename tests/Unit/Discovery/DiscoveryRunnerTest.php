@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
+use Studiometa\Foehn\Config\FoehnConfig;
 use Studiometa\Foehn\Discovery\DiscoveryRunner;
+use Tempest\Container\GenericContainer;
 
 describe('DiscoveryRunner', function () {
     it('returns all discovery classes', function () {
@@ -70,5 +72,112 @@ describe('DiscoveryRunner', function () {
             expect(is_subclass_of($class, \Studiometa\Foehn\Discovery\WpDiscovery::class))
                 ->toBeTrue("Expected {$class} to implement WpDiscovery");
         }
+    });
+});
+
+describe('DiscoveryRunner debug logging', function () {
+    it('logs reflection failures when debug is enabled', function () {
+        $container = new GenericContainer();
+        $config = new FoehnConfig(debug: true);
+
+        $runner = new DiscoveryRunner(
+            container: $container,
+            cache: null,
+            appPath: null,
+            config: $config,
+        );
+
+        // Use reflection to access the private logDiscoveryFailure method
+        $method = new ReflectionMethod($runner, 'logDiscoveryFailure');
+
+        $warningTriggered = false;
+        $warningMessage = '';
+
+        set_error_handler(function ($errno, $errstr) use (&$warningTriggered, &$warningMessage) {
+            if ($errno === E_USER_WARNING) {
+                $warningTriggered = true;
+                $warningMessage = $errstr;
+            }
+
+            return true;
+        });
+
+        try {
+            $exception = new ReflectionException('Class not found');
+            $method->invoke($runner, 'App\\NonExistentClass', $exception);
+        } finally {
+            restore_error_handler();
+        }
+
+        expect($warningTriggered)->toBeTrue();
+        expect($warningMessage)->toContain('[Foehn] Discovery failed for class "App\\NonExistentClass"');
+        expect($warningMessage)->toContain('Class not found');
+    });
+
+    it('does not log reflection failures when debug is disabled', function () {
+        $container = new GenericContainer();
+        $config = new FoehnConfig(debug: false);
+
+        $runner = new DiscoveryRunner(
+            container: $container,
+            cache: null,
+            appPath: null,
+            config: $config,
+        );
+
+        // Use reflection to access the private logDiscoveryFailure method
+        $method = new ReflectionMethod($runner, 'logDiscoveryFailure');
+
+        $warningTriggered = false;
+
+        set_error_handler(function ($errno) use (&$warningTriggered) {
+            if ($errno === E_USER_WARNING) {
+                $warningTriggered = true;
+            }
+
+            return true;
+        });
+
+        try {
+            $exception = new ReflectionException('Class not found');
+            $method->invoke($runner, 'App\\NonExistentClass', $exception);
+        } finally {
+            restore_error_handler();
+        }
+
+        expect($warningTriggered)->toBeFalse();
+    });
+
+    it('does not log reflection failures when config is null', function () {
+        $container = new GenericContainer();
+
+        $runner = new DiscoveryRunner(
+            container: $container,
+            cache: null,
+            appPath: null,
+            config: null,
+        );
+
+        // Use reflection to access the private logDiscoveryFailure method
+        $method = new ReflectionMethod($runner, 'logDiscoveryFailure');
+
+        $warningTriggered = false;
+
+        set_error_handler(function ($errno) use (&$warningTriggered) {
+            if ($errno === E_USER_WARNING) {
+                $warningTriggered = true;
+            }
+
+            return true;
+        });
+
+        try {
+            $exception = new ReflectionException('Class not found');
+            $method->invoke($runner, 'App\\NonExistentClass', $exception);
+        } finally {
+            restore_error_handler();
+        }
+
+        expect($warningTriggered)->toBeFalse();
     });
 });
