@@ -7,6 +7,7 @@ namespace Studiometa\Foehn\Discovery;
 use ReflectionClass;
 use ReflectionMethod;
 use Studiometa\Foehn\Attributes\AsRestRoute;
+use Studiometa\Foehn\Config\FoehnConfig;
 use Studiometa\Foehn\Discovery\Concerns\CacheableDiscovery;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
 use WP_REST_Request;
@@ -21,6 +22,10 @@ final class RestRouteDiscovery implements WpDiscovery
 {
     use IsWpDiscovery;
     use CacheableDiscovery;
+
+    public function __construct(
+        private readonly ?FoehnConfig $config = null,
+    ) {}
 
     /**
      * Discover REST route attributes on methods.
@@ -130,9 +135,17 @@ final class RestRouteDiscovery implements WpDiscovery
             return static fn() => true;
         }
 
-        // No permission specified - require authentication
+        // No permission specified - use default capability from config
         if ($permission === null) {
-            return static fn() => is_user_logged_in();
+            // If no config, default to 'edit_posts'
+            // If config exists, use its restDefaultCapability (which may be null for is_user_logged_in fallback)
+            $defaultCapability = $this->config !== null ? $this->config->restDefaultCapability : 'edit_posts';
+
+            if ($defaultCapability === null) {
+                return static fn() => is_user_logged_in();
+            }
+
+            return static fn() => current_user_can($defaultCapability);
         }
 
         // Custom permission callback method on the class

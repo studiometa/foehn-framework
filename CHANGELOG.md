@@ -7,8 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- REST routes without explicit permission now require `edit_posts` capability instead of just authentication ([cb284f8], [#32])
+
 ### Added
 
+- Add `rest_default_capability` config option to customize default REST route permission ([343e094], [#32])
 - Add `discovery:warm` CLI command to pre-warm discovery cache during deployment ([685132d], [#30])
 - Add security documentation for shortcode output escaping with comprehensive XSS prevention guide ([316cbff], [#29])
 - Transform ACF block fields via Timber's ACF integration ([8e0d11e], [!19]):
@@ -36,6 +41,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Document `#[AsTimberModel]`, `timber_templates_dir`, `hooks` config, and built-in hooks ([3ec60b1], [!17])
 - Document `VideoEmbed` helper, ACF field transformation, and `make:controller`/`make:hooks` CLI commands ([433abae], [!21])
 - Add GitHub Pages deployment workflow ([02d6425], [#3])
+
+### Changed
+
+- Decouple discoveries from Tempest's `Discovery` interface, replace with `WpDiscovery` + `IsWpDiscovery` ([748aace], [#7])
+- Rewrite `DiscoveryRunner` to own the full lifecycle: class scanning via Composer PSR-4, phased `apply()` at correct WP hooks ([b3d5134], [#7])
+- Tempest is now used only for the DI container, not for discovery ([b3d5134], [#7])
+
+### Fixed
+
+- Fix discovery system conflicts with Tempest lifecycle — double discovery, incorrect timing, uninitialized properties ([748aace], [#7])
+- Fix root path passed to Tempest causing "Could not locate composer.json" error ([f0b4f27], [#5])
 
 [b6fd69a]: https://github.com/studiometa/foehn/commit/b6fd69a
 [fae5391]: https://github.com/studiometa/foehn/commit/fae5391
@@ -72,3 +88,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#29]: https://github.com/studiometa/foehn/pull/29
 [685132d]: https://github.com/studiometa/foehn/commit/685132d
 [#30]: https://github.com/studiometa/foehn/pull/30
+[cb284f8]: https://github.com/studiometa/foehn/commit/cb284f8
+[343e094]: https://github.com/studiometa/foehn/commit/343e094
+[#32]: https://github.com/studiometa/foehn/pull/32

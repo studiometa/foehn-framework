@@ -15,6 +15,8 @@ $GLOBALS['wp_stub_calls'] = [];
 function wp_stub_reset(): void
 {
     $GLOBALS['wp_stub_calls'] = [];
+    $GLOBALS['wp_stub_logged_in'] = false;
+    $GLOBALS['wp_stub_user_can'] = [];
 }
 
 /**
@@ -314,6 +316,15 @@ if (!function_exists('is_user_logged_in')) {
     }
 }
 
+if (!function_exists('current_user_can')) {
+    function current_user_can(string $capability, mixed ...$args): bool
+    {
+        wp_stub_record('current_user_can', compact('capability', 'args'));
+
+        return $GLOBALS['wp_stub_user_can'][$capability] ?? false;
+    }
+}
+
 // ──────────────────────────────────────────────
 // Query functions
 // ──────────────────────────────────────────────
@@ -364,3 +375,4 @@ $GLOBALS['wp_stub_post_type'] = 'post';
 $GLOBALS['wp_stub_queried_object'] = null;
 $GLOBALS['wp_stub_query_vars'] = [];
 $GLOBALS['wp_stub_is_admin'] = false;
+$GLOBALS['wp_stub_user_can'] = [];
