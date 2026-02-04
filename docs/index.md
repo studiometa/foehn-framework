@@ -79,6 +79,16 @@ Foehn stands on the shoulders of giants. We're grateful to the following project
 <style>
 :root {
   --vp-home-hero-name-color: transparent;
-  --vp-home-hero-name-background: -webkit-linear-gradient(120deg, #bd34fe 30%, #41d1ff);
+  --vp-home-hero-name-background: -webkit-linear-gradient(120deg, #22c55e 30%, #10b981);
+
+  --vp-c-brand-1: #16a34a;
+  --vp-c-brand-2: #22c55e;
+  --vp-c-brand-3: #4ade80;
+}
+
+.dark {
+  --vp-c-brand-1: #4ade80;
+  --vp-c-brand-2: #22c55e;
+  --vp-c-brand-3: #16a34a;
 }
 </style>
