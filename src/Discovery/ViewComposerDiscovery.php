@@ -7,6 +7,7 @@ namespace Studiometa\WPTempest\Discovery;
 use InvalidArgumentException;
 use Studiometa\WPTempest\Attributes\AsViewComposer;
 use Studiometa\WPTempest\Contracts\ViewComposerInterface;
+use Studiometa\WPTempest\Discovery\Concerns\CacheableDiscovery;
 use Studiometa\WPTempest\Views\ViewComposerRegistry;
 use Tempest\Discovery\Discovery;
 use Tempest\Discovery\DiscoveryLocation;
@@ -22,6 +23,7 @@ use function Tempest\get;
 final class ViewComposerDiscovery implements Discovery
 {
     use IsDiscovery;
+    use CacheableDiscovery;
 
     /**
      * Discover view composer attributes on classes.
@@ -57,8 +59,13 @@ final class ViewComposerDiscovery implements Discovery
         /** @var ViewComposerRegistry $registry */
         $registry = get(ViewComposerRegistry::class);
 
-        foreach ($this->discoveryItems as $item) {
-            $this->registerComposer($registry, $item);
+        foreach ($this->getAllItems() as $item) {
+            // Handle cached format
+            if (isset($item['templates'])) {
+                $this->registerComposerFromCache($registry, $item);
+            } else {
+                $this->registerComposer($registry, $item);
+            }
         }
     }
 
@@ -66,7 +73,7 @@ final class ViewComposerDiscovery implements Discovery
      * Register a single view composer.
      *
      * @param ViewComposerRegistry $registry
-     * @param array{attribute: AsViewComposer, className: class-string} $item
+     * @param array<string, mixed> $item
      */
     private function registerComposer(ViewComposerRegistry $registry, array $item): void
     {
@@ -77,5 +84,37 @@ final class ViewComposerDiscovery implements Discovery
         $composer = get($className);
 
         $registry->register($attribute->getTemplates(), $composer, $attribute->priority);
+    }
+
+    /**
+     * Register a view composer from cached data.
+     *
+     * @param ViewComposerRegistry $registry
+     * @param array<string, mixed> $item
+     */
+    private function registerComposerFromCache(ViewComposerRegistry $registry, array $item): void
+    {
+        /** @var ViewComposerInterface $composer */
+        $composer = get($item['className']);
+
+        $registry->register($item['templates'], $composer, $item['priority']);
+    }
+
+    /**
+     * Convert a discovered item to a cacheable format.
+     *
+     * @param array<string, mixed> $item
+     * @return array<string, mixed>
+     */
+    protected function itemToCacheable(array $item): array
+    {
+        /** @var AsViewComposer $attribute */
+        $attribute = $item['attribute'];
+
+        return [
+            'templates' => $attribute->getTemplates(),
+            'className' => $item['className'],
+            'priority' => $attribute->priority,
+        ];
     }
 }

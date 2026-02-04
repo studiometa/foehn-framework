@@ -9,6 +9,7 @@ use Studiometa\WPTempest\Attributes\AsCliCommand;
 use Studiometa\WPTempest\Console\CliCommandInterface;
 use Studiometa\WPTempest\Console\Commands\DiscoveryClearCommand;
 use Studiometa\WPTempest\Console\Commands\DiscoveryGenerateCommand;
+use Studiometa\WPTempest\Console\Commands\DiscoveryStatusCommand;
 use Studiometa\WPTempest\Console\Commands\MakeAcfBlockCommand;
 use Studiometa\WPTempest\Console\Commands\MakeBlockCommand;
 use Studiometa\WPTempest\Console\Commands\MakePatternCommand;
@@ -28,6 +29,7 @@ describe('Commands', function (): void {
         'MakeShortcodeCommand' => ['class' => MakeShortcodeCommand::class, 'name' => 'make:shortcode'],
         'DiscoveryClearCommand' => ['class' => DiscoveryClearCommand::class, 'name' => 'discovery:clear'],
         'DiscoveryGenerateCommand' => ['class' => DiscoveryGenerateCommand::class, 'name' => 'discovery:generate'],
+        'DiscoveryStatusCommand' => ['class' => DiscoveryStatusCommand::class, 'name' => 'discovery:status'],
     ];
 
     foreach ($commands as $label => $data) {

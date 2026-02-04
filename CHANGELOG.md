@@ -9,5 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add discovery cache for production performance (adc01ed, !2)
 - Add VitePress documentation with guides and API reference (d80fe88, #3)
 - Add GitHub Pages deployment workflow (02d6425, #3)

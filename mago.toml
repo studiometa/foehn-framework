@@ -43,6 +43,7 @@ ignore = [
     "mixed-return-statement",
     "mixed-operand",
     "mixed-method-access",
+    "mixed-property-access",
     "less-specific-nested-argument-type",
     "less-specific-argument",
     "less-specific-return-statement",
@@ -53,4 +54,5 @@ ignore = [
     "redundant-docblock-type",
     "redundant-type-comparison",  # WP runtime types differ from stubs
     "redundant-condition",        # Intentional defensive code for WP
+    "non-existent-method",        # Traits calling methods from other traits
 ]

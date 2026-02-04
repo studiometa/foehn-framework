@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use Studiometa\WPTempest\Attributes\AsAcfBlock;
 use Studiometa\WPTempest\Blocks\AcfBlockRenderer;
 use Studiometa\WPTempest\Contracts\AcfBlockInterface;
+use Studiometa\WPTempest\Discovery\Concerns\CacheableDiscovery;
 use Tempest\Discovery\Discovery;
 use Tempest\Discovery\DiscoveryLocation;
 use Tempest\Discovery\IsDiscovery;
@@ -22,6 +23,7 @@ use function Tempest\get;
 final class AcfBlockDiscovery implements Discovery
 {
     use IsDiscovery;
+    use CacheableDiscovery;
 
     /**
      * Discover ACF block attributes on classes.
@@ -56,8 +58,13 @@ final class AcfBlockDiscovery implements Discovery
     {
         // ACF blocks must be registered on acf/init
         add_action('acf/init', function (): void {
-            foreach ($this->discoveryItems as $item) {
-                $this->registerBlock($item['attribute'], $item['className']);
+            foreach ($this->getAllItems() as $item) {
+                // Handle cached format
+                if (isset($item['name'])) {
+                    $this->registerBlockFromCache($item);
+                } else {
+                    $this->registerBlock($item['attribute'], $item['className']);
+                }
             }
         });
     }
@@ -70,26 +77,84 @@ final class AcfBlockDiscovery implements Discovery
      */
     private function registerBlock(AsAcfBlock $attribute, string $className): void
     {
+        $this->doRegisterBlock(
+            $className,
+            $attribute->name,
+            $attribute->title,
+            $attribute->description,
+            $attribute->category,
+            $attribute->icon,
+            $attribute->keywords,
+            $attribute->mode,
+            $this->buildSupports($attribute),
+            $attribute->postTypes,
+            $attribute->parent,
+        );
+    }
+
+    /**
+     * Register ACF block from cached data.
+     *
+     * @param array<string, mixed> $item
+     */
+    private function registerBlockFromCache(array $item): void
+    {
+        $this->doRegisterBlock(
+            $item['className'],
+            $item['name'],
+            $item['title'],
+            $item['description'],
+            $item['category'],
+            $item['icon'],
+            $item['keywords'],
+            $item['mode'],
+            $item['supports'],
+            $item['postTypes'],
+            $item['parent'],
+        );
+    }
+
+    /**
+     * Actually register the ACF block.
+     *
+     * @param class-string<AcfBlockInterface> $className
+     * @param array<string> $keywords
+     * @param array<string, mixed> $supports
+     * @param array<string> $postTypes
+     */
+    private function doRegisterBlock(
+        string $className,
+        string $name,
+        string $title,
+        ?string $description,
+        string $category,
+        ?string $icon,
+        array $keywords,
+        string $mode,
+        array $supports,
+        array $postTypes,
+        ?string $parent,
+    ): void {
         // Build block configuration
         $config = [
-            'name' => $attribute->name,
-            'title' => $attribute->title,
-            'description' => $attribute->description,
-            'category' => $attribute->category,
-            'icon' => $attribute->icon,
-            'keywords' => $attribute->keywords,
-            'mode' => $attribute->mode,
-            'supports' => $this->buildSupports($attribute),
+            'name' => $name,
+            'title' => $title,
+            'description' => $description ?? '',
+            'category' => $category,
+            'icon' => $icon ?? 'block-default',
+            'keywords' => $keywords,
+            'mode' => $mode,
+            'supports' => $supports,
             'render_callback' => $this->createRenderCallback($className),
         ];
 
         // Add optional configuration
-        if (!empty($attribute->postTypes)) {
-            $config['post_types'] = $attribute->postTypes;
+        if (!empty($postTypes)) {
+            $config['post_types'] = $postTypes;
         }
 
-        if ($attribute->parent !== null) {
-            $config['parent'] = [$attribute->parent];
+        if ($parent !== null) {
+            $config['parent'] = [$parent];
         }
 
         // Register the block type
@@ -98,7 +163,7 @@ final class AcfBlockDiscovery implements Discovery
         }
 
         // Register fields if the class defines them
-        $this->registerFields($attribute, $className);
+        $this->registerFields($name, $className);
     }
 
     /**
@@ -140,10 +205,10 @@ final class AcfBlockDiscovery implements Discovery
     /**
      * Register ACF fields for the block.
      *
-     * @param AsAcfBlock $attribute
+     * @param string $blockName
      * @param class-string<AcfBlockInterface> $className
      */
-    private function registerFields(AsAcfBlock $attribute, string $className): void
+    private function registerFields(string $blockName, string $className): void
     {
         if (!method_exists($className, 'fields')) {
             return;
@@ -156,9 +221,36 @@ final class AcfBlockDiscovery implements Discovery
         $fields = $className::fields();
 
         // Set the location to this block
-        $fields->setLocation('block', '==', $attribute->getFullName());
+        $fullName = 'acf/' . $blockName;
+        $fields->setLocation('block', '==', $fullName);
 
         // Register the field group
         acf_add_local_field_group($fields->build());
+    }
+
+    /**
+     * Convert a discovered item to a cacheable format.
+     *
+     * @param array<string, mixed> $item
+     * @return array<string, mixed>
+     */
+    protected function itemToCacheable(array $item): array
+    {
+        /** @var AsAcfBlock $attribute */
+        $attribute = $item['attribute'];
+
+        return [
+            'className' => $item['className'],
+            'name' => $attribute->name,
+            'title' => $attribute->title,
+            'description' => $attribute->description,
+            'category' => $attribute->category,
+            'icon' => $attribute->icon,
+            'keywords' => $attribute->keywords,
+            'mode' => $attribute->mode,
+            'supports' => $this->buildSupports($attribute),
+            'postTypes' => $attribute->postTypes,
+            'parent' => $attribute->parent,
+        ];
     }
 }
