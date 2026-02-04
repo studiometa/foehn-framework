@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add security documentation for shortcode output escaping with comprehensive XSS prevention guide ([316cbff], [#29])
 - Transform ACF block fields via Timber's ACF integration ([8e0d11e], [!19]):
   - Transforms raw ACF values (image IDs, post IDs) to Timber objects
   - Supports: image, gallery, file, post_object, relationship, taxonomy, user, date_picker
@@ -77,3 +78,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [!17]: https://github.com/studiometa/foehn/pull/17
 [!21]: https://github.com/studiometa/foehn/pull/21
 [433abae]: https://github.com/studiometa/foehn/commit/433abae
+[316cbff]: https://github.com/studiometa/foehn/commit/316cbff
+[#29]: https://github.com/studiometa/foehn/pull/29
