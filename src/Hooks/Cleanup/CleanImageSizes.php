@@ -2,19 +2,22 @@
 
 declare(strict_types=1);
 
-namespace Studiometa\WPTempest\Hooks;
+namespace Studiometa\WPTempest\Hooks\Cleanup;
 
 use Studiometa\WPTempest\Attributes\AsFilter;
 
 /**
  * Remove unnecessary intermediate image sizes.
  *
- * Removes the following default WordPress image sizes:
- * - medium_large (768px)
- * - 1536x1536
- * - 2048x2048
+ * WordPress generates several intermediate sizes that are rarely used
+ * in custom themes:
+ * - medium_large (768px wide)
+ * - 1536x1536 (added in WP 5.3)
+ * - 2048x2048 (added in WP 5.3)
+ *
+ * Removing them saves disk space and speeds up image uploads.
  */
-final class ImageCleanupHooks
+final class CleanImageSizes
 {
     /**
      * Filter intermediate image sizes to remove unnecessary ones.
