@@ -4,13 +4,11 @@ declare(strict_types=1);
 
 namespace Studiometa\WPTempest\Discovery;
 
+use ReflectionClass;
+use ReflectionMethod;
 use Studiometa\WPTempest\Attributes\AsRestRoute;
 use Studiometa\WPTempest\Discovery\Concerns\CacheableDiscovery;
-use Tempest\Discovery\Discovery;
-use Tempest\Discovery\DiscoveryLocation;
-use Tempest\Discovery\IsDiscovery;
-use Tempest\Reflection\ClassReflector;
-use Tempest\Reflection\MethodReflector;
+use Studiometa\WPTempest\Discovery\Concerns\IsWpDiscovery;
 use WP_REST_Request;
 
 use function Tempest\get;
@@ -19,23 +17,36 @@ use function Tempest\get;
  * Discovers methods marked with #[AsRestRoute] attribute
  * and registers them as WordPress REST API endpoints.
  */
-final class RestRouteDiscovery implements Discovery
+final class RestRouteDiscovery implements WpDiscovery
 {
-    use IsDiscovery;
+    use IsWpDiscovery;
     use CacheableDiscovery;
 
     /**
      * Discover REST route attributes on methods.
+     *
+     * @param ReflectionClass<object> $class
      */
-    public function discover(DiscoveryLocation $location, ClassReflector $class): void
+    public function discover(ReflectionClass $class): void
     {
-        foreach ($class->getPublicMethods() as $method) {
+        foreach ($class->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
+            if ($method->getDeclaringClass()->getName() !== $class->getName()) {
+                continue;
+            }
+
             $attributes = $method->getAttributes(AsRestRoute::class);
 
-            foreach ($attributes as $attribute) {
-                $this->discoveryItems->add($location, [
-                    'attribute' => $attribute,
-                    'method' => $method,
+            foreach ($attributes as $reflectionAttribute) {
+                $attribute = $reflectionAttribute->newInstance();
+
+                $this->addItem([
+                    'namespace' => $attribute->namespace,
+                    'route' => $attribute->route,
+                    'httpMethod' => $attribute->getMethodConstant(),
+                    'className' => $method->getDeclaringClass()->getName(),
+                    'methodName' => $method->getName(),
+                    'permission' => $attribute->permission,
+                    'args' => $attribute->args,
                 ]);
             }
         }
@@ -48,54 +59,17 @@ final class RestRouteDiscovery implements Discovery
     {
         add_action('rest_api_init', function (): void {
             foreach ($this->getAllItems() as $item) {
-                // Handle cached format
-                if (isset($item['className'])) {
-                    $this->registerRouteFromCache($item);
-                } else {
-                    $this->registerRoute($item['attribute'], $item['method']);
-                }
+                $this->doRegisterRoute(
+                    $item['namespace'],
+                    $item['route'],
+                    $item['httpMethod'],
+                    $item['className'],
+                    $item['methodName'],
+                    $item['permission'],
+                    $item['args'],
+                );
             }
         });
-    }
-
-    /**
-     * Register a single REST route.
-     *
-     * @param AsRestRoute $attribute
-     * @param MethodReflector $method
-     */
-    private function registerRoute(AsRestRoute $attribute, MethodReflector $method): void
-    {
-        $className = $method->getDeclaringClass()->getName();
-        $methodName = $method->getName();
-
-        $this->doRegisterRoute(
-            $attribute->namespace,
-            $attribute->route,
-            $attribute->getMethodConstant(),
-            $className,
-            $methodName,
-            $attribute->permission,
-            $attribute->args,
-        );
-    }
-
-    /**
-     * Register REST route from cached data.
-     *
-     * @param array<string, mixed> $item
-     */
-    private function registerRouteFromCache(array $item): void
-    {
-        $this->doRegisterRoute(
-            $item['namespace'],
-            $item['route'],
-            $item['httpMethod'],
-            $item['className'],
-            $item['methodName'],
-            $item['permission'],
-            $item['args'],
-        );
     }
 
     /**
@@ -181,19 +155,14 @@ final class RestRouteDiscovery implements Discovery
      */
     protected function itemToCacheable(array $item): array
     {
-        /** @var AsRestRoute $attribute */
-        $attribute = $item['attribute'];
-        /** @var MethodReflector $method */
-        $method = $item['method'];
-
         return [
-            'namespace' => $attribute->namespace,
-            'route' => $attribute->route,
-            'httpMethod' => $attribute->getMethodConstant(),
-            'className' => $method->getDeclaringClass()->getName(),
-            'methodName' => $method->getName(),
-            'permission' => $attribute->permission,
-            'args' => $attribute->args,
+            'namespace' => $item['namespace'],
+            'route' => $item['route'],
+            'httpMethod' => $item['httpMethod'],
+            'className' => $item['className'],
+            'methodName' => $item['methodName'],
+            'permission' => $item['permission'],
+            'args' => $item['args'],
         ];
     }
 }
