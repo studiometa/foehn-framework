@@ -159,9 +159,10 @@ final class Kernel
     }
 
     /**
-     * Walk up from the given path to find the project root containing composer.json.
+     * Walk up from the given path to find the project root containing
+     * both composer.json and a vendor/ directory.
      *
-     * @throws RuntimeException If composer.json cannot be found in any parent directory
+     * @throws RuntimeException If the project root cannot be found in any parent directory
      */
     private static function findProjectRoot(string $path): string
     {
@@ -174,7 +175,7 @@ final class Kernel
         $previous = null;
 
         while ($directory !== $previous) {
-            if (file_exists($directory . '/composer.json')) {
+            if (file_exists($directory . '/composer.json') && is_dir($directory . '/vendor')) {
                 return $directory;
             }
 
@@ -182,7 +183,9 @@ final class Kernel
             $directory = dirname($directory);
         }
 
-        throw new RuntimeException("Could not locate composer.json in any parent directory of: {$path}");
+        throw new RuntimeException(
+            "Could not locate project root (composer.json + vendor/) in any parent directory of: {$path}",
+        );
     }
 
     /**
