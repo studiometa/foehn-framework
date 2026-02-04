@@ -22,13 +22,28 @@ final readonly class AsRestRoute
 
 ## Parameters
 
-| Parameter    | Type      | Default | Description                       |
-| ------------ | --------- | ------- | --------------------------------- |
-| `namespace`  | `string`  | —       | REST namespace (e.g., `theme/v1`) |
-| `route`      | `string`  | —       | Route pattern (required)          |
-| `method`     | `string`  | `'GET'` | HTTP method                       |
-| `permission` | `?string` | `null`  | Permission callback or `'public'` |
-| `args`       | `array`   | `[]`    | Request arguments schema          |
+| Parameter    | Type      | Default | Description                                                           |
+| ------------ | --------- | ------- | --------------------------------------------------------------------- |
+| `namespace`  | `string`  | —       | REST namespace (e.g., `theme/v1`)                                     |
+| `route`      | `string`  | —       | Route pattern (required)                                              |
+| `method`     | `string`  | `'GET'` | HTTP method                                                           |
+| `permission` | `?string` | `null`  | Permission callback, `'public'`, or `null` for default capability     |
+| `args`       | `array`   | `[]`    | Request arguments schema                                              |
+
+## Default Permission
+
+When `permission` is `null` (the default), the route requires the `edit_posts` capability.
+This ensures routes are not accidentally exposed to subscribers or other low-privilege users.
+
+Configure the default via `FoehnConfig`:
+
+```php
+Kernel::boot(__DIR__, [
+    'rest_default_capability' => 'manage_options', // Require admin
+    // or
+    'rest_default_capability' => null, // Only require authentication
+]);
+```
 
 ## HTTP Methods
 
