@@ -115,5 +115,5 @@ describe('Kernel::findProjectRoot', function () {
 
     it('throws when composer.json is not found', function () {
         callFindProjectRoot('/');
-    })->throws(RuntimeException::class, 'Could not locate composer.json');
+    })->throws(RuntimeException::class, 'Could not locate project root');
 });
