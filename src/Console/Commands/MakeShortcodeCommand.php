@@ -50,7 +50,7 @@ final class MakeShortcodeCommand implements CliCommandInterface
             return;
         }
 
-        $className = $assocArgs['class'] ?? str($tag)->studly()->toString() . 'Shortcode';
+        $className = $assocArgs['class'] ?? str($tag)->pascal()->toString() . 'Shortcode';
         $force = isset($assocArgs['force']);
 
         $targetPath = $this->getTargetPath('Shortcodes', $className);

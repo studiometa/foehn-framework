@@ -59,8 +59,8 @@ final class MakePostTypeCommand implements CliCommandInterface
             return;
         }
 
-        $className = $assocArgs['class'] ?? str($name)->studly()->toString() . 'Post';
-        $singular = $assocArgs['singular'] ?? str($name)->headline()->toString();
+        $className = $assocArgs['class'] ?? str($name)->pascal()->toString() . 'Post';
+        $singular = $assocArgs['singular'] ?? str($name)->replace('-', ' ')->title()->toString();
         $plural = $assocArgs['plural'] ?? $singular . 's';
         $force = isset($assocArgs['force']);
 

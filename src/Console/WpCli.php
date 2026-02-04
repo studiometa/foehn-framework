@@ -18,7 +18,7 @@ final class WpCli
      */
     public static function isAvailable(): bool
     {
-        return defined('WP_CLI') && WP_CLI && class_exists(WP_CLI::class);
+        return defined('WP_CLI') && \WP_CLI && class_exists(WP_CLI::class);
     }
 
     /**
@@ -128,7 +128,7 @@ final class WpCli
      */
     public function getRelativePath(string $absolutePath): string
     {
-        $root = defined('STYLESHEETPATH') ? STYLESHEETPATH : getcwd();
+        $root = defined('STYLESHEETPATH') ? \STYLESHEETPATH : getcwd();
 
         if (str_starts_with($absolutePath, (string) $root)) {
             return ltrim(substr($absolutePath, strlen((string) $root)), '/');

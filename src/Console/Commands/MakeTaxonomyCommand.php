@@ -65,8 +65,8 @@ final class MakeTaxonomyCommand implements CliCommandInterface
             return;
         }
 
-        $className = $assocArgs['class'] ?? str($name)->studly()->toString() . 'Term';
-        $singular = $assocArgs['singular'] ?? str($name)->headline()->toString();
+        $className = $assocArgs['class'] ?? str($name)->pascal()->toString() . 'Term';
+        $singular = $assocArgs['singular'] ?? str($name)->replace('-', ' ')->title()->toString();
         $plural = $assocArgs['plural'] ?? $singular . 's';
         $postTypes = isset($assocArgs['post-types'])
             ? array_map('trim', explode(',', $assocArgs['post-types']))

@@ -69,8 +69,8 @@ final class MakeBlockCommand implements CliCommandInterface
             return;
         }
 
-        $className = $assocArgs['class'] ?? str($name)->studly()->toString() . 'Block';
-        $title = $assocArgs['title'] ?? str($name)->headline()->toString();
+        $className = $assocArgs['class'] ?? str($name)->pascal()->toString() . 'Block';
+        $title = $assocArgs['title'] ?? str($name)->replace('-', ' ')->title()->toString();
         $category = $assocArgs['category'] ?? 'theme';
         $namespace = $assocArgs['namespace'] ?? 'theme';
         $interactive = isset($assocArgs['interactive']);

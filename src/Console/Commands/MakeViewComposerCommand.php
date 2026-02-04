@@ -56,7 +56,7 @@ final class MakeViewComposerCommand implements CliCommandInterface
             return;
         }
 
-        $className = $assocArgs['class'] ?? str($name)->studly()->toString() . 'Composer';
+        $className = $assocArgs['class'] ?? str($name)->pascal()->toString() . 'Composer';
         $templates = isset($assocArgs['templates'])
             ? array_map('trim', explode(',', $assocArgs['templates']))
             : [$name, $name . '-*'];

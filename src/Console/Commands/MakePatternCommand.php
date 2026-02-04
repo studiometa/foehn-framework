@@ -65,8 +65,8 @@ final class MakePatternCommand implements CliCommandInterface
             return;
         }
 
-        $className = $assocArgs['class'] ?? str($name)->studly()->toString() . 'Pattern';
-        $title = $assocArgs['title'] ?? str($name)->headline()->toString();
+        $className = $assocArgs['class'] ?? str($name)->pascal()->toString() . 'Pattern';
+        $title = $assocArgs['title'] ?? str($name)->replace('-', ' ')->title()->toString();
         $description = $assocArgs['description'] ?? 'A custom block pattern.';
         $categories = isset($assocArgs['categories'])
             ? array_map('trim', explode(',', $assocArgs['categories']))

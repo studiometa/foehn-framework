@@ -101,7 +101,7 @@ trait GeneratesFiles
         $content = Filesystem\read_file($templatePath);
 
         foreach ($replacements as $search => $replace) {
-            $content = str_replace($search, $replace, (string) $content);
+            $content = str_replace($search, $replace, $content);
         }
 
         Filesystem\write_file($targetPath, $content);
@@ -132,7 +132,7 @@ trait GeneratesFiles
         }
 
         $namespaceSegments = array_map(
-            static fn(string $segment) => str($segment)->studly()->toString(),
+            static fn(string $segment) => str($segment)->pascal()->toString(),
             explode('/', $relativePath),
         );
 
@@ -148,12 +148,13 @@ trait GeneratesFiles
         $composerPath = $this->findComposerJson($appPath);
 
         if ($composerPath !== null && Filesystem\is_file($composerPath)) {
-            $composer = json_decode((string) Filesystem\read_file($composerPath), true);
+            /** @var array{autoload?: array{psr-4?: array<string, string>}} $composer */
+            $composer = json_decode(Filesystem\read_file($composerPath), true);
             $psr4 = $composer['autoload']['psr-4'] ?? [];
 
             // Find the namespace that points to our app path
             foreach ($psr4 as $namespace => $path) {
-                $fullPath = dirname($composerPath) . '/' . rtrim((string) $path, '/');
+                $fullPath = dirname($composerPath) . '/' . rtrim($path, '/');
                 if (realpath($fullPath) === realpath($appPath)) {
                     return rtrim($namespace, '\\');
                 }
@@ -161,7 +162,7 @@ trait GeneratesFiles
 
             // Return first namespace as fallback
             if (count($psr4) > 0) {
-                return rtrim((string) array_key_first($psr4), '\\');
+                return rtrim(array_key_first($psr4), '\\');
             }
         }
 

@@ -62,8 +62,8 @@ final class MakeAcfBlockCommand implements CliCommandInterface
             return;
         }
 
-        $className = $assocArgs['class'] ?? str($name)->studly()->toString() . 'Block';
-        $title = $assocArgs['title'] ?? str($name)->headline()->toString();
+        $className = $assocArgs['class'] ?? str($name)->pascal()->toString() . 'Block';
+        $title = $assocArgs['title'] ?? str($name)->replace('-', ' ')->title()->toString();
         $category = $assocArgs['category'] ?? 'common';
         $mode = $assocArgs['mode'] ?? 'preview';
         $force = isset($assocArgs['force']);

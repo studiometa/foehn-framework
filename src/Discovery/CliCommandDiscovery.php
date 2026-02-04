@@ -9,8 +9,7 @@ use Studiometa\WPTempest\Console\CliCommandInterface;
 use Studiometa\WPTempest\Console\WpCli;
 use Tempest\Container\Container;
 use Tempest\Discovery\Discovery;
-use Tempest\Discovery\DiscoveryContext;
-use Tempest\Discovery\DiscoveryItems;
+use Tempest\Discovery\DiscoveryLocation;
 use Tempest\Discovery\IsDiscovery;
 use Tempest\Reflection\ClassReflector;
 use WP_CLI;
@@ -22,25 +21,26 @@ final class CliCommandDiscovery implements Discovery
 {
     use IsDiscovery;
 
-    public const string CACHE_KEY = 'cli_commands';
-
     public function __construct(
         private readonly Container $container,
     ) {}
 
-    public function discover(DiscoveryContext $context, ClassReflector $class): ?DiscoveryItems
+    public function discover(DiscoveryLocation $location, ClassReflector $class): void
     {
         $attribute = $class->getAttribute(AsCliCommand::class);
 
         if ($attribute === null) {
-            return null;
+            return;
         }
 
         if (!$class->implements(CliCommandInterface::class)) {
-            return null;
+            return;
         }
 
-        return DiscoveryItems::create($this)->add(self::CACHE_KEY, [$class->getName(), $attribute]);
+        $this->discoveryItems->add($location, [
+            'className' => $class->getName(),
+            'attribute' => $attribute,
+        ]);
     }
 
     public function apply(): void
@@ -50,10 +50,8 @@ final class CliCommandDiscovery implements Discovery
             return;
         }
 
-        $items = $this->discoveryItems->get(self::CACHE_KEY);
-
-        foreach ($items as [$className, $attribute]) {
-            $this->registerCommand($className, $attribute);
+        foreach ($this->discoveryItems as $item) {
+            $this->registerCommand($item['className'], $item['attribute']);
         }
     }
 
