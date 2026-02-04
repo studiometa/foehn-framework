@@ -1,0 +1,196 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Studiometa\WPTempest;
+
+use RuntimeException;
+use Studiometa\WPTempest\Discovery\DiscoveryRunner;
+use Tempest\Container\Container;
+use Tempest\Core\Tempest;
+
+/**
+ * The main kernel that bootstraps wp-tempest.
+ */
+final class Kernel
+{
+    private static ?self $instance = null;
+
+    private Container $container;
+
+    private bool $booted = false;
+
+    /**
+     * @param string $appPath Path to the app directory to scan for discovery
+     * @param array<string, mixed> $config Configuration options
+     */
+    private function __construct(
+        private readonly string $appPath,
+        private readonly array $config = [],
+    ) {}
+
+    /**
+     * Boot the kernel.
+     *
+     * @param string $appPath Path to the app directory to scan for discovery
+     * @param array<string, mixed> $config Configuration options
+     */
+    public static function boot(string $appPath, array $config = []): self
+    {
+        if (self::$instance !== null) {
+            return self::$instance;
+        }
+
+        self::$instance = new self($appPath, $config);
+        self::$instance->bootstrap();
+
+        return self::$instance;
+    }
+
+    /**
+     * Get the kernel instance.
+     *
+     * @throws RuntimeException If the kernel has not been booted
+     */
+    public static function getInstance(): self
+    {
+        if (self::$instance === null) {
+            throw new RuntimeException('Kernel not booted. Call Kernel::boot() first.');
+        }
+
+        return self::$instance;
+    }
+
+    /**
+     * Get the container instance.
+     */
+    public static function container(): Container
+    {
+        return self::getInstance()->container;
+    }
+
+    /**
+     * Get a service from the container.
+     *
+     * @template T of object
+     * @param class-string<T> $class
+     * @return T
+     */
+    public static function get(string $class): object
+    {
+        return self::container()->get($class);
+    }
+
+    /**
+     * Get the app path.
+     */
+    public function getAppPath(): string
+    {
+        return $this->appPath;
+    }
+
+    /**
+     * Get a configuration value.
+     */
+    public function getConfig(string $key, mixed $default = null): mixed
+    {
+        return $this->config[$key] ?? $default;
+    }
+
+    /**
+     * Check if the kernel has been booted.
+     */
+    public function isBooted(): bool
+    {
+        return $this->booted;
+    }
+
+    /**
+     * Bootstrap the kernel.
+     */
+    private function bootstrap(): void
+    {
+        // Initialize Tempest container
+        $this->initializeTempest();
+
+        // Register core services
+        $this->registerCoreServices();
+
+        // Hook into WordPress lifecycle
+        $this->registerWordPressHooks();
+    }
+
+    /**
+     * Initialize Tempest framework.
+     */
+    private function initializeTempest(): void
+    {
+        // Boot Tempest with the app path as root
+        Tempest::boot($this->appPath);
+
+        // Get the container from Tempest
+        $this->container = \Tempest\get(Container::class);
+    }
+
+    /**
+     * Register core services in the container.
+     */
+    private function registerCoreServices(): void
+    {
+        // Register the kernel itself
+        $this->container->singleton(self::class, fn () => $this);
+
+        // Register the discovery runner
+        $this->container->singleton(DiscoveryRunner::class);
+    }
+
+    /**
+     * Register WordPress lifecycle hooks.
+     */
+    private function registerWordPressHooks(): void
+    {
+        // Early phase: after_setup_theme
+        add_action('after_setup_theme', $this->onAfterSetupTheme(...), 1);
+
+        // Main phase: init
+        add_action('init', $this->onInit(...), 1);
+
+        // Late phase: wp_loaded
+        add_action('wp_loaded', $this->onWpLoaded(...), 1);
+    }
+
+    /**
+     * Handle after_setup_theme hook.
+     * Run early discoveries (theme setup, Timber init).
+     */
+    public function onAfterSetupTheme(): void
+    {
+        /** @var DiscoveryRunner $runner */
+        $runner = $this->container->get(DiscoveryRunner::class);
+        $runner->runEarlyDiscoveries();
+    }
+
+    /**
+     * Handle init hook.
+     * Run main discoveries (post types, taxonomies, blocks).
+     */
+    public function onInit(): void
+    {
+        /** @var DiscoveryRunner $runner */
+        $runner = $this->container->get(DiscoveryRunner::class);
+        $runner->runMainDiscoveries();
+
+        $this->booted = true;
+    }
+
+    /**
+     * Handle wp_loaded hook.
+     * Run late discoveries (template controllers, REST routes).
+     */
+    public function onWpLoaded(): void
+    {
+        /** @var DiscoveryRunner $runner */
+        $runner = $this->container->get(DiscoveryRunner::class);
+        $runner->runLateDiscoveries();
+    }
+}
