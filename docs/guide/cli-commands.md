@@ -40,6 +40,9 @@ wp tempest make:shortcode Button
 ### Discovery Cache Commands
 
 ```bash
+# Warm discovery cache (run discoveries + cache)
+wp tempest discovery:warm
+
 # Generate discovery cache for production
 wp tempest discovery:generate
 
