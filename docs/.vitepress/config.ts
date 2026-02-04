@@ -68,6 +68,10 @@ export default defineConfig({
           ],
         },
         {
+          text: "Best Practices",
+          items: [{ text: "Security", link: "/guide/security" }],
+        },
+        {
           text: "Migration",
           items: [{ text: "From wp-toolkit", link: "/guide/migration-wp-toolkit" }],
         },

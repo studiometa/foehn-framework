@@ -112,6 +112,35 @@ public function testimonial(array $atts): string
 }
 ```
 
+## Security
+
+Always escape shortcode output to prevent XSS vulnerabilities:
+
+```php
+#[AsShortcode('user_card')]
+public function userCard(array $atts): string
+{
+    $atts = shortcode_atts([
+        'name' => '',
+        'bio' => '',
+        'url' => '#',
+    ], $atts);
+
+    return sprintf(
+        '<div class="user-card">
+            <a href="%s">%s</a>
+            <p>%s</p>
+        </div>',
+        esc_url($atts['url']),       // URLs
+        esc_html($atts['name']),     // Plain text
+        wp_kses_post($atts['bio'])   // Rich HTML
+    );
+}
+```
+
+See [Security Guide](/guide/security) for detailed escaping guidance.
+
 ## Related
 
 - [Guide: Shortcodes](/guide/shortcodes)
+- [Guide: Security](/guide/security)
