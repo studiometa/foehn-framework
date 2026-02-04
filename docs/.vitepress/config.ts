@@ -1,6 +1,11 @@
 import { defineConfig } from "vitepress";
+import llmstxt from "vitepress-plugin-llms";
 
 export default defineConfig({
+  vite: {
+    plugins: [llmstxt()],
+  },
+
   title: "Foehn",
   description:
     "A modern WordPress framework powered by Tempest, featuring attribute-based auto-discovery",
