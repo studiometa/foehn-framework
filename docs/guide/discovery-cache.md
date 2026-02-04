@@ -172,14 +172,14 @@ Or use a constant in `wp-config.php`:
 
 ```php
 // wp-config.php
-define('WP_TEMPEST_DISCOVERY_CACHE', 'full');
+define('FOEHN_DISCOVERY_CACHE', 'full');
 ```
 
 ```php
 // functions.php
 Kernel::boot(__DIR__ . '/app', [
-    'discovery_cache' => defined('WP_TEMPEST_DISCOVERY_CACHE')
-        ? WP_TEMPEST_DISCOVERY_CACHE
+    'discovery_cache' => defined('FOEHN_DISCOVERY_CACHE')
+        ? FOEHN_DISCOVERY_CACHE
         : 'none',
 ]);
 ```
