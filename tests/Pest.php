@@ -42,3 +42,24 @@ expect()->extend('toBeReadonly', function () {
  | Here you can define functions that can be used in all your test files.
  |
  */
+
+/**
+ * Boot a GenericContainer and set it as the global Tempest instance.
+ * Returns the container for further configuration.
+ */
+function bootTestContainer(): \Tempest\Container\GenericContainer
+{
+    $container = new \Tempest\Container\GenericContainer();
+    \Tempest\Container\GenericContainer::setInstance($container);
+    $container->singleton(\Tempest\Container\Container::class, fn() => $container);
+
+    return $container;
+}
+
+/**
+ * Tear down the global Tempest container instance.
+ */
+function tearDownTestContainer(): void
+{
+    \Tempest\Container\GenericContainer::setInstance(null);
+}
