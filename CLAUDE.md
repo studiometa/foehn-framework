@@ -94,3 +94,9 @@ Check `.planning/task_plan.md` for current implementation status.
 - Use English commit messages
 - Include `Co-authored-by: Claude <claude@anthropic.com>` trailer
 - Pre-commit hook runs mago (PHP) and oxfmt (Markdown)
+
+## Release Guidelines
+
+- Tags use semver without `v` prefix (e.g., `0.1.0`, not `v0.1.0`)
+- Update CHANGELOG.md before tagging
+- GitHub Actions workflow handles release creation automatically

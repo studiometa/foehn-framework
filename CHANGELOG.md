@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-02-04
+
 ### Changed
 
 - REST routes without explicit permission now require `edit_posts` capability instead of just authentication ([cb284f8], [#32])
@@ -97,3 +99,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#24]: https://github.com/studiometa/foehn/pull/33
 [3d295e9]: https://github.com/studiometa/foehn/commit/3d295e9
 [#31]: https://github.com/studiometa/foehn/pull/31
+[0.1.0]: https://github.com/studiometa/foehn/releases/tag/0.1.0
