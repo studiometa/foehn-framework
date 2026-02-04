@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Studiometa\WPTempest\Kernel;
 use Studiometa\WPTempest\Config\WpTempestConfig;
+use Timber\Timber;
 
 describe('Kernel', function () {
     afterEach(function () {
@@ -116,4 +117,56 @@ describe('Kernel::findProjectRoot', function () {
     it('throws when composer.json is not found', function () {
         callFindProjectRoot('/');
     })->throws(RuntimeException::class, 'Could not locate project root');
+});
+
+describe('Kernel Timber initialization', function () {
+    afterEach(function () {
+        Kernel::reset();
+        wp_stub_reset();
+    });
+
+    it('calls initializeTimber during bootstrap', function () {
+        $kernel = Kernel::boot(dirname(__DIR__, 2) . '/src');
+
+        // Restore error/exception handlers set by Tempest::boot()
+        restore_error_handler();
+        restore_exception_handler();
+
+        // Timber::$dirname should be set to the default config value
+        expect(Timber::$dirname)->toBe(['templates']);
+    });
+
+    it('sets Timber dirname from config', function () {
+        $kernel = Kernel::boot(dirname(__DIR__, 2) . '/src', [
+            'timber_templates_dir' => ['views', 'twig-templates'],
+        ]);
+
+        // Restore error/exception handlers set by Tempest::boot()
+        restore_error_handler();
+        restore_exception_handler();
+
+        expect(Timber::$dirname)->toBe(['views', 'twig-templates']);
+    });
+
+    it('registers timber/context filter', function () {
+        $kernel = Kernel::boot(dirname(__DIR__, 2) . '/src');
+
+        // Restore error/exception handlers set by Tempest::boot()
+        restore_error_handler();
+        restore_exception_handler();
+
+        $contextFilters = wp_stub_get_calls('add_filter');
+        $timberContextFilter = array_filter(
+            $contextFilters,
+            fn(array $call) => $call['args']['hook'] === 'timber/context',
+        );
+
+        expect($timberContextFilter)->not->toBeEmpty();
+    });
+
+    it('uses default templates dir of ["templates"]', function () {
+        $config = WpTempestConfig::fromArray([]);
+
+        expect($config->timberTemplatesDir)->toBe(['templates']);
+    });
 });

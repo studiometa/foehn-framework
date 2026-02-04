@@ -12,6 +12,7 @@ describe('WpTempestConfig', function () {
         expect($config->discoveryCacheStrategy)->toBe(DiscoveryCacheStrategy::NONE);
         expect($config->discoveryCachePath)->toBeNull();
         expect($config->isDiscoveryCacheEnabled())->toBeFalse();
+        expect($config->timberTemplatesDir)->toBe(['templates']);
     });
 
     it('can be instantiated with full strategy', function () {
@@ -95,6 +96,20 @@ describe('WpTempestConfig', function () {
 
             expect($config->discoveryCachePath)->toBe('/my/cache/path');
             expect($config->getDiscoveryCachePath())->toBe('/my/cache/path');
+        });
+
+        it('creates config with default timber templates dir', function () {
+            $config = WpTempestConfig::fromArray([]);
+
+            expect($config->timberTemplatesDir)->toBe(['templates']);
+        });
+
+        it('creates config with custom timber templates dir', function () {
+            $config = WpTempestConfig::fromArray([
+                'timber_templates_dir' => ['views', 'templates'],
+            ]);
+
+            expect($config->timberTemplatesDir)->toBe(['views', 'templates']);
         });
     });
 });
