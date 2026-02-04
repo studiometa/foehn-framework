@@ -67,7 +67,7 @@ final class ShortcodeDiscovery implements Discovery
         ) {
             $instance = get($className);
 
-            // Normalize attributes
+            // Normalize attributes - WP passes '' when no attributes despite stubs saying array
             $atts = is_array($atts) ? $atts : [];
 
             return $instance->{$methodName}($atts, $content, $tag);

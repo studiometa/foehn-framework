@@ -119,12 +119,12 @@ final class AcfBlockRenderer
         $classes = [];
 
         // Base class from block name
-        if (isset($blockData['name'])) {
+        if (isset($blockData['name']) && is_string($blockData['name'])) {
             $classes[] = 'wp-block-' . str_replace('/', '-', $blockData['name']);
         }
 
         // Alignment class
-        if (!empty($blockData['align'])) {
+        if (!empty($blockData['align']) && is_string($blockData['align'])) {
             $classes[] = 'align' . $blockData['align'];
         }
 

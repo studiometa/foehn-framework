@@ -38,11 +38,11 @@ final class TimberViewEngine implements ViewEngineInterface
 
         $result = Timber::compile($resolved, $context);
 
-        if ($result === false || $result === null) {
+        if ($result === false) {
             throw new RuntimeException("Failed to render template: {$template}");
         }
 
-        return $result;
+        return is_string($result) ? $result : '';
     }
 
     /**
@@ -67,11 +67,9 @@ final class TimberViewEngine implements ViewEngineInterface
     public function exists(string $template): bool
     {
         $resolved = $this->resolveTemplate($template);
-        $locations = Timber::$dirname;
-
-        if (is_string($locations)) {
-            $locations = [$locations];
-        }
+        /** @var string|list<string> $dirname */
+        $dirname = Timber::$dirname;
+        $locations = is_string($dirname) ? [$dirname] : $dirname;
 
         foreach ($locations as $location) {
             $basePath = get_template_directory();
