@@ -32,9 +32,8 @@
         "timber/timber": "^2.0"
     },
     "require-dev": {
-        "pestphp/pest": "^3.0",
-        "phpstan/phpstan": "^2.0",
-        "friendsofphp/php-cs-fixer": "^3.0"
+        "carthage-software/mago": "*",
+        "pestphp/pest": "^3.0"
     },
     "autoload": {
         "psr-4": {
@@ -52,13 +51,17 @@
     "scripts": {
         "test": "pest",
         "test:coverage": "pest --coverage",
-        "analyse": "phpstan analyse",
-        "lint": "php-cs-fixer fix --dry-run --diff",
-        "fix": "php-cs-fixer fix"
+        "analyse": "mago analyse",
+        "lint": "mago lint && mago fmt --check",
+        "fix": "mago lint --fix && mago fmt"
     },
     "config": {
         "sort-packages": true,
-        "optimize-autoloader": true
+        "optimize-autoloader": true,
+        "allow-plugins": {
+            "carthage-software/mago": true,
+            "pestphp/pest-plugin": true
+        }
     },
     "minimum-stability": "stable",
     "prefer-stable": true
