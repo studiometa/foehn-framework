@@ -113,8 +113,17 @@ Kernel::boot(__DIR__ . '/app', [
 
     // Custom cache path (optional)
     'discovery_cache_path' => WP_CONTENT_DIR . '/cache/foehn/discovery',
+
+    // Enable debug mode (defaults to WP_DEBUG)
+    'debug' => true,
 ]);
 ```
+
+### Debug Mode
+
+When `debug` is enabled, Foehn will log discovery failures (e.g., classes that cannot be reflected) via `trigger_error()` with `E_USER_WARNING`. This helps identify misconfigured classes during development.
+
+By default, debug mode follows the `WP_DEBUG` constant value.
 
 For production deployments, enable the discovery cache and generate it after deployment:
 

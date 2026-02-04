@@ -17,6 +17,15 @@ describe('FoehnConfig', function () {
         expect($config->isDiscoveryCacheEnabled())->toBeFalse();
         expect($config->timberTemplatesDir)->toBe(['templates']);
         expect($config->acfTransformFields)->toBeTrue();
+        expect($config->debug)->toBeFalse();
+        expect($config->isDebugEnabled())->toBeFalse();
+    });
+
+    it('can be instantiated with debug enabled', function () {
+        $config = new FoehnConfig(debug: true);
+
+        expect($config->debug)->toBeTrue();
+        expect($config->isDebugEnabled())->toBeTrue();
     });
 
     it('can be instantiated with full strategy', function () {
@@ -150,6 +159,31 @@ describe('FoehnConfig', function () {
             ]);
 
             expect($config->acfTransformFields)->toBeTrue();
+        });
+
+        it('creates config with debug false by default', function () {
+            $config = FoehnConfig::fromArray([]);
+
+            expect($config->debug)->toBeFalse();
+            expect($config->isDebugEnabled())->toBeFalse();
+        });
+
+        it('creates config with debug enabled', function () {
+            $config = FoehnConfig::fromArray([
+                'debug' => true,
+            ]);
+
+            expect($config->debug)->toBeTrue();
+            expect($config->isDebugEnabled())->toBeTrue();
+        });
+
+        it('creates config with debug disabled', function () {
+            $config = FoehnConfig::fromArray([
+                'debug' => false,
+            ]);
+
+            expect($config->debug)->toBeFalse();
+            expect($config->isDebugEnabled())->toBeFalse();
         });
     });
 });
