@@ -2,7 +2,9 @@
 
 A modern WordPress framework powered by [Tempest](https://github.com/tempestphp/tempest-framework), featuring attribute-based auto-discovery for hooks, post types, blocks, and more.
 
+[![Latest Version](https://img.shields.io/github/v/release/studiometa/foehn)](https://github.com/studiometa/foehn/releases)
 [![PHP Version](https://img.shields.io/badge/php-%5E8.4-blue)](https://php.net)
+[![Tests](https://github.com/studiometa/foehn/actions/workflows/ci.yml/badge.svg)](https://github.com/studiometa/foehn/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 > [!WARNING]
@@ -157,12 +159,17 @@ final readonly class HeroBlock implements AcfBlockInterface
 | `#[AsTemplateController]` | Handle template rendering         |
 | `#[AsShortcode]`          | Register a shortcode              |
 | `#[AsRestRoute]`          | Register a REST API endpoint      |
+| `#[AsCliCommand]`         | Register a WP-CLI command         |
+| `#[AsTimberModel]`        | Register a Timber class map       |
 
 ## Documentation
 
-- [Architecture](.planning/architecture.md)
-- [Theme Example](.planning/theme_example.md)
-- [Views & Interactivity](.planning/architecture_views_update.md)
+📖 **[Full Documentation](https://studiometa.github.io/foehn/)**
+
+- [Getting Started](https://studiometa.github.io/foehn/guide/getting-started)
+- [Installation](https://studiometa.github.io/foehn/guide/installation)
+- [Security Guide](https://studiometa.github.io/foehn/guide/security)
+- [API Reference](https://studiometa.github.io/foehn/api/)
 
 ## Contributing
 
