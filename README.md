@@ -84,7 +84,7 @@ final class ThemeHooks
         add_theme_support('post-thumbnails');
         add_theme_support('title-tag');
     }
-    
+
     #[AsFilter('excerpt_length')]
     public function excerptLength(): int
     {
@@ -116,14 +116,14 @@ final readonly class HeroBlock implements AcfBlockInterface
     public function __construct(
         private ViewEngineInterface $view,
     ) {}
-    
+
     public static function fields(): FieldsBuilder
     {
         return (new FieldsBuilder('hero'))
             ->addWysiwyg('content')
             ->addImage('background');
     }
-    
+
     public function compose(array $block, array $fields): array
     {
         return [
@@ -131,7 +131,7 @@ final readonly class HeroBlock implements AcfBlockInterface
             'background' => $fields['background'] ?? null,
         ];
     }
-    
+
     public function render(array $context): string
     {
         return $this->view->render('blocks/hero', $context);
@@ -141,19 +141,19 @@ final readonly class HeroBlock implements AcfBlockInterface
 
 ## Available Attributes
 
-| Attribute | Description |
-|-----------|-------------|
-| `#[AsAction]` | Register a WordPress action hook |
-| `#[AsFilter]` | Register a WordPress filter hook |
-| `#[AsPostType]` | Register a custom post type |
-| `#[AsTaxonomy]` | Register a custom taxonomy |
-| `#[AsBlock]` | Register a native Gutenberg block |
-| `#[AsAcfBlock]` | Register an ACF block |
-| `#[AsBlockPattern]` | Register a block pattern |
-| `#[AsViewComposer]` | Add data to specific views |
-| `#[AsTemplateController]` | Handle template rendering |
-| `#[AsShortcode]` | Register a shortcode |
-| `#[AsRestRoute]` | Register a REST API endpoint |
+| Attribute                 | Description                       |
+| ------------------------- | --------------------------------- |
+| `#[AsAction]`             | Register a WordPress action hook  |
+| `#[AsFilter]`             | Register a WordPress filter hook  |
+| `#[AsPostType]`           | Register a custom post type       |
+| `#[AsTaxonomy]`           | Register a custom taxonomy        |
+| `#[AsBlock]`              | Register a native Gutenberg block |
+| `#[AsAcfBlock]`           | Register an ACF block             |
+| `#[AsBlockPattern]`       | Register a block pattern          |
+| `#[AsViewComposer]`       | Add data to specific views        |
+| `#[AsTemplateController]` | Handle template rendering         |
+| `#[AsShortcode]`          | Register a shortcode              |
+| `#[AsRestRoute]`          | Register a REST API endpoint      |
 
 ## Documentation
 

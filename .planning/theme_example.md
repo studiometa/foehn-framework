@@ -149,7 +149,7 @@ starter-theme/
 <?php
 /**
  * Theme: Starter Theme
- * 
+ *
  * @package StarterTheme
  */
 
@@ -165,25 +165,25 @@ Kernel::boot(__DIR__ . '/app');
 
 ```json
 {
-    "name": "starter/theme",
-    "description": "Starter theme with wp-tempest",
-    "type": "wordpress-theme",
-    "require": {
-        "php": "^8.4",
-        "studiometa/wp-tempest": "^1.0",
-        "stoutlogic/acf-builder": "^1.12"
-    },
-    "require-dev": {
-        "phpstan/phpstan": "^2.0"
-    },
-    "autoload": {
-        "psr-4": {
-            "App\\": "app/"
-        }
-    },
-    "config": {
-        "optimize-autoloader": true
+  "name": "starter/theme",
+  "description": "Starter theme with wp-tempest",
+  "type": "wordpress-theme",
+  "require": {
+    "php": "^8.4",
+    "studiometa/wp-tempest": "^1.0",
+    "stoutlogic/acf-builder": "^1.12"
+  },
+  "require-dev": {
+    "phpstan/phpstan": "^2.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "App\\": "app/"
     }
+  },
+  "config": {
+    "optimize-autoloader": true
+  }
 }
 ```
 
@@ -236,7 +236,7 @@ final class Post extends TimberPost
         $words = str_word_count(strip_tags($this->content()));
         return max(1, (int) ceil($words / 200));
     }
-    
+
     /**
      * Get post excerpt with fallback.
      */
@@ -245,15 +245,15 @@ final class Post extends TimberPost
         if ($this->excerpt()) {
             return $this->excerpt();
         }
-        
+
         $content = strip_tags($this->content());
         if (strlen($content) <= $length) {
             return $content;
         }
-        
+
         return substr($content, 0, $length) . '…';
     }
-    
+
     /**
      * Check if post has a featured image.
      */
@@ -297,7 +297,7 @@ final class Product extends TimberPost implements ConfiguresPostType
             ->setRewrite(['slug' => 'boutique', 'with_front' => false])
             ->setMenuPosition(5);
     }
-    
+
     /**
      * Get product price.
      */
@@ -306,21 +306,21 @@ final class Product extends TimberPost implements ConfiguresPostType
         $price = $this->meta('price');
         return $price ? (float) $price : null;
     }
-    
+
     /**
      * Get formatted price.
      */
     public function formattedPrice(): string
     {
         $price = $this->price();
-        
+
         if ($price === null) {
             return __('Prix sur demande', 'starter-theme');
         }
-        
+
         return number_format($price, 2, ',', ' ') . ' €';
     }
-    
+
     /**
      * Check if product is on sale.
      */
@@ -329,7 +329,7 @@ final class Product extends TimberPost implements ConfiguresPostType
         $salePrice = $this->meta('sale_price');
         return $salePrice && (float) $salePrice < $this->price();
     }
-    
+
     /**
      * Get sale price if exists.
      */
@@ -338,7 +338,7 @@ final class Product extends TimberPost implements ConfiguresPostType
         $salePrice = $this->meta('sale_price');
         return $salePrice ? (float) $salePrice : null;
     }
-    
+
     /**
      * Get product categories.
      */
@@ -346,18 +346,18 @@ final class Product extends TimberPost implements ConfiguresPostType
     {
         return $this->terms('product_category');
     }
-    
+
     /**
      * Get product gallery images.
      */
     public function galleryImages(): array
     {
         $gallery = $this->meta('gallery');
-        
+
         if (!$gallery || !is_array($gallery)) {
             return [];
         }
-        
+
         return array_map(
             fn($id) => \Timber\Timber::get_image($id),
             $gallery
@@ -393,17 +393,17 @@ final class Testimonial extends TimberPost
     {
         return $this->meta('author_name') ?: $this->title();
     }
-    
+
     public function authorRole(): ?string
     {
         return $this->meta('author_role');
     }
-    
+
     public function company(): ?string
     {
         return $this->meta('company');
     }
-    
+
     public function rating(): ?int
     {
         $rating = $this->meta('rating');
@@ -492,7 +492,7 @@ use Timber\Timber;
 final class MenuService
 {
     private array $cache = [];
-    
+
     /**
      * Get a menu by location.
      */
@@ -501,10 +501,10 @@ final class MenuService
         if (!isset($this->cache[$location])) {
             $this->cache[$location] = Timber::get_menu($location);
         }
-        
+
         return $this->cache[$location];
     }
-    
+
     /**
      * Get all registered menus.
      */
@@ -516,7 +516,7 @@ final class MenuService
             'legal' => $this->get('legal'),
         ];
     }
-    
+
     /**
      * Check if a menu location has items.
      */
@@ -550,13 +550,13 @@ final class ImageService
         if (!$imageId) {
             return null;
         }
-        
+
         $image = Timber::get_image($imageId);
-        
+
         if (!$image) {
             return null;
         }
-        
+
         $defaultSizes = [
             'thumbnail' => 150,
             'medium' => 300,
@@ -564,9 +564,9 @@ final class ImageService
             'large' => 1024,
             'full' => null,
         ];
-        
+
         $sizes = array_merge($defaultSizes, $sizes);
-        
+
         return [
             'id' => $image->id,
             'src' => $image->src(),
@@ -577,24 +577,24 @@ final class ImageService
             'sizes' => $this->buildSizes($sizes),
         ];
     }
-    
+
     /**
      * Build srcset attribute.
      */
     private function buildSrcset(Image $image, array $sizes): string
     {
         $srcset = [];
-        
+
         foreach ($sizes as $size => $width) {
             $src = $image->src($size);
             if ($src && $width) {
                 $srcset[] = "{$src} {$width}w";
             }
         }
-        
+
         return implode(', ', $srcset);
     }
-    
+
     /**
      * Build sizes attribute.
      */
@@ -602,7 +602,7 @@ final class ImageService
     {
         return '(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw';
     }
-    
+
     /**
      * Get placeholder image.
      */
@@ -630,7 +630,7 @@ namespace App\Services;
 final class OptionsService
 {
     private ?array $cache = null;
-    
+
     /**
      * Get all theme options.
      */
@@ -639,10 +639,10 @@ final class OptionsService
         if ($this->cache === null) {
             $this->cache = get_fields('options') ?: [];
         }
-        
+
         return $this->cache;
     }
-    
+
     /**
      * Get a specific option.
      */
@@ -651,7 +651,7 @@ final class OptionsService
         $options = $this->all();
         return $options[$key] ?? $default;
     }
-    
+
     /**
      * Get social links.
      */
@@ -659,7 +659,7 @@ final class OptionsService
     {
         return $this->get('social_links', []);
     }
-    
+
     /**
      * Get contact info.
      */
@@ -671,7 +671,7 @@ final class OptionsService
             'address' => $this->get('contact_address'),
         ];
     }
-    
+
     /**
      * Get footer text.
      */
@@ -704,7 +704,7 @@ final readonly class ThemeHooks
     public function __construct(
         private MenuService $menus,
     ) {}
-    
+
     #[AsAction('after_setup_theme')]
     public function setupTheme(): void
     {
@@ -723,11 +723,11 @@ final readonly class ThemeHooks
         add_theme_support('responsive-embeds');
         add_theme_support('wp-block-styles');
         add_theme_support('editor-styles');
-        
+
         // Image sizes
         add_image_size('card', 400, 300, true);
         add_image_size('hero', 1920, 1080, true);
-        
+
         // Register menus
         register_nav_menus([
             'header' => __('Menu principal', 'starter-theme'),
@@ -735,13 +735,13 @@ final readonly class ThemeHooks
             'legal' => __('Mentions légales', 'starter-theme'),
         ]);
     }
-    
+
     #[AsAction('init')]
     public function registerTaxonomies(): void
     {
         // Additional taxonomy configuration if needed
     }
-    
+
     #[AsFilter('timber/twig')]
     public function extendTwig(\Twig\Environment $twig): \Twig\Environment
     {
@@ -749,28 +749,28 @@ final readonly class ThemeHooks
         $twig->addFunction(new \Twig\TwigFunction('icon', [$this, 'renderIcon'], [
             'is_safe' => ['html'],
         ]));
-        
+
         return $twig;
     }
-    
+
     public function renderIcon(string $name, array $attrs = []): string
     {
         $class = $attrs['class'] ?? '';
         $path = get_template_directory() . "/assets/icons/{$name}.svg";
-        
+
         if (!file_exists($path)) {
             return '';
         }
-        
+
         $svg = file_get_contents($path);
-        
+
         if ($class) {
             $svg = str_replace('<svg', "<svg class=\"{$class}\"", $svg);
         }
-        
+
         return $svg;
     }
-    
+
     #[AsFilter('the_content')]
     #[AsFilter('acf_the_content')]
     public function convertYoutubeToNocookie(string $content): string
@@ -782,16 +782,16 @@ final readonly class ThemeHooks
                 $content
             );
         }
-        
+
         return $content;
     }
-    
+
     #[AsFilter('excerpt_length')]
     public function excerptLength(): int
     {
         return 30;
     }
-    
+
     #[AsFilter('excerpt_more')]
     public function excerptMore(): string
     {
@@ -818,7 +818,7 @@ final readonly class AdminHooks
     public function __construct(
         private ViewEngineInterface $view,
     ) {}
-    
+
     #[AsAction('admin_enqueue_scripts')]
     public function enqueueAdminAssets(): void
     {
@@ -829,7 +829,7 @@ final readonly class AdminHooks
             filemtime(get_template_directory() . '/dist/css/admin.css')
         );
     }
-    
+
     #[AsAction('login_enqueue_scripts')]
     public function enqueueLoginAssets(): void
     {
@@ -840,32 +840,32 @@ final readonly class AdminHooks
             filemtime(get_template_directory() . '/dist/css/login.css')
         );
     }
-    
+
     #[AsFilter('login_headerurl')]
     public function loginHeaderUrl(): string
     {
         return home_url('/');
     }
-    
+
     #[AsFilter('login_headertext')]
     public function loginHeaderText(): string
     {
         return get_bloginfo('name');
     }
-    
+
     #[AsAction('wp_dashboard_setup')]
     public function removeDashboardWidgets(): void
     {
         remove_meta_box('dashboard_primary', 'dashboard', 'side');
         remove_meta_box('dashboard_quick_press', 'dashboard', 'side');
     }
-    
+
     #[AsAction('admin_menu')]
     public function removeMenuItems(): void
     {
         remove_menu_page('edit-comments.php');
     }
-    
+
     #[AsFilter('admin_footer_text')]
     public function adminFooterText(): string
     {
@@ -902,26 +902,26 @@ final class SecurityHooks
         remove_action('wp_head', 'print_emoji_detection_script', 7);
         remove_action('wp_print_styles', 'print_emoji_styles');
     }
-    
+
     #[AsFilter('wp_headers')]
     public function removeXPingback(array $headers): array
     {
         unset($headers['X-Pingback']);
         return $headers;
     }
-    
+
     #[AsFilter('xmlrpc_enabled')]
     public function disableXmlRpc(): bool
     {
         return false;
     }
-    
+
     #[AsFilter('login_errors')]
     public function genericLoginError(): string
     {
         return __('Identifiants incorrects.', 'starter-theme');
     }
-    
+
     #[AsFilter('style_loader_src')]
     #[AsFilter('script_loader_src')]
     public function removeVersionFromAssets(string $src): string
@@ -960,7 +960,7 @@ final readonly class GlobalComposer implements ViewComposerInterface
         private MenuService $menus,
         private OptionsService $options,
     ) {}
-    
+
     public function compose(array $context): array
     {
         return array_merge($context, [
@@ -998,11 +998,11 @@ final readonly class SingleComposer implements ViewComposerInterface
     public function compose(array $context): array
     {
         $post = $context['post'] ?? null;
-        
+
         if (!$post) {
             return $context;
         }
-        
+
         // Get related posts
         $relatedPosts = Timber::get_posts([
             'post_type' => 'post',
@@ -1010,7 +1010,7 @@ final readonly class SingleComposer implements ViewComposerInterface
             'post__not_in' => [$post->ID],
             'category__in' => wp_get_post_categories($post->ID),
         ]);
-        
+
         return array_merge($context, [
             'related_posts' => $relatedPosts,
             'reading_time' => $post->readingTime(),
@@ -1020,12 +1020,12 @@ final readonly class SingleComposer implements ViewComposerInterface
             'share_urls' => $this->getShareUrls($post),
         ]);
     }
-    
+
     private function getShareUrls($post): array
     {
         $url = urlencode($post->link());
         $title = urlencode($post->title());
-        
+
         return [
             'twitter' => "https://twitter.com/intent/tweet?url={$url}&text={$title}",
             'facebook' => "https://www.facebook.com/sharer/sharer.php?u={$url}",
@@ -1057,10 +1057,10 @@ final readonly class ProductComposer implements ViewComposerInterface
         // Single product
         if (is_singular('product') && isset($context['post'])) {
             $product = $context['post'];
-            
+
             $context['gallery'] = $product->galleryImages();
             $context['categories'] = $product->productCategories();
-            
+
             // Related products
             $context['related_products'] = Timber::get_posts([
                 'post_type' => 'product',
@@ -1074,19 +1074,19 @@ final readonly class ProductComposer implements ViewComposerInterface
                 ],
             ]);
         }
-        
+
         // Archive
         if (is_post_type_archive('product') || is_tax('product_category')) {
             $context['product_categories'] = Timber::get_terms([
                 'taxonomy' => 'product_category',
                 'hide_empty' => true,
             ]);
-            
-            $context['current_category'] = is_tax('product_category') 
-                ? Timber::get_term(get_queried_object()) 
+
+            $context['current_category'] = is_tax('product_category')
+                ? Timber::get_term(get_queried_object())
                 : null;
         }
-        
+
         return $context;
     }
 }
@@ -1115,24 +1115,24 @@ final readonly class SingleController
     public function __construct(
         private ViewEngineInterface $view,
     ) {}
-    
+
     public function __invoke(): string
     {
         $context = Timber::context();
         $post = $context['post'];
-        
+
         // Password protected
         if (post_password_required($post->ID)) {
             return $this->view->render('pages/password', $context);
         }
-        
+
         // Find the right template
         $templates = [
             "pages/single-{$post->post_type}-{$post->slug}",
             "pages/single-{$post->post_type}",
             'pages/single',
         ];
-        
+
         return $this->view->renderFirst($templates, $context);
     }
 }
@@ -1157,11 +1157,11 @@ final readonly class ArchiveController
     public function __construct(
         private ViewEngineInterface $view,
     ) {}
-    
+
     public function __invoke(): string
     {
         $context = Timber::context();
-        
+
         // Posts are already in context via Timber::context()
         // Add pagination
         if (isset($context['posts']) && method_exists($context['posts'], 'pagination')) {
@@ -1170,67 +1170,67 @@ final readonly class ArchiveController
                 'end_size' => 1,
             ]);
         }
-        
+
         // Archive title
         $context['archive_title'] = $this->getArchiveTitle();
         $context['archive_description'] = get_the_archive_description();
-        
+
         // Find template
         $templates = $this->getTemplates();
-        
+
         return $this->view->renderFirst($templates, $context);
     }
-    
+
     private function getArchiveTitle(): string
     {
         if (is_category()) {
             return single_cat_title('', false);
         }
-        
+
         if (is_tag()) {
             return single_tag_title('', false);
         }
-        
+
         if (is_tax()) {
             return single_term_title('', false);
         }
-        
+
         if (is_post_type_archive()) {
             return post_type_archive_title('', false);
         }
-        
+
         if (is_home()) {
             return __('Blog', 'starter-theme');
         }
-        
+
         return get_the_archive_title();
     }
-    
+
     private function getTemplates(): array
     {
         $templates = [];
-        
+
         if (is_post_type_archive()) {
             $postType = get_query_var('post_type');
             $templates[] = "pages/archive-{$postType}";
         }
-        
+
         if (is_tax()) {
             $term = get_queried_object();
             $templates[] = "pages/taxonomy-{$term->taxonomy}-{$term->slug}";
             $templates[] = "pages/taxonomy-{$term->taxonomy}";
         }
-        
+
         if (is_category()) {
             $templates[] = 'pages/category';
         }
-        
+
         if (is_tag()) {
             $templates[] = 'pages/tag';
         }
-        
+
         $templates[] = 'pages/archive';
-        
+
         return $templates;
     }
 }
@@ -1255,18 +1255,18 @@ final readonly class SearchController
     public function __construct(
         private ViewEngineInterface $view,
     ) {}
-    
+
     public function __invoke(): string
     {
         $context = Timber::context();
-        
+
         $context['search_query'] = get_search_query();
         $context['found_posts'] = $GLOBALS['wp_query']->found_posts;
-        
+
         if (isset($context['posts'])) {
             $context['pagination'] = $context['posts']->pagination();
         }
-        
+
         return $this->view->render('pages/search', $context);
     }
 }
@@ -1305,13 +1305,13 @@ final readonly class HeroBlock implements AcfBlockInterface
         private ViewEngineInterface $view,
         private ImageService $images,
     ) {}
-    
+
     public static function fields(): FieldsBuilder
     {
         $builder = new FieldsBuilder('hero', [
             'title' => 'Hero',
         ]);
-        
+
         $builder
             ->addTab('content', ['label' => 'Contenu'])
             ->addWysiwyg('content', [
@@ -1323,7 +1323,7 @@ final readonly class HeroBlock implements AcfBlockInterface
             ->addLink('cta', [
                 'label' => 'Call to action',
             ])
-            
+
             ->addTab('media', ['label' => 'Média'])
             ->addImage('background_image', [
                 'label' => 'Image de fond',
@@ -1334,7 +1334,7 @@ final readonly class HeroBlock implements AcfBlockInterface
                 'label' => 'Ajouter un overlay',
                 'default_value' => true,
             ])
-            
+
             ->addTab('settings', ['label' => 'Paramètres'])
             ->addSelect('height', [
                 'label' => 'Hauteur',
@@ -1355,10 +1355,10 @@ final readonly class HeroBlock implements AcfBlockInterface
                 ],
                 'default_value' => 'center',
             ]);
-        
+
         return $builder;
     }
-    
+
     public function compose(array $block, array $fields): array
     {
         return [
@@ -1373,30 +1373,30 @@ final readonly class HeroBlock implements AcfBlockInterface
             'is_preview' => $block['is_preview'] ?? false,
         ];
     }
-    
+
     public function render(array $context): string
     {
         return $this->view->render('blocks/hero', $context);
     }
-    
+
     private function buildClasses(array $block, array $fields): string
     {
         $classes = ['block-hero'];
         $classes[] = 'block-hero--' . ($fields['height'] ?? 'large');
         $classes[] = 'block-hero--align-' . ($fields['text_align'] ?? 'center');
-        
+
         if ($fields['has_overlay'] ?? true) {
             $classes[] = 'block-hero--has-overlay';
         }
-        
+
         if (!empty($block['className'])) {
             $classes[] = $block['className'];
         }
-        
+
         if (!empty($block['align'])) {
             $classes[] = 'align' . $block['align'];
         }
-        
+
         return implode(' ', $classes);
     }
 }
@@ -1445,7 +1445,7 @@ final readonly class AccordionBlock implements InteractiveBlockInterface
     public function __construct(
         private ViewEngineInterface $view,
     ) {}
-    
+
     public static function attributes(): array
     {
         return [
@@ -1463,45 +1463,45 @@ final readonly class AccordionBlock implements InteractiveBlockInterface
             ],
         ];
     }
-    
+
     public static function supports(): array
     {
         return [
             'interactivity' => true,
         ];
     }
-    
+
     public static function initialState(): array
     {
         return [];
     }
-    
+
     public function initialContext(array $attributes): array
     {
         $defaultOpen = $attributes['defaultOpen'] ?? -1;
         $items = $attributes['items'] ?? [];
-        
+
         $openItems = [];
         if ($defaultOpen >= 0 && isset($items[$defaultOpen])) {
             $openItems[] = $defaultOpen;
         }
-        
+
         return [
             'openItems' => $openItems,
             'allowMultiple' => $attributes['allowMultiple'] ?? false,
         ];
     }
-    
+
     public function compose(array $attributes, string $content, WP_Block $block): array
     {
         $items = $attributes['items'] ?? [];
-        
+
         // Add unique IDs to items
         foreach ($items as $index => &$item) {
             $item['id'] = $item['id'] ?? "item-{$index}";
             $item['index'] = $index;
         }
-        
+
         return [
             'wrapper_attributes' => get_block_wrapper_attributes([
                 'class' => 'accordion-block',
@@ -1512,10 +1512,10 @@ final readonly class AccordionBlock implements InteractiveBlockInterface
             'allow_multiple' => $attributes['allowMultiple'] ?? false,
         ];
     }
-    
+
     public function render(array $attributes, string $content, WP_Block $block): string
     {
-        return $this->view->render('blocks/accordion', 
+        return $this->view->render('blocks/accordion',
             $this->compose($attributes, $content, $block)
         );
     }
@@ -1570,18 +1570,18 @@ final readonly class HeroFullWidth implements BlockPatternInterface
 <div class="wp-block-cover alignfull" style="min-height:{{ min_height }};padding-top:var(--wp--preset--spacing--large);padding-bottom:var(--wp--preset--spacing--large)">
     <span aria-hidden="true" class="wp-block-cover__background has-primary-background-color" style="opacity:0.{{ overlay_opacity }}"></span>
     <div class="wp-block-cover__inner-container">
-        
+
         <!-- wp:group {"layout":{"type":"constrained","contentSize":"800px"}} -->
         <div class="wp-block-group">
-            
+
             <!-- wp:heading {"textAlign":"center","level":1,"textColor":"white"} -->
             <h1 class="wp-block-heading has-text-align-center has-white-color has-text-color">{{ default_heading }}</h1>
             <!-- /wp:heading -->
-            
+
             <!-- wp:paragraph {"align":"center","textColor":"white","fontSize":"large"} -->
             <p class="has-text-align-center has-white-color has-text-color has-large-font-size">{{ default_text }}</p>
             <!-- /wp:paragraph -->
-            
+
             <!-- wp:buttons {"layout":{"type":"flex","justifyContent":"center"},"style":{"spacing":{"margin":{"top":"var:preset|spacing|medium"}}}} -->
             <div class="wp-block-buttons" style="margin-top:var(--wp--preset--spacing--medium)">
                 <!-- wp:button {"backgroundColor":"white","textColor":"primary"} -->
@@ -1591,10 +1591,10 @@ final readonly class HeroFullWidth implements BlockPatternInterface
                 <!-- /wp:button -->
             </div>
             <!-- /wp:buttons -->
-            
+
         </div>
         <!-- /wp:group -->
-        
+
     </div>
 </div>
 <!-- /wp:cover -->
@@ -1624,7 +1624,7 @@ final class ThemeConfig implements ThemeConfigInterface
         return [
             'appearanceTools' => true,
             'useRootPaddingAwareAlignments' => true,
-            
+
             'color' => [
                 'palette' => [
                     ['name' => 'Primary', 'slug' => 'primary', 'color' => '#1a1a2e'],
@@ -1643,7 +1643,7 @@ final class ThemeConfig implements ThemeConfigInterface
                     ],
                 ],
             ],
-            
+
             'typography' => [
                 'fontFamilies' => [
                     [
@@ -1666,7 +1666,7 @@ final class ThemeConfig implements ThemeConfigInterface
                     ['name' => '3X-Large', 'slug' => '3x-large', 'size' => '3rem'],
                 ],
             ],
-            
+
             'spacing' => [
                 'units' => ['px', 'em', 'rem', '%', 'vw', 'vh'],
                 'spacingSizes' => [
@@ -1677,12 +1677,12 @@ final class ThemeConfig implements ThemeConfigInterface
                     ['name' => 'XL', 'slug' => 'xl', 'size' => '6rem'],
                 ],
             ],
-            
+
             'layout' => [
                 'contentSize' => '800px',
                 'wideSize' => '1200px',
             ],
-            
+
             'custom' => [
                 'lineHeight' => [
                     'small' => 1.2,
@@ -1692,7 +1692,7 @@ final class ThemeConfig implements ThemeConfigInterface
             ],
         ];
     }
-    
+
     public static function styles(): array
     {
         return [
@@ -1745,7 +1745,7 @@ final class ThemeConfig implements ThemeConfigInterface
             ],
         ];
     }
-    
+
     public static function customTemplates(): array
     {
         return [
@@ -1766,7 +1766,7 @@ final class ThemeConfig implements ThemeConfigInterface
             ],
         ];
     }
-    
+
     public static function templateParts(): array
     {
         return [
@@ -1776,7 +1776,7 @@ final class ThemeConfig implements ThemeConfigInterface
             ['name' => 'sidebar', 'title' => 'Sidebar', 'area' => 'uncategorized'],
         ];
     }
-    
+
     public static function blockCategories(): array
     {
         return [
@@ -1811,23 +1811,23 @@ final class ThemeConfig implements ThemeConfigInterface
 </head>
 <body class="{{ body_class }}">
     {{ function('wp_body_open') }}
-    
+
     <a class="skip-link screen-reader-text" href="#main">
         {{ 'Aller au contenu'|trans }}
     </a>
-    
+
     {% block header %}
         {% include 'components/header.twig' %}
     {% endblock %}
-    
+
     <main id="main" class="site-main">
         {% block content %}{% endblock %}
     </main>
-    
+
     {% block footer %}
         {% include 'components/footer.twig' %}
     {% endblock %}
-    
+
     {{ function('wp_footer') }}
 </body>
 </html>
@@ -1840,21 +1840,21 @@ final class ThemeConfig implements ThemeConfigInterface
 
 {% block content %}
 <article class="post post--single" id="post-{{ post.ID }}">
-    
+
     <header class="post__header">
         <div class="container">
             {% include 'components/breadcrumb.twig' %}
-            
+
             <h1 class="post__title">{{ post.title }}</h1>
-            
+
             {% include 'partials/meta-post.twig' %}
         </div>
     </header>
-    
+
     {% if post.thumbnail %}
     <figure class="post__thumbnail">
-        <img 
-            src="{{ post.thumbnail.src('large') }}" 
+        <img
+            src="{{ post.thumbnail.src('large') }}"
             alt="{{ post.thumbnail.alt }}"
             width="{{ post.thumbnail.width }}"
             height="{{ post.thumbnail.height }}"
@@ -1862,12 +1862,12 @@ final class ThemeConfig implements ThemeConfigInterface
         >
     </figure>
     {% endif %}
-    
+
     <div class="post__content container">
         <div class="post__body prose">
             {{ post.content }}
         </div>
-        
+
         {% if tags %}
         <footer class="post__footer">
             <div class="post__tags">
@@ -1875,19 +1875,19 @@ final class ThemeConfig implements ThemeConfigInterface
                 <a href="{{ tag.link }}" class="tag">{{ tag.name }}</a>
                 {% endfor %}
             </div>
-            
+
             {% include 'components/social-share.twig' %}
         </footer>
         {% endif %}
     </div>
-    
+
 </article>
 
 {% if related_posts %}
 <section class="related-posts">
     <div class="container">
         <h2>{{ 'Articles similaires'|trans }}</h2>
-        
+
         <div class="grid grid--3">
             {% for related in related_posts %}
                 {% include 'components/card-post.twig' with { post: related } %}
@@ -1904,7 +1904,7 @@ final class ThemeConfig implements ThemeConfigInterface
 ```twig
 {#
   Hero Block
-  
+
   Variables:
     - block_id: string
     - content: string (WYSIWYG)
@@ -1917,7 +1917,7 @@ final class ThemeConfig implements ThemeConfigInterface
     - is_preview: bool
 #}
 
-<section 
+<section
     class="{{ class }}"
     id="{{ block_id }}"
     {% if background %}
@@ -1926,7 +1926,7 @@ final class ThemeConfig implements ThemeConfigInterface
 >
     {% if background %}
     <picture class="block-hero__background">
-        <img 
+        <img
             src="{{ background.src }}"
             srcset="{{ background.srcset }}"
             sizes="100vw"
@@ -1935,11 +1935,11 @@ final class ThemeConfig implements ThemeConfigInterface
         >
     </picture>
     {% endif %}
-    
+
     {% if has_overlay %}
     <div class="block-hero__overlay"></div>
     {% endif %}
-    
+
     <div class="block-hero__container container">
         <div class="block-hero__content">
             {% if content %}
@@ -1947,11 +1947,11 @@ final class ThemeConfig implements ThemeConfigInterface
                 {{ content|raw }}
             </div>
             {% endif %}
-            
+
             {% if cta %}
             <div class="block-hero__actions">
-                <a 
-                    href="{{ cta.url }}" 
+                <a
+                    href="{{ cta.url }}"
                     class="button button--primary"
                     {% if cta.target %}target="{{ cta.target }}"{% endif %}
                 >
@@ -1975,7 +1975,7 @@ final class ThemeConfig implements ThemeConfigInterface
 ```twig
 {#
   Interactive Accordion Block
-  
+
   Variables:
     - wrapper_attributes: string
     - namespace: string
@@ -1984,13 +1984,13 @@ final class ThemeConfig implements ThemeConfigInterface
     - allow_multiple: bool
 #}
 
-<div 
+<div
     {{ wrapper_attributes|raw }}
     data-wp-interactive="{{ namespace }}"
     data-wp-context='{{ context|json_encode }}'
 >
     {% for item in items %}
-    <div 
+    <div
         class="accordion-block__item"
         data-wp-class--is-open="context.openItems.includes({{ item.index }})"
     >
@@ -2010,7 +2010,7 @@ final class ThemeConfig implements ThemeConfigInterface
                 </svg>
             </span>
         </button>
-        
+
         <div
             class="accordion-block__panel"
             id="accordion-panel-{{ item.id }}"
@@ -2032,7 +2032,7 @@ final class ThemeConfig implements ThemeConfigInterface
 ```twig
 {#
   Post Card Component
-  
+
   Variables:
     - post: Timber\Post
     - show_excerpt: bool (default: true)
@@ -2048,7 +2048,7 @@ final class ThemeConfig implements ThemeConfigInterface
     <a href="{{ post.link }}" class="card-post__link">
         {% if post.thumbnail %}
         <figure class="card-post__thumbnail">
-            <img 
+            <img
                 src="{{ post.thumbnail.src('card') }}"
                 alt="{{ post.thumbnail.alt }}"
                 loading="lazy"
@@ -2061,22 +2061,22 @@ final class ThemeConfig implements ThemeConfigInterface
             {{ icon('image') }}
         </figure>
         {% endif %}
-        
+
         <div class="card-post__body">
             {% if show_category and post.category %}
             <span class="card-post__category">
                 {{ post.category.name }}
             </span>
             {% endif %}
-            
+
             <h3 class="card-post__title">{{ post.title }}</h3>
-            
+
             {% if show_excerpt %}
             <p class="card-post__excerpt">
                 {{ post.safeExcerpt(120) }}
             </p>
             {% endif %}
-            
+
             {% if show_date %}
             <time class="card-post__date" datetime="{{ post.date('c') }}">
                 {{ post.date('j F Y') }}
@@ -2093,17 +2093,17 @@ final class ThemeConfig implements ThemeConfigInterface
 
 Ce thème exemple démontre :
 
-| Feature | Fichier(s) |
-|---------|------------|
-| **Bootstrap minimal** | `functions.php` (1 ligne) |
-| **Post Types** | `app/Models/Product.php`, `Testimonial.php` |
-| **Taxonomies** | `app/Taxonomies/ProductCategory.php` |
-| **Hooks déclaratifs** | `app/Hooks/ThemeHooks.php`, etc. |
-| **View Composers** | `app/Views/Composers/*.php` |
-| **Template Controllers** | `app/Http/Controllers/*.php` |
-| **ACF Blocks** | `app/Blocks/Acf/Hero/HeroBlock.php` |
-| **Native Blocks + Interactivity** | `app/Blocks/Native/Accordion/` |
-| **Block Patterns** | `app/Patterns/HeroFullWidth.php` |
-| **FSE theme.json** | `app/Theme/ThemeConfig.php` |
-| **Services avec DI** | `app/Services/*.php` |
-| **Templates Twig** | `templates/**/*.twig` |
+| Feature                           | Fichier(s)                                  |
+| --------------------------------- | ------------------------------------------- |
+| **Bootstrap minimal**             | `functions.php` (1 ligne)                   |
+| **Post Types**                    | `app/Models/Product.php`, `Testimonial.php` |
+| **Taxonomies**                    | `app/Taxonomies/ProductCategory.php`        |
+| **Hooks déclaratifs**             | `app/Hooks/ThemeHooks.php`, etc.            |
+| **View Composers**                | `app/Views/Composers/*.php`                 |
+| **Template Controllers**          | `app/Http/Controllers/*.php`                |
+| **ACF Blocks**                    | `app/Blocks/Acf/Hero/HeroBlock.php`         |
+| **Native Blocks + Interactivity** | `app/Blocks/Native/Accordion/`              |
+| **Block Patterns**                | `app/Patterns/HeroFullWidth.php`            |
+| **FSE theme.json**                | `app/Theme/ThemeConfig.php`                 |
+| **Services avec DI**              | `app/Services/*.php`                        |
+| **Templates Twig**                | `templates/**/*.twig`                       |

@@ -3,19 +3,22 @@
 ## 1. Existing wp-toolkit Analysis
 
 ### Strengths
+
 - `PostTypeBuilder` / `TaxonomyBuilder`: automatic label generation
 - `AssetsManager`: webpack manifest integration
 - `CleanupManager`: centralized WP hardening
 
 ### Redundancies with Timber
-| wp-toolkit | Timber native | Verdict |
-|------------|---------------|---------|
-| `Repository` | `Timber::get_posts()` | Remove |
-| `PostRepository` | `Timber::get_posts()` | Remove |
-| `TermRepository` | `Timber::get_terms()` | Remove |
-| `CustomPostTypesManager::set_classmap` | `timber/post/classmap` filter | Remove |
+
+| wp-toolkit                             | Timber native                 | Verdict |
+| -------------------------------------- | ----------------------------- | ------- |
+| `Repository`                           | `Timber::get_posts()`         | Remove  |
+| `PostRepository`                       | `Timber::get_posts()`         | Remove  |
+| `TermRepository`                       | `Timber::get_terms()`         | Remove  |
+| `CustomPostTypesManager::set_classmap` | `timber/post/classmap` filter | Remove  |
 
 ### Identified Problems
+
 - `ManagerInterface::run()` too simplistic
 - No DI, manual injection
 - No separation of register/boot
@@ -24,6 +27,7 @@
 ## 2. Tempest Framework
 
 ### Metrics (2026-02-04)
+
 - Version: v2.14.0
 - GitHub Stars: 2,056
 - Architecture: Monorepo (30+ packages)
@@ -31,6 +35,7 @@
 - Maintainer: Brent Roose (spatie.be)
 
 ### Usable Components
+
 ```
 tempest/container    - DI container with auto-wiring
 tempest/discovery    - Auto-discovery via attributes
@@ -41,6 +46,7 @@ tempest/validation   - Validation (optional)
 ```
 
 ### Discovery Pattern
+
 ```php
 // Tempest scans classes and applies discoveries
 final class HookDiscovery implements Discovery
@@ -49,7 +55,7 @@ final class HookDiscovery implements Discovery
     {
         // Find methods with attributes
     }
-    
+
     public function apply(): void
     {
         // Execute registrations
@@ -58,6 +64,7 @@ final class HookDiscovery implements Discovery
 ```
 
 ### View Components
+
 - Convention: `x-*.view.php`
 - Auto-discovered by `ViewComponentDiscovery`
 - Rendered via `ViewRenderer`
@@ -65,6 +72,7 @@ final class HookDiscovery implements Discovery
 ## 3. Acorn (Laravel for WP)
 
 ### What Acorn Provides
+
 - Service Providers (register/boot)
 - View Composers
 - Blade templating
@@ -72,29 +80,32 @@ final class HookDiscovery implements Discovery
 - Eloquent ORM (optional)
 
 ### Differences with Tempest
-| Aspect | Acorn | Tempest |
-|--------|-------|---------|
-| Philosophy | Convention-first | Discovery-first |
-| Config | config/*.php files | PHP 8 attributes |
-| Providers | Manual | Auto-discovered |
-| Verbosity | More boilerplate | Less code |
+
+| Aspect     | Acorn               | Tempest          |
+| ---------- | ------------------- | ---------------- |
+| Philosophy | Convention-first    | Discovery-first  |
+| Config     | config/\*.php files | PHP 8 attributes |
+| Providers  | Manual              | Auto-discovered  |
+| Verbosity  | More boilerplate    | Less code        |
 
 ## 4. WordPress FSE & Gutenberg
 
 ### block.json (native blocks)
+
 ```json
 {
-    "$schema": "https://schemas.wp.org/trunk/block.json",
-    "apiVersion": 3,
-    "name": "theme/notice",
-    "title": "Notice",
-    "render": "file:./render.php",
-    "attributes": {},
-    "supports": {}
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "theme/notice",
+  "title": "Notice",
+  "render": "file:./render.php",
+  "attributes": {},
+  "supports": {}
 }
 ```
 
 ### ACF Blocks
+
 ```php
 acf_register_block_type([
     'name' => 'hero',
@@ -104,12 +115,14 @@ acf_register_block_type([
 ```
 
 ### theme.json
+
 - Defines design tokens (colors, typography, spacing)
 - Configures block supports
 - Global and per-block styles
 - Custom templates and template parts
 
 ### Block Patterns
+
 ```php
 register_block_pattern('theme/hero', [
     'title' => 'Hero',
@@ -118,19 +131,22 @@ register_block_pattern('theme/hero', [
 ```
 
 ### Interactivity API (WP 6.5+)
+
 ```php
 wp_interactivity_state('myblock', ['count' => 0]);
 ```
+
 ```html
 <div data-wp-interactive="myblock">
-    <span data-wp-text="state.count"></span>
-    <button data-wp-on--click="actions.increment">+</button>
+  <span data-wp-text="state.count"></span>
+  <button data-wp-on--click="actions.increment">+</button>
 </div>
 ```
 
 ## 5. Timber 2.x
 
 ### Main API
+
 ```php
 // Querying
 $posts = Timber::get_posts($args);
@@ -145,6 +161,7 @@ Timber::render('template.twig', $context);
 ```
 
 ### Class Maps
+
 ```php
 add_filter('timber/post/classmap', function($map) {
     $map['product'] = Product::class;
@@ -153,6 +170,7 @@ add_filter('timber/post/classmap', function($map) {
 ```
 
 ### Context Filter
+
 ```php
 add_filter('timber/context', function($context) {
     $context['menus'] = [...];
@@ -164,19 +182,19 @@ add_filter('timber/context', function($context) {
 
 ### Attributes to Create
 
-| Attribute | WordPress equivalent | Target |
-|----------|---------------------|--------|
-| `#[AsAction]` | `add_action()` | Method |
-| `#[AsFilter]` | `add_filter()` | Method |
-| `#[AsPostType]` | `register_post_type()` | Class |
-| `#[AsTaxonomy]` | `register_taxonomy()` | Class |
-| `#[AsBlock]` | `register_block_type()` | Class |
-| `#[AsAcfBlock]` | `acf_register_block_type()` | Class |
-| `#[AsBlockPattern]` | `register_block_pattern()` | Class |
-| `#[AsViewComposer]` | `timber/context` filter | Class |
-| `#[AsTemplateController]` | `template_include` | Class |
-| `#[AsShortcode]` | `add_shortcode()` | Method |
-| `#[AsRestRoute]` | `register_rest_route()` | Method |
+| Attribute                 | WordPress equivalent        | Target |
+| ------------------------- | --------------------------- | ------ |
+| `#[AsAction]`             | `add_action()`              | Method |
+| `#[AsFilter]`             | `add_filter()`              | Method |
+| `#[AsPostType]`           | `register_post_type()`      | Class  |
+| `#[AsTaxonomy]`           | `register_taxonomy()`       | Class  |
+| `#[AsBlock]`              | `register_block_type()`     | Class  |
+| `#[AsAcfBlock]`           | `acf_register_block_type()` | Class  |
+| `#[AsBlockPattern]`       | `register_block_pattern()`  | Class  |
+| `#[AsViewComposer]`       | `timber/context` filter     | Class  |
+| `#[AsTemplateController]` | `template_include`          | Class  |
+| `#[AsShortcode]`          | `add_shortcode()`           | Method |
+| `#[AsRestRoute]`          | `register_rest_route()`     | Method |
 
 ### Discoveries to Implement
 
@@ -196,7 +214,7 @@ add_filter('timber/context', function($context) {
 ```
 WordPress Boot:
 1. mu-plugins loaded
-2. plugins loaded  
+2. plugins loaded
 3. after_setup_theme    ← Kernel::boot() here
 4. init                 ← Discoveries applied
 5. wp_loaded
@@ -219,18 +237,22 @@ $kernel->boot(__DIR__ . '/app', [
 ## 7. Open Questions (Resolved)
 
 ### PHP Version
+
 - **8.4**: Full Tempest features, property hooks
 - ~~**8.2**: More hosting compatibility~~
 - **Decision**: 8.4 for new projects, document clearly
 
 ### Namespace
+
 - ~~`WPTempest` - Shorter, generic~~
 - **Decision**: `Studiometa\WPTempest`
 
 ### Repository
+
 - **Decision**: Separate, wp-toolkit can be deprecated
 - ~~Monorepo with wp-toolkit: Share code, but coupling~~
 
 ### ViewEngine
+
 - **Decision**: Timber by default, interface for extensibility
 - ~~Multi-engine: Twig + Blade + Tempest View~~
