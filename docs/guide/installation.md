@@ -108,14 +108,21 @@ You can pass configuration options when booting the kernel:
 
 ```php
 Kernel::boot(__DIR__ . '/app', [
-    'timber' => [
-        'views' => __DIR__ . '/views',
-    ],
-    'blocks' => [
-        'namespace' => 'theme',
-    ],
+    // Enable discovery cache for production
+    'discovery_cache' => 'full',  // 'full', 'partial', 'none'
+
+    // Custom cache path (optional)
+    'discovery_cache_path' => WP_CONTENT_DIR . '/cache/wp-tempest/discovery',
 ]);
 ```
+
+For production deployments, enable the discovery cache and generate it after deployment:
+
+```bash
+wp tempest discovery:generate
+```
+
+See [Discovery Cache](/guide/discovery-cache) for more details.
 
 ## Using with Timber
 
