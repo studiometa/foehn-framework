@@ -32,7 +32,7 @@
         "timber/timber": "^2.0"
     },
     "require-dev": {
-        "carthage-software/mago": "*",
+        "carthage-software/mago": "1.4.1",
         "pestphp/pest": "^3.0",
         "php-stubs/acf-pro-stubs": "^6.5",
         "php-stubs/wordpress-stubs": "*",

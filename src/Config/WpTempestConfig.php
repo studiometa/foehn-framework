@@ -37,6 +37,13 @@ final readonly class WpTempestConfig
          * @var list<class-string>
          */
         public array $hooks = [],
+
+        /**
+         * Transform ACF block fields via Timber's ACF integration.
+         * When enabled, raw ACF values (image IDs, post IDs, etc.) are automatically
+         * converted to Timber objects (Image, Post, Term, etc.).
+         */
+        public bool $acfTransformFields = true,
     ) {}
 
     /**
@@ -63,6 +70,7 @@ final readonly class WpTempestConfig
             discoveryCachePath: $config['discovery_cache_path'] ?? null,
             timberTemplatesDir: $timberTemplatesDir,
             hooks: $hooks,
+            acfTransformFields: $config['acf_transform_fields'] ?? true,
         );
     }
 
