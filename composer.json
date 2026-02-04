@@ -36,6 +36,7 @@
         "pestphp/pest": "^3.0",
         "php-stubs/acf-pro-stubs": "^6.5",
         "php-stubs/wordpress-stubs": "*",
+        "php-stubs/wp-cli-stubs": "^2.12",
         "stoutlogic/acf-builder": "^1.12"
     },
     "autoload": {
