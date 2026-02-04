@@ -48,9 +48,11 @@ final class DiscoveryRunner
             return;
         }
 
+        // Post types and taxonomies
+        $this->runDiscovery(PostTypeDiscovery::class);
+        $this->runDiscovery(TaxonomyDiscovery::class);
+
         // These discoveries will be added in later phases
-        // $this->runDiscovery(PostTypeDiscovery::class);
-        // $this->runDiscovery(TaxonomyDiscovery::class);
         // $this->runDiscovery(BlockDiscovery::class);
         // $this->runDiscovery(AcfBlockDiscovery::class);
 
