@@ -35,6 +35,9 @@ final class DiscoveryRunner
         // Hook discovery runs early to catch after_setup_theme hooks
         $this->runDiscovery(HookDiscovery::class);
 
+        // Shortcodes can be registered early
+        $this->runDiscovery(ShortcodeDiscovery::class);
+
         $this->earlyRan = true;
     }
 
@@ -76,8 +79,8 @@ final class DiscoveryRunner
         $this->runDiscovery(ViewComposerDiscovery::class);
         $this->runDiscovery(TemplateControllerDiscovery::class);
 
-        // These discoveries will be added in later phases
-        // $this->runDiscovery(RestRouteDiscovery::class);
+        // REST API routes
+        $this->runDiscovery(RestRouteDiscovery::class);
 
         $this->lateRan = true;
     }
