@@ -17,6 +17,7 @@ Thumbs.db
 .phpunit.result.cache
 .phpunit.cache/
 coverage/
+.pest.cache
 
 # Build
 /build/
