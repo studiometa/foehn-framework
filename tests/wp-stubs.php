@@ -104,6 +104,24 @@ if (!function_exists('add_filter')) {
     }
 }
 
+if (!function_exists('remove_action')) {
+    function remove_action(string $hook, callable|string $callback, int $priority = 10): bool
+    {
+        wp_stub_record('remove_action', compact('hook', 'callback', 'priority'));
+
+        return true;
+    }
+}
+
+if (!function_exists('remove_filter')) {
+    function remove_filter(string $hook, callable|string $callback, int $priority = 10): bool
+    {
+        wp_stub_record('remove_filter', compact('hook', 'callback', 'priority'));
+
+        return true;
+    }
+}
+
 if (!function_exists('add_shortcode')) {
     function add_shortcode(string $tag, callable $callback): void
     {
