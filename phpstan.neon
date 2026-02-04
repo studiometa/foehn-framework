@@ -1,0 +1,9 @@
+parameters:
+    level: 8
+    paths:
+        - src
+    tmpDir: .phpstan.cache
+    ignoreErrors:
+        # WordPress functions are not known to PHPStan without stubs
+        - '#Function (add_action|add_filter|register_post_type|register_taxonomy|acf_register_block_type|get_fields|get_field|register_block_pattern|wp_interactivity_state|get_block_wrapper_attributes) not found\.#'
+        - '#Function (add_theme_support|register_nav_menus|get_template_directory|get_template_directory_uri) not found\.#'
