@@ -182,9 +182,10 @@ final class DiscoveryRunner
         }
 
         // Find all PHP files in the app directory
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($appPath, \RecursiveDirectoryIterator::SKIP_DOTS),
-        );
+        $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator(
+            $appPath,
+            \RecursiveDirectoryIterator::SKIP_DOTS,
+        ));
 
         // Get Composer's class loader to resolve class names
         $classMap = $this->buildClassMapFromAutoload($appPath);
@@ -257,7 +258,7 @@ final class DiscoveryRunner
             }
         }
 
-        if ($loader === null || !($loader instanceof \Composer\Autoload\ClassLoader)) {
+        if ($loader === null || !$loader instanceof \Composer\Autoload\ClassLoader) {
             return $map;
         }
 
@@ -280,9 +281,10 @@ final class DiscoveryRunner
                     continue;
                 }
 
-                $dirIterator = new \RecursiveIteratorIterator(
-                    new \RecursiveDirectoryIterator($dir, \RecursiveDirectoryIterator::SKIP_DOTS),
-                );
+                $dirIterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator(
+                    $dir,
+                    \RecursiveDirectoryIterator::SKIP_DOTS,
+                ));
 
                 /** @var \SplFileInfo $file */
                 foreach ($dirIterator as $file) {

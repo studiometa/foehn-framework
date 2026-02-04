@@ -205,11 +205,7 @@ final class Kernel
         // Register the discovery runner with cache support and app path
         $this->container->singleton(
             DiscoveryRunner::class,
-            fn() => new DiscoveryRunner(
-                $this->container,
-                $this->container->get(DiscoveryCache::class),
-                $this->appPath,
-            ),
+            fn() => new DiscoveryRunner($this->container, $this->container->get(DiscoveryCache::class), $this->appPath),
         );
     }
 
