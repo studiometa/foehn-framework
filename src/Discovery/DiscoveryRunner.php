@@ -58,6 +58,9 @@ final class DiscoveryRunner
         // CLI commands are registered early so they're available immediately
         $this->applyDiscovery(CliCommandDiscovery::class);
 
+        // Timber class maps need to be available before queries
+        $this->applyDiscovery(TimberModelDiscovery::class);
+
         $this->earlyRan = true;
     }
 
@@ -401,6 +404,7 @@ final class DiscoveryRunner
                 HookDiscovery::class,
                 ShortcodeDiscovery::class,
                 CliCommandDiscovery::class,
+                TimberModelDiscovery::class,
             ],
             'main' => [
                 PostTypeDiscovery::class,
