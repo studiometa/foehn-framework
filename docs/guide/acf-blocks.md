@@ -328,6 +328,119 @@ public static function fields(): FieldsBuilder
 }
 ```
 
+## Field Validation
+
+Foehn provides a `ValidatesFields` trait for optional field validation and sanitization in your `compose()` method.
+
+### Using the Trait
+
+```php
+<?php
+
+namespace App\Blocks\Hero;
+
+use Studiometa\Foehn\Attributes\AsAcfBlock;
+use Studiometa\Foehn\Blocks\Concerns\ValidatesFields;
+use Studiometa\Foehn\Contracts\AcfBlockInterface;
+use Studiometa\Foehn\Contracts\ViewEngineInterface;
+use StoutLogic\AcfBuilder\FieldsBuilder;
+
+#[AsAcfBlock(name: 'hero', title: 'Hero Banner')]
+final readonly class HeroBlock implements AcfBlockInterface
+{
+    use ValidatesFields;
+
+    public function __construct(
+        private ViewEngineInterface $view,
+    ) {}
+
+    public static function fields(): FieldsBuilder
+    {
+        return (new FieldsBuilder('hero'))
+            ->addText('title')
+            ->addWysiwyg('content')
+            ->addNumber('count');
+    }
+
+    public function compose(array $block, array $fields): array
+    {
+        // Validate required fields (throws InvalidArgumentException if missing)
+        $this->validateRequired($fields, ['title']);
+
+        // Sanitize individual fields
+        return [
+            'title' => $this->sanitizeField($fields['title'], 'string'),
+            'content' => $this->sanitizeField($fields['content'] ?? '', 'html'),
+            'count' => $this->sanitizeField($fields['count'] ?? 0, 'int'),
+        ];
+    }
+
+    public function render(array $context, bool $isPreview = false): string
+    {
+        return $this->view->render('blocks/hero', $context);
+    }
+}
+```
+
+### Schema-Based Validation
+
+For more complex validation, use `validateFields()` with a schema:
+
+```php
+public function compose(array $block, array $fields): array
+{
+    return $this->validateFields($fields, [
+        'title' => ['type' => 'string', 'required' => true],
+        'content' => ['type' => 'html', 'default' => ''],
+        'count' => ['type' => 'int', 'default' => 0],
+        'email' => ['type' => 'email'],
+        'link' => ['type' => 'url'],
+        'items' => ['type' => 'array', 'default' => []],
+    ]);
+}
+```
+
+### Available Methods
+
+| Method | Description |
+| ------ | ----------- |
+| `validateRequired(array $fields, array $required)` | Throws if required fields are missing or empty |
+| `validateType(mixed $value, string $type)` | Returns `true` if value matches expected type |
+| `sanitizeField(mixed $value, string $type)` | Coerces value to expected type |
+| `validateFields(array $fields, array $schema)` | Validates and sanitizes fields against a schema |
+
+### Supported Types
+
+| Type | Description |
+| ---- | ----------- |
+| `string` | Trimmed string |
+| `int` | Integer (coerced from numeric strings) |
+| `float` | Float (coerced from numeric values) |
+| `bool` | Boolean (handles `'true'`, `'yes'`, `'1'`, `'on'`) |
+| `array` | Array |
+| `html` | HTML content (sanitized via `wp_kses_post`) |
+| `email` | Email address (sanitized) |
+| `url` | URL (sanitized via `esc_url_raw`) |
+
+### Advanced Validation
+
+For more advanced validation needs, consider using:
+
+- [`webmozart/assert`](https://github.com/webmozarts/assert) - Simple assertions
+- [`respect/validation`](https://github.com/Respect/Validation) - Fluent validation API (Zod-like)
+
+```php
+use Webmozart\Assert\Assert;
+
+public function compose(array $block, array $fields): array
+{
+    Assert::stringNotEmpty($fields['title'] ?? '');
+    Assert::nullOrInteger($fields['count'] ?? null);
+
+    return $fields;
+}
+```
+
 ## Preview Mode
 
 Handle preview mode differently:

@@ -164,6 +164,38 @@ public static function fields(): FieldsBuilder
 }
 ```
 
+## Validation
+
+Use the `ValidatesFields` trait to add optional validation in your `compose()` method:
+
+```php
+use Studiometa\Foehn\Blocks\Concerns\ValidatesFields;
+
+final readonly class HeroBlock implements AcfBlockInterface
+{
+    use ValidatesFields;
+
+    public function compose(array $block, array $fields): array
+    {
+        // Simple: validate required and sanitize
+        $this->validateRequired($fields, ['title']);
+
+        return [
+            'title' => $this->sanitizeField($fields['title'], 'string'),
+            'count' => $this->sanitizeField($fields['count'] ?? 0, 'int'),
+        ];
+
+        // Or use schema-based validation
+        return $this->validateFields($fields, [
+            'title' => ['type' => 'string', 'required' => true],
+            'count' => ['type' => 'int', 'default' => 0],
+        ]);
+    }
+}
+```
+
+See [Field Validation](/guide/acf-blocks#field-validation) for full documentation.
+
 ## Related
 
 - [Guide: ACF Blocks](/guide/acf-blocks)
