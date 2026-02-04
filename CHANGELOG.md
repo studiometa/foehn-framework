@@ -25,6 +25,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Supports: image, gallery, file, post_object, relationship, taxonomy, user, date_picker
   - Handles nested fields recursively (repeater, flexible_content, group)
   - New `acf_transform_fields` config option (default: true) to enable/disable
+- Add `make:controller` command to scaffold template controllers ([fe277ae], [#20])
+- Add `make:hooks` command to scaffold hook classes ([2e98402], [#20])
+- Add `--fields` flag to `make:acf-block` for auto-generating ACF fields ([45a067d], [#20])
 - Add `VideoEmbed` helper and Twig extension for YouTube/Vimeo URL transformation ([c19eefb], [#18])
 - Add opt-in reusable hook classes for common WordPress patterns ([1bac8e8], [#13]):
   - Cleanup: `CleanHeadTags`, `CleanContent`, `CleanImageSizes`, `DisableEmoji`, `DisableFeeds`, `DisableOembed`, `DisableGlobalStyles`
@@ -61,9 +64,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#12]: https://github.com/studiometa/wp-tempest/pull/12
 [#13]: https://github.com/studiometa/wp-tempest/pull/13
 [#18]: https://github.com/studiometa/wp-tempest/pull/18
+[#20]: https://github.com/studiometa/wp-tempest/pull/20
 [!19]: https://github.com/studiometa/wp-tempest/pull/19
 [1bac8e8]: https://github.com/studiometa/wp-tempest/commit/1bac8e8
 [8e0d11e]: https://github.com/studiometa/wp-tempest/commit/8e0d11e
 [c19eefb]: https://github.com/studiometa/wp-tempest/commit/c19eefb
+[fe277ae]: https://github.com/studiometa/wp-tempest/commit/fe277ae
+[2e98402]: https://github.com/studiometa/wp-tempest/commit/2e98402
+[45a067d]: https://github.com/studiometa/wp-tempest/commit/45a067d
 [3ec60b1]: https://github.com/studiometa/wp-tempest/commit/3ec60b1
 [!17]: https://github.com/studiometa/wp-tempest/pull/17

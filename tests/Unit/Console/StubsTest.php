@@ -6,24 +6,30 @@ namespace Tests\Unit\Console;
 
 use ReflectionClass;
 use Studiometa\WPTempest\Attributes\AsAcfBlock;
+use Studiometa\WPTempest\Attributes\AsAction;
 use Studiometa\WPTempest\Attributes\AsBlock;
 use Studiometa\WPTempest\Attributes\AsBlockPattern;
+use Studiometa\WPTempest\Attributes\AsFilter;
 use Studiometa\WPTempest\Attributes\AsPostType;
 use Studiometa\WPTempest\Attributes\AsShortcode;
 use Studiometa\WPTempest\Attributes\AsTaxonomy;
+use Studiometa\WPTempest\Attributes\AsTemplateController;
 use Studiometa\WPTempest\Attributes\AsViewComposer;
 use Studiometa\WPTempest\Console\Stubs\AcfBlockStub;
 use Studiometa\WPTempest\Console\Stubs\BlockPatternStub;
 use Studiometa\WPTempest\Console\Stubs\BlockStub;
+use Studiometa\WPTempest\Console\Stubs\HooksStub;
 use Studiometa\WPTempest\Console\Stubs\InteractiveBlockStub;
 use Studiometa\WPTempest\Console\Stubs\PostTypeStub;
 use Studiometa\WPTempest\Console\Stubs\ShortcodeStub;
 use Studiometa\WPTempest\Console\Stubs\TaxonomyStub;
+use Studiometa\WPTempest\Console\Stubs\TemplateControllerStub;
 use Studiometa\WPTempest\Console\Stubs\ViewComposerStub;
 use Studiometa\WPTempest\Contracts\AcfBlockInterface;
 use Studiometa\WPTempest\Contracts\BlockInterface;
 use Studiometa\WPTempest\Contracts\BlockPatternInterface;
 use Studiometa\WPTempest\Contracts\InteractiveBlockInterface;
+use Studiometa\WPTempest\Contracts\TemplateControllerInterface;
 use Studiometa\WPTempest\Contracts\ViewComposerInterface;
 use Tempest\Discovery\SkipDiscovery;
 
@@ -121,5 +127,32 @@ describe('Stubs', function (): void {
         // Check method has AsShortcode attribute
         $method = $reflection->getMethod('handle');
         expect($method->getAttributes(AsShortcode::class))->toHaveCount(1);
+    });
+
+    it('TemplateControllerStub has correct attributes and implements TemplateControllerInterface', function (): void {
+        $reflection = new ReflectionClass(TemplateControllerStub::class);
+
+        expect($reflection->getAttributes(SkipDiscovery::class))
+            ->toHaveCount(1)
+            ->and($reflection->getAttributes(AsTemplateController::class))
+            ->toHaveCount(1)
+            ->and($reflection->implementsInterface(TemplateControllerInterface::class))
+            ->toBeTrue();
+
+        $attribute = $reflection->getAttributes(AsTemplateController::class)[0]->newInstance();
+        expect($attribute->templates)->toBe('dummy-template');
+    });
+
+    it('HooksStub has correct attributes and hook methods', function (): void {
+        $reflection = new ReflectionClass(HooksStub::class);
+
+        expect($reflection->getAttributes(SkipDiscovery::class))->toHaveCount(1);
+
+        // Check methods have hook attributes
+        $initMethod = $reflection->getMethod('onInit');
+        expect($initMethod->getAttributes(AsAction::class))->toHaveCount(1);
+
+        $filterMethod = $reflection->getMethod('filterTitle');
+        expect($filterMethod->getAttributes(AsFilter::class))->toHaveCount(1);
     });
 });

@@ -12,6 +12,8 @@ use Studiometa\WPTempest\Console\Commands\DiscoveryGenerateCommand;
 use Studiometa\WPTempest\Console\Commands\DiscoveryStatusCommand;
 use Studiometa\WPTempest\Console\Commands\MakeAcfBlockCommand;
 use Studiometa\WPTempest\Console\Commands\MakeBlockCommand;
+use Studiometa\WPTempest\Console\Commands\MakeControllerCommand;
+use Studiometa\WPTempest\Console\Commands\MakeHooksCommand;
 use Studiometa\WPTempest\Console\Commands\MakePatternCommand;
 use Studiometa\WPTempest\Console\Commands\MakePostTypeCommand;
 use Studiometa\WPTempest\Console\Commands\MakeShortcodeCommand;
@@ -27,6 +29,8 @@ describe('Commands', function (): void {
         'MakePatternCommand' => ['class' => MakePatternCommand::class, 'name' => 'make:pattern'],
         'MakeViewComposerCommand' => ['class' => MakeViewComposerCommand::class, 'name' => 'make:view-composer'],
         'MakeShortcodeCommand' => ['class' => MakeShortcodeCommand::class, 'name' => 'make:shortcode'],
+        'MakeControllerCommand' => ['class' => MakeControllerCommand::class, 'name' => 'make:controller'],
+        'MakeHooksCommand' => ['class' => MakeHooksCommand::class, 'name' => 'make:hooks'],
         'DiscoveryClearCommand' => ['class' => DiscoveryClearCommand::class, 'name' => 'discovery:clear'],
         'DiscoveryGenerateCommand' => ['class' => DiscoveryGenerateCommand::class, 'name' => 'discovery:generate'],
         'DiscoveryStatusCommand' => ['class' => DiscoveryStatusCommand::class, 'name' => 'discovery:status'],
