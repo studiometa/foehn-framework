@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Studiometa\WPTempest;
 
-use Studiometa\WPTempest\Kernel;
-
 if (!function_exists('Studiometa\WPTempest\app')) {
     /**
      * Get the kernel instance or a service from the container.

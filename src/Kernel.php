@@ -138,7 +138,7 @@ final class Kernel
     private function registerCoreServices(): void
     {
         // Register the kernel itself
-        $this->container->singleton(self::class, fn () => $this);
+        $this->container->singleton(self::class, fn() => $this);
 
         // Register the discovery runner
         $this->container->singleton(DiscoveryRunner::class);
