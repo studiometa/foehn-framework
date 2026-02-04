@@ -16,11 +16,11 @@ Create a Composer package `studiometa/wp-tempest` that integrates Tempest Framew
 
 ### Phase 2: Post Types & Taxonomies
 
-- [ ] 2.1 `#[AsPostType]` attribute
-- [ ] 2.2 `#[AsTaxonomy]` attribute
-- [ ] 2.3 Automatic Timber classmap integration
-- [ ] 2.4 Migrate existing Builders
-- [ ] 2.5 Tests
+- [x] 2.1 `#[AsPostType]` attribute
+- [x] 2.2 `#[AsTaxonomy]` attribute
+- [x] 2.3 Automatic Timber classmap integration
+- [x] 2.4 Migrate existing Builders
+- [x] 2.5 Tests
 
 ### Phase 3: Views & Templates
 
@@ -151,7 +151,7 @@ Create a Composer package `studiometa/wp-tempest` that integrates Tempest Framew
 
 ## Status
 
-**Phase 1: Foundations** ✅ - Kernel, Container, Hooks discovery implemented
+**Phase 2: Post Types & Taxonomies** ✅ - Attributes, Builders, Discoveries, Tests complete
 
 ---
 
@@ -170,3 +170,7 @@ Create a Composer package `studiometa/wp-tempest` that integrates Tempest Framew
 | 2026-02-04 | 1     | Hook attributes             | #[AsAction], #[AsFilter]                |
 | 2026-02-04 | 1     | Discovery system            | HookDiscovery, DiscoveryRunner          |
 | 2026-02-04 | 1     | Pest tests                  | Attribute coverage                      |
+| 2026-02-04 | 2     | PostType/Taxonomy attrs     | #[AsPostType], #[AsTaxonomy]            |
+| 2026-02-04 | 2     | Builders                    | PostTypeBuilder, TaxonomyBuilder        |
+| 2026-02-04 | 2     | Discoveries                 | PostTypeDiscovery, TaxonomyDiscovery    |
+| 2026-02-04 | 2     | Tests                       | Full test coverage for Phase 2          |
