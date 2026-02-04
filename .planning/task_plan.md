@@ -24,11 +24,11 @@ Create a Composer package `studiometa/wp-tempest` that integrates Tempest Framew
 
 ### Phase 3: Views & Templates
 
-- [ ] 3.1 ViewEngine abstraction (Twig adapter)
-- [ ] 3.2 `#[AsViewComposer]` attribute
-- [ ] 3.3 `#[AsTemplateController]` attribute
-- [ ] 3.4 Timber context integration
-- [ ] 3.5 Tests
+- [x] 3.1 ViewEngine abstraction (Twig adapter)
+- [x] 3.2 `#[AsViewComposer]` attribute
+- [x] 3.3 `#[AsTemplateController]` attribute
+- [x] 3.4 Timber context integration
+- [x] 3.5 Tests
 
 ### Phase 4: Blocks - ACF
 
@@ -151,26 +151,31 @@ Create a Composer package `studiometa/wp-tempest` that integrates Tempest Framew
 
 ## Status
 
-**Phase 2: Post Types & Taxonomies** ✅ - Attributes, Builders, Discoveries, Tests complete
+**Phase 3: Views & Templates** ✅ - ViewEngine, Composers, Controllers, Tests complete
 
 ---
 
 ## Progress Log
 
-| Date       | Phase | Action                      | Result                                  |
-| ---------- | ----- | --------------------------- | --------------------------------------- |
-| 2026-02-04 | 0     | Analyze existing wp-toolkit | Identified redundancies with Timber     |
-| 2026-02-04 | 0     | Evaluate Tempest vs Acorn   | Tempest chosen (discovery-first)        |
-| 2026-02-04 | 0     | Design package architecture | wp-tempest structure defined            |
-| 2026-02-04 | 0     | Design unified ViewEngine   | Patterns + Interactivity via templates  |
-| 2026-02-04 | 0     | Complete theme example      | All use cases documented                |
-| 2026-02-04 | 0     | Create plan                 | Documents complete                      |
-| 2026-02-04 | 1     | Project setup               | composer.json, LICENSE, README, configs |
-| 2026-02-04 | 1     | Kernel + helpers            | Bootstrap WP + Tempest integration      |
-| 2026-02-04 | 1     | Hook attributes             | #[AsAction], #[AsFilter]                |
-| 2026-02-04 | 1     | Discovery system            | HookDiscovery, DiscoveryRunner          |
-| 2026-02-04 | 1     | Pest tests                  | Attribute coverage                      |
-| 2026-02-04 | 2     | PostType/Taxonomy attrs     | #[AsPostType], #[AsTaxonomy]            |
-| 2026-02-04 | 2     | Builders                    | PostTypeBuilder, TaxonomyBuilder        |
-| 2026-02-04 | 2     | Discoveries                 | PostTypeDiscovery, TaxonomyDiscovery    |
-| 2026-02-04 | 2     | Tests                       | Full test coverage for Phase 2          |
+| Date       | Phase | Action                      | Result                                             |
+| ---------- | ----- | --------------------------- | -------------------------------------------------- |
+| 2026-02-04 | 0     | Analyze existing wp-toolkit | Identified redundancies with Timber                |
+| 2026-02-04 | 0     | Evaluate Tempest vs Acorn   | Tempest chosen (discovery-first)                   |
+| 2026-02-04 | 0     | Design package architecture | wp-tempest structure defined                       |
+| 2026-02-04 | 0     | Design unified ViewEngine   | Patterns + Interactivity via templates             |
+| 2026-02-04 | 0     | Complete theme example      | All use cases documented                           |
+| 2026-02-04 | 0     | Create plan                 | Documents complete                                 |
+| 2026-02-04 | 1     | Project setup               | composer.json, LICENSE, README, configs            |
+| 2026-02-04 | 1     | Kernel + helpers            | Bootstrap WP + Tempest integration                 |
+| 2026-02-04 | 1     | Hook attributes             | #[AsAction], #[AsFilter]                           |
+| 2026-02-04 | 1     | Discovery system            | HookDiscovery, DiscoveryRunner                     |
+| 2026-02-04 | 1     | Pest tests                  | Attribute coverage                                 |
+| 2026-02-04 | 2     | PostType/Taxonomy attrs     | #[AsPostType], #[AsTaxonomy]                       |
+| 2026-02-04 | 2     | Builders                    | PostTypeBuilder, TaxonomyBuilder                   |
+| 2026-02-04 | 2     | Discoveries                 | PostTypeDiscovery, TaxonomyDiscovery               |
+| 2026-02-04 | 2     | Tests                       | Full test coverage for Phase 2                     |
+| 2026-02-04 | 3     | View contracts              | ViewEngineInterface, ViewComposerInterface         |
+| 2026-02-04 | 3     | View attributes             | #[AsViewComposer], #[AsTemplateController]         |
+| 2026-02-04 | 3     | View implementations        | TimberViewEngine, ViewComposerRegistry             |
+| 2026-02-04 | 3     | View discoveries            | ViewComposerDiscovery, TemplateControllerDiscovery |
+| 2026-02-04 | 3     | Tests                       | Full test coverage for Phase 3                     |
