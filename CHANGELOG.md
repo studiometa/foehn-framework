@@ -7,19 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed
-
-- Fix discovery system conflicts with Tempest lifecycle — double discovery, incorrect timing, uninitialized properties ([748aace], [#7])
-- Fix root path passed to Tempest causing "Could not locate composer.json" error ([f0b4f27], [#5])
-
-### Changed
-
-- Decouple discoveries from Tempest's `Discovery` interface, replace with `WpDiscovery` + `IsWpDiscovery` ([748aace], [#7])
-- Rewrite `DiscoveryRunner` to own the full lifecycle: class scanning via Composer PSR-4, phased `apply()` at correct WP hooks ([b3d5134], [#7])
-- Tempest is now used only for the DI container, not for discovery ([b3d5134], [#7])
-
 ### Added
 
+- Add `discovery:warm` CLI command to pre-warm discovery cache during deployment ([685132d], [#30])
 - Add security documentation for shortcode output escaping with comprehensive XSS prevention guide ([316cbff], [#29])
 - Transform ACF block fields via Timber's ACF integration ([8e0d11e], [!19]):
   - Transforms raw ACF values (image IDs, post IDs) to Timber objects
@@ -80,3 +70,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [433abae]: https://github.com/studiometa/foehn/commit/433abae
 [316cbff]: https://github.com/studiometa/foehn/commit/316cbff
 [#29]: https://github.com/studiometa/foehn/pull/29
+[685132d]: https://github.com/studiometa/foehn/commit/685132d
+[#30]: https://github.com/studiometa/foehn/pull/30

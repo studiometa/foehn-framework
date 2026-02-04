@@ -26,3 +26,4 @@ coverage/
 # Cache
 .php-cs-fixer.cache
 .phpstan.cache/
+pi-task.md
