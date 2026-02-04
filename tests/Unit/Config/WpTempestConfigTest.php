@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use Studiometa\WPTempest\Config\WpTempestConfig;
+use Studiometa\WPTempest\Hooks\Cleanup\CleanHeadTags;
+use Studiometa\WPTempest\Hooks\Security\SecurityHeaders;
 use Tempest\Core\DiscoveryCacheStrategy;
 
 describe('WpTempestConfig', function () {
@@ -11,6 +13,7 @@ describe('WpTempestConfig', function () {
 
         expect($config->discoveryCacheStrategy)->toBe(DiscoveryCacheStrategy::NONE);
         expect($config->discoveryCachePath)->toBeNull();
+        expect($config->hooks)->toBe([]);
         expect($config->isDiscoveryCacheEnabled())->toBeFalse();
         expect($config->timberTemplatesDir)->toBe(['templates']);
     });
@@ -110,6 +113,26 @@ describe('WpTempestConfig', function () {
             ]);
 
             expect($config->timberTemplatesDir)->toBe(['views', 'templates']);
+        });
+
+        it('creates config with hooks array', function () {
+            $config = WpTempestConfig::fromArray([
+                'hooks' => [
+                    CleanHeadTags::class,
+                    SecurityHeaders::class,
+                ],
+            ]);
+
+            expect($config->hooks)->toBe([
+                CleanHeadTags::class,
+                SecurityHeaders::class,
+            ]);
+        });
+
+        it('creates config with empty hooks by default', function () {
+            $config = WpTempestConfig::fromArray([]);
+
+            expect($config->hooks)->toBe([]);
         });
     });
 });

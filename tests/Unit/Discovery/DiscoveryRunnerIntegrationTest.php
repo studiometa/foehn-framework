@@ -7,6 +7,7 @@ use Studiometa\WPTempest\Discovery\DiscoveryCache;
 use Studiometa\WPTempest\Discovery\DiscoveryRunner;
 use Studiometa\WPTempest\Discovery\HookDiscovery;
 use Studiometa\WPTempest\Discovery\WpDiscovery;
+use Studiometa\WPTempest\Hooks\Cleanup\CleanHeadTags;
 use Tempest\Container\Container;
 use Tempest\Container\GenericContainer;
 use Tempest\Core\DiscoveryCacheStrategy;
@@ -148,5 +149,57 @@ describe('DiscoveryRunner integration', function () {
         // Clean up
         array_map('unlink', glob($tmpDir . '/*'));
         rmdir($tmpDir);
+    });
+
+    it('discovers opt-in hook classes from config', function () {
+        $config = new WpTempestConfig(
+            hooks: [CleanHeadTags::class],
+        );
+
+        $container = bootTestContainer();
+        $container->singleton(WpTempestConfig::class, fn() => $config);
+
+        $runner = new DiscoveryRunner($container);
+
+        // Trigger discovery via early phase
+        $runner->runEarlyDiscoveries();
+
+        $discoveries = $runner->getDiscoveries();
+
+        /** @var HookDiscovery $hookDiscovery */
+        $hookDiscovery = $discoveries[HookDiscovery::class];
+
+        // CleanHeadTags has one #[AsAction('init')] method
+        expect($hookDiscovery->hasItems())->toBeTrue();
+
+        tearDownTestContainer();
+    });
+
+    it('skips non-existent hook classes in config', function () {
+        $config = new WpTempestConfig(
+            hooks: ['NonExistent\\HookClass'],
+        );
+
+        $container = createTestContainer();
+        $container->singleton(WpTempestConfig::class, fn() => $config);
+
+        $runner = new DiscoveryRunner($container);
+
+        // Should not throw
+        $runner->runEarlyDiscoveries();
+
+        expect($runner->hasRun('early'))->toBeTrue();
+    });
+
+    it('handles missing WpTempestConfig gracefully', function () {
+        $container = createTestContainer();
+        // Don't register WpTempestConfig — discoverOptInHooks should catch the exception
+
+        $runner = new DiscoveryRunner($container);
+
+        // Should not throw
+        $runner->runEarlyDiscoveries();
+
+        expect($runner->hasRun('early'))->toBeTrue();
     });
 });

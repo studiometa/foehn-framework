@@ -31,6 +31,12 @@ final readonly class WpTempestConfig
          * @var string[]
          */
         public array $timberTemplatesDir = ['templates'],
+
+        /**
+         * Opt-in hook classes to activate.
+         * @var list<class-string>
+         */
+        public array $hooks = [],
     ) {}
 
     /**
@@ -49,10 +55,14 @@ final readonly class WpTempestConfig
         /** @var string[] $timberTemplatesDir */
         $timberTemplatesDir = $config['timber_templates_dir'] ?? ['templates'];
 
+        /** @var list<class-string> $hooks */
+        $hooks = $config['hooks'] ?? [];
+
         return new self(
             discoveryCacheStrategy: $strategy,
             discoveryCachePath: $config['discovery_cache_path'] ?? null,
             timberTemplatesDir: $timberTemplatesDir,
+            hooks: $hooks,
         );
     }
 
