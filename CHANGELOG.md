@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add `ValidatesFields` trait for optional ACF block field validation ([04c283c], [#24])
 - Add `rest_default_capability` config option to customize default REST route permission ([343e094], [#32])
 - Add `discovery:warm` CLI command to pre-warm discovery cache during deployment ([685132d], [#30])
 - Add security documentation for shortcode output escaping with comprehensive XSS prevention guide ([316cbff], [#29])
@@ -88,6 +89,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#29]: https://github.com/studiometa/foehn/pull/29
 [685132d]: https://github.com/studiometa/foehn/commit/685132d
 [#30]: https://github.com/studiometa/foehn/pull/30
+
 [cb284f8]: https://github.com/studiometa/foehn/commit/cb284f8
 [343e094]: https://github.com/studiometa/foehn/commit/343e094
 [#32]: https://github.com/studiometa/foehn/pull/32
+
+
+[04c283c]: https://github.com/studiometa/foehn/commit/04c283c
+[#24]: https://github.com/studiometa/foehn/pull/33
+
