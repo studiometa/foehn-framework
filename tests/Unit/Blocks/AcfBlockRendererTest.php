@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Studiometa\WPTempest\Blocks\AcfBlockRenderer;
+use Studiometa\WPTempest\Config\WpTempestConfig;
 use Studiometa\WPTempest\Contracts\AcfBlockInterface;
 
 describe('AcfBlockRenderer', function () {
@@ -162,5 +163,133 @@ describe('AcfBlockRenderer', function () {
         $result = $renderer->render($block, $blockData, false);
 
         expect($result)->toBe('0');
+    });
+});
+
+describe('AcfBlockRenderer with config', function () {
+    it('accepts config via constructor', function () {
+        $config = new WpTempestConfig(acfTransformFields: true);
+        $renderer = new AcfBlockRenderer($config);
+
+        expect($renderer)->toBeInstanceOf(AcfBlockRenderer::class);
+    });
+
+    it('respects acfTransformFields config when disabled', function () {
+        $config = new WpTempestConfig(acfTransformFields: false);
+        $renderer = new AcfBlockRenderer($config);
+        $capturedFields = [];
+
+        $block = new class($capturedFields) implements AcfBlockInterface {
+            public function __construct(
+                private array &$captured,
+            ) {}
+
+            public static function fields(): \StoutLogic\AcfBuilder\FieldsBuilder
+            {
+                return new \StoutLogic\AcfBuilder\FieldsBuilder('test');
+            }
+
+            public function compose(array $block, array $fields): array
+            {
+                $this->captured = $fields;
+                return $fields;
+            }
+
+            public function render(array $context, bool $isPreview = false): string
+            {
+                return '';
+            }
+        };
+
+        $blockData = [
+            'id' => 'block_123',
+            'name' => 'acf/test',
+            'data' => [
+                'image' => 42, // Raw image ID
+                'text' => 'Hello',
+            ],
+        ];
+
+        $renderer->render($block, $blockData, false);
+
+        // Without transformation, values should remain as-is
+        expect($capturedFields['image'])->toBe(42);
+        expect($capturedFields['text'])->toBe('Hello');
+    });
+
+    it('preserves empty values without transformation', function () {
+        $config = new WpTempestConfig(acfTransformFields: true);
+        $renderer = new AcfBlockRenderer($config);
+        $capturedFields = [];
+
+        $block = new class($capturedFields) implements AcfBlockInterface {
+            public function __construct(
+                private array &$captured,
+            ) {}
+
+            public static function fields(): \StoutLogic\AcfBuilder\FieldsBuilder
+            {
+                return new \StoutLogic\AcfBuilder\FieldsBuilder('test');
+            }
+
+            public function compose(array $block, array $fields): array
+            {
+                $this->captured = $fields;
+                return $fields;
+            }
+
+            public function render(array $context, bool $isPreview = false): string
+            {
+                return '';
+            }
+        };
+
+        $blockData = [
+            'id' => 'block_123',
+            'name' => 'acf/test',
+            'data' => [
+                'empty_string' => '',
+                'null_value' => null,
+                'empty_array' => [],
+            ],
+        ];
+
+        $renderer->render($block, $blockData, false);
+
+        // Empty values should be preserved
+        expect($capturedFields['empty_string'])->toBe('');
+        expect($capturedFields['null_value'])->toBeNull();
+        expect($capturedFields['empty_array'])->toBe([]);
+    });
+
+    it('works without config (defaults to transform enabled)', function () {
+        $renderer = new AcfBlockRenderer();
+
+        $block = new class implements AcfBlockInterface {
+            public static function fields(): \StoutLogic\AcfBuilder\FieldsBuilder
+            {
+                return new \StoutLogic\AcfBuilder\FieldsBuilder('test');
+            }
+
+            public function compose(array $block, array $fields): array
+            {
+                return $fields;
+            }
+
+            public function render(array $context, bool $isPreview = false): string
+            {
+                return 'rendered';
+            }
+        };
+
+        $blockData = [
+            'id' => 'block_123',
+            'name' => 'acf/test',
+            'data' => ['title' => 'Test'],
+        ];
+
+        // Should not throw
+        $result = $renderer->render($block, $blockData, false);
+        expect($result)->toBe('rendered');
     });
 });

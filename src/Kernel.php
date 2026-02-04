@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Studiometa\WPTempest;
 
 use RuntimeException;
+use Studiometa\WPTempest\Blocks\AcfBlockRenderer;
 use Studiometa\WPTempest\Config\WpTempestConfig;
 use Studiometa\WPTempest\Discovery\DiscoveryCache;
 use Studiometa\WPTempest\Discovery\DiscoveryRunner;
@@ -212,6 +213,9 @@ final class Kernel
             DiscoveryRunner::class,
             fn() => new DiscoveryRunner($this->container, $this->container->get(DiscoveryCache::class), $this->appPath),
         );
+
+        // Register ACF block renderer with config
+        $this->container->singleton(AcfBlockRenderer::class, fn() => new AcfBlockRenderer($this->wpTempestConfig));
     }
 
     /**
