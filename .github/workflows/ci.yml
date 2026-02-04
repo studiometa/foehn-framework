@@ -37,20 +37,15 @@ jobs:
         run: composer lint
 
   test:
-    name: Test (PHP ${{ matrix.php }})
+    name: Test & Coverage
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        php: ["8.4"]
-
     steps:
       - uses: actions/checkout@v4
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: ${{ matrix.php }}
+          php-version: "8.4"
           tools: composer:v2
           coverage: xdebug
 
@@ -68,8 +63,17 @@ jobs:
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress
 
-      - name: Run tests
-        run: composer test
+      - name: Run tests with coverage
+        run: composer test:coverage
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/clover.xml
+          fail_ci_if_error: false
+          flags: unittests
+          name: codecov-wp-tempest
 
   analyse:
     name: Static Analysis
