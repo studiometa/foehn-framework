@@ -20,6 +20,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Transform ACF block fields via Timber's ACF integration ([8e0d11e], [!19]):
+  - Transforms raw ACF values (image IDs, post IDs) to Timber objects
+  - Supports: image, gallery, file, post_object, relationship, taxonomy, user, date_picker
+  - Handles nested fields recursively (repeater, flexible_content, group)
+  - New `acf_transform_fields` config option (default: true) to enable/disable
 - Add opt-in reusable hook classes for common WordPress patterns ([1bac8e8], [#13]):
   - Cleanup: `CleanHeadTags`, `CleanContent`, `CleanImageSizes`, `DisableEmoji`, `DisableFeeds`, `DisableOembed`, `DisableGlobalStyles`
   - Security: `SecurityHeaders`, `DisableVersionDisclosure`, `DisableXmlRpc`, `DisableFileEditor`, `RestApiAuth`
@@ -53,4 +58,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#11]: https://github.com/studiometa/wp-tempest/pull/11
 [#12]: https://github.com/studiometa/wp-tempest/pull/12
 [#13]: https://github.com/studiometa/wp-tempest/pull/13
+[!19]: https://github.com/studiometa/wp-tempest/pull/19
 [1bac8e8]: https://github.com/studiometa/wp-tempest/commit/1bac8e8
+[8e0d11e]: https://github.com/studiometa/wp-tempest/commit/8e0d11e
