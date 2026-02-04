@@ -111,4 +111,81 @@ describe('PostTypeBuilder', function () {
 
         expect($result)->toBe($builder);
     });
+
+    it('supports hierarchical post types', function () {
+        $attribute = new AsPostType(
+            name: 'guide',
+            singular: 'Guide',
+            plural: 'Guides',
+            hierarchical: true,
+        );
+
+        $builder = PostTypeBuilder::fromAttribute($attribute);
+        $args = $builder->build();
+
+        expect($args['hierarchical'])->toBeTrue();
+    });
+
+    it('supports menu position', function () {
+        $builder = new PostTypeBuilder('product');
+        $builder->setMenuPosition(25);
+
+        $args = $builder->build();
+
+        expect($args['menu_position'])->toBe(25);
+    });
+
+    it('supports custom labels merged with auto-generated', function () {
+        $attribute = new AsPostType(
+            name: 'product',
+            singular: 'Product',
+            plural: 'Products',
+            labels: ['menu_name' => 'Shop', 'add_new' => 'Add Product'],
+        );
+
+        $builder = PostTypeBuilder::fromAttribute($attribute);
+        $args = $builder->build();
+
+        expect($args['labels']['menu_name'])->toBe('Shop');
+        expect($args['labels']['add_new'])->toBe('Add Product');
+        // Auto-generated labels still present
+        expect($args['labels']['singular_name'])->toBe('Product');
+    });
+
+    it('supports full rewrite config', function () {
+        $attribute = new AsPostType(
+            name: 'product',
+            rewrite: ['slug' => 'shop', 'with_front' => false],
+        );
+
+        $builder = PostTypeBuilder::fromAttribute($attribute);
+        $args = $builder->build();
+
+        expect($args['rewrite'])->toBe(['slug' => 'shop', 'with_front' => false]);
+    });
+
+    it('supports rewrite false to disable', function () {
+        $attribute = new AsPostType(
+            name: 'internal',
+            rewrite: false,
+        );
+
+        $builder = PostTypeBuilder::fromAttribute($attribute);
+        $args = $builder->build();
+
+        expect($args['rewrite'])->toBeFalse();
+    });
+
+    it('prioritizes rewrite over rewriteSlug', function () {
+        $attribute = new AsPostType(
+            name: 'product',
+            rewriteSlug: 'old-slug',
+            rewrite: ['slug' => 'new-slug', 'with_front' => false],
+        );
+
+        $builder = PostTypeBuilder::fromAttribute($attribute);
+        $args = $builder->build();
+
+        expect($args['rewrite'])->toBe(['slug' => 'new-slug', 'with_front' => false]);
+    });
 });

@@ -60,4 +60,13 @@ describe('DiscoveryRunner', function () {
 
         expect(count($all))->toBe($phaseTotal);
     });
+
+    it('all discovery classes implement WpDiscovery', function () {
+        $classes = DiscoveryRunner::getAllDiscoveryClasses();
+
+        foreach ($classes as $class) {
+            expect(is_subclass_of($class, \Studiometa\WPTempest\Discovery\WpDiscovery::class))
+                ->toBeTrue("Expected {$class} to implement WpDiscovery");
+        }
+    });
 });

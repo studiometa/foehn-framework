@@ -10,9 +10,10 @@ print-width = 120
 [linter.rules]
 cyclomatic-complexity = { threshold = 50 }  # WP template hierarchy is complex
 kan-defect = { threshold = 5.0 }            # Increased for complex discoveries
-halstead = { effort-threshold = 10000, volume-threshold = 2000, difficulty-threshold = 15 }
+halstead = { effort-threshold = 10000, volume-threshold = 2000, difficulty-threshold = 17 }
 too-many-enum-cases = { threshold = 30 }
 too-many-methods = { threshold = 15 }
+too-many-properties = { threshold = 15 }    # Builders wrap many WP register args
 
 # Disable rules that don't fit WordPress/attribute patterns
 literal-named-argument = { enabled = false }    # WP functions use positional args

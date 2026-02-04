@@ -4,16 +4,9 @@ declare(strict_types=1);
 
 use Studiometa\WPTempest\Attributes\AsTaxonomy;
 use Studiometa\WPTempest\Discovery\TaxonomyDiscovery;
-use Tempest\Discovery\DiscoveryItems;
-use Tempest\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
     $this->discovery = new TaxonomyDiscovery();
-    $this->discovery->setItems(new DiscoveryItems());
-    $this->location = new DiscoveryLocation(
-        namespace: 'App\\Test',
-        path: __DIR__,
-    );
 });
 
 describe('TaxonomyDiscovery caching', function () {
@@ -30,7 +23,8 @@ describe('TaxonomyDiscovery caching', function () {
             rewriteSlug: 'product-category',
         );
 
-        $this->discovery->getItems()->add($this->location, [
+        $ref = new ReflectionMethod($this->discovery, 'addItem');
+        $ref->invoke($this->discovery, [
             'attribute' => $attribute,
             'className' => 'App\\Taxonomies\\ProductCategory',
             'implementsConfig' => true,
@@ -58,7 +52,8 @@ describe('TaxonomyDiscovery caching', function () {
             plural: 'Tags',
         );
 
-        $this->discovery->getItems()->add($this->location, [
+        $ref = new ReflectionMethod($this->discovery, 'addItem');
+        $ref->invoke($this->discovery, [
             'attribute' => $attribute,
             'className' => 'App\\Taxonomies\\Tag',
             'implementsConfig' => false,
@@ -67,6 +62,28 @@ describe('TaxonomyDiscovery caching', function () {
         $cacheableData = $this->discovery->getCacheableData();
 
         expect($cacheableData[0]['postTypes'])->toBe(['product', 'event', 'post']);
+    });
+
+    it('includes new WordPress parameters in cache', function () {
+        $attribute = new AsTaxonomy(
+            name: 'genre',
+            singular: 'Genre',
+            plural: 'Genres',
+            labels: ['menu_name' => 'Music Genres'],
+            rewrite: false,
+        );
+
+        $ref = new ReflectionMethod($this->discovery, 'addItem');
+        $ref->invoke($this->discovery, [
+            'attribute' => $attribute,
+            'className' => 'App\\Taxonomies\\Genre',
+            'implementsConfig' => false,
+        ]);
+
+        $cacheableData = $this->discovery->getCacheableData();
+
+        expect($cacheableData[0]['labels'])->toBe(['menu_name' => 'Music Genres']);
+        expect($cacheableData[0]['rewrite'])->toBeFalse();
     });
 
     it('can restore from cache', function () {
@@ -81,6 +98,8 @@ describe('TaxonomyDiscovery caching', function () {
                 'showInRest' => true,
                 'showAdminColumn' => true,
                 'rewriteSlug' => null,
+                'labels' => [],
+                'rewrite' => null,
                 'className' => 'App\\Taxonomies\\ProductCategory',
                 'implementsConfig' => false,
             ],

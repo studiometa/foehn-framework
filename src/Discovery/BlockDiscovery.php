@@ -5,14 +5,12 @@ declare(strict_types=1);
 namespace Studiometa\WPTempest\Discovery;
 
 use InvalidArgumentException;
+use ReflectionClass;
 use Studiometa\WPTempest\Attributes\AsBlock;
 use Studiometa\WPTempest\Blocks\BlockRenderer;
 use Studiometa\WPTempest\Contracts\BlockInterface;
 use Studiometa\WPTempest\Discovery\Concerns\CacheableDiscovery;
-use Tempest\Discovery\Discovery;
-use Tempest\Discovery\DiscoveryLocation;
-use Tempest\Discovery\IsDiscovery;
-use Tempest\Reflection\ClassReflector;
+use Studiometa\WPTempest\Discovery\Concerns\IsWpDiscovery;
 use WP_Block;
 
 use function Tempest\get;
@@ -21,24 +19,26 @@ use function Tempest\get;
  * Discovers classes marked with #[AsBlock] attribute
  * and registers them as native Gutenberg blocks.
  */
-final class BlockDiscovery implements Discovery
+final class BlockDiscovery implements WpDiscovery
 {
-    use IsDiscovery;
+    use IsWpDiscovery;
     use CacheableDiscovery;
 
     /**
      * Discover block attributes on classes.
+     *
+     * @param ReflectionClass<object> $class
      */
-    public function discover(DiscoveryLocation $location, ClassReflector $class): void
+    public function discover(ReflectionClass $class): void
     {
-        $attribute = $class->getAttribute(AsBlock::class);
+        $attributes = $class->getAttributes(AsBlock::class);
 
-        if ($attribute === null) {
+        if ($attributes === []) {
             return;
         }
 
         // Verify the class implements BlockInterface
-        if (!$class->getReflection()->implementsInterface(BlockInterface::class)) {
+        if (!$class->implementsInterface(BlockInterface::class)) {
             throw new InvalidArgumentException(sprintf(
                 'Class %s must implement %s to use #[AsBlock]',
                 $class->getName(),
@@ -46,7 +46,9 @@ final class BlockDiscovery implements Discovery
             ));
         }
 
-        $this->discoveryItems->add($location, [
+        $attribute = $attributes[0]->newInstance();
+
+        $this->addItem([
             'attribute' => $attribute,
             'className' => $class->getName(),
         ]);
@@ -62,9 +64,11 @@ final class BlockDiscovery implements Discovery
                 // Handle cached format
                 if (isset($item['blockName'])) {
                     $this->registerBlockFromCache($item);
-                } else {
-                    $this->registerBlock($item['attribute'], $item['className']);
+
+                    continue;
                 }
+
+                $this->registerBlock($item['attribute'], $item['className']);
             }
         });
     }

@@ -2,30 +2,19 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Attributes\AsViewComposer;
 use Studiometa\WPTempest\Discovery\ViewComposerDiscovery;
-use Tempest\Discovery\DiscoveryItems;
-use Tempest\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
     $this->discovery = new ViewComposerDiscovery();
-    $this->discovery->setItems(new DiscoveryItems());
-    $this->location = new DiscoveryLocation(
-        namespace: 'App\\Test',
-        path: __DIR__,
-    );
 });
 
 describe('ViewComposerDiscovery caching', function () {
     it('converts items to cacheable format with single template', function () {
-        $attribute = new AsViewComposer(
-            templates: 'single.twig',
-            priority: 20,
-        );
-
-        $this->discovery->getItems()->add($this->location, [
-            'attribute' => $attribute,
+        $ref = new ReflectionMethod($this->discovery, 'addItem');
+        $ref->invoke($this->discovery, [
+            'templates' => ['single.twig'],
             'className' => 'App\\View\\SingleComposer',
+            'priority' => 20,
         ]);
 
         $cacheableData = $this->discovery->getCacheableData();
@@ -39,13 +28,11 @@ describe('ViewComposerDiscovery caching', function () {
     });
 
     it('converts items to cacheable format with multiple templates', function () {
-        $attribute = new AsViewComposer(
-            templates: ['single.twig', 'page.twig', 'archive.twig'],
-        );
-
-        $this->discovery->getItems()->add($this->location, [
-            'attribute' => $attribute,
+        $ref = new ReflectionMethod($this->discovery, 'addItem');
+        $ref->invoke($this->discovery, [
+            'templates' => ['single.twig', 'page.twig', 'archive.twig'],
             'className' => 'App\\View\\CommonComposer',
+            'priority' => 10,
         ]);
 
         $cacheableData = $this->discovery->getCacheableData();
@@ -54,13 +41,11 @@ describe('ViewComposerDiscovery caching', function () {
     });
 
     it('handles wildcard templates', function () {
-        $attribute = new AsViewComposer(
-            templates: 'components/*.twig',
-        );
-
-        $this->discovery->getItems()->add($this->location, [
-            'attribute' => $attribute,
+        $ref = new ReflectionMethod($this->discovery, 'addItem');
+        $ref->invoke($this->discovery, [
+            'templates' => ['components/*.twig'],
             'className' => 'App\\View\\ComponentComposer',
+            'priority' => 10,
         ]);
 
         $cacheableData = $this->discovery->getCacheableData();
@@ -69,13 +54,11 @@ describe('ViewComposerDiscovery caching', function () {
     });
 
     it('uses default priority', function () {
-        $attribute = new AsViewComposer(
-            templates: 'header.twig',
-        );
-
-        $this->discovery->getItems()->add($this->location, [
-            'attribute' => $attribute,
+        $ref = new ReflectionMethod($this->discovery, 'addItem');
+        $ref->invoke($this->discovery, [
+            'templates' => ['header.twig'],
             'className' => 'App\\View\\HeaderComposer',
+            'priority' => 10,
         ]);
 
         $cacheableData = $this->discovery->getCacheableData();

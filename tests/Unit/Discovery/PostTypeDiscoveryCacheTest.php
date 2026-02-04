@@ -4,16 +4,9 @@ declare(strict_types=1);
 
 use Studiometa\WPTempest\Attributes\AsPostType;
 use Studiometa\WPTempest\Discovery\PostTypeDiscovery;
-use Tempest\Discovery\DiscoveryItems;
-use Tempest\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
     $this->discovery = new PostTypeDiscovery();
-    $this->discovery->setItems(new DiscoveryItems());
-    $this->location = new DiscoveryLocation(
-        namespace: 'App\\Test',
-        path: __DIR__,
-    );
 });
 
 describe('PostTypeDiscovery caching', function () {
@@ -31,7 +24,8 @@ describe('PostTypeDiscovery caching', function () {
             rewriteSlug: 'products',
         );
 
-        $this->discovery->getItems()->add($this->location, [
+        $ref = new ReflectionMethod($this->discovery, 'addItem');
+        $ref->invoke($this->discovery, [
             'attribute' => $attribute,
             'className' => 'App\\PostTypes\\Product',
             'implementsConfig' => true,
@@ -61,7 +55,8 @@ describe('PostTypeDiscovery caching', function () {
             plural: 'Events',
         );
 
-        $this->discovery->getItems()->add($this->location, [
+        $ref = new ReflectionMethod($this->discovery, 'addItem');
+        $ref->invoke($this->discovery, [
             'attribute' => $attribute,
             'className' => 'App\\PostTypes\\Event',
             'implementsConfig' => false,
@@ -74,6 +69,32 @@ describe('PostTypeDiscovery caching', function () {
         expect($cacheableData[0]['public'])->toBeTrue();
         expect($cacheableData[0]['hasArchive'])->toBeFalse();
         expect($cacheableData[0]['implementsConfig'])->toBeFalse();
+    });
+
+    it('includes new WordPress parameters in cache', function () {
+        $attribute = new AsPostType(
+            name: 'page_like',
+            singular: 'Page Like',
+            plural: 'Page Likes',
+            hierarchical: true,
+            menuPosition: 25,
+            labels: ['menu_name' => 'Custom Menu'],
+            rewrite: ['slug' => 'custom', 'with_front' => false],
+        );
+
+        $ref = new ReflectionMethod($this->discovery, 'addItem');
+        $ref->invoke($this->discovery, [
+            'attribute' => $attribute,
+            'className' => 'App\\PostTypes\\PageLike',
+            'implementsConfig' => false,
+        ]);
+
+        $cacheableData = $this->discovery->getCacheableData();
+
+        expect($cacheableData[0]['hierarchical'])->toBeTrue();
+        expect($cacheableData[0]['menuPosition'])->toBe(25);
+        expect($cacheableData[0]['labels'])->toBe(['menu_name' => 'Custom Menu']);
+        expect($cacheableData[0]['rewrite'])->toBe(['slug' => 'custom', 'with_front' => false]);
     });
 
     it('can restore from cache', function () {
@@ -89,6 +110,10 @@ describe('PostTypeDiscovery caching', function () {
                 'supports' => ['title', 'editor', 'thumbnail'],
                 'taxonomies' => [],
                 'rewriteSlug' => null,
+                'hierarchical' => false,
+                'menuPosition' => null,
+                'labels' => [],
+                'rewrite' => null,
                 'className' => 'App\\PostTypes\\Product',
                 'implementsConfig' => false,
             ],
@@ -100,13 +125,15 @@ describe('PostTypeDiscovery caching', function () {
     });
 
     it('handles multiple post types', function () {
-        $this->discovery->getItems()->add($this->location, [
+        $ref = new ReflectionMethod($this->discovery, 'addItem');
+
+        $ref->invoke($this->discovery, [
             'attribute' => new AsPostType('product', 'Product', 'Products'),
             'className' => 'App\\PostTypes\\Product',
             'implementsConfig' => false,
         ]);
 
-        $this->discovery->getItems()->add($this->location, [
+        $ref->invoke($this->discovery, [
             'attribute' => new AsPostType('event', 'Event', 'Events'),
             'className' => 'App\\PostTypes\\Event',
             'implementsConfig' => true,
