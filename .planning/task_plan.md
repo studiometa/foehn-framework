@@ -61,7 +61,7 @@ Create a Composer package `studiometa/wp-tempest` that integrates Tempest Framew
 
 - [x] 7.1 Shortcodes via `#[AsShortcode]` attribute
 - [x] 7.2 REST API endpoints via `#[AsRestRoute]` attribute
-- [ ] 7.3 CLI commands (make:block, make:post-type, etc.)
+- [x] 7.3 CLI commands (make:block, make:post-type, etc.)
 - [ ] 7.4 Discovery cache (production)
 - [x] 7.5 Tests
 
@@ -120,6 +120,7 @@ Create a Composer package `studiometa/wp-tempest` that integrates Tempest Framew
 | 2026-02-04 | 7     | Advanced discoveries        | ShortcodeDiscovery, RestRouteDiscovery                |
 | 2026-02-04 | 7     | Tests                       | Full test coverage for Phase 7                        |
 | 2026-02-04 | 8     | CI/CD                       | GitHub Actions workflow                               |
+| 2026-02-04 | 7     | CLI commands                | WP-CLI make:_ and discovery:_ commands                |
 
 ## Summary
 
@@ -137,13 +138,13 @@ Create a Composer package `studiometa/wp-tempest` that integrates Tempest Framew
 
 ### Test Coverage
 
-- **115 tests** passing
-- **383 assertions**
-- All attributes, builders, and registries covered
+- **148 tests** passing
+- **456 assertions**
+- All attributes, builders, registries, and CLI commands covered
 
 ### Remaining Work
 
-- CLI commands for scaffolding
 - Discovery cache for production
 - Migration guide from wp-toolkit
 - Theme example project
+- Release v0.1.0
