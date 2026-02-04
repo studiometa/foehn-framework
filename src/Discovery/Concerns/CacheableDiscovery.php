@@ -92,10 +92,8 @@ trait CacheableDiscovery
         // getItems() is provided by IsDiscovery trait which must be used alongside this trait
         // @mago-expect analyse:non-existent-method
         /** @var DiscoveryItems $items */
-        $items = $this->getItems();
-
         /** @var iterable<array<string, mixed>> */
-        return $items;
+        return $this->getItems();
     }
 
     /**
