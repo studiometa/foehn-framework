@@ -83,7 +83,7 @@ final class RestRouteDiscovery implements Discovery
     /**
      * Register REST route from cached data.
      *
-     * @param array{namespace: string, route: string, httpMethod: string, className: string, methodName: string, permission: string|null, args: array<string, mixed>} $item
+     * @param array<string, mixed> $item
      */
     private function registerRouteFromCache(array $item): void
     {
@@ -176,8 +176,8 @@ final class RestRouteDiscovery implements Discovery
     /**
      * Convert a discovered item to a cacheable format.
      *
-     * @param array{attribute: AsRestRoute, method: MethodReflector} $item
-     * @return array{namespace: string, route: string, httpMethod: string, className: string, methodName: string, permission: string|null, args: array<string, mixed>}
+     * @param array<string, mixed> $item
+     * @return array<string, mixed>
      */
     protected function itemToCacheable(array $item): array
     {

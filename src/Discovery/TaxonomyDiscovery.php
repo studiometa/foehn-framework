@@ -64,7 +64,7 @@ final class TaxonomyDiscovery implements Discovery
     /**
      * Register a single taxonomy with WordPress.
      *
-     * @param array{attribute?: AsTaxonomy, className: class-string, implementsConfig: bool, name?: string, singular?: string, plural?: string, postTypes?: array<string>, args?: array<string, mixed>} $item
+     * @param array<string, mixed> $item
      */
     private function registerTaxonomy(array $item): void
     {
@@ -123,8 +123,8 @@ final class TaxonomyDiscovery implements Discovery
     /**
      * Convert a discovered item to a cacheable format.
      *
-     * @param array{attribute: AsTaxonomy, className: class-string, implementsConfig: bool} $item
-     * @return array{name: string, singular: string, plural: string, postTypes: array<string>, args: array<string, mixed>, className: class-string, implementsConfig: bool}
+     * @param array<string, mixed> $item
+     * @return array<string, mixed>
      */
     protected function itemToCacheable(array $item): array
     {

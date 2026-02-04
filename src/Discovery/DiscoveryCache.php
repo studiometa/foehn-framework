@@ -69,7 +69,7 @@ final class DiscoveryCache
     /**
      * Restore cached discovery data.
      *
-     * @return array<string, array<string, mixed>>|null
+     * @return array<string, array<int, array<string, mixed>>>|null
      */
     public function restore(): ?array
     {
@@ -80,7 +80,7 @@ final class DiscoveryCache
         $cacheFile = $this->getCacheFilePath();
 
         // Use require for PHP file cache (fast opcode cache)
-        /** @var array<string, array<string, mixed>>|null $data */
+        /** @var array<string, array<int, array<string, mixed>>>|null $data */
         $data = require $cacheFile;
 
         return is_array($data) ? $data : null;
@@ -89,7 +89,7 @@ final class DiscoveryCache
     /**
      * Store discovery data to cache.
      *
-     * @param array<string, array<string, mixed>> $data Keyed by discovery class name
+     * @param array<string, array<int, array<string, mixed>>> $data Keyed by discovery class name
      */
     public function store(array $data): void
     {

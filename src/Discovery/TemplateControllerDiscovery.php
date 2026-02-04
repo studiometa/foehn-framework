@@ -82,7 +82,7 @@ final class TemplateControllerDiscovery implements Discovery
     /**
      * Register a template controller.
      *
-     * @param array{attribute: AsTemplateController, className: class-string} $item
+     * @param array<string, mixed> $item
      */
     private function registerController(array $item): void
     {
@@ -95,7 +95,7 @@ final class TemplateControllerDiscovery implements Discovery
     /**
      * Register a template controller from cached data.
      *
-     * @param array{templates: array<string>, className: class-string, priority: int} $item
+     * @param array<string, mixed> $item
      */
     private function registerControllerFromCache(array $item): void
     {
@@ -330,7 +330,7 @@ final class TemplateControllerDiscovery implements Discovery
      * Find the controller for a template.
      *
      * @param string $template Template name
-     * @return array{className: class-string, priority: int}|null
+     * @return array<string, mixed>|null
      */
     private function findController(string $template): ?array
     {
@@ -368,8 +368,8 @@ final class TemplateControllerDiscovery implements Discovery
     /**
      * Convert a discovered item to a cacheable format.
      *
-     * @param array{attribute: AsTemplateController, className: class-string} $item
-     * @return array{templates: array<string>, className: class-string, priority: int}
+     * @param array<string, mixed> $item
+     * @return array<string, mixed>
      */
     protected function itemToCacheable(array $item): array
     {

@@ -75,7 +75,7 @@ final class CliCommandDiscovery implements Discovery
     /**
      * Register a command from cached data.
      *
-     * @param array{className: string, name: string, description: string, longDescription: string|null} $item
+     * @param array<string, mixed> $item
      */
     private function registerCommandFromCache(array $item): void
     {
@@ -115,8 +115,8 @@ final class CliCommandDiscovery implements Discovery
     /**
      * Convert a discovered item to a cacheable format.
      *
-     * @param array{className: class-string, attribute: AsCliCommand} $item
-     * @return array{className: class-string, name: string, description: string, longDescription: string|null}
+     * @param array<string, mixed> $item
+     * @return array<string, mixed>
      */
     protected function itemToCacheable(array $item): array
     {

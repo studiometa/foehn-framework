@@ -62,7 +62,7 @@ final readonly class WpTempestConfig
 
         // Default to wp-content/cache/wp-tempest/discovery
         if (defined('WP_CONTENT_DIR')) {
-            return WP_CONTENT_DIR . '/cache/wp-tempest/discovery';
+            return constant('WP_CONTENT_DIR') . '/cache/wp-tempest/discovery';
         }
 
         // Fallback for non-WordPress context (tests)

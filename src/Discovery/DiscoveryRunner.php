@@ -15,7 +15,7 @@ final class DiscoveryRunner
     /** @var array<class-string, Discovery> */
     private array $discoveries = [];
 
-    /** @var array<string, array<string, mixed>>|null */
+    /** @var array<string, array<int, array<string, mixed>>>|null */
     private ?array $cachedData = null;
 
     private bool $cacheLoaded = false;
@@ -130,7 +130,7 @@ final class DiscoveryRunner
      * Restore discovery items from cached data.
      *
      * @param Discovery $discovery
-     * @param array<string, mixed> $data
+     * @param array<int, array<string, mixed>> $data
      */
     private function restoreDiscoveryFromCache(Discovery $discovery, array $data): void
     {
@@ -217,8 +217,11 @@ final class DiscoveryRunner
      */
     public static function getAllDiscoveryClasses(): array
     {
-        $phases = self::getDiscoveryPhases();
-
-        return array_merge(...array_values($phases));
+        /** @var array<class-string<Discovery>> */
+        return array_merge(
+            self::getDiscoveryPhases()['early'],
+            self::getDiscoveryPhases()['main'],
+            self::getDiscoveryPhases()['late'],
+        );
     }
 }

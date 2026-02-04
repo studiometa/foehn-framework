@@ -78,7 +78,7 @@ final class HookDiscovery implements Discovery
     /**
      * Register a single hook with WordPress.
      *
-     * @param array{type: string, hook: string, className: string, methodName: string, priority: int, acceptedArgs: int}|array{type: string, attribute: AsAction|AsFilter, method: MethodReflector} $item
+     * @param array<string, mixed> $item
      */
     private function registerHook(array $item): void
     {
@@ -112,7 +112,7 @@ final class HookDiscovery implements Discovery
     /**
      * Register a hook from cached data.
      *
-     * @param array{type: string, hook: string, className: string, methodName: string, priority: int, acceptedArgs: int} $item
+     * @param array<string, mixed> $item
      */
     private function registerHookFromCache(array $item): void
     {
@@ -154,8 +154,8 @@ final class HookDiscovery implements Discovery
     /**
      * Convert a discovered item to a cacheable format.
      *
-     * @param array{type: string, attribute: AsAction|AsFilter, method: MethodReflector} $item
-     * @return array{type: string, hook: string, className: string, methodName: string, priority: int, acceptedArgs: int}
+     * @param array<string, mixed> $item
+     * @return array<string, mixed>
      */
     protected function itemToCacheable(array $item): array
     {

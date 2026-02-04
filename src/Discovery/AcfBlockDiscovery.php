@@ -95,7 +95,7 @@ final class AcfBlockDiscovery implements Discovery
     /**
      * Register ACF block from cached data.
      *
-     * @param array{className: string, name: string, title: string, description: string, category: string, icon: string, keywords: array<string>, mode: string, supports: array<string, mixed>, postTypes: array<string>, parent: string|null} $item
+     * @param array<string, mixed> $item
      */
     private function registerBlockFromCache(array $item): void
     {
@@ -126,9 +126,9 @@ final class AcfBlockDiscovery implements Discovery
         string $className,
         string $name,
         string $title,
-        string $description,
+        ?string $description,
         string $category,
-        string $icon,
+        ?string $icon,
         array $keywords,
         string $mode,
         array $supports,
@@ -139,9 +139,9 @@ final class AcfBlockDiscovery implements Discovery
         $config = [
             'name' => $name,
             'title' => $title,
-            'description' => $description,
+            'description' => $description ?? '',
             'category' => $category,
-            'icon' => $icon,
+            'icon' => $icon ?? 'block-default',
             'keywords' => $keywords,
             'mode' => $mode,
             'supports' => $supports,
@@ -231,8 +231,8 @@ final class AcfBlockDiscovery implements Discovery
     /**
      * Convert a discovered item to a cacheable format.
      *
-     * @param array{attribute: AsAcfBlock, className: class-string} $item
-     * @return array{className: class-string, name: string, title: string, description: string, category: string, icon: string, keywords: array<string>, mode: string, supports: array<string, mixed>, postTypes: array<string>, parent: string|null}
+     * @param array<string, mixed> $item
+     * @return array<string, mixed>
      */
     protected function itemToCacheable(array $item): array
     {

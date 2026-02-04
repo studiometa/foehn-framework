@@ -74,7 +74,7 @@ final class ShortcodeDiscovery implements Discovery
     /**
      * Register shortcode from cached data.
      *
-     * @param array{tag: string, className: string, methodName: string} $item
+     * @param array<string, mixed> $item
      */
     private function registerShortcodeFromCache(array $item): void
     {
@@ -99,8 +99,8 @@ final class ShortcodeDiscovery implements Discovery
     /**
      * Convert a discovered item to a cacheable format.
      *
-     * @param array{attribute: AsShortcode, method: MethodReflector} $item
-     * @return array{tag: string, className: string, methodName: string}
+     * @param array<string, mixed> $item
+     * @return array<string, mixed>
      */
     protected function itemToCacheable(array $item): array
     {

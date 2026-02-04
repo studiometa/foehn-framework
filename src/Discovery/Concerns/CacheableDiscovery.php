@@ -4,11 +4,16 @@ declare(strict_types=1);
 
 namespace Studiometa\WPTempest\Discovery\Concerns;
 
+use Tempest\Discovery\DiscoveryItems;
+
 /**
  * Trait for discoveries that support caching.
  *
  * Discoveries that use this trait can export their data in a serializable format
  * and restore from cached data.
+ *
+ * This trait requires the class to also use the IsDiscovery trait which provides
+ * the getItems() method.
  */
 trait CacheableDiscovery
 {
@@ -37,7 +42,13 @@ trait CacheableDiscovery
     {
         $data = [];
 
-        foreach ($this->discoveryItems as $item) {
+        // getItems() is provided by IsDiscovery trait which must be used alongside this trait
+        // @mago-expect analyse:non-existent-method
+        /** @var DiscoveryItems $items */
+        $items = $this->getItems();
+
+        /** @var array<string, mixed> $item */
+        foreach ($items as $item) {
             $cacheableItem = $this->itemToCacheable($item);
 
             if ($cacheableItem !== null) {
@@ -78,7 +89,13 @@ trait CacheableDiscovery
             return $this->cachedItems;
         }
 
-        return $this->discoveryItems;
+        // getItems() is provided by IsDiscovery trait which must be used alongside this trait
+        // @mago-expect analyse:non-existent-method
+        /** @var DiscoveryItems $items */
+        $items = $this->getItems();
+
+        /** @var iterable<array<string, mixed>> */
+        return $items;
     }
 
     /**

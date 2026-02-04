@@ -73,7 +73,7 @@ final class ViewComposerDiscovery implements Discovery
      * Register a single view composer.
      *
      * @param ViewComposerRegistry $registry
-     * @param array{attribute: AsViewComposer, className: class-string} $item
+     * @param array<string, mixed> $item
      */
     private function registerComposer(ViewComposerRegistry $registry, array $item): void
     {
@@ -90,7 +90,7 @@ final class ViewComposerDiscovery implements Discovery
      * Register a view composer from cached data.
      *
      * @param ViewComposerRegistry $registry
-     * @param array{templates: array<string>, className: class-string, priority: int} $item
+     * @param array<string, mixed> $item
      */
     private function registerComposerFromCache(ViewComposerRegistry $registry, array $item): void
     {
@@ -103,8 +103,8 @@ final class ViewComposerDiscovery implements Discovery
     /**
      * Convert a discovered item to a cacheable format.
      *
-     * @param array{attribute: AsViewComposer, className: class-string} $item
-     * @return array{templates: array<string>, className: class-string, priority: int}
+     * @param array<string, mixed> $item
+     * @return array<string, mixed>
      */
     protected function itemToCacheable(array $item): array
     {

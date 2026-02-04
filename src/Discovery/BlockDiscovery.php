@@ -102,7 +102,7 @@ final class BlockDiscovery implements Discovery
     /**
      * Register block from cached data.
      *
-     * @param array{className: string, blockName: string, title: string, category: string, icon: string|null, description: string|null, keywords: array<string>, supports: array<string, mixed>, parent: string|null, ancestor: array<string>, interactivity: bool, interactivityNamespace: string|null} $item
+     * @param array<string, mixed> $item
      */
     private function registerBlockFromCache(array $item): void
     {
@@ -209,8 +209,8 @@ final class BlockDiscovery implements Discovery
     /**
      * Convert a discovered item to a cacheable format.
      *
-     * @param array{attribute: AsBlock, className: class-string} $item
-     * @return array{className: class-string, blockName: string, title: string, category: string, icon: string|null, description: string|null, keywords: array<string>, supports: array<string, mixed>, parent: string|null, ancestor: array<string>, interactivity: bool, interactivityNamespace: string|null}
+     * @param array<string, mixed> $item
+     * @return array<string, mixed>
      */
     protected function itemToCacheable(array $item): array
     {

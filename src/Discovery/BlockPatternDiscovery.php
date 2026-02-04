@@ -87,7 +87,7 @@ final class BlockPatternDiscovery implements Discovery
     /**
      * Register pattern from cached data.
      *
-     * @param array{patternName: string, title: string, templatePath: string, className: string, implementsInterface: bool, viewportWidth: int, inserter: bool, categories: array<string>, keywords: array<string>, blockTypes: array<string>, description: string|null} $item
+     * @param array<string, mixed> $item
      */
     private function registerPatternFromCache(array $item): void
     {
@@ -181,8 +181,8 @@ final class BlockPatternDiscovery implements Discovery
     /**
      * Convert a discovered item to a cacheable format.
      *
-     * @param array{attribute: AsBlockPattern, className: class-string, implementsInterface: bool} $item
-     * @return array{patternName: string, title: string, templatePath: string, className: class-string, implementsInterface: bool, viewportWidth: int, inserter: bool, categories: array<string>, keywords: array<string>, blockTypes: array<string>, description: string|null}
+     * @param array<string, mixed> $item
+     * @return array<string, mixed>
      */
     protected function itemToCacheable(array $item): array
     {
