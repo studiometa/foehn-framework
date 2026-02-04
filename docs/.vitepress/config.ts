@@ -64,9 +64,7 @@ export default defineConfig({
         },
         {
           text: "Migration",
-          items: [
-            { text: "From wp-toolkit", link: "/guide/migration-wp-toolkit" },
-          ],
+          items: [{ text: "From wp-toolkit", link: "/guide/migration-wp-toolkit" }],
         },
       ],
       "/api/": [
@@ -78,6 +76,7 @@ export default defineConfig({
             { text: "#[AsFilter]", link: "/api/as-filter" },
             { text: "#[AsPostType]", link: "/api/as-post-type" },
             { text: "#[AsTaxonomy]", link: "/api/as-taxonomy" },
+            { text: "#[AsTimberModel]", link: "/api/as-timber-model" },
             { text: "#[AsViewComposer]", link: "/api/as-view-composer" },
             { text: "#[AsTemplateController]", link: "/api/as-template-controller" },
             { text: "#[AsBlock]", link: "/api/as-block" },
@@ -110,9 +109,7 @@ export default defineConfig({
       ],
     },
 
-    socialLinks: [
-      { icon: "github", link: "https://github.com/studiometa/wp-tempest" },
-    ],
+    socialLinks: [{ icon: "github", link: "https://github.com/studiometa/wp-tempest" }],
 
     footer: {
       message: "Released under the MIT License.",
