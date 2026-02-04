@@ -81,7 +81,13 @@ final class PostTypeDiscovery implements Discovery
                 name: $item['name'],
                 singular: $item['singular'],
                 plural: $item['plural'],
-                args: $item['args'] ?? [],
+                public: $item['public'] ?? true,
+                hasArchive: $item['hasArchive'] ?? false,
+                showInRest: $item['showInRest'] ?? true,
+                menuIcon: $item['menuIcon'] ?? null,
+                supports: $item['supports'] ?? ['title', 'editor', 'thumbnail'],
+                taxonomies: $item['taxonomies'] ?? [],
+                rewriteSlug: $item['rewriteSlug'] ?? null,
             );
             $builder = PostTypeBuilder::fromAttribute($attribute);
             $postTypeName = $item['name'];
@@ -130,7 +136,13 @@ final class PostTypeDiscovery implements Discovery
             'name' => $attribute->name,
             'singular' => $attribute->singular,
             'plural' => $attribute->plural,
-            'args' => $attribute->args,
+            'public' => $attribute->public,
+            'hasArchive' => $attribute->hasArchive,
+            'showInRest' => $attribute->showInRest,
+            'menuIcon' => $attribute->menuIcon,
+            'supports' => $attribute->supports,
+            'taxonomies' => $attribute->taxonomies,
+            'rewriteSlug' => $attribute->rewriteSlug,
             'className' => $item['className'],
             'implementsConfig' => $item['implementsConfig'],
         ];

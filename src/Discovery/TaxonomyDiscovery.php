@@ -79,10 +79,14 @@ final class TaxonomyDiscovery implements Discovery
             // Cached format - rebuild attribute
             $attribute = new AsTaxonomy(
                 name: $item['name'],
+                postTypes: $item['postTypes'] ?? [],
                 singular: $item['singular'],
                 plural: $item['plural'],
-                postTypes: $item['postTypes'] ?? [],
-                args: $item['args'] ?? [],
+                public: $item['public'] ?? true,
+                hierarchical: $item['hierarchical'] ?? false,
+                showInRest: $item['showInRest'] ?? true,
+                showAdminColumn: $item['showAdminColumn'] ?? true,
+                rewriteSlug: $item['rewriteSlug'] ?? null,
             );
             $builder = TaxonomyBuilder::fromAttribute($attribute);
             $taxonomyName = $item['name'];
@@ -132,7 +136,11 @@ final class TaxonomyDiscovery implements Discovery
             'singular' => $attribute->singular,
             'plural' => $attribute->plural,
             'postTypes' => $attribute->postTypes,
-            'args' => $attribute->args,
+            'public' => $attribute->public,
+            'hierarchical' => $attribute->hierarchical,
+            'showInRest' => $attribute->showInRest,
+            'showAdminColumn' => $attribute->showAdminColumn,
+            'rewriteSlug' => $attribute->rewriteSlug,
             'className' => $item['className'],
             'implementsConfig' => $item['implementsConfig'],
         ];
