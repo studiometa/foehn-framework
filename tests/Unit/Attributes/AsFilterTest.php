@@ -38,9 +38,7 @@ describe('AsFilter', function () {
     });
 
     it('is readonly', function () {
-        $filter = new AsFilter('the_content');
-
-        expect($filter)->toBeReadonly();
+        expect(AsFilter::class)->toBeReadonly();
     });
 
     it('can be used as an attribute', function () {
