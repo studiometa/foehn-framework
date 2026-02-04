@@ -5,6 +5,9 @@ A modern WordPress framework powered by [Tempest](https://github.com/tempestphp/
 [![PHP Version](https://img.shields.io/badge/php-%5E8.4-blue)](https://php.net)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
+> [!WARNING]
+> **AI-Generated Project** — This project was primarily built by AI coding agents (Claude). While functional and tested, it may contain bugs, security issues, or unexpected behavior. Use at your own risk, especially in production environments.
+
 ## Features
 
 - 🚀 **Zero configuration** - Auto-discovery of components via PHP 8 attributes
