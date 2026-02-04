@@ -86,6 +86,106 @@ final readonly class HeroBlock implements AcfBlockInterface
 </section>
 ```
 
+## Automatic Field Transformation
+
+By default, WP Tempest automatically transforms ACF field values into Timber objects. This means you don't need to manually convert image IDs to `Timber\Image`, post IDs to `Timber\Post`, etc.
+
+### Enabled by Default
+
+Field transformation is enabled by default. To disable it:
+
+```php
+Kernel::boot(__DIR__, [
+    'acf_transform_fields' => false,
+]);
+```
+
+### Transformed Field Types
+
+| ACF Field Type     | Timber Type                                |
+| ------------------ | ------------------------------------------ |
+| `image`            | `Timber\Image`                             |
+| `gallery`          | `Timber\PostQuery` (array of Images)       |
+| `file`             | `Timber\Attachment`                        |
+| `post_object`      | `Timber\Post` (or `PostQuery` if multiple) |
+| `relationship`     | `Timber\PostQuery`                         |
+| `taxonomy`         | `Timber\Term` (or array of Terms)          |
+| `user`             | `Timber\User` (or array of Users)          |
+| `date_picker`      | `DateTimeImmutable`                        |
+| `date_time_picker` | `DateTimeImmutable`                        |
+
+### Nested Fields Support
+
+Transformation works recursively for nested field types:
+
+- **Repeater**: Each row's sub-fields are transformed
+- **Flexible Content**: Each layout's sub-fields are transformed
+- **Group**: All sub-fields are transformed
+
+### Example: Before and After
+
+**Without transformation** (manual conversion required):
+
+```php
+public function compose(array $block, array $fields): array
+{
+    $context = $fields;
+
+    // Manual transformation for every image field
+    if (!empty($fields['image'])) {
+        $context['image'] = Timber::get_image($fields['image']);
+    }
+
+    // Manual transformation for relationships
+    if (!empty($fields['related_posts'])) {
+        $context['related_posts'] = Timber::get_posts($fields['related_posts']);
+    }
+
+    return $context;
+}
+```
+
+**With transformation** (automatic):
+
+```php
+public function compose(array $block, array $fields): array
+{
+    // $fields['image'] is already a Timber\Image
+    // $fields['related_posts'] is already a Timber\PostQuery
+    return $fields;
+}
+```
+
+### In Twig Templates
+
+With automatic transformation, you can use Timber's full API directly:
+
+```twig
+{# Image fields #}
+<img
+    src="{{ image.src('large') }}"
+    alt="{{ image.alt }}"
+    srcset="{{ image.srcset }}"
+    width="{{ image.width }}"
+    height="{{ image.height }}"
+>
+
+{# Gallery fields #}
+{% for item in gallery %}
+    <img src="{{ item.src('thumbnail') }}" alt="{{ item.alt }}">
+{% endfor %}
+
+{# Relationship fields #}
+{% for post in related_posts %}
+    <a href="{{ post.link }}">{{ post.title }}</a>
+{% endfor %}
+
+{# Date fields #}
+<time datetime="{{ date|date('Y-m-d') }}">
+    {{ date|date('F j, Y') }}
+</time>
+```
+
 ## Full Configuration
 
 ```php
