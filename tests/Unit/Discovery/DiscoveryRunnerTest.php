@@ -19,6 +19,7 @@ describe('DiscoveryRunner', function () {
         expect($classes)->toContain(\Studiometa\WPTempest\Discovery\ViewComposerDiscovery::class);
         expect($classes)->toContain(\Studiometa\WPTempest\Discovery\TemplateControllerDiscovery::class);
         expect($classes)->toContain(\Studiometa\WPTempest\Discovery\RestRouteDiscovery::class);
+        expect($classes)->toContain(\Studiometa\WPTempest\Discovery\TimberModelDiscovery::class);
     });
 
     it('returns discovery phases', function () {
@@ -30,6 +31,7 @@ describe('DiscoveryRunner', function () {
         expect($phases['early'])->toContain(\Studiometa\WPTempest\Discovery\HookDiscovery::class);
         expect($phases['early'])->toContain(\Studiometa\WPTempest\Discovery\ShortcodeDiscovery::class);
         expect($phases['early'])->toContain(\Studiometa\WPTempest\Discovery\CliCommandDiscovery::class);
+        expect($phases['early'])->toContain(\Studiometa\WPTempest\Discovery\TimberModelDiscovery::class);
 
         // Main phase
         expect($phases['main'])->toContain(\Studiometa\WPTempest\Discovery\PostTypeDiscovery::class);
@@ -47,7 +49,7 @@ describe('DiscoveryRunner', function () {
     it('has correct number of discoveries in each phase', function () {
         $phases = DiscoveryRunner::getDiscoveryPhases();
 
-        expect($phases['early'])->toHaveCount(3);
+        expect($phases['early'])->toHaveCount(4);
         expect($phases['main'])->toHaveCount(5);
         expect($phases['late'])->toHaveCount(3);
     });
