@@ -1,0 +1,23 @@
+{
+  "name": "wp-tempest",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "fmt": "oxfmt --write README.md .planning/",
+    "fmt:check": "oxfmt --check README.md .planning/",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.0.0",
+    "lint-staged": "^15.0.0",
+    "oxfmt": "^0.28.0"
+  },
+  "lint-staged": {
+    "*.php": [
+      "composer fix --"
+    ],
+    "*.md": [
+      "oxfmt --write"
+    ]
+  }
+}
