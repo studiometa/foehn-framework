@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add `VideoEmbed` helper and Twig extension for YouTube/Vimeo URL transformation ([c19eefb], [#18])
 - Add opt-in reusable hook classes for common WordPress patterns ([1bac8e8], [#13]):
   - Cleanup: `CleanHeadTags`, `CleanContent`, `CleanImageSizes`, `DisableEmoji`, `DisableFeeds`, `DisableOembed`, `DisableGlobalStyles`
   - Security: `SecurityHeaders`, `DisableVersionDisclosure`, `DisableXmlRpc`, `DisableFileEditor`, `RestApiAuth`
@@ -53,4 +54,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#11]: https://github.com/studiometa/wp-tempest/pull/11
 [#12]: https://github.com/studiometa/wp-tempest/pull/12
 [#13]: https://github.com/studiometa/wp-tempest/pull/13
+[#18]: https://github.com/studiometa/wp-tempest/pull/18
 [1bac8e8]: https://github.com/studiometa/wp-tempest/commit/1bac8e8
+[c19eefb]: https://github.com/studiometa/wp-tempest/commit/c19eefb
