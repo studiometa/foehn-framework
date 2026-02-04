@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Fixtures;
 
-use Studiometa\WPTempest\Attributes\AsAction;
-use Studiometa\WPTempest\Attributes\AsFilter;
+use Studiometa\Foehn\Attributes\AsAction;
+use Studiometa\Foehn\Attributes\AsFilter;
 
 final class HookFixture
 {

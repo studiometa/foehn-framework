@@ -7,7 +7,7 @@ Interface for view composers that add data to templates.
 ```php
 <?php
 
-namespace Studiometa\WPTempest\Contracts;
+namespace Studiometa\Foehn\Contracts;
 
 interface ViewComposerInterface
 {
@@ -49,8 +49,8 @@ public function compose(array $context): array
 
 namespace App\Views\Composers;
 
-use Studiometa\WPTempest\Attributes\AsViewComposer;
-use Studiometa\WPTempest\Contracts\ViewComposerInterface;
+use Studiometa\Foehn\Attributes\AsViewComposer;
+use Studiometa\Foehn\Contracts\ViewComposerInterface;
 
 #[AsViewComposer('*')]
 final class NavigationComposer implements ViewComposerInterface
@@ -75,8 +75,8 @@ final class NavigationComposer implements ViewComposerInterface
 namespace App\Views\Composers;
 
 use App\Services\CartService;
-use Studiometa\WPTempest\Attributes\AsViewComposer;
-use Studiometa\WPTempest\Contracts\ViewComposerInterface;
+use Studiometa\Foehn\Attributes\AsViewComposer;
+use Studiometa\Foehn\Contracts\ViewComposerInterface;
 
 #[AsViewComposer('*')]
 final class CartComposer implements ViewComposerInterface

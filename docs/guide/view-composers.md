@@ -10,8 +10,8 @@ View composers automatically inject data into specific templates. Use `#[AsViewC
 
 namespace App\Views\Composers;
 
-use Studiometa\WPTempest\Attributes\AsViewComposer;
-use Studiometa\WPTempest\Contracts\ViewComposerInterface;
+use Studiometa\Foehn\Attributes\AsViewComposer;
+use Studiometa\Foehn\Contracts\ViewComposerInterface;
 
 #[AsViewComposer('*')]
 final class HeaderComposer implements ViewComposerInterface
@@ -120,8 +120,8 @@ Composers support constructor injection:
 namespace App\Views\Composers;
 
 use App\Services\CartService;
-use Studiometa\WPTempest\Attributes\AsViewComposer;
-use Studiometa\WPTempest\Contracts\ViewComposerInterface;
+use Studiometa\Foehn\Attributes\AsViewComposer;
+use Studiometa\Foehn\Contracts\ViewComposerInterface;
 
 #[AsViewComposer('*')]
 final class CartComposer implements ViewComposerInterface

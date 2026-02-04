@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Studiometa\WPTempest\Discovery;
+namespace Studiometa\Foehn\Discovery;
 
 use InvalidArgumentException;
 use ReflectionClass;
-use Studiometa\WPTempest\Attributes\AsTimberModel;
-use Studiometa\WPTempest\Discovery\Concerns\CacheableDiscovery;
-use Studiometa\WPTempest\Discovery\Concerns\IsWpDiscovery;
+use Studiometa\Foehn\Attributes\AsTimberModel;
+use Studiometa\Foehn\Discovery\Concerns\CacheableDiscovery;
+use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
 use Timber\Post;
 use Timber\Term;
 

@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Contracts\ViewEngineInterface;
-use Studiometa\WPTempest\Discovery\BlockPatternDiscovery;
+use Studiometa\Foehn\Contracts\ViewEngineInterface;
+use Studiometa\Foehn\Discovery\BlockPatternDiscovery;
 use Tests\Fixtures\BlockPatternFixture;
 
 beforeEach(function () {

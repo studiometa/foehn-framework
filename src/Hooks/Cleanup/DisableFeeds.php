@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Studiometa\WPTempest\Hooks\Cleanup;
+namespace Studiometa\Foehn\Hooks\Cleanup;
 
-use Studiometa\WPTempest\Attributes\AsAction;
+use Studiometa\Foehn\Attributes\AsAction;
 
 /**
  * Disable RSS/Atom feed links in wp_head.

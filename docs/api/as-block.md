@@ -61,9 +61,9 @@ final readonly class AsBlock
 
 namespace App\Blocks\Alert;
 
-use Studiometa\WPTempest\Attributes\AsBlock;
-use Studiometa\WPTempest\Contracts\BlockInterface;
-use Studiometa\WPTempest\Contracts\ViewEngineInterface;
+use Studiometa\Foehn\Attributes\AsBlock;
+use Studiometa\Foehn\Contracts\BlockInterface;
+use Studiometa\Foehn\Contracts\ViewEngineInterface;
 use WP_Block;
 
 #[AsBlock(
@@ -108,8 +108,8 @@ final readonly class AlertBlock implements BlockInterface
 
 namespace App\Blocks\Counter;
 
-use Studiometa\WPTempest\Attributes\AsBlock;
-use Studiometa\WPTempest\Contracts\InteractiveBlockInterface;
+use Studiometa\Foehn\Attributes\AsBlock;
+use Studiometa\Foehn\Contracts\InteractiveBlockInterface;
 use WP_Block;
 
 #[AsBlock(

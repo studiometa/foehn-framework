@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Attributes\AsPostType;
+use Studiometa\Foehn\Attributes\AsPostType;
 
 describe('AsPostType', function () {
     it('can be instantiated with minimal parameters', function () {
@@ -59,10 +59,7 @@ describe('AsPostType', function () {
     });
 
     it('supports rewrite as false to disable', function () {
-        $attribute = new AsPostType(
-            name: 'internal',
-            rewrite: false,
-        );
+        $attribute = new AsPostType(name: 'internal', rewrite: false);
 
         expect($attribute->rewrite)->toBeFalse();
     });

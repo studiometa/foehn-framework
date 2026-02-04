@@ -1,6 +1,6 @@
 # Post Types
 
-WP Tempest uses `#[AsPostType]` to register custom post types with Timber integration.
+Foehn uses `#[AsPostType]` to register custom post types with Timber integration.
 
 ## Basic Post Type
 
@@ -10,7 +10,7 @@ WP Tempest uses `#[AsPostType]` to register custom post types with Timber integr
 
 namespace App\Models;
 
-use Studiometa\WPTempest\Attributes\AsPostType;
+use Studiometa\Foehn\Attributes\AsPostType;
 use Timber\Post;
 
 #[AsPostType(
@@ -32,7 +32,7 @@ This registers a post type with sensible defaults and automatically maps it in T
 
 namespace App\Models;
 
-use Studiometa\WPTempest\Attributes\AsPostType;
+use Studiometa\Foehn\Attributes\AsPostType;
 use Timber\Post;
 
 #[AsPostType(
@@ -61,7 +61,7 @@ Add business logic directly to your post type class:
 
 namespace App\Models;
 
-use Studiometa\WPTempest\Attributes\AsPostType;
+use Studiometa\Foehn\Attributes\AsPostType;
 use Timber\Post;
 
 #[AsPostType(
@@ -192,8 +192,8 @@ For complex post types, implement `ConfiguresPostType` interface:
 
 namespace App\Models;
 
-use Studiometa\WPTempest\Attributes\AsPostType;
-use Studiometa\WPTempest\Contracts\ConfiguresPostType;
+use Studiometa\Foehn\Attributes\AsPostType;
+use Studiometa\Foehn\Contracts\ConfiguresPostType;
 use Timber\Post;
 
 #[AsPostType(name: 'event', singular: 'Event', plural: 'Events')]

@@ -2,20 +2,19 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Hooks\Security\SecurityHeaders;
+use Studiometa\Foehn\Hooks\Security\SecurityHeaders;
 
 describe('SecurityHeaders', function () {
     it('has AsAction attribute on send_headers hook', function () {
         $method = new ReflectionMethod(SecurityHeaders::class, 'sendSecurityHeaders');
-        $attributes = $method->getAttributes(\Studiometa\WPTempest\Attributes\AsAction::class);
+        $attributes = $method->getAttributes(\Studiometa\Foehn\Attributes\AsAction::class);
 
         expect($attributes)->toHaveCount(1);
         expect($attributes[0]->newInstance()->hook)->toBe('send_headers');
     });
 
     it('is a final class', function () {
-        expect(new ReflectionClass(SecurityHeaders::class))
-            ->isFinal()->toBeTrue();
+        expect(new ReflectionClass(SecurityHeaders::class))->isFinal()->toBeTrue();
     });
 
     it('does not send deprecated X-XSS-Protection header', function () {

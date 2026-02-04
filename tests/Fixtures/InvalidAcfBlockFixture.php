@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Fixtures;
 
-use Studiometa\WPTempest\Attributes\AsAcfBlock;
+use Studiometa\Foehn\Attributes\AsAcfBlock;
 
 /**
  * Invalid: has #[AsAcfBlock] but does NOT implement AcfBlockInterface.

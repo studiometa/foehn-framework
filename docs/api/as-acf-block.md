@@ -51,9 +51,9 @@ final readonly class AsAcfBlock
 
 namespace App\Blocks\Hero;
 
-use Studiometa\WPTempest\Attributes\AsAcfBlock;
-use Studiometa\WPTempest\Contracts\AcfBlockInterface;
-use Studiometa\WPTempest\Contracts\ViewEngineInterface;
+use Studiometa\Foehn\Attributes\AsAcfBlock;
+use Studiometa\Foehn\Contracts\AcfBlockInterface;
+use Studiometa\Foehn\Contracts\ViewEngineInterface;
 use StoutLogic\AcfBuilder\FieldsBuilder;
 
 #[AsAcfBlock(

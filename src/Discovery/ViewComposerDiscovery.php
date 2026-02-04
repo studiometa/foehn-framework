@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Studiometa\WPTempest\Discovery;
+namespace Studiometa\Foehn\Discovery;
 
 use InvalidArgumentException;
 use ReflectionClass;
-use Studiometa\WPTempest\Attributes\AsViewComposer;
-use Studiometa\WPTempest\Contracts\ViewComposerInterface;
-use Studiometa\WPTempest\Discovery\Concerns\CacheableDiscovery;
-use Studiometa\WPTempest\Discovery\Concerns\IsWpDiscovery;
-use Studiometa\WPTempest\Views\ViewComposerRegistry;
+use Studiometa\Foehn\Attributes\AsViewComposer;
+use Studiometa\Foehn\Contracts\ViewComposerInterface;
+use Studiometa\Foehn\Discovery\Concerns\CacheableDiscovery;
+use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
+use Studiometa\Foehn\Views\ViewComposerRegistry;
 
 use function Tempest\get;
 

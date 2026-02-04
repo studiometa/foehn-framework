@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Studiometa\WPTempest\Discovery;
+namespace Studiometa\Foehn\Discovery;
 
 use InvalidArgumentException;
 use ReflectionClass;
-use Studiometa\WPTempest\Attributes\AsTemplateController;
-use Studiometa\WPTempest\Contracts\TemplateControllerInterface;
-use Studiometa\WPTempest\Discovery\Concerns\CacheableDiscovery;
-use Studiometa\WPTempest\Discovery\Concerns\IsWpDiscovery;
+use Studiometa\Foehn\Attributes\AsTemplateController;
+use Studiometa\Foehn\Contracts\TemplateControllerInterface;
+use Studiometa\Foehn\Discovery\Concerns\CacheableDiscovery;
+use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
 
 use function Tempest\get;
 

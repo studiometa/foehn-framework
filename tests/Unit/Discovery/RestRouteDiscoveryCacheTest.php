@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Discovery\RestRouteDiscovery;
+use Studiometa\Foehn\Discovery\RestRouteDiscovery;
 
 beforeEach(function () {
     $this->discovery = new RestRouteDiscovery();
@@ -102,19 +102,31 @@ describe('RestRouteDiscovery caching', function () {
         $ref = new ReflectionMethod($this->discovery, 'addItem');
 
         $ref->invoke($this->discovery, [
-            'namespace' => 'api/v1', 'route' => '/users', 'httpMethod' => 'GET',
-            'className' => 'App\\Api\\UsersController', 'methodName' => 'index',
-            'permission' => 'public', 'args' => [],
+            'namespace' => 'api/v1',
+            'route' => '/users',
+            'httpMethod' => 'GET',
+            'className' => 'App\\Api\\UsersController',
+            'methodName' => 'index',
+            'permission' => 'public',
+            'args' => [],
         ]);
         $ref->invoke($this->discovery, [
-            'namespace' => 'api/v1', 'route' => '/users', 'httpMethod' => 'POST',
-            'className' => 'App\\Api\\UsersController', 'methodName' => 'store',
-            'permission' => null, 'args' => [],
+            'namespace' => 'api/v1',
+            'route' => '/users',
+            'httpMethod' => 'POST',
+            'className' => 'App\\Api\\UsersController',
+            'methodName' => 'store',
+            'permission' => null,
+            'args' => [],
         ]);
         $ref->invoke($this->discovery, [
-            'namespace' => 'api/v1', 'route' => '/users/(?P<id>\d+)', 'httpMethod' => 'DELETE',
-            'className' => 'App\\Api\\UsersController', 'methodName' => 'destroy',
-            'permission' => null, 'args' => [],
+            'namespace' => 'api/v1',
+            'route' => '/users/(?P<id>\d+)',
+            'httpMethod' => 'DELETE',
+            'className' => 'App\\Api\\UsersController',
+            'methodName' => 'destroy',
+            'permission' => null,
+            'args' => [],
         ]);
 
         $cacheableData = $this->discovery->getCacheableData();

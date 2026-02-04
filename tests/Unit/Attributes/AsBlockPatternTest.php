@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Attributes\AsBlockPattern;
+use Studiometa\Foehn\Attributes\AsBlockPattern;
 
 describe('AsBlockPattern', function () {
     it('can be instantiated with minimal parameters', function () {

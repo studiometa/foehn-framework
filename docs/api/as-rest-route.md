@@ -47,7 +47,7 @@ final readonly class AsRestRoute
 
 namespace App\Rest;
 
-use Studiometa\WPTempest\Attributes\AsRestRoute;
+use Studiometa\Foehn\Attributes\AsRestRoute;
 use WP_REST_Request;
 use WP_REST_Response;
 

@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Hooks\Security\DisableFileEditor;
+use Studiometa\Foehn\Hooks\Security\DisableFileEditor;
 
 describe('DisableFileEditor', function () {
     it('has AsAction attribute on init with priority 1', function () {
         $method = new ReflectionMethod(DisableFileEditor::class, 'disableFileEditor');
-        $attributes = $method->getAttributes(\Studiometa\WPTempest\Attributes\AsAction::class);
+        $attributes = $method->getAttributes(\Studiometa\Foehn\Attributes\AsAction::class);
 
         expect($attributes)->toHaveCount(1);
 
@@ -18,8 +18,7 @@ describe('DisableFileEditor', function () {
     });
 
     it('is a final class', function () {
-        expect(new ReflectionClass(DisableFileEditor::class))
-            ->isFinal()->toBeTrue();
+        expect(new ReflectionClass(DisableFileEditor::class))->isFinal()->toBeTrue();
     });
 
     // Note: We can't test the actual define() behavior in unit tests

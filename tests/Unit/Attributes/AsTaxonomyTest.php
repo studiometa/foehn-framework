@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Attributes\AsTaxonomy;
+use Studiometa\Foehn\Attributes\AsTaxonomy;
 
 describe('AsTaxonomy', function () {
     it('can be instantiated with minimal parameters', function () {
@@ -50,10 +50,7 @@ describe('AsTaxonomy', function () {
     });
 
     it('supports rewrite as false to disable', function () {
-        $attribute = new AsTaxonomy(
-            name: 'internal_tag',
-            rewrite: false,
-        );
+        $attribute = new AsTaxonomy(name: 'internal_tag', rewrite: false);
 
         expect($attribute->rewrite)->toBeFalse();
     });

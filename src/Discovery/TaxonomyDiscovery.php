@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Studiometa\WPTempest\Discovery;
+namespace Studiometa\Foehn\Discovery;
 
 use InvalidArgumentException;
 use ReflectionClass;
-use Studiometa\WPTempest\Attributes\AsTaxonomy;
-use Studiometa\WPTempest\Contracts\ConfiguresTaxonomy;
-use Studiometa\WPTempest\Discovery\Concerns\CacheableDiscovery;
-use Studiometa\WPTempest\Discovery\Concerns\IsWpDiscovery;
-use Studiometa\WPTempest\PostTypes\TaxonomyBuilder;
+use Studiometa\Foehn\Attributes\AsTaxonomy;
+use Studiometa\Foehn\Contracts\ConfiguresTaxonomy;
+use Studiometa\Foehn\Discovery\Concerns\CacheableDiscovery;
+use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
+use Studiometa\Foehn\PostTypes\TaxonomyBuilder;
 use Timber\Term;
 
 /**

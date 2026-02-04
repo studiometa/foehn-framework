@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Studiometa\WPTempest\Discovery;
+namespace Studiometa\Foehn\Discovery;
 
 use RuntimeException;
-use Studiometa\WPTempest\Config\WpTempestConfig;
+use Studiometa\Foehn\Config\FoehnConfig;
 use Tempest\Core\DiscoveryCacheStrategy;
 
 /**
- * Manages discovery cache for wp-tempest.
+ * Manages discovery cache for Foehn.
  *
  * This cache stores serialized discovery items to avoid runtime reflection
  * overhead in production environments.
@@ -20,7 +20,7 @@ final class DiscoveryCache
     private const STRATEGY_FILE = 'strategy';
 
     public function __construct(
-        private readonly WpTempestConfig $config,
+        private readonly FoehnConfig $config,
     ) {}
 
     /**

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Discovery\TaxonomyDiscovery;
+use Studiometa\Foehn\Discovery\TaxonomyDiscovery;
 use Tests\Fixtures\TaxonomyFixture;
 
 beforeEach(function () {

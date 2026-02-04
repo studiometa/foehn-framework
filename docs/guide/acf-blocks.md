@@ -1,6 +1,6 @@
 # ACF Blocks
 
-WP Tempest provides `#[AsAcfBlock]` for creating ACF blocks with type-safe fields using `stoutlogic/acf-builder`.
+Foehn provides `#[AsAcfBlock]` for creating ACF blocks with type-safe fields using `stoutlogic/acf-builder`.
 
 ## Requirements
 
@@ -19,9 +19,9 @@ composer require stoutlogic/acf-builder
 
 namespace App\Blocks\Hero;
 
-use Studiometa\WPTempest\Attributes\AsAcfBlock;
-use Studiometa\WPTempest\Contracts\AcfBlockInterface;
-use Studiometa\WPTempest\Contracts\ViewEngineInterface;
+use Studiometa\Foehn\Attributes\AsAcfBlock;
+use Studiometa\Foehn\Contracts\AcfBlockInterface;
+use Studiometa\Foehn\Contracts\ViewEngineInterface;
 use StoutLogic\AcfBuilder\FieldsBuilder;
 
 #[AsAcfBlock(
@@ -88,7 +88,7 @@ final readonly class HeroBlock implements AcfBlockInterface
 
 ## Automatic Field Transformation
 
-By default, WP Tempest automatically transforms ACF field values into Timber objects. This means you don't need to manually convert image IDs to `Timber\Image`, post IDs to `Timber\Post`, etc.
+By default, Foehn automatically transforms ACF field values into Timber objects. This means you don't need to manually convert image IDs to `Timber\Image`, post IDs to `Timber\Post`, etc.
 
 ### Enabled by Default
 
@@ -214,9 +214,9 @@ final readonly class TestimonialBlock implements AcfBlockInterface {}
 
 namespace App\Blocks\Features;
 
-use Studiometa\WPTempest\Attributes\AsAcfBlock;
-use Studiometa\WPTempest\Contracts\AcfBlockInterface;
-use Studiometa\WPTempest\Contracts\ViewEngineInterface;
+use Studiometa\Foehn\Attributes\AsAcfBlock;
+use Studiometa\Foehn\Contracts\AcfBlockInterface;
+use Studiometa\Foehn\Contracts\ViewEngineInterface;
 use StoutLogic\AcfBuilder\FieldsBuilder;
 
 #[AsAcfBlock(

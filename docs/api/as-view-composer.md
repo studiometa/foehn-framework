@@ -40,8 +40,8 @@ final readonly class AsViewComposer
 
 namespace App\Views\Composers;
 
-use Studiometa\WPTempest\Attributes\AsViewComposer;
-use Studiometa\WPTempest\Contracts\ViewComposerInterface;
+use Studiometa\Foehn\Attributes\AsViewComposer;
+use Studiometa\Foehn\Contracts\ViewComposerInterface;
 
 #[AsViewComposer('*')]
 final class GlobalComposer implements ViewComposerInterface

@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Studiometa\WPTempest\Console\Commands;
+namespace Studiometa\Foehn\Console\Commands;
 
-use Studiometa\WPTempest\Attributes\AsCliCommand;
-use Studiometa\WPTempest\Config\WpTempestConfig;
-use Studiometa\WPTempest\Console\CliCommandInterface;
-use Studiometa\WPTempest\Console\WpCli;
-use Studiometa\WPTempest\Discovery\DiscoveryCache;
+use Studiometa\Foehn\Attributes\AsCliCommand;
+use Studiometa\Foehn\Config\FoehnConfig;
+use Studiometa\Foehn\Console\CliCommandInterface;
+use Studiometa\Foehn\Console\WpCli;
+use Studiometa\Foehn\Discovery\DiscoveryCache;
 
 #[AsCliCommand(name: 'discovery:status', description: 'Show discovery cache status', longDescription: <<<'DOC'
     ## DESCRIPTION
@@ -29,7 +29,7 @@ final class DiscoveryStatusCommand implements CliCommandInterface
     public function __construct(
         private readonly WpCli $cli,
         private readonly DiscoveryCache $discoveryCache,
-        private readonly WpTempestConfig $config,
+        private readonly FoehnConfig $config,
     ) {}
 
     /**

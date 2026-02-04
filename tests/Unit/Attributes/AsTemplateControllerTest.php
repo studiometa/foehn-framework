@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Attributes\AsTemplateController;
+use Studiometa\Foehn\Attributes\AsTemplateController;
 
 describe('AsTemplateController', function () {
     it('can be instantiated with a single template', function () {

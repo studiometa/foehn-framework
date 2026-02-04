@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Studiometa\WPTempest\Views;
+namespace Studiometa\Foehn\Views;
 
 use RuntimeException;
-use Studiometa\WPTempest\Contracts\ViewEngineInterface;
+use Studiometa\Foehn\Contracts\ViewEngineInterface;
 use Timber\Timber;
 
 /**

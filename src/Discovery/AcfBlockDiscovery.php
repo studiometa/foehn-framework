@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Studiometa\WPTempest\Discovery;
+namespace Studiometa\Foehn\Discovery;
 
 use InvalidArgumentException;
 use ReflectionClass;
-use Studiometa\WPTempest\Attributes\AsAcfBlock;
-use Studiometa\WPTempest\Blocks\AcfBlockRenderer;
-use Studiometa\WPTempest\Contracts\AcfBlockInterface;
-use Studiometa\WPTempest\Discovery\Concerns\CacheableDiscovery;
-use Studiometa\WPTempest\Discovery\Concerns\IsWpDiscovery;
+use Studiometa\Foehn\Attributes\AsAcfBlock;
+use Studiometa\Foehn\Blocks\AcfBlockRenderer;
+use Studiometa\Foehn\Contracts\AcfBlockInterface;
+use Studiometa\Foehn\Discovery\Concerns\CacheableDiscovery;
+use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
 
 use function Tempest\get;
 

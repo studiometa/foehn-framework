@@ -7,7 +7,7 @@ Interface for native Gutenberg blocks.
 ```php
 <?php
 
-namespace Studiometa\WPTempest\Contracts;
+namespace Studiometa\Foehn\Contracts;
 
 use WP_Block;
 
@@ -102,9 +102,9 @@ public function render(array $attributes, string $content, WP_Block $block): str
 
 namespace App\Blocks\Alert;
 
-use Studiometa\WPTempest\Attributes\AsBlock;
-use Studiometa\WPTempest\Contracts\BlockInterface;
-use Studiometa\WPTempest\Contracts\ViewEngineInterface;
+use Studiometa\Foehn\Attributes\AsBlock;
+use Studiometa\Foehn\Contracts\BlockInterface;
+use Studiometa\Foehn\Contracts\ViewEngineInterface;
 use WP_Block;
 
 #[AsBlock(name: 'theme/alert', title: 'Alert')]

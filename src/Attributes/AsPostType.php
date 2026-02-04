@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Studiometa\WPTempest\Attributes;
+namespace Studiometa\Foehn\Attributes;
 
 use Attribute;
 

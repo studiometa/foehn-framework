@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Studiometa\WPTempest\Console\Stubs;
+namespace Studiometa\Foehn\Console\Stubs;
 
-use Studiometa\WPTempest\Attributes\AsTaxonomy;
+use Studiometa\Foehn\Attributes\AsTaxonomy;
 use Tempest\Discovery\SkipDiscovery;
 use Timber\Term;
 

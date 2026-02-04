@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Studiometa\WPTempest\Blocks;
+namespace Studiometa\Foehn\Blocks;
 
-use Studiometa\WPTempest\Attributes\AsBlock;
-use Studiometa\WPTempest\Contracts\BlockInterface;
+use Studiometa\Foehn\Attributes\AsBlock;
+use Studiometa\Foehn\Contracts\BlockInterface;
 
 /**
  * Generates block.json configuration for native Gutenberg blocks.

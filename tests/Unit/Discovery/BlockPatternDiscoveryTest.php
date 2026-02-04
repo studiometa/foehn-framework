@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Discovery\BlockPatternDiscovery;
+use Studiometa\Foehn\Discovery\BlockPatternDiscovery;
 use Tests\Fixtures\BlockPatternFixture;
 use Tests\Fixtures\NoAttributeFixture;
 

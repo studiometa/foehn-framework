@@ -1,6 +1,6 @@
 # Native Blocks
 
-WP Tempest provides `#[AsBlock]` for creating native Gutenberg blocks with optional WordPress Interactivity API support.
+Foehn provides `#[AsBlock]` for creating native Gutenberg blocks with optional WordPress Interactivity API support.
 
 ## Basic Native Block
 
@@ -10,9 +10,9 @@ WP Tempest provides `#[AsBlock]` for creating native Gutenberg blocks with optio
 
 namespace App\Blocks\Alert;
 
-use Studiometa\WPTempest\Attributes\AsBlock;
-use Studiometa\WPTempest\Contracts\BlockInterface;
-use Studiometa\WPTempest\Contracts\ViewEngineInterface;
+use Studiometa\Foehn\Attributes\AsBlock;
+use Studiometa\Foehn\Contracts\BlockInterface;
+use Studiometa\Foehn\Contracts\ViewEngineInterface;
 use WP_Block;
 
 #[AsBlock(
@@ -83,9 +83,9 @@ For blocks with client-side interactivity, use the WordPress Interactivity API:
 
 namespace App\Blocks\Counter;
 
-use Studiometa\WPTempest\Attributes\AsBlock;
-use Studiometa\WPTempest\Contracts\InteractiveBlockInterface;
-use Studiometa\WPTempest\Contracts\ViewEngineInterface;
+use Studiometa\Foehn\Attributes\AsBlock;
+use Studiometa\Foehn\Contracts\InteractiveBlockInterface;
+use Studiometa\Foehn\Contracts\ViewEngineInterface;
 use WP_Block;
 
 #[AsBlock(
@@ -204,7 +204,7 @@ store("theme/counter", {
 
 ## Twig Interactivity Helpers
 
-WP Tempest provides Twig helpers for the Interactivity API:
+Foehn provides Twig helpers for the Interactivity API:
 
 ### wp_context
 
@@ -261,7 +261,7 @@ Register custom categories:
 
 namespace App\Blocks;
 
-use Studiometa\WPTempest\Attributes\AsBlockCategory;
+use Studiometa\Foehn\Attributes\AsBlockCategory;
 
 #[AsBlockCategory(slug: 'theme', title: 'Theme Blocks', icon: 'star-filled')]
 final class ThemeBlocks {}

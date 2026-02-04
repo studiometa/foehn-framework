@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Discovery\ViewComposerDiscovery;
+use Studiometa\Foehn\Discovery\ViewComposerDiscovery;
 use Tests\Fixtures\InvalidViewComposerFixture;
 use Tests\Fixtures\NoAttributeFixture;
 use Tests\Fixtures\ViewComposerFixture;

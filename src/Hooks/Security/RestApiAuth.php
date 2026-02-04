@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Studiometa\WPTempest\Hooks\Security;
+namespace Studiometa\Foehn\Hooks\Security;
 
-use Studiometa\WPTempest\Attributes\AsFilter;
+use Studiometa\Foehn\Attributes\AsFilter;
 
 /**
  * Require authentication for REST API user enumeration endpoints.

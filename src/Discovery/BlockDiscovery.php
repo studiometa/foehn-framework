@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Studiometa\WPTempest\Discovery;
+namespace Studiometa\Foehn\Discovery;
 
 use InvalidArgumentException;
 use ReflectionClass;
-use Studiometa\WPTempest\Attributes\AsBlock;
-use Studiometa\WPTempest\Blocks\BlockRenderer;
-use Studiometa\WPTempest\Contracts\BlockInterface;
-use Studiometa\WPTempest\Discovery\Concerns\CacheableDiscovery;
-use Studiometa\WPTempest\Discovery\Concerns\IsWpDiscovery;
+use Studiometa\Foehn\Attributes\AsBlock;
+use Studiometa\Foehn\Blocks\BlockRenderer;
+use Studiometa\Foehn\Contracts\BlockInterface;
+use Studiometa\Foehn\Discovery\Concerns\CacheableDiscovery;
+use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
 use WP_Block;
 
 use function Tempest\get;

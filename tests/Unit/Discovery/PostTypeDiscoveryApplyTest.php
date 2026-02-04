@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Discovery\PostTypeDiscovery;
+use Studiometa\Foehn\Discovery\PostTypeDiscovery;
 use Tests\Fixtures\PostTypeFixture;
 
 beforeEach(function () {

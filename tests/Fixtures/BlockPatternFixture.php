@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Fixtures;
 
-use Studiometa\WPTempest\Attributes\AsBlockPattern;
-use Studiometa\WPTempest\Contracts\BlockPatternInterface;
+use Studiometa\Foehn\Attributes\AsBlockPattern;
+use Studiometa\Foehn\Contracts\BlockPatternInterface;
 
 #[AsBlockPattern(
     name: 'test/hero-pattern',

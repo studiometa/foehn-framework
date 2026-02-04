@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Studiometa\WPTempest\PostTypes;
+namespace Studiometa\Foehn\PostTypes;
 
-use Studiometa\WPTempest\Attributes\AsPostType;
+use Studiometa\Foehn\Attributes\AsPostType;
 
 /**
  * Fluent builder for WordPress custom post types.

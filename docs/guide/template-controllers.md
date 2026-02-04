@@ -10,9 +10,9 @@ Template controllers provide full control over template rendering. Use `#[AsTemp
 
 namespace App\Views\Controllers;
 
-use Studiometa\WPTempest\Attributes\AsTemplateController;
-use Studiometa\WPTempest\Contracts\TemplateControllerInterface;
-use Studiometa\WPTempest\Contracts\ViewEngineInterface;
+use Studiometa\Foehn\Attributes\AsTemplateController;
+use Studiometa\Foehn\Contracts\TemplateControllerInterface;
+use Studiometa\Foehn\Contracts\ViewEngineInterface;
 
 #[AsTemplateController('single')]
 final class SingleController implements TemplateControllerInterface
@@ -128,9 +128,9 @@ final class SingleController implements TemplateControllerInterface
 
 namespace App\Views\Controllers;
 
-use Studiometa\WPTempest\Attributes\AsTemplateController;
-use Studiometa\WPTempest\Contracts\TemplateControllerInterface;
-use Studiometa\WPTempest\Contracts\ViewEngineInterface;
+use Studiometa\Foehn\Attributes\AsTemplateController;
+use Studiometa\Foehn\Contracts\TemplateControllerInterface;
+use Studiometa\Foehn\Contracts\ViewEngineInterface;
 
 #[AsTemplateController('front-page')]
 final class HomeController implements TemplateControllerInterface
@@ -194,9 +194,9 @@ final class HomeController implements TemplateControllerInterface
 
 namespace App\Views\Controllers;
 
-use Studiometa\WPTempest\Attributes\AsTemplateController;
-use Studiometa\WPTempest\Contracts\TemplateControllerInterface;
-use Studiometa\WPTempest\Contracts\ViewEngineInterface;
+use Studiometa\Foehn\Attributes\AsTemplateController;
+use Studiometa\Foehn\Contracts\TemplateControllerInterface;
+use Studiometa\Foehn\Contracts\ViewEngineInterface;
 
 #[AsTemplateController('archive-product')]
 final class ProductArchiveController implements TemplateControllerInterface
@@ -241,9 +241,9 @@ final class ProductArchiveController implements TemplateControllerInterface
 
 namespace App\Views\Controllers;
 
-use Studiometa\WPTempest\Attributes\AsTemplateController;
-use Studiometa\WPTempest\Contracts\TemplateControllerInterface;
-use Studiometa\WPTempest\Contracts\ViewEngineInterface;
+use Studiometa\Foehn\Attributes\AsTemplateController;
+use Studiometa\Foehn\Contracts\TemplateControllerInterface;
+use Studiometa\Foehn\Contracts\ViewEngineInterface;
 
 #[AsTemplateController('search')]
 final class SearchController implements TemplateControllerInterface

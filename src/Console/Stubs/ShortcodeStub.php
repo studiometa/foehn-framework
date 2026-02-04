@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Studiometa\WPTempest\Console\Stubs;
+namespace Studiometa\Foehn\Console\Stubs;
 
-use Studiometa\WPTempest\Attributes\AsShortcode;
+use Studiometa\Foehn\Attributes\AsShortcode;
 use Tempest\Discovery\SkipDiscovery;
 
 #[SkipDiscovery]

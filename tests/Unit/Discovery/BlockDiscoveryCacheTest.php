@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Attributes\AsBlock;
-use Studiometa\WPTempest\Discovery\BlockDiscovery;
+use Studiometa\Foehn\Attributes\AsBlock;
+use Studiometa\Foehn\Discovery\BlockDiscovery;
 
 beforeEach(function () {
     $this->discovery = new BlockDiscovery();
@@ -43,12 +43,7 @@ describe('BlockDiscovery caching', function () {
     });
 
     it('handles interactive block', function () {
-        $attribute = new AsBlock(
-            name: 'my-theme/counter',
-            title: 'Counter',
-            category: 'widgets',
-            interactivity: true,
-        );
+        $attribute = new AsBlock(name: 'my-theme/counter', title: 'Counter', category: 'widgets', interactivity: true);
 
         $ref = new ReflectionMethod($this->discovery, 'addItem');
         $ref->invoke($this->discovery, [

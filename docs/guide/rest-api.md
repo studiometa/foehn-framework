@@ -1,6 +1,6 @@
 # REST API
 
-WP Tempest provides `#[AsRestRoute]` for creating REST API endpoints declaratively.
+Foehn provides `#[AsRestRoute]` for creating REST API endpoints declaratively.
 
 ## Basic Endpoint
 
@@ -10,7 +10,7 @@ WP Tempest provides `#[AsRestRoute]` for creating REST API endpoints declarative
 
 namespace App\Rest;
 
-use Studiometa\WPTempest\Attributes\AsRestRoute;
+use Studiometa\Foehn\Attributes\AsRestRoute;
 use WP_REST_Request;
 use WP_REST_Response;
 
@@ -200,7 +200,7 @@ public function list(WP_REST_Request $request): WP_REST_Response
 
 namespace App\Rest;
 
-use Studiometa\WPTempest\Attributes\AsRestRoute;
+use Studiometa\Foehn\Attributes\AsRestRoute;
 use WP_REST_Request;
 use WP_REST_Response;
 
@@ -352,7 +352,7 @@ final class ProductsApi
 namespace App\Rest;
 
 use App\Services\ProductService;
-use Studiometa\WPTempest\Attributes\AsRestRoute;
+use Studiometa\Foehn\Attributes\AsRestRoute;
 use WP_REST_Request;
 use WP_REST_Response;
 

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Attributes\AsShortcode;
+use Studiometa\Foehn\Attributes\AsShortcode;
 
 describe('AsShortcode', function () {
     it('can be instantiated with tag', function () {

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Fixtures;
 
-use Studiometa\WPTempest\Attributes\AsBlock;
-use Studiometa\WPTempest\Contracts\BlockInterface;
+use Studiometa\Foehn\Attributes\AsBlock;
+use Studiometa\Foehn\Contracts\BlockInterface;
 use WP_Block;
 
 #[AsBlock(

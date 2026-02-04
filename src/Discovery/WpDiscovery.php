@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Studiometa\WPTempest\Discovery;
+namespace Studiometa\Foehn\Discovery;
 
 use ReflectionClass;
 
 /**
- * Interface for wp-tempest discoveries.
+ * Interface for Foehn discoveries.
  *
  * Unlike Tempest's Discovery interface, this one is NOT auto-discovered
  * by Tempest's DiscoveryDiscovery. The DiscoveryRunner fully owns the

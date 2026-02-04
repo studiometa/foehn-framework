@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Attributes\AsPostType;
-use Studiometa\WPTempest\PostTypes\PostTypeBuilder;
+use Studiometa\Foehn\Attributes\AsPostType;
+use Studiometa\Foehn\PostTypes\PostTypeBuilder;
 
 describe('PostTypeBuilder', function () {
     it('can be instantiated with a name', function () {
@@ -113,12 +113,7 @@ describe('PostTypeBuilder', function () {
     });
 
     it('supports hierarchical post types', function () {
-        $attribute = new AsPostType(
-            name: 'guide',
-            singular: 'Guide',
-            plural: 'Guides',
-            hierarchical: true,
-        );
+        $attribute = new AsPostType(name: 'guide', singular: 'Guide', plural: 'Guides', hierarchical: true);
 
         $builder = PostTypeBuilder::fromAttribute($attribute);
         $args = $builder->build();
@@ -136,12 +131,10 @@ describe('PostTypeBuilder', function () {
     });
 
     it('supports custom labels merged with auto-generated', function () {
-        $attribute = new AsPostType(
-            name: 'product',
-            singular: 'Product',
-            plural: 'Products',
-            labels: ['menu_name' => 'Shop', 'add_new' => 'Add Product'],
-        );
+        $attribute = new AsPostType(name: 'product', singular: 'Product', plural: 'Products', labels: [
+            'menu_name' => 'Shop',
+            'add_new' => 'Add Product',
+        ]);
 
         $builder = PostTypeBuilder::fromAttribute($attribute);
         $args = $builder->build();
@@ -153,10 +146,7 @@ describe('PostTypeBuilder', function () {
     });
 
     it('supports full rewrite config', function () {
-        $attribute = new AsPostType(
-            name: 'product',
-            rewrite: ['slug' => 'shop', 'with_front' => false],
-        );
+        $attribute = new AsPostType(name: 'product', rewrite: ['slug' => 'shop', 'with_front' => false]);
 
         $builder = PostTypeBuilder::fromAttribute($attribute);
         $args = $builder->build();
@@ -165,10 +155,7 @@ describe('PostTypeBuilder', function () {
     });
 
     it('supports rewrite false to disable', function () {
-        $attribute = new AsPostType(
-            name: 'internal',
-            rewrite: false,
-        );
+        $attribute = new AsPostType(name: 'internal', rewrite: false);
 
         $builder = PostTypeBuilder::fromAttribute($attribute);
         $args = $builder->build();
@@ -177,11 +164,10 @@ describe('PostTypeBuilder', function () {
     });
 
     it('prioritizes rewrite over rewriteSlug', function () {
-        $attribute = new AsPostType(
-            name: 'product',
-            rewriteSlug: 'old-slug',
-            rewrite: ['slug' => 'new-slug', 'with_front' => false],
-        );
+        $attribute = new AsPostType(name: 'product', rewriteSlug: 'old-slug', rewrite: [
+            'slug' => 'new-slug',
+            'with_front' => false,
+        ]);
 
         $builder = PostTypeBuilder::fromAttribute($attribute);
         $args = $builder->build();

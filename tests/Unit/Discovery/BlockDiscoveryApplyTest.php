@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Discovery\BlockDiscovery;
+use Studiometa\Foehn\Discovery\BlockDiscovery;
 use Tests\Fixtures\BlockFixture;
 
 beforeEach(function () {

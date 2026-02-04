@@ -33,7 +33,7 @@ final readonly class AsBlockCategory
 
 namespace App\Blocks;
 
-use Studiometa\WPTempest\Attributes\AsBlockCategory;
+use Studiometa\Foehn\Attributes\AsBlockCategory;
 
 #[AsBlockCategory(
     slug: 'theme',

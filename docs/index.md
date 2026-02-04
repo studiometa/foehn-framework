@@ -2,7 +2,7 @@
 layout: home
 
 hero:
-  name: WP Tempest
+  name: Foehn
   text: Modern WordPress Development
   tagline: Attribute-based auto-discovery for hooks, post types, blocks, and more
   actions:
@@ -11,7 +11,7 @@ hero:
       link: /guide/getting-started
     - theme: alt
       text: View on GitHub
-      link: https://github.com/studiometa/wp-tempest
+      link: https://github.com/studiometa/foehn
 
 features:
   - icon: 🚀
@@ -36,8 +36,8 @@ features:
 
 namespace App\Hooks;
 
-use Studiometa\WPTempest\Attributes\AsAction;
-use Studiometa\WPTempest\Attributes\AsFilter;
+use Studiometa\Foehn\Attributes\AsAction;
+use Studiometa\Foehn\Attributes\AsFilter;
 
 final class ThemeHooks
 {
@@ -58,11 +58,11 @@ final class ThemeHooks
 
 ## Acknowledgements
 
-WP Tempest stands on the shoulders of giants. We're grateful to the following projects and their maintainers:
+Foehn stands on the shoulders of giants. We're grateful to the following projects and their maintainers:
 
 ### Core Dependencies
 
-- **[Tempest Framework](https://github.com/tempestphp/tempest-framework)** by Brent Roose — The discovery-first PHP framework that powers WP Tempest's attribute-based auto-discovery and dependency injection
+- **[Tempest Framework](https://github.com/tempestphp/tempest-framework)** by Brent Roose — The discovery-first PHP framework that powers Foehn's attribute-based auto-discovery and dependency injection
 - **[Timber](https://github.com/timber/timber)** by Upstatement — The incredible library that brings Twig templating to WordPress
 
 ### Inspirations

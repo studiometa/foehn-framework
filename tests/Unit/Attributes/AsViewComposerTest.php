@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Attributes\AsViewComposer;
+use Studiometa\Foehn\Attributes\AsViewComposer;
 
 describe('AsViewComposer', function () {
     it('can be instantiated with a single template', function () {

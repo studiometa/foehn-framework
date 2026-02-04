@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Fixtures;
 
-use Studiometa\WPTempest\Attributes\AsTemplateController;
-use Studiometa\WPTempest\Contracts\TemplateControllerInterface;
+use Studiometa\Foehn\Attributes\AsTemplateController;
+use Studiometa\Foehn\Contracts\TemplateControllerInterface;
 
 #[AsTemplateController(templates: ['single', 'page'], priority: 10)]
 final class TemplateControllerFixture implements TemplateControllerInterface

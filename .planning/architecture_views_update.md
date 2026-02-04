@@ -55,7 +55,7 @@ Utiliser le moteur de rendu (Twig/Blade/Tempest View) pour tout :
 <?php
 // src/Attributes/AsBlockPattern.php
 
-namespace Studiometa\WPTempest\Attributes;
+namespace Studiometa\Foehn\Attributes;
 
 use Attribute;
 
@@ -82,7 +82,7 @@ final readonly class AsBlockPattern
 <?php
 // src/Contracts/BlockPatternInterface.php
 
-namespace Studiometa\WPTempest\Contracts;
+namespace Studiometa\Foehn\Contracts;
 
 interface BlockPatternInterface
 {
@@ -109,8 +109,8 @@ interface BlockPatternInterface
 
 namespace App\Patterns;
 
-use Studiometa\WPTempest\Attributes\AsBlockPattern;
-use Studiometa\WPTempest\Contracts\BlockPatternInterface;
+use Studiometa\Foehn\Attributes\AsBlockPattern;
+use Studiometa\Foehn\Contracts\BlockPatternInterface;
 
 #[AsBlockPattern(
     name: 'theme/hero-with-cta',
@@ -184,11 +184,11 @@ final readonly class HeroWithCta implements BlockPatternInterface
 <?php
 // src/Discovery/BlockPatternDiscovery.php
 
-namespace Studiometa\WPTempest\Discovery;
+namespace Studiometa\Foehn\Discovery;
 
-use Studiometa\WPTempest\Attributes\AsBlockPattern;
-use Studiometa\WPTempest\Contracts\BlockPatternInterface;
-use Studiometa\WPTempest\Views\ViewEngineInterface;
+use Studiometa\Foehn\Attributes\AsBlockPattern;
+use Studiometa\Foehn\Contracts\BlockPatternInterface;
+use Studiometa\Foehn\Views\ViewEngineInterface;
 use Tempest\Discovery\Discovery;
 use Tempest\Discovery\DiscoveryLocation;
 use Tempest\Discovery\IsDiscovery;
@@ -281,7 +281,7 @@ final class BlockPatternDiscovery implements Discovery
 <?php
 // src/Attributes/AsBlock.php (updated)
 
-namespace Studiometa\WPTempest\Attributes;
+namespace Studiometa\Foehn\Attributes;
 
 use Attribute;
 
@@ -313,7 +313,7 @@ final readonly class AsBlock
 <?php
 // src/Contracts/InteractiveBlockInterface.php
 
-namespace Studiometa\WPTempest\Contracts;
+namespace Studiometa\Foehn\Contracts;
 
 interface InteractiveBlockInterface extends BlockInterface
 {
@@ -343,9 +343,9 @@ interface InteractiveBlockInterface extends BlockInterface
 
 namespace App\Blocks\Counter;
 
-use Studiometa\WPTempest\Attributes\AsBlock;
-use Studiometa\WPTempest\Contracts\InteractiveBlockInterface;
-use Studiometa\WPTempest\Views\ViewEngineInterface;
+use Studiometa\Foehn\Attributes\AsBlock;
+use Studiometa\Foehn\Contracts\InteractiveBlockInterface;
+use Studiometa\Foehn\Views\ViewEngineInterface;
 use WP_Block;
 
 #[AsBlock(
@@ -580,9 +580,9 @@ const { state, actions } = store("theme/counter", {
 
 namespace App\Blocks\Tabs;
 
-use Studiometa\WPTempest\Attributes\AsBlock;
-use Studiometa\WPTempest\Contracts\InteractiveBlockInterface;
-use Studiometa\WPTempest\Views\ViewEngineInterface;
+use Studiometa\Foehn\Attributes\AsBlock;
+use Studiometa\Foehn\Contracts\InteractiveBlockInterface;
+use Studiometa\Foehn\Views\ViewEngineInterface;
 use WP_Block;
 
 #[AsBlock(
@@ -720,7 +720,7 @@ final readonly class TabsBlock implements InteractiveBlockInterface
 <?php
 // src/Views/Twig/InteractivityExtension.php
 
-namespace Studiometa\WPTempest\Views\Twig;
+namespace Studiometa\Foehn\Views\Twig;
 
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFunction;

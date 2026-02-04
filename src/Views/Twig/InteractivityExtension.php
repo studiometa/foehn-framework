@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Studiometa\WPTempest\Views\Twig;
+namespace Studiometa\Foehn\Views\Twig;
 
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFilter;

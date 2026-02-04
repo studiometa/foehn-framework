@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Studiometa\WPTempest\Hooks\Cleanup;
+namespace Studiometa\Foehn\Hooks\Cleanup;
 
-use Studiometa\WPTempest\Attributes\AsFilter;
+use Studiometa\Foehn\Attributes\AsFilter;
 
 /**
  * Remove unnecessary intermediate image sizes.

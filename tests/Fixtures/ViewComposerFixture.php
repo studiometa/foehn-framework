@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Fixtures;
 
-use Studiometa\WPTempest\Attributes\AsViewComposer;
-use Studiometa\WPTempest\Contracts\ViewComposerInterface;
+use Studiometa\Foehn\Attributes\AsViewComposer;
+use Studiometa\Foehn\Contracts\ViewComposerInterface;
 
 #[AsViewComposer(templates: ['single', 'page'], priority: 5)]
 final class ViewComposerFixture implements ViewComposerInterface

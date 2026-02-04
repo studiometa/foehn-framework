@@ -1,13 +1,13 @@
 # Helpers
 
-Global helper functions provided by WP Tempest.
+Global helper functions provided by Foehn.
 
 ## app()
 
 Get the kernel instance or a service from the container.
 
 ```php
-use function Studiometa\WPTempest\app;
+use function Studiometa\Foehn\app;
 
 // Get the kernel
 $kernel = app();
@@ -33,7 +33,7 @@ function app(?string $class = null): object
 Get a configuration value from the kernel.
 
 ```php
-use function Studiometa\WPTempest\config;
+use function Studiometa\Foehn\config;
 
 // Get a config value
 $viewsPath = config('timber.views');
@@ -53,8 +53,8 @@ function config(string $key, mixed $default = null): mixed
 ### Getting Services
 
 ```php
-use Studiometa\WPTempest\Contracts\ViewEngineInterface;
-use function Studiometa\WPTempest\app;
+use Studiometa\Foehn\Contracts\ViewEngineInterface;
+use function Studiometa\Foehn\app;
 
 // In a template or function
 $view = app(ViewEngineInterface::class);
@@ -64,7 +64,7 @@ $html = $view->render('partials/card', ['title' => 'Hello']);
 ### Getting Kernel Properties
 
 ```php
-use function Studiometa\WPTempest\app;
+use function Studiometa\Foehn\app;
 
 $kernel = app();
 $appPath = $kernel->getAppPath();
@@ -74,7 +74,7 @@ $isBooted = $kernel->isBooted();
 ### Configuration Access
 
 ```php
-use function Studiometa\WPTempest\config;
+use function Studiometa\Foehn\config;
 
 // Access nested configuration
 $apiKey = config('services.stripe.key');
@@ -83,16 +83,16 @@ $timeout = config('http.timeout', 30);
 
 ## Namespace
 
-The helpers are in the `Studiometa\WPTempest` namespace:
+The helpers are in the `Studiometa\Foehn` namespace:
 
 ```php
 // Full namespace
-\Studiometa\WPTempest\app();
-\Studiometa\WPTempest\config('key');
+\Studiometa\Foehn\app();
+\Studiometa\Foehn\config('key');
 
 // Or import
-use function Studiometa\WPTempest\app;
-use function Studiometa\WPTempest\config;
+use function Studiometa\Foehn\app;
+use function Studiometa\Foehn\config;
 ```
 
 ## VideoEmbed
@@ -104,7 +104,7 @@ Helper class to transform video URLs to privacy-friendly embed URLs. Supports Yo
 Convert a video URL to a privacy-friendly embed URL.
 
 ```php
-use Studiometa\WPTempest\Helpers\VideoEmbed;
+use Studiometa\Foehn\Helpers\VideoEmbed;
 
 // Basic usage
 $embedUrl = VideoEmbed::embedUrl('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
@@ -207,7 +207,7 @@ VideoEmbed also provides Twig filters:
 ### Usage in ACF Blocks
 
 ```php
-use Studiometa\WPTempest\Helpers\VideoEmbed;
+use Studiometa\Foehn\Helpers\VideoEmbed;
 
 public function compose(array $block, array $fields): array
 {

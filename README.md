@@ -1,4 +1,4 @@
-# WP Tempest
+# 🍃 Foehn
 
 A modern WordPress framework powered by [Tempest](https://github.com/tempestphp/tempest-framework), featuring attribute-based auto-discovery for hooks, post types, blocks, and more.
 
@@ -24,7 +24,7 @@ A modern WordPress framework powered by [Tempest](https://github.com/tempestphp/
 ## Installation
 
 ```bash
-composer require studiometa/wp-tempest
+composer require studiometa/foehn
 ```
 
 ## Quick Start
@@ -35,7 +35,7 @@ composer require studiometa/wp-tempest
 <?php
 // functions.php
 
-use Studiometa\WPTempest\Kernel;
+use Studiometa\Foehn\Kernel;
 
 Kernel::boot(__DIR__ . '/app');
 ```
@@ -48,7 +48,7 @@ Kernel::boot(__DIR__ . '/app');
 
 namespace App\Models;
 
-use Studiometa\WPTempest\Attributes\AsPostType;
+use Studiometa\Foehn\Attributes\AsPostType;
 use Timber\Post;
 
 #[AsPostType(
@@ -76,8 +76,8 @@ final class Product extends Post
 
 namespace App\Hooks;
 
-use Studiometa\WPTempest\Attributes\AsAction;
-use Studiometa\WPTempest\Attributes\AsFilter;
+use Studiometa\Foehn\Attributes\AsAction;
+use Studiometa\Foehn\Attributes\AsFilter;
 
 final class ThemeHooks
 {
@@ -104,8 +104,8 @@ final class ThemeHooks
 
 namespace App\Blocks\Hero;
 
-use Studiometa\WPTempest\Attributes\AsAcfBlock;
-use Studiometa\WPTempest\Contracts\AcfBlockInterface;
+use Studiometa\Foehn\Attributes\AsAcfBlock;
+use Studiometa\Foehn\Contracts\AcfBlockInterface;
 use StoutLogic\AcfBuilder\FieldsBuilder;
 
 #[AsAcfBlock(

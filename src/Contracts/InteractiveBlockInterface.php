@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Studiometa\WPTempest\Contracts;
+namespace Studiometa\Foehn\Contracts;
 
 /**
  * Interface for interactive Gutenberg blocks using the Interactivity API.

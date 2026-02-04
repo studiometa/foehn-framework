@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Config\WpTempestConfig;
-use Studiometa\WPTempest\Discovery\DiscoveryCache;
+use Studiometa\Foehn\Config\FoehnConfig;
+use Studiometa\Foehn\Discovery\DiscoveryCache;
 use Tempest\Core\DiscoveryCacheStrategy;
 
 beforeEach(function () {
     // Create a temp directory for each test
-    $this->tempDir = sys_get_temp_dir() . '/wp-tempest-test-' . uniqid();
+    $this->tempDir = sys_get_temp_dir() . '/foehn-test-' . uniqid();
     mkdir($this->tempDir, 0755, true);
 });
 
@@ -25,7 +25,7 @@ afterEach(function () {
 
 describe('DiscoveryCache', function () {
     it('reports disabled when strategy is NONE', function () {
-        $config = new WpTempestConfig(
+        $config = new FoehnConfig(
             discoveryCacheStrategy: DiscoveryCacheStrategy::NONE,
             discoveryCachePath: $this->tempDir,
         );
@@ -35,7 +35,7 @@ describe('DiscoveryCache', function () {
     });
 
     it('reports disabled when strategy is FULL but no stored strategy', function () {
-        $config = new WpTempestConfig(
+        $config = new FoehnConfig(
             discoveryCacheStrategy: DiscoveryCacheStrategy::FULL,
             discoveryCachePath: $this->tempDir,
         );
@@ -47,7 +47,7 @@ describe('DiscoveryCache', function () {
     });
 
     it('reports enabled when strategy matches stored strategy', function () {
-        $config = new WpTempestConfig(
+        $config = new FoehnConfig(
             discoveryCacheStrategy: DiscoveryCacheStrategy::FULL,
             discoveryCachePath: $this->tempDir,
         );
@@ -61,7 +61,7 @@ describe('DiscoveryCache', function () {
     });
 
     it('reports invalid when strategy mismatch', function () {
-        $config = new WpTempestConfig(
+        $config = new FoehnConfig(
             discoveryCacheStrategy: DiscoveryCacheStrategy::FULL,
             discoveryCachePath: $this->tempDir,
         );
@@ -75,7 +75,7 @@ describe('DiscoveryCache', function () {
     });
 
     it('can store and restore data', function () {
-        $config = new WpTempestConfig(
+        $config = new FoehnConfig(
             discoveryCacheStrategy: DiscoveryCacheStrategy::FULL,
             discoveryCachePath: $this->tempDir,
         );
@@ -97,7 +97,7 @@ describe('DiscoveryCache', function () {
     });
 
     it('returns null when restoring non-existent cache', function () {
-        $config = new WpTempestConfig(
+        $config = new FoehnConfig(
             discoveryCacheStrategy: DiscoveryCacheStrategy::FULL,
             discoveryCachePath: $this->tempDir,
         );
@@ -108,7 +108,7 @@ describe('DiscoveryCache', function () {
     });
 
     it('can clear the cache', function () {
-        $config = new WpTempestConfig(
+        $config = new FoehnConfig(
             discoveryCacheStrategy: DiscoveryCacheStrategy::FULL,
             discoveryCachePath: $this->tempDir,
         );
@@ -126,7 +126,7 @@ describe('DiscoveryCache', function () {
     });
 
     it('returns correct strategy', function () {
-        $config = new WpTempestConfig(
+        $config = new FoehnConfig(
             discoveryCacheStrategy: DiscoveryCacheStrategy::PARTIAL,
             discoveryCachePath: $this->tempDir,
         );

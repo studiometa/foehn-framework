@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Attributes\AsAcfBlock;
-use Studiometa\WPTempest\Discovery\AcfBlockDiscovery;
+use Studiometa\Foehn\Attributes\AsAcfBlock;
+use Studiometa\Foehn\Discovery\AcfBlockDiscovery;
 
 beforeEach(function () {
     $this->discovery = new AcfBlockDiscovery();
@@ -46,10 +46,7 @@ describe('AcfBlockDiscovery caching', function () {
     });
 
     it('applies default supports', function () {
-        $attribute = new AsAcfBlock(
-            name: 'simple',
-            title: 'Simple Block',
-        );
+        $attribute = new AsAcfBlock(name: 'simple', title: 'Simple Block');
 
         $ref = new ReflectionMethod($this->discovery, 'addItem');
         $ref->invoke($this->discovery, [
@@ -67,11 +64,10 @@ describe('AcfBlockDiscovery caching', function () {
     });
 
     it('merges custom supports with defaults', function () {
-        $attribute = new AsAcfBlock(
-            name: 'custom',
-            title: 'Custom Block',
-            supports: ['align' => ['wide', 'full'], 'jsx' => true],
-        );
+        $attribute = new AsAcfBlock(name: 'custom', title: 'Custom Block', supports: [
+            'align' => ['wide', 'full'],
+            'jsx' => true,
+        ]);
 
         $ref = new ReflectionMethod($this->discovery, 'addItem');
         $ref->invoke($this->discovery, [
@@ -90,10 +86,7 @@ describe('AcfBlockDiscovery caching', function () {
     });
 
     it('handles minimal configuration', function () {
-        $attribute = new AsAcfBlock(
-            name: 'minimal',
-            title: 'Minimal Block',
-        );
+        $attribute = new AsAcfBlock(name: 'minimal', title: 'Minimal Block');
 
         $ref = new ReflectionMethod($this->discovery, 'addItem');
         $ref->invoke($this->discovery, [

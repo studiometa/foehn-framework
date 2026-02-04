@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Attributes\AsFilter;
+use Studiometa\Foehn\Attributes\AsFilter;
 
 describe('AsFilter', function () {
     it('can be instantiated with hook name only', function () {

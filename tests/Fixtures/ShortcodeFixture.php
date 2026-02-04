@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Fixtures;
 
-use Studiometa\WPTempest\Attributes\AsShortcode;
+use Studiometa\Foehn\Attributes\AsShortcode;
 
 final class ShortcodeFixture
 {

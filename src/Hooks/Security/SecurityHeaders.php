@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Studiometa\WPTempest\Hooks\Security;
+namespace Studiometa\Foehn\Hooks\Security;
 
-use Studiometa\WPTempest\Attributes\AsAction;
+use Studiometa\Foehn\Attributes\AsAction;
 
 /**
  * Send common security HTTP headers.

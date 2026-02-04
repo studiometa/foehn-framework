@@ -1,10 +1,10 @@
 # CLI Commands
 
-WP Tempest provides `#[AsCliCommand]` for creating WP-CLI commands and includes built-in scaffolding commands.
+Foehn provides `#[AsCliCommand]` for creating WP-CLI commands and includes built-in scaffolding commands.
 
 ## Built-in Commands
 
-WP Tempest includes scaffolding and discovery management commands:
+Foehn includes scaffolding and discovery management commands:
 
 ### Scaffolding Commands
 
@@ -62,7 +62,7 @@ Create custom WP-CLI commands with `#[AsCliCommand]`:
 
 namespace App\Console;
 
-use Studiometa\WPTempest\Attributes\AsCliCommand;
+use Studiometa\Foehn\Attributes\AsCliCommand;
 use WP_CLI;
 
 #[AsCliCommand(
@@ -153,7 +153,7 @@ wp tempest import:products /path/to/products.csv --dry-run
 
 namespace App\Console;
 
-use Studiometa\WPTempest\Attributes\AsCliCommand;
+use Studiometa\Foehn\Attributes\AsCliCommand;
 use WP_CLI;
 
 #[AsCliCommand(
@@ -209,7 +209,7 @@ For complex commands, use separate methods:
 
 namespace App\Console;
 
-use Studiometa\WPTempest\Attributes\AsCliCommand;
+use Studiometa\Foehn\Attributes\AsCliCommand;
 use WP_CLI;
 
 #[AsCliCommand(
@@ -341,7 +341,7 @@ Commands support constructor injection:
 namespace App\Console;
 
 use App\Services\ExportService;
-use Studiometa\WPTempest\Attributes\AsCliCommand;
+use Studiometa\Foehn\Attributes\AsCliCommand;
 use WP_CLI;
 
 #[AsCliCommand(

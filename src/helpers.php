@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Studiometa\WPTempest;
+namespace Studiometa\Foehn;
 
-if (!function_exists('Studiometa\WPTempest\app')) {
+if (!function_exists('Studiometa\Foehn\app')) {
     /**
      * Get the kernel instance or a service from the container.
      *
@@ -22,7 +22,7 @@ if (!function_exists('Studiometa\WPTempest\app')) {
     }
 }
 
-if (!function_exists('Studiometa\WPTempest\config')) {
+if (!function_exists('Studiometa\Foehn\config')) {
     /**
      * Get a configuration value from the kernel.
      */

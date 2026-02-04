@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Hooks\Cleanup\DisableEmoji;
+use Studiometa\Foehn\Hooks\Cleanup\DisableEmoji;
 
 beforeEach(fn() => wp_stub_reset());
 
@@ -45,8 +45,10 @@ describe('DisableEmoji', function () {
         $calls = wp_stub_get_calls('remove_action');
         $emojiCall = array_values(array_filter(
             $calls,
-            fn(array $call) => $call['args']['hook'] === 'wp_head'
-                && $call['args']['callback'] === 'print_emoji_detection_script',
+            fn(array $call) => (
+                $call['args']['hook'] === 'wp_head'
+                && $call['args']['callback'] === 'print_emoji_detection_script'
+            ),
         ));
 
         expect($emojiCall)->toHaveCount(1);

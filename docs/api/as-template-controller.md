@@ -47,9 +47,9 @@ Uses WordPress template hierarchy names:
 
 namespace App\Views\Controllers;
 
-use Studiometa\WPTempest\Attributes\AsTemplateController;
-use Studiometa\WPTempest\Contracts\TemplateControllerInterface;
-use Studiometa\WPTempest\Contracts\ViewEngineInterface;
+use Studiometa\Foehn\Attributes\AsTemplateController;
+use Studiometa\Foehn\Contracts\TemplateControllerInterface;
+use Studiometa\Foehn\Contracts\ViewEngineInterface;
 
 #[AsTemplateController('single')]
 final class SingleController implements TemplateControllerInterface

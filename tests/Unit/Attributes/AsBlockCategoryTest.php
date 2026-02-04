@@ -2,14 +2,11 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Attributes\AsBlockCategory;
+use Studiometa\Foehn\Attributes\AsBlockCategory;
 
 describe('AsBlockCategory', function () {
     it('can be instantiated with minimal parameters', function () {
-        $attribute = new AsBlockCategory(
-            slug: 'my-category',
-            title: 'My Category',
-        );
+        $attribute = new AsBlockCategory(slug: 'my-category', title: 'My Category');
 
         expect($attribute->slug)->toBe('my-category');
         expect($attribute->title)->toBe('My Category');

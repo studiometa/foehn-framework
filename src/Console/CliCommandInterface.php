@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Studiometa\WPTempest\Console;
+namespace Studiometa\Foehn\Console;
 
 /**
  * Interface for WP-CLI commands.

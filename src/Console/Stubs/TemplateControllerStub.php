@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Studiometa\WPTempest\Console\Stubs;
+namespace Studiometa\Foehn\Console\Stubs;
 
-use Studiometa\WPTempest\Attributes\AsTemplateController;
-use Studiometa\WPTempest\Contracts\TemplateControllerInterface;
+use Studiometa\Foehn\Attributes\AsTemplateController;
+use Studiometa\Foehn\Contracts\TemplateControllerInterface;
 use Tempest\Discovery\SkipDiscovery;
 use Timber\Timber;
 

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Discovery\AcfBlockDiscovery;
+use Studiometa\Foehn\Discovery\AcfBlockDiscovery;
 use Tests\Fixtures\AcfBlockFixture;
 use Tests\Fixtures\InvalidAcfBlockFixture;
 use Tests\Fixtures\NoAttributeFixture;

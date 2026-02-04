@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Attributes\AsRestRoute;
+use Studiometa\Foehn\Attributes\AsRestRoute;
 
 describe('AsRestRoute', function () {
     it('can be instantiated with minimal parameters', function () {

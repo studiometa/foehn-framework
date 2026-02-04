@@ -33,7 +33,7 @@ final readonly class AsFilter
 
 namespace App\Hooks;
 
-use Studiometa\WPTempest\Attributes\AsFilter;
+use Studiometa\Foehn\Attributes\AsFilter;
 
 final class ContentFilters
 {

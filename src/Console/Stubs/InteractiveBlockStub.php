@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Studiometa\WPTempest\Console\Stubs;
+namespace Studiometa\Foehn\Console\Stubs;
 
-use Studiometa\WPTempest\Attributes\AsBlock;
-use Studiometa\WPTempest\Contracts\InteractiveBlockInterface;
+use Studiometa\Foehn\Attributes\AsBlock;
+use Studiometa\Foehn\Contracts\InteractiveBlockInterface;
 use Tempest\Discovery\SkipDiscovery;
 use WP_Block;
 

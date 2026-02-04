@@ -1,8 +1,8 @@
-# Task Plan: studiometa/wp-tempest
+# Task Plan: studiometa/foehn
 
 ## Goal
 
-Create a Composer package `studiometa/wp-tempest` that integrates Tempest Framework with WordPress to provide a modern DX (PHP 8 attributes, auto-discovery, DI) while supporting FSE, Gutenberg, and existing workflows (Timber/Twig, ACF).
+Create a Composer package `studiometa/foehn` that integrates Tempest Framework with WordPress to provide a modern DX (PHP 8 attributes, auto-discovery, DI) while supporting FSE, Gutenberg, and existing workflows (Timber/Twig, ACF).
 
 ## Phases
 
@@ -81,46 +81,46 @@ Create a Composer package `studiometa/wp-tempest` that integrates Tempest Framew
 
 ## Progress Log
 
-| Date       | Phase | Action                      | Result                                                |
-| ---------- | ----- | --------------------------- | ----------------------------------------------------- |
-| 2026-02-04 | 0     | Analyze existing wp-toolkit | Identified redundancies with Timber                   |
-| 2026-02-04 | 0     | Evaluate Tempest vs Acorn   | Tempest chosen (discovery-first)                      |
-| 2026-02-04 | 0     | Design package architecture | wp-tempest structure defined                          |
-| 2026-02-04 | 0     | Design unified ViewEngine   | Patterns + Interactivity via templates                |
-| 2026-02-04 | 0     | Complete theme example      | All use cases documented                              |
-| 2026-02-04 | 0     | Create plan                 | Documents complete                                    |
-| 2026-02-04 | 1     | Project setup               | composer.json, LICENSE, README, configs               |
-| 2026-02-04 | 1     | Kernel + helpers            | Bootstrap WP + Tempest integration                    |
-| 2026-02-04 | 1     | Hook attributes             | #[AsAction], #[AsFilter]                              |
-| 2026-02-04 | 1     | Discovery system            | HookDiscovery, DiscoveryRunner                        |
-| 2026-02-04 | 1     | Pest tests                  | Attribute coverage                                    |
-| 2026-02-04 | 2     | PostType/Taxonomy attrs     | #[AsPostType], #[AsTaxonomy]                          |
-| 2026-02-04 | 2     | Builders                    | PostTypeBuilder, TaxonomyBuilder                      |
-| 2026-02-04 | 2     | Discoveries                 | PostTypeDiscovery, TaxonomyDiscovery                  |
-| 2026-02-04 | 2     | Tests                       | Full test coverage for Phase 2                        |
-| 2026-02-04 | 3     | View contracts              | ViewEngineInterface, ViewComposerInterface            |
-| 2026-02-04 | 3     | View attributes             | #[AsViewComposer], #[AsTemplateController]            |
-| 2026-02-04 | 3     | View implementations        | TimberViewEngine, ViewComposerRegistry                |
-| 2026-02-04 | 3     | View discoveries            | ViewComposerDiscovery, TemplateControllerDiscovery    |
-| 2026-02-04 | 3     | Tests                       | Full test coverage for Phase 3                        |
-| 2026-02-04 | 4     | ACF Block attribute         | #[AsAcfBlock], AcfBlockInterface                      |
-| 2026-02-04 | 4     | ACF Block renderer          | AcfBlockRenderer with DI support                      |
-| 2026-02-04 | 4     | ACF Block discovery         | AcfBlockDiscovery with FieldsBuilder                  |
-| 2026-02-04 | 4     | Tests                       | Full test coverage for Phase 4                        |
-| 2026-02-04 | 5     | Native Block attributes     | #[AsBlock], BlockInterface, InteractiveBlockInterface |
-| 2026-02-04 | 5     | Block infrastructure        | BlockRenderer, BlockJsonGenerator                     |
-| 2026-02-04 | 5     | Block discovery             | BlockDiscovery with interactivity support             |
-| 2026-02-04 | 5     | Twig extension              | InteractivityExtension for Interactivity API          |
-| 2026-02-04 | 5     | Tests                       | Full test coverage for Phase 5                        |
-| 2026-02-04 | 6     | FSE attributes              | #[AsBlockPattern], #[AsBlockCategory]                 |
-| 2026-02-04 | 6     | Pattern discovery           | BlockPatternDiscovery with ViewEngine                 |
-| 2026-02-04 | 6     | Theme.json generator        | ThemeJsonGenerator for FSE configuration              |
-| 2026-02-04 | 6     | Tests                       | Full test coverage for Phase 6                        |
-| 2026-02-04 | 7     | Advanced attributes         | #[AsShortcode], #[AsRestRoute]                        |
-| 2026-02-04 | 7     | Advanced discoveries        | ShortcodeDiscovery, RestRouteDiscovery                |
-| 2026-02-04 | 7     | Tests                       | Full test coverage for Phase 7                        |
-| 2026-02-04 | 8     | CI/CD                       | GitHub Actions workflow                               |
-| 2026-02-04 | 7     | CLI commands                | WP-CLI make:_ and discovery:_ commands                |
+| Date       | Phase | Action                      | Result                                                 |
+| ---------- | ----- | --------------------------- | ------------------------------------------------------ |
+| 2026-02-04 | 0     | Analyze existing wp-toolkit | Identified redundancies with Timber                    |
+| 2026-02-04 | 0     | Evaluate Tempest vs Acorn   | Tempest chosen (discovery-first)                       |
+| 2026-02-04 | 0     | Design package architecture | foehn structure defined                                |
+| 2026-02-04 | 0     | Design unified ViewEngine   | Patterns + Interactivity via templates                 |
+| 2026-02-04 | 0     | Complete theme example      | All use cases documented                               |
+| 2026-02-04 | 0     | Create plan                 | Documents complete                                     |
+| 2026-02-04 | 1     | Project setup               | composer.json, LICENSE, README, configs                |
+| 2026-02-04 | 1     | Kernel + helpers            | Bootstrap WP + Tempest integration                     |
+| 2026-02-04 | 1     | Hook attributes             | #[AsAction], #[AsFilter]                               |
+| 2026-02-04 | 1     | Discovery system            | HookDiscovery, DiscoveryRunner                         |
+| 2026-02-04 | 1     | Pest tests                  | Attribute coverage                                     |
+| 2026-02-04 | 2     | PostType/Taxonomy attrs     | #[AsPostType], #[AsTaxonomy]                           |
+| 2026-02-04 | 2     | Builders                    | PostTypeBuilder, TaxonomyBuilder                       |
+| 2026-02-04 | 2     | Discoveries                 | PostTypeDiscovery, TaxonomyDiscovery                   |
+| 2026-02-04 | 2     | Tests                       | Full test coverage for Phase 2                         |
+| 2026-02-04 | 3     | View contracts              | ViewEngineInterface, ViewComposerInterface             |
+| 2026-02-04 | 3     | View attributes             | #[AsViewComposer], #[AsTemplateController]             |
+| 2026-02-04 | 3     | View implementations        | TimberViewEngine, ViewComposerRegistry                 |
+| 2026-02-04 | 3     | View discoveries            | ViewComposerDiscovery, TemplateControllerDiscovery     |
+| 2026-02-04 | 3     | Tests                       | Full test coverage for Phase 3                         |
+| 2026-02-04 | 4     | ACF Block attribute         | #[AsAcfBlock], AcfBlockInterface                       |
+| 2026-02-04 | 4     | ACF Block renderer          | AcfBlockRenderer with DI support                       |
+| 2026-02-04 | 4     | ACF Block discovery         | AcfBlockDiscovery with FieldsBuilder                   |
+| 2026-02-04 | 4     | Tests                       | Full test coverage for Phase 4                         |
+| 2026-02-04 | 5     | Native Block attributes     | #[AsBlock], BlockInterface, InteractiveBlockInterface  |
+| 2026-02-04 | 5     | Block infrastructure        | BlockRenderer, BlockJsonGenerator                      |
+| 2026-02-04 | 5     | Block discovery             | BlockDiscovery with interactivity support              |
+| 2026-02-04 | 5     | Twig extension              | InteractivityExtension for Interactivity API           |
+| 2026-02-04 | 5     | Tests                       | Full test coverage for Phase 5                         |
+| 2026-02-04 | 6     | FSE attributes              | #[AsBlockPattern], #[AsBlockCategory]                  |
+| 2026-02-04 | 6     | Pattern discovery           | BlockPatternDiscovery with ViewEngine                  |
+| 2026-02-04 | 6     | Theme.json generator        | ThemeJsonGenerator for FSE configuration               |
+| 2026-02-04 | 6     | Tests                       | Full test coverage for Phase 6                         |
+| 2026-02-04 | 7     | Advanced attributes         | #[AsShortcode], #[AsRestRoute]                         |
+| 2026-02-04 | 7     | Advanced discoveries        | ShortcodeDiscovery, RestRouteDiscovery                 |
+| 2026-02-04 | 7     | Tests                       | Full test coverage for Phase 7                         |
+| 2026-02-04 | 8     | CI/CD                       | GitHub Actions workflow                                |
+| 2026-02-04 | 7     | CLI commands                | WP-CLI make:_ and discovery:_ commands                 |
 | 2026-02-04 | 7.4   | Discovery cache             | DiscoveryCache, CacheableDiscovery trait, CLI commands |
 
 ## Summary

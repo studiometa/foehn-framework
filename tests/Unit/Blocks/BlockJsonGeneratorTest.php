@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Attributes\AsBlock;
-use Studiometa\WPTempest\Blocks\BlockJsonGenerator;
-use Studiometa\WPTempest\Contracts\BlockInterface;
+use Studiometa\Foehn\Attributes\AsBlock;
+use Studiometa\Foehn\Blocks\BlockJsonGenerator;
+use Studiometa\Foehn\Contracts\BlockInterface;
 
 describe('BlockJsonGenerator', function () {
     it('generates minimal block.json', function () {

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Hooks\Cleanup\DisableOembed;
+use Studiometa\Foehn\Hooks\Cleanup\DisableOembed;
 
 beforeEach(fn() => wp_stub_reset());
 
@@ -20,7 +20,7 @@ describe('DisableOembed', function () {
 
     it('has AsAction attribute on init hook', function () {
         $method = new ReflectionMethod(DisableOembed::class, 'disableOembedDiscovery');
-        $attributes = $method->getAttributes(\Studiometa\WPTempest\Attributes\AsAction::class);
+        $attributes = $method->getAttributes(\Studiometa\Foehn\Attributes\AsAction::class);
 
         expect($attributes)->toHaveCount(1);
         expect($attributes[0]->newInstance()->hook)->toBe('init');

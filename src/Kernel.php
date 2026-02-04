@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-namespace Studiometa\WPTempest;
+namespace Studiometa\Foehn;
 
 use RuntimeException;
-use Studiometa\WPTempest\Blocks\AcfBlockRenderer;
-use Studiometa\WPTempest\Config\WpTempestConfig;
-use Studiometa\WPTempest\Discovery\DiscoveryCache;
-use Studiometa\WPTempest\Discovery\DiscoveryRunner;
+use Studiometa\Foehn\Blocks\AcfBlockRenderer;
+use Studiometa\Foehn\Config\FoehnConfig;
+use Studiometa\Foehn\Discovery\DiscoveryCache;
+use Studiometa\Foehn\Discovery\DiscoveryRunner;
 use Tempest\Container\Container;
 use Tempest\Core\Tempest;
 use Timber\Timber;
 
 /**
- * The main kernel that bootstraps wp-tempest.
+ * The main kernel that bootstraps Foehn.
  */
 final class Kernel
 {
@@ -22,7 +22,7 @@ final class Kernel
 
     private Container $container;
 
-    private WpTempestConfig $wpTempestConfig;
+    private FoehnConfig $wpTempestConfig;
 
     private bool $booted = false;
 
@@ -34,7 +34,7 @@ final class Kernel
         private readonly string $appPath,
         private readonly array $config = [],
     ) {
-        $this->wpTempestConfig = WpTempestConfig::fromArray($config);
+        $this->wpTempestConfig = FoehnConfig::fromArray($config);
     }
 
     /**
@@ -109,9 +109,9 @@ final class Kernel
     }
 
     /**
-     * Get the wp-tempest configuration.
+     * Get the Foehn configuration.
      */
-    public function getWpTempestConfig(): WpTempestConfig
+    public function getFoehnConfig(): FoehnConfig
     {
         return $this->wpTempestConfig;
     }
@@ -202,8 +202,8 @@ final class Kernel
         // Register the kernel itself
         $this->container->singleton(self::class, fn() => $this);
 
-        // Register wp-tempest configuration
-        $this->container->singleton(WpTempestConfig::class, fn() => $this->wpTempestConfig);
+        // Register Foehn configuration
+        $this->container->singleton(FoehnConfig::class, fn() => $this->wpTempestConfig);
 
         // Register discovery cache
         $this->container->singleton(DiscoveryCache::class, fn() => new DiscoveryCache($this->wpTempestConfig));
@@ -226,7 +226,7 @@ final class Kernel
         if (!class_exists(Timber::class)) {
             add_action('admin_notices', static function (): void {
                 echo
-                    '<div class="error"><p><strong>wp-tempest:</strong> Timber plugin is required but not active.</p></div>'
+                    '<div class="error"><p><strong>Foehn:</strong> Timber plugin is required but not active.</p></div>'
                 ;
             });
 

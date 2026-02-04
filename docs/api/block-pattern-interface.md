@@ -7,7 +7,7 @@ Optional interface for block patterns with dynamic content.
 ```php
 <?php
 
-namespace Studiometa\WPTempest\Contracts;
+namespace Studiometa\Foehn\Contracts;
 
 interface BlockPatternInterface
 {
@@ -59,8 +59,8 @@ For dynamic content, implement the interface:
 
 namespace App\Patterns;
 
-use Studiometa\WPTempest\Attributes\AsBlockPattern;
-use Studiometa\WPTempest\Contracts\BlockPatternInterface;
+use Studiometa\Foehn\Attributes\AsBlockPattern;
+use Studiometa\Foehn\Contracts\BlockPatternInterface;
 
 #[AsBlockPattern(
     name: 'theme/latest-posts',
@@ -112,8 +112,8 @@ final class LatestPosts implements BlockPatternInterface
 namespace App\Patterns;
 
 use App\Services\ProductService;
-use Studiometa\WPTempest\Attributes\AsBlockPattern;
-use Studiometa\WPTempest\Contracts\BlockPatternInterface;
+use Studiometa\Foehn\Attributes\AsBlockPattern;
+use Studiometa\Foehn\Contracts\BlockPatternInterface;
 
 #[AsBlockPattern(
     name: 'theme/featured-products',

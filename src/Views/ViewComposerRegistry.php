@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Studiometa\WPTempest\Views;
+namespace Studiometa\Foehn\Views;
 
-use Studiometa\WPTempest\Contracts\ViewComposerInterface;
+use Studiometa\Foehn\Contracts\ViewComposerInterface;
 
 /**
  * Registry for view composers.

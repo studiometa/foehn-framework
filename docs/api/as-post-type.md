@@ -47,7 +47,7 @@ final readonly class AsPostType
 
 namespace App\Models;
 
-use Studiometa\WPTempest\Attributes\AsPostType;
+use Studiometa\Foehn\Attributes\AsPostType;
 use Timber\Post;
 
 #[AsPostType(
@@ -91,8 +91,8 @@ Implement `ConfiguresPostType` for full control:
 
 namespace App\Models;
 
-use Studiometa\WPTempest\Attributes\AsPostType;
-use Studiometa\WPTempest\Contracts\ConfiguresPostType;
+use Studiometa\Foehn\Attributes\AsPostType;
+use Studiometa\Foehn\Contracts\ConfiguresPostType;
 use Timber\Post;
 
 #[AsPostType(name: 'event', singular: 'Event', plural: 'Events')]

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Hooks\Security\DisableVersionDisclosure;
+use Studiometa\Foehn\Hooks\Security\DisableVersionDisclosure;
 
 beforeEach(fn() => wp_stub_reset());
 
@@ -57,29 +57,33 @@ describe('DisableVersionDisclosure', function () {
         $reflection = new ReflectionClass(DisableVersionDisclosure::class);
 
         // init action
-        $initAttrs = $reflection->getMethod('removeGeneratorTag')
-            ->getAttributes(\Studiometa\WPTempest\Attributes\AsAction::class);
+        $initAttrs = $reflection
+            ->getMethod('removeGeneratorTag')
+            ->getAttributes(\Studiometa\Foehn\Attributes\AsAction::class);
 
         expect($initAttrs)->toHaveCount(1);
         expect($initAttrs[0]->newInstance()->hook)->toBe('init');
 
         // script_loader_src filter
-        $scriptAttrs = $reflection->getMethod('removeScriptVersion')
-            ->getAttributes(\Studiometa\WPTempest\Attributes\AsFilter::class);
+        $scriptAttrs = $reflection
+            ->getMethod('removeScriptVersion')
+            ->getAttributes(\Studiometa\Foehn\Attributes\AsFilter::class);
 
         expect($scriptAttrs)->toHaveCount(1);
         expect($scriptAttrs[0]->newInstance()->hook)->toBe('script_loader_src');
 
         // style_loader_src filter
-        $styleAttrs = $reflection->getMethod('removeStyleVersion')
-            ->getAttributes(\Studiometa\WPTempest\Attributes\AsFilter::class);
+        $styleAttrs = $reflection
+            ->getMethod('removeStyleVersion')
+            ->getAttributes(\Studiometa\Foehn\Attributes\AsFilter::class);
 
         expect($styleAttrs)->toHaveCount(1);
         expect($styleAttrs[0]->newInstance()->hook)->toBe('style_loader_src');
 
         // the_generator filter
-        $generatorAttrs = $reflection->getMethod('removeRssGenerator')
-            ->getAttributes(\Studiometa\WPTempest\Attributes\AsFilter::class);
+        $generatorAttrs = $reflection
+            ->getMethod('removeRssGenerator')
+            ->getAttributes(\Studiometa\Foehn\Attributes\AsFilter::class);
 
         expect($generatorAttrs)->toHaveCount(1);
         expect($generatorAttrs[0]->newInstance()->hook)->toBe('the_generator');

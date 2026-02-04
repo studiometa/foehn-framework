@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Attributes\AsBlockPattern;
-use Studiometa\WPTempest\Discovery\BlockPatternDiscovery;
+use Studiometa\Foehn\Attributes\AsBlockPattern;
+use Studiometa\Foehn\Discovery\BlockPatternDiscovery;
 
 beforeEach(function () {
     $this->discovery = new BlockPatternDiscovery();
@@ -45,10 +45,7 @@ describe('BlockPatternDiscovery caching', function () {
     });
 
     it('handles auto-resolved template path', function () {
-        $attribute = new AsBlockPattern(
-            name: 'my-theme/cta-pattern',
-            title: 'CTA Pattern',
-        );
+        $attribute = new AsBlockPattern(name: 'my-theme/cta-pattern', title: 'CTA Pattern');
 
         $ref = new ReflectionMethod($this->discovery, 'addItem');
         $ref->invoke($this->discovery, [
@@ -63,11 +60,7 @@ describe('BlockPatternDiscovery caching', function () {
     });
 
     it('handles inserter visibility', function () {
-        $attribute = new AsBlockPattern(
-            name: 'my-theme/internal-pattern',
-            title: 'Internal Pattern',
-            inserter: false,
-        );
+        $attribute = new AsBlockPattern(name: 'my-theme/internal-pattern', title: 'Internal Pattern', inserter: false);
 
         $ref = new ReflectionMethod($this->discovery, 'addItem');
         $ref->invoke($this->discovery, [
@@ -82,10 +75,7 @@ describe('BlockPatternDiscovery caching', function () {
     });
 
     it('handles minimal configuration', function () {
-        $attribute = new AsBlockPattern(
-            name: 'my-theme/simple',
-            title: 'Simple Pattern',
-        );
+        $attribute = new AsBlockPattern(name: 'my-theme/simple', title: 'Simple Pattern');
 
         $ref = new ReflectionMethod($this->discovery, 'addItem');
         $ref->invoke($this->discovery, [

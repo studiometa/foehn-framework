@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Discovery\ViewComposerDiscovery;
-use Studiometa\WPTempest\Views\ViewComposerRegistry;
+use Studiometa\Foehn\Discovery\ViewComposerDiscovery;
+use Studiometa\Foehn\Views\ViewComposerRegistry;
 use Tests\Fixtures\ViewComposerFixture;
 
 beforeEach(function () {

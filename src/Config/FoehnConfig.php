@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Studiometa\WPTempest\Config;
+namespace Studiometa\Foehn\Config;
 
 use Tempest\Core\DiscoveryCacheStrategy;
 
 /**
- * Configuration for wp-tempest.
+ * Configuration for foehn.
  */
-final readonly class WpTempestConfig
+final readonly class FoehnConfig
 {
     public function __construct(
         /**
@@ -22,7 +22,7 @@ final readonly class WpTempestConfig
 
         /**
          * Path to store discovery cache files.
-         * Defaults to wp-content/cache/wp-tempest/discovery
+         * Defaults to wp-content/cache/foehn/discovery
          */
         public ?string $discoveryCachePath = null,
 
@@ -91,12 +91,12 @@ final readonly class WpTempestConfig
             return $this->discoveryCachePath;
         }
 
-        // Default to wp-content/cache/wp-tempest/discovery
+        // Default to wp-content/cache/foehn/discovery
         if (defined('WP_CONTENT_DIR')) {
-            return constant('WP_CONTENT_DIR') . '/cache/wp-tempest/discovery';
+            return constant('WP_CONTENT_DIR') . '/cache/foehn/discovery';
         }
 
         // Fallback for non-WordPress context (tests)
-        return sys_get_temp_dir() . '/wp-tempest/discovery';
+        return sys_get_temp_dir() . '/foehn/discovery';
     }
 }

@@ -1,6 +1,6 @@
 {
-    "name": "studiometa/wp-tempest",
-    "description": "A modern WordPress framework powered by Tempest, featuring attribute-based auto-discovery for hooks, post types, blocks, and more.",
+    "name": "studiometa/foehn",
+    "description": "🍃 A modern WordPress framework powered by Tempest, featuring attribute-based auto-discovery for hooks, post types, blocks, and more.",
     "type": "library",
     "license": "MIT",
     "authors": [
@@ -21,10 +21,10 @@
         "attributes",
         "discovery"
     ],
-    "homepage": "https://github.com/studiometa/wp-tempest",
+    "homepage": "https://github.com/studiometa/foehn",
     "support": {
-        "issues": "https://github.com/studiometa/wp-tempest/issues",
-        "source": "https://github.com/studiometa/wp-tempest"
+        "issues": "https://github.com/studiometa/foehn/issues",
+        "source": "https://github.com/studiometa/foehn"
     },
     "require": {
         "php": "^8.4",
@@ -41,7 +41,7 @@
     },
     "autoload": {
         "psr-4": {
-            "Studiometa\\WPTempest\\": "src/"
+            "Studiometa\\Foehn\\": "src/"
         },
         "files": [
             "src/helpers.php"
@@ -49,7 +49,7 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "Studiometa\\WPTempest\\Tests\\": "tests/",
+            "Studiometa\\Foehn\\Tests\\": "tests/",
             "Tests\\": "tests/"
         }
     },

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Blocks\AcfBlockRenderer;
-use Studiometa\WPTempest\Config\WpTempestConfig;
-use Studiometa\WPTempest\Contracts\AcfBlockInterface;
+use Studiometa\Foehn\Blocks\AcfBlockRenderer;
+use Studiometa\Foehn\Config\FoehnConfig;
+use Studiometa\Foehn\Contracts\AcfBlockInterface;
 
 describe('AcfBlockRenderer', function () {
     it('renders a block with composed context', function () {
@@ -168,14 +168,14 @@ describe('AcfBlockRenderer', function () {
 
 describe('AcfBlockRenderer with config', function () {
     it('accepts config via constructor', function () {
-        $config = new WpTempestConfig(acfTransformFields: true);
+        $config = new FoehnConfig(acfTransformFields: true);
         $renderer = new AcfBlockRenderer($config);
 
         expect($renderer)->toBeInstanceOf(AcfBlockRenderer::class);
     });
 
     it('respects acfTransformFields config when disabled', function () {
-        $config = new WpTempestConfig(acfTransformFields: false);
+        $config = new FoehnConfig(acfTransformFields: false);
         $renderer = new AcfBlockRenderer($config);
         $capturedFields = [];
 
@@ -218,7 +218,7 @@ describe('AcfBlockRenderer with config', function () {
     });
 
     it('preserves empty values without transformation', function () {
-        $config = new WpTempestConfig(acfTransformFields: true);
+        $config = new FoehnConfig(acfTransformFields: true);
         $renderer = new AcfBlockRenderer($config);
         $capturedFields = [];
 

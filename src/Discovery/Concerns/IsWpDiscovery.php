@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Studiometa\WPTempest\Discovery\Concerns;
+namespace Studiometa\Foehn\Discovery\Concerns;
 
 /**
- * Trait providing storage for wp-tempest discovery items.
+ * Trait providing storage for Foehn discovery items.
  *
  * Replaces Tempest's IsDiscovery trait. Items are stored in a simple array
- * managed entirely by wp-tempest's DiscoveryRunner.
+ * managed entirely by Foehn's DiscoveryRunner.
  *
- * @phpstan-require-implements \Studiometa\WPTempest\Discovery\WpDiscovery
+ * @phpstan-require-implements \Studiometa\Foehn\Discovery\WpDiscovery
  */
 trait IsWpDiscovery
 {

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Discovery\CliCommandDiscovery;
+use Studiometa\Foehn\Discovery\CliCommandDiscovery;
 use Tempest\Container\GenericContainer;
 
 beforeEach(function () {
