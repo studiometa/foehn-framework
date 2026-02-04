@@ -56,6 +56,9 @@ final class DiscoveryRunner
         $this->runDiscovery(AcfBlockDiscovery::class);
         $this->runDiscovery(BlockDiscovery::class);
 
+        // Block patterns
+        $this->runDiscovery(BlockPatternDiscovery::class);
+
         $this->mainRan = true;
     }
 
