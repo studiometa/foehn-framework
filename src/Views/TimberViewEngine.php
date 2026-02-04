@@ -1,0 +1,129 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Studiometa\WPTempest\Views;
+
+use RuntimeException;
+use Studiometa\WPTempest\Contracts\ViewEngineInterface;
+use Timber\Timber;
+
+/**
+ * Timber/Twig implementation of ViewEngineInterface.
+ *
+ * Wraps Timber's template rendering with view composer support
+ * and shared data management.
+ */
+final class TimberViewEngine implements ViewEngineInterface
+{
+    /** @var array<string, mixed> */
+    private array $shared = [];
+
+    public function __construct(
+        private readonly ViewComposerRegistry $composers,
+    ) {}
+
+    /**
+     * @inheritDoc
+     */
+    public function render(string $template, array $context = []): string
+    {
+        $resolved = $this->resolveTemplate($template);
+
+        // Merge shared data, then context (context wins)
+        $context = array_merge($this->shared, $context);
+
+        // Apply view composers
+        $context = $this->composers->compose($template, $context);
+
+        $result = Timber::compile($resolved, $context);
+
+        if ($result === false || $result === null) {
+            throw new RuntimeException("Failed to render template: {$template}");
+        }
+
+        return $result;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function renderFirst(array $templates, array $context = []): string
+    {
+        foreach ($templates as $template) {
+            if (!$this->exists($template)) {
+                continue;
+            }
+
+            return $this->render($template, $context);
+        }
+
+        throw new RuntimeException('No template found: ' . implode(', ', $templates));
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function exists(string $template): bool
+    {
+        $resolved = $this->resolveTemplate($template);
+        $locations = Timber::$dirname;
+
+        if (is_string($locations)) {
+            $locations = [$locations];
+        }
+
+        foreach ($locations as $location) {
+            $basePath = get_template_directory();
+            $path = $basePath . '/' . $location . '/' . $resolved;
+
+            if (file_exists($path)) {
+                return true;
+            }
+
+            // Also check child theme if applicable
+            $childPath = get_stylesheet_directory();
+            if ($childPath !== $basePath) {
+                $path = $childPath . '/' . $location . '/' . $resolved;
+                if (file_exists($path)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function share(string $key, mixed $value): void
+    {
+        $this->shared[$key] = $value;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getShared(): array
+    {
+        return $this->shared;
+    }
+
+    /**
+     * Resolve template name to file path.
+     *
+     * Adds .twig extension if not present.
+     *
+     * @param string $template Template name
+     * @return string Resolved template path
+     */
+    private function resolveTemplate(string $template): string
+    {
+        if (str_ends_with($template, '.twig')) {
+            return $template;
+        }
+
+        return $template . '.twig';
+    }
+}
