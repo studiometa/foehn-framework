@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Studiometa\WPTempest;
 
 use RuntimeException;
+use Studiometa\WPTempest\Config\WpTempestConfig;
+use Studiometa\WPTempest\Discovery\DiscoveryCache;
 use Studiometa\WPTempest\Discovery\DiscoveryRunner;
 use Tempest\Container\Container;
 use Tempest\Core\Tempest;
@@ -18,6 +20,8 @@ final class Kernel
 
     private Container $container;
 
+    private WpTempestConfig $wpTempestConfig;
+
     private bool $booted = false;
 
     /**
@@ -27,13 +31,17 @@ final class Kernel
     private function __construct(
         private readonly string $appPath,
         private readonly array $config = [],
-    ) {}
+    ) {
+        $this->wpTempestConfig = WpTempestConfig::fromArray($config);
+    }
 
     /**
      * Boot the kernel.
      *
      * @param string $appPath Path to the app directory to scan for discovery
      * @param array<string, mixed> $config Configuration options
+     *   - discovery_cache: string|bool - Cache strategy ('full', 'partial', 'none', true, false)
+     *   - discovery_cache_path: string - Custom path for cache files
      */
     public static function boot(string $appPath, array $config = []): self
     {
@@ -98,11 +106,29 @@ final class Kernel
     }
 
     /**
+     * Get the wp-tempest configuration.
+     */
+    public function getWpTempestConfig(): WpTempestConfig
+    {
+        return $this->wpTempestConfig;
+    }
+
+    /**
      * Check if the kernel has been booted.
      */
     public function isBooted(): bool
     {
         return $this->booted;
+    }
+
+    /**
+     * Reset the kernel instance (for testing purposes).
+     *
+     * @internal
+     */
+    public static function reset(): void
+    {
+        self::$instance = null;
     }
 
     /**
@@ -140,8 +166,17 @@ final class Kernel
         // Register the kernel itself
         $this->container->singleton(self::class, fn() => $this);
 
-        // Register the discovery runner
-        $this->container->singleton(DiscoveryRunner::class, fn() => new DiscoveryRunner($this->container));
+        // Register wp-tempest configuration
+        $this->container->singleton(WpTempestConfig::class, fn() => $this->wpTempestConfig);
+
+        // Register discovery cache
+        $this->container->singleton(DiscoveryCache::class, fn() => new DiscoveryCache($this->wpTempestConfig));
+
+        // Register the discovery runner with cache support
+        $this->container->singleton(
+            DiscoveryRunner::class,
+            fn() => new DiscoveryRunner($this->container, $this->container->get(DiscoveryCache::class)),
+        );
     }
 
     /**
