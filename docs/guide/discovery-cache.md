@@ -19,13 +19,13 @@ Kernel::boot(__DIR__ . '/app', [
 
 ### Cache Strategies
 
-| Strategy    | Description                                           |
-| ----------- | ----------------------------------------------------- |
-| `'full'`    | Cache all discoveries (vendor + app) - best for prod  |
-| `'partial'` | Cache only vendor discoveries - good for staging      |
-| `'none'`    | Disable caching - use in development                  |
-| `true`      | Alias for `'full'`                                    |
-| `false`     | Alias for `'none'`                                    |
+| Strategy    | Description                                          |
+| ----------- | ---------------------------------------------------- |
+| `'full'`    | Cache all discoveries (vendor + app) - best for prod |
+| `'partial'` | Cache only vendor discoveries - good for staging     |
+| `'none'`    | Disable caching - use in development                 |
+| `true`      | Alias for `'full'`                                   |
+| `false`     | Alias for `'none'`                                   |
 
 ### Custom Cache Path
 
@@ -49,6 +49,7 @@ wp tempest discovery:generate
 ```
 
 Options:
+
 - `--strategy=<strategy>` - Override configured strategy (full, partial)
 - `--clear` - Clear existing cache before generating
 
@@ -69,6 +70,7 @@ wp tempest discovery:clear
 ```
 
 Run this command when:
+
 - Adding or removing attributed classes
 - Changing attribute parameters
 - Deploying new code
@@ -82,6 +84,7 @@ wp tempest discovery:status
 ```
 
 Output example:
+
 ```
 Discovery Cache Status
 ======================
@@ -192,6 +195,7 @@ Kernel::boot(__DIR__ . '/app', [
 ### What's Cached
 
 The cache stores serialized discovery data for:
+
 - Hook registrations (actions/filters)
 - Post types and taxonomies
 - Blocks (ACF and native)
@@ -235,11 +239,13 @@ return [
 ### Cache Not Working
 
 1. Check if caching is enabled:
+
    ```bash
    wp tempest discovery:status
    ```
 
 2. Ensure the cache directory is writable:
+
    ```bash
    chmod -R 755 wp-content/cache/wp-tempest
    ```
@@ -254,6 +260,7 @@ return [
 If your code changes aren't taking effect:
 
 1. Clear the discovery cache:
+
    ```bash
    wp tempest discovery:clear
    ```
@@ -280,7 +287,7 @@ Kernel::boot(__DIR__ . '/app', [
 | No cache (development)  | ~50-100ms     | ~50-100ms           |
 | Full cache (production) | ~50-100ms     | ~5-10ms             |
 
-*Times are approximate and depend on the number of discovered classes.*
+_Times are approximate and depend on the number of discovered classes._
 
 ## See Also
 

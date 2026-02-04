@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Supports: image, gallery, file, post_object, relationship, taxonomy, user, date_picker
   - Handles nested fields recursively (repeater, flexible_content, group)
   - New `acf_transform_fields` config option (default: true) to enable/disable
+- Add `VideoEmbed` helper and Twig extension for YouTube/Vimeo URL transformation ([c19eefb], [#18])
 - Add opt-in reusable hook classes for common WordPress patterns ([1bac8e8], [#13]):
   - Cleanup: `CleanHeadTags`, `CleanContent`, `CleanImageSizes`, `DisableEmoji`, `DisableFeeds`, `DisableOembed`, `DisableGlobalStyles`
   - Security: `SecurityHeaders`, `DisableVersionDisclosure`, `DisableXmlRpc`, `DisableFileEditor`, `RestApiAuth`
@@ -38,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `discover()` and `apply()` tests for all 11 discovery classes — 359 tests, 1067 assertions ([d7cbe4c], [#7])
 - Add discovery cache for production performance ([adc01ed], [#2])
 - Add VitePress documentation with guides and API reference ([d80fe88], [#3])
+- Document `#[AsTimberModel]`, `timber_templates_dir`, `hooks` config, and built-in hooks ([3ec60b1], [!17])
 - Add GitHub Pages deployment workflow ([02d6425], [#3])
 
 [b6fd69a]: https://github.com/studiometa/wp-tempest/commit/b6fd69a
@@ -58,6 +60,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#11]: https://github.com/studiometa/wp-tempest/pull/11
 [#12]: https://github.com/studiometa/wp-tempest/pull/12
 [#13]: https://github.com/studiometa/wp-tempest/pull/13
+[#18]: https://github.com/studiometa/wp-tempest/pull/18
 [!19]: https://github.com/studiometa/wp-tempest/pull/19
 [1bac8e8]: https://github.com/studiometa/wp-tempest/commit/1bac8e8
 [8e0d11e]: https://github.com/studiometa/wp-tempest/commit/8e0d11e
+[c19eefb]: https://github.com/studiometa/wp-tempest/commit/c19eefb
+[3ec60b1]: https://github.com/studiometa/wp-tempest/commit/3ec60b1
+[!17]: https://github.com/studiometa/wp-tempest/pull/17
