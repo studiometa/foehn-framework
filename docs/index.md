@@ -56,6 +56,26 @@ final class ThemeHooks
 }
 ```
 
+## Acknowledgements
+
+WP Tempest stands on the shoulders of giants. We're grateful to the following projects and their maintainers:
+
+### Core Dependencies
+
+- **[Tempest Framework](https://github.com/tempestphp/tempest-framework)** by Brent Roose — The discovery-first PHP framework that powers WP Tempest's attribute-based auto-discovery and dependency injection
+- **[Timber](https://github.com/timber/timber)** by Upstatement — The incredible library that brings Twig templating to WordPress
+
+### Inspirations
+
+- **[Acorn](https://github.com/roots/acorn)** by Roots — Pioneered Laravel-style development in WordPress and inspired our approach to modern WordPress DX
+- **[Symfony](https://symfony.com/)** — The `#[AsEventListener]` and other attributes inspired our hook registration syntax
+
+### Tools
+
+- **[ACF Builder](https://github.com/StoutLogic/acf-builder)** by StoutLogic — Fluent PHP API for defining ACF fields
+- **[Pest](https://pestphp.com/)** — Elegant testing framework used for our test suite
+- **[Mago](https://github.com/carthage-software/mago)** — PHP toolchain for linting and formatting
+
 <style>
 :root {
   --vp-home-hero-name-color: transparent;
