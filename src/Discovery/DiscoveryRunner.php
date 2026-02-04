@@ -69,9 +69,11 @@ final class DiscoveryRunner
             return;
         }
 
+        // View composers and template controllers
+        $this->runDiscovery(ViewComposerDiscovery::class);
+        $this->runDiscovery(TemplateControllerDiscovery::class);
+
         // These discoveries will be added in later phases
-        // $this->runDiscovery(ViewComposerDiscovery::class);
-        // $this->runDiscovery(TemplateControllerDiscovery::class);
         // $this->runDiscovery(RestRouteDiscovery::class);
 
         $this->lateRan = true;
