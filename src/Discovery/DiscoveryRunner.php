@@ -52,11 +52,9 @@ final class DiscoveryRunner
         $this->runDiscovery(PostTypeDiscovery::class);
         $this->runDiscovery(TaxonomyDiscovery::class);
 
-        // ACF Blocks (registered on acf/init hook internally)
+        // Blocks
         $this->runDiscovery(AcfBlockDiscovery::class);
-
-        // These discoveries will be added in later phases
-        // $this->runDiscovery(BlockDiscovery::class);
+        $this->runDiscovery(BlockDiscovery::class);
 
         $this->mainRan = true;
     }
