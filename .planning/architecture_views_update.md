@@ -88,11 +88,11 @@ interface BlockPatternInterface
 {
     /**
      * Compose data for the pattern template.
-     * 
+     *
      * @return array Context variables for the template
      */
     public function compose(): array;
-    
+
     /**
      * Optional: Override the rendered content.
      * If not implemented, uses template file.
@@ -143,7 +143,7 @@ final readonly class HeroWithCta implements BlockPatternInterface
 ```twig
 {# templates/patterns/hero-with-cta.twig #}
 
-{# 
+{#
   Block Pattern Template
   Variables: colors, default_heading, default_text, default_cta, min_height
 #}
@@ -152,15 +152,15 @@ final readonly class HeroWithCta implements BlockPatternInterface
 <div class="wp-block-cover alignfull" style="min-height:{{ min_height }}">
     <span class="wp-block-cover__background has-primary-background-color"></span>
     <div class="wp-block-cover__inner-container">
-        
+
         <!-- wp:heading {"textAlign":"center","level":1} -->
         <h1 class="wp-block-heading has-text-align-center">{{ default_heading }}</h1>
         <!-- /wp:heading -->
-        
+
         <!-- wp:paragraph {"align":"center"} -->
         <p class="has-text-align-center">{{ default_text }}</p>
         <!-- /wp:paragraph -->
-        
+
         <!-- wp:buttons {"layout":{"type":"flex","justifyContent":"center"}} -->
         <div class="wp-block-buttons">
             <!-- wp:button {"backgroundColor":"secondary","textColor":"primary"} -->
@@ -172,7 +172,7 @@ final readonly class HeroWithCta implements BlockPatternInterface
             <!-- /wp:button -->
         </div>
         <!-- /wp:buttons -->
-        
+
     </div>
 </div>
 <!-- /wp:cover -->
@@ -199,21 +199,21 @@ use function Tempest\get;
 final class BlockPatternDiscovery implements Discovery
 {
     use IsDiscovery;
-    
+
     public function discover(DiscoveryLocation $location, ClassReflector $class): void
     {
         $attribute = $class->getAttribute(AsBlockPattern::class);
-        
+
         if (!$attribute) {
             return;
         }
-        
+
         $this->discoveryItems->add($location, [
             'attribute' => $attribute,
             'class' => $class,
         ]);
     }
-    
+
     public function apply(): void
     {
         add_action('init', function() {
@@ -222,18 +222,18 @@ final class BlockPatternDiscovery implements Discovery
             }
         });
     }
-    
+
     private function registerPattern(AsBlockPattern $attribute, ClassReflector $class): void
     {
         $className = $class->getName();
-        
+
         // Resolve template path
-        $template = $attribute->template 
+        $template = $attribute->template
             ?? $this->resolveTemplatePath($attribute->name);
-        
+
         // Get pattern content via ViewEngine
         $content = $this->renderPatternContent($className, $template);
-        
+
         register_block_pattern($attribute->name, [
             'title' => $attribute->title,
             'description' => $attribute->description,
@@ -245,19 +245,19 @@ final class BlockPatternDiscovery implements Discovery
             'content' => $content,
         ]);
     }
-    
+
     private function resolveTemplatePath(string $name): string
     {
         // 'theme/hero-with-cta' → 'patterns/hero-with-cta'
         $slug = str_replace(['theme/', 'starter/'], '', $name);
         return "patterns/{$slug}";
     }
-    
+
     private function renderPatternContent(string $className, string $template): string
     {
         /** @var ViewEngineInterface $view */
         $view = get(ViewEngineInterface::class);
-        
+
         // Get composed data if class implements interface
         $context = [];
         if (is_subclass_of($className, BlockPatternInterface::class)) {
@@ -265,7 +265,7 @@ final class BlockPatternDiscovery implements Discovery
             $instance = get($className);
             $context = $instance->compose();
         }
-        
+
         return $view->render($template, $context);
     }
 }
@@ -319,15 +319,15 @@ interface InteractiveBlockInterface extends BlockInterface
 {
     /**
      * Initial state for the Interactivity API store.
-     * 
+     *
      * @return array State data
      */
     public static function initialState(): array;
-    
+
     /**
      * Initial context for this block instance.
      * Can use $attributes to customize per-instance.
-     * 
+     *
      * @param array $attributes Block attributes
      * @return array Context data for data-wp-context
      */
@@ -365,7 +365,7 @@ final readonly class CounterBlock implements InteractiveBlockInterface
     public function __construct(
         private ViewEngineInterface $view,
     ) {}
-    
+
     public static function attributes(): array
     {
         return [
@@ -387,7 +387,7 @@ final readonly class CounterBlock implements InteractiveBlockInterface
             ],
         ];
     }
-    
+
     public static function supports(): array
     {
         return [
@@ -398,7 +398,7 @@ final readonly class CounterBlock implements InteractiveBlockInterface
             ],
         ];
     }
-    
+
     /**
      * Global state (shared across all block instances)
      */
@@ -408,7 +408,7 @@ final readonly class CounterBlock implements InteractiveBlockInterface
             'totalClicks' => 0,
         ];
     }
-    
+
     /**
      * Per-instance context
      */
@@ -421,7 +421,7 @@ final readonly class CounterBlock implements InteractiveBlockInterface
             'max' => $attributes['max'] ?? null,
         ];
     }
-    
+
     public function compose(array $attributes, string $content, WP_Block $block): array
     {
         return [
@@ -435,13 +435,13 @@ final readonly class CounterBlock implements InteractiveBlockInterface
             'show_reset' => ($attributes['initialValue'] ?? 0) !== 0,
         ];
     }
-    
+
     public function render(array $attributes, string $content, WP_Block $block): string
     {
         // Register initial state (once per page)
         wp_interactivity_state('theme/counter', self::initialState());
-        
-        return $this->view->render('blocks/counter', 
+
+        return $this->view->render('blocks/counter',
             $this->compose($attributes, $content, $block)
         );
     }
@@ -455,7 +455,7 @@ final readonly class CounterBlock implements InteractiveBlockInterface
 
 {#
   Interactive Counter Block
-  
+
   Variables:
     - wrapper_attributes: string (HTML attributes)
     - namespace: string (Interactivity namespace)
@@ -463,7 +463,7 @@ final readonly class CounterBlock implements InteractiveBlockInterface
     - initial_value: int
     - step: int
     - show_reset: bool
-    
+
   Interactivity directives:
     - data-wp-interactive: Namespace for this block
     - data-wp-context: Per-instance reactive state
@@ -473,13 +473,13 @@ final readonly class CounterBlock implements InteractiveBlockInterface
     - data-wp-class--is-zero: Conditional class
 #}
 
-<div 
+<div
     {{ wrapper_attributes | raw }}
     data-wp-interactive="{{ namespace }}"
     data-wp-context='{{ context | json_encode }}'
 >
     <div class="counter-block__display">
-        <span 
+        <span
             class="counter-block__value"
             data-wp-text="context.count"
             data-wp-class--is-zero="context.count === 0"
@@ -487,9 +487,9 @@ final readonly class CounterBlock implements InteractiveBlockInterface
             {{ context.count }}
         </span>
     </div>
-    
+
     <div class="counter-block__controls">
-        <button 
+        <button
             type="button"
             class="counter-block__button counter-block__button--decrement"
             data-wp-on--click="actions.decrement"
@@ -498,8 +498,8 @@ final readonly class CounterBlock implements InteractiveBlockInterface
         >
             <span aria-hidden="true">−</span>
         </button>
-        
-        <button 
+
+        <button
             type="button"
             class="counter-block__button counter-block__button--increment"
             data-wp-on--click="actions.increment"
@@ -508,9 +508,9 @@ final readonly class CounterBlock implements InteractiveBlockInterface
         >
             <span aria-hidden="true">+</span>
         </button>
-        
+
         {% if show_reset %}
-        <button 
+        <button
             type="button"
             class="counter-block__button counter-block__button--reset"
             data-wp-on--click="actions.reset"
@@ -521,7 +521,7 @@ final readonly class CounterBlock implements InteractiveBlockInterface
         </button>
         {% endif %}
     </div>
-    
+
     {# Debug info in preview mode #}
     {% if is_preview | default(false) %}
     <details class="counter-block__debug">
@@ -537,34 +537,34 @@ final readonly class CounterBlock implements InteractiveBlockInterface
 ```javascript
 // app/Blocks/Counter/view.js
 
-import { store, getContext } from '@wordpress/interactivity';
+import { store, getContext } from "@wordpress/interactivity";
 
-const { state, actions } = store('theme/counter', {
-    state: {
-        get totalClicks() {
-            return state.totalClicks;
-        },
+const { state, actions } = store("theme/counter", {
+  state: {
+    get totalClicks() {
+      return state.totalClicks;
     },
-    actions: {
-        increment() {
-            const ctx = getContext();
-            if (ctx.max === null || ctx.count < ctx.max) {
-                ctx.count += ctx.step;
-                state.totalClicks++;
-            }
-        },
-        decrement() {
-            const ctx = getContext();
-            if (ctx.min === null || ctx.count > ctx.min) {
-                ctx.count -= ctx.step;
-                state.totalClicks++;
-            }
-        },
-        reset() {
-            const ctx = getContext();
-            ctx.count = ctx.initialValue ?? 0;
-        },
+  },
+  actions: {
+    increment() {
+      const ctx = getContext();
+      if (ctx.max === null || ctx.count < ctx.max) {
+        ctx.count += ctx.step;
+        state.totalClicks++;
+      }
     },
+    decrement() {
+      const ctx = getContext();
+      if (ctx.min === null || ctx.count > ctx.min) {
+        ctx.count -= ctx.step;
+        state.totalClicks++;
+      }
+    },
+    reset() {
+      const ctx = getContext();
+      ctx.count = ctx.initialValue ?? 0;
+    },
+  },
 });
 ```
 
@@ -601,7 +601,7 @@ final readonly class TabsBlock implements InteractiveBlockInterface
     public function __construct(
         private ViewEngineInterface $view,
     ) {}
-    
+
     public static function attributes(): array
     {
         return [
@@ -623,27 +623,27 @@ final readonly class TabsBlock implements InteractiveBlockInterface
             ],
         ];
     }
-    
+
     public static function initialState(): array
     {
         return [];
     }
-    
+
     public function initialContext(array $attributes): array
     {
         $tabs = $attributes['tabs'] ?? [];
         $defaultTab = $attributes['defaultTab'] ?? ($tabs[0]['id'] ?? '');
-        
+
         return [
             'activeTab' => $defaultTab,
             'tabs' => array_map(fn($tab) => $tab['id'], $tabs),
         ];
     }
-    
+
     public function compose(array $attributes, string $content, WP_Block $block): array
     {
         $tabs = $attributes['tabs'] ?? [];
-        
+
         return [
             'wrapper_attributes' => get_block_wrapper_attributes(['class' => 'tabs-block']),
             'namespace' => 'theme/tabs',
@@ -652,10 +652,10 @@ final readonly class TabsBlock implements InteractiveBlockInterface
             'block_id' => $block->parsed_block['attrs']['anchor'] ?? uniqid('tabs-'),
         ];
     }
-    
+
     public function render(array $attributes, string $content, WP_Block $block): string
     {
-        return $this->view->render('blocks/tabs', 
+        return $this->view->render('blocks/tabs',
             $this->compose($attributes, $content, $block)
         );
     }
@@ -667,7 +667,7 @@ final readonly class TabsBlock implements InteractiveBlockInterface
 ```twig
 {# templates/blocks/tabs.twig #}
 
-<div 
+<div
     {{ wrapper_attributes | raw }}
     data-wp-interactive="{{ namespace }}"
     data-wp-context='{{ context | json_encode }}'
@@ -691,7 +691,7 @@ final readonly class TabsBlock implements InteractiveBlockInterface
         </button>
         {% endfor %}
     </div>
-    
+
     {# Tab panels #}
     <div class="tabs-block__panels">
         {% for tab in tabs %}
@@ -736,14 +736,14 @@ final class InteractivityExtension extends AbstractExtension
             new TwigFunction('wp_directive', [$this, 'wpDirective'], ['is_safe' => ['html']]),
         ];
     }
-    
+
     public function getFilters(): array
     {
         return [
             new TwigFilter('wp_context', [$this, 'filterWpContext'], ['is_safe' => ['html']]),
         ];
     }
-    
+
     /**
      * Generate data-wp-context attribute
      */
@@ -751,7 +751,7 @@ final class InteractivityExtension extends AbstractExtension
     {
         return sprintf("data-wp-context='%s'", json_encode($context, JSON_HEX_APOS));
     }
-    
+
     /**
      * Generate data-wp-interactive attribute
      */
@@ -759,17 +759,17 @@ final class InteractivityExtension extends AbstractExtension
     {
         return sprintf('data-wp-interactive="%s"', esc_attr($namespace));
     }
-    
+
     /**
      * Generate any wp directive
-     * 
+     *
      * Usage: {{ wp_directive('on--click', 'actions.toggle') }}
      */
     public function wpDirective(string $directive, string $value): string
     {
         return sprintf('data-wp-%s="%s"', esc_attr($directive), esc_attr($value));
     }
-    
+
     /**
      * Filter to add context to existing attributes
      */
@@ -784,7 +784,7 @@ final class InteractivityExtension extends AbstractExtension
 
 ```twig
 {# Avec helpers #}
-<div 
+<div
     {{ wp_interactive('theme/counter') }}
     {{ wp_context({ count: 0, step: 1 }) }}
 >
@@ -793,7 +793,7 @@ final class InteractivityExtension extends AbstractExtension
 </div>
 
 {# Ou avec filtre #}
-<div 
+<div
     data-wp-interactive="theme/counter"
     data-wp-context='{{ { count: 0, step: 1 } | wp_context }}'
 >
@@ -842,18 +842,18 @@ theme/
 
 ## 6. Benefits of This Approach
 
-| Aspect | Heredoc HTML | ViewEngine |
-|--------|--------------|------------|
-| **Syntax highlighting** | ❌ Aucun | ✅ Complet |
-| **IDE autocomplete** | ❌ Non | ✅ Oui |
-| **Réutilisation** | ❌ Difficile | ✅ Includes, extends |
-| **Variables dynamiques** | ❌ Limité | ✅ Complet |
-| **Conditionnels** | ❌ Complexe | ✅ Simple |
-| **Loops** | ❌ Manuel | ✅ Natif |
-| **Escaping** | ❌ Manuel | ✅ Automatique |
-| **Traductions** | ❌ Complexe | ✅ Filtres |
-| **Maintenabilité** | ❌ Faible | ✅ Élevée |
-| **Testabilité** | ❌ Difficile | ✅ Simple |
+| Aspect                   | Heredoc HTML | ViewEngine           |
+| ------------------------ | ------------ | -------------------- |
+| **Syntax highlighting**  | ❌ Aucun     | ✅ Complet           |
+| **IDE autocomplete**     | ❌ Non       | ✅ Oui               |
+| **Réutilisation**        | ❌ Difficile | ✅ Includes, extends |
+| **Variables dynamiques** | ❌ Limité    | ✅ Complet           |
+| **Conditionnels**        | ❌ Complexe  | ✅ Simple            |
+| **Loops**                | ❌ Manuel    | ✅ Natif             |
+| **Escaping**             | ❌ Manuel    | ✅ Automatique       |
+| **Traductions**          | ❌ Complexe  | ✅ Filtres           |
+| **Maintenabilité**       | ❌ Faible    | ✅ Élevée            |
+| **Testabilité**          | ❌ Difficile | ✅ Simple            |
 
 ---
 
@@ -863,6 +863,7 @@ Ajouter dans Phase 5 et 6 :
 
 ```markdown
 ### Phase 5: Blocks - Native Gutenberg (mise à jour)
+
 - [ ] 5.1 Attribut `#[AsBlock]` avec option interactivity
 - [ ] 5.2 Génération block.json automatique
 - [ ] 5.3 Génération render.php (appelle ViewEngine)
@@ -872,6 +873,7 @@ Ajouter dans Phase 5 et 6 :
 - [ ] 5.7 Tests
 
 ### Phase 6: FSE Support (mise à jour)
+
 - [ ] 6.1 ThemeConfig → theme.json generator
 - [ ] 6.2 Attribut `#[AsBlockPattern]` avec template support
 - [ ] 6.3 BlockPatternDiscovery avec ViewEngine
