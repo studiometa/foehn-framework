@@ -17,13 +17,13 @@ final class ThemeJsonGenerator
     /** @var array<string, mixed> */
     private array $styles = [];
 
-    /** @var array<string, mixed> */
+    /** @var list<array{name: string, title: string, postTypes: array<array-key, string>}> */
     private array $customTemplates = [];
 
-    /** @var array<string, mixed> */
+    /** @var list<array{name: string, title: string, area: string}> */
     private array $templateParts = [];
 
-    /** @var array<string, mixed> */
+    /** @var list<string> */
     private array $patterns = [];
 
     /**
@@ -158,12 +158,12 @@ final class ThemeJsonGenerator
     /**
      * Add pattern slugs to include.
      *
-     * @param string[] $patterns Pattern slugs
+     * @param list<string> $patterns Pattern slugs
      * @return self
      */
     public function setPatterns(array $patterns): self
     {
-        $this->patterns = $patterns;
+        $this->patterns = array_values($patterns);
 
         return $this;
     }

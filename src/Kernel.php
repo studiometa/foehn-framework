@@ -141,7 +141,7 @@ final class Kernel
         $this->container->singleton(self::class, fn() => $this);
 
         // Register the discovery runner
-        $this->container->singleton(DiscoveryRunner::class);
+        $this->container->singleton(DiscoveryRunner::class, fn() => new DiscoveryRunner($this->container));
     }
 
     /**

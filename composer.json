@@ -34,6 +34,8 @@
     "require-dev": {
         "carthage-software/mago": "*",
         "pestphp/pest": "^3.0",
+        "php-stubs/acf-pro-stubs": "^6.5",
+        "php-stubs/wordpress-stubs": "*",
         "stoutlogic/acf-builder": "^1.12"
     },
     "autoload": {

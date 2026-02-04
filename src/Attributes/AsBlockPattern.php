@@ -47,7 +47,7 @@ final readonly class AsBlockPattern
         }
 
         // Auto-resolve: 'theme/hero-with-cta' → 'patterns/hero-with-cta'
-        $slug = preg_replace('/^[^\/]+\//', '', $this->name);
+        $slug = preg_replace('/^[^\/]+\//', '', $this->name) ?? $this->name;
 
         return 'patterns/' . $slug;
     }

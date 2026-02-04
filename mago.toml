@@ -1,7 +1,7 @@
 php-version = "8.4"
 
 [source]
-paths = ["src", "tests"]
+paths = ["src"]
 includes = ["vendor"]
 
 [formatter]
@@ -30,6 +30,27 @@ no-redundant-readonly = { enabled = true }
 sensitive-parameter = { enabled = true }
 
 [analyzer]
-# Disable analysis for now - WordPress functions not defined
-# and many false positives with mixed types from discovery items
-enabled = false
+# WordPress stubs are loaded from vendor/php-stubs/wordpress-stubs
+# ACF stubs from vendor/php-stubs/acf-pro-stubs
+
+# Ignore common false positives with Tempest Discovery patterns (mixed iterators)
+# and WordPress's dynamic array structures
+ignore = [
+    "mixed-assignment",
+    "mixed-array-access",
+    "mixed-array-assignment",
+    "mixed-argument",
+    "mixed-return-statement",
+    "mixed-operand",
+    "mixed-method-access",
+    "less-specific-nested-argument-type",
+    "less-specific-argument",
+    "less-specific-return-statement",
+    "docblock-type-mismatch",
+    "possibly-invalid-argument",
+    "invalid-class-string-expression",
+    "string-member-selector",
+    "redundant-docblock-type",
+    "redundant-type-comparison",  # WP runtime types differ from stubs
+    "redundant-condition",        # Intentional defensive code for WP
+]
