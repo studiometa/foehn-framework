@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Studiometa\WPTempest\Discovery;
 
 use Studiometa\WPTempest\Attributes\AsRestRoute;
+use Studiometa\WPTempest\Discovery\Concerns\CacheableDiscovery;
 use Tempest\Discovery\Discovery;
 use Tempest\Discovery\DiscoveryLocation;
 use Tempest\Discovery\IsDiscovery;
@@ -21,6 +22,7 @@ use function Tempest\get;
 final class RestRouteDiscovery implements Discovery
 {
     use IsDiscovery;
+    use CacheableDiscovery;
 
     /**
      * Discover REST route attributes on methods.
@@ -45,8 +47,13 @@ final class RestRouteDiscovery implements Discovery
     public function apply(): void
     {
         add_action('rest_api_init', function (): void {
-            foreach ($this->discoveryItems as $item) {
-                $this->registerRoute($item['attribute'], $item['method']);
+            foreach ($this->getAllItems() as $item) {
+                // Handle cached format
+                if (isset($item['className'])) {
+                    $this->registerRouteFromCache($item);
+                } else {
+                    $this->registerRoute($item['attribute'], $item['method']);
+                }
             }
         });
     }
@@ -62,17 +69,61 @@ final class RestRouteDiscovery implements Discovery
         $className = $method->getDeclaringClass()->getName();
         $methodName = $method->getName();
 
+        $this->doRegisterRoute(
+            $attribute->namespace,
+            $attribute->route,
+            $attribute->getMethodConstant(),
+            $className,
+            $methodName,
+            $attribute->permission,
+            $attribute->args,
+        );
+    }
+
+    /**
+     * Register REST route from cached data.
+     *
+     * @param array<string, mixed> $item
+     */
+    private function registerRouteFromCache(array $item): void
+    {
+        $this->doRegisterRoute(
+            $item['namespace'],
+            $item['route'],
+            $item['httpMethod'],
+            $item['className'],
+            $item['methodName'],
+            $item['permission'],
+            $item['args'],
+        );
+    }
+
+    /**
+     * Actually register the REST route.
+     *
+     * @param class-string $className
+     * @param array<string, mixed> $routeArgs
+     */
+    private function doRegisterRoute(
+        string $namespace,
+        string $route,
+        string $httpMethod,
+        string $className,
+        string $methodName,
+        ?string $permission,
+        array $routeArgs,
+    ): void {
         $args = [
-            'methods' => $attribute->getMethodConstant(),
+            'methods' => $httpMethod,
             'callback' => $this->createCallback($className, $methodName),
-            'permission_callback' => $this->createPermissionCallback($attribute, $className),
+            'permission_callback' => $this->createPermissionCallback($permission, $className),
         ];
 
-        if (!empty($attribute->args)) {
-            $args['args'] = $attribute->args;
+        if (!empty($routeArgs)) {
+            $args['args'] = $routeArgs;
         }
 
-        register_rest_route($attribute->namespace, $attribute->route, $args);
+        register_rest_route($namespace, $route, $args);
     }
 
     /**
@@ -94,32 +145,55 @@ final class RestRouteDiscovery implements Discovery
     /**
      * Create the permission callback.
      *
-     * @param AsRestRoute $attribute
+     * @param string|null $permission
      * @param class-string $className
      * @return callable
      */
-    private function createPermissionCallback(AsRestRoute $attribute, string $className): callable
+    private function createPermissionCallback(?string $permission, string $className): callable
     {
         // Public endpoint - no authentication required
-        if ($attribute->permission === 'public') {
+        if ($permission === 'public') {
             return static fn() => true;
         }
 
         // No permission specified - require authentication
-        if ($attribute->permission === null) {
+        if ($permission === null) {
             return static fn() => is_user_logged_in();
         }
 
         // Custom permission callback method on the class
-        return static function (WP_REST_Request $request) use ($className, $attribute) {
+        return static function (WP_REST_Request $request) use ($className, $permission) {
             $instance = get($className);
-            $permissionMethod = $attribute->permission;
 
-            if (!method_exists($instance, $permissionMethod)) {
+            if (!method_exists($instance, $permission)) {
                 return false;
             }
 
-            return $instance->{$permissionMethod}($request);
+            return $instance->{$permission}($request);
         };
+    }
+
+    /**
+     * Convert a discovered item to a cacheable format.
+     *
+     * @param array<string, mixed> $item
+     * @return array<string, mixed>
+     */
+    protected function itemToCacheable(array $item): array
+    {
+        /** @var AsRestRoute $attribute */
+        $attribute = $item['attribute'];
+        /** @var MethodReflector $method */
+        $method = $item['method'];
+
+        return [
+            'namespace' => $attribute->namespace,
+            'route' => $attribute->route,
+            'httpMethod' => $attribute->getMethodConstant(),
+            'className' => $method->getDeclaringClass()->getName(),
+            'methodName' => $method->getName(),
+            'permission' => $attribute->permission,
+            'args' => $attribute->args,
+        ];
     }
 }

@@ -7,6 +7,7 @@ namespace Studiometa\WPTempest\Discovery;
 use Studiometa\WPTempest\Attributes\AsCliCommand;
 use Studiometa\WPTempest\Console\CliCommandInterface;
 use Studiometa\WPTempest\Console\WpCli;
+use Studiometa\WPTempest\Discovery\Concerns\CacheableDiscovery;
 use Tempest\Container\Container;
 use Tempest\Discovery\Discovery;
 use Tempest\Discovery\DiscoveryLocation;
@@ -20,6 +21,7 @@ use WP_CLI;
 final class CliCommandDiscovery implements Discovery
 {
     use IsDiscovery;
+    use CacheableDiscovery;
 
     public function __construct(
         private readonly Container $container,
@@ -50,8 +52,13 @@ final class CliCommandDiscovery implements Discovery
             return;
         }
 
-        foreach ($this->discoveryItems as $item) {
-            $this->registerCommand($item['className'], $item['attribute']);
+        foreach ($this->getAllItems() as $item) {
+            // Handle cached format
+            if (isset($item['name'])) {
+                $this->registerCommandFromCache($item);
+            } else {
+                $this->registerCommand($item['className'], $item['attribute']);
+            }
         }
     }
 
@@ -62,6 +69,30 @@ final class CliCommandDiscovery implements Discovery
      */
     private function registerCommand(string $className, AsCliCommand $attribute): void
     {
+        $this->doRegisterCommand($className, $attribute->name, $attribute->description, $attribute->longDescription);
+    }
+
+    /**
+     * Register a command from cached data.
+     *
+     * @param array<string, mixed> $item
+     */
+    private function registerCommandFromCache(array $item): void
+    {
+        $this->doRegisterCommand($item['className'], $item['name'], $item['description'], $item['longDescription']);
+    }
+
+    /**
+     * Actually register the command with WP-CLI.
+     *
+     * @param class-string<CliCommandInterface> $className
+     */
+    private function doRegisterCommand(
+        string $className,
+        string $name,
+        string $description,
+        ?string $longDescription,
+    ): void {
         $container = $this->container;
 
         // Create wrapper callback for WP-CLI
@@ -72,12 +103,31 @@ final class CliCommandDiscovery implements Discovery
         };
 
         // Build WP-CLI command name with 'tempest' namespace
-        $commandName = 'tempest ' . $attribute->name;
+        $commandName = 'tempest ' . $name;
 
         // Register with WP-CLI
         WP_CLI::add_command($commandName, $callback, [
-            'shortdesc' => $attribute->description,
-            'longdesc' => $attribute->longDescription,
+            'shortdesc' => $description,
+            'longdesc' => $longDescription,
         ]);
+    }
+
+    /**
+     * Convert a discovered item to a cacheable format.
+     *
+     * @param array<string, mixed> $item
+     * @return array<string, mixed>
+     */
+    protected function itemToCacheable(array $item): array
+    {
+        /** @var AsCliCommand $attribute */
+        $attribute = $item['attribute'];
+
+        return [
+            'className' => $item['className'],
+            'name' => $attribute->name,
+            'description' => $attribute->description,
+            'longDescription' => $attribute->longDescription,
+        ];
     }
 }

@@ -7,6 +7,7 @@ namespace Studiometa\WPTempest\Discovery;
 use InvalidArgumentException;
 use Studiometa\WPTempest\Attributes\AsTaxonomy;
 use Studiometa\WPTempest\Contracts\ConfiguresTaxonomy;
+use Studiometa\WPTempest\Discovery\Concerns\CacheableDiscovery;
 use Studiometa\WPTempest\PostTypes\TaxonomyBuilder;
 use Tempest\Discovery\Discovery;
 use Tempest\Discovery\DiscoveryLocation;
@@ -21,6 +22,7 @@ use Timber\Term;
 final class TaxonomyDiscovery implements Discovery
 {
     use IsDiscovery;
+    use CacheableDiscovery;
 
     /**
      * Discover taxonomy attributes on classes.
@@ -54,7 +56,7 @@ final class TaxonomyDiscovery implements Discovery
      */
     public function apply(): void
     {
-        foreach ($this->discoveryItems as $item) {
+        foreach ($this->getAllItems() as $item) {
             $this->registerTaxonomy($item);
         }
     }
@@ -62,16 +64,33 @@ final class TaxonomyDiscovery implements Discovery
     /**
      * Register a single taxonomy with WordPress.
      *
-     * @param array{attribute: AsTaxonomy, className: class-string, implementsConfig: bool} $item
+     * @param array<string, mixed> $item
      */
     private function registerTaxonomy(array $item): void
     {
-        $attribute = $item['attribute'];
         $className = $item['className'];
         $implementsConfig = $item['implementsConfig'];
 
-        // Build the taxonomy configuration
-        $builder = TaxonomyBuilder::fromAttribute($attribute);
+        // Build from attribute or cached data
+        if (isset($item['attribute'])) {
+            $builder = TaxonomyBuilder::fromAttribute($item['attribute']);
+            $taxonomyName = $item['attribute']->name;
+        } else {
+            // Cached format - rebuild attribute
+            $attribute = new AsTaxonomy(
+                name: $item['name'],
+                postTypes: $item['postTypes'] ?? [],
+                singular: $item['singular'],
+                plural: $item['plural'],
+                public: $item['public'] ?? true,
+                hierarchical: $item['hierarchical'] ?? false,
+                showInRest: $item['showInRest'] ?? true,
+                showAdminColumn: $item['showAdminColumn'] ?? true,
+                rewriteSlug: $item['rewriteSlug'] ?? null,
+            );
+            $builder = TaxonomyBuilder::fromAttribute($attribute);
+            $taxonomyName = $item['name'];
+        }
 
         // Allow class to customize the builder
         if ($implementsConfig) {
@@ -83,7 +102,7 @@ final class TaxonomyDiscovery implements Discovery
         $builder->register();
 
         // Register Timber class map
-        $this->registerTimberClassMap($attribute->name, $className);
+        $this->registerTimberClassMap($taxonomyName, $className);
     }
 
     /**
@@ -99,5 +118,31 @@ final class TaxonomyDiscovery implements Discovery
 
             return $map;
         });
+    }
+
+    /**
+     * Convert a discovered item to a cacheable format.
+     *
+     * @param array<string, mixed> $item
+     * @return array<string, mixed>
+     */
+    protected function itemToCacheable(array $item): array
+    {
+        /** @var AsTaxonomy $attribute */
+        $attribute = $item['attribute'];
+
+        return [
+            'name' => $attribute->name,
+            'singular' => $attribute->singular,
+            'plural' => $attribute->plural,
+            'postTypes' => $attribute->postTypes,
+            'public' => $attribute->public,
+            'hierarchical' => $attribute->hierarchical,
+            'showInRest' => $attribute->showInRest,
+            'showAdminColumn' => $attribute->showAdminColumn,
+            'rewriteSlug' => $attribute->rewriteSlug,
+            'className' => $item['className'],
+            'implementsConfig' => $item['implementsConfig'],
+        ];
     }
 }
