@@ -5,6 +5,9 @@
   "scripts": {
     "fmt": "oxfmt --write README.md .planning/",
     "fmt:check": "oxfmt --check README.md .planning/",
+    "docs:dev": "npm run --prefix docs dev",
+    "docs:build": "npm run --prefix docs build",
+    "docs:preview": "npm run --prefix docs preview",
     "prepare": "husky"
   },
   "devDependencies": {
