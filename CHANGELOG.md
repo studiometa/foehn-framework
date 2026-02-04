@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Auto-initialize Timber in Kernel bootstrap with `timber_templates_dir` config option ([fae5391], [#12])
 - Add `hierarchical`, `menuPosition`, `labels`, `rewrite` (array|false|null) to `#[AsPostType]` ([b544790], [#7])
 - Add `labels`, `rewrite` (array|false|null) to `#[AsTaxonomy]` ([b544790], [#7])
 - Add WordPress function stubs for unit testing `apply()` code paths ([e3988c7], [#7])
@@ -28,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add VitePress documentation with guides and API reference ([d80fe88], [#3])
 - Add GitHub Pages deployment workflow ([02d6425], [#3])
 
+[fae5391]: https://github.com/studiometa/wp-tempest/commit/fae5391
 [748aace]: https://github.com/studiometa/wp-tempest/commit/748aace
 [f0b4f27]: https://github.com/studiometa/wp-tempest/commit/f0b4f27
 [b3d5134]: https://github.com/studiometa/wp-tempest/commit/b3d5134
@@ -41,3 +43,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3]: https://github.com/studiometa/wp-tempest/pull/3
 [#5]: https://github.com/studiometa/wp-tempest/pull/5
 [#7]: https://github.com/studiometa/wp-tempest/pull/7
+[#12]: https://github.com/studiometa/wp-tempest/pull/12
