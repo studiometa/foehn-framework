@@ -18,6 +18,10 @@ describe('AsPostType', function () {
         expect($attribute->supports)->toBe(['title', 'editor', 'thumbnail']);
         expect($attribute->taxonomies)->toBe([]);
         expect($attribute->rewriteSlug)->toBeNull();
+        expect($attribute->hierarchical)->toBeFalse();
+        expect($attribute->menuPosition)->toBeNull();
+        expect($attribute->labels)->toBe([]);
+        expect($attribute->rewrite)->toBeNull();
     });
 
     it('can be instantiated with all parameters', function () {
@@ -32,6 +36,10 @@ describe('AsPostType', function () {
             supports: ['title', 'editor', 'thumbnail', 'excerpt'],
             taxonomies: ['product_category'],
             rewriteSlug: 'shop',
+            hierarchical: true,
+            menuPosition: 25,
+            labels: ['menu_name' => 'Shop'],
+            rewrite: ['slug' => 'shop', 'with_front' => false],
         );
 
         expect($attribute->name)->toBe('product');
@@ -44,6 +52,19 @@ describe('AsPostType', function () {
         expect($attribute->supports)->toBe(['title', 'editor', 'thumbnail', 'excerpt']);
         expect($attribute->taxonomies)->toBe(['product_category']);
         expect($attribute->rewriteSlug)->toBe('shop');
+        expect($attribute->hierarchical)->toBeTrue();
+        expect($attribute->menuPosition)->toBe(25);
+        expect($attribute->labels)->toBe(['menu_name' => 'Shop']);
+        expect($attribute->rewrite)->toBe(['slug' => 'shop', 'with_front' => false]);
+    });
+
+    it('supports rewrite as false to disable', function () {
+        $attribute = new AsPostType(
+            name: 'internal',
+            rewrite: false,
+        );
+
+        expect($attribute->rewrite)->toBeFalse();
     });
 
     it('is readonly', function () {

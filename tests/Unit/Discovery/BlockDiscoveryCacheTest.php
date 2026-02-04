@@ -4,16 +4,9 @@ declare(strict_types=1);
 
 use Studiometa\WPTempest\Attributes\AsBlock;
 use Studiometa\WPTempest\Discovery\BlockDiscovery;
-use Tempest\Discovery\DiscoveryItems;
-use Tempest\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
     $this->discovery = new BlockDiscovery();
-    $this->discovery->setItems(new DiscoveryItems());
-    $this->location = new DiscoveryLocation(
-        namespace: 'App\\Test',
-        path: __DIR__,
-    );
 });
 
 describe('BlockDiscovery caching', function () {
@@ -28,7 +21,8 @@ describe('BlockDiscovery caching', function () {
             supports: ['align' => ['wide', 'full']],
         );
 
-        $this->discovery->getItems()->add($this->location, [
+        $ref = new ReflectionMethod($this->discovery, 'addItem');
+        $ref->invoke($this->discovery, [
             'attribute' => $attribute,
             'className' => 'App\\Blocks\\HeroBlock',
         ]);
@@ -56,7 +50,8 @@ describe('BlockDiscovery caching', function () {
             interactivity: true,
         );
 
-        $this->discovery->getItems()->add($this->location, [
+        $ref = new ReflectionMethod($this->discovery, 'addItem');
+        $ref->invoke($this->discovery, [
             'attribute' => $attribute,
             'className' => 'App\\Blocks\\CounterBlock',
         ]);
@@ -77,7 +72,8 @@ describe('BlockDiscovery caching', function () {
             interactivityNamespace: 'my-custom-namespace',
         );
 
-        $this->discovery->getItems()->add($this->location, [
+        $ref = new ReflectionMethod($this->discovery, 'addItem');
+        $ref->invoke($this->discovery, [
             'attribute' => $attribute,
             'className' => 'App\\Blocks\\SliderBlock',
         ]);
@@ -96,7 +92,8 @@ describe('BlockDiscovery caching', function () {
             ancestor: ['my-theme/carousel'],
         );
 
-        $this->discovery->getItems()->add($this->location, [
+        $ref = new ReflectionMethod($this->discovery, 'addItem');
+        $ref->invoke($this->discovery, [
             'attribute' => $attribute,
             'className' => 'App\\Blocks\\SlideBlock',
         ]);

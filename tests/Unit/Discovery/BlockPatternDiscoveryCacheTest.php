@@ -4,16 +4,9 @@ declare(strict_types=1);
 
 use Studiometa\WPTempest\Attributes\AsBlockPattern;
 use Studiometa\WPTempest\Discovery\BlockPatternDiscovery;
-use Tempest\Discovery\DiscoveryItems;
-use Tempest\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
     $this->discovery = new BlockPatternDiscovery();
-    $this->discovery->setItems(new DiscoveryItems());
-    $this->location = new DiscoveryLocation(
-        namespace: 'App\\Test',
-        path: __DIR__,
-    );
 });
 
 describe('BlockPatternDiscovery caching', function () {
@@ -29,7 +22,8 @@ describe('BlockPatternDiscovery caching', function () {
             template: 'patterns/hero.twig',
         );
 
-        $this->discovery->getItems()->add($this->location, [
+        $ref = new ReflectionMethod($this->discovery, 'addItem');
+        $ref->invoke($this->discovery, [
             'attribute' => $attribute,
             'className' => 'App\\Patterns\\HeroPattern',
             'implementsInterface' => true,
@@ -56,7 +50,8 @@ describe('BlockPatternDiscovery caching', function () {
             title: 'CTA Pattern',
         );
 
-        $this->discovery->getItems()->add($this->location, [
+        $ref = new ReflectionMethod($this->discovery, 'addItem');
+        $ref->invoke($this->discovery, [
             'attribute' => $attribute,
             'className' => 'App\\Patterns\\CtaPattern',
             'implementsInterface' => false,
@@ -64,7 +59,6 @@ describe('BlockPatternDiscovery caching', function () {
 
         $cacheableData = $this->discovery->getCacheableData();
 
-        // Template path should be auto-resolved from name (without .twig extension)
         expect($cacheableData[0]['templatePath'])->toBe('patterns/cta-pattern');
     });
 
@@ -75,7 +69,8 @@ describe('BlockPatternDiscovery caching', function () {
             inserter: false,
         );
 
-        $this->discovery->getItems()->add($this->location, [
+        $ref = new ReflectionMethod($this->discovery, 'addItem');
+        $ref->invoke($this->discovery, [
             'attribute' => $attribute,
             'className' => 'App\\Patterns\\InternalPattern',
             'implementsInterface' => false,
@@ -92,7 +87,8 @@ describe('BlockPatternDiscovery caching', function () {
             title: 'Simple Pattern',
         );
 
-        $this->discovery->getItems()->add($this->location, [
+        $ref = new ReflectionMethod($this->discovery, 'addItem');
+        $ref->invoke($this->discovery, [
             'attribute' => $attribute,
             'className' => 'App\\Patterns\\SimplePattern',
             'implementsInterface' => false,

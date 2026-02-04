@@ -28,6 +28,12 @@ final class TaxonomyBuilder
 
     private ?string $rewriteSlug = null;
 
+    /** @var array<string, string> */
+    private array $customLabels = [];
+
+    /** @var array<string, mixed>|false|null */
+    private array|false|null $rewrite = null;
+
     /** @var array<string, mixed> */
     private array $extraArgs = [];
 
@@ -53,6 +59,8 @@ final class TaxonomyBuilder
         $builder->showInRest = $attribute->showInRest;
         $builder->showAdminColumn = $attribute->showAdminColumn;
         $builder->rewriteSlug = $attribute->rewriteSlug;
+        $builder->customLabels = $attribute->labels;
+        $builder->rewrite = $attribute->rewrite;
 
         return $builder;
     }
@@ -61,6 +69,18 @@ final class TaxonomyBuilder
     {
         $this->singular = $singular;
         $this->plural = $plural;
+
+        return $this;
+    }
+
+    /**
+     * Set custom labels (merged with auto-generated ones).
+     *
+     * @param array<string, string> $labels
+     */
+    public function setCustomLabels(array $labels): self
+    {
+        $this->customLabels = $labels;
 
         return $this;
     }
@@ -106,6 +126,18 @@ final class TaxonomyBuilder
     public function setRewriteSlug(?string $slug): self
     {
         $this->rewriteSlug = $slug;
+
+        return $this;
+    }
+
+    /**
+     * Set the full rewrite configuration.
+     *
+     * @param array<string, mixed>|false|null $rewrite
+     */
+    public function setRewrite(array|false|null $rewrite): self
+    {
+        $this->rewrite = $rewrite;
 
         return $this;
     }
@@ -170,6 +202,11 @@ final class TaxonomyBuilder
             $labels['parent_item_colon'] = "Parent {$this->singular}:";
         }
 
+        // Merge custom labels (overrides auto-generated ones)
+        if ($this->customLabels !== []) {
+            $labels = array_merge($labels, $this->customLabels);
+        }
+
         $args = [
             'labels' => $labels,
             'public' => $this->public,
@@ -178,8 +215,16 @@ final class TaxonomyBuilder
             'show_admin_column' => $this->showAdminColumn,
         ];
 
-        if ($this->rewriteSlug !== null) {
-            $args['rewrite'] = ['slug' => $this->rewriteSlug];
+        // Handle rewrite configuration
+        // Priority: $rewrite (full config) > $rewriteSlug (shorthand)
+        $rewrite = match (true) {
+            $this->rewrite !== null => $this->rewrite,
+            $this->rewriteSlug !== null => ['slug' => $this->rewriteSlug],
+            default => null,
+        };
+
+        if ($rewrite !== null) {
+            $args['rewrite'] = $rewrite;
         }
 
         return array_merge($args, $this->extraArgs);

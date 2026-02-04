@@ -2,53 +2,30 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Attributes\AsAction;
-use Studiometa\WPTempest\Attributes\AsFilter;
 use Studiometa\WPTempest\Discovery\HookDiscovery;
-use Tempest\Discovery\DiscoveryItems;
-use Tempest\Discovery\DiscoveryLocation;
-use Tempest\Reflection\ClassReflector;
-use Tempest\Reflection\MethodReflector;
+
+/**
+ * Helper to add items to a discovery via reflection.
+ */
+function addDiscoveryItem(object $discovery, array $item): void
+{
+    $ref = new ReflectionMethod($discovery, 'addItem');
+    $ref->invoke($discovery, $item);
+}
 
 beforeEach(function () {
     $this->discovery = new HookDiscovery();
-    $this->discovery->setItems(new DiscoveryItems());
-    $this->location = new DiscoveryLocation(
-        namespace: 'App\\Test',
-        path: __DIR__,
-    );
 });
 
 describe('HookDiscovery caching', function () {
     it('converts action items to cacheable format', function () {
-        $attribute = new AsAction('init', 10, 1);
-
-        // Create mock method and class reflectors
-        $classReflector = new class {
-            public function getName(): string
-            {
-                return 'App\\Hooks\\MyHooks';
-            }
-        };
-
-        $methodReflector = new class ($classReflector) {
-            public function __construct(private object $class) {}
-
-            public function getDeclaringClass(): object
-            {
-                return $this->class;
-            }
-
-            public function getName(): string
-            {
-                return 'onInit';
-            }
-        };
-
-        $this->discovery->getItems()->add($this->location, [
+        addDiscoveryItem($this->discovery, [
             'type' => 'action',
-            'attribute' => $attribute,
-            'method' => $methodReflector,
+            'hook' => 'init',
+            'className' => 'App\\Hooks\\MyHooks',
+            'methodName' => 'onInit',
+            'priority' => 10,
+            'acceptedArgs' => 1,
         ]);
 
         $cacheableData = $this->discovery->getCacheableData();
@@ -65,33 +42,13 @@ describe('HookDiscovery caching', function () {
     });
 
     it('converts filter items to cacheable format', function () {
-        $attribute = new AsFilter('the_content', 20, 2);
-
-        $classReflector = new class {
-            public function getName(): string
-            {
-                return 'App\\Hooks\\ContentFilter';
-            }
-        };
-
-        $methodReflector = new class ($classReflector) {
-            public function __construct(private object $class) {}
-
-            public function getDeclaringClass(): object
-            {
-                return $this->class;
-            }
-
-            public function getName(): string
-            {
-                return 'filterContent';
-            }
-        };
-
-        $this->discovery->getItems()->add($this->location, [
+        addDiscoveryItem($this->discovery, [
             'type' => 'filter',
-            'attribute' => $attribute,
-            'method' => $methodReflector,
+            'hook' => 'the_content',
+            'className' => 'App\\Hooks\\ContentFilter',
+            'methodName' => 'filterContent',
+            'priority' => 20,
+            'acceptedArgs' => 2,
         ]);
 
         $cacheableData = $this->discovery->getCacheableData();
@@ -108,53 +65,22 @@ describe('HookDiscovery caching', function () {
     });
 
     it('handles multiple hooks', function () {
-        $actionAttribute = new AsAction('init', 5, 0);
-        $filterAttribute = new AsFilter('the_title', 15, 3);
-
-        $classReflector = new class {
-            public function getName(): string
-            {
-                return 'App\\Hooks\\MultiHooks';
-            }
-        };
-
-        $methodReflector1 = new class ($classReflector) {
-            public function __construct(private object $class) {}
-
-            public function getDeclaringClass(): object
-            {
-                return $this->class;
-            }
-
-            public function getName(): string
-            {
-                return 'onInit';
-            }
-        };
-
-        $methodReflector2 = new class ($classReflector) {
-            public function __construct(private object $class) {}
-
-            public function getDeclaringClass(): object
-            {
-                return $this->class;
-            }
-
-            public function getName(): string
-            {
-                return 'filterTitle';
-            }
-        };
-
-        $this->discovery->getItems()->add($this->location, [
+        addDiscoveryItem($this->discovery, [
             'type' => 'action',
-            'attribute' => $actionAttribute,
-            'method' => $methodReflector1,
+            'hook' => 'init',
+            'className' => 'App\\Hooks\\MultiHooks',
+            'methodName' => 'onInit',
+            'priority' => 5,
+            'acceptedArgs' => 0,
         ]);
-        $this->discovery->getItems()->add($this->location, [
+
+        addDiscoveryItem($this->discovery, [
             'type' => 'filter',
-            'attribute' => $filterAttribute,
-            'method' => $methodReflector2,
+            'hook' => 'the_title',
+            'className' => 'App\\Hooks\\MultiHooks',
+            'methodName' => 'filterTitle',
+            'priority' => 15,
+            'acceptedArgs' => 3,
         ]);
 
         $cacheableData = $this->discovery->getCacheableData();
@@ -190,33 +116,13 @@ describe('HookDiscovery caching', function () {
     });
 
     it('handles default priority and accepted args', function () {
-        $attribute = new AsAction('save_post');
-
-        $classReflector = new class {
-            public function getName(): string
-            {
-                return 'App\\Hooks\\PostHooks';
-            }
-        };
-
-        $methodReflector = new class ($classReflector) {
-            public function __construct(private object $class) {}
-
-            public function getDeclaringClass(): object
-            {
-                return $this->class;
-            }
-
-            public function getName(): string
-            {
-                return 'onSavePost';
-            }
-        };
-
-        $this->discovery->getItems()->add($this->location, [
+        addDiscoveryItem($this->discovery, [
             'type' => 'action',
-            'attribute' => $attribute,
-            'method' => $methodReflector,
+            'hook' => 'save_post',
+            'className' => 'App\\Hooks\\PostHooks',
+            'methodName' => 'onSavePost',
+            'priority' => 10,
+            'acceptedArgs' => 1,
         ]);
 
         $cacheableData = $this->discovery->getCacheableData();

@@ -31,6 +31,16 @@ final class PostTypeBuilder
 
     private ?string $rewriteSlug = null;
 
+    private bool $hierarchical = false;
+
+    private ?int $menuPosition = null;
+
+    /** @var array<string, string> */
+    private array $customLabels = [];
+
+    /** @var array<string, mixed>|false|null */
+    private array|false|null $rewrite = null;
+
     /** @var array<string, mixed> */
     private array $extraArgs = [];
 
@@ -57,6 +67,10 @@ final class PostTypeBuilder
         $builder->supports = $attribute->supports;
         $builder->taxonomies = $attribute->taxonomies;
         $builder->rewriteSlug = $attribute->rewriteSlug;
+        $builder->hierarchical = $attribute->hierarchical;
+        $builder->menuPosition = $attribute->menuPosition;
+        $builder->customLabels = $attribute->labels;
+        $builder->rewrite = $attribute->rewrite;
 
         return $builder;
     }
@@ -65,6 +79,18 @@ final class PostTypeBuilder
     {
         $this->singular = $singular;
         $this->plural = $plural;
+
+        return $this;
+    }
+
+    /**
+     * Set custom labels (merged with auto-generated ones).
+     *
+     * @param array<string, string> $labels
+     */
+    public function setCustomLabels(array $labels): self
+    {
+        $this->customLabels = $labels;
 
         return $this;
     }
@@ -120,6 +146,32 @@ final class PostTypeBuilder
     public function setRewriteSlug(?string $slug): self
     {
         $this->rewriteSlug = $slug;
+
+        return $this;
+    }
+
+    public function setHierarchical(bool $hierarchical): self
+    {
+        $this->hierarchical = $hierarchical;
+
+        return $this;
+    }
+
+    public function setMenuPosition(?int $menuPosition): self
+    {
+        $this->menuPosition = $menuPosition;
+
+        return $this;
+    }
+
+    /**
+     * Set the full rewrite configuration.
+     *
+     * @param array<string, mixed>|false|null $rewrite
+     */
+    public function setRewrite(array|false|null $rewrite): self
+    {
+        $this->rewrite = $rewrite;
 
         return $this;
     }
@@ -182,9 +234,15 @@ final class PostTypeBuilder
             'item_updated' => "{$this->singular} updated.",
         ];
 
+        // Merge custom labels (overrides auto-generated ones)
+        if ($this->customLabels !== []) {
+            $labels = array_merge($labels, $this->customLabels);
+        }
+
         $args = [
             'labels' => $labels,
             'public' => $this->public,
+            'hierarchical' => $this->hierarchical,
             'has_archive' => $this->hasArchive,
             'show_in_rest' => $this->showInRest,
             'supports' => $this->supports,
@@ -195,8 +253,20 @@ final class PostTypeBuilder
             $args['menu_icon'] = $this->menuIcon;
         }
 
-        if ($this->rewriteSlug !== null) {
-            $args['rewrite'] = ['slug' => $this->rewriteSlug];
+        if ($this->menuPosition !== null) {
+            $args['menu_position'] = $this->menuPosition;
+        }
+
+        // Handle rewrite configuration
+        // Priority: $rewrite (full config) > $rewriteSlug (shorthand)
+        $rewrite = match (true) {
+            $this->rewrite !== null => $this->rewrite,
+            $this->rewriteSlug !== null => ['slug' => $this->rewriteSlug],
+            default => null,
+        };
+
+        if ($rewrite !== null) {
+            $args['rewrite'] = $rewrite;
         }
 
         return array_merge($args, $this->extraArgs);

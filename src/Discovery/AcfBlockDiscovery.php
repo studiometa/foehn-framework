@@ -5,14 +5,12 @@ declare(strict_types=1);
 namespace Studiometa\WPTempest\Discovery;
 
 use InvalidArgumentException;
+use ReflectionClass;
 use Studiometa\WPTempest\Attributes\AsAcfBlock;
 use Studiometa\WPTempest\Blocks\AcfBlockRenderer;
 use Studiometa\WPTempest\Contracts\AcfBlockInterface;
 use Studiometa\WPTempest\Discovery\Concerns\CacheableDiscovery;
-use Tempest\Discovery\Discovery;
-use Tempest\Discovery\DiscoveryLocation;
-use Tempest\Discovery\IsDiscovery;
-use Tempest\Reflection\ClassReflector;
+use Studiometa\WPTempest\Discovery\Concerns\IsWpDiscovery;
 
 use function Tempest\get;
 
@@ -20,24 +18,26 @@ use function Tempest\get;
  * Discovers classes marked with #[AsAcfBlock] attribute
  * and registers them as ACF blocks.
  */
-final class AcfBlockDiscovery implements Discovery
+final class AcfBlockDiscovery implements WpDiscovery
 {
-    use IsDiscovery;
+    use IsWpDiscovery;
     use CacheableDiscovery;
 
     /**
      * Discover ACF block attributes on classes.
+     *
+     * @param ReflectionClass<object> $class
      */
-    public function discover(DiscoveryLocation $location, ClassReflector $class): void
+    public function discover(ReflectionClass $class): void
     {
-        $attribute = $class->getAttribute(AsAcfBlock::class);
+        $attributes = $class->getAttributes(AsAcfBlock::class);
 
-        if ($attribute === null) {
+        if ($attributes === []) {
             return;
         }
 
         // Verify the class implements AcfBlockInterface
-        if (!$class->getReflection()->implementsInterface(AcfBlockInterface::class)) {
+        if (!$class->implementsInterface(AcfBlockInterface::class)) {
             throw new InvalidArgumentException(sprintf(
                 'Class %s must implement %s to use #[AsAcfBlock]',
                 $class->getName(),
@@ -45,7 +45,9 @@ final class AcfBlockDiscovery implements Discovery
             ));
         }
 
-        $this->discoveryItems->add($location, [
+        $attribute = $attributes[0]->newInstance();
+
+        $this->addItem([
             'attribute' => $attribute,
             'className' => $class->getName(),
         ]);
@@ -62,9 +64,11 @@ final class AcfBlockDiscovery implements Discovery
                 // Handle cached format
                 if (isset($item['name'])) {
                     $this->registerBlockFromCache($item);
-                } else {
-                    $this->registerBlock($item['attribute'], $item['className']);
+
+                    continue;
                 }
+
+                $this->registerBlock($item['attribute'], $item['className']);
             }
         });
     }

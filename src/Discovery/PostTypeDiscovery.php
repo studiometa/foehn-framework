@@ -5,38 +5,38 @@ declare(strict_types=1);
 namespace Studiometa\WPTempest\Discovery;
 
 use InvalidArgumentException;
+use ReflectionClass;
 use Studiometa\WPTempest\Attributes\AsPostType;
 use Studiometa\WPTempest\Contracts\ConfiguresPostType;
 use Studiometa\WPTempest\Discovery\Concerns\CacheableDiscovery;
+use Studiometa\WPTempest\Discovery\Concerns\IsWpDiscovery;
 use Studiometa\WPTempest\PostTypes\PostTypeBuilder;
-use Tempest\Discovery\Discovery;
-use Tempest\Discovery\DiscoveryLocation;
-use Tempest\Discovery\IsDiscovery;
-use Tempest\Reflection\ClassReflector;
 use Timber\Post;
 
 /**
  * Discovers classes marked with #[AsPostType] attribute
  * and registers them as WordPress custom post types.
  */
-final class PostTypeDiscovery implements Discovery
+final class PostTypeDiscovery implements WpDiscovery
 {
-    use IsDiscovery;
+    use IsWpDiscovery;
     use CacheableDiscovery;
 
     /**
      * Discover post type attributes on classes.
+     *
+     * @param ReflectionClass<object> $class
      */
-    public function discover(DiscoveryLocation $location, ClassReflector $class): void
+    public function discover(ReflectionClass $class): void
     {
-        $attribute = $class->getAttribute(AsPostType::class);
+        $attributes = $class->getAttributes(AsPostType::class);
 
-        if ($attribute === null) {
+        if ($attributes === []) {
             return;
         }
 
         // Verify the class extends Timber\Post
-        if (!$class->getReflection()->isSubclassOf(Post::class)) {
+        if (!$class->isSubclassOf(Post::class)) {
             throw new InvalidArgumentException(sprintf(
                 'Class %s must extend %s to use #[AsPostType]',
                 $class->getName(),
@@ -44,10 +44,12 @@ final class PostTypeDiscovery implements Discovery
             ));
         }
 
-        $this->discoveryItems->add($location, [
+        $attribute = $attributes[0]->newInstance();
+
+        $this->addItem([
             'attribute' => $attribute,
             'className' => $class->getName(),
-            'implementsConfig' => $class->getReflection()->implementsInterface(ConfiguresPostType::class),
+            'implementsConfig' => $class->implementsInterface(ConfiguresPostType::class),
         ]);
     }
 
@@ -70,28 +72,8 @@ final class PostTypeDiscovery implements Discovery
     {
         $className = $item['className'];
         $implementsConfig = $item['implementsConfig'];
-
-        // Build from attribute or cached data
-        if (isset($item['attribute'])) {
-            $builder = PostTypeBuilder::fromAttribute($item['attribute']);
-            $postTypeName = $item['attribute']->name;
-        } else {
-            // Cached format - rebuild attribute
-            $attribute = new AsPostType(
-                name: $item['name'],
-                singular: $item['singular'],
-                plural: $item['plural'],
-                public: $item['public'] ?? true,
-                hasArchive: $item['hasArchive'] ?? false,
-                showInRest: $item['showInRest'] ?? true,
-                menuIcon: $item['menuIcon'] ?? null,
-                supports: $item['supports'] ?? ['title', 'editor', 'thumbnail'],
-                taxonomies: $item['taxonomies'] ?? [],
-                rewriteSlug: $item['rewriteSlug'] ?? null,
-            );
-            $builder = PostTypeBuilder::fromAttribute($attribute);
-            $postTypeName = $item['name'];
-        }
+        $attribute = $this->resolveAttribute($item);
+        $builder = PostTypeBuilder::fromAttribute($attribute);
 
         // Allow class to customize the builder
         if ($implementsConfig) {
@@ -103,7 +85,37 @@ final class PostTypeDiscovery implements Discovery
         $builder->register();
 
         // Register Timber class map
-        $this->registerTimberClassMap($postTypeName, $className);
+        $this->registerTimberClassMap($attribute->name, $className);
+    }
+
+    /**
+     * Resolve the AsPostType attribute from a discovered or cached item.
+     *
+     * @param array<string, mixed> $item
+     */
+    private function resolveAttribute(array $item): AsPostType
+    {
+        if (isset($item['attribute'])) {
+            return $item['attribute'];
+        }
+
+        // Cached format - rebuild attribute
+        return new AsPostType(
+            name: $item['name'],
+            singular: $item['singular'],
+            plural: $item['plural'],
+            public: $item['public'] ?? true,
+            hasArchive: $item['hasArchive'] ?? false,
+            showInRest: $item['showInRest'] ?? true,
+            menuIcon: $item['menuIcon'] ?? null,
+            supports: $item['supports'] ?? ['title', 'editor', 'thumbnail'],
+            taxonomies: $item['taxonomies'] ?? [],
+            rewriteSlug: $item['rewriteSlug'] ?? null,
+            hierarchical: $item['hierarchical'] ?? false,
+            menuPosition: $item['menuPosition'] ?? null,
+            labels: $item['labels'] ?? [],
+            rewrite: $item['rewrite'] ?? null,
+        );
     }
 
     /**
@@ -143,6 +155,10 @@ final class PostTypeDiscovery implements Discovery
             'supports' => $attribute->supports,
             'taxonomies' => $attribute->taxonomies,
             'rewriteSlug' => $attribute->rewriteSlug,
+            'hierarchical' => $attribute->hierarchical,
+            'menuPosition' => $attribute->menuPosition,
+            'labels' => $attribute->labels,
+            'rewrite' => $attribute->rewrite,
             'className' => $item['className'],
             'implementsConfig' => $item['implementsConfig'],
         ];

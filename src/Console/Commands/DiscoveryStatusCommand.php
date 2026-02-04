@@ -67,14 +67,25 @@ final class DiscoveryStatusCommand implements CliCommandInterface
 
         $this->cli->line('');
 
+        $message = match (true) {
+            $enabled && $exists && $valid => null,
+            $enabled && !$exists => 'Discovery cache is enabled but not generated. Run: wp tempest discovery:generate',
+            $enabled && !$valid => 'Discovery cache is enabled but invalid. Run: wp tempest discovery:generate',
+            default => null,
+        };
+
         if ($enabled && $exists && $valid) {
             $this->cli->success('Discovery cache is active and valid.');
-        } elseif ($enabled && !$exists) {
-            $this->cli->warning('Discovery cache is enabled but not generated. Run: wp tempest discovery:generate');
-        } elseif ($enabled && !$valid) {
-            $this->cli->warning('Discovery cache is enabled but invalid. Run: wp tempest discovery:generate');
-        } else {
-            $this->cli->log('Discovery cache is disabled. Discoveries run at runtime.');
+
+            return;
         }
+
+        if ($message !== null) {
+            $this->cli->warning($message);
+
+            return;
+        }
+
+        $this->cli->log('Discovery cache is disabled. Discoveries run at runtime.');
     }
 }

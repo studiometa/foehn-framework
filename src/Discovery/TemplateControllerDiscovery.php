@@ -5,13 +5,11 @@ declare(strict_types=1);
 namespace Studiometa\WPTempest\Discovery;
 
 use InvalidArgumentException;
+use ReflectionClass;
 use Studiometa\WPTempest\Attributes\AsTemplateController;
 use Studiometa\WPTempest\Contracts\TemplateControllerInterface;
 use Studiometa\WPTempest\Discovery\Concerns\CacheableDiscovery;
-use Tempest\Discovery\Discovery;
-use Tempest\Discovery\DiscoveryLocation;
-use Tempest\Discovery\IsDiscovery;
-use Tempest\Reflection\ClassReflector;
+use Studiometa\WPTempest\Discovery\Concerns\IsWpDiscovery;
 
 use function Tempest\get;
 
@@ -19,9 +17,9 @@ use function Tempest\get;
  * Discovers classes marked with #[AsTemplateController] attribute
  * and registers them to intercept WordPress template rendering.
  */
-final class TemplateControllerDiscovery implements Discovery
+final class TemplateControllerDiscovery implements WpDiscovery
 {
-    use IsDiscovery;
+    use IsWpDiscovery;
     use CacheableDiscovery;
 
     /**
@@ -36,17 +34,19 @@ final class TemplateControllerDiscovery implements Discovery
 
     /**
      * Discover template controller attributes on classes.
+     *
+     * @param ReflectionClass<object> $class
      */
-    public function discover(DiscoveryLocation $location, ClassReflector $class): void
+    public function discover(ReflectionClass $class): void
     {
-        $attribute = $class->getAttribute(AsTemplateController::class);
+        $attributes = $class->getAttributes(AsTemplateController::class);
 
-        if ($attribute === null) {
+        if ($attributes === []) {
             return;
         }
 
         // Verify the class implements TemplateControllerInterface
-        if (!$class->getReflection()->implementsInterface(TemplateControllerInterface::class)) {
+        if (!$class->implementsInterface(TemplateControllerInterface::class)) {
             throw new InvalidArgumentException(sprintf(
                 'Class %s must implement %s to use #[AsTemplateController]',
                 $class->getName(),
@@ -54,9 +54,12 @@ final class TemplateControllerDiscovery implements Discovery
             ));
         }
 
-        $this->discoveryItems->add($location, [
-            'attribute' => $attribute,
+        $attribute = $attributes[0]->newInstance();
+
+        $this->addItem([
+            'templates' => $attribute->getTemplates(),
             'className' => $class->getName(),
+            'priority' => $attribute->priority,
         ]);
     }
 
@@ -67,39 +70,11 @@ final class TemplateControllerDiscovery implements Discovery
     {
         // Build controller maps
         foreach ($this->getAllItems() as $item) {
-            // Handle cached format
-            if (isset($item['templates'])) {
-                $this->registerControllerFromCache($item);
-            } else {
-                $this->registerController($item);
-            }
+            $this->addController($item['templates'], $item['className'], $item['priority']);
         }
 
         // Hook into WordPress template_include filter
         add_filter('template_include', [$this, 'handleTemplateInclude'], 5);
-    }
-
-    /**
-     * Register a template controller.
-     *
-     * @param array<string, mixed> $item
-     */
-    private function registerController(array $item): void
-    {
-        $attribute = $item['attribute'];
-        $className = $item['className'];
-
-        $this->addController($attribute->getTemplates(), $className, $attribute->priority);
-    }
-
-    /**
-     * Register a template controller from cached data.
-     *
-     * @param array<string, mixed> $item
-     */
-    private function registerControllerFromCache(array $item): void
-    {
-        $this->addController($item['templates'], $item['className'], $item['priority']);
     }
 
     /**
@@ -115,9 +90,11 @@ final class TemplateControllerDiscovery implements Discovery
 
             if (str_contains($template, '*')) {
                 $this->wildcardControllers[$template] = $entry;
-            } else {
-                $this->controllers[$template] = $entry;
+
+                continue;
             }
+
+            $this->controllers[$template] = $entry;
         }
     }
 
@@ -373,13 +350,10 @@ final class TemplateControllerDiscovery implements Discovery
      */
     protected function itemToCacheable(array $item): array
     {
-        /** @var AsTemplateController $attribute */
-        $attribute = $item['attribute'];
-
         return [
-            'templates' => $attribute->getTemplates(),
+            'templates' => $item['templates'],
             'className' => $item['className'],
-            'priority' => $attribute->priority,
+            'priority' => $item['priority'],
         ];
     }
 }

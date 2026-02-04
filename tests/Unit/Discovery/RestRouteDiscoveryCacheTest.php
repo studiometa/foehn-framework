@@ -2,66 +2,23 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Attributes\AsRestRoute;
 use Studiometa\WPTempest\Discovery\RestRouteDiscovery;
-use Tempest\Discovery\DiscoveryItems;
-use Tempest\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
     $this->discovery = new RestRouteDiscovery();
-    $this->discovery->setItems(new DiscoveryItems());
-    $this->location = new DiscoveryLocation(
-        namespace: 'App\\Test',
-        path: __DIR__,
-    );
 });
-
-/**
- * Create a mock method reflector.
- */
-function createRestMethodReflector(string $className, string $methodName): object
-{
-    $classReflector = new class ($className) {
-        public function __construct(private string $name) {}
-
-        public function getName(): string
-        {
-            return $this->name;
-        }
-    };
-
-    return new class ($classReflector, $methodName) {
-        public function __construct(
-            private object $class,
-            private string $method,
-        ) {}
-
-        public function getDeclaringClass(): object
-        {
-            return $this->class;
-        }
-
-        public function getName(): string
-        {
-            return $this->method;
-        }
-    };
-}
 
 describe('RestRouteDiscovery caching', function () {
     it('converts items to cacheable format', function () {
-        $attribute = new AsRestRoute(
-            namespace: 'my-plugin/v1',
-            route: '/posts',
-            method: 'GET',
-            permission: 'public',
-        );
-
-        $methodReflector = createRestMethodReflector('App\\Api\\PostsController', 'index');
-
-        $this->discovery->getItems()->add($this->location, [
-            'attribute' => $attribute,
-            'method' => $methodReflector,
+        $ref = new ReflectionMethod($this->discovery, 'addItem');
+        $ref->invoke($this->discovery, [
+            'namespace' => 'my-plugin/v1',
+            'route' => '/posts',
+            'httpMethod' => 'GET',
+            'className' => 'App\\Api\\PostsController',
+            'methodName' => 'index',
+            'permission' => 'public',
+            'args' => [],
         ]);
 
         $cacheableData = $this->discovery->getCacheableData();
@@ -79,17 +36,15 @@ describe('RestRouteDiscovery caching', function () {
     });
 
     it('handles POST method', function () {
-        $attribute = new AsRestRoute(
-            namespace: 'my-plugin/v1',
-            route: '/posts',
-            method: 'POST',
-        );
-
-        $methodReflector = createRestMethodReflector('App\\Api\\PostsController', 'store');
-
-        $this->discovery->getItems()->add($this->location, [
-            'attribute' => $attribute,
-            'method' => $methodReflector,
+        $ref = new ReflectionMethod($this->discovery, 'addItem');
+        $ref->invoke($this->discovery, [
+            'namespace' => 'my-plugin/v1',
+            'route' => '/posts',
+            'httpMethod' => 'POST',
+            'className' => 'App\\Api\\PostsController',
+            'methodName' => 'store',
+            'permission' => null,
+            'args' => [],
         ]);
 
         $cacheableData = $this->discovery->getCacheableData();
@@ -98,24 +53,21 @@ describe('RestRouteDiscovery caching', function () {
     });
 
     it('handles route with args', function () {
-        $attribute = new AsRestRoute(
-            namespace: 'my-plugin/v1',
-            route: '/posts/(?P<id>\d+)',
-            method: 'GET',
-            args: [
+        $ref = new ReflectionMethod($this->discovery, 'addItem');
+        $ref->invoke($this->discovery, [
+            'namespace' => 'my-plugin/v1',
+            'route' => '/posts/(?P<id>\d+)',
+            'httpMethod' => 'GET',
+            'className' => 'App\\Api\\PostsController',
+            'methodName' => 'show',
+            'permission' => null,
+            'args' => [
                 'id' => [
                     'required' => true,
                     'type' => 'integer',
                     'description' => 'Post ID',
                 ],
             ],
-        );
-
-        $methodReflector = createRestMethodReflector('App\\Api\\PostsController', 'show');
-
-        $this->discovery->getItems()->add($this->location, [
-            'attribute' => $attribute,
-            'method' => $methodReflector,
         ]);
 
         $cacheableData = $this->discovery->getCacheableData();
@@ -130,18 +82,15 @@ describe('RestRouteDiscovery caching', function () {
     });
 
     it('handles custom permission callback', function () {
-        $attribute = new AsRestRoute(
-            namespace: 'my-plugin/v1',
-            route: '/admin/settings',
-            method: 'PUT',
-            permission: 'canUpdateSettings',
-        );
-
-        $methodReflector = createRestMethodReflector('App\\Api\\SettingsController', 'update');
-
-        $this->discovery->getItems()->add($this->location, [
-            'attribute' => $attribute,
-            'method' => $methodReflector,
+        $ref = new ReflectionMethod($this->discovery, 'addItem');
+        $ref->invoke($this->discovery, [
+            'namespace' => 'my-plugin/v1',
+            'route' => '/admin/settings',
+            'httpMethod' => 'PUT',
+            'className' => 'App\\Api\\SettingsController',
+            'methodName' => 'update',
+            'permission' => 'canUpdateSettings',
+            'args' => [],
         ]);
 
         $cacheableData = $this->discovery->getCacheableData();
@@ -150,17 +99,23 @@ describe('RestRouteDiscovery caching', function () {
     });
 
     it('handles multiple routes', function () {
-        $attribute1 = new AsRestRoute('api/v1', '/users', 'GET', 'public');
-        $attribute2 = new AsRestRoute('api/v1', '/users', 'POST');
-        $attribute3 = new AsRestRoute('api/v1', '/users/(?P<id>\d+)', 'DELETE');
+        $ref = new ReflectionMethod($this->discovery, 'addItem');
 
-        $methodReflector1 = createRestMethodReflector('App\\Api\\UsersController', 'index');
-        $methodReflector2 = createRestMethodReflector('App\\Api\\UsersController', 'store');
-        $methodReflector3 = createRestMethodReflector('App\\Api\\UsersController', 'destroy');
-
-        $this->discovery->getItems()->add($this->location, ['attribute' => $attribute1, 'method' => $methodReflector1]);
-        $this->discovery->getItems()->add($this->location, ['attribute' => $attribute2, 'method' => $methodReflector2]);
-        $this->discovery->getItems()->add($this->location, ['attribute' => $attribute3, 'method' => $methodReflector3]);
+        $ref->invoke($this->discovery, [
+            'namespace' => 'api/v1', 'route' => '/users', 'httpMethod' => 'GET',
+            'className' => 'App\\Api\\UsersController', 'methodName' => 'index',
+            'permission' => 'public', 'args' => [],
+        ]);
+        $ref->invoke($this->discovery, [
+            'namespace' => 'api/v1', 'route' => '/users', 'httpMethod' => 'POST',
+            'className' => 'App\\Api\\UsersController', 'methodName' => 'store',
+            'permission' => null, 'args' => [],
+        ]);
+        $ref->invoke($this->discovery, [
+            'namespace' => 'api/v1', 'route' => '/users/(?P<id>\d+)', 'httpMethod' => 'DELETE',
+            'className' => 'App\\Api\\UsersController', 'methodName' => 'destroy',
+            'permission' => null, 'args' => [],
+        ]);
 
         $cacheableData = $this->discovery->getCacheableData();
 
@@ -189,17 +144,15 @@ describe('RestRouteDiscovery caching', function () {
     });
 
     it('handles null permission (requires auth)', function () {
-        $attribute = new AsRestRoute(
-            namespace: 'my-plugin/v1',
-            route: '/private',
-            method: 'GET',
-        );
-
-        $methodReflector = createRestMethodReflector('App\\Api\\PrivateController', 'getData');
-
-        $this->discovery->getItems()->add($this->location, [
-            'attribute' => $attribute,
-            'method' => $methodReflector,
+        $ref = new ReflectionMethod($this->discovery, 'addItem');
+        $ref->invoke($this->discovery, [
+            'namespace' => 'my-plugin/v1',
+            'route' => '/private',
+            'httpMethod' => 'GET',
+            'className' => 'App\\Api\\PrivateController',
+            'methodName' => 'getData',
+            'permission' => null,
+            'args' => [],
         ]);
 
         $cacheableData = $this->discovery->getCacheableData();

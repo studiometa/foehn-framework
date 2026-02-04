@@ -3,19 +3,16 @@
 declare(strict_types=1);
 
 use Studiometa\WPTempest\Discovery\Concerns\CacheableDiscovery;
-use Tempest\Discovery\Discovery;
-use Tempest\Discovery\DiscoveryItems;
-use Tempest\Discovery\DiscoveryLocation;
-use Tempest\Discovery\IsDiscovery;
-use Tempest\Reflection\ClassReflector;
+use Studiometa\WPTempest\Discovery\Concerns\IsWpDiscovery;
+use Studiometa\WPTempest\Discovery\WpDiscovery;
 
 // Test implementation of a cacheable discovery
-final class TestCacheableDiscovery implements Discovery
+final class TestCacheableDiscovery implements WpDiscovery
 {
-    use IsDiscovery;
+    use IsWpDiscovery;
     use CacheableDiscovery;
 
-    public function discover(DiscoveryLocation $location, ClassReflector $class): void
+    public function discover(ReflectionClass $class): void
     {
         // For testing, we add items manually
     }
@@ -25,9 +22,9 @@ final class TestCacheableDiscovery implements Discovery
         // No-op for testing
     }
 
-    public function addTestItem(DiscoveryLocation $location, array $item): void
+    public function addTestItem(array $item): void
     {
-        $this->discoveryItems->add($location, $item);
+        $this->addItem($item);
     }
 
     protected function itemToCacheable(array $item): array
@@ -47,17 +44,10 @@ final class TestCacheableDiscovery implements Discovery
 describe('CacheableDiscovery', function () {
     beforeEach(function () {
         $this->discovery = new TestCacheableDiscovery();
-        $this->discovery->setItems(new DiscoveryItems());
-
-        // Use a real path that exists
-        $this->location = new DiscoveryLocation(
-            namespace: 'App\\Test',
-            path: __DIR__,
-        );
     });
 
     it('can get cacheable data from discovered items', function () {
-        $this->discovery->addTestItem($this->location, [
+        $this->discovery->addTestItem([
             'name' => 'test-item',
             'value' => 'test-value',
             'extra' => 'not-cached',
@@ -87,7 +77,7 @@ describe('CacheableDiscovery', function () {
     });
 
     it('returns discovered items when not restored from cache', function () {
-        $this->discovery->addTestItem($this->location, [
+        $this->discovery->addTestItem([
             'name' => 'discovered-item',
             'value' => 'discovered-value',
         ]);
@@ -100,9 +90,9 @@ describe('CacheableDiscovery', function () {
     });
 
     it('handles multiple items', function () {
-        $this->discovery->addTestItem($this->location, ['name' => 'item1', 'value' => 'v1']);
-        $this->discovery->addTestItem($this->location, ['name' => 'item2', 'value' => 'v2']);
-        $this->discovery->addTestItem($this->location, ['name' => 'item3', 'value' => 'v3']);
+        $this->discovery->addTestItem(['name' => 'item1', 'value' => 'v1']);
+        $this->discovery->addTestItem(['name' => 'item2', 'value' => 'v2']);
+        $this->discovery->addTestItem(['name' => 'item3', 'value' => 'v3']);
 
         $cacheableData = $this->discovery->getCacheableData();
 
