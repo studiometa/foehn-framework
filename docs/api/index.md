@@ -16,10 +16,11 @@ Attributes are PHP 8 annotations that enable auto-discovery and registration of 
 
 ### Content Types
 
-| Attribute                         | Description                 |
-| --------------------------------- | --------------------------- |
-| [`#[AsPostType]`](./as-post-type) | Register a custom post type |
-| [`#[AsTaxonomy]`](./as-taxonomy)  | Register a custom taxonomy  |
+| Attribute                               | Description                                |
+| --------------------------------------- | ------------------------------------------ |
+| [`#[AsPostType]`](./as-post-type)       | Register a custom post type                |
+| [`#[AsTaxonomy]`](./as-taxonomy)        | Register a custom taxonomy                 |
+| [`#[AsTimberModel]`](./as-timber-model) | Map Timber class without type registration |
 
 ### Views
 

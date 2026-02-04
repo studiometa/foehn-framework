@@ -205,7 +205,111 @@ public function loginStyles(): void
 }
 ```
 
+## Built-in Hooks
+
+WP Tempest provides a collection of **opt-in** reusable hook classes for common WordPress patterns. These are not enabled by default — you choose which ones to activate via the `hooks` configuration option.
+
+### Enabling Built-in Hooks
+
+```php
+use Studiometa\WPTempest\Kernel;
+use Studiometa\WPTempest\Hooks\Cleanup\DisableEmoji;
+use Studiometa\WPTempest\Hooks\Cleanup\CleanHeadTags;
+use Studiometa\WPTempest\Hooks\Security\SecurityHeaders;
+use Studiometa\WPTempest\Hooks\YouTubeNoCookieHooks;
+
+Kernel::boot(__DIR__ . '/app', [
+    'hooks' => [
+        // Cleanup
+        DisableEmoji::class,
+        CleanHeadTags::class,
+
+        // Security
+        SecurityHeaders::class,
+
+        // GDPR
+        YouTubeNoCookieHooks::class,
+    ],
+]);
+```
+
+### Cleanup Hooks
+
+Located in `Studiometa\WPTempest\Hooks\Cleanup`:
+
+| Class                 | Description                                                               |
+| --------------------- | ------------------------------------------------------------------------- |
+| `CleanContent`        | Remove empty `<p>` tags and archive title prefixes                        |
+| `CleanHeadTags`       | Remove wlwmanifest, RSD, shortlink, REST discovery links                  |
+| `CleanImageSizes`     | Remove default WordPress image sizes (medium_large, 1536x1536, 2048x2048) |
+| `DisableEmoji`        | Remove emoji scripts, styles, and TinyMCE plugin                          |
+| `DisableFeeds`        | Disable RSS/Atom feeds                                                    |
+| `DisableGlobalStyles` | Remove global styles and SVG filters from wp_head                         |
+| `DisableOembed`       | Disable oEmbed discovery and related scripts                              |
+
+### Security Hooks
+
+Located in `Studiometa\WPTempest\Hooks\Security`:
+
+| Class                      | Description                                                           |
+| -------------------------- | --------------------------------------------------------------------- |
+| `DisableFileEditor`        | Disable theme/plugin editor in admin                                  |
+| `DisableVersionDisclosure` | Remove WordPress version from head, feeds, and scripts                |
+| `DisableXmlRpc`            | Disable XML-RPC completely                                            |
+| `RestApiAuth`              | Require authentication for REST API requests                          |
+| `SecurityHeaders`          | Send security headers (X-Content-Type-Options, X-Frame-Options, etc.) |
+
+### GDPR Hooks
+
+Located in `Studiometa\WPTempest\Hooks`:
+
+| Class                  | Description                                      |
+| ---------------------- | ------------------------------------------------ |
+| `YouTubeNoCookieHooks` | Replace YouTube embeds with youtube-nocookie.com |
+
+### Example: Production Configuration
+
+```php
+use Studiometa\WPTempest\Kernel;
+use Studiometa\WPTempest\Hooks\Cleanup\{
+    CleanContent,
+    CleanHeadTags,
+    CleanImageSizes,
+    DisableEmoji,
+    DisableGlobalStyles,
+};
+use Studiometa\WPTempest\Hooks\Security\{
+    DisableFileEditor,
+    DisableVersionDisclosure,
+    DisableXmlRpc,
+    SecurityHeaders,
+};
+use Studiometa\WPTempest\Hooks\YouTubeNoCookieHooks;
+
+Kernel::boot(__DIR__ . '/app', [
+    'discovery_cache' => 'full',
+    'hooks' => [
+        // Cleanup for leaner output
+        CleanContent::class,
+        CleanHeadTags::class,
+        CleanImageSizes::class,
+        DisableEmoji::class,
+        DisableGlobalStyles::class,
+
+        // Security hardening
+        DisableFileEditor::class,
+        DisableVersionDisclosure::class,
+        DisableXmlRpc::class,
+        SecurityHeaders::class,
+
+        // GDPR compliance
+        YouTubeNoCookieHooks::class,
+    ],
+]);
+```
+
 ## See Also
 
 - [API Reference: #[AsAction]](/api/as-action)
 - [API Reference: #[AsFilter]](/api/as-filter)
+- [API Reference: Kernel](/api/kernel)
