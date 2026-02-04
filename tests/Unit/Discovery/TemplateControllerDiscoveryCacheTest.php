@@ -2,30 +2,19 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Attributes\AsTemplateController;
 use Studiometa\WPTempest\Discovery\TemplateControllerDiscovery;
-use Tempest\Discovery\DiscoveryItems;
-use Tempest\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
     $this->discovery = new TemplateControllerDiscovery();
-    $this->discovery->setItems(new DiscoveryItems());
-    $this->location = new DiscoveryLocation(
-        namespace: 'App\\Test',
-        path: __DIR__,
-    );
 });
 
 describe('TemplateControllerDiscovery caching', function () {
     it('converts items to cacheable format with single template', function () {
-        $attribute = new AsTemplateController(
-            templates: 'single',
-            priority: 5,
-        );
-
-        $this->discovery->getItems()->add($this->location, [
-            'attribute' => $attribute,
+        $ref = new ReflectionMethod($this->discovery, 'addItem');
+        $ref->invoke($this->discovery, [
+            'templates' => ['single'],
             'className' => 'App\\Controllers\\SingleController',
+            'priority' => 5,
         ]);
 
         $cacheableData = $this->discovery->getCacheableData();
@@ -39,13 +28,11 @@ describe('TemplateControllerDiscovery caching', function () {
     });
 
     it('converts items to cacheable format with multiple templates', function () {
-        $attribute = new AsTemplateController(
-            templates: ['single', 'page', 'singular'],
-        );
-
-        $this->discovery->getItems()->add($this->location, [
-            'attribute' => $attribute,
+        $ref = new ReflectionMethod($this->discovery, 'addItem');
+        $ref->invoke($this->discovery, [
+            'templates' => ['single', 'page', 'singular'],
             'className' => 'App\\Controllers\\ContentController',
+            'priority' => 10,
         ]);
 
         $cacheableData = $this->discovery->getCacheableData();
@@ -54,13 +41,11 @@ describe('TemplateControllerDiscovery caching', function () {
     });
 
     it('handles wildcard templates', function () {
-        $attribute = new AsTemplateController(
-            templates: 'single-*',
-        );
-
-        $this->discovery->getItems()->add($this->location, [
-            'attribute' => $attribute,
+        $ref = new ReflectionMethod($this->discovery, 'addItem');
+        $ref->invoke($this->discovery, [
+            'templates' => ['single-*'],
             'className' => 'App\\Controllers\\SinglePostTypeController',
+            'priority' => 10,
         ]);
 
         $cacheableData = $this->discovery->getCacheableData();
@@ -69,13 +54,11 @@ describe('TemplateControllerDiscovery caching', function () {
     });
 
     it('handles archive templates', function () {
-        $attribute = new AsTemplateController(
-            templates: ['archive', 'archive-product', 'category'],
-        );
-
-        $this->discovery->getItems()->add($this->location, [
-            'attribute' => $attribute,
+        $ref = new ReflectionMethod($this->discovery, 'addItem');
+        $ref->invoke($this->discovery, [
+            'templates' => ['archive', 'archive-product', 'category'],
             'className' => 'App\\Controllers\\ArchiveController',
+            'priority' => 10,
         ]);
 
         $cacheableData = $this->discovery->getCacheableData();
@@ -86,13 +69,11 @@ describe('TemplateControllerDiscovery caching', function () {
     });
 
     it('uses default priority', function () {
-        $attribute = new AsTemplateController(
-            templates: 'home',
-        );
-
-        $this->discovery->getItems()->add($this->location, [
-            'attribute' => $attribute,
+        $ref = new ReflectionMethod($this->discovery, 'addItem');
+        $ref->invoke($this->discovery, [
+            'templates' => ['home'],
             'className' => 'App\\Controllers\\HomeController',
+            'priority' => 10,
         ]);
 
         $cacheableData = $this->discovery->getCacheableData();

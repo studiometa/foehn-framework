@@ -2,36 +2,23 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Attributes\AsCliCommand;
 use Studiometa\WPTempest\Discovery\CliCommandDiscovery;
-use Tempest\Container\Container;
 use Tempest\Container\GenericContainer;
-use Tempest\Discovery\DiscoveryItems;
-use Tempest\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
-    // Use the actual GenericContainer
     $container = new GenericContainer();
 
     $this->discovery = new CliCommandDiscovery($container);
-    $this->discovery->setItems(new DiscoveryItems());
-    $this->location = new DiscoveryLocation(
-        namespace: 'App\\Test',
-        path: __DIR__,
-    );
 });
 
 describe('CliCommandDiscovery caching', function () {
     it('converts items to cacheable format', function () {
-        $attribute = new AsCliCommand(
-            name: 'make:block',
-            description: 'Create a new block',
-            longDescription: 'Creates a new Gutenberg block with all necessary files.',
-        );
-
-        $this->discovery->getItems()->add($this->location, [
+        $ref = new ReflectionMethod($this->discovery, 'addItem');
+        $ref->invoke($this->discovery, [
             'className' => 'App\\Console\\MakeBlockCommand',
-            'attribute' => $attribute,
+            'name' => 'make:block',
+            'description' => 'Create a new block',
+            'longDescription' => 'Creates a new Gutenberg block with all necessary files.',
         ]);
 
         $cacheableData = $this->discovery->getCacheableData();
@@ -46,14 +33,12 @@ describe('CliCommandDiscovery caching', function () {
     });
 
     it('handles minimal configuration', function () {
-        $attribute = new AsCliCommand(
-            name: 'cache:clear',
-            description: 'Clear the cache',
-        );
-
-        $this->discovery->getItems()->add($this->location, [
+        $ref = new ReflectionMethod($this->discovery, 'addItem');
+        $ref->invoke($this->discovery, [
             'className' => 'App\\Console\\CacheClearCommand',
-            'attribute' => $attribute,
+            'name' => 'cache:clear',
+            'description' => 'Clear the cache',
+            'longDescription' => null,
         ]);
 
         $cacheableData = $this->discovery->getCacheableData();
@@ -65,16 +50,19 @@ describe('CliCommandDiscovery caching', function () {
     });
 
     it('handles multiple commands', function () {
-        $attribute1 = new AsCliCommand('make:post-type', 'Create a post type');
-        $attribute2 = new AsCliCommand('make:taxonomy', 'Create a taxonomy');
+        $ref = new ReflectionMethod($this->discovery, 'addItem');
 
-        $this->discovery->getItems()->add($this->location, [
+        $ref->invoke($this->discovery, [
             'className' => 'App\\Console\\MakePostTypeCommand',
-            'attribute' => $attribute1,
+            'name' => 'make:post-type',
+            'description' => 'Create a post type',
+            'longDescription' => null,
         ]);
-        $this->discovery->getItems()->add($this->location, [
+        $ref->invoke($this->discovery, [
             'className' => 'App\\Console\\MakeTaxonomyCommand',
-            'attribute' => $attribute2,
+            'name' => 'make:taxonomy',
+            'description' => 'Create a taxonomy',
+            'longDescription' => null,
         ]);
 
         $cacheableData = $this->discovery->getCacheableData();

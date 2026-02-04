@@ -2,60 +2,19 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Attributes\AsShortcode;
 use Studiometa\WPTempest\Discovery\ShortcodeDiscovery;
-use Tempest\Discovery\DiscoveryItems;
-use Tempest\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
     $this->discovery = new ShortcodeDiscovery();
-    $this->discovery->setItems(new DiscoveryItems());
-    $this->location = new DiscoveryLocation(
-        namespace: 'App\\Test',
-        path: __DIR__,
-    );
 });
-
-/**
- * Create a mock method reflector.
- */
-function createMethodReflector(string $className, string $methodName): object
-{
-    $classReflector = new class ($className) {
-        public function __construct(private string $name) {}
-
-        public function getName(): string
-        {
-            return $this->name;
-        }
-    };
-
-    return new class ($classReflector, $methodName) {
-        public function __construct(
-            private object $class,
-            private string $method,
-        ) {}
-
-        public function getDeclaringClass(): object
-        {
-            return $this->class;
-        }
-
-        public function getName(): string
-        {
-            return $this->method;
-        }
-    };
-}
 
 describe('ShortcodeDiscovery caching', function () {
     it('converts items to cacheable format', function () {
-        $attribute = new AsShortcode('my_shortcode');
-        $methodReflector = createMethodReflector('App\\Shortcodes\\MyShortcode', 'render');
-
-        $this->discovery->getItems()->add($this->location, [
-            'attribute' => $attribute,
-            'method' => $methodReflector,
+        $ref = new ReflectionMethod($this->discovery, 'addItem');
+        $ref->invoke($this->discovery, [
+            'tag' => 'my_shortcode',
+            'className' => 'App\\Shortcodes\\MyShortcode',
+            'methodName' => 'render',
         ]);
 
         $cacheableData = $this->discovery->getCacheableData();
@@ -69,19 +28,17 @@ describe('ShortcodeDiscovery caching', function () {
     });
 
     it('handles multiple shortcodes', function () {
-        $attribute1 = new AsShortcode('gallery');
-        $attribute2 = new AsShortcode('button');
+        $ref = new ReflectionMethod($this->discovery, 'addItem');
 
-        $methodReflector1 = createMethodReflector('App\\Shortcodes\\Gallery', 'renderGallery');
-        $methodReflector2 = createMethodReflector('App\\Shortcodes\\Button', 'renderButton');
-
-        $this->discovery->getItems()->add($this->location, [
-            'attribute' => $attribute1,
-            'method' => $methodReflector1,
+        $ref->invoke($this->discovery, [
+            'tag' => 'gallery',
+            'className' => 'App\\Shortcodes\\Gallery',
+            'methodName' => 'renderGallery',
         ]);
-        $this->discovery->getItems()->add($this->location, [
-            'attribute' => $attribute2,
-            'method' => $methodReflector2,
+        $ref->invoke($this->discovery, [
+            'tag' => 'button',
+            'className' => 'App\\Shortcodes\\Button',
+            'methodName' => 'renderButton',
         ]);
 
         $cacheableData = $this->discovery->getCacheableData();
@@ -106,19 +63,17 @@ describe('ShortcodeDiscovery caching', function () {
     });
 
     it('handles shortcodes from same class', function () {
-        $attribute1 = new AsShortcode('link');
-        $attribute2 = new AsShortcode('external_link');
+        $ref = new ReflectionMethod($this->discovery, 'addItem');
 
-        $methodReflector1 = createMethodReflector('App\\Shortcodes\\LinkShortcodes', 'renderLink');
-        $methodReflector2 = createMethodReflector('App\\Shortcodes\\LinkShortcodes', 'renderExternalLink');
-
-        $this->discovery->getItems()->add($this->location, [
-            'attribute' => $attribute1,
-            'method' => $methodReflector1,
+        $ref->invoke($this->discovery, [
+            'tag' => 'link',
+            'className' => 'App\\Shortcodes\\LinkShortcodes',
+            'methodName' => 'renderLink',
         ]);
-        $this->discovery->getItems()->add($this->location, [
-            'attribute' => $attribute2,
-            'method' => $methodReflector2,
+        $ref->invoke($this->discovery, [
+            'tag' => 'external_link',
+            'className' => 'App\\Shortcodes\\LinkShortcodes',
+            'methodName' => 'renderExternalLink',
         ]);
 
         $cacheableData = $this->discovery->getCacheableData();

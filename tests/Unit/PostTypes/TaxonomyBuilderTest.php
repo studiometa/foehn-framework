@@ -121,4 +121,58 @@ describe('TaxonomyBuilder', function () {
 
         expect($result)->toBe($builder);
     });
+
+    it('supports custom labels merged with auto-generated', function () {
+        $attribute = new AsTaxonomy(
+            name: 'genre',
+            singular: 'Genre',
+            plural: 'Genres',
+            labels: ['menu_name' => 'Music Genres', 'all_items' => 'All Music Genres'],
+        );
+
+        $builder = TaxonomyBuilder::fromAttribute($attribute);
+        $args = $builder->build();
+
+        expect($args['labels']['menu_name'])->toBe('Music Genres');
+        expect($args['labels']['all_items'])->toBe('All Music Genres');
+        // Auto-generated labels still present
+        expect($args['labels']['singular_name'])->toBe('Genre');
+    });
+
+    it('supports full rewrite config', function () {
+        $attribute = new AsTaxonomy(
+            name: 'genre',
+            rewrite: ['slug' => 'music-genre', 'hierarchical' => true],
+        );
+
+        $builder = TaxonomyBuilder::fromAttribute($attribute);
+        $args = $builder->build();
+
+        expect($args['rewrite'])->toBe(['slug' => 'music-genre', 'hierarchical' => true]);
+    });
+
+    it('supports rewrite false to disable', function () {
+        $attribute = new AsTaxonomy(
+            name: 'internal_tag',
+            rewrite: false,
+        );
+
+        $builder = TaxonomyBuilder::fromAttribute($attribute);
+        $args = $builder->build();
+
+        expect($args['rewrite'])->toBeFalse();
+    });
+
+    it('prioritizes rewrite over rewriteSlug', function () {
+        $attribute = new AsTaxonomy(
+            name: 'genre',
+            rewriteSlug: 'old-slug',
+            rewrite: ['slug' => 'new-slug', 'with_front' => false],
+        );
+
+        $builder = TaxonomyBuilder::fromAttribute($attribute);
+        $args = $builder->build();
+
+        expect($args['rewrite'])->toBe(['slug' => 'new-slug', 'with_front' => false]);
+    });
 });
