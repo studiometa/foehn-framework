@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Studiometa\WPTempest\Blocks;
 
+use Studiometa\WPTempest\Config\WpTempestConfig;
 use Studiometa\WPTempest\Contracts\AcfBlockInterface;
 
 /**
@@ -11,6 +12,11 @@ use Studiometa\WPTempest\Contracts\AcfBlockInterface;
  */
 final class AcfBlockRenderer
 {
+    public function __construct(
+        private readonly ?WpTempestConfig $config = null,
+        private readonly ?AcfFieldTransformer $transformer = null,
+    ) {}
+
     /**
      * Render an ACF block.
      *
@@ -23,6 +29,16 @@ final class AcfBlockRenderer
     {
         // Get field values
         $fields = $this->getFields($blockData);
+
+        // Transform fields if enabled
+        if ($this->shouldTransformFields()) {
+            $blockId = $blockData['id'] ?? null;
+
+            if ($blockId !== null) {
+                $transformer = $this->transformer ?? new AcfFieldTransformer();
+                $fields = $transformer->transformFields($fields, $blockId);
+            }
+        }
 
         // Compose the context
         $context = $block->compose($blockData, $fields);
@@ -85,6 +101,18 @@ final class AcfBlockRenderer
         }
 
         return $fields;
+    }
+
+    /**
+     * Check if field transformation is enabled.
+     */
+    private function shouldTransformFields(): bool
+    {
+        if ($this->config === null) {
+            return true;
+        }
+
+        return $this->config->acfTransformFields;
     }
 
     /**

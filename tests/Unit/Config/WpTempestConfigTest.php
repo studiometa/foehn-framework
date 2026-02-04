@@ -16,6 +16,7 @@ describe('WpTempestConfig', function () {
         expect($config->hooks)->toBe([]);
         expect($config->isDiscoveryCacheEnabled())->toBeFalse();
         expect($config->timberTemplatesDir)->toBe(['templates']);
+        expect($config->acfTransformFields)->toBeTrue();
     });
 
     it('can be instantiated with full strategy', function () {
@@ -133,6 +134,28 @@ describe('WpTempestConfig', function () {
             $config = WpTempestConfig::fromArray([]);
 
             expect($config->hooks)->toBe([]);
+        });
+
+        it('creates config with acf_transform_fields true by default', function () {
+            $config = WpTempestConfig::fromArray([]);
+
+            expect($config->acfTransformFields)->toBeTrue();
+        });
+
+        it('creates config with acf_transform_fields disabled', function () {
+            $config = WpTempestConfig::fromArray([
+                'acf_transform_fields' => false,
+            ]);
+
+            expect($config->acfTransformFields)->toBeFalse();
+        });
+
+        it('creates config with acf_transform_fields enabled', function () {
+            $config = WpTempestConfig::fromArray([
+                'acf_transform_fields' => true,
+            ]);
+
+            expect($config->acfTransformFields)->toBeTrue();
         });
     });
 });
