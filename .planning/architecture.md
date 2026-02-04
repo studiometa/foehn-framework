@@ -1,6 +1,6 @@
 # Architecture: studiometa/wp-tempest
 
-## 1. Vue d'ensemble
+## 1. Overview
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -22,7 +22,7 @@
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-## 2. Structure du package
+## 2. Package Structure
 
 ```
 studiometa/wp-tempest/
@@ -118,7 +118,7 @@ studiometa/wp-tempest/
 └── README.md
 ```
 
-## 3. Composants principaux
+## 3. Main Components
 
 ### 3.1 Kernel
 
@@ -921,7 +921,7 @@ final readonly class SingleComposer implements ViewComposerInterface
 }
 ```
 
-## 7. Migration depuis wp-toolkit
+## 7. Migration from wp-toolkit
 
 ### Avant (wp-toolkit)
 

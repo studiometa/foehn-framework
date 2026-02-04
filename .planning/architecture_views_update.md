@@ -1,6 +1,6 @@
-# Architecture Update: Views pour Patterns & Interactivity
+# Architecture Update: Views for Patterns & Interactivity
 
-## Problème
+## Problem
 
 Les Block Patterns et l'Interactivity API utilisent des heredocs HTML :
 
@@ -26,7 +26,7 @@ public function render(): string
 }
 ```
 
-## Solution : ViewEngine partout
+## Solution: ViewEngine Everywhere
 
 Utiliser le moteur de rendu (Twig/Blade/Tempest View) pour tout :
 
@@ -47,9 +47,9 @@ Utiliser le moteur de rendu (Twig/Blade/Tempest View) pour tout :
 
 ---
 
-## 1. Block Patterns avec ViewEngine
+## 1. Block Patterns with ViewEngine
 
-### Attribut mis à jour
+### Updated Attribute
 
 ```php
 <?php
@@ -101,7 +101,7 @@ interface BlockPatternInterface
 }
 ```
 
-### Implémentation Pattern
+### Pattern Implementation
 
 ```php
 <?php
@@ -138,7 +138,7 @@ final readonly class HeroWithCta implements BlockPatternInterface
 }
 ```
 
-### Template Twig pour Pattern
+### Twig Template for Pattern
 
 ```twig
 {# templates/patterns/hero-with-cta.twig #}
@@ -178,7 +178,7 @@ final readonly class HeroWithCta implements BlockPatternInterface
 <!-- /wp:cover -->
 ```
 
-### Discovery mis à jour
+### Updated Discovery
 
 ```php
 <?php
@@ -273,9 +273,9 @@ final class BlockPatternDiscovery implements Discovery
 
 ---
 
-## 2. Interactivity API avec ViewEngine
+## 2. Interactivity API with ViewEngine
 
-### Attribut mis à jour
+### Updated Attribute
 
 ```php
 <?php
@@ -307,7 +307,7 @@ final readonly class AsBlock
 }
 ```
 
-### Interface pour blocks interactifs
+### Interface for Interactive Blocks
 
 ```php
 <?php
@@ -335,7 +335,7 @@ interface InteractiveBlockInterface extends BlockInterface
 }
 ```
 
-### Implémentation Block Interactif
+### Interactive Block Implementation
 
 ```php
 <?php
@@ -448,7 +448,7 @@ final readonly class CounterBlock implements InteractiveBlockInterface
 }
 ```
 
-### Template Twig pour Block Interactif
+### Twig Template for Interactive Block
 
 ```twig
 {# templates/blocks/counter.twig #}
@@ -570,7 +570,7 @@ const { state, actions } = store('theme/counter', {
 
 ---
 
-## 3. Exemple avancé : Tabs interactifs
+## 3. Advanced Example: Interactive Tabs
 
 ### Block Class
 
@@ -780,7 +780,7 @@ final class InteractivityExtension extends AbstractExtension
 }
 ```
 
-### Usage dans templates
+### Usage in Templates
 
 ```twig
 {# Avec helpers #}
@@ -803,7 +803,7 @@ final class InteractivityExtension extends AbstractExtension
 
 ---
 
-## 5. Structure fichiers mise à jour
+## 5. Updated File Structure
 
 ```
 theme/
@@ -840,7 +840,7 @@ theme/
 
 ---
 
-## 6. Avantages de cette approche
+## 6. Benefits of This Approach
 
 | Aspect | Heredoc HTML | ViewEngine |
 |--------|--------------|------------|
@@ -857,7 +857,7 @@ theme/
 
 ---
 
-## 7. Mise à jour task_plan.md
+## 7. task_plan.md Update
 
 Ajouter dans Phase 5 et 6 :
 

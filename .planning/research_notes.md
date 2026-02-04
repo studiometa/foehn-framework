@@ -1,83 +1,83 @@
 # Research Notes: wp-tempest
 
-## 1. Analyse wp-toolkit existant
+## 1. Existing wp-toolkit Analysis
 
-### Points forts
-- `PostTypeBuilder` / `TaxonomyBuilder` : génération labels automatique
-- `AssetsManager` : intégration webpack manifest
-- `CleanupManager` : hardening WP centralisé
+### Strengths
+- `PostTypeBuilder` / `TaxonomyBuilder`: automatic label generation
+- `AssetsManager`: webpack manifest integration
+- `CleanupManager`: centralized WP hardening
 
-### Redondances avec Timber
-| wp-toolkit | Timber natif | Verdict |
-|------------|--------------|---------|
-| `Repository` | `Timber::get_posts()` | Supprimer |
-| `PostRepository` | `Timber::get_posts()` | Supprimer |
-| `TermRepository` | `Timber::get_terms()` | Supprimer |
-| `CustomPostTypesManager::set_classmap` | `timber/post/classmap` filter | Supprimer |
+### Redundancies with Timber
+| wp-toolkit | Timber native | Verdict |
+|------------|---------------|---------|
+| `Repository` | `Timber::get_posts()` | Remove |
+| `PostRepository` | `Timber::get_posts()` | Remove |
+| `TermRepository` | `Timber::get_terms()` | Remove |
+| `CustomPostTypesManager::set_classmap` | `timber/post/classmap` filter | Remove |
 
-### Problèmes identifiés
-- `ManagerInterface::run()` trop simpliste
-- Pas de DI, injection manuelle
-- Pas de séparation register/boot
-- Pas testable (couplage aux hooks WP)
+### Identified Problems
+- `ManagerInterface::run()` too simplistic
+- No DI, manual injection
+- No separation of register/boot
+- Not testable (coupled to WP hooks)
 
 ## 2. Tempest Framework
 
-### Métriques (2026-02-04)
-- Version : v2.14.0
-- GitHub Stars : 2,056
-- Architecture : Monorepo (30+ packages)
-- PHP requis : 8.4+
-- Mainteneur : Brent Roose (spatie.be)
+### Metrics (2026-02-04)
+- Version: v2.14.0
+- GitHub Stars: 2,056
+- Architecture: Monorepo (30+ packages)
+- PHP required: 8.4+
+- Maintainer: Brent Roose (spatie.be)
 
-### Composants utilisables
+### Usable Components
 ```
-tempest/container    - DI container avec auto-wiring
-tempest/discovery    - Auto-discovery via attributs
-tempest/reflection   - Réflexion PHP avancée
+tempest/container    - DI container with auto-wiring
+tempest/discovery    - Auto-discovery via attributes
+tempest/reflection   - Advanced PHP reflection
 tempest/console      - CLI commands
-tempest/view         - View components (optionnel)
-tempest/validation   - Validation (optionnel)
+tempest/view         - View components (optional)
+tempest/validation   - Validation (optional)
 ```
 
 ### Discovery Pattern
 ```php
-// Tempest scanne les classes et applique les discoveries
+// Tempest scans classes and applies discoveries
 final class HookDiscovery implements Discovery
 {
     public function discover(DiscoveryLocation $location, ClassReflector $class): void
     {
-        // Trouve les méthodes avec attributs
+        // Find methods with attributes
     }
     
     public function apply(): void
     {
-        // Exécute les enregistrements
+        // Execute registrations
     }
 }
 ```
 
 ### View Components
-- Convention : `x-*.view.php`
-- Auto-découverts par `ViewComponentDiscovery`
-- Rendu via `ViewRenderer`
+- Convention: `x-*.view.php`
+- Auto-discovered by `ViewComponentDiscovery`
+- Rendered via `ViewRenderer`
 
-## 3. Acorn (Laravel pour WP)
+## 3. Acorn (Laravel for WP)
 
-### Ce qu'Acorn apporte
+### What Acorn Provides
 - Service Providers (register/boot)
 - View Composers
 - Blade templating
 - Artisan CLI
-- Eloquent ORM (optionnel)
+- Eloquent ORM (optional)
 
-### Différences avec Tempest
+### Differences with Tempest
 | Aspect | Acorn | Tempest |
 |--------|-------|---------|
-| Philosophie | Convention-first | Discovery-first |
-| Config | Fichiers config/*.php | Attributs PHP 8 |
-| Providers | Manuels | Auto-découverts |
-| Verbosité | Plus de boilerplate | Moins de code |
+| Philosophy | Convention-first | Discovery-first |
+| Config | config/*.php files | PHP 8 attributes |
+| Providers | Manual | Auto-discovered |
+| Verbosity | More boilerplate | Less code |
 
 ## 4. WordPress FSE & Gutenberg
 
@@ -104,10 +104,10 @@ acf_register_block_type([
 ```
 
 ### theme.json
-- Définit design tokens (couleurs, typo, spacing)
-- Configure les supports des blocks
-- Styles globaux et par block
-- Custom templates et template parts
+- Defines design tokens (colors, typography, spacing)
+- Configures block supports
+- Global and per-block styles
+- Custom templates and template parts
 
 ### Block Patterns
 ```php
@@ -130,7 +130,7 @@ wp_interactivity_state('myblock', ['count' => 0]);
 
 ## 5. Timber 2.x
 
-### API principale
+### Main API
 ```php
 // Querying
 $posts = Timber::get_posts($args);
@@ -160,27 +160,27 @@ add_filter('timber/context', function($context) {
 });
 ```
 
-## 6. Décisions d'architecture
+## 6. Architecture Decisions
 
-### Attributs à créer
+### Attributes to Create
 
-| Attribut | WordPress équivalent | Cible |
-|----------|---------------------|-------|
-| `#[AsAction]` | `add_action()` | Méthode |
-| `#[AsFilter]` | `add_filter()` | Méthode |
-| `#[AsPostType]` | `register_post_type()` | Classe |
-| `#[AsTaxonomy]` | `register_taxonomy()` | Classe |
-| `#[AsBlock]` | `register_block_type()` | Classe |
-| `#[AsAcfBlock]` | `acf_register_block_type()` | Classe |
-| `#[AsBlockPattern]` | `register_block_pattern()` | Classe |
-| `#[AsViewComposer]` | `timber/context` filter | Classe |
-| `#[AsTemplateController]` | `template_include` | Classe |
-| `#[AsShortcode]` | `add_shortcode()` | Méthode |
-| `#[AsRestRoute]` | `register_rest_route()` | Méthode |
+| Attribute | WordPress equivalent | Target |
+|----------|---------------------|--------|
+| `#[AsAction]` | `add_action()` | Method |
+| `#[AsFilter]` | `add_filter()` | Method |
+| `#[AsPostType]` | `register_post_type()` | Class |
+| `#[AsTaxonomy]` | `register_taxonomy()` | Class |
+| `#[AsBlock]` | `register_block_type()` | Class |
+| `#[AsAcfBlock]` | `acf_register_block_type()` | Class |
+| `#[AsBlockPattern]` | `register_block_pattern()` | Class |
+| `#[AsViewComposer]` | `timber/context` filter | Class |
+| `#[AsTemplateController]` | `template_include` | Class |
+| `#[AsShortcode]` | `add_shortcode()` | Method |
+| `#[AsRestRoute]` | `register_rest_route()` | Method |
 
-### Discoveries à implémenter
+### Discoveries to Implement
 
-1. `HookDiscovery` - Actions et filters
+1. `HookDiscovery` - Actions and filters
 2. `PostTypeDiscovery` - CPT + Timber classmap
 3. `TaxonomyDiscovery` - Taxonomies
 4. `BlockDiscovery` - Native Gutenberg blocks
@@ -191,13 +191,13 @@ add_filter('timber/context', function($context) {
 9. `ShortcodeDiscovery` - Shortcodes
 10. `RestRouteDiscovery` - REST API
 
-### Lifecycle WordPress vs Tempest
+### WordPress Lifecycle vs Tempest
 
 ```
 WordPress Boot:
 1. mu-plugins loaded
 2. plugins loaded  
-3. after_setup_theme    ← Kernel::boot() ici
+3. after_setup_theme    ← Kernel::boot() here
 4. init                 ← Discoveries applied
 5. wp_loaded
 6. template_redirect    ← Template controllers
@@ -216,24 +216,21 @@ $kernel->boot(__DIR__ . '/app', [
 ]);
 ```
 
-## 7. Questions ouvertes
+## 7. Open Questions (Resolved)
 
 ### PHP Version
-- **8.4** : Features complètes Tempest, property hooks
-- **8.2** : Plus d'hébergements compatibles
-- **Recommandation** : 8.4 pour nouveaux projets, documenter
+- **8.4**: Full Tempest features, property hooks
+- ~~**8.2**: More hosting compatibility~~
+- **Decision**: 8.4 for new projects, document clearly
 
 ### Namespace
-- `Studiometa\WPTempest` - Clair, lié à Studio Meta
-- `WPTempest` - Plus court, générique
-- **Recommandation** : `Studiometa\WPTempest`
+- ~~`WPTempest` - Shorter, generic~~
+- **Decision**: `Studiometa\WPTempest`
 
 ### Repository
-- **Séparé** : Plus flexible, releases indépendantes
-- **Monorepo avec wp-toolkit** : Partage code, mais couplage
-- **Recommandation** : Séparé, wp-toolkit peut dépendre de wp-tempest
+- **Decision**: Separate, wp-toolkit can be deprecated
+- ~~Monorepo with wp-toolkit: Share code, but coupling~~
 
 ### ViewEngine
-- **Timber only** : Simple, écosystème existant
-- **Multi-engine** : Twig + Blade + Tempest View
-- **Recommandation** : Timber par défaut, interface pour extensibilité
+- **Decision**: Timber by default, interface for extensibility
+- ~~Multi-engine: Twig + Blade + Tempest View~~
