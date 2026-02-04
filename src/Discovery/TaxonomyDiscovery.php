@@ -5,38 +5,38 @@ declare(strict_types=1);
 namespace Studiometa\WPTempest\Discovery;
 
 use InvalidArgumentException;
+use ReflectionClass;
 use Studiometa\WPTempest\Attributes\AsTaxonomy;
 use Studiometa\WPTempest\Contracts\ConfiguresTaxonomy;
 use Studiometa\WPTempest\Discovery\Concerns\CacheableDiscovery;
+use Studiometa\WPTempest\Discovery\Concerns\IsWpDiscovery;
 use Studiometa\WPTempest\PostTypes\TaxonomyBuilder;
-use Tempest\Discovery\Discovery;
-use Tempest\Discovery\DiscoveryLocation;
-use Tempest\Discovery\IsDiscovery;
-use Tempest\Reflection\ClassReflector;
 use Timber\Term;
 
 /**
  * Discovers classes marked with #[AsTaxonomy] attribute
  * and registers them as WordPress custom taxonomies.
  */
-final class TaxonomyDiscovery implements Discovery
+final class TaxonomyDiscovery implements WpDiscovery
 {
-    use IsDiscovery;
+    use IsWpDiscovery;
     use CacheableDiscovery;
 
     /**
      * Discover taxonomy attributes on classes.
+     *
+     * @param ReflectionClass<object> $class
      */
-    public function discover(DiscoveryLocation $location, ClassReflector $class): void
+    public function discover(ReflectionClass $class): void
     {
-        $attribute = $class->getAttribute(AsTaxonomy::class);
+        $attributes = $class->getAttributes(AsTaxonomy::class);
 
-        if ($attribute === null) {
+        if ($attributes === []) {
             return;
         }
 
         // Verify the class extends Timber\Term
-        if (!$class->getReflection()->isSubclassOf(Term::class)) {
+        if (!$class->isSubclassOf(Term::class)) {
             throw new InvalidArgumentException(sprintf(
                 'Class %s must extend %s to use #[AsTaxonomy]',
                 $class->getName(),
@@ -44,10 +44,12 @@ final class TaxonomyDiscovery implements Discovery
             ));
         }
 
-        $this->discoveryItems->add($location, [
+        $attribute = $attributes[0]->newInstance();
+
+        $this->addItem([
             'attribute' => $attribute,
             'className' => $class->getName(),
-            'implementsConfig' => $class->getReflection()->implementsInterface(ConfiguresTaxonomy::class),
+            'implementsConfig' => $class->implementsInterface(ConfiguresTaxonomy::class),
         ]);
     }
 
@@ -87,6 +89,8 @@ final class TaxonomyDiscovery implements Discovery
                 showInRest: $item['showInRest'] ?? true,
                 showAdminColumn: $item['showAdminColumn'] ?? true,
                 rewriteSlug: $item['rewriteSlug'] ?? null,
+                labels: $item['labels'] ?? [],
+                rewrite: $item['rewrite'] ?? null,
             );
             $builder = TaxonomyBuilder::fromAttribute($attribute);
             $taxonomyName = $item['name'];
@@ -141,6 +145,8 @@ final class TaxonomyDiscovery implements Discovery
             'showInRest' => $attribute->showInRest,
             'showAdminColumn' => $attribute->showAdminColumn,
             'rewriteSlug' => $attribute->rewriteSlug,
+            'labels' => $attribute->labels,
+            'rewrite' => $attribute->rewrite,
             'className' => $item['className'],
             'implementsConfig' => $item['implementsConfig'],
         ];

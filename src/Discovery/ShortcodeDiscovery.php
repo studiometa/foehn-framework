@@ -4,13 +4,11 @@ declare(strict_types=1);
 
 namespace Studiometa\WPTempest\Discovery;
 
+use ReflectionClass;
+use ReflectionMethod;
 use Studiometa\WPTempest\Attributes\AsShortcode;
 use Studiometa\WPTempest\Discovery\Concerns\CacheableDiscovery;
-use Tempest\Discovery\Discovery;
-use Tempest\Discovery\DiscoveryLocation;
-use Tempest\Discovery\IsDiscovery;
-use Tempest\Reflection\ClassReflector;
-use Tempest\Reflection\MethodReflector;
+use Studiometa\WPTempest\Discovery\Concerns\IsWpDiscovery;
 
 use function Tempest\get;
 
@@ -18,26 +16,35 @@ use function Tempest\get;
  * Discovers methods marked with #[AsShortcode] attribute
  * and registers them as WordPress shortcodes.
  */
-final class ShortcodeDiscovery implements Discovery
+final class ShortcodeDiscovery implements WpDiscovery
 {
-    use IsDiscovery;
+    use IsWpDiscovery;
     use CacheableDiscovery;
 
     /**
      * Discover shortcode attributes on methods.
+     *
+     * @param ReflectionClass<object> $class
      */
-    public function discover(DiscoveryLocation $location, ClassReflector $class): void
+    public function discover(ReflectionClass $class): void
     {
-        foreach ($class->getPublicMethods() as $method) {
-            $attribute = $method->getAttribute(AsShortcode::class);
-
-            if ($attribute === null) {
+        foreach ($class->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
+            if ($method->getDeclaringClass()->getName() !== $class->getName()) {
                 continue;
             }
 
-            $this->discoveryItems->add($location, [
-                'attribute' => $attribute,
-                'method' => $method,
+            $attributes = $method->getAttributes(AsShortcode::class);
+
+            if ($attributes === []) {
+                continue;
+            }
+
+            $attribute = $attributes[0]->newInstance();
+
+            $this->addItem([
+                'tag' => $attribute->tag,
+                'className' => $method->getDeclaringClass()->getName(),
+                'methodName' => $method->getName(),
             ]);
         }
     }
@@ -48,37 +55,8 @@ final class ShortcodeDiscovery implements Discovery
     public function apply(): void
     {
         foreach ($this->getAllItems() as $item) {
-            // Handle cached format
-            if (isset($item['className'])) {
-                $this->registerShortcodeFromCache($item);
-            } else {
-                $this->registerShortcode($item['attribute'], $item['method']);
-            }
+            $this->doRegisterShortcode($item['tag'], $item['className'], $item['methodName']);
         }
-    }
-
-    /**
-     * Register a single shortcode.
-     *
-     * @param AsShortcode $attribute
-     * @param MethodReflector $method
-     */
-    private function registerShortcode(AsShortcode $attribute, MethodReflector $method): void
-    {
-        $className = $method->getDeclaringClass()->getName();
-        $methodName = $method->getName();
-
-        $this->doRegisterShortcode($attribute->tag, $className, $methodName);
-    }
-
-    /**
-     * Register shortcode from cached data.
-     *
-     * @param array<string, mixed> $item
-     */
-    private function registerShortcodeFromCache(array $item): void
-    {
-        $this->doRegisterShortcode($item['tag'], $item['className'], $item['methodName']);
     }
 
     /**
@@ -104,15 +82,10 @@ final class ShortcodeDiscovery implements Discovery
      */
     protected function itemToCacheable(array $item): array
     {
-        /** @var AsShortcode $attribute */
-        $attribute = $item['attribute'];
-        /** @var MethodReflector $method */
-        $method = $item['method'];
-
         return [
-            'tag' => $attribute->tag,
-            'className' => $method->getDeclaringClass()->getName(),
-            'methodName' => $method->getName(),
+            'tag' => $item['tag'],
+            'className' => $item['className'],
+            'methodName' => $item['methodName'],
         ];
     }
 }
