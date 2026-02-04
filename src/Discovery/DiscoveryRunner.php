@@ -154,6 +154,37 @@ final class DiscoveryRunner
                 $discovery->discover($class);
             }
         }
+
+        // Also discover opt-in hook classes from config
+        $this->discoverOptInHooks();
+    }
+
+    /**
+     * Discover opt-in hook classes from WpTempestConfig.
+     */
+    private function discoverOptInHooks(): void
+    {
+        try {
+            $config = $this->container->get(\Studiometa\WPTempest\Config\WpTempestConfig::class);
+        } catch (\Throwable) {
+            return;
+        }
+
+        foreach ($config->hooks as $hookClass) {
+            if (!class_exists($hookClass)) {
+                continue;
+            }
+
+            try {
+                $reflection = new ReflectionClass($hookClass);
+
+                foreach ($this->discoveries as $discovery) {
+                    $discovery->discover($reflection);
+                }
+            } catch (\ReflectionException) {
+                continue;
+            }
+        }
     }
 
     /**
