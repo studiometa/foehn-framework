@@ -4,16 +4,9 @@ declare(strict_types=1);
 
 use Studiometa\WPTempest\Attributes\AsAcfBlock;
 use Studiometa\WPTempest\Discovery\AcfBlockDiscovery;
-use Tempest\Discovery\DiscoveryItems;
-use Tempest\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
     $this->discovery = new AcfBlockDiscovery();
-    $this->discovery->setItems(new DiscoveryItems());
-    $this->location = new DiscoveryLocation(
-        namespace: 'App\\Test',
-        path: __DIR__,
-    );
 });
 
 describe('AcfBlockDiscovery caching', function () {
@@ -31,7 +24,8 @@ describe('AcfBlockDiscovery caching', function () {
             parent: 'acf/section',
         );
 
-        $this->discovery->getItems()->add($this->location, [
+        $ref = new ReflectionMethod($this->discovery, 'addItem');
+        $ref->invoke($this->discovery, [
             'attribute' => $attribute,
             'className' => 'App\\Blocks\\HeroBlock',
         ]);
@@ -57,14 +51,14 @@ describe('AcfBlockDiscovery caching', function () {
             title: 'Simple Block',
         );
 
-        $this->discovery->getItems()->add($this->location, [
+        $ref = new ReflectionMethod($this->discovery, 'addItem');
+        $ref->invoke($this->discovery, [
             'attribute' => $attribute,
             'className' => 'App\\Blocks\\SimpleBlock',
         ]);
 
         $cacheableData = $this->discovery->getCacheableData();
 
-        // Default supports should be applied
         expect($cacheableData[0]['supports'])->toBe([
             'align' => false,
             'mode' => true,
@@ -79,7 +73,8 @@ describe('AcfBlockDiscovery caching', function () {
             supports: ['align' => ['wide', 'full'], 'jsx' => true],
         );
 
-        $this->discovery->getItems()->add($this->location, [
+        $ref = new ReflectionMethod($this->discovery, 'addItem');
+        $ref->invoke($this->discovery, [
             'attribute' => $attribute,
             'className' => 'App\\Blocks\\CustomBlock',
         ]);
@@ -100,7 +95,8 @@ describe('AcfBlockDiscovery caching', function () {
             title: 'Minimal Block',
         );
 
-        $this->discovery->getItems()->add($this->location, [
+        $ref = new ReflectionMethod($this->discovery, 'addItem');
+        $ref->invoke($this->discovery, [
             'attribute' => $attribute,
             'className' => 'App\\Blocks\\MinimalBlock',
         ]);

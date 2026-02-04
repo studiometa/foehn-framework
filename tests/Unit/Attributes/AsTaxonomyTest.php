@@ -17,6 +17,8 @@ describe('AsTaxonomy', function () {
         expect($attribute->showInRest)->toBeTrue();
         expect($attribute->showAdminColumn)->toBeTrue();
         expect($attribute->rewriteSlug)->toBeNull();
+        expect($attribute->labels)->toBe([]);
+        expect($attribute->rewrite)->toBeNull();
     });
 
     it('can be instantiated with all parameters', function () {
@@ -30,6 +32,8 @@ describe('AsTaxonomy', function () {
             showInRest: true,
             showAdminColumn: true,
             rewriteSlug: 'category',
+            labels: ['menu_name' => 'Product Categories'],
+            rewrite: ['slug' => 'product-cat', 'hierarchical' => true],
         );
 
         expect($attribute->name)->toBe('product_category');
@@ -41,6 +45,17 @@ describe('AsTaxonomy', function () {
         expect($attribute->showInRest)->toBeTrue();
         expect($attribute->showAdminColumn)->toBeTrue();
         expect($attribute->rewriteSlug)->toBe('category');
+        expect($attribute->labels)->toBe(['menu_name' => 'Product Categories']);
+        expect($attribute->rewrite)->toBe(['slug' => 'product-cat', 'hierarchical' => true]);
+    });
+
+    it('supports rewrite as false to disable', function () {
+        $attribute = new AsTaxonomy(
+            name: 'internal_tag',
+            rewrite: false,
+        );
+
+        expect($attribute->rewrite)->toBeFalse();
     });
 
     it('is readonly', function () {
