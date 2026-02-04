@@ -7,11 +7,11 @@ Créer un package Composer `studiometa/wp-tempest` qui intègre Tempest Framewor
 ## Phases
 
 ### Phase 1: Fondations
-- [ ] 1.1 Setup du package Composer (structure, autoload, dépendances)
-- [ ] 1.2 Kernel et bootstrap WordPress
-- [ ] 1.3 Intégration Container Tempest
-- [ ] 1.4 Discovery de base (hooks: actions/filters)
-- [ ] 1.5 Tests unitaires de base
+- [x] 1.1 Setup du package Composer (structure, autoload, dépendances)
+- [x] 1.2 Kernel et bootstrap WordPress
+- [x] 1.3 Intégration Container Tempest
+- [x] 1.4 Discovery de base (hooks: actions/filters)
+- [x] 1.5 Tests unitaires de base (Pest)
 
 ### Phase 2: Post Types & Taxonomies
 - [ ] 2.1 Attribut `#[AsPostType]`
@@ -139,7 +139,7 @@ Créer un package Composer `studiometa/wp-tempest` qui intègre Tempest Framewor
 
 ## Status
 
-**Phase 0 : Planification** ✅ - Architecture définie, prêt pour implémentation
+**Phase 1 : Fondations** ✅ - Kernel, Container, Hooks discovery implémentés
 
 ---
 
@@ -153,3 +153,8 @@ Créer un package Composer `studiometa/wp-tempest` qui intègre Tempest Framewor
 | 2026-02-04 | 0 | Design ViewEngine unified | Patterns + Interactivity via templates |
 | 2026-02-04 | 0 | Exemple thème complet | Tous les use cases documentés |
 | 2026-02-04 | 0 | Création plan | Documents complets |
+| 2026-02-04 | 1 | Setup projet | composer.json, LICENSE, README, configs |
+| 2026-02-04 | 1 | Kernel + helpers | Bootstrap WP + Tempest integration |
+| 2026-02-04 | 1 | Attributs hooks | #[AsAction], #[AsFilter] |
+| 2026-02-04 | 1 | Discovery système | HookDiscovery, DiscoveryRunner |
+| 2026-02-04 | 1 | Tests Pest | Couverture attributs |
