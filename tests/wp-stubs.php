@@ -325,6 +325,13 @@ if (!function_exists('get_query_var')) {
 // Misc
 // ──────────────────────────────────────────────
 
+if (!function_exists('is_admin')) {
+    function is_admin(): bool
+    {
+        return $GLOBALS['wp_stub_is_admin'] ?? false;
+    }
+}
+
 if (!function_exists('esc_attr')) {
     function esc_attr(string $text): string
     {
@@ -338,3 +345,4 @@ $GLOBALS['wp_stub_logged_in'] = false;
 $GLOBALS['wp_stub_post_type'] = 'post';
 $GLOBALS['wp_stub_queried_object'] = null;
 $GLOBALS['wp_stub_query_vars'] = [];
+$GLOBALS['wp_stub_is_admin'] = false;
