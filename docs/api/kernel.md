@@ -74,23 +74,37 @@ Kernel::boot(__DIR__ . '/app');
 With configuration:
 
 ```php
+use Studiometa\WPTempest\Hooks\Cleanup\DisableEmoji;
+use Studiometa\WPTempest\Hooks\Security\SecurityHeaders;
+
 Kernel::boot(__DIR__ . '/app', [
     // Enable discovery cache for production
     'discovery_cache' => 'full',  // 'full', 'partial', 'none'
 
     // Custom cache path (optional)
     'discovery_cache_path' => WP_CONTENT_DIR . '/cache/wp-tempest/discovery',
+
+    // Timber templates directories
+    'timber_templates_dir' => ['templates', 'views'],
+
+    // Opt-in built-in hooks
+    'hooks' => [
+        DisableEmoji::class,
+        SecurityHeaders::class,
+    ],
 ]);
 ```
 
 ### Configuration Options
 
-| Option                  | Type            | Default  | Description                               |
-| ----------------------- | --------------- | -------- | ----------------------------------------- |
-| `discovery_cache`       | `string\|bool`  | `'none'` | Cache strategy: 'full', 'partial', 'none' |
-| `discovery_cache_path`  | `string\|null`  | `null`   | Custom path for cache files               |
+| Option                 | Type             | Default         | Description                               |
+| ---------------------- | ---------------- | --------------- | ----------------------------------------- |
+| `discovery_cache`      | `string\|bool`   | `'none'`        | Cache strategy: 'full', 'partial', 'none' |
+| `discovery_cache_path` | `string\|null`   | `null`          | Custom path for cache files               |
+| `timber_templates_dir` | `string[]`       | `['templates']` | Timber templates directory names          |
+| `hooks`                | `class-string[]` | `[]`            | Opt-in hook classes to activate           |
 
-See [Discovery Cache](/guide/discovery-cache) for details.
+See [Discovery Cache](/guide/discovery-cache) and [Built-in Hooks](/guide/hooks#built-in-hooks) for details.
 
 ### getInstance()
 
