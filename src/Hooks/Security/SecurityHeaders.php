@@ -32,6 +32,9 @@ use Studiometa\WPTempest\Attributes\AsAction;
  */
 final class SecurityHeaders
 {
+    /**
+     * @codeCoverageIgnore Cannot test header() in CLI environment
+     */
     #[AsAction('send_headers')]
     public function sendSecurityHeaders(): void
     {

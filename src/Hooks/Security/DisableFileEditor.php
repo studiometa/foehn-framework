@@ -28,6 +28,9 @@ final class DisableFileEditor
      * Hooked early on `init` to ensure the constant is defined before
      * any admin page loads.
      */
+    /**
+     * @codeCoverageIgnore Cannot test define() as constants persist across tests
+     */
     #[AsAction('init', priority: 1)]
     public function disableFileEditor(): void
     {
