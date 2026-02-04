@@ -7,6 +7,7 @@ namespace Studiometa\WPTempest\Discovery;
 use InvalidArgumentException;
 use Studiometa\WPTempest\Attributes\AsPostType;
 use Studiometa\WPTempest\Contracts\ConfiguresPostType;
+use Studiometa\WPTempest\Discovery\Concerns\CacheableDiscovery;
 use Studiometa\WPTempest\PostTypes\PostTypeBuilder;
 use Tempest\Discovery\Discovery;
 use Tempest\Discovery\DiscoveryLocation;
@@ -21,6 +22,7 @@ use Timber\Post;
 final class PostTypeDiscovery implements Discovery
 {
     use IsDiscovery;
+    use CacheableDiscovery;
 
     /**
      * Discover post type attributes on classes.
@@ -54,7 +56,7 @@ final class PostTypeDiscovery implements Discovery
      */
     public function apply(): void
     {
-        foreach ($this->discoveryItems as $item) {
+        foreach ($this->getAllItems() as $item) {
             $this->registerPostType($item);
         }
     }
@@ -62,16 +64,28 @@ final class PostTypeDiscovery implements Discovery
     /**
      * Register a single post type with WordPress.
      *
-     * @param array{attribute: AsPostType, className: class-string, implementsConfig: bool} $item
+     * @param array{attribute?: AsPostType, className: class-string, implementsConfig: bool, name?: string, singular?: string, plural?: string, args?: array<string, mixed>} $item
      */
     private function registerPostType(array $item): void
     {
-        $attribute = $item['attribute'];
         $className = $item['className'];
         $implementsConfig = $item['implementsConfig'];
 
-        // Build the post type configuration
-        $builder = PostTypeBuilder::fromAttribute($attribute);
+        // Build from attribute or cached data
+        if (isset($item['attribute'])) {
+            $builder = PostTypeBuilder::fromAttribute($item['attribute']);
+            $postTypeName = $item['attribute']->name;
+        } else {
+            // Cached format - rebuild attribute
+            $attribute = new AsPostType(
+                name: $item['name'],
+                singular: $item['singular'],
+                plural: $item['plural'],
+                args: $item['args'] ?? [],
+            );
+            $builder = PostTypeBuilder::fromAttribute($attribute);
+            $postTypeName = $item['name'];
+        }
 
         // Allow class to customize the builder
         if ($implementsConfig) {
@@ -83,7 +97,7 @@ final class PostTypeDiscovery implements Discovery
         $builder->register();
 
         // Register Timber class map
-        $this->registerTimberClassMap($attribute->name, $className);
+        $this->registerTimberClassMap($postTypeName, $className);
     }
 
     /**
@@ -99,5 +113,26 @@ final class PostTypeDiscovery implements Discovery
 
             return $map;
         });
+    }
+
+    /**
+     * Convert a discovered item to a cacheable format.
+     *
+     * @param array{attribute: AsPostType, className: class-string, implementsConfig: bool} $item
+     * @return array{name: string, singular: string, plural: string, args: array<string, mixed>, className: class-string, implementsConfig: bool}
+     */
+    protected function itemToCacheable(array $item): array
+    {
+        /** @var AsPostType $attribute */
+        $attribute = $item['attribute'];
+
+        return [
+            'name' => $attribute->name,
+            'singular' => $attribute->singular,
+            'plural' => $attribute->plural,
+            'args' => $attribute->args,
+            'className' => $item['className'],
+            'implementsConfig' => $item['implementsConfig'],
+        ];
     }
 }

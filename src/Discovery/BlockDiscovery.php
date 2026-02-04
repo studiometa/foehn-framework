@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use Studiometa\WPTempest\Attributes\AsBlock;
 use Studiometa\WPTempest\Blocks\BlockRenderer;
 use Studiometa\WPTempest\Contracts\BlockInterface;
+use Studiometa\WPTempest\Discovery\Concerns\CacheableDiscovery;
 use Tempest\Discovery\Discovery;
 use Tempest\Discovery\DiscoveryLocation;
 use Tempest\Discovery\IsDiscovery;
@@ -23,6 +24,7 @@ use function Tempest\get;
 final class BlockDiscovery implements Discovery
 {
     use IsDiscovery;
+    use CacheableDiscovery;
 
     /**
      * Discover block attributes on classes.
@@ -56,8 +58,13 @@ final class BlockDiscovery implements Discovery
     public function apply(): void
     {
         add_action('init', function (): void {
-            foreach ($this->discoveryItems as $item) {
-                $this->registerBlock($item['attribute'], $item['className']);
+            foreach ($this->getAllItems() as $item) {
+                // Handle cached format
+                if (isset($item['blockName'])) {
+                    $this->registerBlockFromCache($item);
+                } else {
+                    $this->registerBlock($item['attribute'], $item['className']);
+                }
             }
         });
     }
@@ -70,44 +77,102 @@ final class BlockDiscovery implements Discovery
      */
     private function registerBlock(AsBlock $attribute, string $className): void
     {
+        $supports = $attribute->supports;
+
+        if ($attribute->interactivity) {
+            $supports['interactivity'] = true;
+        }
+
+        $this->doRegisterBlock(
+            $className,
+            $attribute->name,
+            $attribute->title,
+            $attribute->category,
+            $attribute->icon,
+            $attribute->description,
+            $attribute->keywords,
+            $supports,
+            $attribute->parent,
+            $attribute->ancestor,
+            $attribute->interactivity,
+            $attribute->interactivity ? $attribute->getInteractivityNamespace() : null,
+        );
+    }
+
+    /**
+     * Register block from cached data.
+     *
+     * @param array{className: string, blockName: string, title: string, category: string, icon: string|null, description: string|null, keywords: array<string>, supports: array<string, mixed>, parent: string|null, ancestor: array<string>, interactivity: bool, interactivityNamespace: string|null} $item
+     */
+    private function registerBlockFromCache(array $item): void
+    {
+        $this->doRegisterBlock(
+            $item['className'],
+            $item['blockName'],
+            $item['title'],
+            $item['category'],
+            $item['icon'],
+            $item['description'],
+            $item['keywords'],
+            $item['supports'],
+            $item['parent'],
+            $item['ancestor'],
+            $item['interactivity'],
+            $item['interactivityNamespace'],
+        );
+    }
+
+    /**
+     * Actually register the block.
+     *
+     * @param class-string<BlockInterface> $className
+     * @param array<string> $keywords
+     * @param array<string, mixed> $supports
+     * @param array<string> $ancestor
+     */
+    private function doRegisterBlock(
+        string $className,
+        string $blockName,
+        string $title,
+        string $category,
+        ?string $icon,
+        ?string $description,
+        array $keywords,
+        array $supports,
+        ?string $parent,
+        array $ancestor,
+        bool $interactivity,
+        ?string $interactivityNamespace,
+    ): void {
         $args = [
-            'title' => $attribute->title,
-            'category' => $attribute->category,
-            'render_callback' => $this->createRenderCallback($attribute, $className),
+            'title' => $title,
+            'category' => $category,
+            'render_callback' => $this->createRenderCallback($className, $interactivityNamespace),
         ];
 
         // Add optional configuration
-        if ($attribute->icon !== null) {
-            $args['icon'] = $attribute->icon;
+        if ($icon !== null) {
+            $args['icon'] = $icon;
         }
 
-        if ($attribute->description !== null) {
-            $args['description'] = $attribute->description;
+        if ($description !== null) {
+            $args['description'] = $description;
         }
 
-        if (!empty($attribute->keywords)) {
-            $args['keywords'] = $attribute->keywords;
+        if (!empty($keywords)) {
+            $args['keywords'] = $keywords;
         }
 
-        if (!empty($attribute->supports)) {
-            $supports = $attribute->supports;
-
-            // Add interactivity support
-            if ($attribute->interactivity) {
-                $supports['interactivity'] = true;
-            }
-
+        if (!empty($supports)) {
             $args['supports'] = $supports;
-        } elseif ($attribute->interactivity) {
-            $args['supports'] = ['interactivity' => true];
         }
 
-        if ($attribute->parent !== null) {
-            $args['parent'] = [$attribute->parent];
+        if ($parent !== null) {
+            $args['parent'] = [$parent];
         }
 
-        if (!empty($attribute->ancestor)) {
-            $args['ancestor'] = $attribute->ancestor;
+        if (!empty($ancestor)) {
+            $args['ancestor'] = $ancestor;
         }
 
         // Add attributes from class
@@ -116,21 +181,20 @@ final class BlockDiscovery implements Discovery
         }
 
         // Register the block
-        register_block_type($attribute->name, $args);
+        register_block_type($blockName, $args);
     }
 
     /**
      * Create the render callback for the block.
      *
-     * @param AsBlock $attribute
      * @param class-string<BlockInterface> $className
      * @return callable
      */
-    private function createRenderCallback(AsBlock $attribute, string $className): callable
+    private function createRenderCallback(string $className, ?string $interactivityNamespace): callable
     {
         return static function (array $attributes, string $content, WP_Block $block) use (
-            $attribute,
             $className,
+            $interactivityNamespace,
         ): string {
             /** @var BlockInterface $instance */
             $instance = get($className);
@@ -138,9 +202,40 @@ final class BlockDiscovery implements Discovery
             /** @var BlockRenderer $renderer */
             $renderer = get(BlockRenderer::class);
 
-            $interactivityNamespace = $attribute->interactivity ? $attribute->getInteractivityNamespace() : null;
-
             return $renderer->render($instance, $attributes, $content, $block, $interactivityNamespace);
         };
+    }
+
+    /**
+     * Convert a discovered item to a cacheable format.
+     *
+     * @param array{attribute: AsBlock, className: class-string} $item
+     * @return array{className: class-string, blockName: string, title: string, category: string, icon: string|null, description: string|null, keywords: array<string>, supports: array<string, mixed>, parent: string|null, ancestor: array<string>, interactivity: bool, interactivityNamespace: string|null}
+     */
+    protected function itemToCacheable(array $item): array
+    {
+        /** @var AsBlock $attribute */
+        $attribute = $item['attribute'];
+
+        $supports = $attribute->supports;
+
+        if ($attribute->interactivity) {
+            $supports['interactivity'] = true;
+        }
+
+        return [
+            'className' => $item['className'],
+            'blockName' => $attribute->name,
+            'title' => $attribute->title,
+            'category' => $attribute->category,
+            'icon' => $attribute->icon,
+            'description' => $attribute->description,
+            'keywords' => $attribute->keywords,
+            'supports' => $supports,
+            'parent' => $attribute->parent,
+            'ancestor' => $attribute->ancestor,
+            'interactivity' => $attribute->interactivity,
+            'interactivityNamespace' => $attribute->interactivity ? $attribute->getInteractivityNamespace() : null,
+        ];
     }
 }

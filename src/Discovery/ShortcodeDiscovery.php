@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Studiometa\WPTempest\Discovery;
 
 use Studiometa\WPTempest\Attributes\AsShortcode;
+use Studiometa\WPTempest\Discovery\Concerns\CacheableDiscovery;
 use Tempest\Discovery\Discovery;
 use Tempest\Discovery\DiscoveryLocation;
 use Tempest\Discovery\IsDiscovery;
@@ -20,6 +21,7 @@ use function Tempest\get;
 final class ShortcodeDiscovery implements Discovery
 {
     use IsDiscovery;
+    use CacheableDiscovery;
 
     /**
      * Discover shortcode attributes on methods.
@@ -45,8 +47,13 @@ final class ShortcodeDiscovery implements Discovery
      */
     public function apply(): void
     {
-        foreach ($this->discoveryItems as $item) {
-            $this->registerShortcode($item['attribute'], $item['method']);
+        foreach ($this->getAllItems() as $item) {
+            // Handle cached format
+            if (isset($item['className'])) {
+                $this->registerShortcodeFromCache($item);
+            } else {
+                $this->registerShortcode($item['attribute'], $item['method']);
+            }
         }
     }
 
@@ -61,16 +68,51 @@ final class ShortcodeDiscovery implements Discovery
         $className = $method->getDeclaringClass()->getName();
         $methodName = $method->getName();
 
-        add_shortcode($attribute->tag, static function ($atts, $content = null, $tag = '') use (
-            $className,
-            $methodName,
-        ) {
+        $this->doRegisterShortcode($attribute->tag, $className, $methodName);
+    }
+
+    /**
+     * Register shortcode from cached data.
+     *
+     * @param array{tag: string, className: string, methodName: string} $item
+     */
+    private function registerShortcodeFromCache(array $item): void
+    {
+        $this->doRegisterShortcode($item['tag'], $item['className'], $item['methodName']);
+    }
+
+    /**
+     * Actually register the shortcode with WordPress.
+     */
+    private function doRegisterShortcode(string $tag, string $className, string $methodName): void
+    {
+        add_shortcode($tag, static function ($atts, $content = null, $shortcodeTag = '') use ($className, $methodName) {
             $instance = get($className);
 
             // Normalize attributes - WP passes '' when no attributes despite stubs saying array
             $atts = is_array($atts) ? $atts : [];
 
-            return $instance->{$methodName}($atts, $content, $tag);
+            return $instance->{$methodName}($atts, $content, $shortcodeTag);
         });
+    }
+
+    /**
+     * Convert a discovered item to a cacheable format.
+     *
+     * @param array{attribute: AsShortcode, method: MethodReflector} $item
+     * @return array{tag: string, className: string, methodName: string}
+     */
+    protected function itemToCacheable(array $item): array
+    {
+        /** @var AsShortcode $attribute */
+        $attribute = $item['attribute'];
+        /** @var MethodReflector $method */
+        $method = $item['method'];
+
+        return [
+            'tag' => $attribute->tag,
+            'className' => $method->getDeclaringClass()->getName(),
+            'methodName' => $method->getName(),
+        ];
     }
 }
