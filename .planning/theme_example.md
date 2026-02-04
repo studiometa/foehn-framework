@@ -1,6 +1,6 @@
-# Exemple de thème avec wp-tempest
+# Theme Example with wp-tempest
 
-## Structure complète du thème
+## Complete Theme Structure
 
 ```
 starter-theme/
@@ -141,7 +141,7 @@ starter-theme/
 
 ---
 
-## Fichiers du thème
+## Theme Files
 
 ### functions.php
 
@@ -2089,7 +2089,7 @@ final class ThemeConfig implements ThemeConfigInterface
 
 ---
 
-## Résumé
+## Summary
 
 Ce thème exemple démontre :
 
