@@ -7,7 +7,7 @@ namespace Studiometa\WPTempest\Console\Commands;
 use Studiometa\WPTempest\Attributes\AsCliCommand;
 use Studiometa\WPTempest\Console\CliCommandInterface;
 use Studiometa\WPTempest\Console\WpCli;
-use Tempest\Core\DiscoveryCache;
+use Studiometa\WPTempest\Discovery\DiscoveryCache;
 
 #[AsCliCommand(name: 'discovery:clear', description: 'Clear the discovery cache', longDescription: <<<'DOC'
     ## DESCRIPTION
@@ -32,6 +32,10 @@ final class DiscoveryClearCommand implements CliCommandInterface
         private readonly DiscoveryCache $discoveryCache,
     ) {}
 
+    /**
+     * @param array<int, string> $args
+     * @param array<string, string> $assocArgs
+     */
     public function __invoke(array $args, array $assocArgs): void
     {
         $this->cli->log('Clearing discovery cache...');
