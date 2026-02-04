@@ -40,9 +40,42 @@ Kernel::boot(__DIR__ . '/app', [
 
 ## CLI Commands
 
+### Warm Cache
+
+Warm up the discovery cache by running all discoveries and caching the results. This is the recommended command for deployment as it ensures all discoveries are executed and cached, avoiding slow initial page loads:
+
+```bash
+wp tempest discovery:warm
+```
+
+Options:
+
+- `--strategy=<strategy>` - Override configured strategy (full, partial)
+
+```bash
+# Warm with specific strategy
+wp tempest discovery:warm --strategy=full
+```
+
+The command outputs what was discovered:
+
+```
+Warming discovery cache...
+  ✓ 24 hooks discovered
+  ✓ 3 post types discovered
+  ✓ 2 taxonomies discovered
+  ✓ 8 ACF blocks discovered
+  ✓ 4 block patterns discovered
+  ✓ 6 view composers discovered
+  ✓ 12 template controllers discovered
+  ✓ 5 REST routes discovered
+Cache written to: /var/www/html/wp-content/cache/foehn/discovery/discoveries.php
+Discovery cache warmed successfully.
+```
+
 ### Generate Cache
 
-Generate the discovery cache after deployment:
+Generate the discovery cache without running discoveries. Use `discovery:warm` for deployment; use this command if you only need to regenerate the cache from existing discovery data:
 
 ```bash
 wp tempest discovery:generate
@@ -109,8 +142,8 @@ git pull origin main
 # 2. Install dependencies
 composer install --no-dev --optimize-autoloader
 
-# 3. Clear and regenerate discovery cache
-wp tempest discovery:generate --clear
+# 3. Warm discovery cache (runs all discoveries + caches)
+wp tempest discovery:warm
 ```
 
 ### With CI/CD
@@ -125,9 +158,9 @@ deploy:
     - name: Deploy code
       run: rsync -avz ./ user@server:/var/www/html/
 
-    - name: Generate discovery cache
+    - name: Warm discovery cache
       run: |
-        ssh user@server "cd /var/www/html && wp tempest discovery:generate --clear"
+        ssh user@server "cd /var/www/html && wp tempest discovery:warm"
 ```
 
 ### With Laravel Forge
@@ -140,8 +173,8 @@ cd /home/forge/example.com
 git pull origin main
 composer install --no-dev --optimize-autoloader
 
-# Generate Foehn discovery cache
-php wp-cli.phar tempest discovery:generate --clear
+# Warm Foehn discovery cache
+php wp-cli.phar tempest discovery:warm
 
 # Clear other caches
 php wp-cli.phar cache flush
