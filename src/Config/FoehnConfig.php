@@ -44,6 +44,12 @@ final readonly class FoehnConfig
          * converted to Timber objects (Image, Post, Term, etc.).
          */
         public bool $acfTransformFields = true,
+
+        /**
+         * Default capability required for REST routes without explicit permission.
+         * Set to null to only require authentication (is_user_logged_in).
+         */
+        public ?string $restDefaultCapability = 'edit_posts',
     ) {}
 
     /**
@@ -65,12 +71,18 @@ final readonly class FoehnConfig
         /** @var list<class-string> $hooks */
         $hooks = $config['hooks'] ?? [];
 
+        /** @var ?string $restDefaultCapability */
+        $restDefaultCapability = array_key_exists('rest_default_capability', $config)
+            ? $config['rest_default_capability']
+            : 'edit_posts';
+
         return new self(
             discoveryCacheStrategy: $strategy,
             discoveryCachePath: $config['discovery_cache_path'] ?? null,
             timberTemplatesDir: $timberTemplatesDir,
             hooks: $hooks,
             acfTransformFields: $config['acf_transform_fields'] ?? true,
+            restDefaultCapability: $restDefaultCapability,
         );
     }
 
