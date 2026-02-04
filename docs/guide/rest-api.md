@@ -112,7 +112,37 @@ public function list(WP_REST_Request $request): WP_REST_Response
 }
 ```
 
-### Authenticated Endpoints
+### Default Permission (edit_posts)
+
+When no `permission` is specified, routes require the `edit_posts` capability by default:
+
+```php
+#[AsRestRoute(
+    namespace: 'theme/v1',
+    route: '/drafts',
+    method: 'GET',
+)]
+public function listDrafts(WP_REST_Request $request): WP_REST_Response
+{
+    // Requires edit_posts capability (default)
+}
+```
+
+This default can be changed via configuration:
+
+```php
+// functions.php
+Kernel::boot(__DIR__, [
+    'rest_default_capability' => 'manage_options', // Require admin for all routes
+]);
+
+// Or use null to only require authentication (is_user_logged_in)
+Kernel::boot(__DIR__, [
+    'rest_default_capability' => null,
+]);
+```
+
+### Custom Permission Callbacks
 
 ```php
 #[AsRestRoute(
