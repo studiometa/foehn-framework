@@ -90,9 +90,11 @@ final class TemplateControllerDiscovery implements WpDiscovery
 
             if (str_contains($template, '*')) {
                 $this->wildcardControllers[$template] = $entry;
-            } else {
-                $this->controllers[$template] = $entry;
+
+                continue;
             }
+
+            $this->controllers[$template] = $entry;
         }
     }
 
