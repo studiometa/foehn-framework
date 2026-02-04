@@ -123,17 +123,21 @@ final class DiscoveryRunner
 
         // Initialize all discovery instances
         foreach (self::getAllDiscoveryClasses() as $discoveryClass) {
-            if (!isset($this->discoveries[$discoveryClass])) {
-                $this->discoveries[$discoveryClass] = $this->container->get($discoveryClass);
+            if (isset($this->discoveries[$discoveryClass])) {
+                continue;
             }
+
+            $this->discoveries[$discoveryClass] = $this->container->get($discoveryClass);
         }
 
         // If we have cached data, restore discoveries from cache
         if ($this->cachedData !== null) {
             foreach ($this->discoveries as $className => $discovery) {
-                if (isset($this->cachedData[$className]) && method_exists($discovery, 'restoreFromCache')) {
-                    $discovery->restoreFromCache($this->cachedData[$className]);
+                if (!isset($this->cachedData[$className]) || !method_exists($discovery, 'restoreFromCache')) {
+                    continue;
                 }
+
+                $discovery->restoreFromCache($this->cachedData[$className]);
             }
 
             return;
@@ -223,7 +227,8 @@ final class DiscoveryRunner
 
                 $classes[] = $reflection;
             } catch (\ReflectionException) {
-                // Skip classes that cannot be reflected
+                // Classes that cannot be reflected are intentionally skipped
+                continue;
             }
         }
 
@@ -325,6 +330,7 @@ final class DiscoveryRunner
 
         $namespace = null;
         $class = null;
+        $matches = null;
 
         // Simple regex-based extraction
         if (preg_match('/namespace\s+([^;]+);/', $content, $matches)) {

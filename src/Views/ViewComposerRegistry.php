@@ -38,9 +38,11 @@ final class ViewComposerRegistry
 
             if (str_contains($template, '*')) {
                 $this->wildcardComposers[$template][] = $entry;
-            } else {
-                $this->composers[$template][] = $entry;
+
+                continue;
             }
+
+            $this->composers[$template][] = $entry;
         }
     }
 

@@ -64,9 +64,11 @@ final class AcfBlockDiscovery implements WpDiscovery
                 // Handle cached format
                 if (isset($item['name'])) {
                     $this->registerBlockFromCache($item);
-                } else {
-                    $this->registerBlock($item['attribute'], $item['className']);
+
+                    continue;
                 }
+
+                $this->registerBlock($item['attribute'], $item['className']);
             }
         });
     }

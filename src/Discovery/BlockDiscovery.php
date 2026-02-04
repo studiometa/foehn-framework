@@ -64,9 +64,11 @@ final class BlockDiscovery implements WpDiscovery
                 // Handle cached format
                 if (isset($item['blockName'])) {
                     $this->registerBlockFromCache($item);
-                } else {
-                    $this->registerBlock($item['attribute'], $item['className']);
+
+                    continue;
                 }
+
+                $this->registerBlock($item['attribute'], $item['className']);
             }
         });
     }

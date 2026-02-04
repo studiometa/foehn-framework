@@ -54,9 +54,11 @@ final class BlockPatternDiscovery implements WpDiscovery
                 // Handle cached format
                 if (isset($item['patternName'])) {
                     $this->registerPatternFromCache($item);
-                } else {
-                    $this->registerPattern($item['attribute'], $item['className'], $item['implementsInterface']);
+
+                    continue;
                 }
+
+                $this->registerPattern($item['attribute'], $item['className'], $item['implementsInterface']);
             }
         });
     }
