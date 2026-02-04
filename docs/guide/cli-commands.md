@@ -21,6 +21,12 @@ wp tempest make:acf-block Hero
 # Generate a native block
 wp tempest make:block Counter --interactive
 
+# Generate a template controller
+wp tempest make:controller single-product
+
+# Generate a hooks class
+wp tempest make:hooks Seo
+
 # Generate a view composer
 wp tempest make:view-composer Header
 
