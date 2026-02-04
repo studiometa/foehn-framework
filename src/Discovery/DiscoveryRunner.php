@@ -38,6 +38,9 @@ final class DiscoveryRunner
         // Shortcodes can be registered early
         $this->runDiscovery(ShortcodeDiscovery::class);
 
+        // CLI commands are registered early so they're available immediately
+        $this->runDiscovery(CliCommandDiscovery::class);
+
         $this->earlyRan = true;
     }
 
