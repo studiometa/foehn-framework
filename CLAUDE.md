@@ -1,8 +1,8 @@
-# Claude Instructions for wp-tempest
+# Claude Instructions for Foehn
 
 ## Project Overview
 
-`studiometa/wp-tempest` is a modern WordPress framework powered by Tempest Framework.
+`studiometa/foehn` is a modern WordPress framework powered by Tempest Framework.
 It provides attribute-based auto-discovery for hooks, post types, blocks, and more.
 
 ## Tech Stack

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Console;
 
-use Studiometa\WPTempest\Console\WpCli;
+use Studiometa\Foehn\Console\WpCli;
 
 describe('WpCli', function (): void {
     it('reports unavailable when WP_CLI is not defined', function (): void {

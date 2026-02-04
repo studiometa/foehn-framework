@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Fixtures;
 
-use Studiometa\WPTempest\Attributes\AsTaxonomy;
+use Studiometa\Foehn\Attributes\AsTaxonomy;
 use Timber\Term;
 
 #[AsTaxonomy(

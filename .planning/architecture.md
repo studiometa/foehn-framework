@@ -1,4 +1,4 @@
-# Architecture: studiometa/wp-tempest
+# Architecture: studiometa/foehn
 
 ## 1. Overview
 
@@ -10,7 +10,7 @@
 │  │   Blocks/  Models/  Http/  Views/  Services/  Patterns/         │   │
 │  └─────────────────────────────────────────────────────────────────┘   │
 ├─────────────────────────────────────────────────────────────────────────┤
-│                       studiometa/wp-tempest                             │
+│                       studiometa/foehn                             │
 │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐     │
 │  │  Kernel  │ │Discovery │ │  Views   │ │  Blocks  │ │   FSE    │     │
 │  └──────────┘ └──────────┘ └──────────┘ └──────────┘ └──────────┘     │
@@ -25,7 +25,7 @@
 ## 2. Package Structure
 
 ```
-studiometa/wp-tempest/
+studiometa/foehn/
 ├── src/
 │   ├── Kernel.php
 │   │
@@ -93,7 +93,7 @@ studiometa/wp-tempest/
 │   │   └── DiscoveryClearCommand.php
 │   │
 │   ├── Config/
-│   │   └── WPTempestConfig.php
+│   │   └── FoehnConfig.php
 │   │
 │   └── helpers.php
 │
@@ -106,7 +106,7 @@ studiometa/wp-tempest/
 │   └── template-controller.php.stub
 │
 ├── config/
-│   └── wp-tempest.php
+│   └── foehn.php
 │
 ├── tests/
 │   ├── Unit/
@@ -125,7 +125,7 @@ studiometa/wp-tempest/
 ```php
 <?php
 
-namespace Studiometa\WPTempest;
+namespace Studiometa\Foehn;
 
 use Tempest\Core\Tempest;
 use Tempest\Container\Container;
@@ -207,7 +207,7 @@ final class Kernel
 <?php
 // src/Attributes/AsAction.php
 
-namespace Studiometa\WPTempest\Attributes;
+namespace Studiometa\Foehn\Attributes;
 
 use Attribute;
 
@@ -226,7 +226,7 @@ final readonly class AsAction
 <?php
 // src/Attributes/AsPostType.php
 
-namespace Studiometa\WPTempest\Attributes;
+namespace Studiometa\Foehn\Attributes;
 
 use Attribute;
 
@@ -251,7 +251,7 @@ final readonly class AsPostType
 <?php
 // src/Attributes/AsBlock.php
 
-namespace Studiometa\WPTempest\Attributes;
+namespace Studiometa\Foehn\Attributes;
 
 use Attribute;
 
@@ -277,7 +277,7 @@ final readonly class AsBlock
 <?php
 // src/Attributes/AsAcfBlock.php
 
-namespace Studiometa\WPTempest\Attributes;
+namespace Studiometa\Foehn\Attributes;
 
 use Attribute;
 
@@ -303,7 +303,7 @@ final readonly class AsAcfBlock
 <?php
 // src/Attributes/AsViewComposer.php
 
-namespace Studiometa\WPTempest\Attributes;
+namespace Studiometa\Foehn\Attributes;
 
 use Attribute;
 
@@ -326,11 +326,11 @@ final readonly class AsViewComposer
 <?php
 // src/Discovery/PostTypeDiscovery.php
 
-namespace Studiometa\WPTempest\Discovery;
+namespace Studiometa\Foehn\Discovery;
 
-use Studiometa\WPTempest\Attributes\AsPostType;
-use Studiometa\WPTempest\Contracts\ConfiguresPostType;
-use Studiometa\WPTempest\PostTypes\PostTypeBuilder;
+use Studiometa\Foehn\Attributes\AsPostType;
+use Studiometa\Foehn\Contracts\ConfiguresPostType;
+use Studiometa\Foehn\PostTypes\PostTypeBuilder;
 use Tempest\Discovery\Discovery;
 use Tempest\Discovery\DiscoveryLocation;
 use Tempest\Discovery\IsDiscovery;
@@ -409,11 +409,11 @@ final class PostTypeDiscovery implements Discovery
 <?php
 // src/Discovery/AcfBlockDiscovery.php
 
-namespace Studiometa\WPTempest\Discovery;
+namespace Studiometa\Foehn\Discovery;
 
-use Studiometa\WPTempest\Attributes\AsAcfBlock;
-use Studiometa\WPTempest\Contracts\AcfBlockInterface;
-use Studiometa\WPTempest\Blocks\AcfBlockRenderer;
+use Studiometa\Foehn\Attributes\AsAcfBlock;
+use Studiometa\Foehn\Contracts\AcfBlockInterface;
+use Studiometa\Foehn\Blocks\AcfBlockRenderer;
 use Tempest\Discovery\Discovery;
 use Tempest\Discovery\DiscoveryLocation;
 use Tempest\Discovery\IsDiscovery;
@@ -493,7 +493,7 @@ final class AcfBlockDiscovery implements Discovery
 <?php
 // src/Contracts/AcfBlockInterface.php
 
-namespace Studiometa\WPTempest\Contracts;
+namespace Studiometa\Foehn\Contracts;
 
 use StoutLogic\AcfBuilder\FieldsBuilder;
 
@@ -527,7 +527,7 @@ interface AcfBlockInterface
 <?php
 // src/Contracts/ViewComposerInterface.php
 
-namespace Studiometa\WPTempest\Contracts;
+namespace Studiometa\Foehn\Contracts;
 
 interface ViewComposerInterface
 {
@@ -547,7 +547,7 @@ interface ViewComposerInterface
 <?php
 // src/Views/TimberViewEngine.php
 
-namespace Studiometa\WPTempest\Views;
+namespace Studiometa\Foehn\Views;
 
 use Timber\Timber;
 
@@ -607,7 +607,7 @@ final class TimberViewEngine implements ViewEngineInterface
 <?php
 // src/FSE/ThemeJsonGenerator.php
 
-namespace Studiometa\WPTempest\FSE;
+namespace Studiometa\Foehn\FSE;
 
 final class ThemeJsonGenerator
 {
@@ -674,7 +674,7 @@ WordPress Request Lifecycle
 
 ```php
 <?php
-// config/wp-tempest.php
+// config/foehn.php
 
 return [
     /*
@@ -729,7 +729,7 @@ return [
 <?php
 // functions.php
 
-use Studiometa\WPTempest\Kernel;
+use Studiometa\Foehn\Kernel;
 
 // That's it!
 Kernel::boot(__DIR__ . '/app');
@@ -743,9 +743,9 @@ Kernel::boot(__DIR__ . '/app');
 
 namespace App\Models;
 
-use Studiometa\WPTempest\Attributes\AsPostType;
-use Studiometa\WPTempest\Contracts\ConfiguresPostType;
-use Studiometa\WPTempest\PostTypes\PostTypeBuilder;
+use Studiometa\Foehn\Attributes\AsPostType;
+use Studiometa\Foehn\Contracts\ConfiguresPostType;
+use Studiometa\Foehn\PostTypes\PostTypeBuilder;
 use Timber\Post;
 
 #[AsPostType(
@@ -787,9 +787,9 @@ final class Product extends Post implements ConfiguresPostType
 
 namespace App\Blocks\Hero;
 
-use Studiometa\WPTempest\Attributes\AsAcfBlock;
-use Studiometa\WPTempest\Contracts\AcfBlockInterface;
-use Studiometa\WPTempest\Views\ViewEngineInterface;
+use Studiometa\Foehn\Attributes\AsAcfBlock;
+use Studiometa\Foehn\Contracts\AcfBlockInterface;
+use Studiometa\Foehn\Views\ViewEngineInterface;
 use StoutLogic\AcfBuilder\FieldsBuilder;
 use App\Services\ImageService;
 
@@ -872,8 +872,8 @@ final readonly class HeroBlock implements AcfBlockInterface
 
 namespace App\Views\Composers;
 
-use Studiometa\WPTempest\Attributes\AsViewComposer;
-use Studiometa\WPTempest\Contracts\ViewComposerInterface;
+use Studiometa\Foehn\Attributes\AsViewComposer;
+use Studiometa\Foehn\Contracts\ViewComposerInterface;
 use App\Services\RelatedPostsService;
 use App\Services\SeoService;
 
@@ -957,7 +957,7 @@ class CustomPostTypesManager implements ManagerInterface {
 }
 ```
 
-### Après (wp-tempest)
+### Après (foehn)
 
 ```php
 // functions.php
@@ -977,8 +977,8 @@ final class Product extends Post {}
 // tests/Unit/Discovery/PostTypeDiscoveryTest.php
 
 use PHPUnit\Framework\TestCase;
-use Studiometa\WPTempest\Discovery\PostTypeDiscovery;
-use Studiometa\WPTempest\Attributes\AsPostType;
+use Studiometa\Foehn\Discovery\PostTypeDiscovery;
+use Studiometa\Foehn\Attributes\AsPostType;
 
 class PostTypeDiscoveryTest extends TestCase
 {

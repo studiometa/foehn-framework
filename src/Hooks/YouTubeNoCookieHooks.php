@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Studiometa\WPTempest\Hooks;
+namespace Studiometa\Foehn\Hooks;
 
-use Studiometa\WPTempest\Attributes\AsFilter;
+use Studiometa\Foehn\Attributes\AsFilter;
 
 /**
  * Replace YouTube embeds with youtube-nocookie.com for GDPR compliance.

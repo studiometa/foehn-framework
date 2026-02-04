@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Hooks\Security\DisableXmlRpc;
+use Studiometa\Foehn\Hooks\Security\DisableXmlRpc;
 
 describe('DisableXmlRpc', function () {
     it('returns false for xmlrpc_enabled filter', function () {
@@ -41,20 +41,23 @@ describe('DisableXmlRpc', function () {
     it('has correct filter attributes', function () {
         $reflection = new ReflectionClass(DisableXmlRpc::class);
 
-        $xmlrpcAttr = $reflection->getMethod('disableXmlRpc')
-            ->getAttributes(\Studiometa\WPTempest\Attributes\AsFilter::class);
+        $xmlrpcAttr = $reflection
+            ->getMethod('disableXmlRpc')
+            ->getAttributes(\Studiometa\Foehn\Attributes\AsFilter::class);
 
         expect($xmlrpcAttr)->toHaveCount(1);
         expect($xmlrpcAttr[0]->newInstance()->hook)->toBe('xmlrpc_enabled');
 
-        $headersAttr = $reflection->getMethod('removePingbackHeader')
-            ->getAttributes(\Studiometa\WPTempest\Attributes\AsFilter::class);
+        $headersAttr = $reflection
+            ->getMethod('removePingbackHeader')
+            ->getAttributes(\Studiometa\Foehn\Attributes\AsFilter::class);
 
         expect($headersAttr)->toHaveCount(1);
         expect($headersAttr[0]->newInstance()->hook)->toBe('wp_headers');
 
-        $bloginfoAttr = $reflection->getMethod('removePingbackUrl')
-            ->getAttributes(\Studiometa\WPTempest\Attributes\AsFilter::class);
+        $bloginfoAttr = $reflection
+            ->getMethod('removePingbackUrl')
+            ->getAttributes(\Studiometa\Foehn\Attributes\AsFilter::class);
 
         expect($bloginfoAttr)->toHaveCount(1);
         expect($bloginfoAttr[0]->newInstance()->hook)->toBe('bloginfo_url');

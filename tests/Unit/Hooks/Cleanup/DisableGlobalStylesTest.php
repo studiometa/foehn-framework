@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Hooks\Cleanup\DisableGlobalStyles;
+use Studiometa\Foehn\Hooks\Cleanup\DisableGlobalStyles;
 
 beforeEach(fn() => wp_stub_reset());
 
@@ -12,10 +12,7 @@ describe('DisableGlobalStyles', function () {
         $hooks->disableGlobalStyles();
 
         $calls = wp_stub_get_calls('remove_action');
-        $removed = array_map(
-            fn(array $call) => $call['args']['hook'] . ':' . $call['args']['callback'],
-            $calls,
-        );
+        $removed = array_map(fn(array $call) => $call['args']['hook'] . ':' . $call['args']['callback'], $calls);
 
         expect($removed)->toContain('wp_enqueue_scripts:wp_enqueue_global_styles');
         expect($removed)->toContain('wp_footer:wp_enqueue_global_styles');
@@ -30,8 +27,10 @@ describe('DisableGlobalStyles', function () {
         $calls = wp_stub_get_calls('remove_action');
         $footerCall = array_values(array_filter(
             $calls,
-            fn(array $call) => $call['args']['hook'] === 'wp_footer'
-                && $call['args']['callback'] === 'wp_enqueue_global_styles',
+            fn(array $call) => (
+                $call['args']['hook'] === 'wp_footer'
+                && $call['args']['callback'] === 'wp_enqueue_global_styles'
+            ),
         ));
 
         expect($footerCall)->toHaveCount(1);
@@ -40,7 +39,7 @@ describe('DisableGlobalStyles', function () {
 
     it('has AsAction attribute on init hook', function () {
         $method = new ReflectionMethod(DisableGlobalStyles::class, 'disableGlobalStyles');
-        $attributes = $method->getAttributes(\Studiometa\WPTempest\Attributes\AsAction::class);
+        $attributes = $method->getAttributes(\Studiometa\Foehn\Attributes\AsAction::class);
 
         expect($attributes)->toHaveCount(1);
         expect($attributes[0]->newInstance()->hook)->toBe('init');

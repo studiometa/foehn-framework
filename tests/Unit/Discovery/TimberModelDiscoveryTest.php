@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Discovery\TimberModelDiscovery;
+use Studiometa\Foehn\Discovery\TimberModelDiscovery;
 use Tests\Fixtures\InvalidTimberModelFixture;
 use Tests\Fixtures\NoAttributeFixture;
 use Tests\Fixtures\TimberModelPostFixture;

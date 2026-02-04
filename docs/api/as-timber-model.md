@@ -7,7 +7,7 @@ Register a Timber class map for a post type or taxonomy without registering the 
 ```php
 <?php
 
-namespace Studiometa\WPTempest\Attributes;
+namespace Studiometa\Foehn\Attributes;
 
 #[Attribute(Attribute::TARGET_CLASS)]
 final readonly class AsTimberModel
@@ -42,7 +42,7 @@ For **custom** post types and taxonomies, use [`#[AsPostType]`](./as-post-type) 
 
 namespace App\Models;
 
-use Studiometa\WPTempest\Attributes\AsTimberModel;
+use Studiometa\Foehn\Attributes\AsTimberModel;
 use Timber\Post;
 
 #[AsTimberModel(name: 'post')]
@@ -74,7 +74,7 @@ final class Article extends Post
 
 namespace App\Models;
 
-use Studiometa\WPTempest\Attributes\AsTimberModel;
+use Studiometa\Foehn\Attributes\AsTimberModel;
 use Timber\Post;
 
 #[AsTimberModel(name: 'page')]
@@ -112,7 +112,7 @@ final class Page extends Post
 
 namespace App\Models;
 
-use Studiometa\WPTempest\Attributes\AsTimberModel;
+use Studiometa\Foehn\Attributes\AsTimberModel;
 use Timber\Term;
 
 #[AsTimberModel(name: 'category')]
@@ -143,7 +143,7 @@ final class Category extends Term
 
 namespace App\Models;
 
-use Studiometa\WPTempest\Attributes\AsTimberModel;
+use Studiometa\Foehn\Attributes\AsTimberModel;
 use Timber\Post;
 
 #[AsTimberModel(name: 'product')]

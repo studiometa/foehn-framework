@@ -1,13 +1,13 @@
 import { defineConfig } from "vitepress";
 
 export default defineConfig({
-  title: "WP Tempest",
+  title: "Foehn",
   description:
     "A modern WordPress framework powered by Tempest, featuring attribute-based auto-discovery",
 
-  base: "/wp-tempest/",
+  base: "/foehn/",
 
-  head: [["link", { rel: "icon", href: "/wp-tempest/favicon.ico" }]],
+  head: [["link", { rel: "icon", href: "/foehn/favicon.ico" }]],
 
   themeConfig: {
     logo: "/logo.svg",
@@ -17,7 +17,7 @@ export default defineConfig({
       { text: "API Reference", link: "/api/" },
       {
         text: "GitHub",
-        link: "https://github.com/studiometa/wp-tempest",
+        link: "https://github.com/studiometa/foehn",
       },
     ],
 
@@ -109,7 +109,7 @@ export default defineConfig({
       ],
     },
 
-    socialLinks: [{ icon: "github", link: "https://github.com/studiometa/wp-tempest" }],
+    socialLinks: [{ icon: "github", link: "https://github.com/studiometa/foehn" }],
 
     footer: {
       message: "Released under the MIT License.",
@@ -121,7 +121,7 @@ export default defineConfig({
     },
 
     editLink: {
-      pattern: "https://github.com/studiometa/wp-tempest/edit/main/docs/:path",
+      pattern: "https://github.com/studiometa/foehn/edit/main/docs/:path",
       text: "Edit this page on GitHub",
     },
   },

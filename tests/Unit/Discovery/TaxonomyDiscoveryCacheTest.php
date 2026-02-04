@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Attributes\AsTaxonomy;
-use Studiometa\WPTempest\Discovery\TaxonomyDiscovery;
+use Studiometa\Foehn\Attributes\AsTaxonomy;
+use Studiometa\Foehn\Discovery\TaxonomyDiscovery;
 
 beforeEach(function () {
     $this->discovery = new TaxonomyDiscovery();

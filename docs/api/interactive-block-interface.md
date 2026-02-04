@@ -7,7 +7,7 @@ Interface for interactive Gutenberg blocks using the WordPress Interactivity API
 ```php
 <?php
 
-namespace Studiometa\WPTempest\Contracts;
+namespace Studiometa\Foehn\Contracts;
 
 interface InteractiveBlockInterface extends BlockInterface
 {
@@ -68,9 +68,9 @@ public function initialContext(array $attributes): array
 
 namespace App\Blocks\Counter;
 
-use Studiometa\WPTempest\Attributes\AsBlock;
-use Studiometa\WPTempest\Contracts\InteractiveBlockInterface;
-use Studiometa\WPTempest\Contracts\ViewEngineInterface;
+use Studiometa\Foehn\Attributes\AsBlock;
+use Studiometa\Foehn\Contracts\InteractiveBlockInterface;
+use Studiometa\Foehn\Contracts\ViewEngineInterface;
 use WP_Block;
 
 #[AsBlock(

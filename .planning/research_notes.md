@@ -1,4 +1,4 @@
-# Research Notes: wp-tempest
+# Research Notes: foehn
 
 ## 1. Existing wp-toolkit Analysis
 
@@ -244,8 +244,8 @@ $kernel->boot(__DIR__ . '/app', [
 
 ### Namespace
 
-- ~~`WPTempest` - Shorter, generic~~
-- **Decision**: `Studiometa\WPTempest`
+- ~~`Foehn` - Shorter, generic~~
+- **Decision**: `Studiometa\Foehn`
 
 ### Repository
 

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Studiometa\WPTempest\Blocks;
+namespace Studiometa\Foehn\Blocks;
 
-use Studiometa\WPTempest\Contracts\BlockInterface;
-use Studiometa\WPTempest\Contracts\InteractiveBlockInterface;
+use Studiometa\Foehn\Contracts\BlockInterface;
+use Studiometa\Foehn\Contracts\InteractiveBlockInterface;
 use WP_Block;
 
 /**

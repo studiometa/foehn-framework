@@ -37,7 +37,7 @@ Commands are registered under `wp tempest <name>`.
 
 namespace App\Console;
 
-use Studiometa\WPTempest\Attributes\AsCliCommand;
+use Studiometa\Foehn\Attributes\AsCliCommand;
 use WP_CLI;
 
 #[AsCliCommand(

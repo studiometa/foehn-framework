@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Hooks\Security\RestApiAuth;
+use Studiometa\Foehn\Hooks\Security\RestApiAuth;
 
 describe('RestApiAuth', function () {
     it('removes user endpoints when not logged in', function () {
@@ -45,7 +45,7 @@ describe('RestApiAuth', function () {
 
     it('has correct filter attribute', function () {
         $method = new ReflectionMethod(RestApiAuth::class, 'restrictUserEndpoints');
-        $attributes = $method->getAttributes(\Studiometa\WPTempest\Attributes\AsFilter::class);
+        $attributes = $method->getAttributes(\Studiometa\Foehn\Attributes\AsFilter::class);
 
         expect($attributes)->toHaveCount(1);
         expect($attributes[0]->newInstance()->hook)->toBe('rest_endpoints');

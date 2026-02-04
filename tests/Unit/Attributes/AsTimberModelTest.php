@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Attributes\AsTimberModel;
+use Studiometa\Foehn\Attributes\AsTimberModel;
 
 describe('AsTimberModel', function () {
     it('can be instantiated with a name', function () {

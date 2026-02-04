@@ -29,7 +29,7 @@ final readonly class AsShortcode
 
 namespace App\Hooks;
 
-use Studiometa\WPTempest\Attributes\AsShortcode;
+use Studiometa\Foehn\Attributes\AsShortcode;
 
 final class Shortcodes
 {

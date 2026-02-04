@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Studiometa\WPTempest\Discovery;
+namespace Studiometa\Foehn\Discovery;
 
 use ReflectionClass;
 use Tempest\Container\Container;
@@ -160,12 +160,12 @@ final class DiscoveryRunner
     }
 
     /**
-     * Discover opt-in hook classes from WpTempestConfig.
+     * Discover opt-in hook classes from FoehnConfig.
      */
     private function discoverOptInHooks(): void
     {
         try {
-            $config = $this->container->get(\Studiometa\WPTempest\Config\WpTempestConfig::class);
+            $config = $this->container->get(\Studiometa\Foehn\Config\FoehnConfig::class);
         } catch (\Throwable) {
             return;
         }

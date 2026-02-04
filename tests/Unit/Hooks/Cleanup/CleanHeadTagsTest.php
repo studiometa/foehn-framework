@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Hooks\Cleanup\CleanHeadTags;
+use Studiometa\Foehn\Hooks\Cleanup\CleanHeadTags;
 
 beforeEach(fn() => wp_stub_reset());
 
@@ -12,10 +12,7 @@ describe('CleanHeadTags', function () {
         $hooks->cleanup();
 
         $calls = wp_stub_get_calls('remove_action');
-        $removed = array_map(
-            fn(array $call) => $call['args']['hook'] . ':' . $call['args']['callback'],
-            $calls,
-        );
+        $removed = array_map(fn(array $call) => $call['args']['hook'] . ':' . $call['args']['callback'], $calls);
 
         expect($removed)->toContain('wp_head:wlwmanifest_link');
         expect($removed)->toContain('wp_head:rsd_link');
@@ -32,7 +29,7 @@ describe('CleanHeadTags', function () {
 
     it('has AsAction attribute on init hook', function () {
         $method = new ReflectionMethod(CleanHeadTags::class, 'cleanup');
-        $attributes = $method->getAttributes(\Studiometa\WPTempest\Attributes\AsAction::class);
+        $attributes = $method->getAttributes(\Studiometa\Foehn\Attributes\AsAction::class);
 
         expect($attributes)->toHaveCount(1);
         expect($attributes[0]->newInstance()->hook)->toBe('init');

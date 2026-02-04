@@ -1,4 +1,4 @@
-# Theme Example with wp-tempest
+# Theme Example with foehn
 
 ## Complete Theme Structure
 
@@ -155,7 +155,7 @@ starter-theme/
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Kernel;
+use Studiometa\Foehn\Kernel;
 
 // Boot the application
 Kernel::boot(__DIR__ . '/app');
@@ -166,11 +166,11 @@ Kernel::boot(__DIR__ . '/app');
 ```json
 {
   "name": "starter/theme",
-  "description": "Starter theme with wp-tempest",
+  "description": "Starter theme with foehn",
   "type": "wordpress-theme",
   "require": {
     "php": "^8.4",
-    "studiometa/wp-tempest": "^1.0",
+    "studiometa/foehn": "^1.0",
     "stoutlogic/acf-builder": "^1.12"
   },
   "require-dev": {
@@ -195,7 +195,7 @@ Theme Name: Starter Theme
 Theme URI: https://github.com/studiometa/starter-theme
 Author: Studio Meta
 Author URI: https://www.studiometa.fr
-Description: A modern WordPress theme powered by wp-tempest
+Description: A modern WordPress theme powered by foehn
 Version: 1.0.0
 Requires at least: 6.4
 Tested up to: 6.7
@@ -218,7 +218,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use Studiometa\WPTempest\Attributes\AsPostType;
+use Studiometa\Foehn\Attributes\AsPostType;
 use Timber\Post as TimberPost;
 
 /**
@@ -273,9 +273,9 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use Studiometa\WPTempest\Attributes\AsPostType;
-use Studiometa\WPTempest\Contracts\ConfiguresPostType;
-use Studiometa\WPTempest\PostTypes\PostTypeBuilder;
+use Studiometa\Foehn\Attributes\AsPostType;
+use Studiometa\Foehn\Contracts\ConfiguresPostType;
+use Studiometa\Foehn\PostTypes\PostTypeBuilder;
 use Timber\Post as TimberPost;
 
 #[AsPostType(
@@ -375,7 +375,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use Studiometa\WPTempest\Attributes\AsPostType;
+use Studiometa\Foehn\Attributes\AsPostType;
 use Timber\Post as TimberPost;
 
 #[AsPostType(
@@ -425,9 +425,9 @@ declare(strict_types=1);
 
 namespace App\Taxonomies;
 
-use Studiometa\WPTempest\Attributes\AsTaxonomy;
-use Studiometa\WPTempest\Contracts\ConfiguresTaxonomy;
-use Studiometa\WPTempest\PostTypes\TaxonomyBuilder;
+use Studiometa\Foehn\Attributes\AsTaxonomy;
+use Studiometa\Foehn\Contracts\ConfiguresTaxonomy;
+use Studiometa\Foehn\PostTypes\TaxonomyBuilder;
 
 #[AsTaxonomy(
     name: 'product_category',
@@ -457,7 +457,7 @@ declare(strict_types=1);
 
 namespace App\Taxonomies;
 
-use Studiometa\WPTempest\Attributes\AsTaxonomy;
+use Studiometa\Foehn\Attributes\AsTaxonomy;
 
 #[AsTaxonomy(
     name: 'product_tag',
@@ -695,8 +695,8 @@ declare(strict_types=1);
 
 namespace App\Hooks;
 
-use Studiometa\WPTempest\Attributes\AsAction;
-use Studiometa\WPTempest\Attributes\AsFilter;
+use Studiometa\Foehn\Attributes\AsAction;
+use Studiometa\Foehn\Attributes\AsFilter;
 use App\Services\MenuService;
 
 final readonly class ThemeHooks
@@ -809,9 +809,9 @@ declare(strict_types=1);
 
 namespace App\Hooks;
 
-use Studiometa\WPTempest\Attributes\AsAction;
-use Studiometa\WPTempest\Attributes\AsFilter;
-use Studiometa\WPTempest\Views\ViewEngineInterface;
+use Studiometa\Foehn\Attributes\AsAction;
+use Studiometa\Foehn\Attributes\AsFilter;
+use Studiometa\Foehn\Views\ViewEngineInterface;
 
 final readonly class AdminHooks
 {
@@ -885,8 +885,8 @@ declare(strict_types=1);
 
 namespace App\Hooks;
 
-use Studiometa\WPTempest\Attributes\AsAction;
-use Studiometa\WPTempest\Attributes\AsFilter;
+use Studiometa\Foehn\Attributes\AsAction;
+use Studiometa\Foehn\Attributes\AsFilter;
 
 final class SecurityHooks
 {
@@ -947,8 +947,8 @@ declare(strict_types=1);
 
 namespace App\Views\Composers;
 
-use Studiometa\WPTempest\Attributes\AsViewComposer;
-use Studiometa\WPTempest\Contracts\ViewComposerInterface;
+use Studiometa\Foehn\Attributes\AsViewComposer;
+use Studiometa\Foehn\Contracts\ViewComposerInterface;
 use App\Services\MenuService;
 use App\Services\OptionsService;
 use Timber\Site;
@@ -988,8 +988,8 @@ declare(strict_types=1);
 
 namespace App\Views\Composers;
 
-use Studiometa\WPTempest\Attributes\AsViewComposer;
-use Studiometa\WPTempest\Contracts\ViewComposerInterface;
+use Studiometa\Foehn\Attributes\AsViewComposer;
+use Studiometa\Foehn\Contracts\ViewComposerInterface;
 use Timber\Timber;
 
 #[AsViewComposer(['single', 'single-post'])]
@@ -1045,8 +1045,8 @@ declare(strict_types=1);
 
 namespace App\Views\Composers;
 
-use Studiometa\WPTempest\Attributes\AsViewComposer;
-use Studiometa\WPTempest\Contracts\ViewComposerInterface;
+use Studiometa\Foehn\Attributes\AsViewComposer;
+use Studiometa\Foehn\Contracts\ViewComposerInterface;
 use Timber\Timber;
 
 #[AsViewComposer(['single-product', 'archive-product'])]
@@ -1105,8 +1105,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use Studiometa\WPTempest\Attributes\AsTemplateController;
-use Studiometa\WPTempest\Views\ViewEngineInterface;
+use Studiometa\Foehn\Attributes\AsTemplateController;
+use Studiometa\Foehn\Views\ViewEngineInterface;
 use Timber\Timber;
 
 #[AsTemplateController('single', 'single-*')]
@@ -1147,8 +1147,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use Studiometa\WPTempest\Attributes\AsTemplateController;
-use Studiometa\WPTempest\Views\ViewEngineInterface;
+use Studiometa\Foehn\Attributes\AsTemplateController;
+use Studiometa\Foehn\Views\ViewEngineInterface;
 use Timber\Timber;
 
 #[AsTemplateController('archive', 'archive-*', 'home', 'category', 'tag', 'tax-*')]
@@ -1245,8 +1245,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use Studiometa\WPTempest\Attributes\AsTemplateController;
-use Studiometa\WPTempest\Views\ViewEngineInterface;
+use Studiometa\Foehn\Attributes\AsTemplateController;
+use Studiometa\Foehn\Views\ViewEngineInterface;
 use Timber\Timber;
 
 #[AsTemplateController('search')]
@@ -1285,9 +1285,9 @@ declare(strict_types=1);
 
 namespace App\Blocks\Acf\Hero;
 
-use Studiometa\WPTempest\Attributes\AsAcfBlock;
-use Studiometa\WPTempest\Contracts\AcfBlockInterface;
-use Studiometa\WPTempest\Views\ViewEngineInterface;
+use Studiometa\Foehn\Attributes\AsAcfBlock;
+use Studiometa\Foehn\Contracts\AcfBlockInterface;
+use Studiometa\Foehn\Views\ViewEngineInterface;
 use App\Services\ImageService;
 use StoutLogic\AcfBuilder\FieldsBuilder;
 
@@ -1415,9 +1415,9 @@ declare(strict_types=1);
 
 namespace App\Blocks\Native\Accordion;
 
-use Studiometa\WPTempest\Attributes\AsBlock;
-use Studiometa\WPTempest\Contracts\InteractiveBlockInterface;
-use Studiometa\WPTempest\Views\ViewEngineInterface;
+use Studiometa\Foehn\Attributes\AsBlock;
+use Studiometa\Foehn\Contracts\InteractiveBlockInterface;
+use Studiometa\Foehn\Views\ViewEngineInterface;
 use WP_Block;
 
 #[AsBlock(
@@ -1535,8 +1535,8 @@ declare(strict_types=1);
 
 namespace App\Patterns;
 
-use Studiometa\WPTempest\Attributes\AsBlockPattern;
-use Studiometa\WPTempest\Contracts\BlockPatternInterface;
+use Studiometa\Foehn\Attributes\AsBlockPattern;
+use Studiometa\Foehn\Contracts\BlockPatternInterface;
 
 #[AsBlockPattern(
     name: 'starter-theme/hero-full-width',
@@ -1613,8 +1613,8 @@ declare(strict_types=1);
 
 namespace App\Theme;
 
-use Studiometa\WPTempest\Attributes\AsThemeConfig;
-use Studiometa\WPTempest\Contracts\ThemeConfigInterface;
+use Studiometa\Foehn\Attributes\AsThemeConfig;
+use Studiometa\Foehn\Contracts\ThemeConfigInterface;
 
 #[AsThemeConfig]
 final class ThemeConfig implements ThemeConfigInterface

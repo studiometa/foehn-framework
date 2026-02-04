@@ -1,13 +1,13 @@
 # Kernel
 
-The main bootstrap class for WP Tempest.
+The main bootstrap class for Foehn.
 
 ## Signature
 
 ```php
 <?php
 
-namespace Studiometa\WPTempest;
+namespace Studiometa\Foehn;
 
 use Tempest\Container\Container;
 
@@ -66,7 +66,7 @@ final class Kernel
 Initialize and boot the kernel. Call this once in `functions.php`.
 
 ```php
-use Studiometa\WPTempest\Kernel;
+use Studiometa\Foehn\Kernel;
 
 Kernel::boot(__DIR__ . '/app');
 ```
@@ -74,15 +74,15 @@ Kernel::boot(__DIR__ . '/app');
 With configuration:
 
 ```php
-use Studiometa\WPTempest\Hooks\Cleanup\DisableEmoji;
-use Studiometa\WPTempest\Hooks\Security\SecurityHeaders;
+use Studiometa\Foehn\Hooks\Cleanup\DisableEmoji;
+use Studiometa\Foehn\Hooks\Security\SecurityHeaders;
 
 Kernel::boot(__DIR__ . '/app', [
     // Enable discovery cache for production
     'discovery_cache' => 'full',  // 'full', 'partial', 'none'
 
     // Custom cache path (optional)
-    'discovery_cache_path' => WP_CONTENT_DIR . '/cache/wp-tempest/discovery',
+    'discovery_cache_path' => WP_CONTENT_DIR . '/cache/foehn/discovery',
 
     // Timber templates directories
     'timber_templates_dir' => ['templates', 'views'],
@@ -160,7 +160,7 @@ The kernel hooks into WordPress lifecycle:
 
 require_once __DIR__ . '/vendor/autoload.php';
 
-use Studiometa\WPTempest\Kernel;
+use Studiometa\Foehn\Kernel;
 
 Kernel::boot(__DIR__ . '/app');
 ```
@@ -181,7 +181,7 @@ $view = Kernel::get(ViewEngineInterface::class);
 
 ```php
 // In a hook or early in bootstrap
-use Studiometa\WPTempest\Kernel;
+use Studiometa\Foehn\Kernel;
 
 add_action('after_setup_theme', function () {
     $container = Kernel::container();

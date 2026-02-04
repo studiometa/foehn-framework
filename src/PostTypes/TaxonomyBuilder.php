@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Studiometa\WPTempest\PostTypes;
+namespace Studiometa\Foehn\PostTypes;
 
-use Studiometa\WPTempest\Attributes\AsTaxonomy;
+use Studiometa\Foehn\Attributes\AsTaxonomy;
 
 /**
  * Fluent builder for WordPress custom taxonomies.

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Hooks\Cleanup\DisableFeeds;
+use Studiometa\Foehn\Hooks\Cleanup\DisableFeeds;
 
 beforeEach(fn() => wp_stub_reset());
 
@@ -28,7 +28,7 @@ describe('DisableFeeds', function () {
 
     it('has AsAction attribute on init hook', function () {
         $method = new ReflectionMethod(DisableFeeds::class, 'removeFeedLinks');
-        $attributes = $method->getAttributes(\Studiometa\WPTempest\Attributes\AsAction::class);
+        $attributes = $method->getAttributes(\Studiometa\Foehn\Attributes\AsAction::class);
 
         expect($attributes)->toHaveCount(1);
         expect($attributes[0]->newInstance()->hook)->toBe('init');

@@ -108,6 +108,6 @@ jobs:
           files: ./coverage/clover.xml
           fail_ci_if_error: false
           flags: unittests
-          name: codecov-wp-tempest
+          name: codecov-foehn
 
 

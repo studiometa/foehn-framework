@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Kernel;
+use Studiometa\Foehn\Kernel;
 
-use function Studiometa\WPTempest\app;
-use function Studiometa\WPTempest\config;
+use function Studiometa\Foehn\app;
+use function Studiometa\Foehn\config;
 
 describe('helpers', function () {
     afterEach(function () {
@@ -14,8 +14,7 @@ describe('helpers', function () {
 
     describe('app()', function () {
         it('throws exception when kernel not booted', function () {
-            expect(fn() => app())
-                ->toThrow(RuntimeException::class, 'Kernel not booted. Call Kernel::boot() first.');
+            expect(fn() => app())->toThrow(RuntimeException::class, 'Kernel not booted. Call Kernel::boot() first.');
         });
 
         it('throws exception when getting class before boot', function () {

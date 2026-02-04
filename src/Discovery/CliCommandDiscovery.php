@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Studiometa\WPTempest\Discovery;
+namespace Studiometa\Foehn\Discovery;
 
 use ReflectionClass;
-use Studiometa\WPTempest\Attributes\AsCliCommand;
-use Studiometa\WPTempest\Console\CliCommandInterface;
-use Studiometa\WPTempest\Console\WpCli;
-use Studiometa\WPTempest\Discovery\Concerns\CacheableDiscovery;
-use Studiometa\WPTempest\Discovery\Concerns\IsWpDiscovery;
+use Studiometa\Foehn\Attributes\AsCliCommand;
+use Studiometa\Foehn\Console\CliCommandInterface;
+use Studiometa\Foehn\Console\WpCli;
+use Studiometa\Foehn\Discovery\Concerns\CacheableDiscovery;
+use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
 use Tempest\Container\Container;
 use WP_CLI;
 

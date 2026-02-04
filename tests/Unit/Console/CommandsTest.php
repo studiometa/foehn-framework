@@ -5,20 +5,20 @@ declare(strict_types=1);
 namespace Tests\Unit\Console;
 
 use ReflectionClass;
-use Studiometa\WPTempest\Attributes\AsCliCommand;
-use Studiometa\WPTempest\Console\CliCommandInterface;
-use Studiometa\WPTempest\Console\Commands\DiscoveryClearCommand;
-use Studiometa\WPTempest\Console\Commands\DiscoveryGenerateCommand;
-use Studiometa\WPTempest\Console\Commands\DiscoveryStatusCommand;
-use Studiometa\WPTempest\Console\Commands\MakeAcfBlockCommand;
-use Studiometa\WPTempest\Console\Commands\MakeBlockCommand;
-use Studiometa\WPTempest\Console\Commands\MakeControllerCommand;
-use Studiometa\WPTempest\Console\Commands\MakeHooksCommand;
-use Studiometa\WPTempest\Console\Commands\MakePatternCommand;
-use Studiometa\WPTempest\Console\Commands\MakePostTypeCommand;
-use Studiometa\WPTempest\Console\Commands\MakeShortcodeCommand;
-use Studiometa\WPTempest\Console\Commands\MakeTaxonomyCommand;
-use Studiometa\WPTempest\Console\Commands\MakeViewComposerCommand;
+use Studiometa\Foehn\Attributes\AsCliCommand;
+use Studiometa\Foehn\Console\CliCommandInterface;
+use Studiometa\Foehn\Console\Commands\DiscoveryClearCommand;
+use Studiometa\Foehn\Console\Commands\DiscoveryGenerateCommand;
+use Studiometa\Foehn\Console\Commands\DiscoveryStatusCommand;
+use Studiometa\Foehn\Console\Commands\MakeAcfBlockCommand;
+use Studiometa\Foehn\Console\Commands\MakeBlockCommand;
+use Studiometa\Foehn\Console\Commands\MakeControllerCommand;
+use Studiometa\Foehn\Console\Commands\MakeHooksCommand;
+use Studiometa\Foehn\Console\Commands\MakePatternCommand;
+use Studiometa\Foehn\Console\Commands\MakePostTypeCommand;
+use Studiometa\Foehn\Console\Commands\MakeShortcodeCommand;
+use Studiometa\Foehn\Console\Commands\MakeTaxonomyCommand;
+use Studiometa\Foehn\Console\Commands\MakeViewComposerCommand;
 
 describe('Commands', function (): void {
     $commands = [

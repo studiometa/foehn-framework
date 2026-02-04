@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Views\TimberViewEngine;
-use Studiometa\WPTempest\Views\ViewComposerRegistry;
+use Studiometa\Foehn\Views\TimberViewEngine;
+use Studiometa\Foehn\Views\ViewComposerRegistry;
 
 describe('TimberViewEngine', function () {
     beforeEach(function () {
@@ -85,6 +85,7 @@ describe('TimberViewEngine template resolution', function () {
         $method = $reflection->getMethod('resolveTemplate');
 
         expect($method->invoke($this->engine, 'blocks/hero/hero'))->toBe('blocks/hero/hero.twig');
-        expect($method->invoke($this->engine, 'partials/header/navigation.twig'))->toBe('partials/header/navigation.twig');
+        expect($method->invoke($this->engine, 'partials/header/navigation.twig'))
+            ->toBe('partials/header/navigation.twig');
     });
 });

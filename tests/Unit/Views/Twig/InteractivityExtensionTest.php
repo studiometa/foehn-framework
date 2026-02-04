@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Views\Twig\InteractivityExtension;
+use Studiometa\Foehn\Views\Twig\InteractivityExtension;
 
 describe('InteractivityExtension', function () {
     beforeEach(function () {

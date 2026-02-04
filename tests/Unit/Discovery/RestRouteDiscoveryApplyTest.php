@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Discovery\RestRouteDiscovery;
+use Studiometa\Foehn\Discovery\RestRouteDiscovery;
 use Tests\Fixtures\RestRouteFixture;
 
 beforeEach(function () {

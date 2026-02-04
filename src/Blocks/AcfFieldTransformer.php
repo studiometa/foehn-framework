@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Studiometa\WPTempest\Blocks;
+namespace Studiometa\Foehn\Blocks;
 
 use Timber\Integration\AcfIntegration;
 

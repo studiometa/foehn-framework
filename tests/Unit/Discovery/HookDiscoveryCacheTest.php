@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Discovery\HookDiscovery;
+use Studiometa\Foehn\Discovery\HookDiscovery;
 
 /**
  * Helper to add items to a discovery via reflection.

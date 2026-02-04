@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Studiometa\WPTempest\Contracts;
+namespace Studiometa\Foehn\Contracts;
 
-use Studiometa\WPTempest\PostTypes\PostTypeBuilder;
+use Studiometa\Foehn\PostTypes\PostTypeBuilder;
 
 /**
  * Interface for post type models that need custom configuration.

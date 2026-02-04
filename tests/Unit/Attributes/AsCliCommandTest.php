@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Tests\Unit\Attributes;
 
 use ReflectionClass;
-use Studiometa\WPTempest\Attributes\AsCliCommand;
+use Studiometa\Foehn\Attributes\AsCliCommand;
 
 describe('AsCliCommand', function (): void {
     it('can be instantiated with minimal parameters', function (): void {

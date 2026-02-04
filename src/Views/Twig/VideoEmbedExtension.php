@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Studiometa\WPTempest\Views\Twig;
+namespace Studiometa\Foehn\Views\Twig;
 
-use Studiometa\WPTempest\Helpers\VideoEmbed;
+use Studiometa\Foehn\Helpers\VideoEmbed;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFilter;
 use Twig\TwigFunction;

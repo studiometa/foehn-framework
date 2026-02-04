@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Attributes\AsAction;
+use Studiometa\Foehn\Attributes\AsAction;
 
 describe('AsAction', function () {
     it('can be instantiated with hook name only', function () {

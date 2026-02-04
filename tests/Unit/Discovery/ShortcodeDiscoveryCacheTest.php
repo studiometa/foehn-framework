@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Discovery\ShortcodeDiscovery;
+use Studiometa\Foehn\Discovery\ShortcodeDiscovery;
 
 beforeEach(function () {
     $this->discovery = new ShortcodeDiscovery();

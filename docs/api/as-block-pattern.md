@@ -47,7 +47,7 @@ final readonly class AsBlockPattern
 
 namespace App\Patterns;
 
-use Studiometa\WPTempest\Attributes\AsBlockPattern;
+use Studiometa\Foehn\Attributes\AsBlockPattern;
 
 #[AsBlockPattern(
     name: 'theme/hero-with-cta',
@@ -80,8 +80,8 @@ Implement `BlockPatternInterface`:
 
 namespace App\Patterns;
 
-use Studiometa\WPTempest\Attributes\AsBlockPattern;
-use Studiometa\WPTempest\Contracts\BlockPatternInterface;
+use Studiometa\Foehn\Attributes\AsBlockPattern;
+use Studiometa\Foehn\Contracts\BlockPatternInterface;
 
 #[AsBlockPattern(
     name: 'theme/latest-posts',

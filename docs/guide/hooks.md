@@ -1,6 +1,6 @@
 # Hooks
 
-WP Tempest provides `#[AsAction]` and `#[AsFilter]` attributes to register WordPress hooks declaratively.
+Foehn provides `#[AsAction]` and `#[AsFilter]` attributes to register WordPress hooks declaratively.
 
 ## Actions
 
@@ -11,7 +11,7 @@ Use `#[AsAction]` to register action hooks:
 
 namespace App\Hooks;
 
-use Studiometa\WPTempest\Attributes\AsAction;
+use Studiometa\Foehn\Attributes\AsAction;
 
 final class ThemeHooks
 {
@@ -70,7 +70,7 @@ Use `#[AsFilter]` to register filter hooks:
 
 namespace App\Hooks;
 
-use Studiometa\WPTempest\Attributes\AsFilter;
+use Studiometa\Foehn\Attributes\AsFilter;
 
 final class ContentFilters
 {
@@ -119,7 +119,7 @@ Hook handlers support constructor dependency injection:
 namespace App\Hooks;
 
 use App\Services\AnalyticsService;
-use Studiometa\WPTempest\Attributes\AsAction;
+use Studiometa\Foehn\Attributes\AsAction;
 
 final class AnalyticsHooks
 {
@@ -207,16 +207,16 @@ public function loginStyles(): void
 
 ## Built-in Hooks
 
-WP Tempest provides a collection of **opt-in** reusable hook classes for common WordPress patterns. These are not enabled by default — you choose which ones to activate via the `hooks` configuration option.
+Foehn provides a collection of **opt-in** reusable hook classes for common WordPress patterns. These are not enabled by default — you choose which ones to activate via the `hooks` configuration option.
 
 ### Enabling Built-in Hooks
 
 ```php
-use Studiometa\WPTempest\Kernel;
-use Studiometa\WPTempest\Hooks\Cleanup\DisableEmoji;
-use Studiometa\WPTempest\Hooks\Cleanup\CleanHeadTags;
-use Studiometa\WPTempest\Hooks\Security\SecurityHeaders;
-use Studiometa\WPTempest\Hooks\YouTubeNoCookieHooks;
+use Studiometa\Foehn\Kernel;
+use Studiometa\Foehn\Hooks\Cleanup\DisableEmoji;
+use Studiometa\Foehn\Hooks\Cleanup\CleanHeadTags;
+use Studiometa\Foehn\Hooks\Security\SecurityHeaders;
+use Studiometa\Foehn\Hooks\YouTubeNoCookieHooks;
 
 Kernel::boot(__DIR__ . '/app', [
     'hooks' => [
@@ -235,7 +235,7 @@ Kernel::boot(__DIR__ . '/app', [
 
 ### Cleanup Hooks
 
-Located in `Studiometa\WPTempest\Hooks\Cleanup`:
+Located in `Studiometa\Foehn\Hooks\Cleanup`:
 
 | Class                 | Description                                                               |
 | --------------------- | ------------------------------------------------------------------------- |
@@ -249,7 +249,7 @@ Located in `Studiometa\WPTempest\Hooks\Cleanup`:
 
 ### Security Hooks
 
-Located in `Studiometa\WPTempest\Hooks\Security`:
+Located in `Studiometa\Foehn\Hooks\Security`:
 
 | Class                      | Description                                                           |
 | -------------------------- | --------------------------------------------------------------------- |
@@ -261,7 +261,7 @@ Located in `Studiometa\WPTempest\Hooks\Security`:
 
 ### GDPR Hooks
 
-Located in `Studiometa\WPTempest\Hooks`:
+Located in `Studiometa\Foehn\Hooks`:
 
 | Class                  | Description                                      |
 | ---------------------- | ------------------------------------------------ |
@@ -270,21 +270,21 @@ Located in `Studiometa\WPTempest\Hooks`:
 ### Example: Production Configuration
 
 ```php
-use Studiometa\WPTempest\Kernel;
-use Studiometa\WPTempest\Hooks\Cleanup\{
+use Studiometa\Foehn\Kernel;
+use Studiometa\Foehn\Hooks\Cleanup\{
     CleanContent,
     CleanHeadTags,
     CleanImageSizes,
     DisableEmoji,
     DisableGlobalStyles,
 };
-use Studiometa\WPTempest\Hooks\Security\{
+use Studiometa\Foehn\Hooks\Security\{
     DisableFileEditor,
     DisableVersionDisclosure,
     DisableXmlRpc,
     SecurityHeaders,
 };
-use Studiometa\WPTempest\Hooks\YouTubeNoCookieHooks;
+use Studiometa\Foehn\Hooks\YouTubeNoCookieHooks;
 
 Kernel::boot(__DIR__ . '/app', [
     'discovery_cache' => 'full',

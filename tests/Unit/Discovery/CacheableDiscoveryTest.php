@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Discovery\Concerns\CacheableDiscovery;
-use Studiometa\WPTempest\Discovery\Concerns\IsWpDiscovery;
-use Studiometa\WPTempest\Discovery\WpDiscovery;
+use Studiometa\Foehn\Discovery\Concerns\CacheableDiscovery;
+use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
+use Studiometa\Foehn\Discovery\WpDiscovery;
 
 // Test implementation of a cacheable discovery
 final class TestCacheableDiscovery implements WpDiscovery

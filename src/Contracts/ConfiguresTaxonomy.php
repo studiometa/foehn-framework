@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Studiometa\WPTempest\Contracts;
+namespace Studiometa\Foehn\Contracts;
 
-use Studiometa\WPTempest\PostTypes\TaxonomyBuilder;
+use Studiometa\Foehn\PostTypes\TaxonomyBuilder;
 
 /**
  * Interface for taxonomy classes that need custom configuration.

@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Contracts\ViewComposerInterface;
-use Studiometa\WPTempest\Views\ViewComposerRegistry;
+use Studiometa\Foehn\Contracts\ViewComposerInterface;
+use Studiometa\Foehn\Views\ViewComposerRegistry;
 
 describe('ViewComposerRegistry', function () {
     it('starts with zero composers', function () {

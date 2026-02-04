@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Fixtures;
 
-use Studiometa\WPTempest\Attributes\AsCliCommand;
-use Studiometa\WPTempest\Console\CliCommandInterface;
+use Studiometa\Foehn\Attributes\AsCliCommand;
+use Studiometa\Foehn\Console\CliCommandInterface;
 
 #[AsCliCommand(
     name: 'test:run',

@@ -1,6 +1,6 @@
 # API Reference
 
-This section documents all attributes, interfaces, and core classes in WP Tempest.
+This section documents all attributes, interfaces, and core classes in Foehn.
 
 ## Attributes
 

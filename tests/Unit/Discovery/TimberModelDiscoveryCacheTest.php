@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Attributes\AsTimberModel;
-use Studiometa\WPTempest\Discovery\TimberModelDiscovery;
+use Studiometa\Foehn\Attributes\AsTimberModel;
+use Studiometa\Foehn\Discovery\TimberModelDiscovery;
 
 beforeEach(function () {
     $this->discovery = new TimberModelDiscovery();

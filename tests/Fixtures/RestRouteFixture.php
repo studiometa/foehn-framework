@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Fixtures;
 
-use Studiometa\WPTempest\Attributes\AsRestRoute;
+use Studiometa\Foehn\Attributes\AsRestRoute;
 use WP_REST_Request;
 
 final class RestRouteFixture

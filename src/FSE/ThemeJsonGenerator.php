@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Studiometa\WPTempest\FSE;
+namespace Studiometa\Foehn\FSE;
 
 /**
  * Generates theme.json configuration for WordPress FSE.

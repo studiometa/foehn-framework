@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Discovery\TemplateControllerDiscovery;
+use Studiometa\Foehn\Discovery\TemplateControllerDiscovery;
 use Tests\Fixtures\TemplateControllerFixture;
 
 beforeEach(function () {

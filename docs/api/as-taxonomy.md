@@ -45,7 +45,7 @@ final readonly class AsTaxonomy
 
 namespace App\Models;
 
-use Studiometa\WPTempest\Attributes\AsTaxonomy;
+use Studiometa\Foehn\Attributes\AsTaxonomy;
 
 #[AsTaxonomy(
     name: 'product_category',
@@ -91,8 +91,8 @@ Implement `ConfiguresTaxonomy` for full control:
 
 namespace App\Models;
 
-use Studiometa\WPTempest\Attributes\AsTaxonomy;
-use Studiometa\WPTempest\Contracts\ConfiguresTaxonomy;
+use Studiometa\Foehn\Attributes\AsTaxonomy;
+use Studiometa\Foehn\Contracts\ConfiguresTaxonomy;
 
 #[AsTaxonomy(
     name: 'skill',

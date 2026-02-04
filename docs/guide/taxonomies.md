@@ -1,6 +1,6 @@
 # Taxonomies
 
-WP Tempest uses `#[AsTaxonomy]` to register custom taxonomies.
+Foehn uses `#[AsTaxonomy]` to register custom taxonomies.
 
 ## Basic Taxonomy
 
@@ -10,7 +10,7 @@ WP Tempest uses `#[AsTaxonomy]` to register custom taxonomies.
 
 namespace App\Models;
 
-use Studiometa\WPTempest\Attributes\AsTaxonomy;
+use Studiometa\Foehn\Attributes\AsTaxonomy;
 
 #[AsTaxonomy(
     name: 'product_category',
@@ -31,7 +31,7 @@ final class ProductCategory
 
 namespace App\Models;
 
-use Studiometa\WPTempest\Attributes\AsTaxonomy;
+use Studiometa\Foehn\Attributes\AsTaxonomy;
 
 #[AsTaxonomy(
     name: 'product_category',
@@ -96,8 +96,8 @@ For complex taxonomies, implement `ConfiguresTaxonomy` interface:
 
 namespace App\Models;
 
-use Studiometa\WPTempest\Attributes\AsTaxonomy;
-use Studiometa\WPTempest\Contracts\ConfiguresTaxonomy;
+use Studiometa\Foehn\Attributes\AsTaxonomy;
+use Studiometa\Foehn\Contracts\ConfiguresTaxonomy;
 
 #[AsTaxonomy(
     name: 'skill',

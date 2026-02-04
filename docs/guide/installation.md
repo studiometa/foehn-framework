@@ -9,7 +9,7 @@
 ## Install via Composer
 
 ```bash
-composer require studiometa/wp-tempest
+composer require studiometa/foehn
 ```
 
 ## Theme Setup
@@ -52,7 +52,7 @@ composer dump-autoload
 
 ### 3. Boot the kernel
 
-In your `functions.php`, boot the WP Tempest kernel:
+In your `functions.php`, boot the Foehn kernel:
 
 ```php
 <?php
@@ -60,17 +60,17 @@ In your `functions.php`, boot the WP Tempest kernel:
 
 require_once __DIR__ . '/vendor/autoload.php';
 
-use Studiometa\WPTempest\Kernel;
+use Studiometa\Foehn\Kernel;
 
 // Boot with the path to your app directory
 Kernel::boot(__DIR__ . '/app');
 ```
 
-That's it! WP Tempest will now auto-discover all your attributed classes.
+That's it! Foehn will now auto-discover all your attributed classes.
 
 ## Directory Structure
 
-A typical WP Tempest theme structure:
+A typical Foehn theme structure:
 
 ```
 your-theme/
@@ -112,7 +112,7 @@ Kernel::boot(__DIR__ . '/app', [
     'discovery_cache' => 'full',  // 'full', 'partial', 'none'
 
     // Custom cache path (optional)
-    'discovery_cache_path' => WP_CONTENT_DIR . '/cache/wp-tempest/discovery',
+    'discovery_cache_path' => WP_CONTENT_DIR . '/cache/foehn/discovery',
 ]);
 ```
 
@@ -126,7 +126,7 @@ See [Discovery Cache](/guide/discovery-cache) for more details.
 
 ## Using with Timber
 
-WP Tempest is designed to work seamlessly with Timber. It automatically:
+Foehn is designed to work seamlessly with Timber. It automatically:
 
 - Registers your post type classes in Timber's classmap
 - Integrates view composers with Timber's context
@@ -134,7 +134,7 @@ WP Tempest is designed to work seamlessly with Timber. It automatically:
 
 ## Using with ACF
 
-For ACF blocks, ensure ACF Pro is installed. WP Tempest uses `stoutlogic/acf-builder` for defining fields:
+For ACF blocks, ensure ACF Pro is installed. Foehn uses `stoutlogic/acf-builder` for defining fields:
 
 ```bash
 composer require stoutlogic/acf-builder
@@ -150,14 +150,14 @@ Create a simple hook to verify everything works:
 
 namespace App\Hooks;
 
-use Studiometa\WPTempest\Attributes\AsAction;
+use Studiometa\Foehn\Attributes\AsAction;
 
 final class TestHooks
 {
     #[AsAction('init')]
     public function testInit(): void
     {
-        error_log('WP Tempest is working!');
+        error_log('Foehn is working!');
     }
 }
 ```

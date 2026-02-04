@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Discovery\TemplateControllerDiscovery;
+use Studiometa\Foehn\Discovery\TemplateControllerDiscovery;
 use Tests\Fixtures\InvalidTemplateControllerFixture;
 use Tests\Fixtures\NoAttributeFixture;
 use Tests\Fixtures\TemplateControllerFixture;

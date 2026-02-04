@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Studiometa\WPTempest\Discovery\Concerns;
+namespace Studiometa\Foehn\Discovery\Concerns;
 
 /**
  * Trait for discoveries that support caching.

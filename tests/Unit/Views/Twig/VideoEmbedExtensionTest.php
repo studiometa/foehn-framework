@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Views\Twig\VideoEmbedExtension;
+use Studiometa\Foehn\Views\Twig\VideoEmbedExtension;
 
 describe('VideoEmbedExtension', function () {
     beforeEach(function () {
@@ -38,7 +38,7 @@ describe('VideoEmbedExtension', function () {
 
         foreach ($functions as $function) {
             $callable = $function->getCallable();
-            expect($callable[0])->toBe('Studiometa\\WPTempest\\Helpers\\VideoEmbed');
+            expect($callable[0])->toBe('Studiometa\\Foehn\\Helpers\\VideoEmbed');
         }
     });
 
@@ -47,7 +47,7 @@ describe('VideoEmbedExtension', function () {
 
         foreach ($filters as $filter) {
             $callable = $filter->getCallable();
-            expect($callable[0])->toBe('Studiometa\\WPTempest\\Helpers\\VideoEmbed');
+            expect($callable[0])->toBe('Studiometa\\Foehn\\Helpers\\VideoEmbed');
         }
     });
 });

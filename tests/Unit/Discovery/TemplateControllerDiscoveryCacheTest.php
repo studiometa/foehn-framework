@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Discovery\TemplateControllerDiscovery;
+use Studiometa\Foehn\Discovery\TemplateControllerDiscovery;
 
 beforeEach(function () {
     $this->discovery = new TemplateControllerDiscovery();

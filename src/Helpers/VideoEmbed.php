@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Studiometa\WPTempest\Helpers;
+namespace Studiometa\Foehn\Helpers;
 
 /**
  * Helper class to transform video URLs to privacy-friendly embed URLs.

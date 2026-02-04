@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Kernel;
-use Studiometa\WPTempest\Config\WpTempestConfig;
+use Studiometa\Foehn\Config\FoehnConfig;
+use Studiometa\Foehn\Kernel;
 use Timber\Timber;
 
 describe('Kernel', function () {
@@ -63,11 +63,11 @@ describe('Kernel configuration', function () {
         $reflection = new ReflectionClass(Kernel::class);
         $kernel = $reflection->newInstanceWithoutConstructor();
 
-        $config = WpTempestConfig::fromArray(['discovery_cache' => 'full']);
+        $config = FoehnConfig::fromArray(['discovery_cache' => 'full']);
         $configProperty = $reflection->getProperty('wpTempestConfig');
         $configProperty->setValue($kernel, $config);
 
-        expect($kernel->getWpTempestConfig())->toBe($config);
+        expect($kernel->getFoehnConfig())->toBe($config);
     });
 
     it('tracks booted state', function () {
@@ -165,7 +165,7 @@ describe('Kernel Timber initialization', function () {
     });
 
     it('uses default templates dir of ["templates"]', function () {
-        $config = WpTempestConfig::fromArray([]);
+        $config = FoehnConfig::fromArray([]);
 
         expect($config->timberTemplatesDir)->toBe(['templates']);
     });

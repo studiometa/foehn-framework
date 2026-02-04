@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Attributes\AsAcfBlock;
+use Studiometa\Foehn\Attributes\AsAcfBlock;
 
 describe('AsAcfBlock', function () {
     it('can be instantiated with minimal parameters', function () {

@@ -1,6 +1,6 @@
 # Shortcodes
 
-WP Tempest provides `#[AsShortcode]` for registering shortcode handlers.
+Foehn provides `#[AsShortcode]` for registering shortcode handlers.
 
 ## Basic Shortcode
 
@@ -10,7 +10,7 @@ WP Tempest provides `#[AsShortcode]` for registering shortcode handlers.
 
 namespace App\Hooks;
 
-use Studiometa\WPTempest\Attributes\AsShortcode;
+use Studiometa\Foehn\Attributes\AsShortcode;
 
 final class Shortcodes
 {
@@ -49,8 +49,8 @@ For complex shortcodes, use templates:
 
 namespace App\Hooks;
 
-use Studiometa\WPTempest\Attributes\AsShortcode;
-use Studiometa\WPTempest\Contracts\ViewEngineInterface;
+use Studiometa\Foehn\Attributes\AsShortcode;
+use Studiometa\Foehn\Contracts\ViewEngineInterface;
 
 final class Shortcodes
 {
@@ -98,7 +98,7 @@ final class Shortcodes
 
 namespace App\Hooks;
 
-use Studiometa\WPTempest\Attributes\AsShortcode;
+use Studiometa\Foehn\Attributes\AsShortcode;
 
 final class Shortcodes
 {

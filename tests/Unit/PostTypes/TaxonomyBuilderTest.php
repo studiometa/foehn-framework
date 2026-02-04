@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Attributes\AsTaxonomy;
-use Studiometa\WPTempest\PostTypes\TaxonomyBuilder;
+use Studiometa\Foehn\Attributes\AsTaxonomy;
+use Studiometa\Foehn\PostTypes\TaxonomyBuilder;
 
 describe('TaxonomyBuilder', function () {
     it('can be instantiated with a name', function () {
@@ -123,12 +123,10 @@ describe('TaxonomyBuilder', function () {
     });
 
     it('supports custom labels merged with auto-generated', function () {
-        $attribute = new AsTaxonomy(
-            name: 'genre',
-            singular: 'Genre',
-            plural: 'Genres',
-            labels: ['menu_name' => 'Music Genres', 'all_items' => 'All Music Genres'],
-        );
+        $attribute = new AsTaxonomy(name: 'genre', singular: 'Genre', plural: 'Genres', labels: [
+            'menu_name' => 'Music Genres',
+            'all_items' => 'All Music Genres',
+        ]);
 
         $builder = TaxonomyBuilder::fromAttribute($attribute);
         $args = $builder->build();
@@ -140,10 +138,7 @@ describe('TaxonomyBuilder', function () {
     });
 
     it('supports full rewrite config', function () {
-        $attribute = new AsTaxonomy(
-            name: 'genre',
-            rewrite: ['slug' => 'music-genre', 'hierarchical' => true],
-        );
+        $attribute = new AsTaxonomy(name: 'genre', rewrite: ['slug' => 'music-genre', 'hierarchical' => true]);
 
         $builder = TaxonomyBuilder::fromAttribute($attribute);
         $args = $builder->build();
@@ -152,10 +147,7 @@ describe('TaxonomyBuilder', function () {
     });
 
     it('supports rewrite false to disable', function () {
-        $attribute = new AsTaxonomy(
-            name: 'internal_tag',
-            rewrite: false,
-        );
+        $attribute = new AsTaxonomy(name: 'internal_tag', rewrite: false);
 
         $builder = TaxonomyBuilder::fromAttribute($attribute);
         $args = $builder->build();
@@ -164,11 +156,10 @@ describe('TaxonomyBuilder', function () {
     });
 
     it('prioritizes rewrite over rewriteSlug', function () {
-        $attribute = new AsTaxonomy(
-            name: 'genre',
-            rewriteSlug: 'old-slug',
-            rewrite: ['slug' => 'new-slug', 'with_front' => false],
-        );
+        $attribute = new AsTaxonomy(name: 'genre', rewriteSlug: 'old-slug', rewrite: [
+            'slug' => 'new-slug',
+            'with_front' => false,
+        ]);
 
         $builder = TaxonomyBuilder::fromAttribute($attribute);
         $args = $builder->build();

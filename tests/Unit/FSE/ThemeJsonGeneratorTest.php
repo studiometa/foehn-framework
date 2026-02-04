@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\FSE\ThemeJsonGenerator;
+use Studiometa\Foehn\FSE\ThemeJsonGenerator;
 
 describe('ThemeJsonGenerator', function () {
     it('generates minimal theme.json', function () {

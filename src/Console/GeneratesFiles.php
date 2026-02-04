@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Studiometa\WPTempest\Console;
+namespace Studiometa\Foehn\Console;
 
-use Studiometa\WPTempest\Kernel;
+use Studiometa\Foehn\Kernel;
 use Tempest\Discovery\SkipDiscovery;
 use Tempest\Generation\ClassManipulator;
 use Tempest\Support\Filesystem;

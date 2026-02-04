@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Fixtures;
 
-use Studiometa\WPTempest\Attributes\AsBlock;
+use Studiometa\Foehn\Attributes\AsBlock;
 
 /**
  * Invalid: has #[AsBlock] but does NOT implement BlockInterface.

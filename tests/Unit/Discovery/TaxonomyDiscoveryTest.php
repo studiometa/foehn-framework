@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Discovery\TaxonomyDiscovery;
+use Studiometa\Foehn\Discovery\TaxonomyDiscovery;
 use Tests\Fixtures\InvalidTaxonomyFixture;
 use Tests\Fixtures\NoAttributeFixture;
 use Tests\Fixtures\TaxonomyFixture;

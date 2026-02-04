@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Hooks\Cleanup\CleanContent;
+use Studiometa\Foehn\Hooks\Cleanup\CleanContent;
 
 describe('CleanContent', function () {
     it('removes empty paragraphs with &nbsp;', function () {
@@ -27,8 +27,7 @@ describe('CleanContent', function () {
     it('removes only empty paragraphs from mixed content', function () {
         $hooks = new CleanContent();
 
-        expect($hooks->cleanEmptyParagraphs('<p>Hello</p><p>&nbsp;</p><p>World</p>'))
-            ->toBe('<p>Hello</p><p>World</p>');
+        expect($hooks->cleanEmptyParagraphs('<p>Hello</p><p>&nbsp;</p><p>World</p>'))->toBe('<p>Hello</p><p>World</p>');
     });
 
     it('removes archive title prefix', function () {
@@ -49,14 +48,14 @@ describe('CleanContent', function () {
         $reflection = new ReflectionClass(CleanContent::class);
 
         $contentMethod = $reflection->getMethod('cleanEmptyParagraphs');
-        $contentAttrs = $contentMethod->getAttributes(\Studiometa\WPTempest\Attributes\AsFilter::class);
+        $contentAttrs = $contentMethod->getAttributes(\Studiometa\Foehn\Attributes\AsFilter::class);
 
         expect($contentAttrs)->toHaveCount(1);
         expect($contentAttrs[0]->newInstance()->hook)->toBe('the_content');
         expect($contentAttrs[0]->newInstance()->priority)->toBe(20);
 
         $archiveMethod = $reflection->getMethod('cleanArchiveTitlePrefix');
-        $archiveAttrs = $archiveMethod->getAttributes(\Studiometa\WPTempest\Attributes\AsFilter::class);
+        $archiveAttrs = $archiveMethod->getAttributes(\Studiometa\Foehn\Attributes\AsFilter::class);
 
         expect($archiveAttrs)->toHaveCount(1);
         expect($archiveAttrs[0]->newInstance()->hook)->toBe('get_the_archive_title');

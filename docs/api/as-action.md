@@ -33,7 +33,7 @@ final readonly class AsAction
 
 namespace App\Hooks;
 
-use Studiometa\WPTempest\Attributes\AsAction;
+use Studiometa\Foehn\Attributes\AsAction;
 
 final class ThemeHooks
 {

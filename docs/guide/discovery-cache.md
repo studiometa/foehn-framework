@@ -1,6 +1,6 @@
 # Discovery Cache
 
-WP Tempest uses PHP reflection to discover attributes at runtime. While this provides a great developer experience, it can add overhead in production. The discovery cache stores discovery results to avoid runtime reflection.
+Foehn uses PHP reflection to discover attributes at runtime. While this provides a great developer experience, it can add overhead in production. The discovery cache stores discovery results to avoid runtime reflection.
 
 ## Configuration
 
@@ -10,7 +10,7 @@ Enable discovery caching by passing configuration when booting the kernel:
 <?php
 // functions.php
 
-use Studiometa\WPTempest\Kernel;
+use Studiometa\Foehn\Kernel;
 
 Kernel::boot(__DIR__ . '/app', [
     'discovery_cache' => 'full',  // or 'partial', 'none', true, false
@@ -29,7 +29,7 @@ Kernel::boot(__DIR__ . '/app', [
 
 ### Custom Cache Path
 
-By default, cache files are stored in `wp-content/cache/wp-tempest/discovery/`. You can customize this:
+By default, cache files are stored in `wp-content/cache/foehn/discovery/`. You can customize this:
 
 ```php
 Kernel::boot(__DIR__ . '/app', [
@@ -91,7 +91,7 @@ Discovery Cache Status
 
 Strategy: full
 Enabled: Yes
-Cache path: /var/www/html/wp-content/cache/wp-tempest/discovery
+Cache path: /var/www/html/wp-content/cache/foehn/discovery
 Cache exists: Yes
 Cache valid: Yes
 
@@ -140,7 +140,7 @@ cd /home/forge/example.com
 git pull origin main
 composer install --no-dev --optimize-autoloader
 
-# Generate WP Tempest discovery cache
+# Generate Foehn discovery cache
 php wp-cli.phar tempest discovery:generate --clear
 
 # Clear other caches
@@ -155,7 +155,7 @@ Use environment variables for different environments:
 <?php
 // functions.php
 
-use Studiometa\WPTempest\Kernel;
+use Studiometa\Foehn\Kernel;
 
 $cacheStrategy = match (wp_get_environment_type()) {
     'production' => 'full',
@@ -186,7 +186,7 @@ Kernel::boot(__DIR__ . '/app', [
 
 ## How It Works
 
-1. **Without cache**: On each request, WP Tempest scans all PHP files in your app directory, reflecting on classes to find attributes.
+1. **Without cache**: On each request, Foehn scans all PHP files in your app directory, reflecting on classes to find attributes.
 
 2. **With cache**: Discovery results are stored as a PHP array file. On subsequent requests, this file is loaded directly (benefiting from PHP's opcode cache).
 
@@ -219,7 +219,7 @@ declare(strict_types=1);
 // Generated: 2024-01-15 10:30:00
 
 return [
-    'Studiometa\\WPTempest\\Discovery\\HookDiscovery' => [
+    'Studiometa\\Foehn\\Discovery\\HookDiscovery' => [
         [
             'type' => 'action',
             'hook' => 'init',
@@ -247,7 +247,7 @@ return [
 2. Ensure the cache directory is writable:
 
    ```bash
-   chmod -R 755 wp-content/cache/wp-tempest
+   chmod -R 755 wp-content/cache/foehn
    ```
 
 3. Regenerate the cache:

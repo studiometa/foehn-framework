@@ -1,12 +1,12 @@
 # Migration from wp-toolkit
 
-This guide helps you migrate from `studiometa/wp-toolkit` to `studiometa/wp-tempest`.
+This guide helps you migrate from `studiometa/wp-toolkit` to `studiometa/foehn`.
 
 ## Overview
 
-WP Tempest replaces wp-toolkit's Manager pattern with attribute-based auto-discovery. The main changes:
+Foehn replaces wp-toolkit's Manager pattern with attribute-based auto-discovery. The main changes:
 
-| wp-toolkit             | wp-tempest                      |
+| wp-toolkit             | Foehn                           |
 | ---------------------- | ------------------------------- |
 | `Manager` classes      | PHP 8 attributes                |
 | Manual registration    | Auto-discovery                  |
@@ -16,10 +16,10 @@ WP Tempest replaces wp-toolkit's Manager pattern with attribute-based auto-disco
 | `BlockManager`         | `#[AsAcfBlock]` or `#[AsBlock]` |
 | `ManagerInterface`     | Specific interfaces per feature |
 
-## Step 1: Install wp-tempest
+## Step 1: Install foehn
 
 ```bash
-composer require studiometa/wp-tempest
+composer require studiometa/foehn
 composer remove studiometa/wp-toolkit
 ```
 
@@ -37,13 +37,13 @@ $theme = new ThemeManager();
 $theme->init();
 ```
 
-**After (wp-tempest):**
+**After (foehn):**
 
 ```php
 <?php
 // functions.php
 
-use Studiometa\WPTempest\Kernel;
+use Studiometa\Foehn\Kernel;
 
 Kernel::boot(__DIR__ . '/app');
 ```
@@ -78,7 +78,7 @@ class ProductPostType extends PostTypeManager
 }
 ```
 
-**After (wp-tempest):**
+**After (foehn):**
 
 ```php
 <?php
@@ -86,7 +86,7 @@ class ProductPostType extends PostTypeManager
 
 namespace App\Models;
 
-use Studiometa\WPTempest\Attributes\AsPostType;
+use Studiometa\Foehn\Attributes\AsPostType;
 use Timber\Post;
 
 #[AsPostType(
@@ -135,7 +135,7 @@ class ProductCategoryTaxonomy extends TaxonomyManager
 }
 ```
 
-**After (wp-tempest):**
+**After (foehn):**
 
 ```php
 <?php
@@ -143,7 +143,7 @@ class ProductCategoryTaxonomy extends TaxonomyManager
 
 namespace App\Models;
 
-use Studiometa\WPTempest\Attributes\AsTaxonomy;
+use Studiometa\Foehn\Attributes\AsTaxonomy;
 
 #[AsTaxonomy(
     name: 'product_category',
@@ -191,7 +191,7 @@ class HeroBlock extends BlockManager
 }
 ```
 
-**After (wp-tempest):**
+**After (foehn):**
 
 ```php
 <?php
@@ -199,9 +199,9 @@ class HeroBlock extends BlockManager
 
 namespace App\Blocks\Hero;
 
-use Studiometa\WPTempest\Attributes\AsAcfBlock;
-use Studiometa\WPTempest\Contracts\AcfBlockInterface;
-use Studiometa\WPTempest\Contracts\ViewEngineInterface;
+use Studiometa\Foehn\Attributes\AsAcfBlock;
+use Studiometa\Foehn\Contracts\AcfBlockInterface;
+use Studiometa\Foehn\Contracts\ViewEngineInterface;
 use StoutLogic\AcfBuilder\FieldsBuilder;
 
 #[AsAcfBlock(
@@ -252,7 +252,7 @@ add_action('after_setup_theme', function () {
 add_filter('excerpt_length', fn () => 30);
 ```
 
-**After (wp-tempest):**
+**After (foehn):**
 
 ```php
 <?php
@@ -260,8 +260,8 @@ add_filter('excerpt_length', fn () => 30);
 
 namespace App\Hooks;
 
-use Studiometa\WPTempest\Attributes\AsAction;
-use Studiometa\WPTempest\Attributes\AsFilter;
+use Studiometa\Foehn\Attributes\AsAction;
+use Studiometa\Foehn\Attributes\AsFilter;
 
 final class ThemeHooks
 {
@@ -297,7 +297,7 @@ theme/
         └── hero.twig
 ```
 
-**After (wp-tempest):**
+**After (foehn):**
 
 ```
 theme/
@@ -331,7 +331,7 @@ wp-toolkit's Manager pattern is replaced by attributes. No need to:
 
 ### 2. Automatic Discovery
 
-wp-tempest automatically discovers and registers:
+foehn automatically discovers and registers:
 
 - Post types
 - Taxonomies
@@ -343,7 +343,7 @@ wp-tempest automatically discovers and registers:
 
 ### 3. Dependency Injection
 
-wp-tempest uses Tempest's DI container:
+foehn uses Tempest's DI container:
 
 ```php
 // Inject services in constructors
@@ -359,7 +359,7 @@ Post type classes extend `Timber\Post` directly and are auto-registered in Timbe
 
 ### 5. New Features
 
-wp-tempest adds features not in wp-toolkit:
+foehn adds features not in wp-toolkit:
 
 - Native Gutenberg blocks with Interactivity API
 - Block patterns with Twig
@@ -370,7 +370,7 @@ wp-tempest adds features not in wp-toolkit:
 
 ## Checklist
 
-- [ ] Install wp-tempest, remove wp-toolkit
+- [ ] Install foehn, remove wp-toolkit
 - [ ] Update `functions.php` bootstrap
 - [ ] Migrate post types to `#[AsPostType]`
 - [ ] Migrate taxonomies to `#[AsTaxonomy]`
@@ -386,4 +386,4 @@ If you encounter issues during migration:
 
 1. Check the [Guide](/guide/getting-started) for detailed documentation
 2. Review the [API Reference](/api/) for attribute parameters
-3. Open an issue on [GitHub](https://github.com/studiometa/wp-tempest/issues)
+3. Open an issue on [GitHub](https://github.com/studiometa/foehn/issues)

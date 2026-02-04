@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Attributes\AsPostType;
-use Studiometa\WPTempest\Discovery\PostTypeDiscovery;
+use Studiometa\Foehn\Attributes\AsPostType;
+use Studiometa\Foehn\Discovery\PostTypeDiscovery;
 
 beforeEach(function () {
     $this->discovery = new PostTypeDiscovery();
@@ -49,11 +49,7 @@ describe('PostTypeDiscovery caching', function () {
     });
 
     it('handles minimal attribute configuration', function () {
-        $attribute = new AsPostType(
-            name: 'event',
-            singular: 'Event',
-            plural: 'Events',
-        );
+        $attribute = new AsPostType(name: 'event', singular: 'Event', plural: 'Events');
 
         $ref = new ReflectionMethod($this->discovery, 'addItem');
         $ref->invoke($this->discovery, [

@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Config\WpTempestConfig;
-use Studiometa\WPTempest\Discovery\DiscoveryCache;
-use Studiometa\WPTempest\Discovery\DiscoveryRunner;
-use Studiometa\WPTempest\Discovery\HookDiscovery;
-use Studiometa\WPTempest\Discovery\WpDiscovery;
-use Studiometa\WPTempest\Hooks\Cleanup\CleanHeadTags;
+use Studiometa\Foehn\Config\FoehnConfig;
+use Studiometa\Foehn\Discovery\DiscoveryCache;
+use Studiometa\Foehn\Discovery\DiscoveryRunner;
+use Studiometa\Foehn\Discovery\HookDiscovery;
+use Studiometa\Foehn\Discovery\WpDiscovery;
+use Studiometa\Foehn\Hooks\Cleanup\CleanHeadTags;
 use Tempest\Container\Container;
 use Tempest\Container\GenericContainer;
 use Tempest\Core\DiscoveryCacheStrategy;
@@ -84,13 +84,10 @@ describe('DiscoveryRunner integration', function () {
     });
 
     it('does not restore from cache when cache is disabled', function () {
-        $tmpDir = sys_get_temp_dir() . '/wp-tempest-test-nocache-' . uniqid();
+        $tmpDir = sys_get_temp_dir() . '/foehn-test-nocache-' . uniqid();
         mkdir($tmpDir, 0o755, true);
 
-        $config = new WpTempestConfig(
-            discoveryCacheStrategy: DiscoveryCacheStrategy::NONE,
-            discoveryCachePath: $tmpDir,
-        );
+        $config = new FoehnConfig(discoveryCacheStrategy: DiscoveryCacheStrategy::NONE, discoveryCachePath: $tmpDir);
         $cache = new DiscoveryCache($config);
 
         $container = createTestContainer();
@@ -109,13 +106,10 @@ describe('DiscoveryRunner integration', function () {
 
     it('restores discoveries from cache via ensureDiscovered', function () {
         // Use reflection to call ensureDiscovered directly (without apply)
-        $tmpDir = sys_get_temp_dir() . '/wp-tempest-test-cache-' . uniqid();
+        $tmpDir = sys_get_temp_dir() . '/foehn-test-cache-' . uniqid();
         mkdir($tmpDir, 0o755, true);
 
-        $config = new WpTempestConfig(
-            discoveryCacheStrategy: DiscoveryCacheStrategy::FULL,
-            discoveryCachePath: $tmpDir,
-        );
+        $config = new FoehnConfig(discoveryCacheStrategy: DiscoveryCacheStrategy::FULL, discoveryCachePath: $tmpDir);
         $cache = new DiscoveryCache($config);
 
         $cache->store([
@@ -152,12 +146,10 @@ describe('DiscoveryRunner integration', function () {
     });
 
     it('discovers opt-in hook classes from config', function () {
-        $config = new WpTempestConfig(
-            hooks: [CleanHeadTags::class],
-        );
+        $config = new FoehnConfig(hooks: [CleanHeadTags::class]);
 
         $container = bootTestContainer();
-        $container->singleton(WpTempestConfig::class, fn() => $config);
+        $container->singleton(FoehnConfig::class, fn() => $config);
 
         $runner = new DiscoveryRunner($container);
 
@@ -176,12 +168,10 @@ describe('DiscoveryRunner integration', function () {
     });
 
     it('skips non-existent hook classes in config', function () {
-        $config = new WpTempestConfig(
-            hooks: ['NonExistent\\HookClass'],
-        );
+        $config = new FoehnConfig(hooks: ['NonExistent\\HookClass']);
 
         $container = createTestContainer();
-        $container->singleton(WpTempestConfig::class, fn() => $config);
+        $container->singleton(FoehnConfig::class, fn() => $config);
 
         $runner = new DiscoveryRunner($container);
 
@@ -191,9 +181,9 @@ describe('DiscoveryRunner integration', function () {
         expect($runner->hasRun('early'))->toBeTrue();
     });
 
-    it('handles missing WpTempestConfig gracefully', function () {
+    it('handles missing FoehnConfig gracefully', function () {
         $container = createTestContainer();
-        // Don't register WpTempestConfig — discoverOptInHooks should catch the exception
+        // Don't register FoehnConfig — discoverOptInHooks should catch the exception
 
         $runner = new DiscoveryRunner($container);
 

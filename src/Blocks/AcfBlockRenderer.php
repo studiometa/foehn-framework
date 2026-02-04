@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Studiometa\WPTempest\Blocks;
+namespace Studiometa\Foehn\Blocks;
 
-use Studiometa\WPTempest\Config\WpTempestConfig;
-use Studiometa\WPTempest\Contracts\AcfBlockInterface;
+use Studiometa\Foehn\Config\FoehnConfig;
+use Studiometa\Foehn\Contracts\AcfBlockInterface;
 
 /**
  * Handles rendering of ACF blocks.
@@ -13,7 +13,7 @@ use Studiometa\WPTempest\Contracts\AcfBlockInterface;
 final class AcfBlockRenderer
 {
     public function __construct(
-        private readonly ?WpTempestConfig $config = null,
+        private readonly ?FoehnConfig $config = null,
         private readonly ?AcfFieldTransformer $transformer = null,
     ) {}
 

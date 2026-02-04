@@ -2,24 +2,24 @@
 
 declare(strict_types=1);
 
-use Studiometa\WPTempest\Discovery\DiscoveryRunner;
+use Studiometa\Foehn\Discovery\DiscoveryRunner;
 
 describe('DiscoveryRunner', function () {
     it('returns all discovery classes', function () {
         $classes = DiscoveryRunner::getAllDiscoveryClasses();
 
-        expect($classes)->toContain(\Studiometa\WPTempest\Discovery\HookDiscovery::class);
-        expect($classes)->toContain(\Studiometa\WPTempest\Discovery\PostTypeDiscovery::class);
-        expect($classes)->toContain(\Studiometa\WPTempest\Discovery\TaxonomyDiscovery::class);
-        expect($classes)->toContain(\Studiometa\WPTempest\Discovery\ShortcodeDiscovery::class);
-        expect($classes)->toContain(\Studiometa\WPTempest\Discovery\CliCommandDiscovery::class);
-        expect($classes)->toContain(\Studiometa\WPTempest\Discovery\AcfBlockDiscovery::class);
-        expect($classes)->toContain(\Studiometa\WPTempest\Discovery\BlockDiscovery::class);
-        expect($classes)->toContain(\Studiometa\WPTempest\Discovery\BlockPatternDiscovery::class);
-        expect($classes)->toContain(\Studiometa\WPTempest\Discovery\ViewComposerDiscovery::class);
-        expect($classes)->toContain(\Studiometa\WPTempest\Discovery\TemplateControllerDiscovery::class);
-        expect($classes)->toContain(\Studiometa\WPTempest\Discovery\RestRouteDiscovery::class);
-        expect($classes)->toContain(\Studiometa\WPTempest\Discovery\TimberModelDiscovery::class);
+        expect($classes)->toContain(\Studiometa\Foehn\Discovery\HookDiscovery::class);
+        expect($classes)->toContain(\Studiometa\Foehn\Discovery\PostTypeDiscovery::class);
+        expect($classes)->toContain(\Studiometa\Foehn\Discovery\TaxonomyDiscovery::class);
+        expect($classes)->toContain(\Studiometa\Foehn\Discovery\ShortcodeDiscovery::class);
+        expect($classes)->toContain(\Studiometa\Foehn\Discovery\CliCommandDiscovery::class);
+        expect($classes)->toContain(\Studiometa\Foehn\Discovery\AcfBlockDiscovery::class);
+        expect($classes)->toContain(\Studiometa\Foehn\Discovery\BlockDiscovery::class);
+        expect($classes)->toContain(\Studiometa\Foehn\Discovery\BlockPatternDiscovery::class);
+        expect($classes)->toContain(\Studiometa\Foehn\Discovery\ViewComposerDiscovery::class);
+        expect($classes)->toContain(\Studiometa\Foehn\Discovery\TemplateControllerDiscovery::class);
+        expect($classes)->toContain(\Studiometa\Foehn\Discovery\RestRouteDiscovery::class);
+        expect($classes)->toContain(\Studiometa\Foehn\Discovery\TimberModelDiscovery::class);
     });
 
     it('returns discovery phases', function () {
@@ -28,22 +28,22 @@ describe('DiscoveryRunner', function () {
         expect($phases)->toHaveKeys(['early', 'main', 'late']);
 
         // Early phase
-        expect($phases['early'])->toContain(\Studiometa\WPTempest\Discovery\HookDiscovery::class);
-        expect($phases['early'])->toContain(\Studiometa\WPTempest\Discovery\ShortcodeDiscovery::class);
-        expect($phases['early'])->toContain(\Studiometa\WPTempest\Discovery\CliCommandDiscovery::class);
-        expect($phases['early'])->toContain(\Studiometa\WPTempest\Discovery\TimberModelDiscovery::class);
+        expect($phases['early'])->toContain(\Studiometa\Foehn\Discovery\HookDiscovery::class);
+        expect($phases['early'])->toContain(\Studiometa\Foehn\Discovery\ShortcodeDiscovery::class);
+        expect($phases['early'])->toContain(\Studiometa\Foehn\Discovery\CliCommandDiscovery::class);
+        expect($phases['early'])->toContain(\Studiometa\Foehn\Discovery\TimberModelDiscovery::class);
 
         // Main phase
-        expect($phases['main'])->toContain(\Studiometa\WPTempest\Discovery\PostTypeDiscovery::class);
-        expect($phases['main'])->toContain(\Studiometa\WPTempest\Discovery\TaxonomyDiscovery::class);
-        expect($phases['main'])->toContain(\Studiometa\WPTempest\Discovery\AcfBlockDiscovery::class);
-        expect($phases['main'])->toContain(\Studiometa\WPTempest\Discovery\BlockDiscovery::class);
-        expect($phases['main'])->toContain(\Studiometa\WPTempest\Discovery\BlockPatternDiscovery::class);
+        expect($phases['main'])->toContain(\Studiometa\Foehn\Discovery\PostTypeDiscovery::class);
+        expect($phases['main'])->toContain(\Studiometa\Foehn\Discovery\TaxonomyDiscovery::class);
+        expect($phases['main'])->toContain(\Studiometa\Foehn\Discovery\AcfBlockDiscovery::class);
+        expect($phases['main'])->toContain(\Studiometa\Foehn\Discovery\BlockDiscovery::class);
+        expect($phases['main'])->toContain(\Studiometa\Foehn\Discovery\BlockPatternDiscovery::class);
 
         // Late phase
-        expect($phases['late'])->toContain(\Studiometa\WPTempest\Discovery\ViewComposerDiscovery::class);
-        expect($phases['late'])->toContain(\Studiometa\WPTempest\Discovery\TemplateControllerDiscovery::class);
-        expect($phases['late'])->toContain(\Studiometa\WPTempest\Discovery\RestRouteDiscovery::class);
+        expect($phases['late'])->toContain(\Studiometa\Foehn\Discovery\ViewComposerDiscovery::class);
+        expect($phases['late'])->toContain(\Studiometa\Foehn\Discovery\TemplateControllerDiscovery::class);
+        expect($phases['late'])->toContain(\Studiometa\Foehn\Discovery\RestRouteDiscovery::class);
     });
 
     it('has correct number of discoveries in each phase', function () {
@@ -67,7 +67,7 @@ describe('DiscoveryRunner', function () {
         $classes = DiscoveryRunner::getAllDiscoveryClasses();
 
         foreach ($classes as $class) {
-            expect(is_subclass_of($class, \Studiometa\WPTempest\Discovery\WpDiscovery::class))
+            expect(is_subclass_of($class, \Studiometa\Foehn\Discovery\WpDiscovery::class))
                 ->toBeTrue("Expected {$class} to implement WpDiscovery");
         }
     });

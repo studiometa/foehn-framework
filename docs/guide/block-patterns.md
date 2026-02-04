@@ -1,6 +1,6 @@
 # Block Patterns
 
-WP Tempest provides `#[AsBlockPattern]` for registering block patterns with Twig template support.
+Foehn provides `#[AsBlockPattern]` for registering block patterns with Twig template support.
 
 ## Basic Block Pattern
 
@@ -10,7 +10,7 @@ WP Tempest provides `#[AsBlockPattern]` for registering block patterns with Twig
 
 namespace App\Patterns;
 
-use Studiometa\WPTempest\Attributes\AsBlockPattern;
+use Studiometa\Foehn\Attributes\AsBlockPattern;
 
 #[AsBlockPattern(
     name: 'theme/hero-with-cta',
@@ -75,8 +75,8 @@ For patterns with dynamic content, implement `BlockPatternInterface`:
 
 namespace App\Patterns;
 
-use Studiometa\WPTempest\Attributes\AsBlockPattern;
-use Studiometa\WPTempest\Contracts\BlockPatternInterface;
+use Studiometa\Foehn\Attributes\AsBlockPattern;
+use Studiometa\Foehn\Contracts\BlockPatternInterface;
 
 #[AsBlockPattern(
     name: 'theme/latest-posts',
@@ -163,7 +163,7 @@ Register custom categories using filters:
 
 namespace App\Hooks;
 
-use Studiometa\WPTempest\Attributes\AsFilter;
+use Studiometa\Foehn\Attributes\AsFilter;
 
 final class PatternHooks
 {
