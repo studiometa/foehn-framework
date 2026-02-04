@@ -10,6 +10,7 @@ use Studiometa\Foehn\Console\CliCommandInterface;
 use Studiometa\Foehn\Console\Commands\DiscoveryClearCommand;
 use Studiometa\Foehn\Console\Commands\DiscoveryGenerateCommand;
 use Studiometa\Foehn\Console\Commands\DiscoveryStatusCommand;
+use Studiometa\Foehn\Console\Commands\DiscoveryWarmCommand;
 use Studiometa\Foehn\Console\Commands\MakeAcfBlockCommand;
 use Studiometa\Foehn\Console\Commands\MakeBlockCommand;
 use Studiometa\Foehn\Console\Commands\MakeControllerCommand;
@@ -34,6 +35,7 @@ describe('Commands', function (): void {
         'DiscoveryClearCommand' => ['class' => DiscoveryClearCommand::class, 'name' => 'discovery:clear'],
         'DiscoveryGenerateCommand' => ['class' => DiscoveryGenerateCommand::class, 'name' => 'discovery:generate'],
         'DiscoveryStatusCommand' => ['class' => DiscoveryStatusCommand::class, 'name' => 'discovery:status'],
+        'DiscoveryWarmCommand' => ['class' => DiscoveryWarmCommand::class, 'name' => 'discovery:warm'],
     ];
 
     foreach ($commands as $label => $data) {
