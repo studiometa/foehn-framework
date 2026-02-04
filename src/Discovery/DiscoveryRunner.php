@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Studiometa\WPTempest\Discovery;
 
 use Tempest\Container\Container;
-use Tempest\Discovery\DiscoveryItems;
 
 /**
  * Orchestrates the discovery process across WordPress lifecycle phases.
