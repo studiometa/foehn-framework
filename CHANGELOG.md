@@ -20,6 +20,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add opt-in reusable hook classes for common WordPress patterns ([1bac8e8], [#13]):
+  - Cleanup: `CleanHeadTags`, `CleanContent`, `CleanImageSizes`, `DisableEmoji`, `DisableFeeds`, `DisableOembed`, `DisableGlobalStyles`
+  - Security: `SecurityHeaders`, `DisableVersionDisclosure`, `DisableXmlRpc`, `DisableFileEditor`, `RestApiAuth`
+  - GDPR: `YouTubeNoCookieHooks`
+- Add `hooks` config option in `Kernel::boot()` to activate opt-in hook classes ([1bac8e8], [#13])
 - Add `#[AsTimberModel]` attribute for Timber class map registration without post type/taxonomy registration ([b6fd69a], [#11])
 - Auto-initialize Timber in Kernel bootstrap with `timber_templates_dir` config option ([fae5391], [#12])
 - Add `hierarchical`, `menuPosition`, `labels`, `rewrite` (array|false|null) to `#[AsPostType]` ([b544790], [#7])
@@ -47,3 +52,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#7]: https://github.com/studiometa/wp-tempest/pull/7
 [#11]: https://github.com/studiometa/wp-tempest/pull/11
 [#12]: https://github.com/studiometa/wp-tempest/pull/12
+[#13]: https://github.com/studiometa/wp-tempest/pull/13
+[1bac8e8]: https://github.com/studiometa/wp-tempest/commit/1bac8e8
