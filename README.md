@@ -14,7 +14,7 @@ A modern WordPress framework powered by [Tempest](https://github.com/tempestphp/
 
 - 🚀 **Zero configuration** - Auto-discovery of components via PHP 8 attributes
 - 🎯 **Modern DX** - Type-safe, IDE-friendly, testable
-- 🔌 **WordPress native** - Works with Timber, ACF, Gutenberg, and FSE
+- 🔌 **WordPress native** - Works with Timber, ACF, and Gutenberg blocks
 - ⚡ **Minimal boilerplate** - One line to boot your theme
 
 ## Requirements
