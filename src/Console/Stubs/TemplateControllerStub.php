@@ -26,6 +26,8 @@ final class TemplateControllerStub implements TemplateControllerInterface
         // $context['post'] = Timber::get_post();
         // $context['custom_data'] = $this->loadCustomData();
 
-        return Timber::compile('dummy-template.twig', $context);
+        $result = Timber::compile('dummy-template.twig', $context);
+
+        return is_string($result) ? $result : null;
     }
 }
