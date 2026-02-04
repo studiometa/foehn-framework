@@ -72,29 +72,8 @@ final class TaxonomyDiscovery implements WpDiscovery
     {
         $className = $item['className'];
         $implementsConfig = $item['implementsConfig'];
-
-        // Build from attribute or cached data
-        if (isset($item['attribute'])) {
-            $builder = TaxonomyBuilder::fromAttribute($item['attribute']);
-            $taxonomyName = $item['attribute']->name;
-        } else {
-            // Cached format - rebuild attribute
-            $attribute = new AsTaxonomy(
-                name: $item['name'],
-                postTypes: $item['postTypes'] ?? [],
-                singular: $item['singular'],
-                plural: $item['plural'],
-                public: $item['public'] ?? true,
-                hierarchical: $item['hierarchical'] ?? false,
-                showInRest: $item['showInRest'] ?? true,
-                showAdminColumn: $item['showAdminColumn'] ?? true,
-                rewriteSlug: $item['rewriteSlug'] ?? null,
-                labels: $item['labels'] ?? [],
-                rewrite: $item['rewrite'] ?? null,
-            );
-            $builder = TaxonomyBuilder::fromAttribute($attribute);
-            $taxonomyName = $item['name'];
-        }
+        $attribute = $this->resolveAttribute($item);
+        $builder = TaxonomyBuilder::fromAttribute($attribute);
 
         // Allow class to customize the builder
         if ($implementsConfig) {
@@ -106,7 +85,34 @@ final class TaxonomyDiscovery implements WpDiscovery
         $builder->register();
 
         // Register Timber class map
-        $this->registerTimberClassMap($taxonomyName, $className);
+        $this->registerTimberClassMap($attribute->name, $className);
+    }
+
+    /**
+     * Resolve the AsTaxonomy attribute from a discovered or cached item.
+     *
+     * @param array<string, mixed> $item
+     */
+    private function resolveAttribute(array $item): AsTaxonomy
+    {
+        if (isset($item['attribute'])) {
+            return $item['attribute'];
+        }
+
+        // Cached format - rebuild attribute
+        return new AsTaxonomy(
+            name: $item['name'],
+            postTypes: $item['postTypes'] ?? [],
+            singular: $item['singular'],
+            plural: $item['plural'],
+            public: $item['public'] ?? true,
+            hierarchical: $item['hierarchical'] ?? false,
+            showInRest: $item['showInRest'] ?? true,
+            showAdminColumn: $item['showAdminColumn'] ?? true,
+            rewriteSlug: $item['rewriteSlug'] ?? null,
+            labels: $item['labels'] ?? [],
+            rewrite: $item['rewrite'] ?? null,
+        );
     }
 
     /**

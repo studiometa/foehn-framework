@@ -72,32 +72,8 @@ final class PostTypeDiscovery implements WpDiscovery
     {
         $className = $item['className'];
         $implementsConfig = $item['implementsConfig'];
-
-        // Build from attribute or cached data
-        if (isset($item['attribute'])) {
-            $builder = PostTypeBuilder::fromAttribute($item['attribute']);
-            $postTypeName = $item['attribute']->name;
-        } else {
-            // Cached format - rebuild attribute
-            $attribute = new AsPostType(
-                name: $item['name'],
-                singular: $item['singular'],
-                plural: $item['plural'],
-                public: $item['public'] ?? true,
-                hasArchive: $item['hasArchive'] ?? false,
-                showInRest: $item['showInRest'] ?? true,
-                menuIcon: $item['menuIcon'] ?? null,
-                supports: $item['supports'] ?? ['title', 'editor', 'thumbnail'],
-                taxonomies: $item['taxonomies'] ?? [],
-                rewriteSlug: $item['rewriteSlug'] ?? null,
-                hierarchical: $item['hierarchical'] ?? false,
-                menuPosition: $item['menuPosition'] ?? null,
-                labels: $item['labels'] ?? [],
-                rewrite: $item['rewrite'] ?? null,
-            );
-            $builder = PostTypeBuilder::fromAttribute($attribute);
-            $postTypeName = $item['name'];
-        }
+        $attribute = $this->resolveAttribute($item);
+        $builder = PostTypeBuilder::fromAttribute($attribute);
 
         // Allow class to customize the builder
         if ($implementsConfig) {
@@ -109,7 +85,37 @@ final class PostTypeDiscovery implements WpDiscovery
         $builder->register();
 
         // Register Timber class map
-        $this->registerTimberClassMap($postTypeName, $className);
+        $this->registerTimberClassMap($attribute->name, $className);
+    }
+
+    /**
+     * Resolve the AsPostType attribute from a discovered or cached item.
+     *
+     * @param array<string, mixed> $item
+     */
+    private function resolveAttribute(array $item): AsPostType
+    {
+        if (isset($item['attribute'])) {
+            return $item['attribute'];
+        }
+
+        // Cached format - rebuild attribute
+        return new AsPostType(
+            name: $item['name'],
+            singular: $item['singular'],
+            plural: $item['plural'],
+            public: $item['public'] ?? true,
+            hasArchive: $item['hasArchive'] ?? false,
+            showInRest: $item['showInRest'] ?? true,
+            menuIcon: $item['menuIcon'] ?? null,
+            supports: $item['supports'] ?? ['title', 'editor', 'thumbnail'],
+            taxonomies: $item['taxonomies'] ?? [],
+            rewriteSlug: $item['rewriteSlug'] ?? null,
+            hierarchical: $item['hierarchical'] ?? false,
+            menuPosition: $item['menuPosition'] ?? null,
+            labels: $item['labels'] ?? [],
+            rewrite: $item['rewrite'] ?? null,
+        );
     }
 
     /**

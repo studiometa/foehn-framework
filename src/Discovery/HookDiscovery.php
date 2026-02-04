@@ -104,9 +104,11 @@ final class HookDiscovery implements WpDiscovery
         // Register with WordPress
         if ($item['type'] === 'action') {
             add_action($item['hook'], $callback, $item['priority'], $item['acceptedArgs']);
-        } else {
-            add_filter($item['hook'], $callback, $item['priority'], $item['acceptedArgs']);
+
+            return;
         }
+
+        add_filter($item['hook'], $callback, $item['priority'], $item['acceptedArgs']);
     }
 
     /**

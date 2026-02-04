@@ -259,10 +259,14 @@ final class PostTypeBuilder
 
         // Handle rewrite configuration
         // Priority: $rewrite (full config) > $rewriteSlug (shorthand)
-        if ($this->rewrite !== null) {
-            $args['rewrite'] = $this->rewrite;
-        } elseif ($this->rewriteSlug !== null) {
-            $args['rewrite'] = ['slug' => $this->rewriteSlug];
+        $rewrite = match (true) {
+            $this->rewrite !== null => $this->rewrite,
+            $this->rewriteSlug !== null => ['slug' => $this->rewriteSlug],
+            default => null,
+        };
+
+        if ($rewrite !== null) {
+            $args['rewrite'] = $rewrite;
         }
 
         return array_merge($args, $this->extraArgs);
