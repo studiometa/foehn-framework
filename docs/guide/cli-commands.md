@@ -4,7 +4,9 @@ WP Tempest provides `#[AsCliCommand]` for creating WP-CLI commands and includes 
 
 ## Built-in Commands
 
-WP Tempest includes several `make:*` commands for scaffolding:
+WP Tempest includes scaffolding and discovery management commands:
+
+### Scaffolding Commands
 
 ```bash
 # Generate a post type
@@ -19,9 +21,30 @@ wp tempest make:acf-block Hero
 # Generate a native block
 wp tempest make:block Counter --interactive
 
-# List discovered components
-wp tempest discovery:list
+# Generate a view composer
+wp tempest make:view-composer Header
+
+# Generate a block pattern
+wp tempest make:pattern HeroWithCta
+
+# Generate a shortcode
+wp tempest make:shortcode Button
 ```
+
+### Discovery Cache Commands
+
+```bash
+# Generate discovery cache for production
+wp tempest discovery:generate
+
+# Clear the discovery cache
+wp tempest discovery:clear
+
+# Check cache status
+wp tempest discovery:status
+```
+
+See [Discovery Cache](/guide/discovery-cache) for more details on caching.
 
 ## Custom Commands
 

@@ -75,11 +75,22 @@ With configuration:
 
 ```php
 Kernel::boot(__DIR__ . '/app', [
-    'timber' => [
-        'views' => __DIR__ . '/views',
-    ],
+    // Enable discovery cache for production
+    'discovery_cache' => 'full',  // 'full', 'partial', 'none'
+
+    // Custom cache path (optional)
+    'discovery_cache_path' => WP_CONTENT_DIR . '/cache/wp-tempest/discovery',
 ]);
 ```
+
+### Configuration Options
+
+| Option                  | Type            | Default  | Description                               |
+| ----------------------- | --------------- | -------- | ----------------------------------------- |
+| `discovery_cache`       | `string\|bool`  | `'none'` | Cache strategy: 'full', 'partial', 'none' |
+| `discovery_cache_path`  | `string\|null`  | `null`   | Custom path for cache files               |
+
+See [Discovery Cache](/guide/discovery-cache) for details.
 
 ### getInstance()
 
@@ -173,4 +184,5 @@ add_action('after_setup_theme', function () {
 
 - [Guide: Getting Started](/guide/getting-started)
 - [Guide: Installation](/guide/installation)
+- [Guide: Discovery Cache](/guide/discovery-cache)
 - [Helpers](./helpers)
