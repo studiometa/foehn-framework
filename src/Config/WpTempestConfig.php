@@ -25,6 +25,12 @@ final readonly class WpTempestConfig
          * Defaults to wp-content/cache/wp-tempest/discovery
          */
         public ?string $discoveryCachePath = null,
+
+        /**
+         * Timber templates directory names.
+         * @var string[]
+         */
+        public array $timberTemplatesDir = ['templates'],
     ) {}
 
     /**
@@ -40,7 +46,14 @@ final readonly class WpTempestConfig
             $strategy = DiscoveryCacheStrategy::make($config['discovery_cache']);
         }
 
-        return new self(discoveryCacheStrategy: $strategy, discoveryCachePath: $config['discovery_cache_path'] ?? null);
+        /** @var string[] $timberTemplatesDir */
+        $timberTemplatesDir = $config['timber_templates_dir'] ?? ['templates'];
+
+        return new self(
+            discoveryCacheStrategy: $strategy,
+            discoveryCachePath: $config['discovery_cache_path'] ?? null,
+            timberTemplatesDir: $timberTemplatesDir,
+        );
     }
 
     /**

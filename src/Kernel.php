@@ -10,6 +10,7 @@ use Studiometa\WPTempest\Discovery\DiscoveryCache;
 use Studiometa\WPTempest\Discovery\DiscoveryRunner;
 use Tempest\Container\Container;
 use Tempest\Core\Tempest;
+use Timber\Timber;
 
 /**
  * The main kernel that bootstraps wp-tempest.
@@ -42,6 +43,7 @@ final class Kernel
      * @param array<string, mixed> $config Configuration options
      *   - discovery_cache: string|bool - Cache strategy ('full', 'partial', 'none', true, false)
      *   - discovery_cache_path: string - Custom path for cache files
+     *   - timber_templates_dir: string[] - Timber templates directory names (default: ['templates'])
      */
     public static function boot(string $appPath, array $config = []): self
     {
@@ -142,6 +144,9 @@ final class Kernel
         // Register core services
         $this->registerCoreServices();
 
+        // Initialize Timber
+        $this->initializeTimber();
+
         // Hook into WordPress lifecycle
         $this->registerWordPressHooks();
     }
@@ -207,6 +212,35 @@ final class Kernel
             DiscoveryRunner::class,
             fn() => new DiscoveryRunner($this->container, $this->container->get(DiscoveryCache::class), $this->appPath),
         );
+    }
+
+    /**
+     * Initialize Timber if available.
+     */
+    private function initializeTimber(): void
+    {
+        if (!class_exists(Timber::class)) {
+            add_action('admin_notices', static function (): void {
+                echo
+                    '<div class="error"><p><strong>wp-tempest:</strong> Timber plugin is required but not active.</p></div>'
+                ;
+            });
+
+            if (!is_admin()) {
+                return;
+            }
+
+            return;
+        }
+
+        Timber::init();
+        Timber::$dirname = $this->wpTempestConfig->timberTemplatesDir;
+
+        add_filter('timber/context', static function (array $context): array {
+            $context['site'] = new \Timber\Site();
+
+            return $context;
+        });
     }
 
     /**
