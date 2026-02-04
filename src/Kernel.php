@@ -22,7 +22,7 @@ final class Kernel
 
     private Container $container;
 
-    private FoehnConfig $wpTempestConfig;
+    private FoehnConfig $foehnConfig;
 
     private bool $booted = false;
 
@@ -34,7 +34,7 @@ final class Kernel
         private readonly string $appPath,
         private readonly array $config = [],
     ) {
-        $this->wpTempestConfig = FoehnConfig::fromArray($config);
+        $this->foehnConfig = FoehnConfig::fromArray($config);
     }
 
     /**
@@ -113,7 +113,7 @@ final class Kernel
      */
     public function getFoehnConfig(): FoehnConfig
     {
-        return $this->wpTempestConfig;
+        return $this->foehnConfig;
     }
 
     /**
@@ -203,10 +203,10 @@ final class Kernel
         $this->container->singleton(self::class, fn() => $this);
 
         // Register Foehn configuration
-        $this->container->singleton(FoehnConfig::class, fn() => $this->wpTempestConfig);
+        $this->container->singleton(FoehnConfig::class, fn() => $this->foehnConfig);
 
         // Register discovery cache
-        $this->container->singleton(DiscoveryCache::class, fn() => new DiscoveryCache($this->wpTempestConfig));
+        $this->container->singleton(DiscoveryCache::class, fn() => new DiscoveryCache($this->foehnConfig));
 
         // Register the discovery runner with cache support and app path
         $this->container->singleton(
@@ -215,7 +215,7 @@ final class Kernel
         );
 
         // Register ACF block renderer with config
-        $this->container->singleton(AcfBlockRenderer::class, fn() => new AcfBlockRenderer($this->wpTempestConfig));
+        $this->container->singleton(AcfBlockRenderer::class, fn() => new AcfBlockRenderer($this->foehnConfig));
     }
 
     /**
@@ -238,7 +238,7 @@ final class Kernel
         }
 
         Timber::init();
-        Timber::$dirname = $this->wpTempestConfig->timberTemplatesDir;
+        Timber::$dirname = $this->foehnConfig->timberTemplatesDir;
 
         add_filter('timber/context', static function (array $context): array {
             $context['site'] = new \Timber\Site();

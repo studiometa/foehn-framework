@@ -64,7 +64,7 @@ describe('Kernel configuration', function () {
         $kernel = $reflection->newInstanceWithoutConstructor();
 
         $config = FoehnConfig::fromArray(['discovery_cache' => 'full']);
-        $configProperty = $reflection->getProperty('wpTempestConfig');
+        $configProperty = $reflection->getProperty('foehnConfig');
         $configProperty->setValue($kernel, $config);
 
         expect($kernel->getFoehnConfig())->toBe($config);
