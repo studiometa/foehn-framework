@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Studiometa\Foehn\Discovery;
 
 use ReflectionClass;
+use Studiometa\Foehn\Config\FoehnConfig;
 use Tempest\Container\Container;
 
 /**
@@ -35,6 +36,7 @@ final class DiscoveryRunner
         private readonly Container $container,
         private readonly ?DiscoveryCache $cache = null,
         private readonly ?string $appPath = null,
+        private readonly ?FoehnConfig $config = null,
     ) {}
 
     /**
@@ -181,7 +183,9 @@ final class DiscoveryRunner
                 foreach ($this->discoveries as $discovery) {
                     $discovery->discover($reflection);
                 }
-            } catch (\ReflectionException) {
+            } catch (\ReflectionException $e) {
+                $this->logDiscoveryFailure($hookClass, $e);
+
                 continue;
             }
         }
@@ -260,8 +264,9 @@ final class DiscoveryRunner
                 }
 
                 $classes[] = $reflection;
-            } catch (\ReflectionException) {
-                // Classes that cannot be reflected are intentionally skipped
+            } catch (\ReflectionException $e) {
+                $this->logDiscoveryFailure($className, $e);
+
                 continue;
             }
         }
@@ -380,6 +385,20 @@ final class DiscoveryRunner
         }
 
         return $namespace !== null ? $namespace . '\\' . $class : $class;
+    }
+
+    /**
+     * Log a discovery failure when debug mode is enabled.
+     */
+    private function logDiscoveryFailure(string $className, \ReflectionException $exception): void
+    {
+        if ($this->config === null || !$this->config->isDebugEnabled()) {
+            return;
+        }
+
+        $message = sprintf('[Foehn] Discovery failed for class "%s": %s', $className, $exception->getMessage());
+
+        trigger_error($message, E_USER_WARNING);
     }
 
     /**
