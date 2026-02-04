@@ -83,3 +83,37 @@ describe('Kernel configuration', function () {
         expect($kernel->isBooted())->toBeTrue();
     });
 });
+
+describe('Kernel::findProjectRoot', function () {
+    /**
+     * Helper to call the private static method via reflection.
+     */
+    function callFindProjectRoot(string $path): string
+    {
+        $method = new ReflectionMethod(Kernel::class, 'findProjectRoot');
+
+        return $method->invoke(null, $path);
+    }
+
+    it('finds the project root from a subdirectory', function () {
+        // The project root is where this repo's composer.json lives
+        $projectRoot = dirname(__DIR__, 2);
+        $subDir = $projectRoot . '/src/Attributes';
+
+        expect(callFindProjectRoot($subDir))->toBe($projectRoot);
+    });
+
+    it('finds the project root when given the root itself', function () {
+        $projectRoot = dirname(__DIR__, 2);
+
+        expect(callFindProjectRoot($projectRoot))->toBe($projectRoot);
+    });
+
+    it('throws when the path does not exist', function () {
+        callFindProjectRoot('/non/existent/path');
+    })->throws(RuntimeException::class, 'Path does not exist');
+
+    it('throws when composer.json is not found', function () {
+        callFindProjectRoot('/');
+    })->throws(RuntimeException::class, 'Could not locate composer.json');
+});

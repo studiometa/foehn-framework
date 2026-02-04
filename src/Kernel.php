@@ -151,11 +151,38 @@ final class Kernel
      */
     private function initializeTempest(): void
     {
-        // Boot Tempest with the app path as root
-        Tempest::boot($this->appPath);
+        // Boot Tempest with the project root (where composer.json lives)
+        Tempest::boot(self::findProjectRoot($this->appPath));
 
         // Get the container from Tempest
         $this->container = \Tempest\get(Container::class);
+    }
+
+    /**
+     * Walk up from the given path to find the project root containing composer.json.
+     *
+     * @throws RuntimeException If composer.json cannot be found in any parent directory
+     */
+    private static function findProjectRoot(string $path): string
+    {
+        $directory = realpath($path);
+
+        if ($directory === false) {
+            throw new RuntimeException("Path does not exist: {$path}");
+        }
+
+        $previous = null;
+
+        while ($directory !== $previous) {
+            if (file_exists($directory . '/composer.json')) {
+                return $directory;
+            }
+
+            $previous = $directory;
+            $directory = dirname($directory);
+        }
+
+        throw new RuntimeException("Could not locate composer.json in any parent directory of: {$path}");
     }
 
     /**
