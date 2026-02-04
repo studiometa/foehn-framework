@@ -33,7 +33,8 @@
     },
     "require-dev": {
         "carthage-software/mago": "*",
-        "pestphp/pest": "^3.0"
+        "pestphp/pest": "^3.0",
+        "stoutlogic/acf-builder": "^1.12"
     },
     "autoload": {
         "psr-4": {
