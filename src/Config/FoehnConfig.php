@@ -84,7 +84,7 @@ final readonly class FoehnConfig
             : 'edit_posts';
 
         // Default debug to WP_DEBUG constant if not explicitly set
-        $debug = $config['debug'] ?? (defined('WP_DEBUG') && constant('WP_DEBUG'));
+        $debug = $config['debug'] ?? defined('WP_DEBUG') && constant('WP_DEBUG');
 
         return new self(
             discoveryCacheStrategy: $strategy,
