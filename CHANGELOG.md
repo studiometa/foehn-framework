@@ -21,6 +21,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `SpacingBuilder`: padding top/bottom controls
   - `BackgroundBuilder`: color, image, and overlay background
 
+### Changed
+
+- **BREAKING:** Rename ViewComposer to ContextProvider ([8a4c503], [#50])
+  - `#[AsViewComposer]` → `#[AsContextProvider]`
+  - `ViewComposerInterface` → `ContextProviderInterface`
+  - `compose()` method → `provide()` method
+  - `ViewComposerRegistry` → `ContextProviderRegistry`
+  - `ViewComposerDiscovery` → `ContextProviderDiscovery`
+  - `make:view-composer` CLI → `make:context-provider`
+
+[8a4c503]: https://github.com/studiometa/foehn/commit/8a4c503
+[#50]: https://github.com/studiometa/foehn/pull/50
 [614faa0]: https://github.com/studiometa/foehn/commit/614faa0
 [#47]: https://github.com/studiometa/foehn/pull/47
 [4b52d3d]: https://github.com/studiometa/foehn/commit/4b52d3d
@@ -35,7 +47,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#44]: https://github.com/studiometa/foehn/pull/44
 [0b1c707]: https://github.com/studiometa/foehn/commit/0b1c707
 [#45]: https://github.com/studiometa/foehn/pull/45
-
 ## [0.1.0] - 2026-02-04
 
 ### Changed
