@@ -7,8 +7,11 @@ namespace Studiometa\Foehn;
 use RuntimeException;
 use Studiometa\Foehn\Blocks\AcfBlockRenderer;
 use Studiometa\Foehn\Config\FoehnConfig;
+use Studiometa\Foehn\Contracts\ViewEngineInterface;
 use Studiometa\Foehn\Discovery\DiscoveryCache;
 use Studiometa\Foehn\Discovery\DiscoveryRunner;
+use Studiometa\Foehn\Views\ContextProviderRegistry;
+use Studiometa\Foehn\Views\TimberViewEngine;
 use Tempest\Container\Container;
 use Tempest\Core\Tempest;
 use Timber\Timber;
@@ -216,6 +219,15 @@ final class Kernel
 
         // Register ACF block renderer with config
         $this->container->singleton(AcfBlockRenderer::class, fn() => new AcfBlockRenderer($this->foehnConfig));
+
+        // Register context provider registry
+        $this->container->singleton(ContextProviderRegistry::class, static fn() => new ContextProviderRegistry());
+
+        // Register view engine interface binding
+        $this->container->singleton(
+            ViewEngineInterface::class,
+            fn() => new TimberViewEngine($this->container->get(ContextProviderRegistry::class)),
+        );
     }
 
     /**
