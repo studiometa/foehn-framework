@@ -11,6 +11,7 @@ describe('DiscoveryRunner', function () {
         $classes = DiscoveryRunner::getAllDiscoveryClasses();
 
         expect($classes)->toContain(\Studiometa\Foehn\Discovery\HookDiscovery::class);
+        expect($classes)->toContain(\Studiometa\Foehn\Discovery\ImageSizeDiscovery::class);
         expect($classes)->toContain(\Studiometa\Foehn\Discovery\PostTypeDiscovery::class);
         expect($classes)->toContain(\Studiometa\Foehn\Discovery\TaxonomyDiscovery::class);
         expect($classes)->toContain(\Studiometa\Foehn\Discovery\MenuDiscovery::class);
@@ -34,6 +35,7 @@ describe('DiscoveryRunner', function () {
 
         // Early phase
         expect($phases['early'])->toContain(\Studiometa\Foehn\Discovery\HookDiscovery::class);
+        expect($phases['early'])->toContain(\Studiometa\Foehn\Discovery\ImageSizeDiscovery::class);
         expect($phases['early'])->toContain(\Studiometa\Foehn\Discovery\ShortcodeDiscovery::class);
         expect($phases['early'])->toContain(\Studiometa\Foehn\Discovery\CliCommandDiscovery::class);
         expect($phases['early'])->toContain(\Studiometa\Foehn\Discovery\TimberModelDiscovery::class);
@@ -57,8 +59,9 @@ describe('DiscoveryRunner', function () {
     it('has correct number of discoveries in each phase', function () {
         $phases = DiscoveryRunner::getDiscoveryPhases();
 
-        expect($phases['early'])->toHaveCount(4);
-        expect($phases['main'])->toHaveCount(8);        expect($phases['late'])->toHaveCount(3);
+        expect($phases['early'])->toHaveCount(5);
+        expect($phases['main'])->toHaveCount(8);
+        expect($phases['late'])->toHaveCount(3);
     });
 
     it('all discovery classes total matches phase sum', function () {
