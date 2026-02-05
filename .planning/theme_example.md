@@ -5,6 +5,13 @@
 ```
 starter-theme/
 ├── app/
+│   ├── Acf/
+│   │   └── Fragments/                  # Reusable ACF field groups
+│   │       ├── BackgroundBuilder.php
+│   │       ├── ButtonLinkBuilder.php
+│   │       ├── ResponsiveImageBuilder.php
+│   │       └── SpacingBuilder.php
+│   │
 │   ├── Blocks/
 │   │   ├── Acf/
 │   │   │   ├── Hero/
@@ -1276,6 +1283,97 @@ final readonly class SearchController
 
 ## ACF Blocks
 
+### app/Acf/Fragments/ButtonLinkBuilder.php
+
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace App\Acf\Fragments;
+
+use StoutLogic\AcfBuilder\FieldsBuilder;
+
+/**
+ * Reusable button/link field fragment.
+ *
+ * Creates the following fields:
+ * - {$name}_link (link)
+ * - {$name}_style (select)
+ */
+final class ButtonLinkBuilder extends FieldsBuilder
+{
+    public function __construct(
+        string $name = 'button',
+        string $label = 'Button',
+        bool $required = false,
+    ) {
+        parent::__construct($name, ['label' => $label]);
+
+        $this
+            ->addLink('link', [
+                'label' => 'Lien',
+                'required' => $required,
+                'return_format' => 'array',
+            ])
+            ->addSelect('style', [
+                'label' => 'Style',
+                'choices' => [
+                    'primary' => 'Principal',
+                    'secondary' => 'Secondaire',
+                    'outline' => 'Contour',
+                ],
+                'default_value' => 'primary',
+            ]);
+    }
+}
+```
+
+### app/Acf/Fragments/ResponsiveImageBuilder.php
+
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace App\Acf\Fragments;
+
+use StoutLogic\AcfBuilder\FieldsBuilder;
+
+/**
+ * Responsive image fragment with desktop/mobile variants.
+ *
+ * Creates the following fields:
+ * - {$name}_desktop (image)
+ * - {$name}_mobile (image)
+ */
+final class ResponsiveImageBuilder extends FieldsBuilder
+{
+    public function __construct(
+        string $name = 'image',
+        string $label = 'Image',
+        bool $required = false,
+    ) {
+        parent::__construct($name, ['label' => $label]);
+
+        $this
+            ->addImage('desktop', [
+                'label' => 'Desktop',
+                'instructions' => 'Recommandé : 1920×1080px',
+                'required' => $required,
+                'return_format' => 'id',
+                'preview_size' => 'medium',
+            ])
+            ->addImage('mobile', [
+                'label' => 'Mobile',
+                'instructions' => 'Recommandé : 768×1024px. Laisser vide pour utiliser l\'image desktop.',
+                'return_format' => 'id',
+                'preview_size' => 'medium',
+            ]);
+    }
+}
+```
+
 ### app/Blocks/Acf/Hero/HeroBlock.php
 
 ```php
@@ -1285,6 +1383,8 @@ declare(strict_types=1);
 
 namespace App\Blocks\Acf\Hero;
 
+use App\Acf\Fragments\ButtonLinkBuilder;
+use App\Acf\Fragments\ResponsiveImageBuilder;
 use Studiometa\Foehn\Attributes\AsAcfBlock;
 use Studiometa\Foehn\Contracts\AcfBlockInterface;
 use Studiometa\Foehn\Views\ViewEngineInterface;
@@ -1320,16 +1420,12 @@ final readonly class HeroBlock implements AcfBlockInterface
                 'toolbar' => 'full',
                 'media_upload' => false,
             ])
-            ->addLink('cta', [
-                'label' => 'Call to action',
-            ])
+            // Use the reusable ButtonLinkBuilder fragment
+            ->appendFields(new ButtonLinkBuilder('cta', 'Call to action'))
 
             ->addTab('media', ['label' => 'Média'])
-            ->addImage('background_image', [
-                'label' => 'Image de fond',
-                'return_format' => 'id',
-                'preview_size' => 'medium',
-            ])
+            // Use the reusable ResponsiveImageBuilder fragment
+            ->appendFields(new ResponsiveImageBuilder('background', 'Image de fond'))
             ->addTrueFalse('has_overlay', [
                 'label' => 'Ajouter un overlay',
                 'default_value' => true,
@@ -2101,6 +2197,7 @@ Ce thème exemple démontre :
 | **Hooks déclaratifs**             | `app/Hooks/ThemeHooks.php`, etc.            |
 | **View Composers**                | `app/Views/Composers/*.php`                 |
 | **Template Controllers**          | `app/Http/Controllers/*.php`                |
+| **ACF Field Fragments**           | `app/Acf/Fragments/ButtonLinkBuilder.php`   |
 | **ACF Blocks**                    | `app/Blocks/Acf/Hero/HeroBlock.php`         |
 | **Native Blocks + Interactivity** | `app/Blocks/Native/Accordion/`              |
 | **Block Patterns**                | `app/Patterns/HeroFullWidth.php`            |

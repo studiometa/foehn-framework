@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add built-in ACF field fragments for reusable field groups ([0b1c707], [#45]):
+  - `ButtonLinkBuilder`: link with style/size options
+  - `ResponsiveImageBuilder`: desktop/mobile image variants
+  - `SpacingBuilder`: padding top/bottom controls
+  - `BackgroundBuilder`: color, image, and overlay background
+
+[0b1c707]: https://github.com/studiometa/foehn/commit/0b1c707
+[#45]: https://github.com/studiometa/foehn/pull/45
+
 ## [0.1.0] - 2026-02-04
 
 ### Changed

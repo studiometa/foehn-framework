@@ -54,6 +54,7 @@ export default defineConfig({
           text: "Blocks",
           items: [
             { text: "ACF Blocks", link: "/guide/acf-blocks" },
+            { text: "Field Fragments", link: "/guide/field-fragments" },
             { text: "Native Blocks", link: "/guide/native-blocks" },
             { text: "Block Patterns", link: "/guide/block-patterns" },
           ],
