@@ -29,13 +29,14 @@ theme/
 │   │   └── NewsletterService.php
 │   ├── Shortcodes/               # Shortcode handlers
 │   │   └── ButtonShortcode.php
+│   ├── Console/                  # CLI commands
+│   │   └── ImportProductsCommand.php
 │   ├── ContextProviders/         # Context providers
 │   │   ├── GlobalContextProvider.php
 │   │   └── NavigationContextProvider.php
-│   └── Views/                    # View layer
-│       └── Controllers/          # Template controllers
-│           ├── HomeController.php
-│           └── SingleController.php
+│   └── Controllers/              # Template controllers
+│       ├── HomeController.php
+│       └── SingleController.php
 ├── views/                        # Twig templates
 │   ├── base.twig                 # Base layout
 │   ├── blocks/                   # Block templates
@@ -186,20 +187,20 @@ final class ProductContextProvider implements ContextProviderInterface {}
 
 | Convention     | Example                    |
 | -------------- | -------------------------- |
-| **Location**   | `app/Views/Controllers/`   |
+| **Location**   | `app/Controllers/`         |
 | **Class name** | `{Template}Controller`     |
 | **File name**  | `{Template}Controller.php` |
 
 ```php
-// app/Views/Controllers/HomeController.php
+// app/Controllers/HomeController.php
 #[AsTemplateController('front-page')]
 final class HomeController implements TemplateControllerInterface {}
 
-// app/Views/Controllers/SingleProductController.php
+// app/Controllers/SingleProductController.php
 #[AsTemplateController('single-product')]
 final class SingleProductController implements TemplateControllerInterface {}
 
-// app/Views/Controllers/ArchiveController.php
+// app/Controllers/ArchiveController.php
 #[AsTemplateController('archive')]
 final class ArchiveController implements TemplateControllerInterface {}
 ```
@@ -239,6 +240,29 @@ final class NewsletterEndpoint {
 #[AsShortcode('button')]
 final class ButtonShortcode {
     public function render(array $atts, ?string $content): string {}
+}
+```
+
+### CLI Commands
+
+| Convention     | Example             |
+| -------------- | ------------------- |
+| **Location**   | `app/Console/`      |
+| **Class name** | `{Name}Command`     |
+| **File name**  | `{Name}Command.php` |
+
+```php
+// app/Console/ImportProductsCommand.php
+#[AsCliCommand(name: 'import:products', description: 'Import products from CSV')]
+final class ImportProductsCommand {
+    public function __invoke(array $args, array $assocArgs): void {}
+}
+
+// app/Console/CacheCommand.php
+#[AsCliCommand(name: 'cache', description: 'Manage application cache')]
+final class CacheCommand {
+    public function clear(): void {}
+    public function warm(): void {}
 }
 ```
 
@@ -378,17 +402,18 @@ Use a consistent namespace structure:
 }
 ```
 
-| Directory                | Namespace               |
-| ------------------------ | ----------------------- |
-| `app/Blocks/`            | `App\Blocks`            |
-| `app/Hooks/`             | `App\Hooks`             |
-| `app/Models/`            | `App\Models`            |
-| `app/Patterns/`          | `App\Patterns`          |
-| `app/Rest/`              | `App\Rest`              |
-| `app/Services/`          | `App\Services`          |
-| `app/Shortcodes/`        | `App\Shortcodes`        |
-| `app/ContextProviders/`  | `App\ContextProviders`  |
-| `app/Views/Controllers/` | `App\Views\Controllers` |
+| Directory               | Namespace              |
+| ----------------------- | ---------------------- |
+| `app/Blocks/`           | `App\Blocks`           |
+| `app/Console/`          | `App\Console`          |
+| `app/ContextProviders/` | `App\ContextProviders` |
+| `app/Controllers/`      | `App\Controllers`      |
+| `app/Hooks/`            | `App\Hooks`            |
+| `app/Models/`           | `App\Models`           |
+| `app/Patterns/`         | `App\Patterns`         |
+| `app/Rest/`             | `App\Rest`             |
+| `app/Services/`         | `App\Services`         |
+| `app/Shortcodes/`       | `App\Shortcodes`       |
 
 ## Migration from wp-toolkit
 
@@ -409,7 +434,8 @@ If migrating from `studiometa/wp-toolkit`, the directory structure changes signi
 2. **Taxonomies**: Move from `app/Taxonomies/` to `app/Models/`, rename from `{Name}Taxonomy.php` to `{Name}.php`
 3. **Blocks**: Move from `app/Blocks/{Name}Block.php` to `app/Blocks/{Name}/{Name}Block.php`
 4. **Hooks**: Create `app/Hooks/` directory and extract hooks from `functions.php`
-5. **Views**: Create `app/Views/Composers/` and `app/Views/Controllers/` directories
+5. **Context Providers**: Create `app/ContextProviders/` directory
+6. **Controllers**: Create `app/Controllers/` directory
 
 ## Best Practices
 
@@ -616,17 +642,27 @@ must-implement = "Studiometa\\Foehn\\Contracts\\ContextProviderInterface"
 reason         = "Context provider classes must implement ContextProviderInterface."
 
 # -----------------------------------------------------------------------------
+# CLI Commands: Must be final and named *Command
+# -----------------------------------------------------------------------------
+[[guard.structural.rules]]
+on            = "App\\Console\\**"
+target        = "class"
+must-be-named = "*Command"
+must-be-final = true
+reason        = "CLI command classes must be final and named *Command."
+
+# -----------------------------------------------------------------------------
 # Template Controllers: Must be final, named *Controller, implement interface
 # -----------------------------------------------------------------------------
 [[guard.structural.rules]]
-on            = "App\\Views\\Controllers\\**"
+on            = "App\\Controllers\\**"
 target        = "class"
 must-be-named = "*Controller"
 must-be-final = true
 reason        = "Template controller classes must be final and named *Controller."
 
 [[guard.structural.rules]]
-on             = "App\\Views\\Controllers\\**"
+on             = "App\\Controllers\\**"
 target         = "class"
 must-implement = "Studiometa\\Foehn\\Contracts\\TemplateControllerInterface"
 reason         = "Template controller classes must implement TemplateControllerInterface."

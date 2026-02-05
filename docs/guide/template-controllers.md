@@ -6,9 +6,9 @@ Template controllers provide full control over template rendering. Use `#[AsTemp
 
 ```php
 <?php
-// app/Views/Controllers/SingleController.php
+// app/Controllers/SingleController.php
 
-namespace App\Views\Controllers;
+namespace App\Controllers;
 
 use Studiometa\Foehn\Attributes\AsTemplateController;
 use Studiometa\Foehn\Contracts\TemplateControllerInterface;
@@ -126,7 +126,7 @@ final class SingleController implements TemplateControllerInterface
 ```php
 <?php
 
-namespace App\Views\Controllers;
+namespace App\Controllers;
 
 use Studiometa\Foehn\Attributes\AsTemplateController;
 use Studiometa\Foehn\Contracts\TemplateControllerInterface;
@@ -192,7 +192,7 @@ final class HomeController implements TemplateControllerInterface
 ```php
 <?php
 
-namespace App\Views\Controllers;
+namespace App\Controllers;
 
 use Studiometa\Foehn\Attributes\AsTemplateController;
 use Studiometa\Foehn\Contracts\TemplateControllerInterface;
@@ -239,7 +239,7 @@ final class ProductArchiveController implements TemplateControllerInterface
 ```php
 <?php
 
-namespace App\Views\Controllers;
+namespace App\Controllers;
 
 use Studiometa\Foehn\Attributes\AsTemplateController;
 use Studiometa\Foehn\Contracts\TemplateControllerInterface;
@@ -290,7 +290,7 @@ Use **Template Controllers** for:
 ## Organizing Controllers
 
 ```
-app/Views/Controllers/
+app/Controllers/
 ├── HomeController.php
 ├── SingleController.php
 ├── ArchiveController.php

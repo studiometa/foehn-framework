@@ -132,17 +132,27 @@ must-implement = "Studiometa\\Foehn\\Contracts\\ContextProviderInterface"
 reason         = "Context provider classes must implement ContextProviderInterface."
 
 # -----------------------------------------------------------------------------
+# CLI Commands: Must be final and named *Command
+# -----------------------------------------------------------------------------
+[[guard.structural.rules]]
+on            = "App\\Console\\**"
+target        = "class"
+must-be-named = "*Command"
+must-be-final = true
+reason        = "CLI command classes must be final and named *Command."
+
+# -----------------------------------------------------------------------------
 # Template Controllers: Must be final, named *Controller, implement interface
 # -----------------------------------------------------------------------------
 [[guard.structural.rules]]
-on            = "App\\Views\\Controllers\\**"
+on            = "App\\Controllers\\**"
 target        = "class"
 must-be-named = "*Controller"
 must-be-final = true
 reason        = "Template controller classes must be final and named *Controller."
 
 [[guard.structural.rules]]
-on             = "App\\Views\\Controllers\\**"
+on             = "App\\Controllers\\**"
 target         = "class"
 must-implement = "Studiometa\\Foehn\\Contracts\\TemplateControllerInterface"
 reason         = "Template controller classes must implement TemplateControllerInterface."

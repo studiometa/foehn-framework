@@ -48,7 +48,7 @@ public function handle(): ?string
 ```php
 <?php
 
-namespace App\Views\Controllers;
+namespace App\Controllers;
 
 use Studiometa\Foehn\Attributes\AsTemplateController;
 use Studiometa\Foehn\Contracts\TemplateControllerInterface;
