@@ -6,23 +6,23 @@ namespace Tests\Unit\Console;
 
 use ReflectionClass;
 use Studiometa\Foehn\Attributes\AsAcfBlock;
+use Studiometa\Foehn\Attributes\AsAcfFieldGroup;
+use Studiometa\Foehn\Attributes\AsAcfOptionsPage;
 use Studiometa\Foehn\Attributes\AsAction;
 use Studiometa\Foehn\Attributes\AsBlock;
 use Studiometa\Foehn\Attributes\AsBlockPattern;
-use Studiometa\Foehn\Attributes\AsFieldGroup;
+use Studiometa\Foehn\Attributes\AsContextProvider;
 use Studiometa\Foehn\Attributes\AsFilter;
 use Studiometa\Foehn\Attributes\AsImageSize;
 use Studiometa\Foehn\Attributes\AsMenu;
-use Studiometa\Foehn\Attributes\AsOptionsPage;
 use Studiometa\Foehn\Attributes\AsPostType;
 use Studiometa\Foehn\Attributes\AsShortcode;
 use Studiometa\Foehn\Attributes\AsTaxonomy;
 use Studiometa\Foehn\Attributes\AsTemplateController;
-use Studiometa\Foehn\Attributes\AsContextProvider;
 use Studiometa\Foehn\Console\Stubs\AcfBlockStub;
 use Studiometa\Foehn\Console\Stubs\BlockPatternStub;
 use Studiometa\Foehn\Console\Stubs\BlockStub;
-use Studiometa\Foehn\Console\Stubs\ContextStub;
+use Studiometa\Foehn\Console\Stubs\ContextProviderStub;
 use Studiometa\Foehn\Console\Stubs\FieldGroupStub;
 use Studiometa\Foehn\Console\Stubs\HooksStub;
 use Studiometa\Foehn\Console\Stubs\ImageSizeStub;
@@ -34,13 +34,12 @@ use Studiometa\Foehn\Console\Stubs\PostTypeStub;
 use Studiometa\Foehn\Console\Stubs\ShortcodeStub;
 use Studiometa\Foehn\Console\Stubs\TaxonomyStub;
 use Studiometa\Foehn\Console\Stubs\TemplateControllerStub;
-use Studiometa\Foehn\Console\Stubs\ContextProviderStub;
 use Studiometa\Foehn\Contracts\AcfBlockInterface;
 use Studiometa\Foehn\Contracts\BlockInterface;
 use Studiometa\Foehn\Contracts\BlockPatternInterface;
+use Studiometa\Foehn\Contracts\ContextProviderInterface;
 use Studiometa\Foehn\Contracts\InteractiveBlockInterface;
 use Studiometa\Foehn\Contracts\TemplateControllerInterface;
-use Studiometa\Foehn\Contracts\ContextProviderInterface;
 use Tempest\Discovery\SkipDiscovery;
 
 describe('Stubs', function (): void {
@@ -178,11 +177,11 @@ describe('Stubs', function (): void {
 
         expect($reflection->getAttributes(SkipDiscovery::class))
             ->toHaveCount(1)
-            ->and($reflection->getAttributes(AsFieldGroup::class))
+            ->and($reflection->getAttributes(AsAcfFieldGroup::class))
             ->toHaveCount(1);
 
-        $attribute = $reflection->getAttributes(AsFieldGroup::class)[0]->newInstance();
-        expect($attribute->key)->toBe('dummy_field_group');
+        $attribute = $reflection->getAttributes(AsAcfFieldGroup::class)[0]->newInstance();
+        expect($attribute->name)->toBe('dummy_field_group');
         expect($attribute->title)->toBe('Dummy Field Group');
     });
 
@@ -191,22 +190,11 @@ describe('Stubs', function (): void {
 
         expect($reflection->getAttributes(SkipDiscovery::class))
             ->toHaveCount(1)
-            ->and($reflection->getAttributes(AsOptionsPage::class))
+            ->and($reflection->getAttributes(AsAcfOptionsPage::class))
             ->toHaveCount(1);
 
-        $attribute = $reflection->getAttributes(AsOptionsPage::class)[0]->newInstance();
+        $attribute = $reflection->getAttributes(AsAcfOptionsPage::class)[0]->newInstance();
         expect($attribute->menuSlug)->toBe('dummy-options');
-    });
-
-    it('ContextStub has correct attributes and implements ViewComposerInterface', function (): void {
-        $reflection = new ReflectionClass(ContextStub::class);
-
-        expect($reflection->getAttributes(SkipDiscovery::class))
-            ->toHaveCount(1)
-            ->and($reflection->getAttributes(AsViewComposer::class))
-            ->toHaveCount(1)
-            ->and($reflection->implementsInterface(ViewComposerInterface::class))
-            ->toBeTrue();
     });
 
     it('MenuStub has correct attributes', function (): void {

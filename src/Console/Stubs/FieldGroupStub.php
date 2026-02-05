@@ -5,20 +5,19 @@ declare(strict_types=1);
 namespace Studiometa\Foehn\Console\Stubs;
 
 use StoutLogic\AcfBuilder\FieldsBuilder;
-use Studiometa\Foehn\Attributes\AsFieldGroup;
+use Studiometa\Foehn\Attributes\AsAcfFieldGroup;
+use Studiometa\Foehn\Contracts\AcfFieldGroupInterface;
 use Tempest\Discovery\SkipDiscovery;
 
 #[SkipDiscovery]
-#[AsFieldGroup(
-    key: 'dummy_field_group',
+#[AsAcfFieldGroup(
+    name: 'dummy_field_group',
     title: 'Dummy Field Group',
-    location: [
-        ['post_type', '==', 'post'],
-    ],
+    location: ['post_type' => 'post'],
     position: 'normal',
     style: 'default',
 )]
-final class FieldGroupStub
+final class FieldGroupStub implements AcfFieldGroupInterface
 {
     /**
      * Define the field group fields using ACF Builder.

@@ -5,16 +5,16 @@ declare(strict_types=1);
 namespace Studiometa\Foehn\Console\Stubs;
 
 use StoutLogic\AcfBuilder\FieldsBuilder;
-use Studiometa\Foehn\Attributes\AsOptionsPage;
+use Studiometa\Foehn\Attributes\AsAcfOptionsPage;
 use Tempest\Discovery\SkipDiscovery;
 
 #[SkipDiscovery]
-#[AsOptionsPage(
+#[AsAcfOptionsPage(
     pageTitle: 'Dummy Options',
     menuTitle: 'Dummy Options',
     menuSlug: 'dummy-options',
     capability: 'edit_posts',
-    parentSlug: '',
+    parentSlug: null,
     iconUrl: 'dashicons-admin-generic',
 )]
 final class OptionsPageStub
