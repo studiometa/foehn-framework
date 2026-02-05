@@ -540,6 +540,47 @@ if (!function_exists('get_stylesheet_directory_uri')) {
 }
 
 // ──────────────────────────────────────────────
+// Transients (Cache)
+// ──────────────────────────────────────────────
+
+if (!function_exists('get_transient')) {
+    function get_transient(string $transient): mixed
+    {
+        wp_stub_record('get_transient', compact('transient'));
+
+        return $GLOBALS['wp_stub_transients'][$transient] ?? false;
+    }
+}
+
+if (!function_exists('set_transient')) {
+    function set_transient(string $transient, mixed $value, int $expiration = 0): bool
+    {
+        wp_stub_record('set_transient', compact('transient', 'value', 'expiration'));
+        $GLOBALS['wp_stub_transients'][$transient] = $value;
+
+        return true;
+    }
+}
+
+if (!function_exists('delete_transient')) {
+    function delete_transient(string $transient): bool
+    {
+        wp_stub_record('delete_transient', compact('transient'));
+        unset($GLOBALS['wp_stub_transients'][$transient]);
+
+        return true;
+    }
+}
+
+// ──────────────────────────────────────────────
+// Logging
+// ──────────────────────────────────────────────
+
+if (!defined('WP_DEBUG_LOG')) {
+    define('WP_DEBUG_LOG', false);
+}
+
+// ──────────────────────────────────────────────
 // Misc
 // ──────────────────────────────────────────────
 
