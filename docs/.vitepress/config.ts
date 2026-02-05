@@ -70,7 +70,10 @@ export default defineConfig({
         },
         {
           text: "Best Practices",
-          items: [{ text: "Security", link: "/guide/security" }],
+          items: [
+            { text: "Theme Conventions", link: "/guide/theme-conventions" },
+            { text: "Security", link: "/guide/security" },
+          ],
         },
         {
           text: "Migration",

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add theme conventions documentation with directory structure, naming rules, and migration guide ([7f180c4], [#43])
 - Add `DisableBlockStyles` cleanup hook to dequeue Gutenberg block styles ([a6152ef], [#44])
 - Add built-in ACF field fragments for reusable field groups ([0b1c707], [#45]):
   - `ButtonLinkBuilder`: link with style/size options
@@ -16,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `SpacingBuilder`: padding top/bottom controls
   - `BackgroundBuilder`: color, image, and overlay background
 
+[7f180c4]: https://github.com/studiometa/foehn/commit/7f180c4
+[#43]: https://github.com/studiometa/foehn/pull/43
 [a6152ef]: https://github.com/studiometa/foehn/commit/a6152ef
 [#44]: https://github.com/studiometa/foehn/pull/44
 [0b1c707]: https://github.com/studiometa/foehn/commit/0b1c707
