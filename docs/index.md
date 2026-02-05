@@ -1,5 +1,7 @@
 ---
 layout: home
+title: Foehn — Modern WordPress development
+titleTemplate: false
 
 hero:
   name: Foehn
