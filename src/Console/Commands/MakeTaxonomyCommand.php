@@ -36,6 +36,9 @@ use function Tempest\Support\str;
     [--force]
     : Overwrite existing file
 
+    [--dry-run]
+    : Show what would be created without creating
+
     ## EXAMPLES
 
         # Create a simple taxonomy
@@ -46,6 +49,9 @@ use function Tempest\Support\str;
 
         # Create hierarchical taxonomy
         wp tempest make:taxonomy location --hierarchical --singular="Location" --plural="Locations"
+
+        # Preview what would be created
+        wp tempest make:taxonomy genre --dry-run
     DOC)]
 final class MakeTaxonomyCommand implements CliCommandInterface
 {
@@ -73,23 +79,35 @@ final class MakeTaxonomyCommand implements CliCommandInterface
             : ['post'];
         $hierarchical = isset($assocArgs['hierarchical']);
         $force = isset($assocArgs['force']);
+        $dryRun = isset($assocArgs['dry-run']);
 
         $targetPath = $this->getTargetPath('Taxonomies', $className);
 
-        if (!$this->shouldGenerate($targetPath, $force)) {
+        if (!$dryRun && !$this->shouldGenerate($targetPath, $force)) {
             return;
         }
 
         // Format post types array for replacement
         $postTypesCode = "['" . implode("', '", $postTypes) . "']";
 
-        $this->generateClassFile(stubClass: TaxonomyStub::class, targetPath: $targetPath, replacements: [
-            'dummy-taxonomy' => $name,
-            "['post']" => $postTypesCode,
-            'Dummy Singular' => $singular,
-            'Dummy Plural' => $plural,
-            'hierarchical: false' => 'hierarchical: ' . ($hierarchical ? 'true' : 'false'),
-        ]);
+        $content = $this->generateClassFile(
+            stubClass: TaxonomyStub::class,
+            targetPath: $targetPath,
+            replacements: [
+                'dummy-taxonomy' => $name,
+                "['post']" => $postTypesCode,
+                'Dummy Singular' => $singular,
+                'Dummy Plural' => $plural,
+                'hierarchical: false' => 'hierarchical: ' . ($hierarchical ? 'true' : 'false'),
+            ],
+            dryRun: $dryRun,
+        );
+
+        if ($dryRun) {
+            $this->displayDryRun($targetPath, (string) $content);
+
+            return;
+        }
 
         $this->cli->success("Taxonomy created: {$this->cli->getRelativePath($targetPath)}");
     }

@@ -37,6 +37,9 @@ use function Tempest\Support\str;
     [--force]
     : Overwrite existing file
 
+    [--dry-run]
+    : Show what would be created without creating
+
     ## EXAMPLES
 
         # Create a simple block
@@ -50,6 +53,9 @@ use function Tempest\Support\str;
 
         # Create with custom namespace
         wp tempest make:block card --namespace=theme-blocks
+
+        # Preview what would be created
+        wp tempest make:block hero --dry-run
     DOC)]
 final class MakeBlockCommand implements CliCommandInterface
 {
@@ -75,11 +81,12 @@ final class MakeBlockCommand implements CliCommandInterface
         $namespace = $assocArgs['namespace'] ?? 'theme';
         $interactive = isset($assocArgs['interactive']);
         $force = isset($assocArgs['force']);
+        $dryRun = isset($assocArgs['dry-run']);
 
         $fullBlockName = $namespace . '/' . $name;
         $targetPath = $this->getTargetPath('Blocks', $className);
 
-        if (!$this->shouldGenerate($targetPath, $force)) {
+        if (!$dryRun && !$this->shouldGenerate($targetPath, $force)) {
             return;
         }
 
@@ -87,11 +94,22 @@ final class MakeBlockCommand implements CliCommandInterface
         $stubBlockName = $interactive ? 'theme/dummy-interactive-block' : 'theme/dummy-block';
         $stubTitle = $interactive ? 'Dummy Interactive Block' : 'Dummy Block';
 
-        $this->generateClassFile(stubClass: $stubClass, targetPath: $targetPath, replacements: [
-            $stubBlockName => $fullBlockName,
-            $stubTitle => $title,
-            "category: 'theme'" => "category: '{$category}'",
-        ]);
+        $content = $this->generateClassFile(
+            stubClass: $stubClass,
+            targetPath: $targetPath,
+            replacements: [
+                $stubBlockName => $fullBlockName,
+                $stubTitle => $title,
+                "category: 'theme'" => "category: '{$category}'",
+            ],
+            dryRun: $dryRun,
+        );
+
+        if ($dryRun) {
+            $this->displayDryRun($targetPath, (string) $content);
+
+            return;
+        }
 
         $this->cli->success("Block created: {$this->cli->getRelativePath($targetPath)}");
         $this->cli->line('');

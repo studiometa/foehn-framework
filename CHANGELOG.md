@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add enhanced CLI scaffolding commands with `--dry-run` support ([4e0f58b], [#51])
 - Add `#[AsImageSize]` attribute for declarative image size registration with auto theme support ([614faa0], [#47])
 - Add `#[AsAcfOptionsPage]` attribute for ACF options pages with auto-discovery and `AcfOptionsService` helper ([4b52d3d], [#49])
 - Add `#[AsAcfFieldGroup]` attribute for non-block ACF field groups with simplified location syntax ([296e69f], [#48])
@@ -31,6 +32,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `ViewComposerDiscovery` → `ContextProviderDiscovery`
   - `make:view-composer` CLI → `make:context-provider`
 
+[4e0f58b]: https://github.com/studiometa/foehn/commit/4e0f58b
+[#51]: https://github.com/studiometa/foehn/pull/51
 [8a4c503]: https://github.com/studiometa/foehn/commit/8a4c503
 [#50]: https://github.com/studiometa/foehn/pull/50
 [614faa0]: https://github.com/studiometa/foehn/commit/614faa0
@@ -47,6 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#44]: https://github.com/studiometa/foehn/pull/44
 [0b1c707]: https://github.com/studiometa/foehn/commit/0b1c707
 [#45]: https://github.com/studiometa/foehn/pull/45
+
 ## [0.1.0] - 2026-02-04
 
 ### Changed

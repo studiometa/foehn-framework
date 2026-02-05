@@ -6,31 +6,40 @@ namespace Tests\Unit\Console;
 
 use ReflectionClass;
 use Studiometa\Foehn\Attributes\AsAcfBlock;
+use Studiometa\Foehn\Attributes\AsAcfFieldGroup;
+use Studiometa\Foehn\Attributes\AsAcfOptionsPage;
 use Studiometa\Foehn\Attributes\AsAction;
 use Studiometa\Foehn\Attributes\AsBlock;
 use Studiometa\Foehn\Attributes\AsBlockPattern;
+use Studiometa\Foehn\Attributes\AsContextProvider;
 use Studiometa\Foehn\Attributes\AsFilter;
+use Studiometa\Foehn\Attributes\AsImageSize;
+use Studiometa\Foehn\Attributes\AsMenu;
 use Studiometa\Foehn\Attributes\AsPostType;
 use Studiometa\Foehn\Attributes\AsShortcode;
 use Studiometa\Foehn\Attributes\AsTaxonomy;
 use Studiometa\Foehn\Attributes\AsTemplateController;
-use Studiometa\Foehn\Attributes\AsContextProvider;
 use Studiometa\Foehn\Console\Stubs\AcfBlockStub;
 use Studiometa\Foehn\Console\Stubs\BlockPatternStub;
 use Studiometa\Foehn\Console\Stubs\BlockStub;
+use Studiometa\Foehn\Console\Stubs\ContextProviderStub;
+use Studiometa\Foehn\Console\Stubs\FieldGroupStub;
 use Studiometa\Foehn\Console\Stubs\HooksStub;
+use Studiometa\Foehn\Console\Stubs\ImageSizeStub;
 use Studiometa\Foehn\Console\Stubs\InteractiveBlockStub;
+use Studiometa\Foehn\Console\Stubs\MenuStub;
+use Studiometa\Foehn\Console\Stubs\ModelStub;
+use Studiometa\Foehn\Console\Stubs\OptionsPageStub;
 use Studiometa\Foehn\Console\Stubs\PostTypeStub;
 use Studiometa\Foehn\Console\Stubs\ShortcodeStub;
 use Studiometa\Foehn\Console\Stubs\TaxonomyStub;
 use Studiometa\Foehn\Console\Stubs\TemplateControllerStub;
-use Studiometa\Foehn\Console\Stubs\ContextProviderStub;
 use Studiometa\Foehn\Contracts\AcfBlockInterface;
 use Studiometa\Foehn\Contracts\BlockInterface;
 use Studiometa\Foehn\Contracts\BlockPatternInterface;
+use Studiometa\Foehn\Contracts\ContextProviderInterface;
 use Studiometa\Foehn\Contracts\InteractiveBlockInterface;
 use Studiometa\Foehn\Contracts\TemplateControllerInterface;
-use Studiometa\Foehn\Contracts\ContextProviderInterface;
 use Tempest\Discovery\SkipDiscovery;
 
 describe('Stubs', function (): void {
@@ -154,5 +163,64 @@ describe('Stubs', function (): void {
 
         $filterMethod = $reflection->getMethod('filterTitle');
         expect($filterMethod->getAttributes(AsFilter::class))->toHaveCount(1);
+    });
+
+    it('ModelStub has correct attributes and extends Timber Post', function (): void {
+        $reflection = new ReflectionClass(ModelStub::class);
+
+        expect($reflection->getAttributes(SkipDiscovery::class))->toHaveCount(1);
+        expect($reflection->getParentClass()->getName())->toBe('Timber\\Post');
+    });
+
+    it('FieldGroupStub has correct attributes', function (): void {
+        $reflection = new ReflectionClass(FieldGroupStub::class);
+
+        expect($reflection->getAttributes(SkipDiscovery::class))
+            ->toHaveCount(1)
+            ->and($reflection->getAttributes(AsAcfFieldGroup::class))
+            ->toHaveCount(1);
+
+        $attribute = $reflection->getAttributes(AsAcfFieldGroup::class)[0]->newInstance();
+        expect($attribute->name)->toBe('dummy_field_group');
+        expect($attribute->title)->toBe('Dummy Field Group');
+    });
+
+    it('OptionsPageStub has correct attributes', function (): void {
+        $reflection = new ReflectionClass(OptionsPageStub::class);
+
+        expect($reflection->getAttributes(SkipDiscovery::class))
+            ->toHaveCount(1)
+            ->and($reflection->getAttributes(AsAcfOptionsPage::class))
+            ->toHaveCount(1);
+
+        $attribute = $reflection->getAttributes(AsAcfOptionsPage::class)[0]->newInstance();
+        expect($attribute->menuSlug)->toBe('dummy-options');
+    });
+
+    it('MenuStub has correct attributes', function (): void {
+        $reflection = new ReflectionClass(MenuStub::class);
+
+        expect($reflection->getAttributes(SkipDiscovery::class))
+            ->toHaveCount(1)
+            ->and($reflection->getAttributes(AsMenu::class))
+            ->toHaveCount(1);
+
+        $attribute = $reflection->getAttributes(AsMenu::class)[0]->newInstance();
+        expect($attribute->location)->toBe('dummy-menu');
+    });
+
+    it('ImageSizeStub has correct attributes', function (): void {
+        $reflection = new ReflectionClass(ImageSizeStub::class);
+
+        expect($reflection->getAttributes(SkipDiscovery::class))
+            ->toHaveCount(1)
+            ->and($reflection->getAttributes(AsImageSize::class))
+            ->toHaveCount(1);
+
+        $attribute = $reflection->getAttributes(AsImageSize::class)[0]->newInstance();
+        expect($attribute->name)->toBe('dummy-size');
+        expect($attribute->width)->toBe(800);
+        expect($attribute->height)->toBe(600);
+        expect($attribute->crop)->toBeTrue();
     });
 });

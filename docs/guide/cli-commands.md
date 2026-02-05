@@ -9,6 +9,10 @@ Foehn includes scaffolding and discovery management commands:
 ### Scaffolding Commands
 
 ```bash
+# Generate a Timber model (with optional post type)
+wp tempest make:model Product
+wp tempest make:model Product --post-type
+
 # Generate a post type
 wp tempest make:post-type Product
 
@@ -30,11 +34,47 @@ wp tempest make:hooks Seo
 # Generate a context provider
 wp tempest make:context-provider Header
 
+# Generate a context provider (alias for view composer)
+wp tempest make:context GlobalContext --global
+wp tempest make:context ProductContext --templates=single-product,archive-product
+
 # Generate a block pattern
 wp tempest make:pattern HeroWithCta
 
 # Generate a shortcode
 wp tempest make:shortcode Button
+
+# Generate an ACF field group
+wp tempest make:field-group ProductFields --post-type=product
+wp tempest make:field-group PageFields --page-template=front-page
+wp tempest make:field-group CategoryFields --taxonomy=category
+
+# Generate an ACF options page
+wp tempest make:options-page ThemeSettings
+wp tempest make:options-page FooterSettings --parent=theme-settings
+
+# Generate a navigation menu
+wp tempest make:menu HeaderMenu --location=header
+wp tempest make:menu FooterMenu --description="Footer Navigation"
+
+# Generate an image size
+wp tempest make:image-size CardImage --width=400 --height=300 --crop
+wp tempest make:image-size HeroImage --width=1920 --height=0
+```
+
+### Global Options
+
+All scaffolding commands support these options:
+
+```bash
+--force      # Overwrite existing files
+--dry-run    # Preview what would be created without creating
+```
+
+Example with dry-run:
+
+```bash
+wp tempest make:model Product --post-type --dry-run
 ```
 
 ### Discovery Cache Commands

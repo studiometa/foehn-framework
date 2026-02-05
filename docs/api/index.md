@@ -36,6 +36,20 @@ Attributes are PHP 8 annotations that enable auto-discovery and registration of 
 | [`#[AsContextProvider]`](./as-context-provider)       | Add data to specific templates |
 | [`#[AsTemplateController]`](./as-template-controller) | Handle template rendering      |
 
+### ACF Fields
+
+| Attribute                               | Description                |
+| --------------------------------------- | -------------------------- |
+| [`#[AsFieldGroup]`](./as-field-group)   | Register an ACF field group |
+| [`#[AsOptionsPage]`](./as-options-page) | Register an ACF options page |
+
+### Theme Features
+
+| Attribute                           | Description                     |
+| ----------------------------------- | ------------------------------- |
+| [`#[AsMenu]`](./as-menu)            | Register a navigation menu      |
+| [`#[AsImageSize]`](./as-image-size) | Register a custom image size    |
+
 ### Blocks
 
 | Attribute                                   | Description                       |

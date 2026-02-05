@@ -54,15 +54,15 @@ trait GeneratesFiles
      * @param class-string $stubClass Stub class to use as template
      * @param string $targetPath Target file path
      * @param array<string, string> $replacements Key-value pairs to replace in the stub
+     * @param bool $dryRun If true, return content without writing file
+     * @return string|null Generated content when $dryRun is true, null otherwise
      */
-    protected function generateClassFile(string $stubClass, string $targetPath, array $replacements = []): void
-    {
-        // Ensure directory exists
-        $directory = dirname($targetPath);
-        if (!is_dir($directory)) {
-            mkdir($directory, 0o755, true);
-        }
-
+    protected function generateClassFile(
+        string $stubClass,
+        string $targetPath,
+        array $replacements = [],
+        bool $dryRun = false,
+    ): ?string {
         // Get namespace from target path
         $namespace = $this->resolveNamespace($targetPath);
         $className = pathinfo($targetPath, PATHINFO_FILENAME);
@@ -79,8 +79,21 @@ trait GeneratesFiles
             $content = str_replace($search, $replace, $content);
         }
 
+        // If dry run, return the content without writing
+        if ($dryRun) {
+            return $content;
+        }
+
+        // Ensure directory exists
+        $directory = dirname($targetPath);
+        if (!is_dir($directory)) {
+            mkdir($directory, 0o755, true);
+        }
+
         // Write the file
         Filesystem\write_file($targetPath, $content);
+
+        return null;
     }
 
     /**
@@ -89,22 +102,64 @@ trait GeneratesFiles
      * @param string $templatePath Path to template file
      * @param string $targetPath Target file path
      * @param array<string, string> $replacements Key-value pairs to replace
+     * @param bool $dryRun If true, return content without writing file
+     * @return string|null Generated content when $dryRun is true, null otherwise
      */
-    protected function generateRawFile(string $templatePath, string $targetPath, array $replacements = []): void
-    {
-        // Ensure directory exists
-        $directory = dirname($targetPath);
-        if (!is_dir($directory)) {
-            mkdir($directory, 0o755, true);
-        }
-
+    protected function generateRawFile(
+        string $templatePath,
+        string $targetPath,
+        array $replacements = [],
+        bool $dryRun = false,
+    ): ?string {
         $content = Filesystem\read_file($templatePath);
 
         foreach ($replacements as $search => $replace) {
             $content = str_replace($search, $replace, $content);
         }
 
+        // If dry run, return the content without writing
+        if ($dryRun) {
+            return $content;
+        }
+
+        // Ensure directory exists
+        $directory = dirname($targetPath);
+        if (!is_dir($directory)) {
+            mkdir($directory, 0o755, true);
+        }
+
         Filesystem\write_file($targetPath, $content);
+
+        return null;
+    }
+
+    /**
+     * Display dry run output.
+     *
+     * @param string $targetPath The path that would be created
+     * @param string $content The content that would be written
+     */
+    protected function displayDryRun(string $targetPath, string $content): void
+    {
+        $this->cli->line('');
+        $this->cli->log($this->cli->colorize('%YWould create:%n'));
+        $this->cli->log("  → {$this->cli->getRelativePath($targetPath)}");
+        $this->cli->line('');
+        $this->cli->log($this->cli->colorize('%YWith content:%n'));
+        $this->cli->line('');
+
+        // Show content with line limit
+        $lines = explode("\n", $content);
+        $maxLines = 50;
+
+        foreach (array_slice($lines, 0, $maxLines) as $line) {
+            $this->cli->line('  ' . $line);
+        }
+
+        if (count($lines) > $maxLines) {
+            $this->cli->line('');
+            $this->cli->log($this->cli->colorize('%C  ... (' . (count($lines) - $maxLines) . ' more lines)%n'));
+        }
     }
 
     /**
