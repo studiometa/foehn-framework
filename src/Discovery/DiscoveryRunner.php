@@ -54,6 +54,9 @@ final class DiscoveryRunner
         // Hook discovery runs early to catch after_setup_theme hooks
         $this->applyDiscovery(HookDiscovery::class);
 
+        // Image sizes need to be registered early (enables post-thumbnails support)
+        $this->applyDiscovery(ImageSizeDiscovery::class);
+
         // Shortcodes can be registered early
         $this->applyDiscovery(ShortcodeDiscovery::class);
 
@@ -460,6 +463,7 @@ final class DiscoveryRunner
         return [
             'early' => [
                 HookDiscovery::class,
+                ImageSizeDiscovery::class,
                 ShortcodeDiscovery::class,
                 CliCommandDiscovery::class,
                 TimberModelDiscovery::class,
