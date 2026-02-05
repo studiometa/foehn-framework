@@ -28,6 +28,7 @@
     },
     "require": {
         "php": "^8.4",
+        "studiometa/twig-toolkit": "^2.1",
         "tempest/framework": "^2.14",
         "timber/timber": "^2.0"
     },
