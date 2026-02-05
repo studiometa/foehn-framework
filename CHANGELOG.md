@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `#[AsTwigExtension]` attribute for declarative Twig extension registration ([63edb11], [#53])
+
+[63edb11]: https://github.com/studiometa/foehn/commit/63edb11
+[#53]: https://github.com/studiometa/foehn/pull/53
+
 ## [0.2.0] - 2026-02-05
 
 ### Added

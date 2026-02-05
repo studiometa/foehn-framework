@@ -66,6 +66,9 @@ final class DiscoveryRunner
         // Timber class maps need to be available before queries
         $this->applyDiscovery(TimberModelDiscovery::class);
 
+        // Twig extensions are registered early so they're available for all templates
+        $this->applyDiscovery(TwigExtensionDiscovery::class);
+
         $this->earlyRan = true;
     }
 
@@ -467,6 +470,7 @@ final class DiscoveryRunner
                 ShortcodeDiscovery::class,
                 CliCommandDiscovery::class,
                 TimberModelDiscovery::class,
+                TwigExtensionDiscovery::class,
             ],
             'main' => [
                 PostTypeDiscovery::class,

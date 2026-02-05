@@ -39,6 +39,7 @@ describe('DiscoveryRunner', function () {
         expect($phases['early'])->toContain(\Studiometa\Foehn\Discovery\ShortcodeDiscovery::class);
         expect($phases['early'])->toContain(\Studiometa\Foehn\Discovery\CliCommandDiscovery::class);
         expect($phases['early'])->toContain(\Studiometa\Foehn\Discovery\TimberModelDiscovery::class);
+        expect($phases['early'])->toContain(\Studiometa\Foehn\Discovery\TwigExtensionDiscovery::class);
 
         // Main phase
         expect($phases['main'])->toContain(\Studiometa\Foehn\Discovery\PostTypeDiscovery::class);
@@ -59,7 +60,7 @@ describe('DiscoveryRunner', function () {
     it('has correct number of discoveries in each phase', function () {
         $phases = DiscoveryRunner::getDiscoveryPhases();
 
-        expect($phases['early'])->toHaveCount(5);
+        expect($phases['early'])->toHaveCount(6);
         expect($phases['main'])->toHaveCount(8);
         expect($phases['late'])->toHaveCount(3);
     });
