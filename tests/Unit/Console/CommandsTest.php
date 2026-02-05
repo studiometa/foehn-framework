@@ -13,8 +13,14 @@ use Studiometa\Foehn\Console\Commands\DiscoveryStatusCommand;
 use Studiometa\Foehn\Console\Commands\DiscoveryWarmCommand;
 use Studiometa\Foehn\Console\Commands\MakeAcfBlockCommand;
 use Studiometa\Foehn\Console\Commands\MakeBlockCommand;
+use Studiometa\Foehn\Console\Commands\MakeContextCommand;
 use Studiometa\Foehn\Console\Commands\MakeControllerCommand;
+use Studiometa\Foehn\Console\Commands\MakeFieldGroupCommand;
 use Studiometa\Foehn\Console\Commands\MakeHooksCommand;
+use Studiometa\Foehn\Console\Commands\MakeImageSizeCommand;
+use Studiometa\Foehn\Console\Commands\MakeMenuCommand;
+use Studiometa\Foehn\Console\Commands\MakeModelCommand;
+use Studiometa\Foehn\Console\Commands\MakeOptionsPageCommand;
 use Studiometa\Foehn\Console\Commands\MakePatternCommand;
 use Studiometa\Foehn\Console\Commands\MakePostTypeCommand;
 use Studiometa\Foehn\Console\Commands\MakeShortcodeCommand;
@@ -32,6 +38,12 @@ describe('Commands', function (): void {
         'MakeShortcodeCommand' => ['class' => MakeShortcodeCommand::class, 'name' => 'make:shortcode'],
         'MakeControllerCommand' => ['class' => MakeControllerCommand::class, 'name' => 'make:controller'],
         'MakeHooksCommand' => ['class' => MakeHooksCommand::class, 'name' => 'make:hooks'],
+        'MakeModelCommand' => ['class' => MakeModelCommand::class, 'name' => 'make:model'],
+        'MakeFieldGroupCommand' => ['class' => MakeFieldGroupCommand::class, 'name' => 'make:field-group'],
+        'MakeOptionsPageCommand' => ['class' => MakeOptionsPageCommand::class, 'name' => 'make:options-page'],
+        'MakeContextCommand' => ['class' => MakeContextCommand::class, 'name' => 'make:context'],
+        'MakeMenuCommand' => ['class' => MakeMenuCommand::class, 'name' => 'make:menu'],
+        'MakeImageSizeCommand' => ['class' => MakeImageSizeCommand::class, 'name' => 'make:image-size'],
         'DiscoveryClearCommand' => ['class' => DiscoveryClearCommand::class, 'name' => 'discovery:clear'],
         'DiscoveryGenerateCommand' => ['class' => DiscoveryGenerateCommand::class, 'name' => 'discovery:generate'],
         'DiscoveryStatusCommand' => ['class' => DiscoveryStatusCommand::class, 'name' => 'discovery:status'],

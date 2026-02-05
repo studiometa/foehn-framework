@@ -24,6 +24,9 @@ use function Tempest\Support\str;
     [--force]
     : Overwrite existing file
 
+    [--dry-run]
+    : Show what would be created without creating
+
     ## EXAMPLES
 
         # Create a SEO hooks class
@@ -34,6 +37,9 @@ use function Tempest\Support\str;
 
         # Create security-related hooks
         wp tempest make:hooks security
+
+        # Preview what would be created
+        wp tempest make:hooks seo --dry-run
     DOC)]
 final class MakeHooksCommand implements CliCommandInterface
 {
@@ -55,16 +61,28 @@ final class MakeHooksCommand implements CliCommandInterface
 
         $className = $assocArgs['class'] ?? str($name)->pascal()->toString() . 'Hooks';
         $force = isset($assocArgs['force']);
+        $dryRun = isset($assocArgs['dry-run']);
 
         $targetPath = $this->getTargetPath('Hooks', $className);
 
-        if (!$this->shouldGenerate($targetPath, $force)) {
+        if (!$dryRun && !$this->shouldGenerate($targetPath, $force)) {
             return;
         }
 
-        $this->generateClassFile(stubClass: HooksStub::class, targetPath: $targetPath, replacements: [
-            'DummyHooks' => $className,
-        ]);
+        $content = $this->generateClassFile(
+            stubClass: HooksStub::class,
+            targetPath: $targetPath,
+            replacements: [
+                'DummyHooks' => $className,
+            ],
+            dryRun: $dryRun,
+        );
+
+        if ($dryRun) {
+            $this->displayDryRun($targetPath, (string) $content);
+
+            return;
+        }
 
         $this->cli->success("Hooks class created: {$this->cli->getRelativePath($targetPath)}");
         $this->cli->line('');

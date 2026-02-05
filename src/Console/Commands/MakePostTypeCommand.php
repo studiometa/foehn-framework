@@ -30,6 +30,9 @@ use function Tempest\Support\str;
     [--force]
     : Overwrite existing file
 
+    [--dry-run]
+    : Show what would be created without creating
+
     ## EXAMPLES
 
         # Create a simple post type
@@ -40,6 +43,9 @@ use function Tempest\Support\str;
 
         # Create with custom class name
         wp tempest make:post-type event --class=CalendarEvent
+
+        # Preview what would be created
+        wp tempest make:post-type project --dry-run
     DOC)]
 final class MakePostTypeCommand implements CliCommandInterface
 {
@@ -63,18 +69,30 @@ final class MakePostTypeCommand implements CliCommandInterface
         $singular = $assocArgs['singular'] ?? str($name)->replace('-', ' ')->title()->toString();
         $plural = $assocArgs['plural'] ?? $singular . 's';
         $force = isset($assocArgs['force']);
+        $dryRun = isset($assocArgs['dry-run']);
 
         $targetPath = $this->getTargetPath('PostTypes', $className);
 
-        if (!$this->shouldGenerate($targetPath, $force)) {
+        if (!$dryRun && !$this->shouldGenerate($targetPath, $force)) {
             return;
         }
 
-        $this->generateClassFile(stubClass: PostTypeStub::class, targetPath: $targetPath, replacements: [
-            'dummy-post-type' => $name,
-            'Dummy Singular' => $singular,
-            'Dummy Plural' => $plural,
-        ]);
+        $content = $this->generateClassFile(
+            stubClass: PostTypeStub::class,
+            targetPath: $targetPath,
+            replacements: [
+                'dummy-post-type' => $name,
+                'Dummy Singular' => $singular,
+                'Dummy Plural' => $plural,
+            ],
+            dryRun: $dryRun,
+        );
+
+        if ($dryRun) {
+            $this->displayDryRun($targetPath, (string) $content);
+
+            return;
+        }
 
         $this->cli->success("Post type created: {$this->cli->getRelativePath($targetPath)}");
         $this->cli->line('');

@@ -27,6 +27,9 @@ use function Tempest\Support\str;
     [--force]
     : Overwrite existing file
 
+    [--dry-run]
+    : Show what would be created without creating
+
     ## EXAMPLES
 
         # Create a provider for header template
@@ -37,6 +40,9 @@ use function Tempest\Support\str;
 
         # Create a global provider
         wp tempest make:context-provider global --templates=*
+
+        # Preview what would be created
+        wp tempest make:context-provider header --dry-run
     DOC)]
 final class MakeContextProviderCommand implements CliCommandInterface
 {
@@ -61,19 +67,31 @@ final class MakeContextProviderCommand implements CliCommandInterface
             ? array_map('trim', explode(',', $assocArgs['templates']))
             : [$name, $name . '-*'];
         $force = isset($assocArgs['force']);
+        $dryRun = isset($assocArgs['dry-run']);
 
         $targetPath = $this->getTargetPath('ContextProviders', $className);
 
-        if (!$this->shouldGenerate($targetPath, $force)) {
+        if (!$dryRun && !$this->shouldGenerate($targetPath, $force)) {
             return;
         }
 
         // Format templates array for replacement
         $templatesCode = "['" . implode("', '", $templates) . "']";
 
-        $this->generateClassFile(stubClass: ContextProviderStub::class, targetPath: $targetPath, replacements: [
-            "['dummy-template', 'dummy-template-*']" => $templatesCode,
-        ]);
+        $content = $this->generateClassFile(
+            stubClass: ContextProviderStub::class,
+            targetPath: $targetPath,
+            replacements: [
+                "['dummy-template', 'dummy-template-*']" => $templatesCode,
+            ],
+            dryRun: $dryRun,
+        );
+
+        if ($dryRun) {
+            $this->displayDryRun($targetPath, (string) $content);
+
+            return;
+        }
 
         $this->cli->success("Context provider created: {$this->cli->getRelativePath($targetPath)}");
     }

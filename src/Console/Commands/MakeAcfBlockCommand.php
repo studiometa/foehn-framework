@@ -38,6 +38,9 @@ use function Tempest\Support\str;
     [--force]
     : Overwrite existing file
 
+    [--dry-run]
+    : Show what would be created without creating
+
     ## EXAMPLES
 
         # Create a simple ACF block
@@ -51,6 +54,9 @@ use function Tempest\Support\str;
 
         # Create with edit mode
         wp tempest make:acf-block contact-form --mode=edit
+
+        # Preview what would be created
+        wp tempest make:acf-block hero --dry-run
     DOC)]
 final class MakeAcfBlockCommand implements CliCommandInterface
 {
@@ -112,6 +118,7 @@ final class MakeAcfBlockCommand implements CliCommandInterface
         $mode = $assocArgs['mode'] ?? 'preview';
         $fields = isset($assocArgs['fields']) ? array_map('trim', explode(',', $assocArgs['fields'])) : [];
         $force = isset($assocArgs['force']);
+        $dryRun = isset($assocArgs['dry-run']);
 
         // Validate mode
         if (!in_array($mode, ['preview', 'edit', 'auto'], true)) {
@@ -135,7 +142,7 @@ final class MakeAcfBlockCommand implements CliCommandInterface
 
         $targetPath = $this->getTargetPath('Blocks', $className);
 
-        if (!$this->shouldGenerate($targetPath, $force)) {
+        if (!$dryRun && !$this->shouldGenerate($targetPath, $force)) {
             return;
         }
 
@@ -146,15 +153,26 @@ final class MakeAcfBlockCommand implements CliCommandInterface
         $fieldsCode = $this->generateFieldsCode($fields);
         $composeCode = $this->generateComposeCode($fields);
 
-        $this->generateClassFile(stubClass: AcfBlockStub::class, targetPath: $targetPath, replacements: [
-            'dummy-acf-block' => $name,
-            'Dummy ACF Block' => $title,
-            "category: 'common'" => "category: '{$category}'",
-            "mode: 'preview'" => "mode: '{$mode}'",
-            'dummy_acf_block' => $fieldKey,
-            $this->getDefaultFieldsCode() => $fieldsCode,
-            $this->getDefaultComposeCode() => $composeCode,
-        ]);
+        $content = $this->generateClassFile(
+            stubClass: AcfBlockStub::class,
+            targetPath: $targetPath,
+            replacements: [
+                'dummy-acf-block' => $name,
+                'Dummy ACF Block' => $title,
+                "category: 'common'" => "category: '{$category}'",
+                "mode: 'preview'" => "mode: '{$mode}'",
+                'dummy_acf_block' => $fieldKey,
+                $this->getDefaultFieldsCode() => $fieldsCode,
+                $this->getDefaultComposeCode() => $composeCode,
+            ],
+            dryRun: $dryRun,
+        );
+
+        if ($dryRun) {
+            $this->displayDryRun($targetPath, (string) $content);
+
+            return;
+        }
 
         $this->cli->success("ACF block created: {$this->cli->getRelativePath($targetPath)}");
         $this->cli->line('');
