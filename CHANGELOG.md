@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add `WP` helper for typed access to WordPress globals (`WP::db()`, `WP::query()`, `WP::post()`, `WP::user()`) ([db95247], [#58])
+- Add `Env` helper for environment detection (`Env::isProduction()`, `Env::isDevelopment()`, `Env::isDebug()`) ([db95247], [#58])
 - Add `#[AsTwigExtension]` attribute for declarative Twig extension registration ([63edb11], [#53])
 
 ### Fixed
@@ -19,6 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#53]: https://github.com/studiometa/foehn/pull/53
 [1f5db42]: https://github.com/studiometa/foehn/commit/1f5db42
 [#57]: https://github.com/studiometa/foehn/pull/57
+[db95247]: https://github.com/studiometa/foehn/commit/db95247
+[#58]: https://github.com/studiometa/foehn/pull/58
 
 ## [0.2.0] - 2026-02-05
 
