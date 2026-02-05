@@ -528,108 +528,38 @@ define('WP_DEBUG', true);
 define('WP_DEBUG_LOG', true);
 ```
 
-## Validator
+## Validation
 
-Laravel-style validation helper.
+For data validation, we recommend using a dedicated third-party package:
 
-### Basic Usage
+- **[rakit/validation](https://github.com/rakit/validation)** - Laravel-style validation
+- **[respect/validation](https://github.com/Respect/Validation)** - Fluent validation library
+
+### Example with rakit/validation
+
+```bash
+composer require rakit/validation
+```
 
 ```php
-use Studiometa\Foehn\Helpers\Validator;
+use Rakit\Validation\Validator;
 
-$validator = Validator::make($data, [
+$validator = new Validator();
+
+$validation = $validator->make($request->get_params(), [
+    'name' => 'required|min:2',
     'email' => 'required|email',
-    'name' => 'required|min:2|max:100',
-    'age' => 'numeric|min:18',
+    'message' => 'required|min:10',
 ]);
 
-if ($validator->fails()) {
-    $errors = $validator->errors();
+$validation->validate();
+
+if ($validation->fails()) {
+    $errors = $validation->errors()->firstOfAll();
+    return new WP_REST_Response(['errors' => $errors], 422);
 }
 
-$validated = $validator->validated();
-```
-
-### Quick Validation
-
-Throw exception on failure:
-
-```php
-use Studiometa\Foehn\Helpers\Validator;
-use Studiometa\Foehn\Helpers\ValidationException;
-
-try {
-    $data = Validator::validate($request, [
-        'email' => 'required|email',
-    ]);
-} catch (ValidationException $e) {
-    $errors = $e->errors();
-}
-```
-
-### Available Rules
-
-| Rule              | Description                                     |
-| ----------------- | ----------------------------------------------- |
-| `required`        | Field must be present and not empty             |
-| `email`           | Must be a valid email address                   |
-| `url`             | Must be a valid URL                             |
-| `numeric`         | Must be a number                                |
-| `integer`         | Must be an integer                              |
-| `string`          | Must be a string                                |
-| `array`           | Must be an array                                |
-| `boolean`         | Must be true/false                              |
-| `min:n`           | Minimum length (string) or value (number)       |
-| `max:n`           | Maximum length (string) or value (number)       |
-| `between:min,max` | Value must be between min and max               |
-| `in:a,b,c`        | Value must be one of the listed values          |
-| `regex:/pattern/` | Must match regex pattern                        |
-| `confirmed`       | Field must have matching `{field}_confirmation` |
-| `nullable`        | Field can be null                               |
-
-### Multiple Rules
-
-Combine rules with `|`:
-
-```php
-$rules = [
-    'email' => 'required|email|max:255',
-    'password' => 'required|min:8|confirmed',
-    'role' => 'required|in:admin,editor,author',
-];
-```
-
-### REST API Example
-
-```php
-use Studiometa\Foehn\Attributes\AsRestRoute;
-use Studiometa\Foehn\Helpers\Validator;
-use Studiometa\Foehn\Helpers\ValidationException;
-use WP_REST_Request;
-use WP_REST_Response;
-
-final class ContactApi
-{
-    #[AsRestRoute('theme/v1', '/contact', 'POST', permission: 'public')]
-    public function submit(WP_REST_Request $request): WP_REST_Response
-    {
-        try {
-            $data = Validator::validate($request->get_params(), [
-                'name' => 'required|min:2',
-                'email' => 'required|email',
-                'message' => 'required|min:10',
-            ]);
-        } catch (ValidationException $e) {
-            return new WP_REST_Response([
-                'errors' => $e->errors(),
-            ], 422);
-        }
-
-        // Process valid data...
-
-        return new WP_REST_Response(['success' => true]);
-    }
-}
+$data = $validation->getValidData();
 ```
 
 ## Related

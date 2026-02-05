@@ -7,6 +7,7 @@ export default defineConfig({
   },
 
   title: "Foehn",
+  titleTemplate: ":title — Foehn, modern WordPress development",
   description:
     "A modern WordPress framework powered by Tempest, featuring attribute-based auto-discovery",
 

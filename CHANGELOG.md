@@ -12,7 +12,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `BlockMarkupExtension` with `wp_block_start()`, `wp_block_end()` and `wp_block()` Twig functions for block pattern templates ([210783a], [#63])
 - Add `Cache` helper for WordPress transients with `remember()` pattern ([258fab4], [#64])
 - Add `Log` helper for debug logging with PSR-3 style levels ([258fab4], [#64])
-- Add `Validator` helper with Laravel-style validation rules ([258fab4], [#64])
 
 [210783a]: https://github.com/studiometa/foehn/commit/210783a
 [#63]: https://github.com/studiometa/foehn/pull/63
