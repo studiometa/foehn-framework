@@ -3,12 +3,12 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Views\TimberViewEngine;
-use Studiometa\Foehn\Views\ViewComposerRegistry;
+use Studiometa\Foehn\Views\ContextProviderRegistry;
 
 describe('TimberViewEngine', function () {
     beforeEach(function () {
-        $this->composers = new ViewComposerRegistry();
-        $this->engine = new TimberViewEngine($this->composers);
+        $this->contextProviders = new ContextProviderRegistry();
+        $this->engine = new TimberViewEngine($this->contextProviders);
     });
 
     it('starts with no shared data', function () {
@@ -59,8 +59,8 @@ describe('TimberViewEngine', function () {
 
 describe('TimberViewEngine template resolution', function () {
     beforeEach(function () {
-        $this->composers = new ViewComposerRegistry();
-        $this->engine = new TimberViewEngine($this->composers);
+        $this->contextProviders = new ContextProviderRegistry();
+        $this->engine = new TimberViewEngine($this->contextProviders);
     });
 
     it('adds twig extension when missing', function () {

@@ -21,7 +21,7 @@ describe('DiscoveryRunner', function () {
         expect($classes)->toContain(\Studiometa\Foehn\Discovery\AcfFieldGroupDiscovery::class);
         expect($classes)->toContain(\Studiometa\Foehn\Discovery\BlockDiscovery::class);
         expect($classes)->toContain(\Studiometa\Foehn\Discovery\BlockPatternDiscovery::class);
-        expect($classes)->toContain(\Studiometa\Foehn\Discovery\ViewComposerDiscovery::class);
+        expect($classes)->toContain(\Studiometa\Foehn\Discovery\ContextProviderDiscovery::class);
         expect($classes)->toContain(\Studiometa\Foehn\Discovery\TemplateControllerDiscovery::class);
         expect($classes)->toContain(\Studiometa\Foehn\Discovery\RestRouteDiscovery::class);
         expect($classes)->toContain(\Studiometa\Foehn\Discovery\TimberModelDiscovery::class);
@@ -51,7 +51,7 @@ describe('DiscoveryRunner', function () {
         expect($phases['main'])->toContain(\Studiometa\Foehn\Discovery\AcfOptionsPageDiscovery::class);
 
         // Late phase
-        expect($phases['late'])->toContain(\Studiometa\Foehn\Discovery\ViewComposerDiscovery::class);
+        expect($phases['late'])->toContain(\Studiometa\Foehn\Discovery\ContextProviderDiscovery::class);
         expect($phases['late'])->toContain(\Studiometa\Foehn\Discovery\TemplateControllerDiscovery::class);
         expect($phases['late'])->toContain(\Studiometa\Foehn\Discovery\RestRouteDiscovery::class);
     });

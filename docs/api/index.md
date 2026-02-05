@@ -33,7 +33,7 @@ Attributes are PHP 8 annotations that enable auto-discovery and registration of 
 
 | Attribute                                             | Description                    |
 | ----------------------------------------------------- | ------------------------------ |
-| [`#[AsViewComposer]`](./as-view-composer)             | Add data to specific templates |
+| [`#[AsContextProvider]`](./as-context-provider)       | Add data to specific templates |
 | [`#[AsTemplateController]`](./as-template-controller) | Handle template rendering      |
 
 ### Blocks
@@ -63,16 +63,16 @@ Attributes are PHP 8 annotations that enable auto-discovery and registration of 
 
 Interfaces define contracts for classes used with specific attributes.
 
-| Interface                                                        | Used with                        |
-| ---------------------------------------------------------------- | -------------------------------- |
-| [`BlockInterface`](./block-interface)                            | `#[AsBlock]`                     |
-| [`InteractiveBlockInterface`](./interactive-block-interface)     | `#[AsBlock]` with interactivity  |
-| [`AcfBlockInterface`](./acf-block-interface)                     | `#[AsAcfBlock]`                  |
-| [`AcfFieldGroupInterface`](./acf-field-group-interface)          | `#[AsAcfFieldGroup]`             |
-| [`AcfOptionsPageInterface`](./acf-options-page-interface)        | `#[AsAcfOptionsPage]` (optional) |
-| [`ViewComposerInterface`](./view-composer-interface)             | `#[AsViewComposer]`              |
-| [`TemplateControllerInterface`](./template-controller-interface) | `#[AsTemplateController]`        |
-| [`BlockPatternInterface`](./block-pattern-interface)             | `#[AsBlockPattern]` (optional)   |
+| Interface                                                          | Used with                        |
+| ------------------------------------------------------------------ | -------------------------------- |
+| [`BlockInterface`](./block-interface)                              | `#[AsBlock]`                     |
+| [`InteractiveBlockInterface`](./interactive-block-interface)       | `#[AsBlock]` with interactivity  |
+| [`AcfBlockInterface`](./acf-block-interface)                       | `#[AsAcfBlock]`                  |
+| [`AcfFieldGroupInterface`](./acf-field-group-interface)            | `#[AsAcfFieldGroup]`             |
+| [`AcfOptionsPageInterface`](./acf-options-page-interface)          | `#[AsAcfOptionsPage]` (optional) |
+| [`ContextProviderInterface`](./context-provider-interface)         | `#[AsContextProvider]`           |
+| [`TemplateControllerInterface`](./template-controller-interface)   | `#[AsTemplateController]`        |
+| [`BlockPatternInterface`](./block-pattern-interface)               | `#[AsBlockPattern]` (optional)   |
 
 ## Core
 

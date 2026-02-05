@@ -139,4 +139,4 @@ interface TemplateControllerInterface
 
 - [Guide: Template Controllers](/guide/template-controllers)
 - [`TemplateControllerInterface`](./template-controller-interface)
-- [`#[AsViewComposer]`](./as-view-composer)
+- [`#[AsContextProvider]`](./as-context-provider)

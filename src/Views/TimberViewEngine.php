@@ -11,7 +11,7 @@ use Timber\Timber;
 /**
  * Timber/Twig implementation of ViewEngineInterface.
  *
- * Wraps Timber's template rendering with view composer support
+ * Wraps Timber's template rendering with context provider support
  * and shared data management.
  */
 final class TimberViewEngine implements ViewEngineInterface
@@ -20,7 +20,7 @@ final class TimberViewEngine implements ViewEngineInterface
     private array $shared = [];
 
     public function __construct(
-        private readonly ViewComposerRegistry $composers,
+        private readonly ContextProviderRegistry $contextProviders,
     ) {}
 
     /**
@@ -33,8 +33,8 @@ final class TimberViewEngine implements ViewEngineInterface
         // Merge shared data, then context (context wins)
         $context = array_merge($this->shared, $context);
 
-        // Apply view composers
-        $context = $this->composers->compose($template, $context);
+        // Apply context providers
+        $context = $this->contextProviders->provide($template, $context);
 
         $result = Timber::compile($resolved, $context);
 
