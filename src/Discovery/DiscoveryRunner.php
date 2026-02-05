@@ -92,6 +92,8 @@ final class DiscoveryRunner
         // ACF Field Groups
         $this->applyDiscovery(AcfFieldGroupDiscovery::class);
 
+        // ACF Options Pages
+        $this->applyDiscovery(AcfOptionsPageDiscovery::class);
         // Block patterns
         $this->applyDiscovery(BlockPatternDiscovery::class);
 
@@ -470,6 +472,7 @@ final class DiscoveryRunner
                 AcfFieldGroupDiscovery::class,
                 BlockDiscovery::class,
                 BlockPatternDiscovery::class,
+                AcfOptionsPageDiscovery::class,
             ],
             'late' => [
                 ViewComposerDiscovery::class,
