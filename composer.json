@@ -31,13 +31,17 @@
         "tempest/framework": "^2.14",
         "timber/timber": "^2.0"
     },
+    "suggest": {
+        "studiometa/webpack-config": "Required for WebpackManifest asset helper"
+    },
     "require-dev": {
         "carthage-software/mago": "1.4.1",
         "pestphp/pest": "^3.0",
         "php-stubs/acf-pro-stubs": "^6.5",
         "php-stubs/wordpress-stubs": "*",
         "php-stubs/wp-cli-stubs": "^2.12",
-        "stoutlogic/acf-builder": "^1.12"
+        "stoutlogic/acf-builder": "^1.12",
+        "studiometa/webpack-config": "^6.3"
     },
     "autoload": {
         "psr-4": {
