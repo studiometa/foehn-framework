@@ -172,6 +172,10 @@ final readonly class HeroBlock implements AcfBlockInterface
 - [Security Guide](https://studiometa.github.io/foehn/guide/security)
 - [API Reference](https://studiometa.github.io/foehn/api/)
 
+### For AI Agents
+
+This package includes an [Agent Skill](https://agentskills.io/) at `skills/foehn/SKILL.md` with comprehensive usage reference. Compatible agents will discover it automatically.
+
 ## Contributing
 
 Contributions are welcome! Please read our contributing guidelines before submitting a PR.
