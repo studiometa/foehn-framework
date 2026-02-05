@@ -165,7 +165,10 @@ final class Log
         $formatted = "[FOEHN.{$level}] {$message}";
 
         if ($context !== []) {
-            $formatted .= ' ' . json_encode($context, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+            $json = json_encode($context, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+            if ($json !== false) {
+                $formatted .= ' ' . $json;
+            }
         }
 
         return $formatted;
@@ -201,6 +204,6 @@ final class Log
             return false;
         }
 
-        return (bool) WP_DEBUG_LOG;
+        return (bool) constant('WP_DEBUG_LOG');
     }
 }

@@ -138,16 +138,13 @@ trait ValidatesFields
         $validated = [];
 
         foreach ($schema as $fieldName => $rules) {
-            $type = $rules['type'] ?? 'string';
+            $type = $rules['type'];
             $required = $rules['required'] ?? false;
             $default = $rules['default'] ?? null;
 
-            // Check if field exists
-            $hasValue =
-                isset($fields[$fieldName])
-                && $fields[$fieldName] !== ''
-                && $fields[$fieldName] !== []
-                && $fields[$fieldName] !== null;
+            // Check if field exists and has a meaningful value
+            $value = $fields[$fieldName] ?? null;
+            $hasValue = $value !== null && $value !== '' && $value !== [];
 
             // Handle required fields
             if ($required && !$hasValue) {
