@@ -1,6 +1,6 @@
 # Hooks
 
-Foehn provides `#[AsAction]` and `#[AsFilter]` attributes to register WordPress hooks declaratively.
+Føhn provides `#[AsAction]` and `#[AsFilter]` attributes to register WordPress hooks declaratively.
 
 ## Actions
 
@@ -208,7 +208,7 @@ public function loginStyles(): void
 
 ## Built-in Hooks
 
-Foehn provides a collection of **opt-in** reusable hook classes for common WordPress patterns. These are not enabled by default — you choose which ones to activate via the `hooks` configuration option.
+Føhn provides a collection of **opt-in** reusable hook classes for common WordPress patterns. These are not enabled by default — you choose which ones to activate via the `hooks` configuration option.
 
 ### Enabling Built-in Hooks
 

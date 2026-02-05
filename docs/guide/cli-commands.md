@@ -1,10 +1,10 @@
 # CLI Commands
 
-Foehn provides `#[AsCliCommand]` for creating WP-CLI commands and includes built-in scaffolding commands.
+Føhn provides `#[AsCliCommand]` for creating WP-CLI commands and includes built-in scaffolding commands.
 
 ## Built-in Commands
 
-Foehn includes scaffolding and discovery management commands:
+Føhn includes scaffolding and discovery management commands:
 
 ### Scaffolding Commands
 

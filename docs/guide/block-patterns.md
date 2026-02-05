@@ -1,10 +1,10 @@
 # Block Patterns
 
-Foehn provides `#[AsBlockPattern]` for registering block patterns with Twig template support, along with Twig helpers to generate WordPress block markup comments.
+Føhn provides `#[AsBlockPattern]` for registering block patterns with Twig template support, along with Twig helpers to generate WordPress block markup comments.
 
 ## Block Markup Helpers
 
-Writing block comments manually is tedious. Foehn provides Twig functions to generate them:
+Writing block comments manually is tedious. Føhn provides Twig functions to generate them:
 
 ```twig
 {# Instead of writing this: #}

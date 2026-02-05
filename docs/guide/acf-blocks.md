@@ -1,6 +1,6 @@
 # ACF Blocks
 
-Foehn provides `#[AsAcfBlock]` for creating ACF blocks with type-safe fields using `stoutlogic/acf-builder`.
+Føhn provides `#[AsAcfBlock]` for creating ACF blocks with type-safe fields using `stoutlogic/acf-builder`.
 
 ## Requirements
 
@@ -88,7 +88,7 @@ final readonly class HeroBlock implements AcfBlockInterface
 
 ## Automatic Field Transformation
 
-By default, Foehn automatically transforms ACF field values into Timber objects. This means you don't need to manually convert image IDs to `Timber\Image`, post IDs to `Timber\Post`, etc.
+By default, Føhn automatically transforms ACF field values into Timber objects. This means you don't need to manually convert image IDs to `Timber\Image`, post IDs to `Timber\Post`, etc.
 
 ### Enabled by Default
 
@@ -330,7 +330,7 @@ public static function fields(): FieldsBuilder
 
 ## Field Validation
 
-Foehn provides a `ValidatesFields` trait for optional field validation and sanitization in your `compose()` method.
+Føhn provides a `ValidatesFields` trait for optional field validation and sanitization in your `compose()` method.
 
 ### Using the Trait
 

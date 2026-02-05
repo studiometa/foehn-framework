@@ -86,7 +86,7 @@ When `height` is `0` (the default), the image height scales proportionally to ma
 
 ## Theme Support
 
-When any image size is discovered, Foehn automatically enables the `post-thumbnails` theme support:
+When any image size is discovered, Føhn automatically enables the `post-thumbnails` theme support:
 
 ```php
 add_theme_support('post-thumbnails');

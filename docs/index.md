@@ -1,10 +1,10 @@
 ---
 layout: home
-title: Foehn — Modern WordPress development
+title: Føhn — Modern WordPress development
 titleTemplate: false
 
 hero:
-  name: Foehn
+  name: Føhn
   text: Modern WordPress Development
   tagline: Attribute-based auto-discovery for hooks, post types, blocks, and more
   actions:
@@ -60,11 +60,11 @@ final class ThemeHooks
 
 ## Acknowledgements
 
-Foehn stands on the shoulders of giants. We're grateful to the following projects and their maintainers:
+Føhn stands on the shoulders of giants. We're grateful to the following projects and their maintainers:
 
 ### Core Dependencies
 
-- **[Tempest Framework](https://github.com/tempestphp/tempest-framework)** by Brent Roose — The discovery-first PHP framework that powers Foehn's attribute-based auto-discovery and dependency injection
+- **[Tempest Framework](https://github.com/tempestphp/tempest-framework)** by Brent Roose — The discovery-first PHP framework that powers Føhn's attribute-based auto-discovery and dependency injection
 - **[Timber](https://github.com/timber/timber)** by Upstatement — The incredible library that brings Twig templating to WordPress
 
 ### Inspirations

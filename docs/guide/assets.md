@@ -1,6 +1,6 @@
 # Assets
 
-Foehn provides a helper class for enqueuing scripts and styles from [`@studiometa/webpack-config`](https://github.com/studiometa/webpack-config) manifests.
+Føhn provides a helper class for enqueuing scripts and styles from [`@studiometa/webpack-config`](https://github.com/studiometa/webpack-config) manifests.
 
 ## Installation
 

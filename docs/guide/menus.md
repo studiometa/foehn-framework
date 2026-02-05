@@ -1,6 +1,6 @@
 # Menus
 
-Foehn uses `#[AsMenu]` to register WordPress navigation menu locations with automatic Timber context integration.
+Føhn uses `#[AsMenu]` to register WordPress navigation menu locations with automatic Timber context integration.
 
 ## Basic Menu
 

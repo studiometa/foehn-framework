@@ -1,6 +1,6 @@
 # Twig Extensions
 
-Foehn uses Timber which provides Twig as its templating engine. You can extend Twig with custom functions, filters, and more using the `#[AsTwigExtension]` attribute.
+Føhn uses Timber which provides Twig as its templating engine. You can extend Twig with custom functions, filters, and more using the `#[AsTwigExtension]` attribute.
 
 ## Creating an Extension
 
@@ -192,11 +192,11 @@ app/
 
 ## Built-in Extensions
 
-Foehn includes useful extensions out of the box:
+Føhn includes useful extensions out of the box:
 
 ### TwigToolkitExtension
 
-Foehn bundles [`studiometa/twig-toolkit`](https://github.com/studiometa/twig-toolkit) which provides essential helpers for HTML generation:
+Føhn bundles [`studiometa/twig-toolkit`](https://github.com/studiometa/twig-toolkit) which provides essential helpers for HTML generation:
 
 ```twig
 {# Conditional CSS classes #}

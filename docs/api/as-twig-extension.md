@@ -152,7 +152,7 @@ final class PriceExtension extends AbstractExtension
 
 ## Built-in Extensions
 
-Foehn provides built-in extensions that you can use as examples:
+Føhn provides built-in extensions that you can use as examples:
 
 - `InteractivityExtension` — Helpers for WordPress Interactivity API
 - `VideoEmbedExtension` — Video URL transformation utilities

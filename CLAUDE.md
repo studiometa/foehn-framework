@@ -1,4 +1,4 @@
-# Claude Instructions for Foehn
+# Claude Instructions for Føhn
 
 ## Project Overview
 

@@ -1,6 +1,6 @@
 # Helpers
 
-Global helper functions provided by Foehn.
+Global helper functions provided by Føhn.
 
 ## app()
 

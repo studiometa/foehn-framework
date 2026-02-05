@@ -1,6 +1,6 @@
 # Migration to v0.2.0
 
-This guide helps you migrate from Foehn v0.1.x to v0.2.0.
+This guide helps you migrate from Føhn v0.1.x to v0.2.0.
 
 ## Breaking Changes
 

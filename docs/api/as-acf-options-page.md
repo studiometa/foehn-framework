@@ -178,7 +178,7 @@ $attr->isSubPage(); // true
 
 ## Optional Interface
 
-Implementing `AcfOptionsPageInterface` is optional. When implemented, Foehn automatically registers the field group:
+Implementing `AcfOptionsPageInterface` is optional. When implemented, Føhn automatically registers the field group:
 
 ```php
 interface AcfOptionsPageInterface

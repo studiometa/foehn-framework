@@ -1,10 +1,10 @@
 # Getting Started
 
-Foehn is a modern WordPress framework powered by [Tempest Framework](https://github.com/tempestphp/tempest-framework). It brings attribute-based auto-discovery to WordPress development, eliminating boilerplate code for hooks, post types, blocks, and more.
+Føhn is a modern WordPress framework powered by [Tempest Framework](https://github.com/tempestphp/tempest-framework). It brings attribute-based auto-discovery to WordPress development, eliminating boilerplate code for hooks, post types, blocks, and more.
 
-## Why Foehn?
+## Why Føhn?
 
-Traditional WordPress development requires manually registering every hook, post type, and block. It also lacks modern OOP practices like dependency injection and autowiring. Foehn changes this with PHP 8 attributes and a powerful DI container:
+Traditional WordPress development requires manually registering every hook, post type, and block. It also lacks modern OOP practices like dependency injection and autowiring. Føhn changes this with PHP 8 attributes and a powerful DI container:
 
 **Before (Traditional WordPress):**
 
@@ -26,7 +26,7 @@ add_action('after_setup_theme', function () {
 add_filter('excerpt_length', fn () => 30);
 ```
 
-**After (Foehn):**
+**After (Føhn):**
 
 ```php
 // app/Models/Product.php
@@ -76,7 +76,7 @@ final class ThemeHooks
 
 ## Next Steps
 
-1. [Install Foehn](./installation.md)
+1. [Install Føhn](./installation.md)
 2. Learn about [Hooks](./hooks.md)
 3. Create [Post Types](./post-types.md)
 4. Build [ACF Blocks](./acf-blocks.md)

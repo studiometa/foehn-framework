@@ -1,6 +1,6 @@
 # Taxonomies
 
-Foehn uses `#[AsTaxonomy]` to register custom taxonomies.
+Føhn uses `#[AsTaxonomy]` to register custom taxonomies.
 
 ## Basic Taxonomy
 

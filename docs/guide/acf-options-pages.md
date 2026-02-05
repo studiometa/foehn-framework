@@ -1,6 +1,6 @@
 # ACF Options Pages
 
-Foehn provides `#[AsAcfOptionsPage]` for creating ACF options pages with type-safe fields using `stoutlogic/acf-builder`.
+Føhn provides `#[AsAcfOptionsPage]` for creating ACF options pages with type-safe fields using `stoutlogic/acf-builder`.
 
 ## Requirements
 
