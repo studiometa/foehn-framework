@@ -13,47 +13,55 @@ When building ACF blocks, you often repeat the same field patterns:
 
 Instead of duplicating these fields in every block, create a **Field Fragment** once and reuse it everywhere.
 
-## Creating a Field Fragment
+## Built-in Fragments
+
+Foehn provides common fragments out of the box:
+
+| Fragment                  | Description                                |
+| ------------------------- | ------------------------------------------ |
+| `ButtonLinkBuilder`       | Link with style and size options           |
+| `ResponsiveImageBuilder`  | Desktop/mobile image variants              |
+| `SpacingBuilder`          | Padding top/bottom controls                |
+| `BackgroundBuilder`       | Color, image, and overlay background       |
+
+```php
+use Studiometa\Foehn\Acf\Fragments\ButtonLinkBuilder;
+use Studiometa\Foehn\Acf\Fragments\ResponsiveImageBuilder;
+use Studiometa\Foehn\Acf\Fragments\SpacingBuilder;
+use Studiometa\Foehn\Acf\Fragments\BackgroundBuilder;
+```
+
+## Creating Custom Fragments
 
 A Field Fragment extends `FieldsBuilder` and configures its fields in the constructor:
 
 ```php
 <?php
-// app/Acf/Fragments/ButtonLinkBuilder.php
+// app/Acf/Fragments/VideoEmbedBuilder.php
 
 namespace App\Acf\Fragments;
 
 use StoutLogic\AcfBuilder\FieldsBuilder;
 
-final class ButtonLinkBuilder extends FieldsBuilder
+final class VideoEmbedBuilder extends FieldsBuilder
 {
-    public function __construct(string $name = 'button', string $label = 'Button')
+    public function __construct(string $name = 'video', string $label = 'Video')
     {
         parent::__construct($name, ['label' => $label]);
 
         $this
-            ->addLink('link', [
-                'label' => 'Link',
-                'return_format' => 'array',
+            ->addOembed('url', [
+                'label' => 'Video URL',
+                'instructions' => 'YouTube or Vimeo URL',
             ])
-            ->addSelect('style', [
-                'label' => 'Style',
-                'choices' => [
-                    'primary' => 'Primary',
-                    'secondary' => 'Secondary',
-                    'outline' => 'Outline',
-                    'ghost' => 'Ghost',
-                ],
-                'default_value' => 'primary',
+            ->addImage('poster', [
+                'label' => 'Poster Image',
+                'instructions' => 'Custom thumbnail (optional)',
+                'return_format' => 'id',
             ])
-            ->addSelect('size', [
-                'label' => 'Size',
-                'choices' => [
-                    'small' => 'Small',
-                    'medium' => 'Medium',
-                    'large' => 'Large',
-                ],
-                'default_value' => 'medium',
+            ->addTrueFalse('autoplay', [
+                'label' => 'Autoplay',
+                'default_value' => false,
             ]);
     }
 }
@@ -69,7 +77,8 @@ Use `appendFields()` to add a fragment to your block's field configuration:
 
 namespace App\Blocks\Hero;
 
-use App\Acf\Fragments\ButtonLinkBuilder;
+use Studiometa\Foehn\Acf\Fragments\ButtonLinkBuilder;
+use Studiometa\Foehn\Acf\Fragments\BackgroundBuilder;
 use Studiometa\Foehn\Attributes\AsAcfBlock;
 use Studiometa\Foehn\Contracts\AcfBlockInterface;
 use StoutLogic\AcfBuilder\FieldsBuilder;
@@ -87,10 +96,10 @@ final readonly class HeroBlock implements AcfBlockInterface
 
         $builder
             ->addWysiwyg('content', ['label' => 'Content'])
-            ->addImage('background', ['label' => 'Background Image'])
 
-            // Append the button fragment
-            ->appendFields(new ButtonLinkBuilder('cta', 'Call to Action'));
+            // Append the built-in fragments
+            ->appendFields(new ButtonLinkBuilder('cta', 'Call to Action'))
+            ->appendFields(new BackgroundBuilder());
 
         return $builder;
     }
@@ -101,146 +110,90 @@ final readonly class HeroBlock implements AcfBlockInterface
 
 The fragment's fields are added inline, producing:
 - `content` (wysiwyg)
-- `background` (image)
 - `cta_link` (link)
 - `cta_style` (select)
 - `cta_size` (select)
+- `background_type` (button_group)
+- `background_color` (color_picker)
+- `background_image` (image)
+- `background_overlay` (true_false)
+- `background_overlay_opacity` (range)
 
-## Common Fragment Examples
+## Customizing Built-in Fragments
+
+All built-in fragments accept constructor parameters for customization:
+
+### ButtonLinkBuilder
+
+```php
+use Studiometa\Foehn\Acf\Fragments\ButtonLinkBuilder;
+
+// Default usage
+->appendFields(new ButtonLinkBuilder())
+
+// Custom styles, no size field
+->appendFields(new ButtonLinkBuilder(
+    name: 'cta',
+    label: 'Call to Action',
+    styles: ['primary' => 'Primary', 'ghost' => 'Ghost'],
+    sizes: null, // Disable size field
+    required: true,
+))
+```
 
 ### ResponsiveImageBuilder
 
-For images that need different sources on mobile and desktop:
-
 ```php
-<?php
-// app/Acf/Fragments/ResponsiveImageBuilder.php
+use Studiometa\Foehn\Acf\Fragments\ResponsiveImageBuilder;
 
-namespace App\Acf\Fragments;
+// Default usage
+->appendFields(new ResponsiveImageBuilder())
 
-use StoutLogic\AcfBuilder\FieldsBuilder;
-
-final class ResponsiveImageBuilder extends FieldsBuilder
-{
-    public function __construct(
-        string $name = 'image',
-        string $label = 'Image',
-        bool $required = false,
-    ) {
-        parent::__construct($name, ['label' => $label]);
-
-        $this
-            ->addImage('desktop', [
-                'label' => 'Desktop',
-                'instructions' => 'Recommended: 1920×1080px',
-                'required' => $required,
-                'return_format' => 'id',
-                'preview_size' => 'medium',
-            ])
-            ->addImage('mobile', [
-                'label' => 'Mobile',
-                'instructions' => 'Recommended: 768×1024px. Leave empty to use desktop image.',
-                'return_format' => 'id',
-                'preview_size' => 'medium',
-            ]);
-    }
-}
+// With custom instructions
+->appendFields(new ResponsiveImageBuilder(
+    name: 'hero_image',
+    label: 'Hero Image',
+    required: true,
+    desktopInstructions: 'Recommended: 2560×1440px',
+    mobileInstructions: 'Recommended: 750×1334px',
+))
 ```
 
 ### SpacingBuilder
 
-For consistent spacing controls:
-
 ```php
-<?php
-// app/Acf/Fragments/SpacingBuilder.php
+use Studiometa\Foehn\Acf\Fragments\SpacingBuilder;
 
-namespace App\Acf\Fragments;
+// Default usage
+->appendFields(new SpacingBuilder())
 
-use StoutLogic\AcfBuilder\FieldsBuilder;
-
-final class SpacingBuilder extends FieldsBuilder
-{
-    private const SIZES = [
-        'none' => 'None',
-        'small' => 'Small',
-        'medium' => 'Medium',
-        'large' => 'Large',
-        'xlarge' => 'Extra Large',
-    ];
-
-    public function __construct(string $name = 'spacing')
-    {
-        parent::__construct($name, ['label' => 'Spacing']);
-
-        $this
-            ->addSelect('padding_top', [
-                'label' => 'Padding Top',
-                'choices' => self::SIZES,
-                'default_value' => 'medium',
-            ])
-            ->addSelect('padding_bottom', [
-                'label' => 'Padding Bottom',
-                'choices' => self::SIZES,
-                'default_value' => 'medium',
-            ]);
-    }
-}
+// Custom sizes and labels
+->appendFields(new SpacingBuilder(
+    name: 'margin',
+    label: 'Margins',
+    sizes: ['0' => 'None', '1' => 'Small', '2' => 'Medium', '3' => 'Large'],
+    default: '1',
+    topLabel: 'Margin Top',
+    bottomLabel: 'Margin Bottom',
+))
 ```
 
 ### BackgroundBuilder
 
-For background settings with color, image, and overlay:
-
 ```php
-<?php
-// app/Acf/Fragments/BackgroundBuilder.php
+use Studiometa\Foehn\Acf\Fragments\BackgroundBuilder;
 
-namespace App\Acf\Fragments;
+// Default usage
+->appendFields(new BackgroundBuilder())
 
-use StoutLogic\AcfBuilder\FieldsBuilder;
-
-final class BackgroundBuilder extends FieldsBuilder
-{
-    public function __construct(string $name = 'background')
-    {
-        parent::__construct($name, ['label' => 'Background']);
-
-        $this
-            ->addButtonGroup('type', [
-                'label' => 'Background Type',
-                'choices' => [
-                    'none' => 'None',
-                    'color' => 'Color',
-                    'image' => 'Image',
-                ],
-                'default_value' => 'none',
-            ])
-            ->addColorPicker('color', [
-                'label' => 'Background Color',
-            ])
-                ->conditional('type', '==', 'color')
-            ->addImage('image', [
-                'label' => 'Background Image',
-                'return_format' => 'id',
-            ])
-                ->conditional('type', '==', 'image')
-            ->addTrueFalse('overlay', [
-                'label' => 'Add Overlay',
-                'default_value' => true,
-            ])
-                ->conditional('type', '==', 'image')
-            ->addRange('overlay_opacity', [
-                'label' => 'Overlay Opacity',
-                'min' => 0,
-                'max' => 100,
-                'step' => 5,
-                'default_value' => 50,
-            ])
-                ->conditional('type', '==', 'image')
-                ->and('overlay', '==', 1);
-    }
-}
+// Image-only background (no color option)
+->appendFields(new BackgroundBuilder(
+    name: 'bg',
+    label: 'Background',
+    types: ['none' => 'None', 'image' => 'Image'],
+    default: 'none',
+    defaultOpacity: 70,
+))
 ```
 
 ## Organizing Fragments with Tabs
