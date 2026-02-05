@@ -311,7 +311,7 @@ theme/
 │   │   ├── Product.php
 │   │   └── ProductCategory.php
 │   └── Views/
-│       ├── Composers/
+│       ├── ContextProviders/
 │       └── Controllers/
 ├── views/
 │   └── blocks/
@@ -337,7 +337,7 @@ foehn automatically discovers and registers:
 - Taxonomies
 - Hooks
 - Blocks
-- View composers
+- Context providers
 - REST routes
 - CLI commands
 
@@ -364,7 +364,7 @@ foehn adds features not in wp-toolkit:
 - Native Gutenberg blocks with Interactivity API
 - Block patterns with Twig
 - Template controllers
-- View composers
+- Context providers
 - REST API attributes
 - CLI commands
 
