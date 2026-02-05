@@ -36,6 +36,6 @@ final class MenuStub
     {
         $menu = self::get();
 
-        return $menu !== null && count($menu->items) > 0;
+        return $menu !== null && $menu->items !== null && count($menu->items) > 0;
     }
 }

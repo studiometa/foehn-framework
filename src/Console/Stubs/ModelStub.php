@@ -38,6 +38,6 @@ final class ModelStub extends Post
      */
     public function shortExcerpt(int $words = 20): string
     {
-        return wp_trim_words($this->excerpt(), $words);
+        return wp_trim_words((string) $this->excerpt(), $words);
     }
 }
