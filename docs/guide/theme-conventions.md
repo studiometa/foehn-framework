@@ -29,10 +29,10 @@ theme/
 │   │   └── NewsletterService.php
 │   ├── Shortcodes/               # Shortcode handlers
 │   │   └── ButtonShortcode.php
+│   ├── ContextProviders/         # Context providers
+│   │   ├── GlobalContextProvider.php
+│   │   └── NavigationContextProvider.php
 │   └── Views/                    # View layer
-│       ├── Composers/            # View composers
-│       │   ├── GlobalComposer.php
-│       │   └── NavigationComposer.php
 │       └── Controllers/          # Template controllers
 │           ├── HomeController.php
 │           └── SingleController.php
@@ -64,11 +64,11 @@ theme/
 
 ### Post Types
 
-| Convention | Example |
-| --- | --- |
-| **Location** | `app/Models/` |
+| Convention     | Example             |
+| -------------- | ------------------- |
+| **Location**   | `app/Models/`       |
 | **Class name** | Singular PascalCase |
-| **File name** | `{ClassName}.php` |
+| **File name**  | `{ClassName}.php`   |
 
 ```php
 // app/Models/Product.php
@@ -82,11 +82,11 @@ final class TeamMember extends Post {}
 
 ### Taxonomies
 
-| Convention | Example |
-| --- | --- |
-| **Location** | `app/Models/` (alongside post types) |
-| **Class name** | Singular PascalCase |
-| **File name** | `{ClassName}.php` |
+| Convention     | Example                              |
+| -------------- | ------------------------------------ |
+| **Location**   | `app/Models/` (alongside post types) |
+| **Class name** | Singular PascalCase                  |
+| **File name**  | `{ClassName}.php`                    |
 
 ```php
 // app/Models/ProductCategory.php
@@ -100,11 +100,11 @@ final class EventType {}
 
 ### ACF Blocks
 
-| Convention | Example |
-| --- | --- |
-| **Location** | `app/Blocks/{BlockName}/` |
-| **Class name** | `{BlockName}Block` |
-| **File name** | `{BlockName}Block.php` |
+| Convention     | Example                   |
+| -------------- | ------------------------- |
+| **Location**   | `app/Blocks/{BlockName}/` |
+| **Class name** | `{BlockName}Block`        |
+| **File name**  | `{BlockName}Block.php`    |
 
 ```php
 // app/Blocks/Hero/HeroBlock.php
@@ -120,11 +120,11 @@ Each block has its own directory to keep related files together (PHP, assets, te
 
 ### Native Blocks
 
-| Convention | Example |
-| --- | --- |
-| **Location** | `app/Blocks/{BlockName}/` |
-| **Class name** | `{BlockName}Block` |
-| **File name** | `{BlockName}Block.php` |
+| Convention     | Example                   |
+| -------------- | ------------------------- |
+| **Location**   | `app/Blocks/{BlockName}/` |
+| **Class name** | `{BlockName}Block`        |
+| **File name**  | `{BlockName}Block.php`    |
 
 ```php
 // app/Blocks/Counter/CounterBlock.php
@@ -134,11 +134,11 @@ final readonly class CounterBlock implements InteractiveBlockInterface {}
 
 ### Hooks
 
-| Convention | Example |
-| --- | --- |
-| **Location** | `app/Hooks/` |
-| **Class name** | `{Domain}Hooks` |
-| **File name** | `{Domain}Hooks.php` |
+| Convention     | Example             |
+| -------------- | ------------------- |
+| **Location**   | `app/Hooks/`        |
+| **Class name** | `{Domain}Hooks`     |
+| **File name**  | `{Domain}Hooks.php` |
 
 ```php
 // app/Hooks/ThemeHooks.php
@@ -160,35 +160,35 @@ final class AdminHooks {
 }
 ```
 
-### View Composers
+### Context Providers
 
-| Convention | Example |
-| --- | --- |
-| **Location** | `app/Views/Composers/` |
-| **Class name** | `{Name}Composer` |
-| **File name** | `{Name}Composer.php` |
+| Convention     | Example                     |
+| -------------- | --------------------------- |
+| **Location**   | `app/ContextProviders/`     |
+| **Class name** | `{Name}ContextProvider`     |
+| **File name**  | `{Name}ContextProvider.php` |
 
 ```php
-// app/Views/Composers/GlobalComposer.php
-#[AsViewComposer('*')]
-final class GlobalComposer implements ViewComposerInterface {}
+// app/ContextProviders/GlobalContextProvider.php
+#[AsContextProvider('*')]
+final class GlobalContextProvider implements ContextProviderInterface {}
 
-// app/Views/Composers/NavigationComposer.php
-#[AsViewComposer('*')]
-final class NavigationComposer implements ViewComposerInterface {}
+// app/ContextProviders/NavigationContextProvider.php
+#[AsContextProvider('*')]
+final class NavigationContextProvider implements ContextProviderInterface {}
 
-// app/Views/Composers/ProductComposer.php
-#[AsViewComposer('single-product')]
-final class ProductComposer implements ViewComposerInterface {}
+// app/ContextProviders/ProductContextProvider.php
+#[AsContextProvider('single-product')]
+final class ProductContextProvider implements ContextProviderInterface {}
 ```
 
 ### Template Controllers
 
-| Convention | Example |
-| --- | --- |
-| **Location** | `app/Views/Controllers/` |
-| **Class name** | `{Template}Controller` |
-| **File name** | `{Template}Controller.php` |
+| Convention     | Example                    |
+| -------------- | -------------------------- |
+| **Location**   | `app/Views/Controllers/`   |
+| **Class name** | `{Template}Controller`     |
+| **File name**  | `{Template}Controller.php` |
 
 ```php
 // app/Views/Controllers/HomeController.php
@@ -206,11 +206,11 @@ final class ArchiveController implements TemplateControllerInterface {}
 
 ### REST Endpoints
 
-| Convention | Example |
-| --- | --- |
-| **Location** | `app/Rest/` |
-| **Class name** | `{Resource}Endpoint` |
-| **File name** | `{Resource}Endpoint.php` |
+| Convention     | Example                  |
+| -------------- | ------------------------ |
+| **Location**   | `app/Rest/`              |
+| **Class name** | `{Resource}Endpoint`     |
+| **File name**  | `{Resource}Endpoint.php` |
 
 ```php
 // app/Rest/ProductsEndpoint.php
@@ -228,11 +228,11 @@ final class NewsletterEndpoint {
 
 ### Shortcodes
 
-| Convention | Example |
-| --- | --- |
-| **Location** | `app/Shortcodes/` |
-| **Class name** | `{Name}Shortcode` |
-| **File name** | `{Name}Shortcode.php` |
+| Convention     | Example               |
+| -------------- | --------------------- |
+| **Location**   | `app/Shortcodes/`     |
+| **Class name** | `{Name}Shortcode`     |
+| **File name**  | `{Name}Shortcode.php` |
 
 ```php
 // app/Shortcodes/ButtonShortcode.php
@@ -244,11 +244,11 @@ final class ButtonShortcode {
 
 ### Block Patterns
 
-| Convention | Example |
-| --- | --- |
-| **Location** | `app/Patterns/` |
-| **Class name** | `{Name}Pattern` |
-| **File name** | `{Name}Pattern.php` |
+| Convention     | Example             |
+| -------------- | ------------------- |
+| **Location**   | `app/Patterns/`     |
+| **Class name** | `{Name}Pattern`     |
+| **File name**  | `{Name}Pattern.php` |
 
 ```php
 // app/Patterns/HeroPattern.php
@@ -258,11 +258,11 @@ final readonly class HeroPattern implements BlockPatternInterface {}
 
 ### Services
 
-| Convention | Example |
-| --- | --- |
-| **Location** | `app/Services/` |
-| **Class name** | `{Name}Service` |
-| **File name** | `{Name}Service.php` |
+| Convention     | Example             |
+| -------------- | ------------------- |
+| **Location**   | `app/Services/`     |
+| **Class name** | `{Name}Service`     |
+| **File name**  | `{Name}Service.php` |
 
 ```php
 // app/Services/CartService.php
@@ -280,32 +280,32 @@ final readonly class NewsletterService {
 
 ### Template Locations
 
-| Template Type | Location | Example |
-| --- | --- | --- |
-| **Base layouts** | `views/` | `views/base.twig` |
-| **WordPress templates** | `views/` | `views/single.twig`, `views/archive.twig` |
-| **Block templates** | `views/blocks/` | `views/blocks/hero.twig` |
-| **Page templates** | `views/pages/` | `views/pages/home.twig` |
-| **Partials** | `views/partials/` | `views/partials/header.twig` |
-| **Components** | `views/components/` | `views/components/button.twig` |
-| **Pattern templates** | `views/patterns/` | `views/patterns/hero.twig` |
+| Template Type           | Location            | Example                                   |
+| ----------------------- | ------------------- | ----------------------------------------- |
+| **Base layouts**        | `views/`            | `views/base.twig`                         |
+| **WordPress templates** | `views/`            | `views/single.twig`, `views/archive.twig` |
+| **Block templates**     | `views/blocks/`     | `views/blocks/hero.twig`                  |
+| **Page templates**      | `views/pages/`      | `views/pages/home.twig`                   |
+| **Partials**            | `views/partials/`   | `views/partials/header.twig`              |
+| **Components**          | `views/components/` | `views/components/button.twig`            |
+| **Pattern templates**   | `views/patterns/`   | `views/patterns/hero.twig`                |
 
 ### Template Naming
 
-| WordPress Hierarchy | Twig Template |
-| --- | --- |
-| `index.php` | `views/index.twig` |
-| `front-page.php` | `views/front-page.twig` or `views/pages/home.twig` |
-| `single.php` | `views/single.twig` |
-| `single-{post_type}.php` | `views/single-{post_type}.twig` |
-| `archive.php` | `views/archive.twig` |
-| `archive-{post_type}.php` | `views/archive-{post_type}.twig` |
-| `page.php` | `views/page.twig` |
-| `page-{slug}.php` | `views/page-{slug}.twig` |
-| `category.php` | `views/category.twig` |
-| `taxonomy-{taxonomy}.php` | `views/taxonomy-{taxonomy}.twig` |
-| `search.php` | `views/search.twig` |
-| `404.php` | `views/404.twig` |
+| WordPress Hierarchy       | Twig Template                                      |
+| ------------------------- | -------------------------------------------------- |
+| `index.php`               | `views/index.twig`                                 |
+| `front-page.php`          | `views/front-page.twig` or `views/pages/home.twig` |
+| `single.php`              | `views/single.twig`                                |
+| `single-{post_type}.php`  | `views/single-{post_type}.twig`                    |
+| `archive.php`             | `views/archive.twig`                               |
+| `archive-{post_type}.php` | `views/archive-{post_type}.twig`                   |
+| `page.php`                | `views/page.twig`                                  |
+| `page-{slug}.php`         | `views/page-{slug}.twig`                           |
+| `category.php`            | `views/category.twig`                              |
+| `taxonomy-{taxonomy}.php` | `views/taxonomy-{taxonomy}.twig`                   |
+| `search.php`              | `views/search.twig`                                |
+| `404.php`                 | `views/404.twig`                                   |
 
 ### Block Template Naming
 
@@ -378,16 +378,16 @@ Use a consistent namespace structure:
 }
 ```
 
-| Directory | Namespace |
-| --- | --- |
-| `app/Blocks/` | `App\Blocks` |
-| `app/Hooks/` | `App\Hooks` |
-| `app/Models/` | `App\Models` |
-| `app/Patterns/` | `App\Patterns` |
-| `app/Rest/` | `App\Rest` |
-| `app/Services/` | `App\Services` |
-| `app/Shortcodes/` | `App\Shortcodes` |
-| `app/Views/Composers/` | `App\Views\Composers` |
+| Directory                | Namespace               |
+| ------------------------ | ----------------------- |
+| `app/Blocks/`            | `App\Blocks`            |
+| `app/Hooks/`             | `App\Hooks`             |
+| `app/Models/`            | `App\Models`            |
+| `app/Patterns/`          | `App\Patterns`          |
+| `app/Rest/`              | `App\Rest`              |
+| `app/Services/`          | `App\Services`          |
+| `app/Shortcodes/`        | `App\Shortcodes`        |
+| `app/ContextProviders/`  | `App\ContextProviders`  |
 | `app/Views/Controllers/` | `App\Views\Controllers` |
 
 ## Migration from wp-toolkit
@@ -396,12 +396,12 @@ If migrating from `studiometa/wp-toolkit`, the directory structure changes signi
 
 ### Key Changes
 
-| wp-toolkit | Foehn |
-| --- | --- |
-| `app/PostTypes/ProductPostType.php` | `app/Models/Product.php` |
-| `app/Taxonomies/CategoryTaxonomy.php` | `app/Models/Category.php` |
-| `app/Blocks/HeroBlock.php` | `app/Blocks/Hero/HeroBlock.php` |
-| Manual Manager registration | Automatic discovery |
+| wp-toolkit                            | Foehn                           |
+| ------------------------------------- | ------------------------------- |
+| `app/PostTypes/ProductPostType.php`   | `app/Models/Product.php`        |
+| `app/Taxonomies/CategoryTaxonomy.php` | `app/Models/Category.php`       |
+| `app/Blocks/HeroBlock.php`            | `app/Blocks/Hero/HeroBlock.php` |
+| Manual Manager registration           | Automatic discovery             |
 
 ### File Relocation Checklist
 
@@ -600,20 +600,20 @@ must-be-final = true
 reason        = "Shortcode classes must be final and named *Shortcode."
 
 # -----------------------------------------------------------------------------
-# View Composers: Must be final, named *Composer, implement interface
+# Context Providers: Must be final, named *ContextProvider, implement interface
 # -----------------------------------------------------------------------------
 [[guard.structural.rules]]
-on            = "App\\Views\\Composers\\**"
+on            = "App\\ContextProviders\\**"
 target        = "class"
-must-be-named = "*Composer"
+must-be-named = "*ContextProvider"
 must-be-final = true
-reason        = "View composer classes must be final and named *Composer."
+reason        = "Context provider classes must be final and named *ContextProvider."
 
 [[guard.structural.rules]]
-on             = "App\\Views\\Composers\\**"
+on             = "App\\ContextProviders\\**"
 target         = "class"
-must-implement = "Studiometa\\Foehn\\Contracts\\ViewComposerInterface"
-reason         = "View composer classes must implement ViewComposerInterface."
+must-implement = "Studiometa\\Foehn\\Contracts\\ContextProviderInterface"
+reason         = "Context provider classes must implement ContextProviderInterface."
 
 # -----------------------------------------------------------------------------
 # Template Controllers: Must be final, named *Controller, implement interface
@@ -693,5 +693,5 @@ Add Mago guard to your CI pipeline:
 - [Migration from wp-toolkit](./migration-wp-toolkit.md)
 - [Post Types](./post-types.md)
 - [ACF Blocks](./acf-blocks.md)
-- [View Composers](./view-composers.md)
+- [Context Providers](./context-providers.md)
 - [Template Controllers](./template-controllers.md)

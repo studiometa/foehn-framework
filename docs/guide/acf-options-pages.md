@@ -49,20 +49,20 @@ final class ThemeSettings implements AcfOptionsPageInterface
 ```php
 <?php
 
-namespace App\ViewComposers;
+namespace App\ContextProviders;
 
-use Studiometa\Foehn\Attributes\AsViewComposer;
-use Studiometa\Foehn\Contracts\ViewComposerInterface;
+use Studiometa\Foehn\Attributes\AsContextProvider;
+use Studiometa\Foehn\Contracts\ContextProviderInterface;
 use Studiometa\Foehn\Services\AcfOptionsService;
 
-#[AsViewComposer(templates: ['*'])]
-final readonly class GlobalComposer implements ViewComposerInterface
+#[AsContextProvider(templates: ['*'])]
+final readonly class GlobalContextProvider implements ContextProviderInterface
 {
     public function __construct(
         private AcfOptionsService $options,
     ) {}
 
-    public function compose(array $context): array
+    public function provide(array $context): array
     {
         return [
             ...$context,
@@ -182,7 +182,7 @@ $fieldObject = $options->getObject('field_name', 'options-page-slug');
 ## Using in Twig Templates
 
 ```twig
-{# Get options in a view composer and pass to template #}
+{# Get options in a context provider and pass to template #}
 <footer class="footer">
     <p>{{ footer_text }}</p>
 
@@ -197,4 +197,4 @@ $fieldObject = $options->getObject('field_name', 'options-page-slug');
 - [API: #[AsAcfOptionsPage]](/api/as-acf-options-page)
 - [API: AcfOptionsPageInterface](/api/acf-options-page-interface)
 - [Guide: ACF Blocks](/guide/acf-blocks)
-- [Guide: View Composers](/guide/view-composers)
+- [Guide: Context Providers](/guide/context-providers)

@@ -84,7 +84,10 @@ export default defineConfig({
         },
         {
           text: "Migration",
-          items: [{ text: "From wp-toolkit", link: "/guide/migration-wp-toolkit" }],
+          items: [
+            { text: "To v0.2.0", link: "/guide/migration-0.2" },
+            { text: "From wp-toolkit", link: "/guide/migration-wp-toolkit" },
+          ],
         },
       ],
       "/api/": [

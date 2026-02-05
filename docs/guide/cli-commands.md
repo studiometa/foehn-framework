@@ -34,7 +34,7 @@ wp tempest make:hooks Seo
 # Generate a context provider
 wp tempest make:context-provider Header
 
-# Generate a context provider (alias for view composer)
+# Generate a context provider
 wp tempest make:context GlobalContext --global
 wp tempest make:context ProductContext --templates=single-product,archive-product
 

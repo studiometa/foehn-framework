@@ -116,20 +116,20 @@ must-be-final = true
 reason        = "Shortcode classes must be final and named *Shortcode."
 
 # -----------------------------------------------------------------------------
-# View Composers: Must be final, named *Composer, implement interface
+# Context Providers: Must be final, named *ContextProvider, implement interface
 # -----------------------------------------------------------------------------
 [[guard.structural.rules]]
-on            = "App\\Views\\Composers\\**"
+on            = "App\\ContextProviders\\**"
 target        = "class"
-must-be-named = "*Composer"
+must-be-named = "*ContextProvider"
 must-be-final = true
-reason        = "View composer classes must be final and named *Composer."
+reason        = "Context provider classes must be final and named *ContextProvider."
 
 [[guard.structural.rules]]
-on             = "App\\Views\\Composers\\**"
+on             = "App\\ContextProviders\\**"
 target         = "class"
-must-implement = "Studiometa\\Foehn\\Contracts\\ViewComposerInterface"
-reason         = "View composer classes must implement ViewComposerInterface."
+must-implement = "Studiometa\\Foehn\\Contracts\\ContextProviderInterface"
+reason         = "Context provider classes must implement ContextProviderInterface."
 
 # -----------------------------------------------------------------------------
 # Template Controllers: Must be final, named *Controller, implement interface
