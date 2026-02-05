@@ -10,9 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Add `WebpackManifest` helper for enqueuing assets from `@studiometa/webpack-config` manifests ([edd6216], [#60])
+- Bundle `studiometa/twig-toolkit` extension with `html_classes()`, `html_styles()`, `html_attributes()` and `{% element %}` tag ([5a7b8cf], [#62])
 
 [edd6216]: https://github.com/studiometa/foehn/commit/edd6216
 [#60]: https://github.com/studiometa/foehn/pull/60
+[5a7b8cf]: https://github.com/studiometa/foehn/commit/5a7b8cf
+[#62]: https://github.com/studiometa/foehn/pull/62
 
 ## [0.2.1] - 2026-02-05
 
