@@ -23,6 +23,12 @@ Attributes are PHP 8 annotations that enable auto-discovery and registration of 
 | [`#[AsMenu]`](./as-menu)                | Register a navigation menu location        |
 | [`#[AsTimberModel]`](./as-timber-model) | Map Timber class without type registration |
 
+### Media
+
+| Attribute                             | Description                    |
+| ------------------------------------- | ------------------------------ |
+| [`#[AsImageSize]`](./as-image-size)   | Register a custom image size   |
+
 ### Views
 
 | Attribute                                             | Description                    |

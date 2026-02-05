@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add `#[AsImageSize]` attribute for declarative image size registration with auto theme support ([614faa0], [#47])
 - Add `#[AsAcfOptionsPage]` attribute for ACF options pages with auto-discovery and `AcfOptionsService` helper ([4b52d3d], [#49])
 - Add `#[AsAcfFieldGroup]` attribute for non-block ACF field groups with simplified location syntax ([296e69f], [#48])
 - Add `#[AsMenu]` attribute for declarative navigation menu registration with auto-context injection ([2ce9f77], [#46])
@@ -20,6 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `SpacingBuilder`: padding top/bottom controls
   - `BackgroundBuilder`: color, image, and overlay background
 
+[614faa0]: https://github.com/studiometa/foehn/commit/614faa0
+[#47]: https://github.com/studiometa/foehn/pull/47
 [4b52d3d]: https://github.com/studiometa/foehn/commit/4b52d3d
 [#49]: https://github.com/studiometa/foehn/pull/49
 [296e69f]: https://github.com/studiometa/foehn/commit/296e69f

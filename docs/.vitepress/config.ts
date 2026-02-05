@@ -108,6 +108,7 @@ export default defineConfig({
             { text: "#[AsRestRoute]", link: "/api/as-rest-route" },
             { text: "#[AsShortcode]", link: "/api/as-shortcode" },
             { text: "#[AsCliCommand]", link: "/api/as-cli-command" },
+            { text: "#[AsImageSize]", link: "/api/as-image-size" },
           ],
         },
         {
