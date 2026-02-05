@@ -115,8 +115,8 @@ final class DiscoveryRunner
 
         $this->ensureDiscovered();
 
-        // View composers and template controllers
-        $this->applyDiscovery(ViewComposerDiscovery::class);
+        // Context providers and template controllers
+        $this->applyDiscovery(ContextProviderDiscovery::class);
         $this->applyDiscovery(TemplateControllerDiscovery::class);
 
         // REST API routes
@@ -479,7 +479,7 @@ final class DiscoveryRunner
                 AcfOptionsPageDiscovery::class,
             ],
             'late' => [
-                ViewComposerDiscovery::class,
+                ContextProviderDiscovery::class,
                 TemplateControllerDiscovery::class,
                 RestRouteDiscovery::class,
             ],

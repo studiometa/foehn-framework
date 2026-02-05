@@ -1,6 +1,6 @@
-# ViewComposerInterface
+# ContextProviderInterface
 
-Interface for view composers that add data to templates.
+Interface for context providers that add data to templates.
 
 ## Signature
 
@@ -9,26 +9,26 @@ Interface for view composers that add data to templates.
 
 namespace Studiometa\Foehn\Contracts;
 
-interface ViewComposerInterface
+interface ContextProviderInterface
 {
     /**
-     * Compose additional data for the view.
+     * Provide additional data for the view context.
      *
      * @param array<string, mixed> $context Current template context
      * @return array<string, mixed> Modified context with additional data
      */
-    public function compose(array $context): array;
+    public function provide(array $context): array;
 }
 ```
 
 ## Methods
 
-### compose()
+### provide()
 
 Receives the current template context and returns the modified context with additional data.
 
 ```php
-public function compose(array $context): array
+public function provide(array $context): array
 {
     // Add new data
     $context['site_name'] = get_bloginfo('name');
@@ -47,15 +47,15 @@ public function compose(array $context): array
 ```php
 <?php
 
-namespace App\Views\Composers;
+namespace App\ContextProviders;
 
-use Studiometa\Foehn\Attributes\AsViewComposer;
-use Studiometa\Foehn\Contracts\ViewComposerInterface;
+use Studiometa\Foehn\Attributes\AsContextProvider;
+use Studiometa\Foehn\Contracts\ContextProviderInterface;
 
-#[AsViewComposer('*')]
-final class NavigationComposer implements ViewComposerInterface
+#[AsContextProvider('*')]
+final class NavigationContextProvider implements ContextProviderInterface
 {
-    public function compose(array $context): array
+    public function provide(array $context): array
     {
         $context['menus'] = [
             'primary' => \Timber\Timber::get_menu('primary'),
@@ -72,20 +72,20 @@ final class NavigationComposer implements ViewComposerInterface
 ```php
 <?php
 
-namespace App\Views\Composers;
+namespace App\ContextProviders;
 
 use App\Services\CartService;
-use Studiometa\Foehn\Attributes\AsViewComposer;
-use Studiometa\Foehn\Contracts\ViewComposerInterface;
+use Studiometa\Foehn\Attributes\AsContextProvider;
+use Studiometa\Foehn\Contracts\ContextProviderInterface;
 
-#[AsViewComposer('*')]
-final class CartComposer implements ViewComposerInterface
+#[AsContextProvider('*')]
+final class CartContextProvider implements ContextProviderInterface
 {
     public function __construct(
         private readonly CartService $cart,
     ) {}
 
-    public function compose(array $context): array
+    public function provide(array $context): array
     {
         $context['cart'] = [
             'count' => $this->cart->getItemCount(),
@@ -99,5 +99,5 @@ final class CartComposer implements ViewComposerInterface
 
 ## Related
 
-- [Guide: View Composers](/guide/view-composers)
-- [`#[AsViewComposer]`](./as-view-composer)
+- [Guide: Context Providers](/guide/context-providers)
+- [`#[AsContextProvider]`](./as-context-provider)

@@ -89,8 +89,8 @@ your-theme/
 │   │   └── ProductCategory.php
 │   ├── Rest/             # REST API endpoints
 │   │   └── ProductsApi.php
-│   └── Views/            # View composers and controllers
-│       ├── Composers/
+│   └── Views/            # Context providers and controllers
+│       ├── ContextProviders/
 │       └── Controllers/
 ├── views/                # Twig templates
 │   ├── single.twig
@@ -138,7 +138,7 @@ See [Discovery Cache](/guide/discovery-cache) for more details.
 Foehn is designed to work seamlessly with Timber. It automatically:
 
 - Registers your post type classes in Timber's classmap
-- Integrates view composers with Timber's context
+- Integrates context providers with Timber's context
 - Uses Twig for block and pattern templates
 
 ## Using with ACF

@@ -7,19 +7,19 @@ namespace Studiometa\Foehn\Console\Commands;
 use Studiometa\Foehn\Attributes\AsCliCommand;
 use Studiometa\Foehn\Console\CliCommandInterface;
 use Studiometa\Foehn\Console\GeneratesFiles;
-use Studiometa\Foehn\Console\Stubs\ViewComposerStub;
+use Studiometa\Foehn\Console\Stubs\ContextProviderStub;
 use Studiometa\Foehn\Console\WpCli;
 
 use function Tempest\Support\str;
 
-#[AsCliCommand(name: 'make:view-composer', description: 'Create a new view composer class', longDescription: <<<'DOC'
+#[AsCliCommand(name: 'make:context-provider', description: 'Create a new context provider class', longDescription: <<<'DOC'
     ## OPTIONS
 
     <name>
-    : The composer name (e.g., 'header', 'single-post')
+    : The provider name (e.g., 'header', 'single-post')
 
     [--class=<class>]
-    : Custom class name (defaults to PascalCase of name + Composer)
+    : Custom class name (defaults to PascalCase of name + ContextProvider)
 
     [--templates=<templates>]
     : Comma-separated template patterns to match (defaults to name and name-*)
@@ -29,16 +29,16 @@ use function Tempest\Support\str;
 
     ## EXAMPLES
 
-        # Create a composer for header template
-        wp tempest make:view-composer header
+        # Create a provider for header template
+        wp tempest make:context-provider header
 
-        # Create a composer for multiple templates
-        wp tempest make:view-composer post --templates=single-post,archive-post
+        # Create a provider for multiple templates
+        wp tempest make:context-provider post --templates=single-post,archive-post
 
-        # Create a global composer
-        wp tempest make:view-composer global --templates=*
+        # Create a global provider
+        wp tempest make:context-provider global --templates=*
     DOC)]
-final class MakeViewComposerCommand implements CliCommandInterface
+final class MakeContextProviderCommand implements CliCommandInterface
 {
     use GeneratesFiles;
 
@@ -51,18 +51,18 @@ final class MakeViewComposerCommand implements CliCommandInterface
         $name = $args[0] ?? null;
 
         if ($name === null) {
-            $this->cli->error('Please provide a composer name.');
+            $this->cli->error('Please provide a provider name.');
 
             return;
         }
 
-        $className = $assocArgs['class'] ?? str($name)->pascal()->toString() . 'Composer';
+        $className = $assocArgs['class'] ?? str($name)->pascal()->toString() . 'ContextProvider';
         $templates = isset($assocArgs['templates'])
             ? array_map('trim', explode(',', $assocArgs['templates']))
             : [$name, $name . '-*'];
         $force = isset($assocArgs['force']);
 
-        $targetPath = $this->getTargetPath('ViewComposers', $className);
+        $targetPath = $this->getTargetPath('ContextProviders', $className);
 
         if (!$this->shouldGenerate($targetPath, $force)) {
             return;
@@ -71,10 +71,10 @@ final class MakeViewComposerCommand implements CliCommandInterface
         // Format templates array for replacement
         $templatesCode = "['" . implode("', '", $templates) . "']";
 
-        $this->generateClassFile(stubClass: ViewComposerStub::class, targetPath: $targetPath, replacements: [
+        $this->generateClassFile(stubClass: ContextProviderStub::class, targetPath: $targetPath, replacements: [
             "['dummy-template', 'dummy-template-*']" => $templatesCode,
         ]);
 
-        $this->cli->success("View composer created: {$this->cli->getRelativePath($targetPath)}");
+        $this->cli->success("Context provider created: {$this->cli->getRelativePath($targetPath)}");
     }
 }

@@ -1,12 +1,12 @@
-# #[AsViewComposer]
+# #[AsContextProvider]
 
-Register a class as a view composer that adds data to specific templates.
+Register a class as a context provider that adds data to specific templates.
 
 ## Signature
 
 ```php
 #[Attribute(Attribute::TARGET_CLASS)]
-final readonly class AsViewComposer
+final readonly class AsContextProvider
 {
     public function __construct(
         public string|array $templates,
@@ -33,20 +33,20 @@ final readonly class AsViewComposer
 
 ## Usage
 
-### Global Composer
+### Global Provider
 
 ```php
 <?php
 
-namespace App\Views\Composers;
+namespace App\ContextProviders;
 
-use Studiometa\Foehn\Attributes\AsViewComposer;
-use Studiometa\Foehn\Contracts\ViewComposerInterface;
+use Studiometa\Foehn\Attributes\AsContextProvider;
+use Studiometa\Foehn\Contracts\ContextProviderInterface;
 
-#[AsViewComposer('*')]
-final class GlobalComposer implements ViewComposerInterface
+#[AsContextProvider('*')]
+final class GlobalContextProvider implements ContextProviderInterface
 {
-    public function compose(array $context): array
+    public function provide(array $context): array
     {
         $context['site_name'] = get_bloginfo('name');
         $context['primary_menu'] = \Timber\Timber::get_menu('primary');
@@ -59,10 +59,10 @@ final class GlobalComposer implements ViewComposerInterface
 ### Template-Specific
 
 ```php
-#[AsViewComposer('single-product')]
-final class ProductComposer implements ViewComposerInterface
+#[AsContextProvider('single-product')]
+final class ProductContextProvider implements ContextProviderInterface
 {
-    public function compose(array $context): array
+    public function provide(array $context): array
     {
         $context['related'] = $context['post']->relatedProducts(4);
         return $context;
@@ -73,10 +73,10 @@ final class ProductComposer implements ViewComposerInterface
 ### Wildcard Pattern
 
 ```php
-#[AsViewComposer('archive-*')]
-final class ArchiveComposer implements ViewComposerInterface
+#[AsContextProvider('archive-*')]
+final class ArchiveContextProvider implements ContextProviderInterface
 {
-    public function compose(array $context): array
+    public function provide(array $context): array
     {
         $context['pagination'] = \Timber\Timber::get_pagination();
         return $context;
@@ -87,10 +87,10 @@ final class ArchiveComposer implements ViewComposerInterface
 ### Multiple Templates
 
 ```php
-#[AsViewComposer(['home', 'front-page'])]
-final class HomeComposer implements ViewComposerInterface
+#[AsContextProvider(['home', 'front-page'])]
+final class HomeContextProvider implements ContextProviderInterface
 {
-    public function compose(array $context): array
+    public function provide(array $context): array
     {
         $context['featured'] = $this->getFeaturedPosts();
         return $context;
@@ -102,27 +102,27 @@ final class HomeComposer implements ViewComposerInterface
 
 ```php
 // Runs first
-#[AsViewComposer('*', priority: 5)]
-final class BaseComposer implements ViewComposerInterface {}
+#[AsContextProvider('*', priority: 5)]
+final class BaseContextProvider implements ContextProviderInterface {}
 
 // Runs last
-#[AsViewComposer('*', priority: 20)]
-final class FinalComposer implements ViewComposerInterface {}
+#[AsContextProvider('*', priority: 20)]
+final class FinalContextProvider implements ContextProviderInterface {}
 ```
 
 ## Required Interface
 
-Classes must implement `ViewComposerInterface`:
+Classes must implement `ContextProviderInterface`:
 
 ```php
-interface ViewComposerInterface
+interface ContextProviderInterface
 {
-    public function compose(array $context): array;
+    public function provide(array $context): array;
 }
 ```
 
 ## Related
 
-- [Guide: View Composers](/guide/view-composers)
-- [`ViewComposerInterface`](./view-composer-interface)
+- [Guide: Context Providers](/guide/context-providers)
+- [`ContextProviderInterface`](./context-provider-interface)
 - [`#[AsTemplateController]`](./as-template-controller)

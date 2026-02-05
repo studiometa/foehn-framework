@@ -155,7 +155,7 @@ final readonly class HeroBlock implements AcfBlockInterface
 | `#[AsBlock]`              | Register a native Gutenberg block |
 | `#[AsAcfBlock]`           | Register an ACF block             |
 | `#[AsBlockPattern]`       | Register a block pattern          |
-| `#[AsViewComposer]`       | Add data to specific views        |
+| `#[AsContextProvider]`    | Add data to specific views        |
 | `#[AsTemplateController]` | Handle template rendering         |
 | `#[AsShortcode]`          | Register a shortcode              |
 | `#[AsRestRoute]`          | Register a REST API endpoint      |
