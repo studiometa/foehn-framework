@@ -17,6 +17,8 @@ function wp_stub_reset(): void
     $GLOBALS['wp_stub_calls'] = [];
     $GLOBALS['wp_stub_logged_in'] = false;
     $GLOBALS['wp_stub_user_can'] = [];
+    $GLOBALS['wp_stub_acf_fields'] = [];
+    $GLOBALS['wp_stub_acf_field_objects'] = [];
 }
 
 /**
@@ -202,6 +204,58 @@ if (!function_exists('acf_add_local_field_group')) {
     function acf_add_local_field_group(array $group): void
     {
         wp_stub_record('acf_add_local_field_group', compact('group'));
+    }
+}
+
+if (!function_exists('acf_add_options_page')) {
+    function acf_add_options_page(array $config): array
+    {
+        wp_stub_record('acf_add_options_page', compact('config'));
+
+        return $config;
+    }
+}
+
+if (!function_exists('acf_add_options_sub_page')) {
+    function acf_add_options_sub_page(array $config): array
+    {
+        wp_stub_record('acf_add_options_sub_page', compact('config'));
+
+        return $config;
+    }
+}
+
+if (!function_exists('get_field')) {
+    function get_field(string $selector, mixed $postId = false, bool $formatValue = true): mixed
+    {
+        wp_stub_record('get_field', compact('selector', 'postId', 'formatValue'));
+
+        return $GLOBALS['wp_stub_acf_fields'][$postId][$selector] ?? null;
+    }
+}
+
+if (!function_exists('get_fields')) {
+    function get_fields(mixed $postId = false, bool $formatValue = true): array|false
+    {
+        wp_stub_record('get_fields', compact('postId', 'formatValue'));
+
+        return $GLOBALS['wp_stub_acf_fields'][$postId] ?? false;
+    }
+}
+
+if (!function_exists('get_field_object')) {
+    function get_field_object(string $selector, mixed $postId = false, bool $formatValue = true): array|false
+    {
+        wp_stub_record('get_field_object', compact('selector', 'postId', 'formatValue'));
+
+        return $GLOBALS['wp_stub_acf_field_objects'][$postId][$selector] ?? false;
+    }
+}
+
+if (!function_exists('sanitize_title')) {
+    function sanitize_title(string $title): string
+    {
+        return strtolower(preg_replace('/[^a-zA-Z0-9]+/', '-', $title) ?? $title);
     }
 }
 
