@@ -17,6 +17,7 @@ describe('DiscoveryRunner', function () {
         expect($classes)->toContain(\Studiometa\Foehn\Discovery\ShortcodeDiscovery::class);
         expect($classes)->toContain(\Studiometa\Foehn\Discovery\CliCommandDiscovery::class);
         expect($classes)->toContain(\Studiometa\Foehn\Discovery\AcfBlockDiscovery::class);
+        expect($classes)->toContain(\Studiometa\Foehn\Discovery\AcfFieldGroupDiscovery::class);
         expect($classes)->toContain(\Studiometa\Foehn\Discovery\BlockDiscovery::class);
         expect($classes)->toContain(\Studiometa\Foehn\Discovery\BlockPatternDiscovery::class);
         expect($classes)->toContain(\Studiometa\Foehn\Discovery\ViewComposerDiscovery::class);
@@ -41,6 +42,7 @@ describe('DiscoveryRunner', function () {
         expect($phases['main'])->toContain(\Studiometa\Foehn\Discovery\TaxonomyDiscovery::class);
         expect($phases['main'])->toContain(\Studiometa\Foehn\Discovery\MenuDiscovery::class);
         expect($phases['main'])->toContain(\Studiometa\Foehn\Discovery\AcfBlockDiscovery::class);
+        expect($phases['main'])->toContain(\Studiometa\Foehn\Discovery\AcfFieldGroupDiscovery::class);
         expect($phases['main'])->toContain(\Studiometa\Foehn\Discovery\BlockDiscovery::class);
         expect($phases['main'])->toContain(\Studiometa\Foehn\Discovery\BlockPatternDiscovery::class);
 
@@ -54,7 +56,7 @@ describe('DiscoveryRunner', function () {
         $phases = DiscoveryRunner::getDiscoveryPhases();
 
         expect($phases['early'])->toHaveCount(4);
-        expect($phases['main'])->toHaveCount(6);
+        expect($phases['main'])->toHaveCount(7);
         expect($phases['late'])->toHaveCount(3);
     });
 
@@ -82,12 +84,7 @@ describe('DiscoveryRunner debug logging', function () {
         $container = new GenericContainer();
         $config = new FoehnConfig(debug: true);
 
-        $runner = new DiscoveryRunner(
-            container: $container,
-            cache: null,
-            appPath: null,
-            config: $config,
-        );
+        $runner = new DiscoveryRunner(container: $container, cache: null, appPath: null, config: $config);
 
         // Use reflection to access the private logDiscoveryFailure method
         $method = new ReflectionMethod($runner, 'logDiscoveryFailure');
@@ -120,12 +117,7 @@ describe('DiscoveryRunner debug logging', function () {
         $container = new GenericContainer();
         $config = new FoehnConfig(debug: false);
 
-        $runner = new DiscoveryRunner(
-            container: $container,
-            cache: null,
-            appPath: null,
-            config: $config,
-        );
+        $runner = new DiscoveryRunner(container: $container, cache: null, appPath: null, config: $config);
 
         // Use reflection to access the private logDiscoveryFailure method
         $method = new ReflectionMethod($runner, 'logDiscoveryFailure');
@@ -153,12 +145,7 @@ describe('DiscoveryRunner debug logging', function () {
     it('does not log reflection failures when config is null', function () {
         $container = new GenericContainer();
 
-        $runner = new DiscoveryRunner(
-            container: $container,
-            cache: null,
-            appPath: null,
-            config: null,
-        );
+        $runner = new DiscoveryRunner(container: $container, cache: null, appPath: null, config: null);
 
         // Use reflection to access the private logDiscoveryFailure method
         $method = new ReflectionMethod($runner, 'logDiscoveryFailure');
