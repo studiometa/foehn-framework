@@ -71,6 +71,6 @@ final class Env
      */
     public static function isDebug(): bool
     {
-        return defined('WP_DEBUG') && WP_DEBUG;
+        return defined('WP_DEBUG') && \WP_DEBUG;
     }
 }
