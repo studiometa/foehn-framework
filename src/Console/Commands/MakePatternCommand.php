@@ -36,6 +36,9 @@ use function Tempest\Support\str;
     [--force]
     : Overwrite existing file
 
+    [--dry-run]
+    : Show what would be created without creating
+
     ## EXAMPLES
 
         # Create a simple pattern
@@ -46,6 +49,9 @@ use function Tempest\Support\str;
 
         # Create with multiple categories
         wp tempest make:pattern pricing-table --categories=featured,commerce
+
+        # Preview what would be created
+        wp tempest make:pattern hero-section --dry-run
     DOC)]
 final class MakePatternCommand implements CliCommandInterface
 {
@@ -73,23 +79,35 @@ final class MakePatternCommand implements CliCommandInterface
             : ['featured'];
         $namespace = $assocArgs['namespace'] ?? 'theme';
         $force = isset($assocArgs['force']);
+        $dryRun = isset($assocArgs['dry-run']);
 
         $fullPatternName = $namespace . '/' . $name;
         $targetPath = $this->getTargetPath('Patterns', $className);
 
-        if (!$this->shouldGenerate($targetPath, $force)) {
+        if (!$dryRun && !$this->shouldGenerate($targetPath, $force)) {
             return;
         }
 
         // Format categories array for replacement
         $categoriesCode = "['" . implode("', '", $categories) . "']";
 
-        $this->generateClassFile(stubClass: BlockPatternStub::class, targetPath: $targetPath, replacements: [
-            'theme/dummy-pattern' => $fullPatternName,
-            'Dummy Pattern' => $title,
-            'A custom block pattern.' => $description,
-            "['featured']" => $categoriesCode,
-        ]);
+        $content = $this->generateClassFile(
+            stubClass: BlockPatternStub::class,
+            targetPath: $targetPath,
+            replacements: [
+                'theme/dummy-pattern' => $fullPatternName,
+                'Dummy Pattern' => $title,
+                'A custom block pattern.' => $description,
+                "['featured']" => $categoriesCode,
+            ],
+            dryRun: $dryRun,
+        );
+
+        if ($dryRun) {
+            $this->displayDryRun($targetPath, (string) $content);
+
+            return;
+        }
 
         $this->cli->success("Block pattern created: {$this->cli->getRelativePath($targetPath)}");
         $this->cli->line('');

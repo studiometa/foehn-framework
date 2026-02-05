@@ -28,6 +28,9 @@ use function Tempest\Support\str;
     [--force]
     : Overwrite existing file
 
+    [--dry-run]
+    : Show what would be created without creating
+
     ## EXAMPLES
 
         # Create a single post controller
@@ -38,6 +41,9 @@ use function Tempest\Support\str;
 
         # Create a custom page controller
         wp tempest make:controller page-contact --class=ContactController
+
+        # Preview what would be created
+        wp tempest make:controller single --dry-run
     DOC)]
 final class MakeControllerCommand implements CliCommandInterface
 {
@@ -62,10 +68,11 @@ final class MakeControllerCommand implements CliCommandInterface
             ? array_map('trim', explode(',', $assocArgs['templates']))
             : [$name];
         $force = isset($assocArgs['force']);
+        $dryRun = isset($assocArgs['dry-run']);
 
         $targetPath = $this->getTargetPath('Controllers', $className);
 
-        if (!$this->shouldGenerate($targetPath, $force)) {
+        if (!$dryRun && !$this->shouldGenerate($targetPath, $force)) {
             return;
         }
 
@@ -75,10 +82,21 @@ final class MakeControllerCommand implements CliCommandInterface
         // Get template file name for the Twig template
         $templateName = $templates[0];
 
-        $this->generateClassFile(stubClass: TemplateControllerStub::class, targetPath: $targetPath, replacements: [
-            "'dummy-template'" => $templatesCode,
-            'dummy-template.twig' => "{$templateName}.twig",
-        ]);
+        $content = $this->generateClassFile(
+            stubClass: TemplateControllerStub::class,
+            targetPath: $targetPath,
+            replacements: [
+                "'dummy-template'" => $templatesCode,
+                'dummy-template.twig' => "{$templateName}.twig",
+            ],
+            dryRun: $dryRun,
+        );
+
+        if ($dryRun) {
+            $this->displayDryRun($targetPath, (string) $content);
+
+            return;
+        }
 
         $this->cli->success("Controller created: {$this->cli->getRelativePath($targetPath)}");
         $this->cli->line('');

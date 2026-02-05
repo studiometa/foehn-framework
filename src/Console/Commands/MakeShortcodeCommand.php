@@ -24,6 +24,9 @@ use function Tempest\Support\str;
     [--force]
     : Overwrite existing file
 
+    [--dry-run]
+    : Show what would be created without creating
+
     ## EXAMPLES
 
         # Create a simple shortcode
@@ -31,6 +34,9 @@ use function Tempest\Support\str;
 
         # Create with custom class name
         wp tempest make:shortcode my-gallery --class=GalleryShortcode
+
+        # Preview what would be created
+        wp tempest make:shortcode button --dry-run
     DOC)]
 final class MakeShortcodeCommand implements CliCommandInterface
 {
@@ -52,16 +58,28 @@ final class MakeShortcodeCommand implements CliCommandInterface
 
         $className = $assocArgs['class'] ?? str($tag)->pascal()->toString() . 'Shortcode';
         $force = isset($assocArgs['force']);
+        $dryRun = isset($assocArgs['dry-run']);
 
         $targetPath = $this->getTargetPath('Shortcodes', $className);
 
-        if (!$this->shouldGenerate($targetPath, $force)) {
+        if (!$dryRun && !$this->shouldGenerate($targetPath, $force)) {
             return;
         }
 
-        $this->generateClassFile(stubClass: ShortcodeStub::class, targetPath: $targetPath, replacements: [
-            'dummy-shortcode' => $tag,
-        ]);
+        $content = $this->generateClassFile(
+            stubClass: ShortcodeStub::class,
+            targetPath: $targetPath,
+            replacements: [
+                'dummy-shortcode' => $tag,
+            ],
+            dryRun: $dryRun,
+        );
+
+        if ($dryRun) {
+            $this->displayDryRun($targetPath, (string) $content);
+
+            return;
+        }
 
         $this->cli->success("Shortcode created: {$this->cli->getRelativePath($targetPath)}");
         $this->cli->line('');
