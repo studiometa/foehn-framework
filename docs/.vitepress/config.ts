@@ -49,6 +49,7 @@ export default defineConfig({
           items: [
             { text: "Context Providers", link: "/guide/context-providers" },
             { text: "Template Controllers", link: "/guide/template-controllers" },
+            { text: "Twig Extensions", link: "/guide/twig-extensions" },
           ],
         },
         {
@@ -112,6 +113,7 @@ export default defineConfig({
             { text: "#[AsShortcode]", link: "/api/as-shortcode" },
             { text: "#[AsCliCommand]", link: "/api/as-cli-command" },
             { text: "#[AsImageSize]", link: "/api/as-image-size" },
+            { text: "#[AsTwigExtension]", link: "/api/as-twig-extension" },
           ],
         },
         {
