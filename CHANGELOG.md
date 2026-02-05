@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `BlockMarkupExtension` with `wp_block_start()`, `wp_block_end()` and `wp_block()` Twig functions for block pattern templates ([210783a], [#63])
+
+[210783a]: https://github.com/studiometa/foehn/commit/210783a
+[#63]: https://github.com/studiometa/foehn/pull/63
+
 ## [0.2.2] - 2026-02-05
 
 ### Added
