@@ -48,7 +48,7 @@ final class ImageSizeDiscovery implements WpDiscovery
      */
     public function apply(): void
     {
-        $items = [...$this->getAllItems()];
+        $items = iterator_to_array($this->getAllItems());
 
         if ($items === []) {
             return;
