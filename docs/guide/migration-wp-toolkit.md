@@ -4,9 +4,9 @@ This guide helps you migrate from `studiometa/wp-toolkit` to `studiometa/foehn`.
 
 ## Overview
 
-Foehn replaces wp-toolkit's Manager pattern with attribute-based auto-discovery. The main changes:
+Føhn replaces wp-toolkit's Manager pattern with attribute-based auto-discovery. The main changes:
 
-| wp-toolkit             | Foehn                           |
+| wp-toolkit             | Føhn                           |
 | ---------------------- | ------------------------------- |
 | `Manager` classes      | PHP 8 attributes                |
 | Manual registration    | Auto-discovery                  |

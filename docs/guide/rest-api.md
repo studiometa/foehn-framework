@@ -1,6 +1,6 @@
 # REST API
 
-Foehn provides `#[AsRestRoute]` for creating REST API endpoints declaratively.
+Føhn provides `#[AsRestRoute]` for creating REST API endpoints declaratively.
 
 ## Basic Endpoint
 

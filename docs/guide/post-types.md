@@ -1,6 +1,6 @@
 # Post Types
 
-Foehn uses `#[AsPostType]` to register custom post types with Timber integration.
+Føhn uses `#[AsPostType]` to register custom post types with Timber integration.
 
 ## Basic Post Type
 

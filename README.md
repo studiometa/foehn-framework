@@ -1,4 +1,4 @@
-# 🍃 Foehn
+# 🍃 Føhn
 
 A modern WordPress framework powered by [Tempest](https://github.com/tempestphp/tempest-framework), featuring attribute-based auto-discovery for hooks, post types, blocks, and more.
 

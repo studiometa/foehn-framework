@@ -52,7 +52,7 @@ composer dump-autoload
 
 ### 3. Boot the kernel
 
-In your `functions.php`, boot the Foehn kernel:
+In your `functions.php`, boot the Føhn kernel:
 
 ```php
 <?php
@@ -66,11 +66,11 @@ use Studiometa\Foehn\Kernel;
 Kernel::boot(__DIR__ . '/app');
 ```
 
-That's it! Foehn will now auto-discover all your attributed classes.
+That's it! Føhn will now auto-discover all your attributed classes.
 
 ## Directory Structure
 
-A typical Foehn theme structure:
+A typical Føhn theme structure:
 
 ```
 your-theme/
@@ -121,7 +121,7 @@ Kernel::boot(__DIR__ . '/app', [
 
 ### Debug Mode
 
-When `debug` is enabled, Foehn will log discovery failures (e.g., classes that cannot be reflected) via `trigger_error()` with `E_USER_WARNING`. This helps identify misconfigured classes during development.
+When `debug` is enabled, Føhn will log discovery failures (e.g., classes that cannot be reflected) via `trigger_error()` with `E_USER_WARNING`. This helps identify misconfigured classes during development.
 
 By default, debug mode follows the `WP_DEBUG` constant value.
 
@@ -135,7 +135,7 @@ See [Discovery Cache](/guide/discovery-cache) for more details.
 
 ## Using with Timber
 
-Foehn is designed to work seamlessly with Timber. It automatically:
+Føhn is designed to work seamlessly with Timber. It automatically:
 
 - Registers your post type classes in Timber's classmap
 - Integrates context providers with Timber's context
@@ -143,7 +143,7 @@ Foehn is designed to work seamlessly with Timber. It automatically:
 
 ## Using with ACF
 
-For ACF blocks, ensure ACF Pro is installed. Foehn uses `stoutlogic/acf-builder` for defining fields:
+For ACF blocks, ensure ACF Pro is installed. Føhn uses `stoutlogic/acf-builder` for defining fields:
 
 ```bash
 composer require stoutlogic/acf-builder
@@ -166,7 +166,7 @@ final class TestHooks
     #[AsAction('init')]
     public function testInit(): void
     {
-        error_log('Foehn is working!');
+        error_log('Føhn is working!');
     }
 }
 ```

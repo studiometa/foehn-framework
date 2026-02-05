@@ -1,6 +1,6 @@
 # Kernel
 
-The main bootstrap class for Foehn.
+The main bootstrap class for Føhn.
 
 ## Signature
 

@@ -1,6 +1,6 @@
 # Theme Conventions
 
-This guide establishes the recommended structure and naming conventions for Foehn-based WordPress themes.
+This guide establishes the recommended structure and naming conventions for Føhn-based WordPress themes.
 
 ## Directory Structure
 
@@ -421,7 +421,7 @@ If migrating from `studiometa/wp-toolkit`, the directory structure changes signi
 
 ### Key Changes
 
-| wp-toolkit                            | Foehn                           |
+| wp-toolkit                            | Føhn                           |
 | ------------------------------------- | ------------------------------- |
 | `app/PostTypes/ProductPostType.php`   | `app/Models/Product.php`        |
 | `app/Taxonomies/CategoryTaxonomy.php` | `app/Models/Category.php`       |
@@ -500,7 +500,7 @@ composer require --dev carthage-software/mago
 
 ### Quick Setup
 
-Foehn includes a ready-to-use Mago configuration. Copy it to your theme:
+Føhn includes a ready-to-use Mago configuration. Copy it to your theme:
 
 ```bash
 cp vendor/studiometa/foehn/resources/mago-theme.toml mago.toml
@@ -530,7 +530,7 @@ excludes = ["cache/**", "var/**", "node_modules/**"]
 # =============================================================================
 # Structural Guard Rules
 # =============================================================================
-# These rules enforce naming conventions and class structure for Foehn themes.
+# These rules enforce naming conventions and class structure for Føhn themes.
 
 # -----------------------------------------------------------------------------
 # Blocks: Must be final readonly, named *Block, implement interface

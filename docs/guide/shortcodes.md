@@ -1,6 +1,6 @@
 # Shortcodes
 
-Foehn provides `#[AsShortcode]` for registering shortcode handlers.
+Føhn provides `#[AsShortcode]` for registering shortcode handlers.
 
 ## Basic Shortcode
 

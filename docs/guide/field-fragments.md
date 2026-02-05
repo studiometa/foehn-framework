@@ -15,7 +15,7 @@ Instead of duplicating these fields in every block, create a **Field Fragment** 
 
 ## Built-in Fragments
 
-Foehn provides common fragments out of the box:
+Føhn provides common fragments out of the box:
 
 | Fragment                  | Description                                |
 | ------------------------- | ------------------------------------------ |

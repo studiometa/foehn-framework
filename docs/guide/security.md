@@ -1,6 +1,6 @@
 # Security
 
-When building WordPress themes with Foehn, security should be a top priority. This guide covers essential security practices, focusing on output escaping to prevent Cross-Site Scripting (XSS) vulnerabilities.
+When building WordPress themes with Føhn, security should be a top priority. This guide covers essential security practices, focusing on output escaping to prevent Cross-Site Scripting (XSS) vulnerabilities.
 
 ## Output Escaping
 

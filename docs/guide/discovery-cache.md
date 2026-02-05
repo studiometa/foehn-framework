@@ -1,6 +1,6 @@
 # Discovery Cache
 
-Foehn uses PHP reflection to discover attributes at runtime. While this provides a great developer experience, it can add overhead in production. The discovery cache stores discovery results to avoid runtime reflection.
+Føhn uses PHP reflection to discover attributes at runtime. While this provides a great developer experience, it can add overhead in production. The discovery cache stores discovery results to avoid runtime reflection.
 
 ## Configuration
 
@@ -173,7 +173,7 @@ cd /home/forge/example.com
 git pull origin main
 composer install --no-dev --optimize-autoloader
 
-# Warm Foehn discovery cache
+# Warm Føhn discovery cache
 php wp-cli.phar tempest discovery:warm
 
 # Clear other caches
@@ -219,7 +219,7 @@ Kernel::boot(__DIR__ . '/app', [
 
 ## How It Works
 
-1. **Without cache**: On each request, Foehn scans all PHP files in your app directory, reflecting on classes to find attributes.
+1. **Without cache**: On each request, Føhn scans all PHP files in your app directory, reflecting on classes to find attributes.
 
 2. **With cache**: Discovery results are stored as a PHP array file. On subsequent requests, this file is loaded directly (benefiting from PHP's opcode cache).
 

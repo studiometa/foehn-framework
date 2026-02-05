@@ -1,6 +1,6 @@
 # Native Blocks
 
-Foehn provides `#[AsBlock]` for creating native Gutenberg blocks with optional WordPress Interactivity API support.
+Føhn provides `#[AsBlock]` for creating native Gutenberg blocks with optional WordPress Interactivity API support.
 
 ## Basic Native Block
 
@@ -204,7 +204,7 @@ store("theme/counter", {
 
 ## Twig Interactivity Helpers
 
-Foehn provides Twig helpers for the Interactivity API:
+Føhn provides Twig helpers for the Interactivity API:
 
 ### wp_context
 
