@@ -36,6 +36,7 @@ Attributes are PHP 8 annotations that enable auto-discovery and registration of 
 | ------------------------------------------- | --------------------------------- |
 | [`#[AsBlock]`](./as-block)                  | Register a native Gutenberg block |
 | [`#[AsAcfBlock]`](./as-acf-block)           | Register an ACF block             |
+| [`#[AsAcfFieldGroup]`](./as-acf-field-group)| Register an ACF field group       |
 | [`#[AsBlockPattern]`](./as-block-pattern)   | Register a block pattern          |
 | [`#[AsBlockCategory]`](./as-block-category) | Register a block category         |
 
@@ -55,6 +56,7 @@ Interfaces define contracts for classes used with specific attributes.
 | [`BlockInterface`](./block-interface)                            | `#[AsBlock]`                    |
 | [`InteractiveBlockInterface`](./interactive-block-interface)     | `#[AsBlock]` with interactivity |
 | [`AcfBlockInterface`](./acf-block-interface)                     | `#[AsAcfBlock]`                 |
+| [`AcfFieldGroupInterface`](./acf-field-group-interface)          | `#[AsAcfFieldGroup]`            |
 | [`ViewComposerInterface`](./view-composer-interface)             | `#[AsViewComposer]`             |
 | [`TemplateControllerInterface`](./template-controller-interface) | `#[AsTemplateController]`       |
 | [`BlockPatternInterface`](./block-pattern-interface)             | `#[AsBlockPattern]` (optional)  |

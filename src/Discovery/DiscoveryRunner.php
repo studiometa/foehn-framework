@@ -89,6 +89,9 @@ final class DiscoveryRunner
         $this->applyDiscovery(AcfBlockDiscovery::class);
         $this->applyDiscovery(BlockDiscovery::class);
 
+        // ACF Field Groups
+        $this->applyDiscovery(AcfFieldGroupDiscovery::class);
+
         // Block patterns
         $this->applyDiscovery(BlockPatternDiscovery::class);
 
@@ -464,6 +467,7 @@ final class DiscoveryRunner
                 TaxonomyDiscovery::class,
                 MenuDiscovery::class,
                 AcfBlockDiscovery::class,
+                AcfFieldGroupDiscovery::class,
                 BlockDiscovery::class,
                 BlockPatternDiscovery::class,
             ],
