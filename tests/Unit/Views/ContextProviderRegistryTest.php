@@ -175,4 +175,27 @@ describe('ContextProviderRegistry', function () {
             'wildcard' => true,
         ]);
     });
+
+    it('counts wildcard providers correctly', function () {
+        $registry = new ContextProviderRegistry();
+        $provider = new class implements ContextProviderInterface {
+            public function provide(array $context): array
+            {
+                return $context;
+            }
+        };
+
+        // Register only wildcard patterns
+        $registry->register(['single-*', 'archive-*'], $provider);
+
+        expect($registry->count())->toBe(2);
+    });
+
+    it('returns unmodified context when no providers match', function () {
+        $registry = new ContextProviderRegistry();
+
+        $context = $registry->provide('nonexistent', ['original' => true]);
+
+        expect($context)->toBe(['original' => true]);
+    });
 });
