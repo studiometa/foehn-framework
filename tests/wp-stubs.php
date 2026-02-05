@@ -90,6 +90,47 @@ if (!class_exists('WP_Term')) {
     }
 }
 
+if (!class_exists('WP_Query')) {
+    class WP_Query
+    {
+        public bool $is_main_query = true;
+        public array $posts = [];
+        public int $post_count = 0;
+    }
+}
+
+if (!class_exists('WP_User')) {
+    class WP_User
+    {
+        public int $ID = 0;
+        public string $user_login = '';
+        public string $user_email = '';
+        public string $display_name = '';
+    }
+}
+
+if (!class_exists('wpdb')) {
+    class wpdb
+    {
+        public string $prefix = 'wp_';
+        public string $posts = 'wp_posts';
+        public string $postmeta = 'wp_postmeta';
+        public string $users = 'wp_users';
+        public string $usermeta = 'wp_usermeta';
+        public string $options = 'wp_options';
+
+        public function get_results(string $query): array
+        {
+            return [];
+        }
+
+        public function prepare(string $query, mixed ...$args): string
+        {
+            return sprintf($query, ...$args);
+        }
+    }
+}
+
 // ──────────────────────────────────────────────
 // Hooks
 // ──────────────────────────────────────────────
@@ -450,6 +491,13 @@ if (!function_exists('is_admin')) {
     function is_admin(): bool
     {
         return $GLOBALS['wp_stub_is_admin'] ?? false;
+    }
+}
+
+if (!function_exists('wp_get_current_user')) {
+    function wp_get_current_user(): WP_User
+    {
+        return $GLOBALS['wp_stub_current_user'] ?? new WP_User();
     }
 }
 
