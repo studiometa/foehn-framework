@@ -82,6 +82,9 @@ final class DiscoveryRunner
         $this->applyDiscovery(PostTypeDiscovery::class);
         $this->applyDiscovery(TaxonomyDiscovery::class);
 
+        // Menus
+        $this->applyDiscovery(MenuDiscovery::class);
+
         // Blocks
         $this->applyDiscovery(AcfBlockDiscovery::class);
         $this->applyDiscovery(BlockDiscovery::class);
@@ -459,6 +462,7 @@ final class DiscoveryRunner
             'main' => [
                 PostTypeDiscovery::class,
                 TaxonomyDiscovery::class,
+                MenuDiscovery::class,
                 AcfBlockDiscovery::class,
                 BlockDiscovery::class,
                 BlockPatternDiscovery::class,
