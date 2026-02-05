@@ -408,6 +408,230 @@ public function compose(array $block, array $fields): array
 }
 ```
 
+## Cache
+
+Helper class for caching data using WordPress transients.
+
+### get() / set()
+
+Store and retrieve values from cache.
+
+```php
+use Studiometa\Foehn\Helpers\Cache;
+
+// Store a value (TTL in seconds)
+Cache::set('key', $value, 3600);
+
+// Retrieve a value
+$value = Cache::get('key');
+$value = Cache::get('key', 'default');
+```
+
+### has()
+
+Check if a key exists in cache.
+
+```php
+if (Cache::has('key')) {
+    // ...
+}
+```
+
+### remember()
+
+Get from cache or compute and store.
+
+```php
+use Studiometa\Foehn\Helpers\Cache;
+
+$posts = Cache::remember('recent_posts', 3600, function () {
+    return get_posts(['numberposts' => 10]);
+});
+```
+
+### forget()
+
+Remove a value from cache.
+
+```php
+Cache::forget('key');
+```
+
+### forever()
+
+Store a value with no expiration.
+
+```php
+Cache::forever('key', $value);
+```
+
+### increment() / decrement()
+
+Modify numeric values.
+
+```php
+Cache::increment('counter');
+Cache::increment('counter', 5);
+Cache::decrement('counter');
+```
+
+### Prefix
+
+All keys are prefixed with `foehn_` by default.
+
+```php
+Cache::setPrefix('myapp_');
+```
+
+## Log
+
+Helper class for logging to WordPress debug.log.
+
+### Log Levels
+
+```php
+use Studiometa\Foehn\Helpers\Log;
+
+Log::emergency('System is unusable');
+Log::alert('Action must be taken immediately');
+Log::critical('Critical conditions');
+Log::error('Error conditions');
+Log::warning('Warning conditions');
+Log::notice('Normal but significant conditions');
+Log::info('Informational messages');
+Log::debug('Debug-level messages');
+```
+
+### Context
+
+Pass additional data as context:
+
+```php
+Log::info('User logged in', ['user_id' => 123, 'ip' => $ip]);
+Log::error('Payment failed', ['order_id' => 456, 'error' => $e->getMessage()]);
+```
+
+### Output Format
+
+Messages are formatted as:
+
+```
+[2026-02-05 15:30:00] [FOEHN.INFO] User logged in {"user_id":123}
+```
+
+### Enabling Logging
+
+Logging only works when `WP_DEBUG_LOG` is enabled in `wp-config.php`:
+
+```php
+define('WP_DEBUG', true);
+define('WP_DEBUG_LOG', true);
+```
+
+## Validator
+
+Laravel-style validation helper.
+
+### Basic Usage
+
+```php
+use Studiometa\Foehn\Helpers\Validator;
+
+$validator = Validator::make($data, [
+    'email' => 'required|email',
+    'name' => 'required|min:2|max:100',
+    'age' => 'numeric|min:18',
+]);
+
+if ($validator->fails()) {
+    $errors = $validator->errors();
+}
+
+$validated = $validator->validated();
+```
+
+### Quick Validation
+
+Throw exception on failure:
+
+```php
+use Studiometa\Foehn\Helpers\Validator;
+use Studiometa\Foehn\Helpers\ValidationException;
+
+try {
+    $data = Validator::validate($request, [
+        'email' => 'required|email',
+    ]);
+} catch (ValidationException $e) {
+    $errors = $e->errors();
+}
+```
+
+### Available Rules
+
+| Rule              | Description                                     |
+| ----------------- | ----------------------------------------------- |
+| `required`        | Field must be present and not empty             |
+| `email`           | Must be a valid email address                   |
+| `url`             | Must be a valid URL                             |
+| `numeric`         | Must be a number                                |
+| `integer`         | Must be an integer                              |
+| `string`          | Must be a string                                |
+| `array`           | Must be an array                                |
+| `boolean`         | Must be true/false                              |
+| `min:n`           | Minimum length (string) or value (number)       |
+| `max:n`           | Maximum length (string) or value (number)       |
+| `between:min,max` | Value must be between min and max               |
+| `in:a,b,c`        | Value must be one of the listed values          |
+| `regex:/pattern/` | Must match regex pattern                        |
+| `confirmed`       | Field must have matching `{field}_confirmation` |
+| `nullable`        | Field can be null                               |
+
+### Multiple Rules
+
+Combine rules with `|`:
+
+```php
+$rules = [
+    'email' => 'required|email|max:255',
+    'password' => 'required|min:8|confirmed',
+    'role' => 'required|in:admin,editor,author',
+];
+```
+
+### REST API Example
+
+```php
+use Studiometa\Foehn\Attributes\AsRestRoute;
+use Studiometa\Foehn\Helpers\Validator;
+use Studiometa\Foehn\Helpers\ValidationException;
+use WP_REST_Request;
+use WP_REST_Response;
+
+final class ContactApi
+{
+    #[AsRestRoute('theme/v1', '/contact', 'POST', permission: 'public')]
+    public function submit(WP_REST_Request $request): WP_REST_Response
+    {
+        try {
+            $data = Validator::validate($request->get_params(), [
+                'name' => 'required|min:2',
+                'email' => 'required|email',
+                'message' => 'required|min:10',
+            ]);
+        } catch (ValidationException $e) {
+            return new WP_REST_Response([
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        // Process valid data...
+
+        return new WP_REST_Response(['success' => true]);
+    }
+}
+```
+
 ## Related
 
 - [Kernel](./kernel)
