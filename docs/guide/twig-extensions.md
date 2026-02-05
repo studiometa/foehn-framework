@@ -44,7 +44,7 @@ Use in templates:
 
 ## Adding Functions
 
-Functions are called with `{{ function_name(args) }}`:
+Functions are called with <code v-pre>{{ function_name(args) }}</code>:
 
 ```php
 public function getFunctions(): array
@@ -73,7 +73,7 @@ Use `'is_safe' => ['html']` when your function returns HTML that should not be e
 
 ## Adding Filters
 
-Filters transform values with `{{ value | filter_name }}`:
+Filters transform values with <code v-pre>{{ value | filter_name }}</code>:
 
 ```php
 public function getFilters(): array
