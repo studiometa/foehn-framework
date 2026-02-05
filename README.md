@@ -168,6 +168,7 @@ final readonly class HeroBlock implements AcfBlockInterface
 
 - [Getting Started](https://studiometa.github.io/foehn/guide/getting-started)
 - [Installation](https://studiometa.github.io/foehn/guide/installation)
+- [Theme Conventions](https://studiometa.github.io/foehn/guide/theme-conventions)
 - [Security Guide](https://studiometa.github.io/foehn/guide/security)
 - [API Reference](https://studiometa.github.io/foehn/api/)
 
