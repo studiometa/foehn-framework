@@ -194,6 +194,47 @@ app/
 
 Foehn includes useful extensions out of the box:
 
+### TwigToolkitExtension
+
+Foehn bundles [`studiometa/twig-toolkit`](https://github.com/studiometa/twig-toolkit) which provides essential helpers for HTML generation:
+
+```twig
+{# Conditional CSS classes #}
+<div class="{{ html_classes([
+    'card',
+    {'card--featured': post.is_featured},
+    {'card--large': size == 'large'}
+]) }}">
+
+{# Conditional inline styles #}
+<div style="{{ html_styles({
+    'color': text_color,
+    'background': bg_color ?? false,
+}) }}">
+
+{# Render multiple attributes #}
+<button {{ html_attributes({
+    'class': 'btn',
+    'disabled': is_disabled,
+    'data-id': item.id,
+}) }}>
+```
+
+The `{% element %}` tag allows dynamic element rendering:
+
+```twig
+{% element tag|default('div') with { class: 'wrapper' } %}
+    Content here
+{% endelement %}
+```
+
+| Function          | Description                         |
+| ----------------- | ----------------------------------- |
+| `html_classes`    | Build class attribute conditionally |
+| `html_styles`     | Build style attribute conditionally |
+| `html_attributes` | Render multiple HTML attributes     |
+| `{% element %}`   | Dynamic element tag with attributes |
+
 ### InteractivityExtension
 
 Helpers for WordPress Interactivity API:
