@@ -462,6 +462,211 @@ final readonly class ProductController implements TemplateControllerInterface
 - File name matches class name
 - Group related classes in directories
 
+## Enforcing Conventions with Mago
+
+[Mago](https://mago.carthage.software/) is a fast PHP toolchain that includes an architectural guard feature. You can use it to automatically enforce theme conventions.
+
+### Installation
+
+```bash
+composer require --dev carthage-software/mago
+```
+
+### Configuration
+
+Add the following rules to your theme's `mago.toml` to enforce Foehn conventions:
+
+```toml
+php-version = "8.4"
+
+[source]
+paths = ["app"]
+
+# =============================================================================
+# Structural Guard Rules
+# =============================================================================
+# These rules enforce naming conventions and class structure for Foehn themes.
+# Run with: mago guard
+
+# -----------------------------------------------------------------------------
+# Blocks: Must be final readonly, named *Block, implement interface
+# -----------------------------------------------------------------------------
+[[guard.structural.rules]]
+on               = "App\\Blocks\\**"
+target           = "class"
+must-be-named    = "*Block"
+must-be-final    = true
+must-be-readonly = true
+reason           = "Block classes must be final readonly and named *Block."
+
+[[guard.structural.rules]]
+on               = "App\\Blocks\\**"
+target           = "class"
+must-implement   = [
+    ["Studiometa\\Foehn\\Contracts\\AcfBlockInterface"],
+    ["Studiometa\\Foehn\\Contracts\\BlockInterface"],
+    ["Studiometa\\Foehn\\Contracts\\InteractiveBlockInterface"],
+]
+reason           = "Block classes must implement AcfBlockInterface, BlockInterface, or InteractiveBlockInterface."
+
+# -----------------------------------------------------------------------------
+# Hooks: Must be final and named *Hooks
+# -----------------------------------------------------------------------------
+[[guard.structural.rules]]
+on            = "App\\Hooks\\**"
+target        = "class"
+must-be-named = "*Hooks"
+must-be-final = true
+reason        = "Hook classes must be final and named *Hooks."
+
+# -----------------------------------------------------------------------------
+# Models (Post Types): Must be final and extend Timber\Post
+# -----------------------------------------------------------------------------
+[[guard.structural.rules]]
+on            = "App\\Models\\**"
+target        = "class"
+must-be-final = true
+must-extend   = [
+    ["Timber\\Post"],
+    ["Timber\\Term"],
+]
+not-on        = "App\\Models\\**Interface"
+reason        = "Model classes must be final and extend Timber\\Post or Timber\\Term."
+
+# -----------------------------------------------------------------------------
+# Patterns: Must be final readonly, named *Pattern, implement interface
+# -----------------------------------------------------------------------------
+[[guard.structural.rules]]
+on               = "App\\Patterns\\**"
+target           = "class"
+must-be-named    = "*Pattern"
+must-be-final    = true
+must-be-readonly = true
+reason           = "Pattern classes must be final readonly and named *Pattern."
+
+[[guard.structural.rules]]
+on             = "App\\Patterns\\**"
+target         = "class"
+must-implement = "Studiometa\\Foehn\\Contracts\\BlockPatternInterface"
+reason         = "Pattern classes must implement BlockPatternInterface."
+
+# -----------------------------------------------------------------------------
+# REST Endpoints: Must be final and named *Endpoint
+# -----------------------------------------------------------------------------
+[[guard.structural.rules]]
+on            = "App\\Rest\\**"
+target        = "class"
+must-be-named = "*Endpoint"
+must-be-final = true
+reason        = "REST endpoint classes must be final and named *Endpoint."
+
+# -----------------------------------------------------------------------------
+# Services: Must be final readonly and named *Service
+# -----------------------------------------------------------------------------
+[[guard.structural.rules]]
+on               = "App\\Services\\**"
+target           = "class"
+must-be-named    = "*Service"
+must-be-final    = true
+must-be-readonly = true
+reason           = "Service classes must be final readonly and named *Service."
+
+# -----------------------------------------------------------------------------
+# Shortcodes: Must be final and named *Shortcode
+# -----------------------------------------------------------------------------
+[[guard.structural.rules]]
+on            = "App\\Shortcodes\\**"
+target        = "class"
+must-be-named = "*Shortcode"
+must-be-final = true
+reason        = "Shortcode classes must be final and named *Shortcode."
+
+# -----------------------------------------------------------------------------
+# View Composers: Must be final, named *Composer, implement interface
+# -----------------------------------------------------------------------------
+[[guard.structural.rules]]
+on            = "App\\Views\\Composers\\**"
+target        = "class"
+must-be-named = "*Composer"
+must-be-final = true
+reason        = "View composer classes must be final and named *Composer."
+
+[[guard.structural.rules]]
+on             = "App\\Views\\Composers\\**"
+target         = "class"
+must-implement = "Studiometa\\Foehn\\Contracts\\ViewComposerInterface"
+reason         = "View composer classes must implement ViewComposerInterface."
+
+# -----------------------------------------------------------------------------
+# Template Controllers: Must be final, named *Controller, implement interface
+# -----------------------------------------------------------------------------
+[[guard.structural.rules]]
+on            = "App\\Views\\Controllers\\**"
+target        = "class"
+must-be-named = "*Controller"
+must-be-final = true
+reason        = "Template controller classes must be final and named *Controller."
+
+[[guard.structural.rules]]
+on             = "App\\Views\\Controllers\\**"
+target         = "class"
+must-implement = "Studiometa\\Foehn\\Contracts\\TemplateControllerInterface"
+reason         = "Template controller classes must implement TemplateControllerInterface."
+```
+
+### Running the Guard
+
+```bash
+# Check all structural rules
+mago guard
+
+# Check with detailed output
+mago guard --reporting-format rich
+
+# Check specific directory
+mago guard app/Blocks/
+```
+
+### Example Output
+
+When a convention is violated, Mago provides clear error messages:
+
+```
+error[structural-violation]: Block classes must be final readonly and named *Block.
+  ┌─ app/Blocks/Hero/Hero.php:8:1
+  │
+8 │ class Hero implements AcfBlockInterface
+  │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  │
+  = The class `App\Blocks\Hero\Hero` does not match the required name pattern `*Block`.
+  = Consider renaming to `HeroBlock`.
+```
+
+### Customizing Rules
+
+You can adjust the rules to match your team's conventions:
+
+```toml
+# Example: Allow non-readonly services
+[[guard.structural.rules]]
+on            = "App\\Services\\**"
+target        = "class"
+must-be-named = "*Service"
+must-be-final = true
+# must-be-readonly = true  # Commented out to allow mutable services
+reason        = "Service classes must be final and named *Service."
+```
+
+### CI Integration
+
+Add Mago guard to your CI pipeline:
+
+```yaml
+# .github/workflows/ci.yml
+- name: Check conventions
+  run: composer exec mago guard
+```
+
 ## See Also
 
 - [Getting Started](./getting-started.md)
