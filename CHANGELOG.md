@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `WebpackManifest` helper for enqueuing assets from `@studiometa/webpack-config` manifests ([edd6216], [#60])
+
+[edd6216]: https://github.com/studiometa/foehn/commit/edd6216
+[#60]: https://github.com/studiometa/foehn/pull/60
+
 ## [0.2.1] - 2026-02-05
 
 ### Added

@@ -26,6 +26,7 @@ final class ThemeHooks
     #[AsAction('wp_enqueue_scripts')]
     public function enqueueAssets(): void
     {
+        // See the Assets guide for a better approach using WebpackManifest
         wp_enqueue_style('theme-style', get_stylesheet_uri());
         wp_enqueue_script('theme-script', get_template_directory_uri() . '/dist/main.js');
     }
@@ -311,6 +312,7 @@ Kernel::boot(__DIR__ . '/app', [
 
 ## See Also
 
+- [Assets Guide](/guide/assets) - Enqueue assets with WebpackManifest
 - [API Reference: #[AsAction]](/api/as-action)
 - [API Reference: #[AsFilter]](/api/as-filter)
 - [API Reference: Kernel](/api/kernel)

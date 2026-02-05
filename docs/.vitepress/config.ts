@@ -39,6 +39,7 @@ export default defineConfig({
           text: "Core Concepts",
           items: [
             { text: "Hooks", link: "/guide/hooks" },
+            { text: "Assets", link: "/guide/assets" },
             { text: "Post Types", link: "/guide/post-types" },
             { text: "Taxonomies", link: "/guide/taxonomies" },
             { text: "Menus", link: "/guide/menus" },
@@ -133,6 +134,7 @@ export default defineConfig({
           items: [
             { text: "Kernel", link: "/api/kernel" },
             { text: "Helpers", link: "/api/helpers" },
+            { text: "WebpackManifest", link: "/api/webpack-manifest" },
           ],
         },
       ],

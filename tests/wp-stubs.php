@@ -469,6 +469,30 @@ if (!function_exists('get_query_var')) {
 // Scripts & Styles
 // ──────────────────────────────────────────────
 
+if (!function_exists('wp_enqueue_style')) {
+    function wp_enqueue_style(
+        string $handle,
+        string $src = '',
+        array $deps = [],
+        ?string $ver = null,
+        string $media = 'all',
+    ): void {
+        wp_stub_record('wp_enqueue_style', compact('handle', 'src', 'deps', 'ver', 'media'));
+    }
+}
+
+if (!function_exists('wp_enqueue_script')) {
+    function wp_enqueue_script(
+        string $handle,
+        string $src = '',
+        array $deps = [],
+        ?string $ver = null,
+        bool $in_footer = false,
+    ): void {
+        wp_stub_record('wp_enqueue_script', compact('handle', 'src', 'deps', 'ver', 'in_footer'));
+    }
+}
+
 if (!function_exists('wp_dequeue_style')) {
     function wp_dequeue_style(string $handle): void
     {
@@ -480,6 +504,38 @@ if (!function_exists('wp_dequeue_script')) {
     function wp_dequeue_script(string $handle): void
     {
         wp_stub_record('wp_dequeue_script', compact('handle'));
+    }
+}
+
+// ──────────────────────────────────────────────
+// Theme directories
+// ──────────────────────────────────────────────
+
+if (!function_exists('get_template_directory')) {
+    function get_template_directory(): string
+    {
+        return $GLOBALS['wp_stub_template_directory'] ?? '/var/www/wp-content/themes/theme';
+    }
+}
+
+if (!function_exists('get_template_directory_uri')) {
+    function get_template_directory_uri(): string
+    {
+        return $GLOBALS['wp_stub_template_directory_uri'] ?? 'http://example.com/wp-content/themes/theme';
+    }
+}
+
+if (!function_exists('get_stylesheet_directory')) {
+    function get_stylesheet_directory(): string
+    {
+        return $GLOBALS['wp_stub_stylesheet_directory'] ?? '/var/www/wp-content/themes/child-theme';
+    }
+}
+
+if (!function_exists('get_stylesheet_directory_uri')) {
+    function get_stylesheet_directory_uri(): string
+    {
+        return $GLOBALS['wp_stub_stylesheet_directory_uri'] ?? 'http://example.com/wp-content/themes/child-theme';
     }
 }
 
