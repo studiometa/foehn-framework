@@ -27,8 +27,8 @@ wp tempest make:controller single-product
 # Generate a hooks class
 wp tempest make:hooks Seo
 
-# Generate a view composer
-wp tempest make:view-composer Header
+# Generate a context provider
+wp tempest make:context-provider Header
 
 # Generate a block pattern
 wp tempest make:pattern HeroWithCta

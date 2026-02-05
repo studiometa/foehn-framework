@@ -47,7 +47,7 @@ export default defineConfig({
         {
           text: "Views & Templates",
           items: [
-            { text: "View Composers", link: "/guide/view-composers" },
+            { text: "Context Providers", link: "/guide/context-providers" },
             { text: "Template Controllers", link: "/guide/template-controllers" },
           ],
         },
@@ -98,7 +98,7 @@ export default defineConfig({
             { text: "#[AsTaxonomy]", link: "/api/as-taxonomy" },
             { text: "#[AsMenu]", link: "/api/as-menu" },
             { text: "#[AsTimberModel]", link: "/api/as-timber-model" },
-            { text: "#[AsViewComposer]", link: "/api/as-view-composer" },
+            { text: "#[AsContextProvider]", link: "/api/as-context-provider" },
             { text: "#[AsTemplateController]", link: "/api/as-template-controller" },
             { text: "#[AsBlock]", link: "/api/as-block" },
             { text: "#[AsAcfBlock]", link: "/api/as-acf-block" },
@@ -118,7 +118,7 @@ export default defineConfig({
             { text: "InteractiveBlockInterface", link: "/api/interactive-block-interface" },
             { text: "AcfBlockInterface", link: "/api/acf-block-interface" },
             { text: "AcfOptionsPageInterface", link: "/api/acf-options-page-interface" },
-            { text: "ViewComposerInterface", link: "/api/view-composer-interface" },
+            { text: "ContextProviderInterface", link: "/api/context-provider-interface" },
             { text: "TemplateControllerInterface", link: "/api/template-controller-interface" },
             { text: "BlockPatternInterface", link: "/api/block-pattern-interface" },
           ],

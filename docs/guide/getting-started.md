@@ -60,7 +60,7 @@ final class ThemeHooks
 - **Hooks** — `#[AsAction]` and `#[AsFilter]` for WordPress hooks
 - **Post Types** — `#[AsPostType]` with Timber integration
 - **Taxonomies** — `#[AsTaxonomy]` with hierarchical support
-- **Views** — `#[AsViewComposer]` and `#[AsTemplateController]`
+- **Views** — `#[AsContextProvider]` and `#[AsTemplateController]`
 - **ACF Blocks** — `#[AsAcfBlock]` with FieldsBuilder
 - **Native Blocks** — `#[AsBlock]` with Interactivity API support
 - **Block Patterns** — `#[AsBlockPattern]` with Twig templates

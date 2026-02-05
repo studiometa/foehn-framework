@@ -14,7 +14,7 @@ use Studiometa\Foehn\Attributes\AsPostType;
 use Studiometa\Foehn\Attributes\AsShortcode;
 use Studiometa\Foehn\Attributes\AsTaxonomy;
 use Studiometa\Foehn\Attributes\AsTemplateController;
-use Studiometa\Foehn\Attributes\AsViewComposer;
+use Studiometa\Foehn\Attributes\AsContextProvider;
 use Studiometa\Foehn\Console\Stubs\AcfBlockStub;
 use Studiometa\Foehn\Console\Stubs\BlockPatternStub;
 use Studiometa\Foehn\Console\Stubs\BlockStub;
@@ -24,13 +24,13 @@ use Studiometa\Foehn\Console\Stubs\PostTypeStub;
 use Studiometa\Foehn\Console\Stubs\ShortcodeStub;
 use Studiometa\Foehn\Console\Stubs\TaxonomyStub;
 use Studiometa\Foehn\Console\Stubs\TemplateControllerStub;
-use Studiometa\Foehn\Console\Stubs\ViewComposerStub;
+use Studiometa\Foehn\Console\Stubs\ContextProviderStub;
 use Studiometa\Foehn\Contracts\AcfBlockInterface;
 use Studiometa\Foehn\Contracts\BlockInterface;
 use Studiometa\Foehn\Contracts\BlockPatternInterface;
 use Studiometa\Foehn\Contracts\InteractiveBlockInterface;
 use Studiometa\Foehn\Contracts\TemplateControllerInterface;
-use Studiometa\Foehn\Contracts\ViewComposerInterface;
+use Studiometa\Foehn\Contracts\ContextProviderInterface;
 use Tempest\Discovery\SkipDiscovery;
 
 describe('Stubs', function (): void {
@@ -108,14 +108,14 @@ describe('Stubs', function (): void {
             ->toBeTrue();
     });
 
-    it('ViewComposerStub has correct attributes and implements ViewComposerInterface', function (): void {
-        $reflection = new ReflectionClass(ViewComposerStub::class);
+    it('ContextProviderStub has correct attributes and implements ContextProviderInterface', function (): void {
+        $reflection = new ReflectionClass(ContextProviderStub::class);
 
         expect($reflection->getAttributes(SkipDiscovery::class))
             ->toHaveCount(1)
-            ->and($reflection->getAttributes(AsViewComposer::class))
+            ->and($reflection->getAttributes(AsContextProvider::class))
             ->toHaveCount(1)
-            ->and($reflection->implementsInterface(ViewComposerInterface::class))
+            ->and($reflection->implementsInterface(ContextProviderInterface::class))
             ->toBeTrue();
     });
 

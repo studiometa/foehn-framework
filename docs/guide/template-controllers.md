@@ -266,16 +266,16 @@ final class SearchController implements TemplateControllerInterface
 }
 ```
 
-## View Composers vs Template Controllers
+## Context Providers vs Template Controllers
 
-| Feature      | View Composer                | Template Controller          |
+| Feature      | Context Provider             | Template Controller          |
 | ------------ | ---------------------------- | ---------------------------- |
 | **Purpose**  | Add data to existing context | Full control over rendering  |
 | **Returns**  | Modified context array       | Rendered HTML string or null |
-| **Multiple** | Can stack multiple composers | One controller per template  |
+| **Multiple** | Can stack multiple providers | One controller per template  |
 | **Use case** | Shared data (menus, etc.)    | Complex page logic           |
 
-Use **View Composers** for:
+Use **Context Providers** for:
 
 - Adding shared data to multiple templates
 - Injecting navigation, footer data
@@ -301,6 +301,6 @@ app/Views/Controllers/
 
 ## See Also
 
-- [View Composers](./view-composers)
+- [Context Providers](./context-providers)
 - [API Reference: #[AsTemplateController]](/api/as-template-controller)
 - [API Reference: TemplateControllerInterface](/api/template-controller-interface)

@@ -6,42 +6,42 @@ namespace Studiometa\Foehn\Discovery;
 
 use InvalidArgumentException;
 use ReflectionClass;
-use Studiometa\Foehn\Attributes\AsViewComposer;
-use Studiometa\Foehn\Contracts\ViewComposerInterface;
+use Studiometa\Foehn\Attributes\AsContextProvider;
+use Studiometa\Foehn\Contracts\ContextProviderInterface;
 use Studiometa\Foehn\Discovery\Concerns\CacheableDiscovery;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
-use Studiometa\Foehn\Views\ViewComposerRegistry;
+use Studiometa\Foehn\Views\ContextProviderRegistry;
 
 use function Tempest\get;
 
 /**
- * Discovers classes marked with #[AsViewComposer] attribute
- * and registers them with the ViewComposerRegistry.
+ * Discovers classes marked with #[AsContextProvider] attribute
+ * and registers them with the ContextProviderRegistry.
  */
-final class ViewComposerDiscovery implements WpDiscovery
+final class ContextProviderDiscovery implements WpDiscovery
 {
     use IsWpDiscovery;
     use CacheableDiscovery;
 
     /**
-     * Discover view composer attributes on classes.
+     * Discover context provider attributes on classes.
      *
      * @param ReflectionClass<object> $class
      */
     public function discover(ReflectionClass $class): void
     {
-        $attributes = $class->getAttributes(AsViewComposer::class);
+        $attributes = $class->getAttributes(AsContextProvider::class);
 
         if ($attributes === []) {
             return;
         }
 
-        // Verify the class implements ViewComposerInterface
-        if (!$class->implementsInterface(ViewComposerInterface::class)) {
+        // Verify the class implements ContextProviderInterface
+        if (!$class->implementsInterface(ContextProviderInterface::class)) {
             throw new InvalidArgumentException(sprintf(
-                'Class %s must implement %s to use #[AsViewComposer]',
+                'Class %s must implement %s to use #[AsContextProvider]',
                 $class->getName(),
-                ViewComposerInterface::class,
+                ContextProviderInterface::class,
             ));
         }
 
@@ -55,18 +55,18 @@ final class ViewComposerDiscovery implements WpDiscovery
     }
 
     /**
-     * Apply discovered view composers by registering them.
+     * Apply discovered context providers by registering them.
      */
     public function apply(): void
     {
-        /** @var ViewComposerRegistry $registry */
-        $registry = get(ViewComposerRegistry::class);
+        /** @var ContextProviderRegistry $registry */
+        $registry = get(ContextProviderRegistry::class);
 
         foreach ($this->getAllItems() as $item) {
-            /** @var ViewComposerInterface $composer */
-            $composer = get($item['className']);
+            /** @var ContextProviderInterface $provider */
+            $provider = get($item['className']);
 
-            $registry->register($item['templates'], $composer, $item['priority']);
+            $registry->register($item['templates'], $provider, $item['priority']);
         }
     }
 

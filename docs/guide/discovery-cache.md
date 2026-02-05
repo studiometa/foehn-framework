@@ -66,7 +66,7 @@ Warming discovery cache...
   ✓ 2 taxonomies discovered
   ✓ 8 ACF blocks discovered
   ✓ 4 block patterns discovered
-  ✓ 6 view composers discovered
+  ✓ 6 context providers discovered
   ✓ 12 template controllers discovered
   ✓ 5 REST routes discovered
 Cache written to: /var/www/html/wp-content/cache/foehn/discovery/discoveries.php
@@ -233,7 +233,7 @@ The cache stores serialized discovery data for:
 - Post types and taxonomies
 - Blocks (ACF and native)
 - Block patterns
-- View composers
+- Context providers
 - Template controllers
 - REST routes
 - Shortcodes

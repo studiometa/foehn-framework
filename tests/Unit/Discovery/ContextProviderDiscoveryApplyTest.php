@@ -2,26 +2,26 @@
 
 declare(strict_types=1);
 
-use Studiometa\Foehn\Discovery\ViewComposerDiscovery;
-use Studiometa\Foehn\Views\ViewComposerRegistry;
-use Tests\Fixtures\ViewComposerFixture;
+use Studiometa\Foehn\Discovery\ContextProviderDiscovery;
+use Studiometa\Foehn\Views\ContextProviderRegistry;
+use Tests\Fixtures\ContextProviderFixture;
 
 beforeEach(function () {
     wp_stub_reset();
     $container = bootTestContainer();
 
-    // Register a ViewComposerRegistry
-    $this->registry = new ViewComposerRegistry();
-    $container->singleton(ViewComposerRegistry::class, fn() => $this->registry);
+    // Register a ContextProviderRegistry
+    $this->registry = new ContextProviderRegistry();
+    $container->singleton(ContextProviderRegistry::class, fn() => $this->registry);
 
-    $this->discovery = new ViewComposerDiscovery();
+    $this->discovery = new ContextProviderDiscovery();
 });
 
 afterEach(fn() => tearDownTestContainer());
 
-describe('ViewComposerDiscovery apply', function () {
-    it('registers discovered view composers with the registry', function () {
-        $this->discovery->discover(new ReflectionClass(ViewComposerFixture::class));
+describe('ContextProviderDiscovery apply', function () {
+    it('registers discovered context providers with the registry', function () {
+        $this->discovery->discover(new ReflectionClass(ContextProviderFixture::class));
         $this->discovery->apply();
 
         expect($this->registry->count())->toBe(2); // 'single' and 'page'
@@ -37,7 +37,7 @@ describe('ViewComposerDiscovery apply', function () {
         $this->discovery->restoreFromCache([
             [
                 'templates' => ['archive', 'home'],
-                'className' => ViewComposerFixture::class,
+                'className' => ContextProviderFixture::class,
                 'priority' => 5,
             ],
         ]);

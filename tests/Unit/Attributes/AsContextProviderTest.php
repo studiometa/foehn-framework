@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use Studiometa\Foehn\Attributes\AsViewComposer;
+use Studiometa\Foehn\Attributes\AsContextProvider;
 
-describe('AsViewComposer', function () {
+describe('AsContextProvider', function () {
     it('can be instantiated with a single template', function () {
-        $attribute = new AsViewComposer(templates: 'single');
+        $attribute = new AsContextProvider(templates: 'single');
 
         expect($attribute->templates)->toBe('single');
         expect($attribute->priority)->toBe(10);
@@ -14,30 +14,30 @@ describe('AsViewComposer', function () {
     });
 
     it('can be instantiated with multiple templates', function () {
-        $attribute = new AsViewComposer(templates: ['single', 'page', 'archive']);
+        $attribute = new AsContextProvider(templates: ['single', 'page', 'archive']);
 
         expect($attribute->templates)->toBe(['single', 'page', 'archive']);
         expect($attribute->getTemplates())->toBe(['single', 'page', 'archive']);
     });
 
     it('can be instantiated with custom priority', function () {
-        $attribute = new AsViewComposer(templates: 'single', priority: 5);
+        $attribute = new AsContextProvider(templates: 'single', priority: 5);
 
         expect($attribute->priority)->toBe(5);
     });
 
     it('supports wildcard patterns', function () {
-        $attribute = new AsViewComposer(templates: ['single-*', 'archive-*']);
+        $attribute = new AsContextProvider(templates: ['single-*', 'archive-*']);
 
         expect($attribute->getTemplates())->toBe(['single-*', 'archive-*']);
     });
 
     it('is readonly', function () {
-        expect(AsViewComposer::class)->toBeReadonly();
+        expect(AsContextProvider::class)->toBeReadonly();
     });
 
     it('is a class attribute', function () {
-        $reflection = new ReflectionClass(AsViewComposer::class);
+        $reflection = new ReflectionClass(AsContextProvider::class);
         $attributes = $reflection->getAttributes(Attribute::class);
 
         expect($attributes)->toHaveCount(1);

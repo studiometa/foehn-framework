@@ -7,13 +7,13 @@ namespace Studiometa\Foehn\Attributes;
 use Attribute;
 
 /**
- * Register a class as a view composer.
+ * Register a class as a context provider.
  *
- * View composers automatically add data to matching templates.
- * The class must implement ViewComposerInterface.
+ * Context providers automatically add data to matching templates.
+ * The class must implement ContextProviderInterface.
  */
 #[Attribute(Attribute::TARGET_CLASS)]
-final readonly class AsViewComposer
+final readonly class AsContextProvider
 {
     /**
      * @param string|string[] $templates Template patterns to match.

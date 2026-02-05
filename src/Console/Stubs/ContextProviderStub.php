@@ -4,21 +4,21 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Console\Stubs;
 
-use Studiometa\Foehn\Attributes\AsViewComposer;
-use Studiometa\Foehn\Contracts\ViewComposerInterface;
+use Studiometa\Foehn\Attributes\AsContextProvider;
+use Studiometa\Foehn\Contracts\ContextProviderInterface;
 use Tempest\Discovery\SkipDiscovery;
 
 #[SkipDiscovery]
-#[AsViewComposer(templates: ['dummy-template', 'dummy-template-*'])]
-final class ViewComposerStub implements ViewComposerInterface
+#[AsContextProvider(templates: ['dummy-template', 'dummy-template-*'])]
+final class ContextProviderStub implements ContextProviderInterface
 {
     /**
-     * Compose additional data for the view.
+     * Provide additional data for the view context.
      *
      * @param array<string, mixed> $context Current Timber context
      * @return array<string, mixed> Modified context
      */
-    public function compose(array $context): array
+    public function provide(array $context): array
     {
         // Add your custom data to the context
         $context['custom_data'] = [

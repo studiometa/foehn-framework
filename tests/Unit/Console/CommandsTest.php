@@ -19,7 +19,7 @@ use Studiometa\Foehn\Console\Commands\MakePatternCommand;
 use Studiometa\Foehn\Console\Commands\MakePostTypeCommand;
 use Studiometa\Foehn\Console\Commands\MakeShortcodeCommand;
 use Studiometa\Foehn\Console\Commands\MakeTaxonomyCommand;
-use Studiometa\Foehn\Console\Commands\MakeViewComposerCommand;
+use Studiometa\Foehn\Console\Commands\MakeContextProviderCommand;
 
 describe('Commands', function (): void {
     $commands = [
@@ -28,7 +28,7 @@ describe('Commands', function (): void {
         'MakeBlockCommand' => ['class' => MakeBlockCommand::class, 'name' => 'make:block'],
         'MakeAcfBlockCommand' => ['class' => MakeAcfBlockCommand::class, 'name' => 'make:acf-block'],
         'MakePatternCommand' => ['class' => MakePatternCommand::class, 'name' => 'make:pattern'],
-        'MakeViewComposerCommand' => ['class' => MakeViewComposerCommand::class, 'name' => 'make:view-composer'],
+        'MakeContextProviderCommand' => ['class' => MakeContextProviderCommand::class, 'name' => 'make:context-provider'],
         'MakeShortcodeCommand' => ['class' => MakeShortcodeCommand::class, 'name' => 'make:shortcode'],
         'MakeControllerCommand' => ['class' => MakeControllerCommand::class, 'name' => 'make:controller'],
         'MakeHooksCommand' => ['class' => MakeHooksCommand::class, 'name' => 'make:hooks'],
