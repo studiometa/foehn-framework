@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-02-05
+
 ### Added
 
 - Add bundled Mago config for theme conventions enforcement ([329c89b], [#52])
@@ -53,6 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#44]: https://github.com/studiometa/foehn/pull/44
 [0b1c707]: https://github.com/studiometa/foehn/commit/0b1c707
 [#45]: https://github.com/studiometa/foehn/pull/45
+[0.2.0]: https://github.com/studiometa/foehn/releases/tag/0.2.0
 
 ## [0.1.0] - 2026-02-04
 
