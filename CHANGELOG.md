@@ -9,12 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add `DisableBlockStyles` cleanup hook to dequeue Gutenberg block styles ([a6152ef], [#44])
 - Add built-in ACF field fragments for reusable field groups ([0b1c707], [#45]):
   - `ButtonLinkBuilder`: link with style/size options
   - `ResponsiveImageBuilder`: desktop/mobile image variants
   - `SpacingBuilder`: padding top/bottom controls
   - `BackgroundBuilder`: color, image, and overlay background
 
+[a6152ef]: https://github.com/studiometa/foehn/commit/a6152ef
+[#44]: https://github.com/studiometa/foehn/pull/44
 [0b1c707]: https://github.com/studiometa/foehn/commit/0b1c707
 [#45]: https://github.com/studiometa/foehn/pull/45
 

@@ -242,6 +242,7 @@ Located in `Studiometa\Foehn\Hooks\Cleanup`:
 | `CleanContent`        | Remove empty `<p>` tags and archive title prefixes                        |
 | `CleanHeadTags`       | Remove wlwmanifest, RSD, shortlink, REST discovery links                  |
 | `CleanImageSizes`     | Remove default WordPress image sizes (medium_large, 1536x1536, 2048x2048) |
+| `DisableBlockStyles`  | Dequeue Gutenberg block styles (for themes not using blocks)              |
 | `DisableEmoji`        | Remove emoji scripts, styles, and TinyMCE plugin                          |
 | `DisableFeeds`        | Disable RSS/Atom feeds                                                    |
 | `DisableGlobalStyles` | Remove global styles and SVG filters from wp_head                         |
