@@ -1,6 +1,54 @@
 # Block Patterns
 
-Foehn provides `#[AsBlockPattern]` for registering block patterns with Twig template support.
+Foehn provides `#[AsBlockPattern]` for registering block patterns with Twig template support, along with Twig helpers to generate WordPress block markup comments.
+
+## Block Markup Helpers
+
+Writing block comments manually is tedious. Foehn provides Twig functions to generate them:
+
+```twig
+{# Instead of writing this: #}
+<!-- wp:heading {"level":2} -->
+<h2 class="wp-block-heading">Title</h2>
+<!-- /wp:heading -->
+
+{# You can write: #}
+{{ wp_block_start('heading', { level: 2 }) }}
+<h2 class="wp-block-heading">Title</h2>
+{{ wp_block_end('heading') }}
+
+{# Or use the shorthand: #}
+{{ wp_block('heading', { level: 2 }, '<h2 class="wp-block-heading">Title</h2>') }}
+```
+
+### Available Functions
+
+| Function         | Description                               |
+| ---------------- | ----------------------------------------- |
+| `wp_block_start` | Opening block comment with optional attrs |
+| `wp_block_end`   | Closing block comment                     |
+| `wp_block`       | Complete block (open + content + close)   |
+
+### Examples
+
+```twig
+{# Simple block #}
+{{ wp_block_start('paragraph') }}
+<p>Hello world</p>
+{{ wp_block_end('paragraph') }}
+
+{# Block with attributes #}
+{{ wp_block_start('group', { layout: { type: 'constrained' } }) }}
+<div class="wp-block-group">
+    {{ wp_block('heading', {}, '<h2>Section Title</h2>') }}
+</div>
+{{ wp_block_end('group') }}
+
+{# Namespaced blocks #}
+{{ wp_block_start('theme/hero', { fullWidth: true }) }}
+<div class="hero">...</div>
+{{ wp_block_end('theme/hero') }}
+```
 
 ## Basic Block Pattern
 
