@@ -27,20 +27,20 @@ final readonly class AsOptionsPage
 
 ## Parameters
 
-| Parameter        | Type     | Default                    | Description                                     |
-| ---------------- | -------- | -------------------------- | ----------------------------------------------- |
-| `pageTitle`      | `string` | —                          | Title displayed on the options page             |
-| `menuTitle`      | `string` | —                          | Title displayed in the admin menu               |
-| `menuSlug`       | `string` | —                          | Unique slug for the options page URL            |
-| `capability`     | `string` | `edit_posts`               | Required capability to access the page          |
-| `parentSlug`     | `string` | `''`                       | Parent menu slug (empty for top-level menu)     |
-| `position`       | `int`    | `99`                       | Menu position (only for top-level menus)        |
-| `iconUrl`        | `string` | `dashicons-admin-generic`  | Dashicon class or icon URL                      |
-| `redirect`       | `bool`   | `true`                     | Whether to redirect to the first child page     |
-| `postId`         | `string` | `options`                  | Custom post ID for storing options              |
-| `autoload`       | `bool`   | `true`                     | Whether to autoload options on every page load  |
-| `updateButton`   | `string` | `Update`                   | Text for the update button                      |
-| `updatedMessage` | `string` | `Options Updated`          | Message displayed after saving                  |
+| Parameter        | Type     | Default                   | Description                                    |
+| ---------------- | -------- | ------------------------- | ---------------------------------------------- |
+| `pageTitle`      | `string` | —                         | Title displayed on the options page            |
+| `menuTitle`      | `string` | —                         | Title displayed in the admin menu              |
+| `menuSlug`       | `string` | —                         | Unique slug for the options page URL           |
+| `capability`     | `string` | `edit_posts`              | Required capability to access the page         |
+| `parentSlug`     | `string` | `''`                      | Parent menu slug (empty for top-level menu)    |
+| `position`       | `int`    | `99`                      | Menu position (only for top-level menus)       |
+| `iconUrl`        | `string` | `dashicons-admin-generic` | Dashicon class or icon URL                     |
+| `redirect`       | `bool`   | `true`                    | Whether to redirect to the first child page    |
+| `postId`         | `string` | `options`                 | Custom post ID for storing options             |
+| `autoload`       | `bool`   | `true`                    | Whether to autoload options on every page load |
+| `updateButton`   | `string` | `Update`                  | Text for the update button                     |
+| `updatedMessage` | `string` | `Options Updated`         | Message displayed after saving                 |
 
 ## Usage
 
@@ -161,7 +161,7 @@ $companyName = get_field('company_name', 'option');
 {# Using ACF function #}
 {{ fn('get_field', 'company_name', 'option') }}
 
-{# Or add to context via a view composer #}
+{# Or add to context via a context provider #}
 {{ options.company_name }}
 ```
 
