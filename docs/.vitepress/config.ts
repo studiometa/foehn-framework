@@ -61,6 +61,12 @@ export default defineConfig({
           ],
         },
         {
+          text: "ACF",
+          items: [
+            { text: "ACF Options Pages", link: "/guide/acf-options-pages" },
+          ],
+        },
+        {
           text: "Advanced",
           items: [
             { text: "REST API", link: "/guide/rest-api" },
@@ -98,6 +104,7 @@ export default defineConfig({
             { text: "#[AsAcfBlock]", link: "/api/as-acf-block" },
             { text: "#[AsBlockPattern]", link: "/api/as-block-pattern" },
             { text: "#[AsBlockCategory]", link: "/api/as-block-category" },
+            { text: "#[AsAcfOptionsPage]", link: "/api/as-acf-options-page" },
             { text: "#[AsRestRoute]", link: "/api/as-rest-route" },
             { text: "#[AsShortcode]", link: "/api/as-shortcode" },
             { text: "#[AsCliCommand]", link: "/api/as-cli-command" },
@@ -109,6 +116,7 @@ export default defineConfig({
             { text: "BlockInterface", link: "/api/block-interface" },
             { text: "InteractiveBlockInterface", link: "/api/interactive-block-interface" },
             { text: "AcfBlockInterface", link: "/api/acf-block-interface" },
+            { text: "AcfOptionsPageInterface", link: "/api/acf-options-page-interface" },
             { text: "ViewComposerInterface", link: "/api/view-composer-interface" },
             { text: "TemplateControllerInterface", link: "/api/template-controller-interface" },
             { text: "BlockPatternInterface", link: "/api/block-pattern-interface" },
