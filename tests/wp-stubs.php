@@ -154,6 +154,26 @@ if (!function_exists('register_taxonomy')) {
 }
 
 // ──────────────────────────────────────────────
+// Menus
+// ──────────────────────────────────────────────
+
+if (!function_exists('register_nav_menus')) {
+    function register_nav_menus(array $locations): void
+    {
+        wp_stub_record('register_nav_menus', compact('locations'));
+    }
+}
+
+if (!function_exists('has_nav_menu')) {
+    function has_nav_menu(string $location): bool
+    {
+        wp_stub_record('has_nav_menu', compact('location'));
+
+        return $GLOBALS['wp_stub_nav_menus'][$location] ?? false;
+    }
+}
+
+// ──────────────────────────────────────────────
 // Blocks
 // ──────────────────────────────────────────────
 
@@ -394,3 +414,4 @@ $GLOBALS['wp_stub_queried_object'] = null;
 $GLOBALS['wp_stub_query_vars'] = [];
 $GLOBALS['wp_stub_is_admin'] = false;
 $GLOBALS['wp_stub_user_can'] = [];
+$GLOBALS['wp_stub_nav_menus'] = [];

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add `#[AsMenu]` attribute for declarative navigation menu registration with auto-context injection ([2ce9f77], [#46])
 - Add theme conventions documentation with directory structure, naming rules, and migration guide ([7f180c4], [#43])
 - Add `DisableBlockStyles` cleanup hook to dequeue Gutenberg block styles ([a6152ef], [#44])
 - Add built-in ACF field fragments for reusable field groups ([0b1c707], [#45]):
@@ -17,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `SpacingBuilder`: padding top/bottom controls
   - `BackgroundBuilder`: color, image, and overlay background
 
+[2ce9f77]: https://github.com/studiometa/foehn/commit/2ce9f77
+[#46]: https://github.com/studiometa/foehn/pull/46
 [7f180c4]: https://github.com/studiometa/foehn/commit/7f180c4
 [#43]: https://github.com/studiometa/foehn/pull/43
 [a6152ef]: https://github.com/studiometa/foehn/commit/a6152ef

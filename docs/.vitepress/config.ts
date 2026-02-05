@@ -41,6 +41,7 @@ export default defineConfig({
             { text: "Hooks", link: "/guide/hooks" },
             { text: "Post Types", link: "/guide/post-types" },
             { text: "Taxonomies", link: "/guide/taxonomies" },
+            { text: "Menus", link: "/guide/menus" },
           ],
         },
         {
@@ -89,6 +90,7 @@ export default defineConfig({
             { text: "#[AsFilter]", link: "/api/as-filter" },
             { text: "#[AsPostType]", link: "/api/as-post-type" },
             { text: "#[AsTaxonomy]", link: "/api/as-taxonomy" },
+            { text: "#[AsMenu]", link: "/api/as-menu" },
             { text: "#[AsTimberModel]", link: "/api/as-timber-model" },
             { text: "#[AsViewComposer]", link: "/api/as-view-composer" },
             { text: "#[AsTemplateController]", link: "/api/as-template-controller" },
