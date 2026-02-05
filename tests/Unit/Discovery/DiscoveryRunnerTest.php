@@ -13,6 +13,7 @@ describe('DiscoveryRunner', function () {
         expect($classes)->toContain(\Studiometa\Foehn\Discovery\HookDiscovery::class);
         expect($classes)->toContain(\Studiometa\Foehn\Discovery\PostTypeDiscovery::class);
         expect($classes)->toContain(\Studiometa\Foehn\Discovery\TaxonomyDiscovery::class);
+        expect($classes)->toContain(\Studiometa\Foehn\Discovery\MenuDiscovery::class);
         expect($classes)->toContain(\Studiometa\Foehn\Discovery\ShortcodeDiscovery::class);
         expect($classes)->toContain(\Studiometa\Foehn\Discovery\CliCommandDiscovery::class);
         expect($classes)->toContain(\Studiometa\Foehn\Discovery\AcfBlockDiscovery::class);
@@ -38,6 +39,7 @@ describe('DiscoveryRunner', function () {
         // Main phase
         expect($phases['main'])->toContain(\Studiometa\Foehn\Discovery\PostTypeDiscovery::class);
         expect($phases['main'])->toContain(\Studiometa\Foehn\Discovery\TaxonomyDiscovery::class);
+        expect($phases['main'])->toContain(\Studiometa\Foehn\Discovery\MenuDiscovery::class);
         expect($phases['main'])->toContain(\Studiometa\Foehn\Discovery\AcfBlockDiscovery::class);
         expect($phases['main'])->toContain(\Studiometa\Foehn\Discovery\BlockDiscovery::class);
         expect($phases['main'])->toContain(\Studiometa\Foehn\Discovery\BlockPatternDiscovery::class);
@@ -52,7 +54,7 @@ describe('DiscoveryRunner', function () {
         $phases = DiscoveryRunner::getDiscoveryPhases();
 
         expect($phases['early'])->toHaveCount(4);
-        expect($phases['main'])->toHaveCount(5);
+        expect($phases['main'])->toHaveCount(6);
         expect($phases['late'])->toHaveCount(3);
     });
 
