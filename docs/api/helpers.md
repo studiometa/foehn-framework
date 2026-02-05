@@ -95,6 +95,189 @@ use function Studiometa\Foehn\app;
 use function Studiometa\Foehn\config;
 ```
 
+## WP
+
+Helper class for typed access to WordPress global variables. Centralizes "unsafe" `$GLOBALS` access in a single, auditable location.
+
+### db()
+
+Get the WordPress database instance.
+
+```php
+use Studiometa\Foehn\Helpers\WP;
+
+$results = WP::db()->get_results("SELECT * FROM {$wpdb->posts} LIMIT 10");
+$prefix = WP::db()->prefix;
+```
+
+### query()
+
+Get the main WordPress query.
+
+```php
+use Studiometa\Foehn\Helpers\WP;
+
+$query = WP::query();
+if ($query->is_main_query()) {
+    // ...
+}
+```
+
+### post()
+
+Get the current post (or null if not set).
+
+```php
+use Studiometa\Foehn\Helpers\WP;
+
+$post = WP::post();
+if ($post !== null) {
+    echo $post->post_title;
+}
+```
+
+### user()
+
+Get the current user (or null if not logged in).
+
+```php
+use Studiometa\Foehn\Helpers\WP;
+
+$user = WP::user();
+if ($user !== null) {
+    echo "Hello, {$user->display_name}";
+}
+```
+
+### Why Use This?
+
+Using `$GLOBALS` directly triggers static analysis warnings (e.g., Mago's `no-global` rule). This helper:
+
+- Provides typed return values for better IDE support
+- Centralizes unsafe access in one auditable location
+- Makes code easier to test (can mock the helper)
+- Follows Tempest's helper class patterns
+
+## Env
+
+Helper class for environment detection. Supports multiple env variable conventions (APP_ENV, WP_ENV) with safe defaults.
+
+### get()
+
+Get the current environment name.
+
+```php
+use Studiometa\Foehn\Helpers\Env;
+
+$env = Env::get();
+// Checks APP_ENV, then WP_ENV, falls back to 'production'
+```
+
+### is()
+
+Check if the current environment matches.
+
+```php
+use Studiometa\Foehn\Helpers\Env;
+
+if (Env::is('staging')) {
+    // Enable staging features
+}
+```
+
+### isProduction()
+
+Check if running in production.
+
+```php
+use Studiometa\Foehn\Helpers\Env;
+
+if (Env::isProduction()) {
+    // Enable caching, disable debug output
+}
+```
+
+### isDevelopment()
+
+Check if running in development.
+
+```php
+use Studiometa\Foehn\Helpers\Env;
+
+if (Env::isDevelopment()) {
+    // Show debug toolbar
+}
+```
+
+### isStaging()
+
+Check if running in staging.
+
+```php
+use Studiometa\Foehn\Helpers\Env;
+
+if (Env::isStaging()) {
+    // Enable staging banner
+}
+```
+
+### isLocal()
+
+Check if running in a local environment (returns true for both 'local' and 'development').
+
+```php
+use Studiometa\Foehn\Helpers\Env;
+
+if (Env::isLocal()) {
+    // Skip external API calls
+}
+```
+
+### isDebug()
+
+Check if WordPress debug mode is enabled.
+
+```php
+use Studiometa\Foehn\Helpers\Env;
+
+if (Env::isDebug()) {
+    // Show detailed errors
+}
+```
+
+### Usage in Context Providers
+
+```php
+use Studiometa\Foehn\Attributes\AsContextProvider;
+use Studiometa\Foehn\Contracts\ContextProviderInterface;
+use Studiometa\Foehn\Helpers\Env;
+
+#[AsContextProvider(templates: ['*'])]
+final class GlobalContext implements ContextProviderInterface
+{
+    public function provide(array $context): array
+    {
+        $context['is_production'] = Env::isProduction();
+        $context['is_debug'] = Env::isDebug();
+        $context['environment'] = Env::get();
+
+        return $context;
+    }
+}
+```
+
+Then in Twig:
+
+```twig
+{% if is_debug %}
+    {{ dump(post) }}
+{% endif %}
+
+{% if not is_production %}
+    <div class="env-banner">Environment: {{ environment }}</div>
+{% endif %}
+```
+
 ## VideoEmbed
 
 Helper class to transform video URLs to privacy-friendly embed URLs. Supports YouTube and Vimeo.
