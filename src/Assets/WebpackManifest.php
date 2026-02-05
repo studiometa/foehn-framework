@@ -116,13 +116,7 @@ final class WebpackManifest
             $fullPath = $this->basePath . $href;
             $version = file_exists($fullPath) ? md5_file($fullPath) : null;
 
-            wp_enqueue_style(
-                $prefix . '-' . sanitize_title((string) $handle),
-                $this->baseUri . $href,
-                $deps,
-                $version,
-                $media,
-            );
+            wp_enqueue_style($prefix . '-' . sanitize_title($handle), $this->baseUri . $href, $deps, $version, $media);
         }
 
         // Enqueue scripts
@@ -132,7 +126,7 @@ final class WebpackManifest
             $version = file_exists($fullPath) ? md5_file($fullPath) : null;
 
             wp_enqueue_script(
-                $prefix . '-' . sanitize_title((string) $handle),
+                $prefix . '-' . sanitize_title($handle),
                 $this->baseUri . $src,
                 $deps,
                 $version,

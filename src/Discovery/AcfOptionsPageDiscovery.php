@@ -151,6 +151,7 @@ final class AcfOptionsPageDiscovery implements WpDiscovery
             return;
         }
 
+        /** @var AcfOptionsPageInterface $className */
         $fields = $className::fields();
 
         // Set the location to this options page
