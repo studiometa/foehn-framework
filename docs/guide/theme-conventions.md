@@ -472,21 +472,39 @@ final readonly class ProductController implements TemplateControllerInterface
 composer require --dev carthage-software/mago
 ```
 
-### Configuration
+### Quick Setup
 
-Add the following rules to your theme's `mago.toml` to enforce Foehn conventions:
+Foehn includes a ready-to-use Mago configuration. Copy it to your theme:
+
+```bash
+cp vendor/studiometa/foehn/resources/mago-theme.toml mago.toml
+```
+
+Then run:
+
+```bash
+mago guard  # Check conventions
+```
+
+### Manual Configuration
+
+If you prefer to configure Mago manually, add the following rules to your theme's `mago.toml`:
+
+<details>
+<summary>Click to expand full configuration</summary>
 
 ```toml
 php-version = "8.4"
 
 [source]
 paths = ["app"]
+includes = ["vendor"]
+excludes = ["cache/**", "var/**", "node_modules/**"]
 
 # =============================================================================
 # Structural Guard Rules
 # =============================================================================
 # These rules enforce naming conventions and class structure for Foehn themes.
-# Run with: mago guard
 
 # -----------------------------------------------------------------------------
 # Blocks: Must be final readonly, named *Block, implement interface
@@ -520,7 +538,7 @@ must-be-final = true
 reason        = "Hook classes must be final and named *Hooks."
 
 # -----------------------------------------------------------------------------
-# Models (Post Types): Must be final and extend Timber\Post
+# Models (Post Types): Must be final and extend Timber\Post or Timber\Term
 # -----------------------------------------------------------------------------
 [[guard.structural.rules]]
 on            = "App\\Models\\**"
@@ -613,6 +631,8 @@ target         = "class"
 must-implement = "Studiometa\\Foehn\\Contracts\\TemplateControllerInterface"
 reason         = "Template controller classes must implement TemplateControllerInterface."
 ```
+
+</details>
 
 ### Running the Guard
 

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add bundled Mago config for theme conventions enforcement ([329c89b], [#52])
 - Add enhanced CLI scaffolding commands with `--dry-run` support ([4e0f58b], [#51])
 - Add `#[AsImageSize]` attribute for declarative image size registration with auto theme support ([614faa0], [#47])
 - Add `#[AsAcfOptionsPage]` attribute for ACF options pages with auto-discovery and `AcfOptionsService` helper ([4b52d3d], [#49])
@@ -32,6 +33,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `ViewComposerDiscovery` → `ContextProviderDiscovery`
   - `make:view-composer` CLI → `make:context-provider`
 
+[329c89b]: https://github.com/studiometa/foehn/commit/329c89b
+[#52]: https://github.com/studiometa/foehn/pull/52
 [4e0f58b]: https://github.com/studiometa/foehn/commit/4e0f58b
 [#51]: https://github.com/studiometa/foehn/pull/51
 [8a4c503]: https://github.com/studiometa/foehn/commit/8a4c503
