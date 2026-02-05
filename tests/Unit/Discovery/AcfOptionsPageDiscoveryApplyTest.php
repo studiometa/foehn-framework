@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Studiometa\Foehn\Discovery\AcfOptionsPageDiscovery;
 use Tests\Fixtures\AcfOptionsPageFixture;
+use Tests\Fixtures\AcfOptionsPageFullFixture;
 use Tests\Fixtures\AcfOptionsSubPageFixture;
 
 beforeEach(function () {
@@ -96,5 +97,25 @@ describe('AcfOptionsPageDiscovery::apply()', function () {
         $calls = wp_stub_get_calls('acf_add_local_field_group');
 
         expect($calls)->toBeEmpty();
+    });
+
+    it('includes updateButton and updatedMessage in config when set', function () {
+        $this->discovery->discover(new ReflectionClass(AcfOptionsPageFullFixture::class));
+        $this->discovery->apply();
+
+        // Simulate the acf/init hook firing
+        $actionCalls = wp_stub_get_calls('add_action');
+        $callback = $actionCalls[0]['args']['callback'];
+        $callback();
+
+        $calls = wp_stub_get_calls('acf_add_options_page');
+
+        expect($calls)->toHaveCount(1);
+
+        $config = $calls[0]['args']['config'];
+        expect($config['update_button'])->toBe('Save All Settings');
+        expect($config['updated_message'])->toBe('All settings have been saved.');
+        expect($config['post_id'])->toBe('full_settings');
+        expect($config['autoload'])->toBeFalse();
     });
 });
