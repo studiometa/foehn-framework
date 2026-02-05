@@ -7,16 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.3] - 2026-02-05
+
 ### Added
 
-- Add `BlockMarkupExtension` with `wp_block_start()`, `wp_block_end()` and `wp_block()` Twig functions for block pattern templates ([210783a], [#63])
-- Add `Cache` helper for WordPress transients with `remember()` pattern ([258fab4], [#64])
-- Add `Log` helper for debug logging with PSR-3 style levels ([258fab4], [#64])
+- Add `BlockMarkupExtension` with `wp_block_start()`, `wp_block_end()` and `wp_block()` Twig functions for block pattern templates ([b94e17c], [#63])
+- Add `Cache` helper for WordPress transients with `remember()` pattern ([aa974a8], [#64])
+- Add `Log` helper for debug logging with PSR-3 style levels ([aa974a8], [#64])
 
-[210783a]: https://github.com/studiometa/foehn/commit/210783a
+### Removed
+
+- Remove `Validator` helper, recommend third-party packages instead ([54bfe25])
+
+### Fixed
+
+- Fix static analysis issues ([76a4828])
+- Fix VitePress build by escaping Twig syntax in docs ([90e4906])
+
+[b94e17c]: https://github.com/studiometa/foehn/commit/b94e17c
 [#63]: https://github.com/studiometa/foehn/pull/63
-[258fab4]: https://github.com/studiometa/foehn/commit/258fab4
+[aa974a8]: https://github.com/studiometa/foehn/commit/aa974a8
 [#64]: https://github.com/studiometa/foehn/pull/64
+[54bfe25]: https://github.com/studiometa/foehn/commit/54bfe25
+[76a4828]: https://github.com/studiometa/foehn/commit/76a4828
+[90e4906]: https://github.com/studiometa/foehn/commit/90e4906
+[0.2.3]: https://github.com/studiometa/foehn/releases/tag/0.2.3
 
 ## [0.2.2] - 2026-02-05
 
