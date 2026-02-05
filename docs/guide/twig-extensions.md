@@ -284,6 +284,34 @@ Video URL utilities:
 {% endif %}
 ```
 
+### BlockMarkupExtension
+
+Helpers for generating WordPress block comment syntax used in patterns and templates:
+
+```twig
+{# Opening and closing comments #}
+{{ wp_block_start('heading', { level: 2 }) }}
+<h2 class="wp-block-heading">Title</h2>
+{{ wp_block_end('heading') }}
+
+{# Or complete block in one call #}
+{{ wp_block('paragraph', { align: 'center' }, '<p>Centered text</p>') }}
+
+{# Nested blocks #}
+{{ wp_block_start('group', { layout: { type: 'constrained' } }) }}
+<div class="wp-block-group">
+    {{ wp_block('heading', {}, '<h2>Section</h2>') }}
+    {{ wp_block('paragraph', {}, '<p>Content here</p>') }}
+</div>
+{{ wp_block_end('group') }}
+```
+
+| Function         | Description                    |
+| ---------------- | ------------------------------ |
+| `wp_block_start` | Generate opening block comment |
+| `wp_block_end`   | Generate closing block comment |
+| `wp_block`       | Generate complete block markup |
+
 ## Complete Example
 
 ```php
