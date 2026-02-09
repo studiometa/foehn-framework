@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add Render API REST endpoint for cacheable template rendering via AJAX ([7d9f33a], [#67])
+
+[7d9f33a]: https://github.com/studiometa/foehn/commit/7d9f33a
+[#67]: https://github.com/studiometa/foehn/pull/67
+
 ## [0.2.4] - 2026-02-09
 
 ### Fixed
