@@ -93,9 +93,35 @@ if (!class_exists('WP_Term')) {
 if (!class_exists('WP_Query')) {
     class WP_Query
     {
-        public bool $is_main_query = true;
+        private bool $is_main = true;
+        private array $query_vars = [];
         public array $posts = [];
         public int $post_count = 0;
+
+        public function is_main_query(): bool
+        {
+            return $this->is_main;
+        }
+
+        public function set_main_query(bool $is_main): void
+        {
+            $this->is_main = $is_main;
+        }
+
+        public function get(string $key, mixed $default = ''): mixed
+        {
+            return $this->query_vars[$key] ?? $default;
+        }
+
+        public function set(string $key, mixed $value): void
+        {
+            $this->query_vars[$key] = $value;
+        }
+
+        public function get_query_vars(): array
+        {
+            return $this->query_vars;
+        }
     }
 }
 
