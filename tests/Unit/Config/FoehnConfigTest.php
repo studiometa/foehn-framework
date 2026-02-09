@@ -15,8 +15,6 @@ describe('FoehnConfig', function () {
         expect($config->discoveryCachePath)->toBeNull();
         expect($config->hooks)->toBe([]);
         expect($config->isDiscoveryCacheEnabled())->toBeFalse();
-        expect($config->timberTemplatesDir)->toBe(['templates']);
-        expect($config->acfTransformFields)->toBeTrue();
         expect($config->debug)->toBeFalse();
         expect($config->isDebugEnabled())->toBeFalse();
     });
@@ -105,20 +103,6 @@ describe('FoehnConfig', function () {
             expect($config->getDiscoveryCachePath())->toBe('/my/cache/path');
         });
 
-        it('creates config with default timber templates dir', function () {
-            $config = FoehnConfig::fromArray([]);
-
-            expect($config->timberTemplatesDir)->toBe(['templates']);
-        });
-
-        it('creates config with custom timber templates dir', function () {
-            $config = FoehnConfig::fromArray([
-                'timber_templates_dir' => ['views', 'templates'],
-            ]);
-
-            expect($config->timberTemplatesDir)->toBe(['views', 'templates']);
-        });
-
         it('creates config with hooks array', function () {
             $config = FoehnConfig::fromArray([
                 'hooks' => [
@@ -137,28 +121,6 @@ describe('FoehnConfig', function () {
             $config = FoehnConfig::fromArray([]);
 
             expect($config->hooks)->toBe([]);
-        });
-
-        it('creates config with acf_transform_fields true by default', function () {
-            $config = FoehnConfig::fromArray([]);
-
-            expect($config->acfTransformFields)->toBeTrue();
-        });
-
-        it('creates config with acf_transform_fields disabled', function () {
-            $config = FoehnConfig::fromArray([
-                'acf_transform_fields' => false,
-            ]);
-
-            expect($config->acfTransformFields)->toBeFalse();
-        });
-
-        it('creates config with acf_transform_fields enabled', function () {
-            $config = FoehnConfig::fromArray([
-                'acf_transform_fields' => true,
-            ]);
-
-            expect($config->acfTransformFields)->toBeTrue();
         });
 
         it('creates config with debug false by default', function () {

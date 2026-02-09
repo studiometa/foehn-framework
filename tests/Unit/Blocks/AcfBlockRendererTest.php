@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Blocks\AcfBlockRenderer;
-use Studiometa\Foehn\Config\FoehnConfig;
+use Studiometa\Foehn\Config\AcfConfig;
 use Studiometa\Foehn\Contracts\AcfBlockInterface;
 
 describe('AcfBlockRenderer', function () {
@@ -168,14 +168,14 @@ describe('AcfBlockRenderer', function () {
 
 describe('AcfBlockRenderer with config', function () {
     it('accepts config via constructor', function () {
-        $config = new FoehnConfig(acfTransformFields: true);
+        $config = new AcfConfig(transformFields: true);
         $renderer = new AcfBlockRenderer($config);
 
         expect($renderer)->toBeInstanceOf(AcfBlockRenderer::class);
     });
 
-    it('respects acfTransformFields config when disabled', function () {
-        $config = new FoehnConfig(acfTransformFields: false);
+    it('respects transformFields config when disabled', function () {
+        $config = new AcfConfig(transformFields: false);
         $renderer = new AcfBlockRenderer($config);
         $capturedFields = [];
 
@@ -218,7 +218,7 @@ describe('AcfBlockRenderer with config', function () {
     });
 
     it('preserves empty values without transformation', function () {
-        $config = new FoehnConfig(acfTransformFields: true);
+        $config = new AcfConfig(transformFields: true);
         $renderer = new AcfBlockRenderer($config);
         $capturedFields = [];
 

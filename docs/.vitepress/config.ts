@@ -73,6 +73,7 @@ export default defineConfig({
           text: "Advanced",
           items: [
             { text: "REST API", link: "/guide/rest-api" },
+            { text: "Render API", link: "/guide/render-api" },
             { text: "Shortcodes", link: "/guide/shortcodes" },
             { text: "CLI Commands", link: "/guide/cli-commands" },
             { text: "Discovery Cache", link: "/guide/discovery-cache" },

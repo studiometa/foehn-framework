@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Blocks;
 
-use Studiometa\Foehn\Config\FoehnConfig;
+use Studiometa\Foehn\Config\AcfConfig;
 use Studiometa\Foehn\Contracts\AcfBlockInterface;
 
 /**
@@ -13,7 +13,7 @@ use Studiometa\Foehn\Contracts\AcfBlockInterface;
 final class AcfBlockRenderer
 {
     public function __construct(
-        private readonly ?FoehnConfig $config = null,
+        private readonly ?AcfConfig $config = null,
         private readonly ?AcfFieldTransformer $transformer = null,
     ) {}
 
@@ -112,7 +112,7 @@ final class AcfBlockRenderer
             return true;
         }
 
-        return $this->config->acfTransformFields;
+        return $this->config->transformFields;
     }
 
     /**

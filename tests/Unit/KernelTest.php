@@ -136,16 +136,16 @@ describe('Kernel Timber initialization', function () {
         expect(Timber::$dirname)->toBe(['templates']);
     });
 
-    it('sets Timber dirname from config', function () {
-        $kernel = Kernel::boot(dirname(__DIR__, 2) . '/src', [
-            'timber_templates_dir' => ['views', 'twig-templates'],
-        ]);
+    it('registers TimberConfig in container with defaults', function () {
+        $kernel = Kernel::boot(dirname(__DIR__, 2) . '/src', []);
 
         // Restore error/exception handlers set by Tempest::boot()
         restore_error_handler();
         restore_exception_handler();
 
-        expect(Timber::$dirname)->toBe(['views', 'twig-templates']);
+        $config = Kernel::get(\Studiometa\Foehn\Config\TimberConfig::class);
+        expect($config)->toBeInstanceOf(\Studiometa\Foehn\Config\TimberConfig::class);
+        expect($config->templatesDir)->toBe(['templates']);
     });
 
     it('registers timber/context filter', function () {
@@ -164,9 +164,52 @@ describe('Kernel Timber initialization', function () {
         expect($timberContextFilter)->not->toBeEmpty();
     });
 
-    it('uses default templates dir of ["templates"]', function () {
-        $config = FoehnConfig::fromArray([]);
+    it('registers AcfConfig in container with defaults', function () {
+        $kernel = Kernel::boot(dirname(__DIR__, 2) . '/src', []);
 
-        expect($config->timberTemplatesDir)->toBe(['templates']);
+        // Restore error/exception handlers set by Tempest::boot()
+        restore_error_handler();
+        restore_exception_handler();
+
+        $config = Kernel::get(\Studiometa\Foehn\Config\AcfConfig::class);
+        expect($config)->toBeInstanceOf(\Studiometa\Foehn\Config\AcfConfig::class);
+        expect($config->transformFields)->toBeTrue();
+    });
+
+    it('registers RestConfig in container with defaults', function () {
+        $kernel = Kernel::boot(dirname(__DIR__, 2) . '/src', []);
+
+        // Restore error/exception handlers set by Tempest::boot()
+        restore_error_handler();
+        restore_exception_handler();
+
+        $config = Kernel::get(\Studiometa\Foehn\Config\RestConfig::class);
+        expect($config)->toBeInstanceOf(\Studiometa\Foehn\Config\RestConfig::class);
+        expect($config->defaultCapability)->toBe('edit_posts');
+    });
+
+    it('registers RenderApi in container', function () {
+        $kernel = Kernel::boot(dirname(__DIR__, 2) . '/src', []);
+
+        // Restore error/exception handlers set by Tempest::boot()
+        restore_error_handler();
+        restore_exception_handler();
+
+        // RenderApi should be available in container
+        $renderApi = Kernel::get(\Studiometa\Foehn\Rest\RenderApi::class);
+        expect($renderApi)->toBeInstanceOf(\Studiometa\Foehn\Rest\RenderApi::class);
+    });
+
+    it('registers RenderApiConfig in container with defaults', function () {
+        $kernel = Kernel::boot(dirname(__DIR__, 2) . '/src', []);
+
+        // Restore error/exception handlers set by Tempest::boot()
+        restore_error_handler();
+        restore_exception_handler();
+
+        // RenderApiConfig should be available with empty templates by default
+        $config = Kernel::get(\Studiometa\Foehn\Config\RenderApiConfig::class);
+        expect($config)->toBeInstanceOf(\Studiometa\Foehn\Config\RenderApiConfig::class);
+        expect($config->templates)->toBe([]);
     });
 });
