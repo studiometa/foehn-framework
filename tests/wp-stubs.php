@@ -565,6 +565,56 @@ if (!function_exists('get_query_var')) {
     }
 }
 
+if (!function_exists('add_query_arg')) {
+    function add_query_arg(array|string $key, mixed $value = null, ?string $url = null): string
+    {
+        // Simple implementation for testing
+        if (is_array($key)) {
+            $args = $key;
+            $url = $value ?? $_SERVER['REQUEST_URI'] ?? '/';
+        } else {
+            $args = [$key => $value];
+            $url = $url ?? $_SERVER['REQUEST_URI'] ?? '/';
+        }
+
+        $parsed = parse_url($url);
+        $path = $parsed['path'] ?? '/';
+        parse_str($parsed['query'] ?? '', $existing);
+
+        $merged = array_merge($existing, $args);
+        $query = http_build_query($merged);
+
+        return $query !== '' ? "{$path}?{$query}" : $path;
+    }
+}
+
+if (!function_exists('remove_query_arg')) {
+    function remove_query_arg(array|string $keys, ?string $url = null): string
+    {
+        $url = $url ?? $_SERVER['REQUEST_URI'] ?? '/';
+        $keys = (array) $keys;
+
+        $parsed = parse_url($url);
+        $path = $parsed['path'] ?? '/';
+        parse_str($parsed['query'] ?? '', $existing);
+
+        foreach ($keys as $key) {
+            unset($existing[$key]);
+        }
+
+        $query = http_build_query($existing);
+
+        return $query !== '' ? "{$path}?{$query}" : $path;
+    }
+}
+
+if (!function_exists('esc_url')) {
+    function esc_url(string $url): string
+    {
+        return htmlspecialchars($url, ENT_QUOTES, 'UTF-8');
+    }
+}
+
 // ──────────────────────────────────────────────
 // Scripts & Styles
 // ──────────────────────────────────────────────

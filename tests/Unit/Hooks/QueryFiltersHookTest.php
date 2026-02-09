@@ -237,5 +237,69 @@ describe('QueryFiltersHook', function () {
             // Invalid value should be reset
             expect($query->get('posts_per_page'))->toBe('');
         });
+
+        it('applies taxonomy filter with array values', function () {
+            $config = new QueryFiltersConfig(taxonomies: ['genre' => ['in']]);
+            $hook = new QueryFiltersHook($config);
+
+            $query = new WP_Query();
+            $query->set('genre', ['rock', 'jazz']);
+
+            $hook->applyFilters($query);
+
+            $taxQuery = $query->get('tax_query');
+            expect($taxQuery[0]['terms'])->toBe(['rock', 'jazz']);
+        });
+
+        it('skips non-string non-array values', function () {
+            $config = new QueryFiltersConfig(taxonomies: ['genre' => ['in']]);
+            $hook = new QueryFiltersHook($config);
+
+            $query = new WP_Query();
+            $query->set('genre', 123); // integer value
+
+            $hook->applyFilters($query);
+
+            expect($query->get('tax_query'))->toBe('');
+        });
+
+        it('skips empty array values', function () {
+            $config = new QueryFiltersConfig(taxonomies: ['genre' => ['in']]);
+            $hook = new QueryFiltersHook($config);
+
+            $query = new WP_Query();
+            $query->set('genre', []);
+
+            $hook->applyFilters($query);
+
+            expect($query->get('tax_query'))->toBe('');
+        });
+
+        it('applies taxonomy filter with EXISTS operator', function () {
+            $config = new QueryFiltersConfig(taxonomies: ['genre' => ['exists']]);
+            $hook = new QueryFiltersHook($config);
+
+            $query = new WP_Query();
+            $query->set('genre__exists', '1');
+
+            $hook->applyFilters($query);
+
+            $taxQuery = $query->get('tax_query');
+            expect($taxQuery[0]['taxonomy'])->toBe('genre');
+            expect($taxQuery[0]['operator'])->toBe('EXISTS');
+        });
+
+        it('skips empty public var values', function () {
+            $config = new QueryFiltersConfig(publicVars: ['posts_per_page' => [12, 24, 48]]);
+            $hook = new QueryFiltersHook($config);
+
+            $query = new WP_Query();
+            $query->set('posts_per_page', '');
+
+            $hook->applyFilters($query);
+
+            // Empty value should remain empty (not validated)
+            expect($query->get('posts_per_page'))->toBe('');
+        });
     });
 });
