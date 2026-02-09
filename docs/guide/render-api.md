@@ -32,19 +32,41 @@ GET /wp-json/foehn/v1/render
 
 ### Parameters
 
-| Parameter  | Type      | Required | Description                                |
-| ---------- | --------- | -------- | ------------------------------------------ |
-| `template` | `string`  | Yes      | Template path (e.g., `partials/card`)      |
-| `post_id`  | `integer` | No       | Post ID to resolve as `post` context       |
-| `term_id`  | `integer` | No       | Term ID to resolve as `term` context       |
-| `taxonomy` | `string`  | No       | Taxonomy for term_id (default: `category`) |
-| `*`        | `scalar`  | No       | Any other scalar values passed to context  |
+| Parameter   | Type      | Required | Description                                |
+| ----------- | --------- | -------- | ------------------------------------------ |
+| `template`  | `string`  | \*       | Single template path                       |
+| `templates` | `object`  | \*       | Multiple templates (key → path)            |
+| `post_id`   | `integer` | No       | Post ID to resolve as `post` context       |
+| `term_id`   | `integer` | No       | Term ID to resolve as `term` context       |
+| `taxonomy`  | `string`  | No       | Taxonomy for term_id (default: `category`) |
+| `*`         | `scalar`  | No       | Any other scalar values passed to context  |
 
-### Response
+\* Either `template` or `templates` is required.
+
+### Single Template Response
+
+```
+GET /wp-json/foehn/v1/render?template=partials/card&post_id=123
+```
 
 ```json
 {
   "html": "<div class=\"card\">...</div>"
+}
+```
+
+### Multiple Templates Response
+
+Render multiple templates in a single request, reducing round-trips (inspired by [Shopify's Section Rendering API](https://shopify.dev/docs/api/ajax/section-rendering)):
+
+```
+GET /wp-json/foehn/v1/render?templates[hero]=blocks/hero&templates[card]=partials/card&post_id=123
+```
+
+```json
+{
+  "hero": "<section class=\"hero\">...</section>",
+  "card": "<article class=\"card\">...</article>"
 }
 ```
 
@@ -127,6 +149,30 @@ const response = await fetch(
   "/wp-json/foehn/v1/render?template=partials/category-card&term_id=5&taxonomy=category",
 );
 const { html } = await response.json();
+```
+
+### Render Multiple Sections
+
+Fetch multiple page sections in a single request:
+
+**JavaScript**:
+
+```js
+async function refreshPageSections(postId) {
+  const params = new URLSearchParams();
+  params.set("templates[header]", "partials/header");
+  params.set("templates[sidebar]", "partials/sidebar");
+  params.set("templates[footer]", "partials/footer");
+  params.set("post_id", postId);
+
+  const response = await fetch(`/wp-json/foehn/v1/render?${params}`);
+  const sections = await response.json();
+
+  // Update each section
+  document.querySelector(".header").innerHTML = sections.header;
+  document.querySelector(".sidebar").innerHTML = sections.sidebar;
+  document.querySelector(".footer").innerHTML = sections.footer;
+}
 ```
 
 ## Caching

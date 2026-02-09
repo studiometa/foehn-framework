@@ -44,8 +44,10 @@ final readonly class RenderApi
                 'args' => [
                     'template' => [
                         'type' => 'string',
-                        'required' => true,
                         'sanitize_callback' => 'sanitize_text_field',
+                    ],
+                    'templates' => [
+                        'type' => 'object',
                     ],
                     'post_id' => [
                         'type' => 'integer',
@@ -70,10 +72,14 @@ final readonly class RenderApi
     public function handle(WP_REST_Request $request): WP_REST_Response
     {
         $template = $request->get_param('template');
+        $templates = $request->get_param('templates');
 
-        // Validate template against allowlist
-        if (!$this->config->isTemplateAllowed($template)) {
-            return new WP_REST_Response(['code' => 'template_not_allowed', 'message' => 'Template not found'], 404);
+        // Must have either template or templates
+        if ($template === null && $templates === null) {
+            return new WP_REST_Response([
+                'code' => 'missing_template',
+                'message' => 'Either template or templates parameter is required',
+            ], 400);
         }
 
         // Build context from request parameters
@@ -83,7 +89,26 @@ final readonly class RenderApi
             return new WP_REST_Response(['code' => 'invalid_context', 'message' => 'Resource not found'], 404);
         }
 
-        // Render the template
+        // Single template mode
+        if ($template !== null) {
+            return $this->handleSingleTemplate($template, $context);
+        }
+
+        // Multiple templates mode
+        return $this->handleMultipleTemplates($templates, $context);
+    }
+
+    /**
+     * Handle single template rendering.
+     *
+     * @param array<string, mixed> $context
+     */
+    private function handleSingleTemplate(string $template, array $context): WP_REST_Response
+    {
+        if (!$this->config->isTemplateAllowed($template)) {
+            return new WP_REST_Response(['code' => 'template_not_allowed', 'message' => 'Template not found'], 404);
+        }
+
         try {
             $html = $this->view->render($template, $context);
         } catch (\Throwable) {
@@ -91,6 +116,40 @@ final readonly class RenderApi
         }
 
         return new WP_REST_Response(['html' => $html]);
+    }
+
+    /**
+     * Handle multiple templates rendering.
+     *
+     * @param array<string, string> $templates
+     * @param array<string, mixed> $context
+     */
+    private function handleMultipleTemplates(array $templates, array $context): WP_REST_Response
+    {
+        $results = [];
+
+        foreach ($templates as $key => $template) {
+            // Sanitize template path
+            $template = sanitize_text_field($template);
+
+            if (!$this->config->isTemplateAllowed($template)) {
+                return new WP_REST_Response([
+                    'code' => 'template_not_allowed',
+                    'message' => "Template '{$key}' not found",
+                ], 404);
+            }
+
+            try {
+                $results[$key] = $this->view->render($template, $context);
+            } catch (\Throwable) {
+                return new WP_REST_Response([
+                    'code' => 'render_error',
+                    'message' => "Template '{$key}' rendering failed",
+                ], 404);
+            }
+        }
+
+        return new WP_REST_Response($results);
     }
 
     /**
@@ -131,7 +190,7 @@ final readonly class RenderApi
         // Add remaining scalar parameters to context
         foreach ($request->get_params() as $key => $value) {
             // Skip reserved parameters
-            if (in_array($key, ['template', 'post_id', 'term_id', 'taxonomy'], true)) {
+            if (in_array($key, ['template', 'templates', 'post_id', 'term_id', 'taxonomy'], true)) {
                 continue;
             }
 

@@ -76,6 +76,7 @@ describe('RenderApi handle', function () {
             ->method('get_param')
             ->willReturnCallback(fn($key) => match ($key) {
                 'template' => 'blocks/hero',
+                'templates' => null,
                 default => null,
             });
 
@@ -101,6 +102,7 @@ describe('RenderApi handle', function () {
             ->method('get_param')
             ->willReturnCallback(fn($key) => match ($key) {
                 'template' => 'partials/card',
+                'templates' => null,
                 'post_id' => null,
                 'term_id' => null,
                 default => null,
@@ -109,6 +111,7 @@ describe('RenderApi handle', function () {
             ->method('get_params')
             ->willReturn([
                 'template' => 'partials/card',
+                'templates' => null,
                 'title' => 'Hello',
                 'count' => '5',
             ]);
@@ -132,6 +135,7 @@ describe('RenderApi handle', function () {
             ->method('get_param')
             ->willReturnCallback(fn($key) => match ($key) {
                 'template' => 'partials/nonexistent',
+                'templates' => null,
                 'post_id' => null,
                 'term_id' => null,
                 default => null,
@@ -140,6 +144,7 @@ describe('RenderApi handle', function () {
             ->method('get_params')
             ->willReturn([
                 'template' => 'partials/nonexistent',
+                'templates' => null,
             ]);
 
         $response = $api->handle($request);
@@ -161,6 +166,8 @@ describe('RenderApi handle', function () {
             ->method('get_param')
             ->willReturnCallback(fn($key) => match ($key) {
                 'template' => 'partials/card',
+                'templates' => null,
+                'templates' => null,
                 'post_id' => null,
                 'term_id' => null,
                 default => null,
@@ -169,6 +176,7 @@ describe('RenderApi handle', function () {
             ->method('get_params')
             ->willReturn([
                 'template' => 'partials/card',
+                'templates' => null,
                 'title' => 'Hello',
                 'items' => ['should', 'be', 'ignored'], // Non-scalar
             ]);
@@ -176,5 +184,123 @@ describe('RenderApi handle', function () {
         $response = $api->handle($request);
 
         expect($response->get_status())->toBe(200);
+    });
+
+    it('returns 400 when neither template nor templates provided', function () {
+        $view = $this->createMock(ViewEngineInterface::class);
+        $config = new RenderApiConfig(enabled: true, templates: ['partials/*']);
+
+        $api = new RenderApi($view, $config);
+
+        $request = $this->createMock(WP_REST_Request::class);
+        $request->method('get_param')->willReturnCallback(fn($key) => null);
+
+        $response = $api->handle($request);
+
+        expect($response->get_status())->toBe(400);
+        expect($response->get_data()['code'])->toBe('missing_template');
+    });
+});
+
+describe('RenderApi handle multiple templates', function () {
+    it('renders multiple templates', function () {
+        $view = $this->createMock(ViewEngineInterface::class);
+        $view->method('render')->willReturnCallback(fn($template) => match ($template) {
+            'partials/hero' => '<section>Hero</section>',
+            'partials/card' => '<article>Card</article>',
+            default => '',
+        });
+
+        $config = new RenderApiConfig(enabled: true, templates: ['partials/*']);
+
+        $api = new RenderApi($view, $config);
+
+        $request = $this->createMock(WP_REST_Request::class);
+        $request
+            ->method('get_param')
+            ->willReturnCallback(fn($key) => match ($key) {
+                'template' => null,
+                'templates' => ['hero' => 'partials/hero', 'card' => 'partials/card'],
+                'post_id' => null,
+                'term_id' => null,
+                default => null,
+            });
+        $request
+            ->method('get_params')
+            ->willReturn([
+                'templates' => ['hero' => 'partials/hero', 'card' => 'partials/card'],
+            ]);
+
+        $response = $api->handle($request);
+
+        expect($response->get_status())->toBe(200);
+        expect($response->get_data())->toBe([
+            'hero' => '<section>Hero</section>',
+            'card' => '<article>Card</article>',
+        ]);
+    });
+
+    it('returns 404 when one template is not allowed', function () {
+        $view = $this->createMock(ViewEngineInterface::class);
+        $config = new RenderApiConfig(enabled: true, templates: ['partials/*']);
+
+        $api = new RenderApi($view, $config);
+
+        $request = $this->createMock(WP_REST_Request::class);
+        $request
+            ->method('get_param')
+            ->willReturnCallback(fn($key) => match ($key) {
+                'template' => null,
+                'templates' => ['hero' => 'partials/hero', 'secret' => 'admin/secret'],
+                'post_id' => null,
+                'term_id' => null,
+                default => null,
+            });
+        $request
+            ->method('get_params')
+            ->willReturn([
+                'templates' => ['hero' => 'partials/hero', 'secret' => 'admin/secret'],
+            ]);
+
+        $response = $api->handle($request);
+
+        expect($response->get_status())->toBe(404);
+        expect($response->get_data()['code'])->toBe('template_not_allowed');
+    });
+
+    it('returns 404 when one template fails to render', function () {
+        $view = $this->createMock(ViewEngineInterface::class);
+        $view->method('render')->willReturnCallback(function ($template) {
+            if ($template === 'partials/broken') {
+                throw new RuntimeException('Render failed');
+            }
+
+            return '<div>OK</div>';
+        });
+
+        $config = new RenderApiConfig(enabled: true, templates: ['partials/*']);
+
+        $api = new RenderApi($view, $config);
+
+        $request = $this->createMock(WP_REST_Request::class);
+        $request
+            ->method('get_param')
+            ->willReturnCallback(fn($key) => match ($key) {
+                'template' => null,
+                'templates' => ['good' => 'partials/good', 'broken' => 'partials/broken'],
+                'post_id' => null,
+                'term_id' => null,
+                default => null,
+            });
+        $request
+            ->method('get_params')
+            ->willReturn([
+                'templates' => ['good' => 'partials/good', 'broken' => 'partials/broken'],
+            ]);
+
+        $response = $api->handle($request);
+
+        expect($response->get_status())->toBe(404);
+        expect($response->get_data()['code'])->toBe('render_error');
     });
 });
