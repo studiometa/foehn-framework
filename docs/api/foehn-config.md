@@ -1,6 +1,6 @@
 # FoehnConfig
 
-Core configuration class for Føhn. Unlike other config classes, this is passed directly to `Kernel::boot()` and is available during the bootstrap phase.
+Core configuration class for Føhn. Like all other config classes, it can be auto-discovered via a `foehn.config.php` file. A legacy array-based approach via `Kernel::boot()` is also supported.
 
 ## Signature
 
@@ -39,12 +39,42 @@ final readonly class FoehnConfig
 
 ## Usage
 
-`FoehnConfig` is created internally by `Kernel::boot()` from the config array:
+### Config file (recommended)
+
+Create a config file in your app directory:
+
+```php
+<?php
+// app/foehn.config.php
+
+use Studiometa\Foehn\Config\FoehnConfig;
+use Studiometa\Foehn\Hooks\Cleanup\CleanHeadTags;
+use Studiometa\Foehn\Hooks\Security\SecurityHeaders;
+use Tempest\Core\DiscoveryCacheStrategy;
+
+return new FoehnConfig(
+    discoveryCacheStrategy: DiscoveryCacheStrategy::FULL,
+    discoveryCachePath: WP_CONTENT_DIR . '/cache/foehn',
+    hooks: [
+        CleanHeadTags::class,
+        SecurityHeaders::class,
+    ],
+    debug: WP_DEBUG,
+);
+```
+
+Then boot the kernel without any config array:
+
+```php
+Kernel::boot(__DIR__ . '/app');
+```
+
+### Via Kernel::boot() (legacy)
+
+You can also pass configuration directly to `Kernel::boot()`:
 
 ```php
 use Studiometa\Foehn\Kernel;
-use Studiometa\Foehn\Hooks\Cleanup\CleanHeadTags;
-use Studiometa\Foehn\Hooks\Security\SecurityHeaders;
 
 Kernel::boot(__DIR__ . '/app', [
     'discovery_cache' => 'full',
@@ -56,6 +86,8 @@ Kernel::boot(__DIR__ . '/app', [
     'debug' => WP_DEBUG,
 ]);
 ```
+
+> **Note**: If both a `foehn.config.php` file and boot array are provided, the config file takes precedence.
 
 ### Discovery Cache Strategies
 
@@ -89,17 +121,17 @@ When enabled, discovery failures (reflection errors, missing classes) are logged
 
 Defaults to the value of `WP_DEBUG` when not explicitly set.
 
-## Difference from Other Configs
+## All Config Classes
 
-| Config Class      | Loaded by        | When available           |
-| ----------------- | ---------------- | ------------------------ |
-| `FoehnConfig`     | `Kernel::boot()` | Immediately at bootstrap |
-| `TimberConfig`    | Tempest discovery | After Tempest boots      |
-| `AcfConfig`       | Tempest discovery | After Tempest boots      |
-| `RestConfig`      | Tempest discovery | After Tempest boots      |
-| `RenderApiConfig` | Tempest discovery | After Tempest boots      |
+All Føhn config classes follow the same pattern — discoverable via `*.config.php` files:
 
-`FoehnConfig` is the only config passed directly to the kernel because it controls the bootstrap process itself (cache strategy, debug mode).
+| Config Class      | Config file                   | Purpose                          |
+| ----------------- | ----------------------------- | -------------------------------- |
+| `FoehnConfig`     | `app/foehn.config.php`        | Core bootstrap settings          |
+| `TimberConfig`    | `app/timber.config.php`       | Template directories             |
+| `AcfConfig`       | `app/acf.config.php`          | ACF field transformation         |
+| `RestConfig`      | `app/rest.config.php`         | REST API permissions             |
+| `RenderApiConfig` | `app/render-api.config.php`   | Render API allowlisting          |
 
 ## Related
 

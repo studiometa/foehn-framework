@@ -53,6 +53,11 @@ final class Kernel
     public function getConfig(string $key, mixed $default = null): mixed;
 
     /**
+     * Get the Foehn configuration.
+     */
+    public function getFoehnConfig(): FoehnConfig;
+
+    /**
      * Check if the kernel has been booted.
      */
     public function isBooted(): bool;
@@ -71,41 +76,33 @@ use Studiometa\Foehn\Kernel;
 Kernel::boot(__DIR__ . '/app');
 ```
 
-With configuration:
+Configuration is handled via config files in your app directory (recommended):
 
 ```php
-use Studiometa\Foehn\Hooks\Cleanup\DisableEmoji;
-use Studiometa\Foehn\Hooks\Security\SecurityHeaders;
+<?php
+// app/foehn.config.php
+use Studiometa\Foehn\Config\FoehnConfig;
+use Tempest\Core\DiscoveryCacheStrategy;
 
-Kernel::boot(__DIR__ . '/app', [
-    // Enable discovery cache for production
-    'discovery_cache' => 'full',  // 'full', 'partial', 'none'
-
-    // Custom cache path (optional)
-    'discovery_cache_path' => WP_CONTENT_DIR . '/cache/foehn/discovery',
-
-    // Timber templates directories
-    'timber_templates_dir' => ['templates', 'views'],
-
-    // Opt-in built-in hooks
-    'hooks' => [
-        DisableEmoji::class,
-        SecurityHeaders::class,
+return new FoehnConfig(
+    discoveryCacheStrategy: DiscoveryCacheStrategy::FULL,
+    hooks: [
+        \Studiometa\Foehn\Hooks\Cleanup\DisableEmoji::class,
+        \Studiometa\Foehn\Hooks\Security\SecurityHeaders::class,
     ],
+);
+```
+
+A legacy array-based approach is also supported:
+
+```php
+Kernel::boot(__DIR__ . '/app', [
+    'discovery_cache' => 'full',
+    'hooks' => [DisableEmoji::class],
 ]);
 ```
 
-### Configuration Options
-
-| Option                 | Type             | Default      | Description                                       |
-| ---------------------- | ---------------- | ------------ | ------------------------------------------------- |
-| `discovery_cache`      | `string\|bool`   | `'none'`     | Cache strategy: 'full', 'partial', 'none'         |
-| `discovery_cache_path` | `string\|null`   | `null`       | Custom path for cache files                       |
-| `timber_templates_dir` | `string[]`       | `['templates']` | Timber templates directory names               |
-| `hooks`                | `class-string[]` | `[]`         | Opt-in hook classes to activate                   |
-| `debug`                | `bool`           | `WP_DEBUG`   | Enable debug logging for discovery failures       |
-
-See [Discovery Cache](/guide/discovery-cache) and [Built-in Hooks](/guide/hooks#built-in-hooks) for details.
+See [FoehnConfig](./foehn-config), [Discovery Cache](/guide/discovery-cache), and [Built-in Hooks](/guide/hooks#built-in-hooks) for details.
 
 ### getInstance()
 
