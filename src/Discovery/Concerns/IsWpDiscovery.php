@@ -4,37 +4,50 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Discovery\Concerns;
 
+use Studiometa\Foehn\Discovery\DiscoveryLocation;
+use Studiometa\Foehn\Discovery\WpDiscoveryItems;
+
 /**
- * Trait providing storage for Foehn discovery items.
+ * Trait providing WpDiscoveryItems storage for Foehn discoveries.
  *
- * Replaces Tempest's IsDiscovery trait. Items are stored in a simple array
- * managed entirely by Foehn's DiscoveryRunner.
+ * Replaces the old simple array storage with location-aware WpDiscoveryItems.
+ * Each discovery class uses this trait and adds items with their location context.
  *
  * @phpstan-require-implements \Studiometa\Foehn\Discovery\WpDiscovery
  */
 trait IsWpDiscovery
 {
-    /** @var array<int, array<string, mixed>> */
-    private array $items = [];
+    private WpDiscoveryItems $discoveryItems;
 
     /**
-     * Add a discovered item.
+     * Add a discovered item for the given location.
      *
+     * @param DiscoveryLocation $location
      * @param array<string, mixed> $item
      */
-    protected function addItem(array $item): void
+    protected function addItem(DiscoveryLocation $location, array $item): void
     {
-        $this->items[] = $item;
+        $this->getItems()->add($location, $item);
     }
 
     /**
-     * Get all discovered items.
-     *
-     * @return array<int, array<string, mixed>>
+     * Get the discovery items collection.
      */
-    public function getItems(): array
+    public function getItems(): WpDiscoveryItems
     {
-        return $this->items;
+        if (!isset($this->discoveryItems)) {
+            $this->discoveryItems = new WpDiscoveryItems();
+        }
+
+        return $this->discoveryItems;
+    }
+
+    /**
+     * Set the discovery items collection (used for cache restoration).
+     */
+    public function setItems(WpDiscoveryItems $items): void
+    {
+        $this->discoveryItems = $items;
     }
 
     /**
@@ -42,6 +55,6 @@ trait IsWpDiscovery
      */
     public function hasItems(): bool
     {
-        return $this->items !== [];
+        return !$this->getItems()->isEmpty();
     }
 }

@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 use Studiometa\Foehn\Attributes\AsAcfFieldGroup;
 use Studiometa\Foehn\Discovery\AcfFieldGroupDiscovery;
+use Studiometa\Foehn\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
+    $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
     $this->discovery = new AcfFieldGroupDiscovery();
 });
 
@@ -24,24 +26,24 @@ describe('AcfFieldGroupDiscovery caching', function () {
         );
 
         $ref = new ReflectionMethod($this->discovery, 'addItem');
-        $ref->invoke($this->discovery, [
+        $ref->invoke($this->discovery, $this->location, [
             'attribute' => $attribute,
             'className' => 'App\\Fields\\PropertyFields',
         ]);
 
         $cacheableData = $this->discovery->getCacheableData();
 
-        expect($cacheableData)->toHaveCount(1);
-        expect($cacheableData[0]['name'])->toBe('property_fields');
-        expect($cacheableData[0]['title'])->toBe('Property Details');
-        expect($cacheableData[0]['location'])->toBe(['post_type' => 'property']);
-        expect($cacheableData[0]['position'])->toBe('acf_after_title');
-        expect($cacheableData[0]['menuOrder'])->toBe(10);
-        expect($cacheableData[0]['style'])->toBe('seamless');
-        expect($cacheableData[0]['labelPlacement'])->toBe('left');
-        expect($cacheableData[0]['instructionPlacement'])->toBe('field');
-        expect($cacheableData[0]['hideOnScreen'])->toBe(['the_content', 'excerpt']);
-        expect($cacheableData[0]['className'])->toBe('App\\Fields\\PropertyFields');
+        expect($cacheableData['App\\'])->toHaveCount(1);
+        expect($cacheableData['App\\'][0]['name'])->toBe('property_fields');
+        expect($cacheableData['App\\'][0]['title'])->toBe('Property Details');
+        expect($cacheableData['App\\'][0]['location'])->toBe(['post_type' => 'property']);
+        expect($cacheableData['App\\'][0]['position'])->toBe('acf_after_title');
+        expect($cacheableData['App\\'][0]['menuOrder'])->toBe(10);
+        expect($cacheableData['App\\'][0]['style'])->toBe('seamless');
+        expect($cacheableData['App\\'][0]['labelPlacement'])->toBe('left');
+        expect($cacheableData['App\\'][0]['instructionPlacement'])->toBe('field');
+        expect($cacheableData['App\\'][0]['hideOnScreen'])->toBe(['the_content', 'excerpt']);
+        expect($cacheableData['App\\'][0]['className'])->toBe('App\\Fields\\PropertyFields');
     });
 
     it('handles minimal configuration', function () {
@@ -52,19 +54,19 @@ describe('AcfFieldGroupDiscovery caching', function () {
         );
 
         $ref = new ReflectionMethod($this->discovery, 'addItem');
-        $ref->invoke($this->discovery, [
+        $ref->invoke($this->discovery, $this->location, [
             'attribute' => $attribute,
             'className' => 'App\\Fields\\MinimalFields',
         ]);
 
         $cacheableData = $this->discovery->getCacheableData();
 
-        expect($cacheableData[0]['position'])->toBe('normal');
-        expect($cacheableData[0]['menuOrder'])->toBe(0);
-        expect($cacheableData[0]['style'])->toBe('default');
-        expect($cacheableData[0]['labelPlacement'])->toBe('top');
-        expect($cacheableData[0]['instructionPlacement'])->toBe('label');
-        expect($cacheableData[0]['hideOnScreen'])->toBe([]);
+        expect($cacheableData['App\\'][0]['position'])->toBe('normal');
+        expect($cacheableData['App\\'][0]['menuOrder'])->toBe(0);
+        expect($cacheableData['App\\'][0]['style'])->toBe('default');
+        expect($cacheableData['App\\'][0]['labelPlacement'])->toBe('top');
+        expect($cacheableData['App\\'][0]['instructionPlacement'])->toBe('label');
+        expect($cacheableData['App\\'][0]['hideOnScreen'])->toBe([]);
     });
 
     it('handles full ACF location format', function () {
@@ -85,14 +87,14 @@ describe('AcfFieldGroupDiscovery caching', function () {
         );
 
         $ref = new ReflectionMethod($this->discovery, 'addItem');
-        $ref->invoke($this->discovery, [
+        $ref->invoke($this->discovery, $this->location, [
             'attribute' => $attribute,
             'className' => 'App\\Fields\\ComplexFields',
         ]);
 
         $cacheableData = $this->discovery->getCacheableData();
 
-        expect($cacheableData[0]['location'])->toBe($location);
+        expect($cacheableData['App\\'][0]['location'])->toBe($location);
     });
 
     it('can restore from cache', function () {
@@ -111,7 +113,7 @@ describe('AcfFieldGroupDiscovery caching', function () {
             ],
         ];
 
-        $this->discovery->restoreFromCache($cachedData);
+        $this->discovery->restoreFromCache(['App\\' => $cachedData]);
 
         expect($this->discovery->wasRestoredFromCache())->toBeTrue();
     });
@@ -130,19 +132,19 @@ describe('AcfFieldGroupDiscovery caching', function () {
         );
 
         $ref = new ReflectionMethod($this->discovery, 'addItem');
-        $ref->invoke($this->discovery, [
+        $ref->invoke($this->discovery, $this->location, [
             'attribute' => $attribute1,
             'className' => 'App\\Fields\\PostFields',
         ]);
-        $ref->invoke($this->discovery, [
+        $ref->invoke($this->discovery, $this->location, [
             'attribute' => $attribute2,
             'className' => 'App\\Fields\\PageFields',
         ]);
 
         $cacheableData = $this->discovery->getCacheableData();
 
-        expect($cacheableData)->toHaveCount(2);
-        expect($cacheableData[0]['name'])->toBe('post_fields');
-        expect($cacheableData[1]['name'])->toBe('page_fields');
+        expect($cacheableData['App\\'])->toHaveCount(2);
+        expect($cacheableData['App\\'][0]['name'])->toBe('post_fields');
+        expect($cacheableData['App\\'][1]['name'])->toBe('page_fields');
     });
 });

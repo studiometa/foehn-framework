@@ -5,8 +5,10 @@ declare(strict_types=1);
 use Studiometa\Foehn\Discovery\TimberModelDiscovery;
 use Tests\Fixtures\TimberModelPostFixture;
 use Tests\Fixtures\TimberModelTermFixture;
+use Studiometa\Foehn\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
+    $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
     wp_stub_reset();
     bootTestContainer();
     $this->discovery = new TimberModelDiscovery();
@@ -16,7 +18,7 @@ afterEach(fn() => tearDownTestContainer());
 
 describe('TimberModelDiscovery apply', function () {
     it('registers post classmap filter for post models', function () {
-        $this->discovery->discover(new ReflectionClass(TimberModelPostFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(TimberModelPostFixture::class));
         $this->discovery->apply();
 
         $filters = wp_stub_get_calls('add_filter');
@@ -32,7 +34,7 @@ describe('TimberModelDiscovery apply', function () {
     });
 
     it('registers term classmap filter for term models', function () {
-        $this->discovery->discover(new ReflectionClass(TimberModelTermFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(TimberModelTermFixture::class));
         $this->discovery->apply();
 
         $filters = wp_stub_get_calls('add_filter');
@@ -48,8 +50,8 @@ describe('TimberModelDiscovery apply', function () {
     });
 
     it('does not register post types or taxonomies', function () {
-        $this->discovery->discover(new ReflectionClass(TimberModelPostFixture::class));
-        $this->discovery->discover(new ReflectionClass(TimberModelTermFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(TimberModelPostFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(TimberModelTermFixture::class));
         $this->discovery->apply();
 
         expect(wp_stub_get_calls('register_post_type'))->toBeEmpty();
@@ -63,7 +65,7 @@ describe('TimberModelDiscovery apply', function () {
     });
 
     it('registers models from cached data', function () {
-        $this->discovery->restoreFromCache([
+        $this->discovery->restoreFromCache(['App\\' => [
             [
                 'name' => 'page',
                 'className' => TimberModelPostFixture::class,
@@ -74,7 +76,7 @@ describe('TimberModelDiscovery apply', function () {
                 'className' => TimberModelTermFixture::class,
                 'type' => 'term',
             ],
-        ]);
+        ]]);
 
         $this->discovery->apply();
 

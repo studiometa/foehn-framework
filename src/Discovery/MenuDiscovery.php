@@ -22,9 +22,10 @@ final class MenuDiscovery implements WpDiscovery
     /**
      * Discover menu attributes on classes.
      *
+     * @param DiscoveryLocation $location
      * @param ReflectionClass<object> $class
      */
-    public function discover(ReflectionClass $class): void
+    public function discover(DiscoveryLocation $location, ReflectionClass $class): void
     {
         $attributes = $class->getAttributes(AsMenu::class);
 
@@ -34,7 +35,7 @@ final class MenuDiscovery implements WpDiscovery
 
         $attribute = $attributes[0]->newInstance();
 
-        $this->addItem([
+        $this->addItem($location, [
             'attribute' => $attribute,
             'className' => $class->getName(),
         ]);
@@ -48,7 +49,7 @@ final class MenuDiscovery implements WpDiscovery
     {
         $menus = [];
 
-        foreach ($this->getAllItems() as $item) {
+        foreach ($this->getItems() as $item) {
             $attribute = $this->resolveAttribute($item);
             $menus[$attribute->location] = $attribute->description;
         }

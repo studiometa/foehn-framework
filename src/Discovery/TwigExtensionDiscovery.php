@@ -23,9 +23,10 @@ final class TwigExtensionDiscovery implements WpDiscovery
     /**
      * Discover Twig extension classes.
      *
+     * @param DiscoveryLocation $location
      * @param ReflectionClass<object> $class
      */
-    public function discover(ReflectionClass $class): void
+    public function discover(DiscoveryLocation $location, ReflectionClass $class): void
     {
         $attributes = $class->getAttributes(AsTwigExtension::class);
 
@@ -40,7 +41,7 @@ final class TwigExtensionDiscovery implements WpDiscovery
 
         $attribute = $attributes[0]->newInstance();
 
-        $this->addItem([
+        $this->addItem($location, [
             'className' => $class->getName(),
             'priority' => $attribute->priority,
         ]);
@@ -52,7 +53,7 @@ final class TwigExtensionDiscovery implements WpDiscovery
     public function apply(): void
     {
         // Collect all items and sort by priority
-        $items = iterator_to_array($this->getAllItems());
+        $items = iterator_to_array($this->getItems());
 
         if ($items === []) {
             return;

@@ -6,16 +6,18 @@ use Studiometa\Foehn\Discovery\BlockDiscovery;
 use Tests\Fixtures\BlockFixture;
 use Tests\Fixtures\InvalidBlockFixture;
 use Tests\Fixtures\NoAttributeFixture;
+use Studiometa\Foehn\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
+    $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
     $this->discovery = new BlockDiscovery();
 });
 
 describe('BlockDiscovery', function () {
     it('discovers block attributes on classes', function () {
-        $this->discovery->discover(new ReflectionClass(BlockFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(BlockFixture::class));
 
-        $items = $this->discovery->getItems();
+        $items = $this->discovery->getItems()->all();
 
         expect($items)->toHaveCount(1);
         expect($items[0]['className'])->toBe(BlockFixture::class);
@@ -28,20 +30,20 @@ describe('BlockDiscovery', function () {
     });
 
     it('ignores classes without block attribute', function () {
-        $this->discovery->discover(new ReflectionClass(NoAttributeFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(NoAttributeFixture::class));
 
-        expect($this->discovery->getItems())->toBeEmpty();
+        expect($this->discovery->getItems()->isEmpty())->toBeTrue();
     });
 
     it('throws when class does not implement BlockInterface', function () {
-        expect(fn() => $this->discovery->discover(new ReflectionClass(InvalidBlockFixture::class)))
+        expect(fn() => $this->discovery->discover($this->location, new ReflectionClass(InvalidBlockFixture::class)))
             ->toThrow(InvalidArgumentException::class, 'must implement');
     });
 
     it('reports hasItems correctly', function () {
         expect($this->discovery->hasItems())->toBeFalse();
 
-        $this->discovery->discover(new ReflectionClass(BlockFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(BlockFixture::class));
 
         expect($this->discovery->hasItems())->toBeTrue();
     });

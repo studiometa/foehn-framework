@@ -25,9 +25,10 @@ final class PostTypeDiscovery implements WpDiscovery
     /**
      * Discover post type attributes on classes.
      *
+     * @param DiscoveryLocation $location
      * @param ReflectionClass<object> $class
      */
-    public function discover(ReflectionClass $class): void
+    public function discover(DiscoveryLocation $location, ReflectionClass $class): void
     {
         $attributes = $class->getAttributes(AsPostType::class);
 
@@ -46,7 +47,7 @@ final class PostTypeDiscovery implements WpDiscovery
 
         $attribute = $attributes[0]->newInstance();
 
-        $this->addItem([
+        $this->addItem($location, [
             'attribute' => $attribute,
             'className' => $class->getName(),
             'implementsConfig' => $class->implementsInterface(ConfiguresPostType::class),
@@ -58,7 +59,7 @@ final class PostTypeDiscovery implements WpDiscovery
      */
     public function apply(): void
     {
-        foreach ($this->getAllItems() as $item) {
+        foreach ($this->getItems() as $item) {
             $this->registerPostType($item);
         }
     }

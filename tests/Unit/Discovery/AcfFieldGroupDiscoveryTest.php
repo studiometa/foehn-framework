@@ -6,16 +6,18 @@ use Studiometa\Foehn\Discovery\AcfFieldGroupDiscovery;
 use Tests\Fixtures\AcfFieldGroupFixture;
 use Tests\Fixtures\InvalidAcfFieldGroupFixture;
 use Tests\Fixtures\NoAttributeFixture;
+use Studiometa\Foehn\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
+    $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
     $this->discovery = new AcfFieldGroupDiscovery();
 });
 
 describe('AcfFieldGroupDiscovery', function () {
     it('discovers ACF field group attributes on classes', function () {
-        $this->discovery->discover(new ReflectionClass(AcfFieldGroupFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(AcfFieldGroupFixture::class));
 
-        $items = $this->discovery->getItems();
+        $items = $this->discovery->getItems()->all();
 
         expect($items)->toHaveCount(1);
         expect($items[0]['className'])->toBe(AcfFieldGroupFixture::class);
@@ -31,20 +33,20 @@ describe('AcfFieldGroupDiscovery', function () {
     });
 
     it('ignores classes without ACF field group attribute', function () {
-        $this->discovery->discover(new ReflectionClass(NoAttributeFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(NoAttributeFixture::class));
 
-        expect($this->discovery->getItems())->toBeEmpty();
+        expect($this->discovery->getItems()->isEmpty())->toBeTrue();
     });
 
     it('throws when class does not implement AcfFieldGroupInterface', function () {
-        expect(fn () => $this->discovery->discover(new ReflectionClass(InvalidAcfFieldGroupFixture::class)))
+        expect(fn () => $this->discovery->discover($this->location, new ReflectionClass(InvalidAcfFieldGroupFixture::class)))
             ->toThrow(InvalidArgumentException::class, 'must implement');
     });
 
     it('reports hasItems correctly', function () {
         expect($this->discovery->hasItems())->toBeFalse();
 
-        $this->discovery->discover(new ReflectionClass(AcfFieldGroupFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(AcfFieldGroupFixture::class));
 
         expect($this->discovery->hasItems())->toBeTrue();
     });

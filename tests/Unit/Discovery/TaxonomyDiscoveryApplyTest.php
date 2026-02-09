@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 use Studiometa\Foehn\Discovery\TaxonomyDiscovery;
 use Tests\Fixtures\TaxonomyFixture;
+use Studiometa\Foehn\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
+    $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
     wp_stub_reset();
     bootTestContainer();
     $this->discovery = new TaxonomyDiscovery();
@@ -15,7 +17,7 @@ afterEach(fn() => tearDownTestContainer());
 
 describe('TaxonomyDiscovery apply', function () {
     it('registers discovered taxonomies with WordPress', function () {
-        $this->discovery->discover(new ReflectionClass(TaxonomyFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(TaxonomyFixture::class));
         $this->discovery->apply();
 
         $calls = wp_stub_get_calls('register_taxonomy');
@@ -29,7 +31,7 @@ describe('TaxonomyDiscovery apply', function () {
     });
 
     it('registers Timber classmap filter', function () {
-        $this->discovery->discover(new ReflectionClass(TaxonomyFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(TaxonomyFixture::class));
         $this->discovery->apply();
 
         $filters = wp_stub_get_calls('add_filter');
@@ -45,7 +47,7 @@ describe('TaxonomyDiscovery apply', function () {
     });
 
     it('registers taxonomies from cached data', function () {
-        $this->discovery->restoreFromCache([
+        $this->discovery->restoreFromCache(['App\\' => [
             [
                 'name' => 'genre',
                 'singular' => 'Genre',
@@ -61,7 +63,7 @@ describe('TaxonomyDiscovery apply', function () {
                 'className' => TaxonomyFixture::class,
                 'implementsConfig' => false,
             ],
-        ]);
+        ]]);
 
         $this->discovery->apply();
 
