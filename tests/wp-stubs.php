@@ -142,6 +142,20 @@ if (!function_exists('add_action')) {
     }
 }
 
+if (!function_exists('do_action')) {
+    function do_action(string $hook, mixed ...$args): void
+    {
+        wp_stub_record('do_action', compact('hook', 'args'));
+    }
+}
+
+if (!function_exists('do_action_deprecated')) {
+    function do_action_deprecated(string $hook, array $args, string $version, string $replacement = ''): void
+    {
+        wp_stub_record('do_action_deprecated', compact('hook', 'args', 'version', 'replacement'));
+    }
+}
+
 if (!function_exists('add_filter')) {
     function add_filter(string $hook, callable $callback, int $priority = 10, int $acceptedArgs = 1): void
     {
@@ -580,6 +594,10 @@ if (!defined('WP_DEBUG_LOG')) {
     define('WP_DEBUG_LOG', false);
 }
 
+if (!defined('WP_DEBUG')) {
+    define('WP_DEBUG', false);
+}
+
 // ──────────────────────────────────────────────
 // Misc
 // ──────────────────────────────────────────────
@@ -602,6 +620,110 @@ if (!function_exists('esc_attr')) {
     function esc_attr(string $text): string
     {
         return htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
+    }
+}
+
+if (!function_exists('get_body_class')) {
+    /**
+     * @return list<string>
+     */
+    function get_body_class(): array
+    {
+        return $GLOBALS['wp_stub_body_class'] ?? [];
+    }
+}
+
+if (!function_exists('wp_title')) {
+    function wp_title(string $sep = '&raquo;', bool $display = true, string $seplocation = ''): string
+    {
+        return $GLOBALS['wp_stub_wp_title'] ?? '';
+    }
+}
+
+if (!function_exists('is_multisite')) {
+    function is_multisite(): bool
+    {
+        return $GLOBALS['wp_stub_is_multisite'] ?? false;
+    }
+}
+
+if (!function_exists('get_bloginfo')) {
+    function get_bloginfo(string $show = '', string $filter = 'raw'): string
+    {
+        return match ($show) {
+            'name' => $GLOBALS['wp_stub_bloginfo_name'] ?? 'Test Site',
+            'description' => $GLOBALS['wp_stub_bloginfo_description'] ?? 'Just another WordPress site',
+            'url', 'wpurl', 'siteurl' => $GLOBALS['wp_stub_bloginfo_url'] ?? 'http://example.com',
+            'admin_email' => $GLOBALS['wp_stub_bloginfo_admin_email'] ?? 'admin@example.com',
+            'charset' => 'UTF-8',
+            'language' => 'en-US',
+            'version' => '6.0',
+            default => '',
+        };
+    }
+}
+
+if (!function_exists('home_url')) {
+    function home_url(string $path = '', ?string $scheme = null): string
+    {
+        $url = $GLOBALS['wp_stub_home_url'] ?? 'http://example.com';
+
+        return $path ? rtrim($url, '/') . '/' . ltrim($path, '/') : $url;
+    }
+}
+
+if (!function_exists('site_url')) {
+    function site_url(string $path = '', ?string $scheme = null): string
+    {
+        $url = $GLOBALS['wp_stub_site_url'] ?? 'http://example.com';
+
+        return $path ? rtrim($url, '/') . '/' . ltrim($path, '/') : $url;
+    }
+}
+
+if (!function_exists('get_option')) {
+    function get_option(string $option, mixed $default = false): mixed
+    {
+        return $GLOBALS['wp_stub_options'][$option] ?? $default;
+    }
+}
+
+if (!function_exists('apply_filters')) {
+    function apply_filters(string $hook, mixed $value, mixed ...$args): mixed
+    {
+        wp_stub_record('apply_filters', compact('hook', 'value', 'args'));
+
+        return $value;
+    }
+}
+
+if (!function_exists('apply_filters_deprecated')) {
+    function apply_filters_deprecated(string $hook, array $args, string $version, string $replacement = ''): mixed
+    {
+        wp_stub_record('apply_filters_deprecated', compact('hook', 'args', 'version', 'replacement'));
+
+        return $args[0] ?? null;
+    }
+}
+
+if (!function_exists('get_theme_support')) {
+    function get_theme_support(string $feature): mixed
+    {
+        return $GLOBALS['wp_stub_theme_support'][$feature] ?? false;
+    }
+}
+
+if (!function_exists('trailingslashit')) {
+    function trailingslashit(string $value): string
+    {
+        return rtrim($value, '/\\') . '/';
+    }
+}
+
+if (!function_exists('untrailingslashit')) {
+    function untrailingslashit(string $value): string
+    {
+        return rtrim($value, '/\\');
     }
 }
 
