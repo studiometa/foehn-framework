@@ -7,21 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-02-09
+
 ### Added
 
 - Add `Cache::tags()` for tagged cache invalidation ([43f1f95], [#78])
 - Add `DiscoveryLocation` and `WpDiscoveryItems` for location-aware discovery ([758b19f], [#79])
+- Add `ClassScanner` for dedicated PSR-4 class scanning ([50466bf], [#79])
+- Add `QueryFiltersConfig` and `QueryFiltersHook` for URL-based archive filtering ([a487181], [#77])
+- Add `QueryExtension` with `query_*` Twig helpers for filter UI building ([5911c2c], [#77])
+- Add Render API REST endpoint for cacheable template rendering via AJAX ([7d9f33a], [#67])
+- Make `FoehnConfig` discoverable via `app/foehn.config.php` ([0aaafb3], [#80])
 - Add API documentation for all config classes, discovery system, and view engine ([556dd93], [#80])
 - Add configuration and custom discovery guides ([59f39e3], [#80])
-- Make `FoehnConfig` discoverable via `app/foehn.config.php` ([0aaafb3], [#80])
 - Add comprehensive migration guide from wp-toolkit to Føhn ([bc3227a], [#81])
 
 ### Changed
 
-- Align `WpDiscovery` interface with Tempest conventions: `discover()` now receives `DiscoveryLocation`, items managed via `WpDiscoveryItems` ([758b19f], [#79])
-- Add `QueryFiltersConfig` and `QueryFiltersHook` for URL-based archive filtering ([a487181], [#77])
-- Add `QueryExtension` with `query_*` Twig helpers for filter UI building ([5911c2c], [#77])
-- Add Render API REST endpoint for cacheable template rendering via AJAX ([7d9f33a], [#67])
+- **BREAKING:** Align `WpDiscovery` interface with Tempest conventions: `discover()` now receives `DiscoveryLocation`, items managed via `WpDiscoveryItems` ([758b19f], [#79])
+- **BREAKING:** Discovery cache format changed to location-grouped structure (`array<string, array<string, list<array>>>`) ([758b19f], [#79])
 
 ### Fixed
 
@@ -41,9 +45,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [59f39e3]: https://github.com/studiometa/foehn/commit/59f39e3
 [#80]: https://github.com/studiometa/foehn/pull/80
 [bc3227a]: https://github.com/studiometa/foehn/commit/bc3227a
+[50466bf]: https://github.com/studiometa/foehn/commit/50466bf
 [#81]: https://github.com/studiometa/foehn/pull/81
 [95ba3d7]: https://github.com/studiometa/foehn/commit/95ba3d7
 [#74]: https://github.com/studiometa/foehn/pull/74
+[0.3.0]: https://github.com/studiometa/foehn/releases/tag/0.3.0
 
 ## [0.2.4] - 2026-02-09
 
