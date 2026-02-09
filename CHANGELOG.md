@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add API documentation for all config classes, discovery system, and view engine ([556dd93], [#80])
 - Add configuration and custom discovery guides ([59f39e3], [#80])
 - Make `FoehnConfig` discoverable via `app/foehn.config.php` ([0aaafb3], [#80])
+- Add comprehensive migration guide from wp-toolkit to Føhn ([bc3227a], [#81])
 
 ### Changed
 
@@ -39,6 +40,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0aaafb3]: https://github.com/studiometa/foehn/commit/0aaafb3
 [59f39e3]: https://github.com/studiometa/foehn/commit/59f39e3
 [#80]: https://github.com/studiometa/foehn/pull/80
+[bc3227a]: https://github.com/studiometa/foehn/commit/bc3227a
+[#81]: https://github.com/studiometa/foehn/pull/81
 [95ba3d7]: https://github.com/studiometa/foehn/commit/95ba3d7
 [#74]: https://github.com/studiometa/foehn/pull/74
 
