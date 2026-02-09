@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Config\FoehnConfig;
+use Studiometa\Foehn\Config\RenderApiConfig;
 use Studiometa\Foehn\Hooks\Cleanup\CleanHeadTags;
 use Studiometa\Foehn\Hooks\Security\SecurityHeaders;
 use Tempest\Core\DiscoveryCacheStrategy;
@@ -184,6 +185,33 @@ describe('FoehnConfig', function () {
 
             expect($config->debug)->toBeFalse();
             expect($config->isDebugEnabled())->toBeFalse();
+        });
+
+        it('creates config with render_api disabled by default', function () {
+            $config = FoehnConfig::fromArray([]);
+
+            expect($config->renderApi)->toBeNull();
+        });
+
+        it('creates config with render_api from array', function () {
+            $config = FoehnConfig::fromArray([
+                'render_api' => [
+                    'enabled' => true,
+                    'templates' => ['partials/*', 'blocks/*'],
+                ],
+            ]);
+
+            expect($config->renderApi)->toBeInstanceOf(RenderApiConfig::class);
+            expect($config->renderApi->enabled)->toBeTrue();
+            expect($config->renderApi->templates)->toBe(['partials/*', 'blocks/*']);
+        });
+
+        it('ignores render_api if not an array', function () {
+            $config = FoehnConfig::fromArray([
+                'render_api' => true,
+            ]);
+
+            expect($config->renderApi)->toBeNull();
         });
     });
 });

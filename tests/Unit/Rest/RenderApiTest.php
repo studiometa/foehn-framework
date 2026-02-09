@@ -147,4 +147,34 @@ describe('RenderApi handle', function () {
         expect($response->get_status())->toBe(404);
         expect($response->get_data()['code'])->toBe('render_error');
     });
+
+    it('filters out non-scalar context values', function () {
+        $view = $this->createMock(ViewEngineInterface::class);
+        $view->method('render')->with('partials/card', ['title' => 'Hello'])->willReturn('<div>Hello</div>');
+
+        $config = new RenderApiConfig(enabled: true, templates: ['partials/*']);
+
+        $api = new RenderApi($view, $config);
+
+        $request = $this->createMock(WP_REST_Request::class);
+        $request
+            ->method('get_param')
+            ->willReturnCallback(fn($key) => match ($key) {
+                'template' => 'partials/card',
+                'post_id' => null,
+                'term_id' => null,
+                default => null,
+            });
+        $request
+            ->method('get_params')
+            ->willReturn([
+                'template' => 'partials/card',
+                'title' => 'Hello',
+                'items' => ['should', 'be', 'ignored'], // Non-scalar
+            ]);
+
+        $response = $api->handle($request);
+
+        expect($response->get_status())->toBe(200);
+    });
 });
