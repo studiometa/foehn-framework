@@ -71,7 +71,9 @@ final readonly class RenderApi
      */
     public function handle(WP_REST_Request $request): WP_REST_Response
     {
+        /** @var string|null $template */
         $template = $request->get_param('template');
+        /** @var array<string, string>|null $templates */
         $templates = $request->get_param('templates');
 
         // Must have either template or templates
@@ -162,6 +164,7 @@ final readonly class RenderApi
         $context = [];
 
         // Resolve post_id to Timber Post
+        /** @var int|null $postId */
         $postId = $request->get_param('post_id');
         if ($postId !== null) {
             $post = Timber::get_post($postId);
@@ -175,10 +178,12 @@ final readonly class RenderApi
         }
 
         // Resolve term_id to Timber Term
+        /** @var int|null $termId */
         $termId = $request->get_param('term_id');
         if ($termId !== null) {
-            $taxonomy = $request->get_param('taxonomy') ?? 'category';
-            $term = Timber::get_term($termId, $taxonomy);
+            /** @var string|null $taxonomy */
+            $taxonomy = $request->get_param('taxonomy');
+            $term = Timber::get_term_by('id', $termId, $taxonomy ?? 'category');
 
             if (!$term instanceof Term) {
                 return null;
