@@ -11,8 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add Render API REST endpoint for cacheable template rendering via AJAX ([7d9f33a], [#67])
 
+### Fixed
+
+- Fix user config files being overwritten by framework defaults ([95ba3d7], [#74])
+
 [7d9f33a]: https://github.com/studiometa/foehn/commit/7d9f33a
 [#67]: https://github.com/studiometa/foehn/pull/67
+[95ba3d7]: https://github.com/studiometa/foehn/commit/95ba3d7
+[#74]: https://github.com/studiometa/foehn/pull/74
 
 ## [0.2.4] - 2026-02-09
 
