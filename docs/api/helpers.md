@@ -483,6 +483,89 @@ All keys are prefixed with `foehn_` by default.
 Cache::setPrefix('myapp_');
 ```
 
+### Cache Tags
+
+Tags allow grouping cache keys for batch invalidation. This is the industry-standard pattern used by Laravel and Symfony.
+
+#### Storing with Tags
+
+```php
+use Studiometa\Foehn\Helpers\Cache;
+
+// Store with single tag
+$products = Cache::tags(['products'])
+    ->remember('products_list', 3600, fn() => get_products());
+
+// Store with multiple tags
+$featured = Cache::tags(['products', 'featured'])
+    ->remember('featured_products', 3600, fn() => get_featured_products());
+
+// Other tagged methods
+Cache::tags(['products'])->put('key', $value, 3600);
+Cache::tags(['products'])->forever('key', $value);
+Cache::tags(['products'])->forget('key');
+```
+
+#### Flushing by Tag
+
+```php
+// Flush all keys with a tag
+Cache::flushTag('products');
+// Clears: products_list, featured_products, etc.
+
+// Flush multiple tags at once
+Cache::flushTags(['products', 'categories']);
+```
+
+#### Practical Example
+
+Use cache tags with hooks to automatically invalidate cache when content changes:
+
+```php
+use Studiometa\Foehn\Attributes\AsAction;
+use Studiometa\Foehn\Helpers\Cache;
+
+final readonly class ProductCache
+{
+    /**
+     * Get cached products list.
+     */
+    public function list(): array
+    {
+        return Cache::tags(['products'])
+            ->remember('products_list', 3600, fn() => get_posts([
+                'post_type' => 'product',
+                'numberposts' => -1,
+            ]));
+    }
+
+    /**
+     * Get cached products by category.
+     */
+    public function byCategory(int $categoryId): array
+    {
+        return Cache::tags(['products', "category_{$categoryId}"])
+            ->remember("products_cat_{$categoryId}", 3600, fn() => get_posts([
+                'post_type' => 'product',
+                'tax_query' => [['taxonomy' => 'product_cat', 'terms' => $categoryId]],
+            ]));
+    }
+
+    /**
+     * Invalidate product cache when a product is saved.
+     */
+    #[AsAction('save_post_product')]
+    public function invalidate(int $postId): void
+    {
+        Cache::flushTag('products');
+    }
+}
+```
+
+::: tip Tag Storage
+Tag-to-key mappings are stored in a WordPress option (`foehn_cache_tags`). When a tag is flushed, all associated transients are deleted and the mapping is cleaned up automatically.
+:::
+
 ## Log
 
 Helper class for logging to WordPress debug.log.
