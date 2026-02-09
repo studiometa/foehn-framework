@@ -52,6 +52,7 @@ export default defineConfig({
             { text: "Context Providers", link: "/guide/context-providers" },
             { text: "Template Controllers", link: "/guide/template-controllers" },
             { text: "Twig Extensions", link: "/guide/twig-extensions" },
+            { text: "Query Filters", link: "/guide/query-filters" },
           ],
         },
         {
