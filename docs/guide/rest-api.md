@@ -2,6 +2,19 @@
 
 Føhn provides `#[AsRestRoute]` for creating REST API endpoints declaratively.
 
+::: tip Why REST API over admin-ajax.php?
+The REST API is the recommended approach for AJAX in WordPress since version 4.7 (2016). Compared to the legacy `admin-ajax.php`:
+
+- **Proper HTTP methods** (GET, POST, PUT, DELETE) with semantic meaning
+- **Built-in authentication** via nonces, cookies, or application passwords
+- **Cacheable** — GET requests can be cached by plugins like WP Rocket
+- **Standardized responses** with proper HTTP status codes
+- **Schema validation** for request parameters
+- **Better for headless/external consumers**
+
+The `admin-ajax.php` endpoint should be considered legacy. Use `permission: 'public'` for endpoints accessible to non-logged-in users (equivalent to `wp_ajax_nopriv_` hooks).
+:::
+
 ## Basic Endpoint
 
 ```php
@@ -411,6 +424,76 @@ final class ProductsApi
 | `method`     | `string`  | `'GET'`    | HTTP method                       |
 | `permission` | `?string` | `null`     | Permission callback or `'public'` |
 | `args`       | `array`   | `[]`       | Request arguments schema          |
+
+## Returning HTML
+
+REST endpoints can return HTML for AJAX partial loading (e.g., "load more" buttons, infinite scroll):
+
+```php
+<?php
+
+namespace App\Rest;
+
+use Studiometa\Foehn\Attributes\AsRestRoute;
+use Studiometa\Foehn\Contracts\ViewEngineInterface;
+use WP_REST_Request;
+use WP_REST_Response;
+
+final class PartialsApi
+{
+    public function __construct(
+        private readonly ViewEngineInterface $view,
+    ) {}
+
+    #[AsRestRoute(
+        namespace: 'theme/v1',
+        route: '/partials/posts',
+        method: 'GET',
+        permission: 'public',
+        args: [
+            'page' => ['type' => 'integer', 'default' => 1],
+            'per_page' => ['type' => 'integer', 'default' => 6],
+        ],
+    )]
+    public function loadMorePosts(WP_REST_Request $request): WP_REST_Response
+    {
+        $posts = \Timber\Timber::get_posts([
+            'post_type' => 'post',
+            'posts_per_page' => $request->get_param('per_page'),
+            'paged' => $request->get_param('page'),
+        ]);
+
+        $html = '';
+        foreach ($posts as $post) {
+            $html .= $this->view->render('partials/card', ['post' => $post]);
+        }
+
+        return new WP_REST_Response([
+            'html' => $html,
+            'hasMore' => count($posts) === $request->get_param('per_page'),
+        ]);
+    }
+}
+```
+
+**Frontend usage:**
+
+```js
+async function loadMore(page) {
+  const response = await fetch(`/wp-json/theme/v1/partials/posts?page=${page}`);
+  const { html, hasMore } = await response.json();
+
+  document.querySelector(".posts-grid").insertAdjacentHTML("beforeend", html);
+
+  if (!hasMore) {
+    document.querySelector(".load-more-btn").remove();
+  }
+}
+```
+
+::: tip Caching HTML responses
+Public GET endpoints returning HTML can be cached by WP Rocket and similar plugins, improving performance for repeated requests.
+:::
 
 ## See Also
 
