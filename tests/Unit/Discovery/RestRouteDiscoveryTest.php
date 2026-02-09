@@ -5,16 +5,18 @@ declare(strict_types=1);
 use Studiometa\Foehn\Discovery\RestRouteDiscovery;
 use Tests\Fixtures\NoAttributeFixture;
 use Tests\Fixtures\RestRouteFixture;
+use Studiometa\Foehn\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
+    $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
     $this->discovery = new RestRouteDiscovery();
 });
 
 describe('RestRouteDiscovery', function () {
     it('discovers REST route attributes on methods', function () {
-        $this->discovery->discover(new ReflectionClass(RestRouteFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(RestRouteFixture::class));
 
-        $items = $this->discovery->getItems();
+        $items = $this->discovery->getItems()->all();
 
         expect($items)->toHaveCount(3);
 
@@ -37,15 +39,15 @@ describe('RestRouteDiscovery', function () {
     });
 
     it('ignores classes without REST route attributes', function () {
-        $this->discovery->discover(new ReflectionClass(NoAttributeFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(NoAttributeFixture::class));
 
-        expect($this->discovery->getItems())->toBeEmpty();
+        expect($this->discovery->getItems()->isEmpty())->toBeTrue();
     });
 
     it('reports hasItems correctly', function () {
         expect($this->discovery->hasItems())->toBeFalse();
 
-        $this->discovery->discover(new ReflectionClass(RestRouteFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(RestRouteFixture::class));
 
         expect($this->discovery->hasItems())->toBeTrue();
     });

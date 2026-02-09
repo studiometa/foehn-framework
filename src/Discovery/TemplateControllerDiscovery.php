@@ -35,9 +35,10 @@ final class TemplateControllerDiscovery implements WpDiscovery
     /**
      * Discover template controller attributes on classes.
      *
+     * @param DiscoveryLocation $location
      * @param ReflectionClass<object> $class
      */
-    public function discover(ReflectionClass $class): void
+    public function discover(DiscoveryLocation $location, ReflectionClass $class): void
     {
         $attributes = $class->getAttributes(AsTemplateController::class);
 
@@ -56,7 +57,7 @@ final class TemplateControllerDiscovery implements WpDiscovery
 
         $attribute = $attributes[0]->newInstance();
 
-        $this->addItem([
+        $this->addItem($location, [
             'templates' => $attribute->getTemplates(),
             'className' => $class->getName(),
             'priority' => $attribute->priority,
@@ -69,7 +70,7 @@ final class TemplateControllerDiscovery implements WpDiscovery
     public function apply(): void
     {
         // Build controller maps
-        foreach ($this->getAllItems() as $item) {
+        foreach ($this->getItems() as $item) {
             $this->addController($item['templates'], $item['className'], $item['priority']);
         }
 

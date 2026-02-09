@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 use Studiometa\Foehn\Discovery\BlockDiscovery;
 use Tests\Fixtures\BlockFixture;
+use Studiometa\Foehn\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
+    $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
     wp_stub_reset();
     bootTestContainer();
     $this->discovery = new BlockDiscovery();
@@ -15,7 +17,7 @@ afterEach(fn() => tearDownTestContainer());
 
 describe('BlockDiscovery apply', function () {
     it('registers init action for block registration', function () {
-        $this->discovery->discover(new ReflectionClass(BlockFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(BlockFixture::class));
         $this->discovery->apply();
 
         $actions = wp_stub_get_calls('add_action');
@@ -25,7 +27,7 @@ describe('BlockDiscovery apply', function () {
     });
 
     it('registers blocks when init callback is invoked', function () {
-        $this->discovery->discover(new ReflectionClass(BlockFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(BlockFixture::class));
         $this->discovery->apply();
 
         // Simulate WordPress calling the init callback

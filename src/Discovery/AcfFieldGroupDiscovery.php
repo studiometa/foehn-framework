@@ -23,9 +23,10 @@ final class AcfFieldGroupDiscovery implements WpDiscovery
     /**
      * Discover ACF field group attributes on classes.
      *
+     * @param DiscoveryLocation $location
      * @param ReflectionClass<object> $class
      */
-    public function discover(ReflectionClass $class): void
+    public function discover(DiscoveryLocation $location, ReflectionClass $class): void
     {
         $attributes = $class->getAttributes(AsAcfFieldGroup::class);
 
@@ -44,7 +45,7 @@ final class AcfFieldGroupDiscovery implements WpDiscovery
 
         $attribute = $attributes[0]->newInstance();
 
-        $this->addItem([
+        $this->addItem($location, [
             'attribute' => $attribute,
             'className' => $class->getName(),
         ]);
@@ -57,7 +58,7 @@ final class AcfFieldGroupDiscovery implements WpDiscovery
     {
         // ACF field groups must be registered on acf/init
         add_action('acf/init', function (): void {
-            foreach ($this->getAllItems() as $item) {
+            foreach ($this->getItems() as $item) {
                 // Handle cached format
                 if (isset($item['name'])) {
                     $this->registerFieldGroupFromCache($item);

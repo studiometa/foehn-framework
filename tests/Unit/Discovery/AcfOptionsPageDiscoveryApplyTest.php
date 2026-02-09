@@ -6,15 +6,17 @@ use Studiometa\Foehn\Discovery\AcfOptionsPageDiscovery;
 use Tests\Fixtures\AcfOptionsPageFixture;
 use Tests\Fixtures\AcfOptionsPageFullFixture;
 use Tests\Fixtures\AcfOptionsSubPageFixture;
+use Studiometa\Foehn\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
+    $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
     wp_stub_reset();
     $this->discovery = new AcfOptionsPageDiscovery();
 });
 
 describe('AcfOptionsPageDiscovery::apply()', function () {
     it('registers action on acf/init hook', function () {
-        $this->discovery->discover(new ReflectionClass(AcfOptionsPageFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(AcfOptionsPageFixture::class));
         $this->discovery->apply();
 
         $calls = wp_stub_get_calls('add_action');
@@ -24,7 +26,7 @@ describe('AcfOptionsPageDiscovery::apply()', function () {
     });
 
     it('registers top-level options page with acf_add_options_page', function () {
-        $this->discovery->discover(new ReflectionClass(AcfOptionsPageFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(AcfOptionsPageFixture::class));
         $this->discovery->apply();
 
         // Simulate the acf/init hook firing
@@ -49,7 +51,7 @@ describe('AcfOptionsPageDiscovery::apply()', function () {
     });
 
     it('registers sub-page options page with acf_add_options_sub_page', function () {
-        $this->discovery->discover(new ReflectionClass(AcfOptionsSubPageFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(AcfOptionsSubPageFixture::class));
         $this->discovery->apply();
 
         // Simulate the acf/init hook firing
@@ -67,7 +69,7 @@ describe('AcfOptionsPageDiscovery::apply()', function () {
     });
 
     it('registers ACF field group when class implements AcfOptionsPageInterface', function () {
-        $this->discovery->discover(new ReflectionClass(AcfOptionsPageFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(AcfOptionsPageFixture::class));
         $this->discovery->apply();
 
         // Simulate the acf/init hook firing
@@ -86,7 +88,7 @@ describe('AcfOptionsPageDiscovery::apply()', function () {
     });
 
     it('does not register ACF field group when class does not implement interface', function () {
-        $this->discovery->discover(new ReflectionClass(AcfOptionsSubPageFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(AcfOptionsSubPageFixture::class));
         $this->discovery->apply();
 
         // Simulate the acf/init hook firing
@@ -100,7 +102,7 @@ describe('AcfOptionsPageDiscovery::apply()', function () {
     });
 
     it('includes updateButton and updatedMessage in config when set', function () {
-        $this->discovery->discover(new ReflectionClass(AcfOptionsPageFullFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(AcfOptionsPageFullFixture::class));
         $this->discovery->apply();
 
         // Simulate the acf/init hook firing

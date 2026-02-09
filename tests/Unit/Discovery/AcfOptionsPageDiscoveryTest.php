@@ -6,16 +6,18 @@ use Studiometa\Foehn\Discovery\AcfOptionsPageDiscovery;
 use Tests\Fixtures\AcfOptionsPageFixture;
 use Tests\Fixtures\AcfOptionsSubPageFixture;
 use Tests\Fixtures\NoAttributeFixture;
+use Studiometa\Foehn\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
+    $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
     $this->discovery = new AcfOptionsPageDiscovery();
 });
 
 describe('AcfOptionsPageDiscovery', function () {
     it('discovers ACF options page attributes on classes', function () {
-        $this->discovery->discover(new ReflectionClass(AcfOptionsPageFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(AcfOptionsPageFixture::class));
 
-        $items = $this->discovery->getItems();
+        $items = $this->discovery->getItems()->all();
 
         expect($items)->toHaveCount(1);
         expect($items[0]['className'])->toBe(AcfOptionsPageFixture::class);
@@ -31,9 +33,9 @@ describe('AcfOptionsPageDiscovery', function () {
     });
 
     it('discovers sub-page options pages', function () {
-        $this->discovery->discover(new ReflectionClass(AcfOptionsSubPageFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(AcfOptionsSubPageFixture::class));
 
-        $items = $this->discovery->getItems();
+        $items = $this->discovery->getItems()->all();
 
         expect($items)->toHaveCount(1);
         expect($items[0]['attribute']->pageTitle)->toBe('Social Media');
@@ -43,15 +45,15 @@ describe('AcfOptionsPageDiscovery', function () {
     });
 
     it('ignores classes without ACF options page attribute', function () {
-        $this->discovery->discover(new ReflectionClass(NoAttributeFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(NoAttributeFixture::class));
 
-        expect($this->discovery->getItems())->toBeEmpty();
+        expect($this->discovery->getItems()->isEmpty())->toBeTrue();
     });
 
     it('reports hasItems correctly', function () {
         expect($this->discovery->hasItems())->toBeFalse();
 
-        $this->discovery->discover(new ReflectionClass(AcfOptionsPageFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(AcfOptionsPageFixture::class));
 
         expect($this->discovery->hasItems())->toBeTrue();
     });

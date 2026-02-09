@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 use Studiometa\Foehn\Discovery\HookDiscovery;
 use Tests\Fixtures\HookFixture;
+use Studiometa\Foehn\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
+    $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
     wp_stub_reset();
     bootTestContainer();
     $this->discovery = new HookDiscovery();
@@ -15,7 +17,7 @@ afterEach(fn() => tearDownTestContainer());
 
 describe('HookDiscovery apply', function () {
     it('registers discovered actions with WordPress', function () {
-        $this->discovery->discover(new ReflectionClass(HookFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(HookFixture::class));
         $this->discovery->apply();
 
         $actions = wp_stub_get_calls('add_action');
@@ -31,7 +33,7 @@ describe('HookDiscovery apply', function () {
     });
 
     it('registers discovered filters with WordPress', function () {
-        $this->discovery->discover(new ReflectionClass(HookFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(HookFixture::class));
         $this->discovery->apply();
 
         $filters = wp_stub_get_calls('add_filter');
@@ -53,7 +55,7 @@ describe('HookDiscovery apply', function () {
     });
 
     it('registers hooks from cached data', function () {
-        $this->discovery->restoreFromCache([
+        $this->discovery->restoreFromCache(['App\\' => [
             [
                 'type' => 'action',
                 'hook' => 'save_post',
@@ -62,7 +64,7 @@ describe('HookDiscovery apply', function () {
                 'priority' => 15,
                 'acceptedArgs' => 3,
             ],
-        ]);
+        ]]);
 
         $this->discovery->apply();
 

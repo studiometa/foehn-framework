@@ -119,11 +119,11 @@ final class DiscoveryWarmCommand implements CliCommandInterface
      * Collect cache data and display statistics.
      *
      * @param array<class-string, object> $discoveries
-     * @return array<string, array<int, array<string, mixed>>>
+     * @return array<string, array<string, list<array<string, mixed>>>>
      */
     private function collectAndDisplayStats(array $discoveries): array
     {
-        /** @var array<string, array<int, array<string, mixed>>> $cacheData */
+        /** @var array<string, array<string, list<array<string, mixed>>>> $cacheData */
         $cacheData = [];
 
         foreach ($discoveries as $className => $discovery) {
@@ -132,7 +132,7 @@ final class DiscoveryWarmCommand implements CliCommandInterface
                 continue;
             }
 
-            /** @var array<int, array<string, mixed>> $data */
+            /** @var array<string, list<array<string, mixed>>> $data */
             $data = $discovery->getCacheableData();
 
             if (empty($data)) {
@@ -141,9 +141,9 @@ final class DiscoveryWarmCommand implements CliCommandInterface
 
             $cacheData[$className] = $data;
 
-            // Display stats
+            // Display stats — count items across all locations
             $label = $this->getDiscoveryLabel($className);
-            $count = count($data);
+            $count = array_sum(array_map('count', $data));
             $this->cli->log("  ✓ {$count} {$label} discovered");
         }
 

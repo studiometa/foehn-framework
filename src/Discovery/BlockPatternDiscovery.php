@@ -25,9 +25,10 @@ final class BlockPatternDiscovery implements WpDiscovery
     /**
      * Discover block pattern attributes on classes.
      *
+     * @param DiscoveryLocation $location
      * @param ReflectionClass<object> $class
      */
-    public function discover(ReflectionClass $class): void
+    public function discover(DiscoveryLocation $location, ReflectionClass $class): void
     {
         $attributes = $class->getAttributes(AsBlockPattern::class);
 
@@ -37,7 +38,7 @@ final class BlockPatternDiscovery implements WpDiscovery
 
         $attribute = $attributes[0]->newInstance();
 
-        $this->addItem([
+        $this->addItem($location, [
             'attribute' => $attribute,
             'className' => $class->getName(),
             'implementsInterface' => $class->implementsInterface(BlockPatternInterface::class),
@@ -50,7 +51,7 @@ final class BlockPatternDiscovery implements WpDiscovery
     public function apply(): void
     {
         add_action('init', function (): void {
-            foreach ($this->getAllItems() as $item) {
+            foreach ($this->getItems() as $item) {
                 // Handle cached format
                 if (isset($item['patternName'])) {
                     $this->registerPatternFromCache($item);

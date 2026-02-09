@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 use Studiometa\Foehn\Discovery\ImageSizeDiscovery;
 use Tests\Fixtures\ImageSizeFixture;
+use Studiometa\Foehn\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
+    $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
     $this->discovery = new ImageSizeDiscovery();
     $this->addedImageSizes = [];
     $this->themeSupports = [];
@@ -37,7 +39,7 @@ describe('ImageSizeDiscovery::apply', function () {
     it('registers discovered image sizes with WordPress', function () {
         global $testAddedImageSizes;
 
-        $this->discovery->discover(new ReflectionClass(ImageSizeFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(ImageSizeFixture::class));
         $this->discovery->apply();
 
         expect($testAddedImageSizes)->toHaveCount(1);
@@ -50,7 +52,7 @@ describe('ImageSizeDiscovery::apply', function () {
     it('enables post-thumbnails theme support when image sizes are discovered', function () {
         global $testThemeSupports;
 
-        $this->discovery->discover(new ReflectionClass(ImageSizeFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(ImageSizeFixture::class));
         $this->discovery->apply();
 
         expect($testThemeSupports)->toContain('post-thumbnails');

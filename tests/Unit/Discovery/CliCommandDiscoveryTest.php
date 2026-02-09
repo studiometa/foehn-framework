@@ -7,16 +7,18 @@ use Tempest\Container\GenericContainer;
 use Tests\Fixtures\CliCommandFixture;
 use Tests\Fixtures\InvalidCliCommandFixture;
 use Tests\Fixtures\NoAttributeFixture;
+use Studiometa\Foehn\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
+    $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
     $this->discovery = new CliCommandDiscovery(new GenericContainer());
 });
 
 describe('CliCommandDiscovery', function () {
     it('discovers CLI command attributes on classes', function () {
-        $this->discovery->discover(new ReflectionClass(CliCommandFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(CliCommandFixture::class));
 
-        $items = $this->discovery->getItems();
+        $items = $this->discovery->getItems()->all();
 
         expect($items)->toHaveCount(1);
         expect($items[0]['className'])->toBe(CliCommandFixture::class);
@@ -26,21 +28,21 @@ describe('CliCommandDiscovery', function () {
     });
 
     it('ignores classes without CLI command attribute', function () {
-        $this->discovery->discover(new ReflectionClass(NoAttributeFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(NoAttributeFixture::class));
 
-        expect($this->discovery->getItems())->toBeEmpty();
+        expect($this->discovery->getItems()->isEmpty())->toBeTrue();
     });
 
     it('ignores classes that do not implement CliCommandInterface', function () {
-        $this->discovery->discover(new ReflectionClass(InvalidCliCommandFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(InvalidCliCommandFixture::class));
 
-        expect($this->discovery->getItems())->toBeEmpty();
+        expect($this->discovery->getItems()->isEmpty())->toBeTrue();
     });
 
     it('reports hasItems correctly', function () {
         expect($this->discovery->hasItems())->toBeFalse();
 
-        $this->discovery->discover(new ReflectionClass(CliCommandFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(CliCommandFixture::class));
 
         expect($this->discovery->hasItems())->toBeTrue();
     });

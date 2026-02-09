@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 use Studiometa\Foehn\Discovery\CliCommandDiscovery;
 use Tempest\Container\GenericContainer;
+use Studiometa\Foehn\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
+    $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
     $container = new GenericContainer();
 
     $this->discovery = new CliCommandDiscovery($container);
@@ -14,7 +16,7 @@ beforeEach(function () {
 describe('CliCommandDiscovery caching', function () {
     it('converts items to cacheable format', function () {
         $ref = new ReflectionMethod($this->discovery, 'addItem');
-        $ref->invoke($this->discovery, [
+        $ref->invoke($this->discovery, $this->location, [
             'className' => 'App\\Console\\MakeBlockCommand',
             'name' => 'make:block',
             'description' => 'Create a new block',
@@ -23,8 +25,8 @@ describe('CliCommandDiscovery caching', function () {
 
         $cacheableData = $this->discovery->getCacheableData();
 
-        expect($cacheableData)->toHaveCount(1);
-        expect($cacheableData[0])->toBe([
+        expect($cacheableData['App\\'])->toHaveCount(1);
+        expect($cacheableData['App\\'][0])->toBe([
             'className' => 'App\\Console\\MakeBlockCommand',
             'name' => 'make:block',
             'description' => 'Create a new block',
@@ -34,7 +36,7 @@ describe('CliCommandDiscovery caching', function () {
 
     it('handles minimal configuration', function () {
         $ref = new ReflectionMethod($this->discovery, 'addItem');
-        $ref->invoke($this->discovery, [
+        $ref->invoke($this->discovery, $this->location, [
             'className' => 'App\\Console\\CacheClearCommand',
             'name' => 'cache:clear',
             'description' => 'Clear the cache',
@@ -43,22 +45,22 @@ describe('CliCommandDiscovery caching', function () {
 
         $cacheableData = $this->discovery->getCacheableData();
 
-        expect($cacheableData)->toHaveCount(1);
-        expect($cacheableData[0]['name'])->toBe('cache:clear');
-        expect($cacheableData[0]['description'])->toBe('Clear the cache');
-        expect($cacheableData[0]['longDescription'])->toBeNull();
+        expect($cacheableData['App\\'])->toHaveCount(1);
+        expect($cacheableData['App\\'][0]['name'])->toBe('cache:clear');
+        expect($cacheableData['App\\'][0]['description'])->toBe('Clear the cache');
+        expect($cacheableData['App\\'][0]['longDescription'])->toBeNull();
     });
 
     it('handles multiple commands', function () {
         $ref = new ReflectionMethod($this->discovery, 'addItem');
 
-        $ref->invoke($this->discovery, [
+        $ref->invoke($this->discovery, $this->location, [
             'className' => 'App\\Console\\MakePostTypeCommand',
             'name' => 'make:post-type',
             'description' => 'Create a post type',
             'longDescription' => null,
         ]);
-        $ref->invoke($this->discovery, [
+        $ref->invoke($this->discovery, $this->location, [
             'className' => 'App\\Console\\MakeTaxonomyCommand',
             'name' => 'make:taxonomy',
             'description' => 'Create a taxonomy',
@@ -67,9 +69,9 @@ describe('CliCommandDiscovery caching', function () {
 
         $cacheableData = $this->discovery->getCacheableData();
 
-        expect($cacheableData)->toHaveCount(2);
-        expect($cacheableData[0]['name'])->toBe('make:post-type');
-        expect($cacheableData[1]['name'])->toBe('make:taxonomy');
+        expect($cacheableData['App\\'])->toHaveCount(2);
+        expect($cacheableData['App\\'][0]['name'])->toBe('make:post-type');
+        expect($cacheableData['App\\'][1]['name'])->toBe('make:taxonomy');
     });
 
     it('can restore from cache', function () {
@@ -82,7 +84,7 @@ describe('CliCommandDiscovery caching', function () {
             ],
         ];
 
-        $this->discovery->restoreFromCache($cachedData);
+        $this->discovery->restoreFromCache(['App\\' => $cachedData]);
 
         expect($this->discovery->wasRestoredFromCache())->toBeTrue();
     });

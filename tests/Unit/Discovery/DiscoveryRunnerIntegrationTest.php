@@ -114,13 +114,15 @@ describe('DiscoveryRunner integration', function () {
 
         $cache->store([
             HookDiscovery::class => [
-                [
-                    'type' => 'action',
-                    'hook' => 'init',
-                    'className' => 'App\\Hooks\\Test',
-                    'methodName' => 'onInit',
-                    'priority' => 10,
-                    'acceptedArgs' => 1,
+                'App\\' => [
+                    [
+                        'type' => 'action',
+                        'hook' => 'init',
+                        'className' => 'App\\Hooks\\Test',
+                        'methodName' => 'onInit',
+                        'priority' => 10,
+                        'acceptedArgs' => 1,
+                    ],
                 ],
             ],
         ]);

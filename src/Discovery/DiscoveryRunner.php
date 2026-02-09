@@ -23,8 +23,11 @@ final class DiscoveryRunner
     /** @var array<class-string<WpDiscovery>, WpDiscovery> */
     private array $discoveries = [];
 
-    /** @var array<string, array<int, array<string, mixed>>>|null */
+    /** @var array<string, array<string, list<array<string, mixed>>>>|null */
     private ?array $cachedData = null;
+
+    /** @var DiscoveryLocation|null */
+    private ?DiscoveryLocation $appLocation = null;
 
     private bool $cacheLoaded = false;
     private bool $discovered = false;
@@ -156,23 +159,42 @@ final class DiscoveryRunner
                     continue;
                 }
 
-                $discovery->restoreFromCache($this->cachedData[$className]);
+                /** @var array<string, list<array<string, mixed>>> $discoveryData */
+                $discoveryData = $this->cachedData[$className];
+                $discovery->restoreFromCache($discoveryData);
             }
 
             return;
         }
 
-        // No cache — scan classes and run discover()
-        $classes = $this->scanClasses();
+        // Build app location
+        $this->appLocation = $this->buildAppLocation();
 
-        foreach ($classes as $class) {
-            foreach ($this->discoveries as $discovery) {
-                $discovery->discover($class);
+        // No cache — scan classes and run discover()
+        if ($this->appLocation !== null) {
+            $classes = $this->scanClasses();
+
+            foreach ($classes as $class) {
+                foreach ($this->discoveries as $discovery) {
+                    $discovery->discover($this->appLocation, $class);
+                }
             }
         }
 
         // Also discover opt-in hook classes from config
         $this->discoverOptInHooks();
+    }
+
+    /**
+     * Build the DiscoveryLocation for the app directory.
+     */
+    private function buildAppLocation(): ?DiscoveryLocation
+    {
+        if ($this->appPath === null) {
+            return null;
+        }
+
+        return ClassScanner::buildLocation($this->appPath);
     }
 
     /**
@@ -186,6 +208,9 @@ final class DiscoveryRunner
             return;
         }
 
+        // Use the app location for opt-in hooks, or create a fallback
+        $location = $this->appLocation ?? DiscoveryLocation::app('App\\', '');
+
         foreach ($config->hooks as $hookClass) {
             if (!class_exists($hookClass)) {
                 continue;
@@ -195,7 +220,7 @@ final class DiscoveryRunner
                 $reflection = new ReflectionClass($hookClass);
 
                 foreach ($this->discoveries as $discovery) {
-                    $discovery->discover($reflection);
+                    $discovery->discover($location, $reflection);
                 }
             } catch (\ReflectionException $e) {
                 $this->logDiscoveryFailure($hookClass, $e);
@@ -226,179 +251,11 @@ final class DiscoveryRunner
      */
     private function scanClasses(): array
     {
-        if ($this->appPath === null) {
+        if ($this->appLocation === null) {
             return [];
         }
 
-        $classes = [];
-        $appPath = realpath($this->appPath);
-
-        if ($appPath === false) {
-            return [];
-        }
-
-        // Find all PHP files in the app directory
-        $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator(
-            $appPath,
-            \RecursiveDirectoryIterator::SKIP_DOTS,
-        ));
-
-        // Get Composer's class loader to resolve class names
-        $classMap = $this->buildClassMapFromAutoload($appPath);
-
-        /** @var \SplFileInfo $file */
-        foreach ($iterator as $file) {
-            if ($file->getExtension() !== 'php') {
-                continue;
-            }
-
-            $filePath = $file->getRealPath();
-
-            if ($filePath === false) {
-                continue;
-            }
-
-            // Try to find the class name from the class map
-            $className = $classMap[$filePath] ?? $this->extractClassName($filePath);
-
-            if ($className === null) {
-                continue;
-            }
-
-            if (!class_exists($className)) {
-                continue;
-            }
-
-            try {
-                $reflection = new ReflectionClass($className);
-
-                // Skip abstract classes and interfaces
-                if ($reflection->isAbstract() || $reflection->isInterface() || $reflection->isTrait()) {
-                    continue;
-                }
-
-                $classes[] = $reflection;
-            } catch (\ReflectionException $e) {
-                $this->logDiscoveryFailure($className, $e);
-
-                continue;
-            }
-        }
-
-        return $classes;
-    }
-
-    /**
-     * Build a file path to class name map from Composer's PSR-4 autoload.
-     *
-     * @return array<string, string> Map of file path => class name
-     */
-    private function buildClassMapFromAutoload(string $appPath): array
-    {
-        $map = [];
-
-        // Try to get the Composer autoloader
-        $autoloadFiles = [
-            dirname($appPath) . '/vendor/autoload.php',
-            $appPath . '/../../vendor/autoload.php',
-            $appPath . '/../../../vendor/autoload.php',
-        ];
-
-        $loader = null;
-
-        foreach ($autoloadFiles as $autoloadFile) {
-            $resolved = realpath($autoloadFile);
-
-            if ($resolved !== false && file_exists($resolved)) {
-                $loader = require $resolved;
-
-                break;
-            }
-        }
-
-        if ($loader === null || !$loader instanceof \Composer\Autoload\ClassLoader) {
-            return $map;
-        }
-
-        // Use PSR-4 prefixes to build the map
-        foreach ($loader->getPrefixesPsr4() as $prefix => $dirs) {
-            foreach ($dirs as $dir) {
-                $dir = realpath($dir);
-
-                if ($dir === false) {
-                    continue;
-                }
-
-                // Check if this PSR-4 prefix maps to a directory within our app path
-                if (!str_starts_with($appPath, $dir) && !str_starts_with($dir, $appPath)) {
-                    continue;
-                }
-
-                // Scan files under this directory
-                if (!is_dir($dir)) {
-                    continue;
-                }
-
-                $dirIterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator(
-                    $dir,
-                    \RecursiveDirectoryIterator::SKIP_DOTS,
-                ));
-
-                /** @var \SplFileInfo $file */
-                foreach ($dirIterator as $file) {
-                    if ($file->getExtension() !== 'php') {
-                        continue;
-                    }
-
-                    $filePath = $file->getRealPath();
-
-                    if ($filePath === false) {
-                        continue;
-                    }
-
-                    // Convert file path to class name
-                    $relativePath = substr($filePath, strlen($dir) + 1);
-                    $className = $prefix . str_replace(['/', '.php'], ['\\', ''], $relativePath);
-                    $map[$filePath] = $className;
-                }
-            }
-        }
-
-        return $map;
-    }
-
-    /**
-     * Extract class name from a PHP file by parsing namespace and class declarations.
-     *
-     * @param string $filePath
-     * @return string|null
-     */
-    private function extractClassName(string $filePath): ?string
-    {
-        $content = file_get_contents($filePath);
-
-        if ($content === false) {
-            return null;
-        }
-
-        $namespace = null;
-        $class = null;
-        $matches = null;
-
-        // Simple regex-based extraction
-        if (preg_match('/namespace\s+([^;]+);/', $content, $matches)) {
-            $namespace = trim($matches[1]);
-        }
-
-        if (preg_match('/(?:final\s+|abstract\s+|readonly\s+)*class\s+(\w+)/', $content, $matches)) {
-            $class = $matches[1];
-        }
-
-        if ($class === null) {
-            return null;
-        }
-
-        return $namespace !== null ? $namespace . '\\' . $class : $class;
+        return ClassScanner::scan($this->appLocation);
     }
 
     /**

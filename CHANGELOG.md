@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Add `Cache::tags()` for tagged cache invalidation ([43f1f95], [#78])
+- Add `DiscoveryLocation` and `WpDiscoveryItems` for location-aware discovery ([758b19f], [#79])
+
+### Changed
+
+- Align `WpDiscovery` interface with Tempest conventions: `discover()` now receives `DiscoveryLocation`, items managed via `WpDiscoveryItems` ([758b19f], [#79])
 - Add `QueryFiltersConfig` and `QueryFiltersHook` for URL-based archive filtering ([a487181], [#77])
 - Add `QueryExtension` with `query_*` Twig helpers for filter UI building ([5911c2c], [#77])
 - Add Render API REST endpoint for cacheable template rendering via AJAX ([7d9f33a], [#67])
@@ -25,6 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#77]: https://github.com/studiometa/foehn/pull/77
 [7d9f33a]: https://github.com/studiometa/foehn/commit/7d9f33a
 [#67]: https://github.com/studiometa/foehn/pull/67
+[758b19f]: https://github.com/studiometa/foehn/commit/758b19f
+[#79]: https://github.com/studiometa/foehn/pull/79
 [95ba3d7]: https://github.com/studiometa/foehn/commit/95ba3d7
 [#74]: https://github.com/studiometa/foehn/pull/74
 
