@@ -70,6 +70,21 @@ GET /wp-json/foehn/v1/render?templates[hero]=blocks/hero&templates[card]=partial
 }
 ```
 
+## Context
+
+Templates rendered via the Render API have access to:
+
+- **Timber global context**: `site`, `theme`, `user`, `http_host`, `wp_title`, `body_class`
+- **Shared data**: Values registered via `ViewEngineInterface::share()`
+- **Context providers**: All registered `#[AsContextProvider]` matching the template
+- **Request parameters**: `post`, `term`, and any scalar query parameters
+
+```twig
+{# All these are available in Render API templates #}
+<a href="{{ site.url }}">{{ site.name }}</a>
+<p>Logged in: {{ user ? 'Yes' : 'No' }}</p>
+```
+
 ## Usage Examples
 
 ### Load More Posts
