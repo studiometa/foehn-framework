@@ -43,10 +43,11 @@ describe('MenuDiscovery', function () {
 
         $cacheData = $this->discovery->getCacheableData();
 
-        expect($cacheData)->toHaveCount(1);
-        expect($cacheData[0]['location'])->toBe('primary');
-        expect($cacheData[0]['description'])->toBe('Primary Navigation');
-        expect($cacheData[0]['className'])->toBe(MenuFixture::class);
+        expect($cacheData)->toHaveKey('App\\');
+        expect($cacheData['App\\'])->toHaveCount(1);
+        expect($cacheData['App\\'][0]['location'])->toBe('primary');
+        expect($cacheData['App\\'][0]['description'])->toBe('Primary Navigation');
+        expect($cacheData['App\\'][0]['className'])->toBe(MenuFixture::class);
 
         // Restore from cache
         $newDiscovery = new MenuDiscovery();

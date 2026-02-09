@@ -62,12 +62,10 @@ describe('CacheableDiscovery', function () {
 
     it('can restore from cache', function () {
         $cachedData = [
-            'App\\' => [
-                ['name' => 'cached-item', 'value' => 'cached-value'],
-            ],
+            ['name' => 'cached-item', 'value' => 'cached-value'],
         ];
 
-        $this->discovery->restoreFromCache($cachedData);
+        $this->discovery->restoreFromCache(['App\\' => $cachedData]);
 
         expect($this->discovery->wasRestoredFromCache())->toBeTrue();
 

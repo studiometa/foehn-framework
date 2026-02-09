@@ -63,12 +63,13 @@ describe('TwigExtensionDiscovery', function () {
 
         $cacheableData = $this->discovery->getCacheableData();
 
-        expect($cacheableData)->toHaveCount(2);
-        expect($cacheableData[0])->toBe([
+        expect($cacheableData)->toHaveKey('App\\');
+        expect($cacheableData['App\\'])->toHaveCount(2);
+        expect($cacheableData['App\\'][0])->toBe([
             'className' => TwigExtensionFixture::class,
             'priority' => 10,
         ]);
-        expect($cacheableData[1])->toBe([
+        expect($cacheableData['App\\'][1])->toBe([
             'className' => TwigExtensionWithPriorityFixture::class,
             'priority' => 5,
         ]);
@@ -80,7 +81,7 @@ describe('TwigExtensionDiscovery', function () {
             ['className' => TwigExtensionWithPriorityFixture::class, 'priority' => 5],
         ];
 
-        $this->discovery->restoreFromCache($cachedData);
+        $this->discovery->restoreFromCache(['App\\' => $cachedData]);
 
         expect($this->discovery->wasRestoredFromCache())->toBeTrue();
     });

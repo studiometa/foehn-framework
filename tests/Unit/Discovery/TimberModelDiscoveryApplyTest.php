@@ -65,7 +65,7 @@ describe('TimberModelDiscovery apply', function () {
     });
 
     it('registers models from cached data', function () {
-        $this->discovery->restoreFromCache([
+        $this->discovery->restoreFromCache(['App\\' => [
             [
                 'name' => 'page',
                 'className' => TimberModelPostFixture::class,
@@ -76,7 +76,7 @@ describe('TimberModelDiscovery apply', function () {
                 'className' => TimberModelTermFixture::class,
                 'type' => 'term',
             ],
-        ]);
+        ]]);
 
         $this->discovery->apply();
 

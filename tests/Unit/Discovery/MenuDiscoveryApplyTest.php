@@ -44,13 +44,13 @@ describe('MenuDiscovery apply', function () {
     });
 
     it('registers menus from cached data', function () {
-        $this->discovery->restoreFromCache([
+        $this->discovery->restoreFromCache(['App\\' => [
             [
                 'location' => 'footer',
                 'description' => 'Footer Navigation',
                 'className' => MenuFixture::class,
             ],
-        ]);
+        ]]);
 
         $this->discovery->apply();
 
@@ -61,7 +61,7 @@ describe('MenuDiscovery apply', function () {
     });
 
     it('registers multiple menus', function () {
-        $this->discovery->restoreFromCache([
+        $this->discovery->restoreFromCache(['App\\' => [
             [
                 'location' => 'primary',
                 'description' => 'Primary Navigation',
@@ -72,7 +72,7 @@ describe('MenuDiscovery apply', function () {
                 'description' => 'Footer Navigation',
                 'className' => MenuFixture::class,
             ],
-        ]);
+        ]]);
 
         $this->discovery->apply();
 

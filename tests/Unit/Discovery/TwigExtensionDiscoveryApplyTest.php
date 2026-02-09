@@ -76,7 +76,7 @@ describe('TwigExtensionDiscovery::apply', function () {
             ['className' => TwigExtensionFixture::class, 'priority' => 10],
         ];
 
-        $this->discovery->restoreFromCache($cachedData);
+        $this->discovery->restoreFromCache(['App\\' => $cachedData]);
         $this->discovery->apply();
 
         $calls = wp_stub_get_calls('add_filter');

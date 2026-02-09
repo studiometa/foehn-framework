@@ -95,7 +95,7 @@ describe('AcfFieldGroupDiscovery apply', function () {
             ],
         ];
 
-        $this->discovery->restoreFromCache($cachedData);
+        $this->discovery->restoreFromCache(['App\\' => $cachedData]);
         $this->discovery->apply();
 
         $actions = wp_stub_get_calls('add_action');
@@ -148,7 +148,7 @@ describe('AcfFieldGroupDiscovery apply', function () {
             ],
         ];
 
-        $this->discovery->restoreFromCache($cachedData);
+        $this->discovery->restoreFromCache(['App\\' => $cachedData]);
         $this->discovery->apply();
 
         $actions = wp_stub_get_calls('add_action');

@@ -17,15 +17,16 @@ describe('MenuDiscovery caching', function () {
 
         $cacheData = $this->discovery->getCacheableData();
 
-        expect($cacheData)->toHaveCount(1);
-        expect($cacheData[0]['location'])->toBe('primary');
-        expect($cacheData[0]['description'])->toBe('Primary Navigation');
-        expect($cacheData[0]['className'])->toBe(MenuFixture::class);
+        expect($cacheData)->toHaveKey('App\\');
+        expect($cacheData['App\\'])->toHaveCount(1);
+        expect($cacheData['App\\'][0]['location'])->toBe('primary');
+        expect($cacheData['App\\'][0]['description'])->toBe('Primary Navigation');
+        expect($cacheData['App\\'][0]['className'])->toBe(MenuFixture::class);
     });
 
     it('handles multiple menus', function () {
         // Manually add items to simulate multiple discovered menus
-        $this->discovery->restoreFromCache([
+        $this->discovery->restoreFromCache(['App\\' => [
             [
                 'location' => 'primary',
                 'description' => 'Primary Navigation',
@@ -36,7 +37,7 @@ describe('MenuDiscovery caching', function () {
                 'description' => 'Footer Navigation',
                 'className' => MenuFixture::class,
             ],
-        ]);
+        ]]);
 
         expect($this->discovery->wasRestoredFromCache())->toBeTrue();
     });
@@ -50,7 +51,7 @@ describe('MenuDiscovery caching', function () {
             ],
         ];
 
-        $this->discovery->restoreFromCache($cacheData);
+        $this->discovery->restoreFromCache(['App\\' => $cacheData]);
 
         expect($this->discovery->wasRestoredFromCache())->toBeTrue();
     });
@@ -61,6 +62,6 @@ describe('MenuDiscovery caching', function () {
         $cacheData = $this->discovery->getCacheableData();
 
         // All required fields should be present
-        expect($cacheData[0])->toHaveKeys(['location', 'description', 'className']);
+        expect($cacheData['App\\'][0])->toHaveKeys(['location', 'description', 'className']);
     });
 });

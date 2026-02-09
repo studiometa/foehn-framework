@@ -47,7 +47,7 @@ describe('PostTypeDiscovery apply', function () {
     });
 
     it('registers post types from cached data', function () {
-        $this->discovery->restoreFromCache([
+        $this->discovery->restoreFromCache(['App\\' => [
             [
                 'name' => 'event',
                 'singular' => 'Event',
@@ -66,7 +66,7 @@ describe('PostTypeDiscovery apply', function () {
                 'className' => PostTypeFixture::class,
                 'implementsConfig' => false,
             ],
-        ]);
+        ]]);
 
         $this->discovery->apply();
 
