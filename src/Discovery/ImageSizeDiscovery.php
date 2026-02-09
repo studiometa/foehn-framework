@@ -21,9 +21,10 @@ final class ImageSizeDiscovery implements WpDiscovery
     /**
      * Discover image size attributes on classes.
      *
+     * @param DiscoveryLocation $location
      * @param ReflectionClass<object> $class
      */
-    public function discover(ReflectionClass $class): void
+    public function discover(DiscoveryLocation $location, ReflectionClass $class): void
     {
         $attributes = $class->getAttributes(AsImageSize::class);
 
@@ -34,7 +35,7 @@ final class ImageSizeDiscovery implements WpDiscovery
         $attribute = $attributes[0]->newInstance();
         $name = $attribute->name ?? $this->deriveNameFromClass($class->getShortName());
 
-        $this->addItem([
+        $this->addItem($location, [
             'name' => $name,
             'width' => $attribute->width,
             'height' => $attribute->height,
@@ -48,7 +49,7 @@ final class ImageSizeDiscovery implements WpDiscovery
      */
     public function apply(): void
     {
-        $items = iterator_to_array($this->getAllItems());
+        $items = iterator_to_array($this->getItems());
 
         if ($items === []) {
             return;

@@ -22,9 +22,10 @@ final class AcfOptionsPageDiscovery implements WpDiscovery
     /**
      * Discover ACF options page attributes on classes.
      *
+     * @param DiscoveryLocation $location
      * @param ReflectionClass<object> $class
      */
-    public function discover(ReflectionClass $class): void
+    public function discover(DiscoveryLocation $location, ReflectionClass $class): void
     {
         $attributes = $class->getAttributes(AsAcfOptionsPage::class);
 
@@ -34,7 +35,7 @@ final class AcfOptionsPageDiscovery implements WpDiscovery
 
         $attribute = $attributes[0]->newInstance();
 
-        $this->addItem([
+        $this->addItem($location, [
             'attribute' => $attribute,
             'className' => $class->getName(),
             'hasFields' => $class->implementsInterface(AcfOptionsPageInterface::class),
@@ -48,7 +49,7 @@ final class AcfOptionsPageDiscovery implements WpDiscovery
     {
         // ACF options pages must be registered on acf/init
         add_action('acf/init', function (): void {
-            foreach ($this->getAllItems() as $item) {
+            foreach ($this->getItems() as $item) {
                 $this->registerOptionsPage($item);
             }
         });

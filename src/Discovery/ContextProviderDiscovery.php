@@ -26,9 +26,10 @@ final class ContextProviderDiscovery implements WpDiscovery
     /**
      * Discover context provider attributes on classes.
      *
+     * @param DiscoveryLocation $location
      * @param ReflectionClass<object> $class
      */
-    public function discover(ReflectionClass $class): void
+    public function discover(DiscoveryLocation $location, ReflectionClass $class): void
     {
         $attributes = $class->getAttributes(AsContextProvider::class);
 
@@ -47,7 +48,7 @@ final class ContextProviderDiscovery implements WpDiscovery
 
         $attribute = $attributes[0]->newInstance();
 
-        $this->addItem([
+        $this->addItem($location, [
             'templates' => $attribute->getTemplates(),
             'className' => $class->getName(),
             'priority' => $attribute->priority,
@@ -62,7 +63,7 @@ final class ContextProviderDiscovery implements WpDiscovery
         /** @var ContextProviderRegistry $registry */
         $registry = get(ContextProviderRegistry::class);
 
-        foreach ($this->getAllItems() as $item) {
+        foreach ($this->getItems() as $item) {
             /** @var ContextProviderInterface $provider */
             $provider = get($item['className']);
 
