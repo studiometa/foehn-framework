@@ -5,8 +5,10 @@ declare(strict_types=1);
 use Studiometa\Foehn\Config\RestConfig;
 use Studiometa\Foehn\Discovery\RestRouteDiscovery;
 use Tests\Fixtures\RestRouteFixture;
+use Studiometa\Foehn\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
+    $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
     wp_stub_reset();
     bootTestContainer();
     $this->discovery = new RestRouteDiscovery();
@@ -16,7 +18,7 @@ afterEach(fn() => tearDownTestContainer());
 
 describe('RestRouteDiscovery apply', function () {
     it('registers rest_api_init action', function () {
-        $this->discovery->discover(new ReflectionClass(RestRouteFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(RestRouteFixture::class));
         $this->discovery->apply();
 
         $actions = wp_stub_get_calls('add_action');
@@ -26,7 +28,7 @@ describe('RestRouteDiscovery apply', function () {
     });
 
     it('registers routes when rest_api_init callback is invoked', function () {
-        $this->discovery->discover(new ReflectionClass(RestRouteFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(RestRouteFixture::class));
         $this->discovery->apply();
 
         // Simulate WordPress calling the rest_api_init callback
@@ -66,7 +68,7 @@ describe('RestRouteDiscovery apply', function () {
 describe('RestRouteDiscovery default permission', function () {
     it('uses current_user_can with edit_posts by default', function () {
         $discovery = new RestRouteDiscovery();
-        $discovery->discover(new ReflectionClass(RestRouteFixture::class));
+        $discovery->discover($this->location, new ReflectionClass(RestRouteFixture::class));
         $discovery->apply();
 
         // Trigger rest_api_init callback
@@ -90,7 +92,7 @@ describe('RestRouteDiscovery default permission', function () {
     it('uses custom capability from config', function () {
         $config = new RestConfig(defaultCapability: 'manage_options');
         $discovery = new RestRouteDiscovery($config);
-        $discovery->discover(new ReflectionClass(RestRouteFixture::class));
+        $discovery->discover($this->location, new ReflectionClass(RestRouteFixture::class));
         $discovery->apply();
 
         // Trigger rest_api_init callback
@@ -111,7 +113,7 @@ describe('RestRouteDiscovery default permission', function () {
     it('falls back to is_user_logged_in when capability is null', function () {
         $config = new RestConfig(defaultCapability: null);
         $discovery = new RestRouteDiscovery($config);
-        $discovery->discover(new ReflectionClass(RestRouteFixture::class));
+        $discovery->discover($this->location, new ReflectionClass(RestRouteFixture::class));
         $discovery->apply();
 
         // Trigger rest_api_init callback
@@ -132,7 +134,7 @@ describe('RestRouteDiscovery default permission', function () {
 
     it('allows public access when permission is public', function () {
         $discovery = new RestRouteDiscovery();
-        $discovery->discover(new ReflectionClass(RestRouteFixture::class));
+        $discovery->discover($this->location, new ReflectionClass(RestRouteFixture::class));
         $discovery->apply();
 
         // Trigger rest_api_init callback

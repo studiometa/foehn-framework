@@ -125,7 +125,7 @@ final class DiscoveryGenerateCommand implements CliCommandInterface
      */
     private function collectDiscoveryData(): array
     {
-        /** @var array<string, array<int, array<string, mixed>>> $cacheData */
+        /** @var array<string, array<string, list<array<string, mixed>>>> $cacheData */
         $cacheData = [];
 
         foreach (DiscoveryRunner::getAllDiscoveryClasses() as $discoveryClass) {
@@ -134,7 +134,7 @@ final class DiscoveryGenerateCommand implements CliCommandInterface
 
             // Get cacheable data from the discovery
             if (method_exists($discovery, 'getCacheableData')) {
-                /** @var array<int, array<string, mixed>> $data */
+                /** @var array<string, list<array<string, mixed>>> $data */
                 $data = $discovery->getCacheableData();
 
                 if (!empty($data)) {

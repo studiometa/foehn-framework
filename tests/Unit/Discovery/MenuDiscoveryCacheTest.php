@@ -4,14 +4,16 @@ declare(strict_types=1);
 
 use Studiometa\Foehn\Discovery\MenuDiscovery;
 use Tests\Fixtures\MenuFixture;
+use Studiometa\Foehn\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
+    $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
     $this->discovery = new MenuDiscovery();
 });
 
 describe('MenuDiscovery caching', function () {
     it('converts items to cacheable format', function () {
-        $this->discovery->discover(new ReflectionClass(MenuFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(MenuFixture::class));
 
         $cacheData = $this->discovery->getCacheableData();
 
@@ -54,7 +56,7 @@ describe('MenuDiscovery caching', function () {
     });
 
     it('handles minimal configuration', function () {
-        $this->discovery->discover(new ReflectionClass(MenuFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(MenuFixture::class));
 
         $cacheData = $this->discovery->getCacheableData();
 

@@ -7,8 +7,10 @@ use Tests\Fixtures\TwigExtensionFixture;
 use Tests\Fixtures\TwigExtensionWithPriorityFixture;
 use Twig\Environment;
 use Twig\Loader\ArrayLoader;
+use Studiometa\Foehn\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
+    $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
     wp_stub_reset();
     bootTestContainer();
     $this->discovery = new TwigExtensionDiscovery();
@@ -18,7 +20,7 @@ afterEach(fn() => tearDownTestContainer());
 
 describe('TwigExtensionDiscovery::apply', function () {
     it('registers timber/twig filter when extensions are discovered', function () {
-        $this->discovery->discover(new ReflectionClass(TwigExtensionFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(TwigExtensionFixture::class));
         $this->discovery->apply();
 
         $calls = wp_stub_get_calls('add_filter');
@@ -36,8 +38,8 @@ describe('TwigExtensionDiscovery::apply', function () {
 
     it('sorts extensions by priority before registering', function () {
         // Discover in reverse priority order
-        $this->discovery->discover(new ReflectionClass(TwigExtensionFixture::class)); // priority 10
-        $this->discovery->discover(new ReflectionClass(TwigExtensionWithPriorityFixture::class)); // priority 5
+        $this->discovery->discover($this->location, new ReflectionClass(TwigExtensionFixture::class)); // priority 10
+        $this->discovery->discover($this->location, new ReflectionClass(TwigExtensionWithPriorityFixture::class)); // priority 5
         $this->discovery->apply();
 
         $calls = wp_stub_get_calls('add_filter');
@@ -48,8 +50,8 @@ describe('TwigExtensionDiscovery::apply', function () {
     });
 
     it('callback registers extensions with Twig environment', function () {
-        $this->discovery->discover(new ReflectionClass(TwigExtensionFixture::class));
-        $this->discovery->discover(new ReflectionClass(TwigExtensionWithPriorityFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(TwigExtensionFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(TwigExtensionWithPriorityFixture::class));
         $this->discovery->apply();
 
         $calls = wp_stub_get_calls('add_filter');

@@ -7,16 +7,18 @@ use Tests\Fixtures\InvalidTwigExtensionFixture;
 use Tests\Fixtures\NoAttributeFixture;
 use Tests\Fixtures\TwigExtensionFixture;
 use Tests\Fixtures\TwigExtensionWithPriorityFixture;
+use Studiometa\Foehn\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
+    $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
     $this->discovery = new TwigExtensionDiscovery();
 });
 
 describe('TwigExtensionDiscovery', function () {
     it('discovers classes with AsTwigExtension attribute', function () {
-        $this->discovery->discover(new ReflectionClass(TwigExtensionFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(TwigExtensionFixture::class));
 
-        $items = $this->discovery->getItems();
+        $items = $this->discovery->getItems()->all();
 
         expect($items)->toHaveCount(1);
         expect($items[0]['className'])->toBe(TwigExtensionFixture::class);
@@ -24,9 +26,9 @@ describe('TwigExtensionDiscovery', function () {
     });
 
     it('discovers custom priority', function () {
-        $this->discovery->discover(new ReflectionClass(TwigExtensionWithPriorityFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(TwigExtensionWithPriorityFixture::class));
 
-        $items = $this->discovery->getItems();
+        $items = $this->discovery->getItems()->all();
 
         expect($items)->toHaveCount(1);
         expect($items[0]['className'])->toBe(TwigExtensionWithPriorityFixture::class);
@@ -34,30 +36,30 @@ describe('TwigExtensionDiscovery', function () {
     });
 
     it('ignores classes without the attribute', function () {
-        $this->discovery->discover(new ReflectionClass(NoAttributeFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(NoAttributeFixture::class));
 
-        expect($this->discovery->getItems())->toBeEmpty();
+        expect($this->discovery->getItems()->isEmpty())->toBeTrue();
         expect($this->discovery->hasItems())->toBeFalse();
     });
 
     it('ignores classes that do not extend AbstractExtension', function () {
-        $this->discovery->discover(new ReflectionClass(InvalidTwigExtensionFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(InvalidTwigExtensionFixture::class));
 
-        expect($this->discovery->getItems())->toBeEmpty();
+        expect($this->discovery->getItems()->isEmpty())->toBeTrue();
         expect($this->discovery->hasItems())->toBeFalse();
     });
 
     it('reports hasItems correctly', function () {
         expect($this->discovery->hasItems())->toBeFalse();
 
-        $this->discovery->discover(new ReflectionClass(TwigExtensionFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(TwigExtensionFixture::class));
 
         expect($this->discovery->hasItems())->toBeTrue();
     });
 
     it('provides cacheable data', function () {
-        $this->discovery->discover(new ReflectionClass(TwigExtensionFixture::class));
-        $this->discovery->discover(new ReflectionClass(TwigExtensionWithPriorityFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(TwigExtensionFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(TwigExtensionWithPriorityFixture::class));
 
         $cacheableData = $this->discovery->getCacheableData();
 

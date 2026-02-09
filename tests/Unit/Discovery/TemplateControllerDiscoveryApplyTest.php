@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 use Studiometa\Foehn\Discovery\TemplateControllerDiscovery;
 use Tests\Fixtures\TemplateControllerFixture;
+use Studiometa\Foehn\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
+    $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
     wp_stub_reset();
     bootTestContainer();
     $this->discovery = new TemplateControllerDiscovery();
@@ -15,7 +17,7 @@ afterEach(fn() => tearDownTestContainer());
 
 describe('TemplateControllerDiscovery apply', function () {
     it('registers template_include filter', function () {
-        $this->discovery->discover(new ReflectionClass(TemplateControllerFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(TemplateControllerFixture::class));
         $this->discovery->apply();
 
         $filters = wp_stub_get_calls('add_filter');
@@ -26,7 +28,7 @@ describe('TemplateControllerDiscovery apply', function () {
     });
 
     it('handles single template type', function () {
-        $this->discovery->discover(new ReflectionClass(TemplateControllerFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(TemplateControllerFixture::class));
         $this->discovery->apply();
 
         $GLOBALS['wp_stub_template'] = 'single';
@@ -41,7 +43,7 @@ describe('TemplateControllerDiscovery apply', function () {
     });
 
     it('passes through when no controller matches', function () {
-        $this->discovery->discover(new ReflectionClass(TemplateControllerFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(TemplateControllerFixture::class));
         $this->discovery->apply();
 
         $GLOBALS['wp_stub_template'] = '404';
@@ -52,7 +54,7 @@ describe('TemplateControllerDiscovery apply', function () {
     });
 
     it('handles page template type', function () {
-        $this->discovery->discover(new ReflectionClass(TemplateControllerFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(TemplateControllerFixture::class));
         $this->discovery->apply();
 
         $GLOBALS['wp_stub_template'] = 'page';

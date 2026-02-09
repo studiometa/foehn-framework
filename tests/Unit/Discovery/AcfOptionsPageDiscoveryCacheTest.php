@@ -4,33 +4,35 @@ declare(strict_types=1);
 
 use Studiometa\Foehn\Discovery\AcfOptionsPageDiscovery;
 use Tests\Fixtures\AcfOptionsPageFixture;
+use Studiometa\Foehn\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
+    $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
     wp_stub_reset();
     $this->discovery = new AcfOptionsPageDiscovery();
 });
 
 describe('AcfOptionsPageDiscovery caching', function () {
     it('converts discovered items to cacheable format', function () {
-        $this->discovery->discover(new ReflectionClass(AcfOptionsPageFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(AcfOptionsPageFixture::class));
 
         $cacheableData = $this->discovery->getCacheableData();
 
-        expect($cacheableData)->toHaveCount(1);
-        expect($cacheableData[0]['className'])->toBe(AcfOptionsPageFixture::class);
-        expect($cacheableData[0]['hasFields'])->toBeTrue();
-        expect($cacheableData[0]['pageTitle'])->toBe('Theme Settings');
-        expect($cacheableData[0]['menuTitle'])->toBe('Theme');
-        expect($cacheableData[0]['menuSlug'])->toBe('theme-settings');
-        expect($cacheableData[0]['capability'])->toBe('manage_options');
-        expect($cacheableData[0]['position'])->toBe(59);
-        expect($cacheableData[0]['parentSlug'])->toBeNull();
-        expect($cacheableData[0]['iconUrl'])->toBe('dashicons-admin-generic');
-        expect($cacheableData[0]['redirect'])->toBeFalse();
-        expect($cacheableData[0]['postId'])->toBeNull();
-        expect($cacheableData[0]['autoload'])->toBeTrue();
-        expect($cacheableData[0]['updateButton'])->toBeNull();
-        expect($cacheableData[0]['updatedMessage'])->toBeNull();
+        expect($cacheableData['App\\'])->toHaveCount(1);
+        expect($cacheableData['App\\'][0]['className'])->toBe(AcfOptionsPageFixture::class);
+        expect($cacheableData['App\\'][0]['hasFields'])->toBeTrue();
+        expect($cacheableData['App\\'][0]['pageTitle'])->toBe('Theme Settings');
+        expect($cacheableData['App\\'][0]['menuTitle'])->toBe('Theme');
+        expect($cacheableData['App\\'][0]['menuSlug'])->toBe('theme-settings');
+        expect($cacheableData['App\\'][0]['capability'])->toBe('manage_options');
+        expect($cacheableData['App\\'][0]['position'])->toBe(59);
+        expect($cacheableData['App\\'][0]['parentSlug'])->toBeNull();
+        expect($cacheableData['App\\'][0]['iconUrl'])->toBe('dashicons-admin-generic');
+        expect($cacheableData['App\\'][0]['redirect'])->toBeFalse();
+        expect($cacheableData['App\\'][0]['postId'])->toBeNull();
+        expect($cacheableData['App\\'][0]['autoload'])->toBeTrue();
+        expect($cacheableData['App\\'][0]['updateButton'])->toBeNull();
+        expect($cacheableData['App\\'][0]['updatedMessage'])->toBeNull();
     });
 
     it('restores from cached data and applies correctly', function () {
@@ -54,7 +56,7 @@ describe('AcfOptionsPageDiscovery caching', function () {
             ],
         ];
 
-        $this->discovery->restoreFromCache($cachedData);
+        $this->discovery->restoreFromCache(['App\\' => $cachedData]);
         $this->discovery->apply();
 
         // Simulate the acf/init hook firing

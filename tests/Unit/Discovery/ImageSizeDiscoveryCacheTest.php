@@ -4,19 +4,21 @@ declare(strict_types=1);
 
 use Studiometa\Foehn\Discovery\ImageSizeDiscovery;
 use Tests\Fixtures\ImageSizeFixture;
+use Studiometa\Foehn\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
+    $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
     $this->discovery = new ImageSizeDiscovery();
 });
 
 describe('ImageSizeDiscovery caching', function () {
     it('returns cacheable data', function () {
-        $this->discovery->discover(new ReflectionClass(ImageSizeFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(ImageSizeFixture::class));
 
         $cacheableData = $this->discovery->getCacheableData();
 
-        expect($cacheableData)->toHaveCount(1);
-        expect($cacheableData[0])->toBe([
+        expect($cacheableData['App\\'])->toHaveCount(1);
+        expect($cacheableData['App\\'][0])->toBe([
             'name' => 'image_size_fixture',
             'width' => 1200,
             'height' => 630,
@@ -36,7 +38,7 @@ describe('ImageSizeDiscovery caching', function () {
             ],
         ];
 
-        $this->discovery->restoreFromCache($cachedData);
+        $this->discovery->restoreFromCache(['App\\' => $cachedData]);
 
         expect($this->discovery->wasRestoredFromCache())->toBeTrue();
     });
@@ -48,7 +50,7 @@ describe('ImageSizeDiscovery caching', function () {
     });
 
     it('preserves all item data through cache cycle', function () {
-        $this->discovery->discover(new ReflectionClass(ImageSizeFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(ImageSizeFixture::class));
         $originalData = $this->discovery->getCacheableData();
 
         // Create new discovery and restore from cache

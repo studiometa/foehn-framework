@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 use Studiometa\Foehn\Discovery\PostTypeDiscovery;
 use Tests\Fixtures\PostTypeFixture;
+use Studiometa\Foehn\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
+    $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
     wp_stub_reset();
     bootTestContainer();
     $this->discovery = new PostTypeDiscovery();
@@ -15,7 +17,7 @@ afterEach(fn() => tearDownTestContainer());
 
 describe('PostTypeDiscovery apply', function () {
     it('registers discovered post types with WordPress', function () {
-        $this->discovery->discover(new ReflectionClass(PostTypeFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(PostTypeFixture::class));
         $this->discovery->apply();
 
         $calls = wp_stub_get_calls('register_post_type');
@@ -29,7 +31,7 @@ describe('PostTypeDiscovery apply', function () {
     });
 
     it('registers Timber classmap filter', function () {
-        $this->discovery->discover(new ReflectionClass(PostTypeFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(PostTypeFixture::class));
         $this->discovery->apply();
 
         $filters = wp_stub_get_calls('add_filter');
