@@ -7,10 +7,12 @@ namespace Studiometa\Foehn;
 use RuntimeException;
 use Studiometa\Foehn\Blocks\AcfBlockRenderer;
 use Studiometa\Foehn\Config\FoehnConfig;
+use Studiometa\Foehn\Contracts\ContentResolverInterface;
 use Studiometa\Foehn\Contracts\ViewEngineInterface;
 use Studiometa\Foehn\Discovery\DiscoveryCache;
 use Studiometa\Foehn\Discovery\DiscoveryRunner;
 use Studiometa\Foehn\Rest\RenderApi;
+use Studiometa\Foehn\Rest\TimberContentResolver;
 use Studiometa\Foehn\Views\ContextProviderRegistry;
 use Studiometa\Foehn\Views\TimberViewEngine;
 use Tempest\Container\Container;
@@ -230,11 +232,15 @@ final class Kernel
             fn() => new TimberViewEngine($this->container->get(ContextProviderRegistry::class)),
         );
 
+        // Register content resolver for Render API
+        $this->container->singleton(ContentResolverInterface::class, static fn() => new TimberContentResolver());
+
         // Register Render API if enabled
         if ($this->foehnConfig->renderApi !== null) {
             $renderApi = new RenderApi(
                 $this->container->get(ViewEngineInterface::class),
                 $this->foehnConfig->renderApi,
+                $this->container->get(ContentResolverInterface::class),
             );
             $renderApi->register();
         }
