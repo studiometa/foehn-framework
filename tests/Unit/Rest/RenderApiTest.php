@@ -3,32 +3,85 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Config\RenderApiConfig;
-use Studiometa\Foehn\Contracts\ContentResolverInterface;
+use Studiometa\Foehn\Contracts\TimberRepositoryInterface;
 use Studiometa\Foehn\Contracts\ViewEngineInterface;
 use Studiometa\Foehn\Rest\RenderApi;
+use Timber\Menu;
 use Timber\Post;
+use Timber\PostQuery;
 use Timber\Term;
 use Timber\Timber;
+use Timber\User;
 
 /**
- * Create a mock ContentResolverInterface.
+ * Create a mock TimberRepositoryInterface.
  */
-function createMockResolver(?Post $post = null, ?Term $term = null): ContentResolverInterface
+function createMockTimber(?Post $post = null, ?Term $term = null): TimberRepositoryInterface
 {
-    return new class($post, $term) implements ContentResolverInterface {
+    return new class($post, $term) implements TimberRepositoryInterface {
         public function __construct(
-            private ?Post $post,
-            private ?Term $term,
+            private ?Post $mockPost,
+            private ?Term $mockTerm,
         ) {}
 
-        public function resolvePost(int $postId): ?Post
+        public function post(int $id, bool $publishedOnly = true): ?Post
         {
-            return $this->post;
+            return $this->mockPost;
         }
 
-        public function resolveTerm(int $termId, string $taxonomy): ?Term
+        public function currentPost(): ?Post
         {
-            return $this->term;
+            return null;
+        }
+
+        public function posts(array $args = []): ?PostQuery
+        {
+            return null;
+        }
+
+        public function term(int $id, string $taxonomy = 'category'): ?Term
+        {
+            return $this->mockTerm;
+        }
+
+        public function termBySlug(string $slug, string $taxonomy = 'category'): ?Term
+        {
+            return null;
+        }
+
+        public function terms(string|array $args = []): iterable
+        {
+            return [];
+        }
+
+        public function menu(string $location): ?Menu
+        {
+            return null;
+        }
+
+        public function menuBySlug(string $slug): ?Menu
+        {
+            return null;
+        }
+
+        public function currentUser(): ?User
+        {
+            return null;
+        }
+
+        public function user(int $id): ?User
+        {
+            return null;
+        }
+
+        public function context(): array
+        {
+            return [];
+        }
+
+        public function globalContext(): array
+        {
+            return [];
         }
     };
 }
@@ -55,7 +108,7 @@ describe('RenderApi', function () {
         $view = $this->createMock(ViewEngineInterface::class);
         $config = new RenderApiConfig(enabled: false, templates: ['partials/*']);
 
-        $api = new RenderApi($view, $config, createMockResolver());
+        $api = new RenderApi($view, $config, createMockTimber());
         $api->register();
 
         $actions = wp_stub_get_calls('add_action');
@@ -66,7 +119,7 @@ describe('RenderApi', function () {
         $view = $this->createMock(ViewEngineInterface::class);
         $config = new RenderApiConfig(enabled: true, templates: ['partials/*']);
 
-        $api = new RenderApi($view, $config, createMockResolver());
+        $api = new RenderApi($view, $config, createMockTimber());
         $api->register();
 
         $actions = wp_stub_get_calls('add_action');
@@ -78,7 +131,7 @@ describe('RenderApi', function () {
         $view = $this->createMock(ViewEngineInterface::class);
         $config = new RenderApiConfig(enabled: true, templates: ['partials/*']);
 
-        $api = new RenderApi($view, $config, createMockResolver());
+        $api = new RenderApi($view, $config, createMockTimber());
         $api->register();
 
         // Trigger rest_api_init callback
@@ -100,7 +153,7 @@ describe('RenderApi handle', function () {
         $view = $this->createMock(ViewEngineInterface::class);
         $config = new RenderApiConfig(enabled: true, templates: ['partials/*']);
 
-        $api = new RenderApi($view, $config, createMockResolver());
+        $api = new RenderApi($view, $config, createMockTimber());
 
         $request = $this->createMock(WP_REST_Request::class);
         $request
@@ -126,7 +179,7 @@ describe('RenderApi handle', function () {
 
         $config = new RenderApiConfig(enabled: true, templates: ['partials/*']);
 
-        $api = new RenderApi($view, $config, createMockResolver());
+        $api = new RenderApi($view, $config, createMockTimber());
 
         $request = $this->createMock(WP_REST_Request::class);
         $request
@@ -159,7 +212,7 @@ describe('RenderApi handle', function () {
 
         $config = new RenderApiConfig(enabled: true, templates: ['partials/*']);
 
-        $api = new RenderApi($view, $config, createMockResolver());
+        $api = new RenderApi($view, $config, createMockTimber());
 
         $request = $this->createMock(WP_REST_Request::class);
         $request
@@ -190,7 +243,7 @@ describe('RenderApi handle', function () {
 
         $config = new RenderApiConfig(enabled: true, templates: ['partials/*']);
 
-        $api = new RenderApi($view, $config, createMockResolver());
+        $api = new RenderApi($view, $config, createMockTimber());
 
         $request = $this->createMock(WP_REST_Request::class);
         $request
@@ -221,7 +274,7 @@ describe('RenderApi handle', function () {
         $view = $this->createMock(ViewEngineInterface::class);
         $config = new RenderApiConfig(enabled: true, templates: ['partials/*']);
 
-        $api = new RenderApi($view, $config, createMockResolver());
+        $api = new RenderApi($view, $config, createMockTimber());
 
         $request = $this->createMock(WP_REST_Request::class);
         $request->method('get_param')->willReturnCallback(fn($key) => null);
@@ -244,7 +297,7 @@ describe('RenderApi handle multiple templates', function () {
 
         $config = new RenderApiConfig(enabled: true, templates: ['partials/*']);
 
-        $api = new RenderApi($view, $config, createMockResolver());
+        $api = new RenderApi($view, $config, createMockTimber());
 
         $request = $this->createMock(WP_REST_Request::class);
         $request
@@ -275,7 +328,7 @@ describe('RenderApi handle multiple templates', function () {
         $view = $this->createMock(ViewEngineInterface::class);
         $config = new RenderApiConfig(enabled: true, templates: ['partials/*']);
 
-        $api = new RenderApi($view, $config, createMockResolver());
+        $api = new RenderApi($view, $config, createMockTimber());
 
         $request = $this->createMock(WP_REST_Request::class);
         $request
@@ -311,7 +364,7 @@ describe('RenderApi handle multiple templates', function () {
 
         $config = new RenderApiConfig(enabled: true, templates: ['partials/*']);
 
-        $api = new RenderApi($view, $config, createMockResolver());
+        $api = new RenderApi($view, $config, createMockTimber());
 
         $request = $this->createMock(WP_REST_Request::class);
         $request
@@ -347,9 +400,9 @@ describe('RenderApi context resolution', function () {
             ->willReturn('<article>Post</article>');
 
         $config = new RenderApiConfig(enabled: true, templates: ['partials/*']);
-        $resolver = createMockResolver(post: $mockPost);
+        $timber = createMockTimber(post: $mockPost);
 
-        $api = new RenderApi($view, $config, $resolver);
+        $api = new RenderApi($view, $config, $timber);
 
         $request = $this->createMock(WP_REST_Request::class);
         $request
@@ -372,9 +425,9 @@ describe('RenderApi context resolution', function () {
     it('returns 404 when post_id not found', function () {
         $view = $this->createMock(ViewEngineInterface::class);
         $config = new RenderApiConfig(enabled: true, templates: ['partials/*']);
-        $resolver = createMockResolver(); // Returns null for post
+        $timber = createMockTimber(); // Returns null for post
 
-        $api = new RenderApi($view, $config, $resolver);
+        $api = new RenderApi($view, $config, $timber);
 
         $request = $this->createMock(WP_REST_Request::class);
         $request
@@ -404,9 +457,9 @@ describe('RenderApi context resolution', function () {
             ->willReturn('<div>Term</div>');
 
         $config = new RenderApiConfig(enabled: true, templates: ['partials/*']);
-        $resolver = createMockResolver(term: $mockTerm);
+        $timber = createMockTimber(term: $mockTerm);
 
-        $api = new RenderApi($view, $config, $resolver);
+        $api = new RenderApi($view, $config, $timber);
 
         $request = $this->createMock(WP_REST_Request::class);
         $request
@@ -430,9 +483,9 @@ describe('RenderApi context resolution', function () {
     it('returns 404 when term_id not found', function () {
         $view = $this->createMock(ViewEngineInterface::class);
         $config = new RenderApiConfig(enabled: true, templates: ['partials/*']);
-        $resolver = createMockResolver(); // Returns null for term
+        $timber = createMockTimber(); // Returns null for term
 
-        $api = new RenderApi($view, $config, $resolver);
+        $api = new RenderApi($view, $config, $timber);
 
         $request = $this->createMock(WP_REST_Request::class);
         $request

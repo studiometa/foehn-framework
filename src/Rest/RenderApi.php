@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Studiometa\Foehn\Rest;
 
 use Studiometa\Foehn\Config\RenderApiConfig;
-use Studiometa\Foehn\Contracts\ContentResolverInterface;
+use Studiometa\Foehn\Contracts\TimberRepositoryInterface;
 use Studiometa\Foehn\Contracts\ViewEngineInterface;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -23,7 +23,7 @@ final readonly class RenderApi
     public function __construct(
         private ViewEngineInterface $view,
         private RenderApiConfig $config,
-        private ContentResolverInterface $contentResolver,
+        private TimberRepositoryInterface $timber,
     ) {}
 
     /**
@@ -166,7 +166,7 @@ final readonly class RenderApi
         /** @var int|null $postId */
         $postId = $request->get_param('post_id');
         if ($postId !== null) {
-            $post = $this->contentResolver->resolvePost($postId);
+            $post = $this->timber->post($postId);
 
             if ($post === null) {
                 return null;
@@ -181,7 +181,7 @@ final readonly class RenderApi
         if ($termId !== null) {
             /** @var string|null $taxonomy */
             $taxonomy = $request->get_param('taxonomy');
-            $term = $this->contentResolver->resolveTerm($termId, $taxonomy ?? 'category');
+            $term = $this->timber->term($termId, $taxonomy ?? 'category');
 
             if ($term === null) {
                 return null;
