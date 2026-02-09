@@ -88,6 +88,24 @@ Interfaces define contracts for classes used with specific attributes.
 | [`TemplateControllerInterface`](./template-controller-interface)   | `#[AsTemplateController]`        |
 | [`BlockPatternInterface`](./block-pattern-interface)               | `#[AsBlockPattern]` (optional)   |
 
+## Configuration
+
+| Config Class                                    | Config File                   | Description                   |
+| ----------------------------------------------- | ----------------------------- | ----------------------------- |
+| [`FoehnConfig`](./foehn-config)                 | `app/foehn.config.php`        | Core bootstrap settings       |
+| [`TimberConfig`](./timber-config)               | `app/timber.config.php`       | Template directories          |
+| [`AcfConfig`](./acf-config)                     | `app/acf.config.php`          | ACF field transformation      |
+| [`RestConfig`](./rest-config)                    | `app/rest.config.php`         | REST API permissions          |
+| [`RenderApiConfig`](./render-api-config)         | `app/render-api.config.php`   | Render API allowlisting       |
+
+## Discovery
+
+| Class                                          | Description                        |
+| ---------------------------------------------- | ---------------------------------- |
+| [`DiscoveryRunner`](./discovery-runner)         | Orchestrates discovery lifecycle   |
+| [`WpDiscovery`](./wp-discovery)                | Discovery interface + items/traits |
+| [`ViewEngineInterface`](./view-engine-interface)| View rendering abstraction         |
+
 ## Core
 
 | Class                  | Description             |
