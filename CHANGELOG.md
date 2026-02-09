@@ -9,12 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add `QueryFiltersConfig` and `QueryFiltersHook` for URL-based archive filtering ([a487181], [#77])
+- Add `QueryExtension` with `query_*` Twig helpers for filter UI building ([5911c2c], [#77])
 - Add Render API REST endpoint for cacheable template rendering via AJAX ([7d9f33a], [#67])
 
 ### Fixed
 
 - Fix user config files being overwritten by framework defaults ([95ba3d7], [#74])
 
+[a487181]: https://github.com/studiometa/foehn/commit/a487181
+[5911c2c]: https://github.com/studiometa/foehn/commit/5911c2c
+[#77]: https://github.com/studiometa/foehn/pull/77
 [7d9f33a]: https://github.com/studiometa/foehn/commit/7d9f33a
 [#67]: https://github.com/studiometa/foehn/pull/67
 [95ba3d7]: https://github.com/studiometa/foehn/commit/95ba3d7

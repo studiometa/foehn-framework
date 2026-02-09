@@ -261,6 +261,16 @@ Located in `Studiometa\Foehn\Hooks\Security`:
 | `RestApiAuth`              | Require authentication for REST API requests                          |
 | `SecurityHeaders`          | Send security headers (X-Content-Type-Options, X-Frame-Options, etc.) |
 
+### Query Hooks
+
+Located in `Studiometa\Foehn\Hooks`:
+
+| Class              | Description                                                     |
+| ------------------ | --------------------------------------------------------------- |
+| `QueryFiltersHook` | Enable URL-based filtering for custom taxonomies and query vars |
+
+See the [Query Filters Guide](/guide/query-filters) for complete documentation.
+
 ### GDPR Hooks
 
 Located in `Studiometa\Foehn\Hooks`:
