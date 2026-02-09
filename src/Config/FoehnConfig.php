@@ -57,6 +57,12 @@ final readonly class FoehnConfig
          * Defaults to WP_DEBUG constant value.
          */
         public bool $debug = false,
+
+        /**
+         * Render API configuration.
+         * Enables a REST endpoint to render Twig templates via AJAX.
+         */
+        public ?RenderApiConfig $renderApi = null,
     ) {}
 
     /**
@@ -86,6 +92,12 @@ final readonly class FoehnConfig
         // Default debug to WP_DEBUG constant if not explicitly set
         $debug = $config['debug'] ?? defined('WP_DEBUG') && constant('WP_DEBUG');
 
+        // Render API config
+        $renderApi = null;
+        if (isset($config['render_api']) && is_array($config['render_api'])) {
+            $renderApi = RenderApiConfig::fromArray($config['render_api']);
+        }
+
         return new self(
             discoveryCacheStrategy: $strategy,
             discoveryCachePath: $config['discovery_cache_path'] ?? null,
@@ -94,6 +106,7 @@ final readonly class FoehnConfig
             acfTransformFields: $config['acf_transform_fields'] ?? true,
             restDefaultCapability: $restDefaultCapability,
             debug: (bool) $debug,
+            renderApi: $renderApi,
         );
     }
 
