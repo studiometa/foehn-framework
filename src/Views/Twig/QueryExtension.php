@@ -189,7 +189,9 @@ final class QueryExtension extends AbstractExtension
 
         // Add value
         $current = $this->get($key, []);
-        $current = is_array($current) ? $current : ($current !== null ? [$current] : []);
+        if (!is_array($current)) {
+            $current = $current !== null ? [$current] : [];
+        }
         $current[] = $value;
 
         return $this->escUrl($this->addQueryArg([$key => array_values($current)]));

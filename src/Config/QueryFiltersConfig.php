@@ -129,7 +129,17 @@ final readonly class QueryFiltersConfig
             return true;
         }
 
-        // Check against whitelist
-        return in_array($value, $allowed, false); // loose comparison for string/int flexibility
+        // Check against whitelist (cast to string for comparison since URL params are strings)
+        $valueStr = (string) $value;
+
+        foreach ($allowed as $allowedValue) {
+            if ($valueStr !== (string) $allowedValue) {
+                continue;
+            }
+
+            return true;
+        }
+
+        return false;
     }
 }
