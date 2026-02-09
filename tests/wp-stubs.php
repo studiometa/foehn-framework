@@ -717,6 +717,11 @@ if (!function_exists('delete_transient')) {
     function delete_transient(string $transient): bool
     {
         wp_stub_record('delete_transient', compact('transient'));
+
+        if (!isset($GLOBALS['wp_stub_transients'][$transient])) {
+            return false;
+        }
+
         unset($GLOBALS['wp_stub_transients'][$transient]);
 
         return true;

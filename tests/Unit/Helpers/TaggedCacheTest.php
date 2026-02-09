@@ -156,6 +156,36 @@ describe('TaggedCache', function () {
             expect($mapping['archive'])->not->toContain('products_page_1');
             expect($mapping['archive'])->toContain('categories_list');
         });
+
+        it('handles failed cache deletion gracefully', function () {
+            // Register a key with a tag but don't add it to transients
+            // so delete_transient will return false
+            Cache::tags(['products'])->put('products_list', 'data');
+
+            // Remove the transient so forget() returns false
+            unset($GLOBALS['wp_stub_transients']['foehn_products_list']);
+
+            $flushed = Cache::flushTag('products');
+
+            // Should return 0 since deletion failed
+            expect($flushed)->toBe(0);
+
+            // Tag should still be removed from mapping
+            $mapping = TaggedCache::getTagsMapping();
+            expect($mapping)->not->toHaveKey('products');
+        });
+
+        it('removes empty tags after cleanup', function () {
+            // Create a scenario where tag 'archive' only contains keys from 'products'
+            Cache::tags(['products', 'archive'])->put('products_page_1', 'data1');
+
+            // Flush products - this should also remove 'archive' since it becomes empty
+            Cache::flushTag('products');
+
+            $mapping = TaggedCache::getTagsMapping();
+            expect($mapping)->not->toHaveKey('products');
+            expect($mapping)->not->toHaveKey('archive');
+        });
     });
 
     describe('flushTags', function () {
