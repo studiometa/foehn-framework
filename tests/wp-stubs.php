@@ -109,6 +109,66 @@ if (!class_exists('WP_User')) {
     }
 }
 
+if (!class_exists('WP_REST_Request')) {
+    class WP_REST_Request
+    {
+        private array $params = [];
+
+        public function get_param(string $key): mixed
+        {
+            return $this->params[$key] ?? null;
+        }
+
+        public function get_params(): array
+        {
+            return $this->params;
+        }
+
+        public function set_param(string $key, mixed $value): void
+        {
+            $this->params[$key] = $value;
+        }
+
+        public function has_param(string $key): bool
+        {
+            return isset($this->params[$key]);
+        }
+    }
+}
+
+if (!class_exists('WP_REST_Response')) {
+    class WP_REST_Response
+    {
+        /** @var array<string, string> */
+        private array $headers = [];
+
+        public function __construct(
+            private mixed $data = null,
+            private int $status = 200,
+        ) {}
+
+        public function get_data(): mixed
+        {
+            return $this->data;
+        }
+
+        public function get_status(): int
+        {
+            return $this->status;
+        }
+
+        public function header(string $key, string $value): void
+        {
+            $this->headers[$key] = $value;
+        }
+
+        public function get_headers(): array
+        {
+            return $this->headers;
+        }
+    }
+}
+
 if (!class_exists('wpdb')) {
     class wpdb
     {
@@ -621,6 +681,56 @@ if (!function_exists('esc_attr')) {
     {
         return htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
     }
+}
+
+if (!function_exists('sanitize_text_field')) {
+    function sanitize_text_field(string $str): string
+    {
+        return trim(strip_tags($str));
+    }
+}
+
+if (!function_exists('sanitize_key')) {
+    function sanitize_key(string $key): string
+    {
+        return preg_replace('/[^a-z0-9_\-]/', '', strtolower($key)) ?? '';
+    }
+}
+
+if (!function_exists('absint')) {
+    function absint(mixed $value): int
+    {
+        return abs((int) $value);
+    }
+}
+
+// ──────────────────────────────────────────────
+// Timber stubs for testing
+// ──────────────────────────────────────────────
+
+$GLOBALS['wp_stub_timber_posts'] = [];
+$GLOBALS['wp_stub_timber_terms'] = [];
+
+/**
+ * Set a mock Timber post for testing.
+ *
+ * @param int $id Post ID
+ * @param \Timber\Post|null $post Post object or null
+ */
+function wp_stub_set_timber_post(int $id, ?\Timber\Post $post): void
+{
+    $GLOBALS['wp_stub_timber_posts'][$id] = $post;
+}
+
+/**
+ * Set a mock Timber term for testing.
+ *
+ * @param string $key Term key (e.g., "id:5:category")
+ * @param \Timber\Term|null $term Term object or null
+ */
+function wp_stub_set_timber_term(string $key, ?\Timber\Term $term): void
+{
+    $GLOBALS['wp_stub_timber_terms'][$key] = $term;
 }
 
 if (!function_exists('get_body_class')) {

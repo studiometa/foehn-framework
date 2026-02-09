@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Studiometa\Foehn\Config\FoehnConfig;
+use Studiometa\Foehn\Config\RestConfig;
 use Studiometa\Foehn\Discovery\RestRouteDiscovery;
 use Tests\Fixtures\RestRouteFixture;
 
@@ -88,7 +88,7 @@ describe('RestRouteDiscovery default permission', function () {
     });
 
     it('uses custom capability from config', function () {
-        $config = new FoehnConfig(restDefaultCapability: 'manage_options');
+        $config = new RestConfig(defaultCapability: 'manage_options');
         $discovery = new RestRouteDiscovery($config);
         $discovery->discover(new ReflectionClass(RestRouteFixture::class));
         $discovery->apply();
@@ -109,7 +109,7 @@ describe('RestRouteDiscovery default permission', function () {
     });
 
     it('falls back to is_user_logged_in when capability is null', function () {
-        $config = new FoehnConfig(restDefaultCapability: null);
+        $config = new RestConfig(defaultCapability: null);
         $discovery = new RestRouteDiscovery($config);
         $discovery->discover(new ReflectionClass(RestRouteFixture::class));
         $discovery->apply();

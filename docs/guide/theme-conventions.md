@@ -34,9 +34,10 @@ theme/
 │   ├── ContextProviders/         # Context providers
 │   │   ├── GlobalContextProvider.php
 │   │   └── NavigationContextProvider.php
-│   └── Controllers/              # Template controllers
-│       ├── HomeController.php
-│       └── SingleController.php
+│   ├── Controllers/              # Template controllers
+│   │   ├── HomeController.php
+│   │   └── SingleController.php
+│   └── render-api.config.php     # Config files (Tempest convention)
 ├── views/                        # Twig templates
 │   ├── base.twig                 # Base layout
 │   ├── blocks/                   # Block templates
@@ -300,6 +301,33 @@ final readonly class NewsletterService {
 }
 ```
 
+### Config Files
+
+Føhn uses Tempest's config discovery. Any file ending in `.config.php` in the `app/` directory is automatically loaded.
+
+| Convention    | Example             |
+| ------------- | ------------------- |
+| **Location**  | `app/`              |
+| **File name** | `{name}.config.php` |
+
+```php
+// app/render-api.config.php
+use Studiometa\Foehn\Config\RenderApiConfig;
+
+return new RenderApiConfig(
+    templates: ['partials/*', 'components/*'],
+);
+```
+
+Environment-specific configs are also supported:
+
+| File                           | Environment |
+| ------------------------------ | ----------- |
+| `{name}.config.php`            | All         |
+| `{name}.local.config.php`      | Development |
+| `{name}.production.config.php` | Production  |
+| `{name}.staging.config.php`    | Staging     |
+
 ## Twig Template Conventions
 
 ### Template Locations
@@ -421,7 +449,7 @@ If migrating from `studiometa/wp-toolkit`, the directory structure changes signi
 
 ### Key Changes
 
-| wp-toolkit                            | Føhn                           |
+| wp-toolkit                            | Føhn                            |
 | ------------------------------------- | ------------------------------- |
 | `app/PostTypes/ProductPostType.php`   | `app/Models/Product.php`        |
 | `app/Taxonomies/CategoryTaxonomy.php` | `app/Models/Category.php`       |
