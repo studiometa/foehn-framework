@@ -6,16 +6,18 @@ use Studiometa\Foehn\Discovery\ImageSizeDiscovery;
 use Tests\Fixtures\ImageSizeFixture;
 use Tests\Fixtures\ImageSizeWithNameFixture;
 use Tests\Fixtures\NoAttributeFixture;
+use Studiometa\Foehn\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
+    $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
     $this->discovery = new ImageSizeDiscovery();
 });
 
 describe('ImageSizeDiscovery', function () {
     it('discovers image size attributes on classes', function () {
-        $this->discovery->discover(new ReflectionClass(ImageSizeFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(ImageSizeFixture::class));
 
-        $items = $this->discovery->getItems();
+        $items = $this->discovery->getItems()->all();
 
         expect($items)->toHaveCount(1);
         expect($items[0]['className'])->toBe(ImageSizeFixture::class);
@@ -25,9 +27,9 @@ describe('ImageSizeDiscovery', function () {
     });
 
     it('derives name from class name when not specified', function () {
-        $this->discovery->discover(new ReflectionClass(ImageSizeFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(ImageSizeFixture::class));
 
-        $items = $this->discovery->getItems();
+        $items = $this->discovery->getItems()->all();
 
         // ImageSizeFixture -> image_size_fixture (removes "Fixture" suffix? No, just converts)
         // Actually: ImageSizeFixture -> image_size_fixture
@@ -35,23 +37,23 @@ describe('ImageSizeDiscovery', function () {
     });
 
     it('uses explicit name when provided', function () {
-        $this->discovery->discover(new ReflectionClass(ImageSizeWithNameFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(ImageSizeWithNameFixture::class));
 
-        $items = $this->discovery->getItems();
+        $items = $this->discovery->getItems()->all();
 
         expect($items[0]['name'])->toBe('hero_banner');
     });
 
     it('ignores classes without image size attribute', function () {
-        $this->discovery->discover(new ReflectionClass(NoAttributeFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(NoAttributeFixture::class));
 
-        expect($this->discovery->getItems())->toBeEmpty();
+        expect($this->discovery->getItems()->isEmpty())->toBeTrue();
     });
 
     it('reports hasItems correctly', function () {
         expect($this->discovery->hasItems())->toBeFalse();
 
-        $this->discovery->discover(new ReflectionClass(ImageSizeFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(ImageSizeFixture::class));
 
         expect($this->discovery->hasItems())->toBeTrue();
     });

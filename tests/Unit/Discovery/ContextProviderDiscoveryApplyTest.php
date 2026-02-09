@@ -5,8 +5,10 @@ declare(strict_types=1);
 use Studiometa\Foehn\Discovery\ContextProviderDiscovery;
 use Studiometa\Foehn\Views\ContextProviderRegistry;
 use Tests\Fixtures\ContextProviderFixture;
+use Studiometa\Foehn\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
+    $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
     wp_stub_reset();
     $container = bootTestContainer();
 
@@ -21,7 +23,7 @@ afterEach(fn() => tearDownTestContainer());
 
 describe('ContextProviderDiscovery apply', function () {
     it('registers discovered context providers with the registry', function () {
-        $this->discovery->discover(new ReflectionClass(ContextProviderFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(ContextProviderFixture::class));
         $this->discovery->apply();
 
         expect($this->registry->count())->toBe(2); // 'single' and 'page'

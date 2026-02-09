@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 use Studiometa\Foehn\Attributes\AsTaxonomy;
 use Studiometa\Foehn\Discovery\TaxonomyDiscovery;
+use Studiometa\Foehn\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
+    $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
     $this->discovery = new TaxonomyDiscovery();
 });
 
@@ -24,7 +26,7 @@ describe('TaxonomyDiscovery caching', function () {
         );
 
         $ref = new ReflectionMethod($this->discovery, 'addItem');
-        $ref->invoke($this->discovery, [
+        $ref->invoke($this->discovery, $this->location, [
             'attribute' => $attribute,
             'className' => 'App\\Taxonomies\\ProductCategory',
             'implementsConfig' => true,
@@ -32,16 +34,16 @@ describe('TaxonomyDiscovery caching', function () {
 
         $cacheableData = $this->discovery->getCacheableData();
 
-        expect($cacheableData)->toHaveCount(1);
-        expect($cacheableData[0]['name'])->toBe('product_category');
-        expect($cacheableData[0]['singular'])->toBe('Category');
-        expect($cacheableData[0]['plural'])->toBe('Categories');
-        expect($cacheableData[0]['postTypes'])->toBe(['product']);
-        expect($cacheableData[0]['hierarchical'])->toBeTrue();
-        expect($cacheableData[0]['showInRest'])->toBeTrue();
-        expect($cacheableData[0]['rewriteSlug'])->toBe('product-category');
-        expect($cacheableData[0]['className'])->toBe('App\\Taxonomies\\ProductCategory');
-        expect($cacheableData[0]['implementsConfig'])->toBeTrue();
+        expect($cacheableData['App\\'])->toHaveCount(1);
+        expect($cacheableData['App\\'][0]['name'])->toBe('product_category');
+        expect($cacheableData['App\\'][0]['singular'])->toBe('Category');
+        expect($cacheableData['App\\'][0]['plural'])->toBe('Categories');
+        expect($cacheableData['App\\'][0]['postTypes'])->toBe(['product']);
+        expect($cacheableData['App\\'][0]['hierarchical'])->toBeTrue();
+        expect($cacheableData['App\\'][0]['showInRest'])->toBeTrue();
+        expect($cacheableData['App\\'][0]['rewriteSlug'])->toBe('product-category');
+        expect($cacheableData['App\\'][0]['className'])->toBe('App\\Taxonomies\\ProductCategory');
+        expect($cacheableData['App\\'][0]['implementsConfig'])->toBeTrue();
     });
 
     it('handles taxonomy with multiple post types', function () {
@@ -53,7 +55,7 @@ describe('TaxonomyDiscovery caching', function () {
         );
 
         $ref = new ReflectionMethod($this->discovery, 'addItem');
-        $ref->invoke($this->discovery, [
+        $ref->invoke($this->discovery, $this->location, [
             'attribute' => $attribute,
             'className' => 'App\\Taxonomies\\Tag',
             'implementsConfig' => false,
@@ -61,7 +63,7 @@ describe('TaxonomyDiscovery caching', function () {
 
         $cacheableData = $this->discovery->getCacheableData();
 
-        expect($cacheableData[0]['postTypes'])->toBe(['product', 'event', 'post']);
+        expect($cacheableData['App\\'][0]['postTypes'])->toBe(['product', 'event', 'post']);
     });
 
     it('includes new WordPress parameters in cache', function () {
@@ -74,7 +76,7 @@ describe('TaxonomyDiscovery caching', function () {
         );
 
         $ref = new ReflectionMethod($this->discovery, 'addItem');
-        $ref->invoke($this->discovery, [
+        $ref->invoke($this->discovery, $this->location, [
             'attribute' => $attribute,
             'className' => 'App\\Taxonomies\\Genre',
             'implementsConfig' => false,
@@ -82,8 +84,8 @@ describe('TaxonomyDiscovery caching', function () {
 
         $cacheableData = $this->discovery->getCacheableData();
 
-        expect($cacheableData[0]['labels'])->toBe(['menu_name' => 'Music Genres']);
-        expect($cacheableData[0]['rewrite'])->toBeFalse();
+        expect($cacheableData['App\\'][0]['labels'])->toBe(['menu_name' => 'Music Genres']);
+        expect($cacheableData['App\\'][0]['rewrite'])->toBeFalse();
     });
 
     it('can restore from cache', function () {
@@ -105,7 +107,7 @@ describe('TaxonomyDiscovery caching', function () {
             ],
         ];
 
-        $this->discovery->restoreFromCache($cachedData);
+        $this->discovery->restoreFromCache(['App\\' => $cachedData]);
 
         expect($this->discovery->wasRestoredFromCache())->toBeTrue();
     });

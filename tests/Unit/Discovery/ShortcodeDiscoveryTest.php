@@ -5,16 +5,18 @@ declare(strict_types=1);
 use Studiometa\Foehn\Discovery\ShortcodeDiscovery;
 use Tests\Fixtures\NoAttributeFixture;
 use Tests\Fixtures\ShortcodeFixture;
+use Studiometa\Foehn\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
+    $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
     $this->discovery = new ShortcodeDiscovery();
 });
 
 describe('ShortcodeDiscovery', function () {
     it('discovers shortcode attributes on methods', function () {
-        $this->discovery->discover(new ReflectionClass(ShortcodeFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(ShortcodeFixture::class));
 
-        $items = $this->discovery->getItems();
+        $items = $this->discovery->getItems()->all();
 
         expect($items)->toHaveCount(2);
 
@@ -28,15 +30,15 @@ describe('ShortcodeDiscovery', function () {
     });
 
     it('ignores classes without shortcode attributes', function () {
-        $this->discovery->discover(new ReflectionClass(NoAttributeFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(NoAttributeFixture::class));
 
-        expect($this->discovery->getItems())->toBeEmpty();
+        expect($this->discovery->getItems()->isEmpty())->toBeTrue();
     });
 
     it('reports hasItems correctly', function () {
         expect($this->discovery->hasItems())->toBeFalse();
 
-        $this->discovery->discover(new ReflectionClass(ShortcodeFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(ShortcodeFixture::class));
 
         expect($this->discovery->hasItems())->toBeTrue();
     });

@@ -5,16 +5,18 @@ declare(strict_types=1);
 use Studiometa\Foehn\Discovery\HookDiscovery;
 use Tests\Fixtures\HookFixture;
 use Tests\Fixtures\NoAttributeFixture;
+use Studiometa\Foehn\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
+    $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
     $this->discovery = new HookDiscovery();
 });
 
 describe('HookDiscovery', function () {
     it('discovers action attributes on methods', function () {
-        $this->discovery->discover(new ReflectionClass(HookFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(HookFixture::class));
 
-        $items = $this->discovery->getItems();
+        $items = $this->discovery->getItems()->all();
         $actions = array_values(array_filter($items, fn($item) => $item['type'] === 'action'));
 
         expect($actions)->toHaveCount(2);
@@ -33,9 +35,9 @@ describe('HookDiscovery', function () {
     });
 
     it('discovers filter attributes on methods', function () {
-        $this->discovery->discover(new ReflectionClass(HookFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(HookFixture::class));
 
-        $items = $this->discovery->getItems();
+        $items = $this->discovery->getItems()->all();
         $filters = array_values(array_filter($items, fn($item) => $item['type'] === 'filter'));
 
         expect($filters)->toHaveCount(2);
@@ -54,16 +56,16 @@ describe('HookDiscovery', function () {
     });
 
     it('ignores classes without hook attributes', function () {
-        $this->discovery->discover(new ReflectionClass(NoAttributeFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(NoAttributeFixture::class));
 
-        expect($this->discovery->getItems())->toBeEmpty();
+        expect($this->discovery->getItems()->isEmpty())->toBeTrue();
         expect($this->discovery->hasItems())->toBeFalse();
     });
 
     it('reports hasItems correctly', function () {
         expect($this->discovery->hasItems())->toBeFalse();
 
-        $this->discovery->discover(new ReflectionClass(HookFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(HookFixture::class));
 
         expect($this->discovery->hasItems())->toBeTrue();
     });
