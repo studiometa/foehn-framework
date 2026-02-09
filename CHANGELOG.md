@@ -7,12 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.4] - 2026-02-09
+
 ### Fixed
 
 - Include Timber global context (`site`, `theme`, `user`, etc.) in `TimberViewEngine` ([af343d8], [#66])
 
 [af343d8]: https://github.com/studiometa/foehn/commit/af343d8
 [#66]: https://github.com/studiometa/foehn/pull/66
+[0.2.4]: https://github.com/studiometa/foehn/releases/tag/0.2.4
 
 ## [0.2.3] - 2026-02-05
 
