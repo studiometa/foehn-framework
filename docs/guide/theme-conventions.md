@@ -303,7 +303,7 @@ final readonly class NewsletterService {
 
 ### Config Files
 
-Føhn uses Tempest's config discovery. Any file ending in `.config.php` in the `app/` directory is automatically loaded.
+Føhn uses Tempest's config discovery. Any file ending in `.config.php` in the `app/` directory is automatically loaded. See the [Configuration guide](/guide/configuration) for all available config classes.
 
 | Convention    | Example             |
 | ------------- | ------------------- |

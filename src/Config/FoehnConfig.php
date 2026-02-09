@@ -9,8 +9,19 @@ use Tempest\Core\DiscoveryCacheStrategy;
 /**
  * Core configuration for Føhn.
  *
- * This config is passed to Kernel::boot() and contains options needed
- * during the bootstrap phase (before Tempest config discovery runs).
+ * Can be configured via a config file (preferred) or via Kernel::boot() array (legacy).
+ *
+ * Config file approach:
+ * ```php
+ * // app/foehn.config.php
+ * use Studiometa\Foehn\Config\FoehnConfig;
+ * use Tempest\Core\DiscoveryCacheStrategy;
+ *
+ * return new FoehnConfig(
+ *     discoveryCacheStrategy: DiscoveryCacheStrategy::FULL,
+ *     hooks: [CleanHeadTags::class],
+ * );
+ * ```
  *
  * For other configurations, use dedicated config files:
  * - `app/timber.config.php` → TimberConfig

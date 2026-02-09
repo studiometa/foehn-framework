@@ -36,20 +36,18 @@ final class Kernel
 
     /**
      * @param string $appPath Path to the app directory to scan for discovery
-     * @param array<string, mixed> $config Configuration options
+     * @param array<string, mixed> $config Legacy configuration options (prefer foehn.config.php)
      */
     private function __construct(
         private readonly string $appPath,
         private readonly array $config = [],
-    ) {
-        $this->foehnConfig = FoehnConfig::fromArray($config);
-    }
+    ) {}
 
     /**
      * Boot the kernel.
      *
      * @param string $appPath Path to the app directory to scan for discovery
-     * @param array<string, mixed> $config Configuration options
+     * @param array<string, mixed> $config Configuration options (legacy, prefer foehn.config.php)
      *   - discovery_cache: string|bool - Cache strategy ('full', 'partial', 'none', true, false)
      *   - discovery_cache_path: string - Custom path for cache files
      *   - hooks: list<class-string> - Opt-in hook classes to activate
@@ -211,8 +209,16 @@ final class Kernel
         // Register the kernel itself
         $this->container->singleton(self::class, fn() => $this);
 
-        // Register Foehn configuration
-        $this->container->singleton(FoehnConfig::class, fn() => $this->foehnConfig);
+        // Resolve FoehnConfig: prefer discovered config file, fall back to boot() array, then defaults
+        if ($this->container->has(FoehnConfig::class)) {
+            $this->foehnConfig = $this->container->get(FoehnConfig::class);
+        } elseif ($this->config !== []) {
+            $this->foehnConfig = FoehnConfig::fromArray($this->config);
+            $this->container->singleton(FoehnConfig::class, fn() => $this->foehnConfig);
+        } else {
+            $this->foehnConfig = new FoehnConfig();
+            $this->container->singleton(FoehnConfig::class, fn() => $this->foehnConfig);
+        }
 
         // Register default configs only if user hasn't provided their own via *.config.php
         // Tempest's LoadConfig discovery runs before this, so user configs are already registered
