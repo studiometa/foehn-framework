@@ -169,4 +169,38 @@ describe('Kernel Timber initialization', function () {
 
         expect($config->timberTemplatesDir)->toBe(['templates']);
     });
+
+    it('registers Render API when enabled', function () {
+        Kernel::boot(dirname(__DIR__, 2) . '/src', [
+            'render_api' => [
+                'enabled' => true,
+                'templates' => ['partials/*'],
+            ],
+        ]);
+
+        // Restore error/exception handlers set by Tempest::boot()
+        restore_error_handler();
+        restore_exception_handler();
+
+        // Check that rest_api_init action was registered
+        $actions = wp_stub_get_calls('add_action');
+        $restApiInitActions = array_filter($actions, fn(array $call) => $call['args']['hook'] === 'rest_api_init');
+
+        expect($restApiInitActions)->not->toBeEmpty();
+    });
+
+    it('does not register Render API when not configured', function () {
+        Kernel::boot(dirname(__DIR__, 2) . '/src', []);
+
+        // Restore error/exception handlers set by Tempest::boot()
+        restore_error_handler();
+        restore_exception_handler();
+
+        // Check rest_api_init actions - should only have Foehn's internal ones, not RenderApi
+        $actions = wp_stub_get_calls('add_action');
+        $restApiInitActions = array_filter($actions, fn(array $call) => $call['args']['hook'] === 'rest_api_init');
+
+        // RenderApi should not be registered
+        expect(count($restApiInitActions))->toBe(0);
+    });
 });
