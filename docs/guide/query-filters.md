@@ -125,11 +125,29 @@ Føhn provides `query_*` Twig functions for building filter UIs. These are avail
 
 ### Form Helper
 
+When building a form that controls only some filters (e.g., a sort dropdown), you need to preserve the other active filters. Without this, submitting the form would lose all other query parameters.
+
+`query_hidden_inputs()` generates `<input type="hidden">` elements for all current query parameters, so they're included when the form is submitted.
+
 ```twig
-{# Generate hidden inputs to preserve current filters #}
-{{ query_hidden_inputs() | raw }}
-{{ query_hidden_inputs(exclude=['s']) | raw }}
+{# Current URL: /blog?category=news&tag=featured&orderby=date #}
+
+<form method="get">
+  {{ query_hidden_inputs(exclude=['orderby']) | raw }}
+  {# Outputs:
+     <input type="hidden" name="category" value="news">
+     <input type="hidden" name="tag" value="featured">
+  #}
+
+  <select name="orderby" onchange="this.form.submit()">
+    <option value="date">Date</option>
+    <option value="title">Title</option>
+  </select>
+</form>
+{# Submitting with "title" goes to: /blog?category=news&tag=featured&orderby=title #}
 ```
+
+The `exclude` parameter lets you omit parameters that your form controls directly (to avoid duplicates).
 
 ## Template Examples
 
@@ -177,6 +195,7 @@ Føhn provides `query_*` Twig functions for building filter UIs. These are avail
 
 ```twig
 <form method="get">
+  {# Preserve all current filters except 'orderby' which is controlled by the select #}
   {{ query_hidden_inputs(exclude=['orderby']) | raw }}
 
   <label>
