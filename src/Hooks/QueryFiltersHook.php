@@ -135,12 +135,12 @@ final readonly class QueryFiltersHook
      */
     private function buildTaxQueryClause(string $taxonomy, string $operator, array $terms): array
     {
+        /** @var 'in'|'not_in'|'and'|'exists' $operator */
         $wpOperator = match ($operator) {
             'in' => 'IN',
             'not_in' => 'NOT IN',
             'and' => 'AND',
             'exists' => 'EXISTS',
-            default => 'IN',
         };
 
         return [
