@@ -22,10 +22,25 @@ final readonly class RenderApi
     public const NAMESPACE = 'foehn/v1';
     public const ROUTE = '/render';
 
+    /** @var (callable(int): ?Post)|null */
+    private mixed $postResolver;
+
+    /** @var (callable(int, string): ?Term)|null */
+    private mixed $termResolver;
+
+    /**
+     * @param (callable(int): ?Post)|null $postResolver Custom post resolver for testing
+     * @param (callable(int, string): ?Term)|null $termResolver Custom term resolver for testing
+     */
     public function __construct(
         private ViewEngineInterface $view,
         private RenderApiConfig $config,
-    ) {}
+        ?callable $postResolver = null,
+        ?callable $termResolver = null,
+    ) {
+        $this->postResolver = $postResolver;
+        $this->termResolver = $termResolver;
+    }
 
     /**
      * Register the REST route.
@@ -167,10 +182,9 @@ final readonly class RenderApi
         /** @var int|null $postId */
         $postId = $request->get_param('post_id');
         if ($postId !== null) {
-            $post = Timber::get_post($postId);
+            $post = $this->resolvePost($postId);
 
-            // Only allow published/public posts
-            if (!$post instanceof Post || $post->post_status !== 'publish') {
+            if ($post === null) {
                 return null;
             }
 
@@ -183,9 +197,9 @@ final readonly class RenderApi
         if ($termId !== null) {
             /** @var string|null $taxonomy */
             $taxonomy = $request->get_param('taxonomy');
-            $term = Timber::get_term_by('id', $termId, $taxonomy ?? 'category');
+            $term = $this->resolveTerm($termId, $taxonomy ?? 'category');
 
-            if (!$term instanceof Term) {
+            if ($term === null) {
                 return null;
             }
 
@@ -206,5 +220,44 @@ final readonly class RenderApi
         }
 
         return $context;
+    }
+
+    /**
+     * Resolve a post ID to a Timber Post.
+     *
+     * Only returns published posts.
+     */
+    private function resolvePost(int $postId): ?Post
+    {
+        if ($this->postResolver !== null) {
+            return ($this->postResolver)($postId);
+        }
+
+        $post = Timber::get_post($postId);
+
+        // Only allow published/public posts
+        if (!$post instanceof Post || $post->post_status !== 'publish') {
+            return null;
+        }
+
+        return $post;
+    }
+
+    /**
+     * Resolve a term ID to a Timber Term.
+     */
+    private function resolveTerm(int $termId, string $taxonomy): ?Term
+    {
+        if ($this->termResolver !== null) {
+            return ($this->termResolver)($termId, $taxonomy);
+        }
+
+        $term = Timber::get_term_by('id', $termId, $taxonomy);
+
+        if (!$term instanceof Term) {
+            return null;
+        }
+
+        return $term;
     }
 }

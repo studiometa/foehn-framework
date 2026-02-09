@@ -691,6 +691,35 @@ if (!function_exists('absint')) {
     }
 }
 
+// ──────────────────────────────────────────────
+// Timber stubs for testing
+// ──────────────────────────────────────────────
+
+$GLOBALS['wp_stub_timber_posts'] = [];
+$GLOBALS['wp_stub_timber_terms'] = [];
+
+/**
+ * Set a mock Timber post for testing.
+ *
+ * @param int $id Post ID
+ * @param \Timber\Post|null $post Post object or null
+ */
+function wp_stub_set_timber_post(int $id, ?\Timber\Post $post): void
+{
+    $GLOBALS['wp_stub_timber_posts'][$id] = $post;
+}
+
+/**
+ * Set a mock Timber term for testing.
+ *
+ * @param string $key Term key (e.g., "id:5:category")
+ * @param \Timber\Term|null $term Term object or null
+ */
+function wp_stub_set_timber_term(string $key, ?\Timber\Term $term): void
+{
+    $GLOBALS['wp_stub_timber_terms'][$key] = $term;
+}
+
 if (!function_exists('get_body_class')) {
     /**
      * @return list<string>
