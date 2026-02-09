@@ -23,8 +23,11 @@ final class DiscoveryRunner
     /** @var array<class-string<WpDiscovery>, WpDiscovery> */
     private array $discoveries = [];
 
-    /** @var array<string, array<int, array<string, mixed>>>|null */
+    /** @var array<string, array<string, list<array<string, mixed>>>>|null */
     private ?array $cachedData = null;
+
+    /** @var DiscoveryLocation|null */
+    private ?DiscoveryLocation $appLocation = null;
 
     private bool $cacheLoaded = false;
     private bool $discovered = false;
@@ -156,23 +159,94 @@ final class DiscoveryRunner
                     continue;
                 }
 
-                $discovery->restoreFromCache($this->cachedData[$className]);
+                /** @var array<string, list<array<string, mixed>>> $discoveryData */
+                $discoveryData = $this->cachedData[$className];
+                $discovery->restoreFromCache($discoveryData);
             }
 
             return;
         }
 
-        // No cache — scan classes and run discover()
-        $classes = $this->scanClasses();
+        // Build app location
+        $this->appLocation = $this->buildAppLocation();
 
-        foreach ($classes as $class) {
-            foreach ($this->discoveries as $discovery) {
-                $discovery->discover($class);
+        // No cache — scan classes and run discover()
+        if ($this->appLocation !== null) {
+            $classes = $this->scanClasses();
+
+            foreach ($classes as $class) {
+                foreach ($this->discoveries as $discovery) {
+                    $discovery->discover($this->appLocation, $class);
+                }
             }
         }
 
         // Also discover opt-in hook classes from config
         $this->discoverOptInHooks();
+    }
+
+    /**
+     * Build the DiscoveryLocation for the app directory.
+     */
+    private function buildAppLocation(): ?DiscoveryLocation
+    {
+        if ($this->appPath === null) {
+            return null;
+        }
+
+        $appPath = realpath($this->appPath);
+
+        if ($appPath === false) {
+            return null;
+        }
+
+        // Try to determine the namespace from Composer's autoload
+        $namespace = $this->resolveAppNamespace($appPath);
+
+        return DiscoveryLocation::app($namespace, $appPath);
+    }
+
+    /**
+     * Resolve the PSR-4 namespace for the app path from Composer's autoload.
+     */
+    private function resolveAppNamespace(string $appPath): string
+    {
+        // Try to get the Composer autoloader
+        $autoloadFiles = [
+            dirname($appPath) . '/vendor/autoload.php',
+            $appPath . '/../../vendor/autoload.php',
+            $appPath . '/../../../vendor/autoload.php',
+        ];
+
+        foreach ($autoloadFiles as $autoloadFile) {
+            $resolved = realpath($autoloadFile);
+
+            if ($resolved === false || !file_exists($resolved)) {
+                continue;
+            }
+
+            $loader = require $resolved;
+
+            if (!$loader instanceof \Composer\Autoload\ClassLoader) {
+                continue;
+            }
+
+            foreach ($loader->getPrefixesPsr4() as $prefix => $dirs) {
+                foreach ($dirs as $dir) {
+                    $dir = realpath($dir);
+
+                    if ($dir === false) {
+                        continue;
+                    }
+
+                    if ($dir === $appPath || str_starts_with($appPath, $dir)) {
+                        return $prefix;
+                    }
+                }
+            }
+        }
+
+        return 'App\\';
     }
 
     /**
@@ -186,6 +260,9 @@ final class DiscoveryRunner
             return;
         }
 
+        // Use the app location for opt-in hooks, or create a fallback
+        $location = $this->appLocation ?? DiscoveryLocation::app('App\\', '');
+
         foreach ($config->hooks as $hookClass) {
             if (!class_exists($hookClass)) {
                 continue;
@@ -195,7 +272,7 @@ final class DiscoveryRunner
                 $reflection = new ReflectionClass($hookClass);
 
                 foreach ($this->discoveries as $discovery) {
-                    $discovery->discover($reflection);
+                    $discovery->discover($location, $reflection);
                 }
             } catch (\ReflectionException $e) {
                 $this->logDiscoveryFailure($hookClass, $e);
@@ -226,16 +303,12 @@ final class DiscoveryRunner
      */
     private function scanClasses(): array
     {
-        if ($this->appPath === null) {
+        if ($this->appLocation === null) {
             return [];
         }
 
         $classes = [];
-        $appPath = realpath($this->appPath);
-
-        if ($appPath === false) {
-            return [];
-        }
+        $appPath = $this->appLocation->path;
 
         // Find all PHP files in the app directory
         $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator(
