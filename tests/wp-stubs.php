@@ -93,9 +93,35 @@ if (!class_exists('WP_Term')) {
 if (!class_exists('WP_Query')) {
     class WP_Query
     {
-        public bool $is_main_query = true;
+        private bool $is_main = true;
+        private array $query_vars = [];
         public array $posts = [];
         public int $post_count = 0;
+
+        public function is_main_query(): bool
+        {
+            return $this->is_main;
+        }
+
+        public function set_main_query(bool $is_main): void
+        {
+            $this->is_main = $is_main;
+        }
+
+        public function get(string $key, mixed $default = ''): mixed
+        {
+            return $this->query_vars[$key] ?? $default;
+        }
+
+        public function set(string $key, mixed $value): void
+        {
+            $this->query_vars[$key] = $value;
+        }
+
+        public function get_query_vars(): array
+        {
+            return $this->query_vars;
+        }
     }
 }
 
@@ -536,6 +562,56 @@ if (!function_exists('get_query_var')) {
     function get_query_var(string $var, mixed $default = ''): mixed
     {
         return $GLOBALS['wp_stub_query_vars'][$var] ?? $default;
+    }
+}
+
+if (!function_exists('add_query_arg')) {
+    function add_query_arg(array|string $key, mixed $value = null, ?string $url = null): string
+    {
+        // Simple implementation for testing
+        if (is_array($key)) {
+            $args = $key;
+            $url = $value ?? $_SERVER['REQUEST_URI'] ?? '/';
+        } else {
+            $args = [$key => $value];
+            $url = $url ?? $_SERVER['REQUEST_URI'] ?? '/';
+        }
+
+        $parsed = parse_url($url);
+        $path = $parsed['path'] ?? '/';
+        parse_str($parsed['query'] ?? '', $existing);
+
+        $merged = array_merge($existing, $args);
+        $query = http_build_query($merged);
+
+        return $query !== '' ? "{$path}?{$query}" : $path;
+    }
+}
+
+if (!function_exists('remove_query_arg')) {
+    function remove_query_arg(array|string $keys, ?string $url = null): string
+    {
+        $url = $url ?? $_SERVER['REQUEST_URI'] ?? '/';
+        $keys = (array) $keys;
+
+        $parsed = parse_url($url);
+        $path = $parsed['path'] ?? '/';
+        parse_str($parsed['query'] ?? '', $existing);
+
+        foreach ($keys as $key) {
+            unset($existing[$key]);
+        }
+
+        $query = http_build_query($existing);
+
+        return $query !== '' ? "{$path}?{$query}" : $path;
+    }
+}
+
+if (!function_exists('esc_url')) {
+    function esc_url(string $url): string
+    {
+        return htmlspecialchars($url, ENT_QUOTES, 'UTF-8');
     }
 }
 

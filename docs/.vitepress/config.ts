@@ -6,6 +6,10 @@ export default defineConfig({
     plugins: [llmstxt()],
   },
 
+  markdown: {
+    toc: { level: [2, 3] },
+  },
+
   title: "Foehn",
   titleTemplate: ":title — Foehn, modern WordPress development",
   description:
@@ -52,6 +56,7 @@ export default defineConfig({
             { text: "Context Providers", link: "/guide/context-providers" },
             { text: "Template Controllers", link: "/guide/template-controllers" },
             { text: "Twig Extensions", link: "/guide/twig-extensions" },
+            { text: "Query Filters", link: "/guide/query-filters" },
           ],
         },
         {
@@ -156,6 +161,10 @@ export default defineConfig({
     editLink: {
       pattern: "https://github.com/studiometa/foehn/edit/main/docs/:path",
       text: "Edit this page on GitHub",
+    },
+
+    outline: {
+      level: [2, 3],
     },
   },
 });

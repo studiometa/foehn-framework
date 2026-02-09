@@ -284,6 +284,43 @@ Video URL utilities:
 {% endif %}
 ```
 
+### QueryExtension
+
+Helpers for URL query manipulation, useful for building filter UIs:
+
+```twig
+{# Reading parameters #}
+{{ query_get('category') }}
+{{ query_get('page', 1) }}              {# with default #}
+{{ query_has('category') }}
+{{ query_contains('tags', 'php') }}     {# value in array #}
+{{ query_all() }}                       {# all params #}
+
+{# Building URLs #}
+{{ query_url({category: 'news'}) }}
+{{ query_url_without('category') }}
+{{ query_url_toggle('tags', 'php') }}   {# add/remove value #}
+{{ query_url_clear() }}
+
+{# Form helper #}
+{{ query_hidden_inputs() | raw }}
+{{ query_hidden_inputs(exclude=['s']) | raw }}
+```
+
+| Function              | Description                               |
+| --------------------- | ----------------------------------------- |
+| `query_get`           | Get parameter value with optional default |
+| `query_has`           | Check if parameter exists                 |
+| `query_contains`      | Check if value is in array parameter      |
+| `query_all`           | Get all non-empty parameters              |
+| `query_url`           | Build URL with modified parameters        |
+| `query_url_without`   | Build URL without specified parameters    |
+| `query_url_toggle`    | Toggle a value in a parameter             |
+| `query_url_clear`     | Build URL without any parameters          |
+| `query_hidden_inputs` | Generate hidden inputs for forms          |
+
+See the [Query Filters Guide](/guide/query-filters) for complete examples.
+
 ### BlockMarkupExtension
 
 Helpers for generating WordPress block comment syntax used in patterns and templates:
