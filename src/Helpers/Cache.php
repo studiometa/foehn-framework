@@ -122,6 +122,39 @@ final class Cache
     }
 
     /**
+     * Create a tagged cache instance.
+     *
+     * @param array<string> $tags Tags to associate with cached keys
+     * @return TaggedCache
+     */
+    public static function tags(array $tags): TaggedCache
+    {
+        return new TaggedCache($tags);
+    }
+
+    /**
+     * Flush all cache keys associated with a tag.
+     *
+     * @param string $tag Tag to flush
+     * @return int Number of keys flushed
+     */
+    public static function flushTag(string $tag): int
+    {
+        return TaggedCache::flushTag($tag);
+    }
+
+    /**
+     * Flush all cache keys associated with multiple tags.
+     *
+     * @param array<string> $tags Tags to flush
+     * @return int Total number of keys flushed
+     */
+    public static function flushTags(array $tags): int
+    {
+        return TaggedCache::flushTags($tags);
+    }
+
+    /**
      * Store a value forever (no expiration).
      *
      * @param string $key Cache key
