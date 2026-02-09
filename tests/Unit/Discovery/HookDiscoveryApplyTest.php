@@ -55,7 +55,7 @@ describe('HookDiscovery apply', function () {
     });
 
     it('registers hooks from cached data', function () {
-        $this->discovery->restoreFromCache([
+        $this->discovery->restoreFromCache(['App\\' => [
             [
                 'type' => 'action',
                 'hook' => 'save_post',
@@ -64,7 +64,7 @@ describe('HookDiscovery apply', function () {
                 'priority' => 15,
                 'acceptedArgs' => 3,
             ],
-        ]);
+        ]]);
 
         $this->discovery->apply();
 

@@ -7,6 +7,7 @@ use Tempest\Container\GenericContainer;
 use Studiometa\Foehn\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
+    $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
     $container = new GenericContainer();
 
     $this->discovery = new CliCommandDiscovery($container);

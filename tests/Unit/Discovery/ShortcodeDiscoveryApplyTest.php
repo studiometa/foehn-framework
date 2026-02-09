@@ -34,13 +34,13 @@ describe('ShortcodeDiscovery apply', function () {
     });
 
     it('registers shortcodes from cached data', function () {
-        $this->discovery->restoreFromCache([
+        $this->discovery->restoreFromCache(['App\\' => [
             [
                 'tag' => 'cached-shortcode',
                 'className' => ShortcodeFixture::class,
                 'methodName' => 'greeting',
             ],
-        ]);
+        ]]);
 
         $this->discovery->apply();
 

@@ -36,13 +36,13 @@ describe('ContextProviderDiscovery apply', function () {
     });
 
     it('registers from cached data', function () {
-        $this->discovery->restoreFromCache([
+        $this->discovery->restoreFromCache(['App\\' => [
             [
                 'templates' => ['archive', 'home'],
                 'className' => ContextProviderFixture::class,
                 'priority' => 5,
             ],
-        ]);
+        ]]);
 
         $this->discovery->apply();
 

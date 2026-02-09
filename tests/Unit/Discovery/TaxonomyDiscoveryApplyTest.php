@@ -47,7 +47,7 @@ describe('TaxonomyDiscovery apply', function () {
     });
 
     it('registers taxonomies from cached data', function () {
-        $this->discovery->restoreFromCache([
+        $this->discovery->restoreFromCache(['App\\' => [
             [
                 'name' => 'genre',
                 'singular' => 'Genre',
@@ -63,7 +63,7 @@ describe('TaxonomyDiscovery apply', function () {
                 'className' => TaxonomyFixture::class,
                 'implementsConfig' => false,
             ],
-        ]);
+        ]]);
 
         $this->discovery->apply();
 
