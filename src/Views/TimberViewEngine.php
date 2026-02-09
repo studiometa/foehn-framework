@@ -30,8 +30,9 @@ final class TimberViewEngine implements ViewEngineInterface
     {
         $resolved = $this->resolveTemplate($template);
 
-        // Merge shared data, then context (context wins)
-        $context = array_merge($this->shared, $context);
+        // Merge Timber's global context first (site, theme, user, etc.),
+        // then shared data, then context (context wins)
+        $context = array_merge(Timber::context_global(), $this->shared, $context);
 
         // Apply context providers
         $context = $this->contextProviders->provide($template, $context);
