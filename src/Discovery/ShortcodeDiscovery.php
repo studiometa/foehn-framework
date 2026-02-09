@@ -24,9 +24,10 @@ final class ShortcodeDiscovery implements WpDiscovery
     /**
      * Discover shortcode attributes on methods.
      *
+     * @param DiscoveryLocation $location
      * @param ReflectionClass<object> $class
      */
-    public function discover(ReflectionClass $class): void
+    public function discover(DiscoveryLocation $location, ReflectionClass $class): void
     {
         foreach ($class->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
             if ($method->getDeclaringClass()->getName() !== $class->getName()) {
@@ -41,7 +42,7 @@ final class ShortcodeDiscovery implements WpDiscovery
 
             $attribute = $attributes[0]->newInstance();
 
-            $this->addItem([
+            $this->addItem($location, [
                 'tag' => $attribute->tag,
                 'className' => $method->getDeclaringClass()->getName(),
                 'methodName' => $method->getName(),
@@ -54,7 +55,7 @@ final class ShortcodeDiscovery implements WpDiscovery
      */
     public function apply(): void
     {
-        foreach ($this->getAllItems() as $item) {
+        foreach ($this->getItems() as $item) {
             $this->doRegisterShortcode($item['tag'], $item['className'], $item['methodName']);
         }
     }

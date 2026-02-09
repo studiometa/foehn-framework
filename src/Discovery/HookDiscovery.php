@@ -23,9 +23,10 @@ final class HookDiscovery implements WpDiscovery
     /**
      * Discover hook attributes on class methods.
      *
+     * @param DiscoveryLocation $location
      * @param ReflectionClass<object> $class
      */
-    public function discover(ReflectionClass $class): void
+    public function discover(DiscoveryLocation $location, ReflectionClass $class): void
     {
         foreach ($class->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
             // Skip methods inherited from parent classes outside the scanned namespace
@@ -33,21 +34,21 @@ final class HookDiscovery implements WpDiscovery
                 continue;
             }
 
-            $this->discoverActions($method);
-            $this->discoverFilters($method);
+            $this->discoverActions($location, $method);
+            $this->discoverFilters($location, $method);
         }
     }
 
     /**
      * Discover #[AsAction] attributes on a method.
      */
-    private function discoverActions(ReflectionMethod $method): void
+    private function discoverActions(DiscoveryLocation $location, ReflectionMethod $method): void
     {
         $attributes = $method->getAttributes(AsAction::class);
 
         foreach ($attributes as $attribute) {
             $instance = $attribute->newInstance();
-            $this->addItem([
+            $this->addItem($location, [
                 'type' => 'action',
                 'hook' => $instance->hook,
                 'className' => $method->getDeclaringClass()->getName(),
@@ -61,13 +62,13 @@ final class HookDiscovery implements WpDiscovery
     /**
      * Discover #[AsFilter] attributes on a method.
      */
-    private function discoverFilters(ReflectionMethod $method): void
+    private function discoverFilters(DiscoveryLocation $location, ReflectionMethod $method): void
     {
         $attributes = $method->getAttributes(AsFilter::class);
 
         foreach ($attributes as $attribute) {
             $instance = $attribute->newInstance();
-            $this->addItem([
+            $this->addItem($location, [
                 'type' => 'filter',
                 'hook' => $instance->hook,
                 'className' => $method->getDeclaringClass()->getName(),
@@ -83,7 +84,7 @@ final class HookDiscovery implements WpDiscovery
      */
     public function apply(): void
     {
-        foreach ($this->getAllItems() as $item) {
+        foreach ($this->getItems() as $item) {
             $this->registerHook($item);
         }
     }

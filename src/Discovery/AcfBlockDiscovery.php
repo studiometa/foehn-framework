@@ -26,9 +26,10 @@ final class AcfBlockDiscovery implements WpDiscovery
     /**
      * Discover ACF block attributes on classes.
      *
+     * @param DiscoveryLocation $location
      * @param ReflectionClass<object> $class
      */
-    public function discover(ReflectionClass $class): void
+    public function discover(DiscoveryLocation $location, ReflectionClass $class): void
     {
         $attributes = $class->getAttributes(AsAcfBlock::class);
 
@@ -47,7 +48,7 @@ final class AcfBlockDiscovery implements WpDiscovery
 
         $attribute = $attributes[0]->newInstance();
 
-        $this->addItem([
+        $this->addItem($location, [
             'attribute' => $attribute,
             'className' => $class->getName(),
         ]);
@@ -60,7 +61,7 @@ final class AcfBlockDiscovery implements WpDiscovery
     {
         // ACF blocks must be registered on acf/init
         add_action('acf/init', function (): void {
-            foreach ($this->getAllItems() as $item) {
+            foreach ($this->getItems() as $item) {
                 // Handle cached format
                 if (isset($item['name'])) {
                     $this->registerBlockFromCache($item);

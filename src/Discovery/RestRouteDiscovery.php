@@ -30,9 +30,10 @@ final class RestRouteDiscovery implements WpDiscovery
     /**
      * Discover REST route attributes on methods.
      *
+     * @param DiscoveryLocation $location
      * @param ReflectionClass<object> $class
      */
-    public function discover(ReflectionClass $class): void
+    public function discover(DiscoveryLocation $location, ReflectionClass $class): void
     {
         foreach ($class->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
             if ($method->getDeclaringClass()->getName() !== $class->getName()) {
@@ -44,7 +45,7 @@ final class RestRouteDiscovery implements WpDiscovery
             foreach ($attributes as $reflectionAttribute) {
                 $attribute = $reflectionAttribute->newInstance();
 
-                $this->addItem([
+                $this->addItem($location, [
                     'namespace' => $attribute->namespace,
                     'route' => $attribute->route,
                     'httpMethod' => $attribute->getMethodConstant(),
@@ -63,7 +64,7 @@ final class RestRouteDiscovery implements WpDiscovery
     public function apply(): void
     {
         add_action('rest_api_init', function (): void {
-            foreach ($this->getAllItems() as $item) {
+            foreach ($this->getItems() as $item) {
                 $this->doRegisterRoute(
                     $item['namespace'],
                     $item['route'],
