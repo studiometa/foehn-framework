@@ -10,6 +10,7 @@ use Studiometa\Foehn\Config\FoehnConfig;
 use Studiometa\Foehn\Contracts\ViewEngineInterface;
 use Studiometa\Foehn\Discovery\DiscoveryCache;
 use Studiometa\Foehn\Discovery\DiscoveryRunner;
+use Studiometa\Foehn\Rest\RenderApi;
 use Studiometa\Foehn\Views\ContextProviderRegistry;
 use Studiometa\Foehn\Views\TimberViewEngine;
 use Tempest\Container\Container;
@@ -228,6 +229,15 @@ final class Kernel
             ViewEngineInterface::class,
             fn() => new TimberViewEngine($this->container->get(ContextProviderRegistry::class)),
         );
+
+        // Register Render API if enabled
+        if ($this->foehnConfig->renderApi !== null) {
+            $renderApi = new RenderApi(
+                $this->container->get(ViewEngineInterface::class),
+                $this->foehnConfig->renderApi,
+            );
+            $renderApi->register();
+        }
     }
 
     /**
