@@ -19,6 +19,7 @@ function wp_stub_reset(): void
     $GLOBALS['wp_stub_user_can'] = [];
     $GLOBALS['wp_stub_acf_fields'] = [];
     $GLOBALS['wp_stub_acf_field_objects'] = [];
+    $GLOBALS['wp_stub_options'] = [];
 }
 
 /**
@@ -871,6 +872,26 @@ if (!function_exists('get_option')) {
     function get_option(string $option, mixed $default = false): mixed
     {
         return $GLOBALS['wp_stub_options'][$option] ?? $default;
+    }
+}
+
+if (!function_exists('update_option')) {
+    function update_option(string $option, mixed $value, string|bool|null $autoload = null): bool
+    {
+        wp_stub_record('update_option', compact('option', 'value', 'autoload'));
+        $GLOBALS['wp_stub_options'][$option] = $value;
+
+        return true;
+    }
+}
+
+if (!function_exists('delete_option')) {
+    function delete_option(string $option): bool
+    {
+        wp_stub_record('delete_option', compact('option'));
+        unset($GLOBALS['wp_stub_options'][$option]);
+
+        return true;
     }
 }
 
