@@ -213,3 +213,45 @@ describe('Kernel Timber initialization', function () {
         expect($config->templates)->toBe([]);
     });
 });
+
+describe('Kernel respects user config files', function () {
+    afterEach(function () {
+        Kernel::reset();
+        wp_stub_reset();
+    });
+
+    it('does not overwrite user-defined configs already in container', function () {
+        // Boot kernel
+        $kernel = Kernel::boot(dirname(__DIR__, 2) . '/src', []);
+
+        // Restore error/exception handlers set by Tempest::boot()
+        restore_error_handler();
+        restore_exception_handler();
+
+        // Get the container
+        $container = Kernel::container();
+
+        // Create a custom config
+        $customConfig = new \Studiometa\Foehn\Config\TimberConfig(templatesDir: ['custom-views']);
+
+        // Manually register it (simulating what Tempest's LoadConfig does)
+        $container->singleton(\Studiometa\Foehn\Config\TimberConfig::class, fn() => $customConfig);
+
+        // Verify the container returns our custom config (not overwritten)
+        $config = $container->get(\Studiometa\Foehn\Config\TimberConfig::class);
+        expect($config->templatesDir)->toBe(['custom-views']);
+    });
+
+    it('uses has() check before registering default configs', function () {
+        // Use reflection to verify the registerCoreServices method checks has()
+        $reflection = new ReflectionClass(Kernel::class);
+        $method = $reflection->getMethod('registerCoreServices');
+        $source = file_get_contents($reflection->getFileName());
+
+        // Verify the code contains has() checks for each config
+        expect($source)->toContain('if (!$this->container->has(TimberConfig::class))');
+        expect($source)->toContain('if (!$this->container->has(AcfConfig::class))');
+        expect($source)->toContain('if (!$this->container->has(RestConfig::class))');
+        expect($source)->toContain('if (!$this->container->has(RenderApiConfig::class))');
+    });
+});

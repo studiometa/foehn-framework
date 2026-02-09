@@ -214,11 +214,23 @@ final class Kernel
         // Register Foehn configuration
         $this->container->singleton(FoehnConfig::class, fn() => $this->foehnConfig);
 
-        // Register default configs (can be overridden by *.config.php files)
-        $this->container->singleton(TimberConfig::class, static fn() => new TimberConfig());
-        $this->container->singleton(AcfConfig::class, static fn() => new AcfConfig());
-        $this->container->singleton(RestConfig::class, static fn() => new RestConfig());
-        $this->container->singleton(RenderApiConfig::class, static fn() => new RenderApiConfig());
+        // Register default configs only if user hasn't provided their own via *.config.php
+        // Tempest's LoadConfig discovery runs before this, so user configs are already registered
+        if (!$this->container->has(TimberConfig::class)) {
+            $this->container->singleton(TimberConfig::class, static fn() => new TimberConfig());
+        }
+
+        if (!$this->container->has(AcfConfig::class)) {
+            $this->container->singleton(AcfConfig::class, static fn() => new AcfConfig());
+        }
+
+        if (!$this->container->has(RestConfig::class)) {
+            $this->container->singleton(RestConfig::class, static fn() => new RestConfig());
+        }
+
+        if (!$this->container->has(RenderApiConfig::class)) {
+            $this->container->singleton(RenderApiConfig::class, static fn() => new RenderApiConfig());
+        }
 
         // Register discovery cache
         $this->container->singleton(DiscoveryCache::class, fn() => new DiscoveryCache($this->foehnConfig));
