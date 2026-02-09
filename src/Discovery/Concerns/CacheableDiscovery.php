@@ -31,10 +31,14 @@ trait CacheableDiscovery
      */
     public function getCacheableData(): array
     {
+        /** @var WpDiscoveryItems $items */
         $items = $this->getItems();
+        /** @var array<string, list<array<string, mixed>>> $data */
         $data = [];
 
+        /** @var string $namespace */
         foreach ($items->toArray() as $namespace => $locationItems) {
+            /** @var array<string, mixed> $item */
             foreach ($locationItems as $item) {
                 $cacheableItem = $this->itemToCacheable($item);
 
