@@ -4,24 +4,19 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Discovery\Concerns;
 
+use Studiometa\Foehn\Discovery\WpDiscoveryItems;
+
 /**
  * Trait for discoveries that support caching.
  *
  * Discoveries that use this trait can export their data in a serializable format
- * and restore from cached data.
+ * and restore from cached data via WpDiscoveryItems.
  *
  * This trait requires the class to also use the IsWpDiscovery trait which provides
- * the getItems() method.
+ * getItems()/setItems() methods.
  */
 trait CacheableDiscovery
 {
-    /**
-     * Cached items restored from cache.
-     *
-     * @var array<int, array<string, mixed>>
-     */
-    protected array $cachedItems = [];
-
     /**
      * Whether this discovery was restored from cache.
      */
@@ -30,26 +25,22 @@ trait CacheableDiscovery
     /**
      * Get cacheable data from the discovery.
      *
-     * Each discovery should override this to return serializable data.
-     * The data should be structured so it can be used in apply() without
-     * requiring reflection.
+     * Converts all discovered items into a serializable format grouped by location.
      *
-     * @return array<int, array<string, mixed>>
+     * @return array<string, list<array<string, mixed>>>
      */
     public function getCacheableData(): array
     {
+        $items = $this->getItems();
         $data = [];
 
-        // getItems() is provided by IsWpDiscovery trait which must be used alongside this trait
-        /** @var array<int, array<string, mixed>> $items */
-        $items = $this->getItems();
+        foreach ($items->toArray() as $namespace => $locationItems) {
+            foreach ($locationItems as $item) {
+                $cacheableItem = $this->itemToCacheable($item);
 
-        /** @var array<string, mixed> $item */
-        foreach ($items as $item) {
-            $cacheableItem = $this->itemToCacheable($item);
-
-            if ($cacheableItem !== null) {
-                $data[] = $cacheableItem;
+                if ($cacheableItem !== null) {
+                    $data[$namespace][] = $cacheableItem;
+                }
             }
         }
 
@@ -59,11 +50,11 @@ trait CacheableDiscovery
     /**
      * Restore discovery from cached data.
      *
-     * @param array<int, array<string, mixed>> $data
+     * @param array<string, list<array<string, mixed>>> $data
      */
     public function restoreFromCache(array $data): void
     {
-        $this->cachedItems = $data;
+        $this->setItems(WpDiscoveryItems::fromArray($data));
         $this->restoredFromCache = true;
     }
 
@@ -73,22 +64,6 @@ trait CacheableDiscovery
     public function wasRestoredFromCache(): bool
     {
         return $this->restoredFromCache;
-    }
-
-    /**
-     * Get all items (from discovery or cache).
-     *
-     * @return iterable<array<string, mixed>>
-     */
-    protected function getAllItems(): iterable
-    {
-        if ($this->restoredFromCache) {
-            return $this->cachedItems;
-        }
-
-        // getItems() is provided by IsWpDiscovery trait which must be used alongside this trait
-        /** @var iterable<array<string, mixed>> */
-        return $this->getItems();
     }
 
     /**
