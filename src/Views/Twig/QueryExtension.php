@@ -267,22 +267,7 @@ final class QueryExtension extends AbstractExtension
      */
     protected function addQueryArg(array $args): string
     {
-        if (function_exists('add_query_arg')) {
-            return add_query_arg($args);
-        }
-
-        // Fallback for non-WordPress context (tests)
-        $uri = $this->getRequestUri();
-        $parsed = parse_url($uri);
-        $path = is_array($parsed) && isset($parsed['path']) ? $parsed['path'] : '/';
-        $queryString = is_array($parsed) && isset($parsed['query']) ? $parsed['query'] : '';
-        $existing = [];
-        parse_str($queryString, $existing);
-
-        $merged = array_merge($existing, $args);
-        $query = http_build_query($merged);
-
-        return $query !== '' ? "{$path}?{$query}" : $path;
+        return add_query_arg($args);
     }
 
     /**
@@ -292,25 +277,7 @@ final class QueryExtension extends AbstractExtension
      */
     protected function removeQueryArg(array $keys): string
     {
-        if (function_exists('remove_query_arg')) {
-            return remove_query_arg($keys);
-        }
-
-        // Fallback for non-WordPress context (tests)
-        $uri = $this->getRequestUri();
-        $parsed = parse_url($uri);
-        $path = is_array($parsed) && isset($parsed['path']) ? $parsed['path'] : '/';
-        $queryString = is_array($parsed) && isset($parsed['query']) ? $parsed['query'] : '';
-        $existing = [];
-        parse_str($queryString, $existing);
-
-        foreach ($keys as $key) {
-            unset($existing[$key]);
-        }
-
-        $query = http_build_query($existing);
-
-        return $query !== '' ? "{$path}?{$query}" : $path;
+        return remove_query_arg($keys);
     }
 
     /**
@@ -318,11 +285,7 @@ final class QueryExtension extends AbstractExtension
      */
     protected function escUrl(string $url): string
     {
-        if (function_exists('esc_url')) {
-            return esc_url($url);
-        }
-
-        return htmlspecialchars($url, ENT_QUOTES, 'UTF-8');
+        return esc_url($url);
     }
 
     /**
@@ -330,10 +293,6 @@ final class QueryExtension extends AbstractExtension
      */
     protected function escAttr(string $value): string
     {
-        if (function_exists('esc_attr')) {
-            return esc_attr($value);
-        }
-
-        return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+        return esc_attr($value);
     }
 }
