@@ -7,7 +7,16 @@ namespace Studiometa\Foehn\Config;
 use Tempest\Core\DiscoveryCacheStrategy;
 
 /**
- * Configuration for foehn.
+ * Core configuration for Føhn.
+ *
+ * This config is passed to Kernel::boot() and contains options needed
+ * during the bootstrap phase (before Tempest config discovery runs).
+ *
+ * For other configurations, use dedicated config files:
+ * - `app/timber.config.php` → TimberConfig
+ * - `app/acf.config.php` → AcfConfig
+ * - `app/rest.config.php` → RestConfig
+ * - `app/render-api.config.php` → RenderApiConfig
  */
 final readonly class FoehnConfig
 {
@@ -27,29 +36,10 @@ final readonly class FoehnConfig
         public ?string $discoveryCachePath = null,
 
         /**
-         * Timber templates directory names.
-         * @var string[]
-         */
-        public array $timberTemplatesDir = ['templates'],
-
-        /**
          * Opt-in hook classes to activate.
          * @var list<class-string>
          */
         public array $hooks = [],
-
-        /**
-         * Transform ACF block fields via Timber's ACF integration.
-         * When enabled, raw ACF values (image IDs, post IDs, etc.) are automatically
-         * converted to Timber objects (Image, Post, Term, etc.).
-         */
-        public bool $acfTransformFields = true,
-
-        /**
-         * Default capability required for REST routes without explicit permission.
-         * Set to null to only require authentication (is_user_logged_in).
-         */
-        public ?string $restDefaultCapability = 'edit_posts',
 
         /**
          * Enable debug mode for discovery.
@@ -57,12 +47,6 @@ final readonly class FoehnConfig
          * Defaults to WP_DEBUG constant value.
          */
         public bool $debug = false,
-
-        /**
-         * Render API configuration.
-         * Enables a REST endpoint to render Twig templates via AJAX.
-         */
-        public ?RenderApiConfig $renderApi = null,
     ) {}
 
     /**
@@ -78,35 +62,17 @@ final readonly class FoehnConfig
             $strategy = DiscoveryCacheStrategy::make($config['discovery_cache']);
         }
 
-        /** @var string[] $timberTemplatesDir */
-        $timberTemplatesDir = $config['timber_templates_dir'] ?? ['templates'];
-
         /** @var list<class-string> $hooks */
         $hooks = $config['hooks'] ?? [];
-
-        /** @var ?string $restDefaultCapability */
-        $restDefaultCapability = array_key_exists('rest_default_capability', $config)
-            ? $config['rest_default_capability']
-            : 'edit_posts';
 
         // Default debug to WP_DEBUG constant if not explicitly set
         $debug = $config['debug'] ?? defined('WP_DEBUG') && constant('WP_DEBUG');
 
-        // Render API config
-        $renderApi = null;
-        if (isset($config['render_api']) && is_array($config['render_api'])) {
-            $renderApi = RenderApiConfig::fromArray($config['render_api']);
-        }
-
         return new self(
             discoveryCacheStrategy: $strategy,
             discoveryCachePath: $config['discovery_cache_path'] ?? null,
-            timberTemplatesDir: $timberTemplatesDir,
             hooks: $hooks,
-            acfTransformFields: $config['acf_transform_fields'] ?? true,
-            restDefaultCapability: $restDefaultCapability,
             debug: (bool) $debug,
-            renderApi: $renderApi,
         );
     }
 

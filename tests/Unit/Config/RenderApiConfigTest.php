@@ -8,32 +8,17 @@ describe('RenderApiConfig', function () {
     it('can be instantiated with defaults', function () {
         $config = new RenderApiConfig();
 
-        expect($config->enabled)->toBeTrue();
         expect($config->templates)->toBe([]);
+        expect($config->cacheMaxAge)->toBe(0);
+        expect($config->debug)->toBeFalse();
     });
 
     it('can be instantiated with custom values', function () {
-        $config = new RenderApiConfig(enabled: false, templates: ['partials/*', 'blocks/*']);
+        $config = new RenderApiConfig(templates: ['partials/*', 'blocks/*'], cacheMaxAge: 300, debug: true);
 
-        expect($config->enabled)->toBeFalse();
         expect($config->templates)->toBe(['partials/*', 'blocks/*']);
-    });
-
-    it('can be created from array', function () {
-        $config = RenderApiConfig::fromArray([
-            'enabled' => true,
-            'templates' => ['components/*'],
-        ]);
-
-        expect($config->enabled)->toBeTrue();
-        expect($config->templates)->toBe(['components/*']);
-    });
-
-    it('uses defaults when array is empty', function () {
-        $config = RenderApiConfig::fromArray([]);
-
-        expect($config->enabled)->toBeTrue();
-        expect($config->templates)->toBe([]);
+        expect($config->cacheMaxAge)->toBe(300);
+        expect($config->debug)->toBeTrue();
     });
 
     it('is readonly', function () {
@@ -86,5 +71,13 @@ describe('RenderApiConfig template matching', function () {
         expect($config->isTemplateAllowed('partials/card'))->toBeTrue();
         expect($config->isTemplateAllowed('blocks/card'))->toBeTrue();
         expect($config->isTemplateAllowed('partials/hero'))->toBeFalse();
+    });
+
+    it('escapes regex metacharacters in patterns', function () {
+        $config = new RenderApiConfig(templates: ['components.button']);
+
+        // Dot should be literal, not regex "any character"
+        expect($config->isTemplateAllowed('components.button'))->toBeTrue();
+        expect($config->isTemplateAllowed('componentsXbutton'))->toBeFalse();
     });
 });

@@ -2,23 +2,42 @@
 
 Føhn provides an optional REST endpoint for rendering Twig templates via AJAX. This enables cacheable partial loading for features like "load more" buttons, infinite scroll, or dynamic content updates.
 
-## Configuration
+## Enabling the Render API
 
-Enable the Render API in your theme's `functions.php`:
+The Render API is opt-in. Enable it by adding `RenderApiHook` to your hooks configuration:
 
 ```php
+use Studiometa\Foehn\Hooks\RenderApiHook;
+
 Kernel::boot(__DIR__, [
-    'render_api' => [
-        'enabled' => true,
-        'templates' => ['partials/*', 'blocks/*', 'components/*'],
+    'hooks' => [
+        RenderApiHook::class,
     ],
 ]);
 ```
 
-| Option      | Type       | Default | Description                              |
-| ----------- | ---------- | ------- | ---------------------------------------- |
-| `enabled`   | `bool`     | `true`  | Enable/disable the endpoint              |
-| `templates` | `string[]` | `[]`    | Allowed template patterns (supports `*`) |
+## Configuration
+
+Configure the allowed templates by creating a `render-api.config.php` file in your `app/` directory:
+
+```php
+// app/render-api.config.php
+use Studiometa\Foehn\Config\RenderApiConfig;
+
+return new RenderApiConfig(
+    templates: ['partials/*', 'components/*'],
+    cacheMaxAge: 300, // 5 minutes
+    debug: false,
+);
+```
+
+This file is automatically discovered by Tempest's config loader.
+
+| Option        | Type       | Default | Description                                     |
+| ------------- | ---------- | ------- | ----------------------------------------------- |
+| `templates`   | `string[]` | `[]`    | Allowed template patterns (supports `*`)        |
+| `cacheMaxAge` | `int`      | `0`     | Cache-Control max-age in seconds (0 to disable) |
+| `debug`       | `bool`     | `false` | Include exception details in error messages     |
 
 ::: warning Security
 Only templates matching the configured patterns can be rendered. Always restrict to specific directories to prevent unauthorized template access.
@@ -32,26 +51,23 @@ GET /wp-json/foehn/v1/render
 
 ### Parameters
 
-| Parameter   | Type      | Required | Description                                |
-| ----------- | --------- | -------- | ------------------------------------------ |
-| `template`  | `string`  | \*       | Single template path                       |
-| `templates` | `object`  | \*       | Multiple templates (key → path)            |
-| `post_id`   | `integer` | No       | Post ID to resolve as `post` context       |
-| `term_id`   | `integer` | No       | Term ID to resolve as `term` context       |
-| `taxonomy`  | `string`  | No       | Taxonomy for term_id (default: `category`) |
-| `*`         | `scalar`  | No       | Any other scalar values passed to context  |
+| Parameter   | Type     | Required | Description                         |
+| ----------- | -------- | -------- | ----------------------------------- |
+| `template`  | `string` | \*       | Single template path                |
+| `templates` | `object` | \*       | Multiple templates (key → path)     |
+| `*`         | `scalar` | No       | Any scalar values passed to context |
 
 \* Either `template` or `templates` is required.
 
 ### Single Template Response
 
 ```
-GET /wp-json/foehn/v1/render?template=partials/card&post_id=123
+GET /wp-json/foehn/v1/render?template=partials/card&title=Hello
 ```
 
 ```json
 {
-  "html": "<div class=\"card\">...</div>"
+  "html": "<div class=\"card\">Hello</div>"
 }
 ```
 
@@ -60,36 +76,69 @@ GET /wp-json/foehn/v1/render?template=partials/card&post_id=123
 Render multiple templates in a single request, reducing round-trips (inspired by [Shopify's Section Rendering API](https://shopify.dev/docs/api/ajax/section-rendering)):
 
 ```
-GET /wp-json/foehn/v1/render?templates[hero]=blocks/hero&templates[card]=partials/card&post_id=123
+GET /wp-json/foehn/v1/render?templates[hero]=blocks/hero&templates[card]=partials/card&title=Hello
 ```
 
 ```json
 {
-  "hero": "<section class=\"hero\">...</section>",
-  "card": "<article class=\"card\">...</article>"
+  "hero": "<section class=\"hero\">Hello</section>",
+  "card": "<article class=\"card\">Hello</article>"
 }
 ```
 
 ## Context
 
-Templates rendered via the Render API have access to:
+Templates receive only scalar values from query parameters. For complex data like posts or terms, use a [Context Provider](/guide/context-providers).
 
-- **Timber global context**: `site`, `theme`, `user`, `http_host`, `wp_title`, `body_class`
-- **Shared data**: Values registered via `ViewEngineInterface::share()`
-- **Context providers**: All registered `#[AsContextProvider]` matching the template
-- **Request parameters**: `post`, `term`, and any scalar query parameters
+### Basic Context
+
+All scalar query parameters (except `template` and `templates`) are passed to the template:
 
 ```twig
-{# All these are available in Render API templates #}
-<a href="{{ site.url }}">{{ site.name }}</a>
-<p>Logged in: {{ user ? 'Yes' : 'No' }}</p>
+{# GET /wp-json/foehn/v1/render?template=partials/card&title=Hello&count=5 #}
+<div class="card">
+  <h2>{{ title }}</h2>
+  <span>{{ count }} items</span>
+</div>
 ```
 
-## Usage Examples
+### Resolving Posts and Terms
 
-### Load More Posts
+Use a Context Provider to resolve IDs to Timber objects:
 
-**Template** (`templates/partials/card.twig`):
+```php
+use Studiometa\Foehn\Attributes\AsContextProvider;
+use Studiometa\Foehn\Contracts\ContextProviderInterface;
+use Timber\Timber;
+
+#[AsContextProvider('partials/*')]
+final class PostContextProvider implements ContextProviderInterface
+{
+    public function provide(array $context): array
+    {
+        if (isset($context['post_id'])) {
+            $post = Timber::get_post((int) $context['post_id']);
+
+            if ($post && $post->post_status === 'publish') {
+                $context['post'] = $post;
+            }
+        }
+
+        if (isset($context['term_id'])) {
+            $taxonomy = $context['taxonomy'] ?? 'category';
+            $context['term'] = Timber::get_term_by('id', (int) $context['term_id'], $taxonomy);
+        }
+
+        return $context;
+    }
+}
+```
+
+Now you can use `post_id` and `term_id` parameters:
+
+```
+GET /wp-json/foehn/v1/render?template=partials/card&post_id=123
+```
 
 ```twig
 <article class="card">
@@ -99,11 +148,15 @@ Templates rendered via the Render API have access to:
 </article>
 ```
 
+## Usage Examples
+
+### Load More Posts
+
 **JavaScript**:
 
 ```js
 async function loadMorePosts(page) {
-  const postIds = await fetchPostIds(page); // Your logic to get post IDs
+  const postIds = await fetchPostIds(page);
 
   const cards = await Promise.all(
     postIds.map(async (id) => {
@@ -145,32 +198,9 @@ async function renderButton(label, url, variant = "primary") {
 }
 ```
 
-### Render Term Card
-
-**Template** (`templates/partials/category-card.twig`):
-
-```twig
-<div class="category-card">
-  <h3>{{ term.name }}</h3>
-  <p>{{ term.description }}</p>
-  <span class="count">{{ term.count }} posts</span>
-</div>
-```
-
-**JavaScript**:
-
-```js
-const response = await fetch(
-  "/wp-json/foehn/v1/render?template=partials/category-card&term_id=5&taxonomy=category",
-);
-const { html } = await response.json();
-```
-
 ### Render Multiple Sections
 
 Fetch multiple page sections in a single request:
-
-**JavaScript**:
 
 ```js
 async function refreshPageSections(postId) {
@@ -183,7 +213,6 @@ async function refreshPageSections(postId) {
   const response = await fetch(`/wp-json/foehn/v1/render?${params}`);
   const sections = await response.json();
 
-  // Update each section
   document.querySelector(".header").innerHTML = sections.header;
   document.querySelector(".sidebar").innerHTML = sections.sidebar;
   document.querySelector(".footer").innerHTML = sections.footer;
@@ -198,25 +227,23 @@ The Render API uses GET requests, making responses cacheable by:
 - **CDN/Edge caching** (Cloudflare, Fastly, etc.)
 - **WordPress caching plugins** (WP Rocket, WP Super Cache, etc.)
 
-::: tip WP Rocket
-WP Rocket can cache REST API responses. Ensure your allowed templates don't contain user-specific data, or exclude specific patterns from caching.
-:::
-
 ## Security Considerations
 
 1. **Template allowlist**: Only explicitly allowed template patterns can be rendered
-2. **Public posts only**: `post_id` only resolves published posts (not drafts, private, etc.)
-3. **Scalar values only**: Context parameters are limited to scalar types (strings, numbers, booleans)
-4. **No sensitive data**: Don't pass sensitive information via query parameters
+2. **Scalar values only**: Context parameters are limited to scalar types (strings, numbers, booleans)
+3. **No sensitive data**: Don't pass sensitive information via query parameters
+4. **Post/term access**: If using a Context Provider to resolve posts/terms, ensure you check `post_status` and permissions
 
 ## Error Responses
 
-| Status | Code                   | Description                    |
-| ------ | ---------------------- | ------------------------------ |
-| 404    | `template_not_allowed` | Template not in allowlist      |
-| 404    | `invalid_context`      | Referenced post/term not found |
-| 404    | `render_error`         | Template rendering failed      |
+| Status | Code                   | Description                                     |
+| ------ | ---------------------- | ----------------------------------------------- |
+| 400    | `missing_template`     | No template specified                           |
+| 400    | `invalid_templates`    | templates parameter is not an object of strings |
+| 403    | `template_not_allowed` | Template not in allowlist                       |
+| 500    | `render_error`         | Template rendering failed                       |
 
 ## See Also
 
+- [Context Providers](/guide/context-providers) - Add dynamic data to templates
 - [REST API](/guide/rest-api) - Custom REST endpoints

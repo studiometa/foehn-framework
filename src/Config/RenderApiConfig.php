@@ -6,30 +6,30 @@ namespace Studiometa\Foehn\Config;
 
 /**
  * Configuration for the Render API.
+ *
+ * Create a config file in your app directory:
+ *
+ * ```php
+ * // app/render-api.config.php
+ * use Studiometa\Foehn\Config\RenderApiConfig;
+ *
+ * return new RenderApiConfig(
+ *     templates: ['partials/*', 'components/*'],
+ * );
+ * ```
  */
 final readonly class RenderApiConfig
 {
     /**
-     * @param bool $enabled Whether the render API is enabled
      * @param list<string> $templates Allowed template patterns (supports * wildcard)
+     * @param int $cacheMaxAge Cache-Control max-age in seconds (0 to disable)
+     * @param bool $debug When true, error messages include exception details
      */
     public function __construct(
-        public bool $enabled = true,
         public array $templates = [],
+        public int $cacheMaxAge = 0,
+        public bool $debug = false,
     ) {}
-
-    /**
-     * Create config from array.
-     *
-     * @param array<string, mixed> $config
-     */
-    public static function fromArray(array $config): self
-    {
-        /** @var list<string> $templates */
-        $templates = $config['templates'] ?? [];
-
-        return new self(enabled: $config['enabled'] ?? true, templates: $templates);
-    }
 
     /**
      * Check if a template path is allowed.
@@ -56,9 +56,11 @@ final readonly class RenderApiConfig
      */
     private function matchPattern(string $template, string $pattern): bool
     {
-        // Convert glob pattern to regex
-        $regex = str_replace(['*', '/'], ['[^/]*', '\/'], $pattern);
+        // Escape regex metacharacters, then convert * to pattern
+        // Use # as delimiter to avoid escaping slashes
+        $regex = preg_quote($pattern, '#');
+        $regex = str_replace('\*', '[^/]*', $regex);
 
-        return (bool) preg_match('/^' . $regex . '$/', $template);
+        return (bool) preg_match('#^' . $regex . '$#', $template);
     }
 }

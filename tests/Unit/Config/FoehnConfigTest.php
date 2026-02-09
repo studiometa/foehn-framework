@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Config\FoehnConfig;
-use Studiometa\Foehn\Config\RenderApiConfig;
 use Studiometa\Foehn\Hooks\Cleanup\CleanHeadTags;
 use Studiometa\Foehn\Hooks\Security\SecurityHeaders;
 use Tempest\Core\DiscoveryCacheStrategy;
@@ -16,8 +15,6 @@ describe('FoehnConfig', function () {
         expect($config->discoveryCachePath)->toBeNull();
         expect($config->hooks)->toBe([]);
         expect($config->isDiscoveryCacheEnabled())->toBeFalse();
-        expect($config->timberTemplatesDir)->toBe(['templates']);
-        expect($config->acfTransformFields)->toBeTrue();
         expect($config->debug)->toBeFalse();
         expect($config->isDebugEnabled())->toBeFalse();
     });
@@ -106,20 +103,6 @@ describe('FoehnConfig', function () {
             expect($config->getDiscoveryCachePath())->toBe('/my/cache/path');
         });
 
-        it('creates config with default timber templates dir', function () {
-            $config = FoehnConfig::fromArray([]);
-
-            expect($config->timberTemplatesDir)->toBe(['templates']);
-        });
-
-        it('creates config with custom timber templates dir', function () {
-            $config = FoehnConfig::fromArray([
-                'timber_templates_dir' => ['views', 'templates'],
-            ]);
-
-            expect($config->timberTemplatesDir)->toBe(['views', 'templates']);
-        });
-
         it('creates config with hooks array', function () {
             $config = FoehnConfig::fromArray([
                 'hooks' => [
@@ -138,28 +121,6 @@ describe('FoehnConfig', function () {
             $config = FoehnConfig::fromArray([]);
 
             expect($config->hooks)->toBe([]);
-        });
-
-        it('creates config with acf_transform_fields true by default', function () {
-            $config = FoehnConfig::fromArray([]);
-
-            expect($config->acfTransformFields)->toBeTrue();
-        });
-
-        it('creates config with acf_transform_fields disabled', function () {
-            $config = FoehnConfig::fromArray([
-                'acf_transform_fields' => false,
-            ]);
-
-            expect($config->acfTransformFields)->toBeFalse();
-        });
-
-        it('creates config with acf_transform_fields enabled', function () {
-            $config = FoehnConfig::fromArray([
-                'acf_transform_fields' => true,
-            ]);
-
-            expect($config->acfTransformFields)->toBeTrue();
         });
 
         it('creates config with debug false by default', function () {
@@ -185,33 +146,6 @@ describe('FoehnConfig', function () {
 
             expect($config->debug)->toBeFalse();
             expect($config->isDebugEnabled())->toBeFalse();
-        });
-
-        it('creates config with render_api disabled by default', function () {
-            $config = FoehnConfig::fromArray([]);
-
-            expect($config->renderApi)->toBeNull();
-        });
-
-        it('creates config with render_api from array', function () {
-            $config = FoehnConfig::fromArray([
-                'render_api' => [
-                    'enabled' => true,
-                    'templates' => ['partials/*', 'blocks/*'],
-                ],
-            ]);
-
-            expect($config->renderApi)->toBeInstanceOf(RenderApiConfig::class);
-            expect($config->renderApi->enabled)->toBeTrue();
-            expect($config->renderApi->templates)->toBe(['partials/*', 'blocks/*']);
-        });
-
-        it('ignores render_api if not an array', function () {
-            $config = FoehnConfig::fromArray([
-                'render_api' => true,
-            ]);
-
-            expect($config->renderApi)->toBeNull();
         });
     });
 });

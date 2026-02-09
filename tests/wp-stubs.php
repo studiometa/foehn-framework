@@ -139,6 +139,9 @@ if (!class_exists('WP_REST_Request')) {
 if (!class_exists('WP_REST_Response')) {
     class WP_REST_Response
     {
+        /** @var array<string, string> */
+        private array $headers = [];
+
         public function __construct(
             private mixed $data = null,
             private int $status = 200,
@@ -152,6 +155,16 @@ if (!class_exists('WP_REST_Response')) {
         public function get_status(): int
         {
             return $this->status;
+        }
+
+        public function header(string $key, string $value): void
+        {
+            $this->headers[$key] = $value;
+        }
+
+        public function get_headers(): array
+        {
+            return $this->headers;
         }
     }
 }

@@ -6,13 +6,15 @@ namespace Studiometa\Foehn;
 
 use RuntimeException;
 use Studiometa\Foehn\Blocks\AcfBlockRenderer;
+use Studiometa\Foehn\Config\AcfConfig;
 use Studiometa\Foehn\Config\FoehnConfig;
-use Studiometa\Foehn\Contracts\TimberRepositoryInterface;
+use Studiometa\Foehn\Config\RenderApiConfig;
+use Studiometa\Foehn\Config\RestConfig;
+use Studiometa\Foehn\Config\TimberConfig;
 use Studiometa\Foehn\Contracts\ViewEngineInterface;
 use Studiometa\Foehn\Discovery\DiscoveryCache;
 use Studiometa\Foehn\Discovery\DiscoveryRunner;
 use Studiometa\Foehn\Rest\RenderApi;
-use Studiometa\Foehn\Timber\TimberRepository;
 use Studiometa\Foehn\Views\ContextProviderRegistry;
 use Studiometa\Foehn\Views\TimberViewEngine;
 use Tempest\Container\Container;
@@ -50,7 +52,8 @@ final class Kernel
      * @param array<string, mixed> $config Configuration options
      *   - discovery_cache: string|bool - Cache strategy ('full', 'partial', 'none', true, false)
      *   - discovery_cache_path: string - Custom path for cache files
-     *   - timber_templates_dir: string[] - Timber templates directory names (default: ['templates'])
+     *   - hooks: list<class-string> - Opt-in hook classes to activate
+     *   - debug: bool - Enable debug mode for discovery
      */
     public static function boot(string $appPath, array $config = []): self
     {
@@ -211,6 +214,12 @@ final class Kernel
         // Register Foehn configuration
         $this->container->singleton(FoehnConfig::class, fn() => $this->foehnConfig);
 
+        // Register default configs (can be overridden by *.config.php files)
+        $this->container->singleton(TimberConfig::class, static fn() => new TimberConfig());
+        $this->container->singleton(AcfConfig::class, static fn() => new AcfConfig());
+        $this->container->singleton(RestConfig::class, static fn() => new RestConfig());
+        $this->container->singleton(RenderApiConfig::class, static fn() => new RenderApiConfig());
+
         // Register discovery cache
         $this->container->singleton(DiscoveryCache::class, fn() => new DiscoveryCache($this->foehnConfig));
 
@@ -221,7 +230,10 @@ final class Kernel
         );
 
         // Register ACF block renderer with config
-        $this->container->singleton(AcfBlockRenderer::class, fn() => new AcfBlockRenderer($this->foehnConfig));
+        $this->container->singleton(
+            AcfBlockRenderer::class,
+            fn() => new AcfBlockRenderer($this->container->get(AcfConfig::class)),
+        );
 
         // Register context provider registry
         $this->container->singleton(ContextProviderRegistry::class, static fn() => new ContextProviderRegistry());
@@ -232,19 +244,14 @@ final class Kernel
             fn() => new TimberViewEngine($this->container->get(ContextProviderRegistry::class)),
         );
 
-        // Register Timber repository
-        $this->container->singleton(TimberRepository::class, static fn() => new TimberRepository());
-        $this->container->singleton(TimberRepositoryInterface::class, fn() => $this->container->get(TimberRepository::class));
-
-        // Register Render API if enabled
-        if ($this->foehnConfig->renderApi !== null) {
-            $renderApi = new RenderApi(
+        // Register RenderApi (used by RenderApiHook when opted-in)
+        $this->container->singleton(
+            RenderApi::class,
+            fn() => new RenderApi(
                 $this->container->get(ViewEngineInterface::class),
-                $this->foehnConfig->renderApi,
-                $this->container->get(TimberRepositoryInterface::class),
-            );
-            $renderApi->register();
-        }
+                $this->container->get(RenderApiConfig::class),
+            ),
+        );
     }
 
     /**
@@ -267,7 +274,11 @@ final class Kernel
         }
 
         Timber::init();
-        Timber::$dirname = $this->foehnConfig->timberTemplatesDir;
+
+        // Set Timber templates directory from config
+        /** @var TimberConfig $timberConfig */
+        $timberConfig = $this->container->get(TimberConfig::class);
+        Timber::$dirname = $timberConfig->templatesDir;
 
         add_filter('timber/context', static function (array $context): array {
             $context['site'] = new \Timber\Site();

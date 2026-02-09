@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Studiometa\Foehn\Rest;
 
 use Studiometa\Foehn\Config\RenderApiConfig;
-use Studiometa\Foehn\Contracts\TimberRepositoryInterface;
 use Studiometa\Foehn\Contracts\ViewEngineInterface;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -14,6 +13,8 @@ use WP_REST_Response;
  * REST API endpoint for rendering Twig templates.
  *
  * Provides a cacheable endpoint for AJAX partial loading.
+ * Only scalar values are passed to the template context.
+ * Use ContextProviders to resolve IDs to objects.
  */
 final readonly class RenderApi
 {
@@ -23,7 +24,6 @@ final readonly class RenderApi
     public function __construct(
         private ViewEngineInterface $view,
         private RenderApiConfig $config,
-        private TimberRepositoryInterface $timber,
     ) {}
 
     /**
@@ -31,38 +31,20 @@ final readonly class RenderApi
      */
     public function register(): void
     {
-        if (!$this->config->enabled) {
-            return;
-        }
-
-        add_action('rest_api_init', function (): void {
-            register_rest_route(self::NAMESPACE, self::ROUTE, [
-                'methods' => 'GET',
-                'callback' => $this->handle(...),
-                'permission_callback' => '__return_true',
-                'args' => [
-                    'template' => [
-                        'type' => 'string',
-                        'sanitize_callback' => 'sanitize_text_field',
-                    ],
-                    'templates' => [
-                        'type' => 'object',
-                    ],
-                    'post_id' => [
-                        'type' => 'integer',
-                        'sanitize_callback' => 'absint',
-                    ],
-                    'term_id' => [
-                        'type' => 'integer',
-                        'sanitize_callback' => 'absint',
-                    ],
-                    'taxonomy' => [
-                        'type' => 'string',
-                        'sanitize_callback' => 'sanitize_key',
-                    ],
+        register_rest_route(self::NAMESPACE, self::ROUTE, [
+            'methods' => 'GET',
+            'callback' => $this->handle(...),
+            'permission_callback' => '__return_true',
+            'args' => [
+                'template' => [
+                    'type' => 'string',
+                    'sanitize_callback' => 'sanitize_text_field',
                 ],
-            ]);
-        });
+                'templates' => [
+                    'type' => 'object',
+                ],
+            ],
+        ]);
     }
 
     /**
@@ -72,23 +54,25 @@ final readonly class RenderApi
     {
         /** @var string|null $template */
         $template = $request->get_param('template');
-        /** @var array<string, string>|null $templates */
+        /** @var mixed $templates */
         $templates = $request->get_param('templates');
 
         // Must have either template or templates
         if ($template === null && $templates === null) {
-            return new WP_REST_Response([
-                'code' => 'missing_template',
-                'message' => 'Either template or templates parameter is required',
-            ], 400);
+            return $this->errorResponse('missing_template', 'Either template or templates parameter is required', 400);
         }
 
-        // Build context from request parameters
+        // Validate templates format if provided
+        if ($templates !== null && !$this->isValidTemplatesParam($templates)) {
+            return $this->errorResponse(
+                'invalid_templates',
+                'The templates parameter must be an object with string values',
+                400,
+            );
+        }
+
+        // Build context from request parameters (scalar values only)
         $context = $this->buildContext($request);
-
-        if ($context === null) {
-            return new WP_REST_Response(['code' => 'invalid_context', 'message' => 'Resource not found'], 404);
-        }
 
         // Single template mode
         if ($template !== null) {
@@ -96,7 +80,28 @@ final readonly class RenderApi
         }
 
         // Multiple templates mode
+        /** @var array<string, string> $templates */
         return $this->handleMultipleTemplates($templates, $context);
+    }
+
+    /**
+     * Validate that templates parameter is an associative array of strings.
+     */
+    private function isValidTemplatesParam(mixed $templates): bool
+    {
+        if (!is_array($templates)) {
+            return false;
+        }
+
+        foreach ($templates as $key => $value) {
+            if (!(!is_string($key) || !is_string($value))) {
+                continue;
+            }
+
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -107,16 +112,16 @@ final readonly class RenderApi
     private function handleSingleTemplate(string $template, array $context): WP_REST_Response
     {
         if (!$this->config->isTemplateAllowed($template)) {
-            return new WP_REST_Response(['code' => 'template_not_allowed', 'message' => 'Template not found'], 404);
+            return $this->errorResponse('template_not_allowed', 'Template not allowed', 403);
         }
 
         try {
             $html = $this->view->render($template, $context);
-        } catch (\Throwable) {
-            return new WP_REST_Response(['code' => 'render_error', 'message' => 'Template not found'], 404);
+        } catch (\Throwable $e) {
+            return $this->renderErrorResponse('Template rendering failed', $e);
         }
 
-        return new WP_REST_Response(['html' => $html]);
+        return $this->successResponse(['html' => $html]);
     }
 
     /**
@@ -134,66 +139,34 @@ final readonly class RenderApi
             $template = sanitize_text_field($template);
 
             if (!$this->config->isTemplateAllowed($template)) {
-                return new WP_REST_Response([
-                    'code' => 'template_not_allowed',
-                    'message' => "Template '{$key}' not found",
-                ], 404);
+                return $this->errorResponse('template_not_allowed', "Template '{$key}' not allowed", 403);
             }
 
             try {
                 $results[$key] = $this->view->render($template, $context);
-            } catch (\Throwable) {
-                return new WP_REST_Response([
-                    'code' => 'render_error',
-                    'message' => "Template '{$key}' rendering failed",
-                ], 404);
+            } catch (\Throwable $e) {
+                return $this->renderErrorResponse("Template '{$key}' rendering failed", $e);
             }
         }
 
-        return new WP_REST_Response($results);
+        return $this->successResponse($results);
     }
 
     /**
      * Build context from request parameters.
      *
-     * @return array<string, mixed>|null Null if a referenced resource doesn't exist
+     * Only scalar values are included. Use ContextProviders to resolve
+     * IDs (post_id, term_id, etc.) to Timber objects.
+     *
+     * @return array<string, scalar>
      */
-    private function buildContext(WP_REST_Request $request): ?array
+    private function buildContext(WP_REST_Request $request): array
     {
         $context = [];
 
-        // Resolve post_id to Timber Post
-        /** @var int|null $postId */
-        $postId = $request->get_param('post_id');
-        if ($postId !== null) {
-            $post = $this->timber->post($postId);
-
-            if ($post === null) {
-                return null;
-            }
-
-            $context['post'] = $post;
-        }
-
-        // Resolve term_id to Timber Term
-        /** @var int|null $termId */
-        $termId = $request->get_param('term_id');
-        if ($termId !== null) {
-            /** @var string|null $taxonomy */
-            $taxonomy = $request->get_param('taxonomy');
-            $term = $this->timber->term($termId, $taxonomy ?? 'category');
-
-            if ($term === null) {
-                return null;
-            }
-
-            $context['term'] = $term;
-        }
-
-        // Add remaining scalar parameters to context
         foreach ($request->get_params() as $key => $value) {
             // Skip reserved parameters
-            if (in_array($key, ['template', 'templates', 'post_id', 'term_id', 'taxonomy'], true)) {
+            if (in_array($key, ['template', 'templates'], true)) {
                 continue;
             }
 
@@ -204,5 +177,41 @@ final readonly class RenderApi
         }
 
         return $context;
+    }
+
+    /**
+     * Create a success response with cache headers.
+     *
+     * @param array<string, mixed> $data
+     */
+    private function successResponse(array $data): WP_REST_Response
+    {
+        $response = new WP_REST_Response($data);
+
+        if ($this->config->cacheMaxAge > 0) {
+            $response->header('Cache-Control', "public, max-age={$this->config->cacheMaxAge}");
+        }
+
+        return $response;
+    }
+
+    /**
+     * Create an error response.
+     */
+    private function errorResponse(string $code, string $message, int $status): WP_REST_Response
+    {
+        return new WP_REST_Response(['code' => $code, 'message' => $message], $status);
+    }
+
+    /**
+     * Create a render error response, optionally with debug details.
+     */
+    private function renderErrorResponse(string $message, \Throwable $exception): WP_REST_Response
+    {
+        if ($this->config->debug) {
+            $message .= ': ' . $exception->getMessage();
+        }
+
+        return $this->errorResponse('render_error', $message, 500);
     }
 }
