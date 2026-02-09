@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add `Cache::tags()` for tagged cache invalidation ([43f1f95], [#78])
 - Add `DiscoveryLocation` and `WpDiscoveryItems` for location-aware discovery ([758b19f], [#79])
+- Add API documentation for all config classes, discovery system, and view engine ([556dd93], [#80])
+- Add configuration and custom discovery guides ([59f39e3], [#80])
+- Make `FoehnConfig` discoverable via `app/foehn.config.php` ([0aaafb3], [#80])
 
 ### Changed
 
@@ -32,6 +35,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#67]: https://github.com/studiometa/foehn/pull/67
 [758b19f]: https://github.com/studiometa/foehn/commit/758b19f
 [#79]: https://github.com/studiometa/foehn/pull/79
+[556dd93]: https://github.com/studiometa/foehn/commit/556dd93
+[0aaafb3]: https://github.com/studiometa/foehn/commit/0aaafb3
+[59f39e3]: https://github.com/studiometa/foehn/commit/59f39e3
+[#80]: https://github.com/studiometa/foehn/pull/80
 [95ba3d7]: https://github.com/studiometa/foehn/commit/95ba3d7
 [#74]: https://github.com/studiometa/foehn/pull/74
 
