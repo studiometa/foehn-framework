@@ -92,7 +92,14 @@ final readonly class QueryFiltersHook
                 }
 
                 // Parse comma-separated values
-                $terms = is_string($value) ? array_filter(array_map('trim', explode(',', $value))) : (array) $value;
+                if (is_string($value)) {
+                    $terms = array_filter(array_map('trim', explode(',', $value)));
+                } elseif (is_array($value)) {
+                    /** @var list<string> $terms */
+                    $terms = $value;
+                } else {
+                    continue;
+                }
 
                 if ($terms === []) {
                     continue;

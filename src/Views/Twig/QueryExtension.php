@@ -248,6 +248,7 @@ final class QueryExtension extends AbstractExtension
      */
     protected function getQueryParams(): array
     {
+        /** @var array<string, mixed> */
         return $_GET;
     }
 
@@ -273,8 +274,10 @@ final class QueryExtension extends AbstractExtension
         // Fallback for non-WordPress context (tests)
         $uri = $this->getRequestUri();
         $parsed = parse_url($uri);
-        $path = $parsed['path'] ?? '/';
-        parse_str($parsed['query'] ?? '', $existing);
+        $path = is_array($parsed) && isset($parsed['path']) ? $parsed['path'] : '/';
+        $queryString = is_array($parsed) && isset($parsed['query']) ? $parsed['query'] : '';
+        $existing = [];
+        parse_str($queryString, $existing);
 
         $merged = array_merge($existing, $args);
         $query = http_build_query($merged);
@@ -296,8 +299,10 @@ final class QueryExtension extends AbstractExtension
         // Fallback for non-WordPress context (tests)
         $uri = $this->getRequestUri();
         $parsed = parse_url($uri);
-        $path = $parsed['path'] ?? '/';
-        parse_str($parsed['query'] ?? '', $existing);
+        $path = is_array($parsed) && isset($parsed['path']) ? $parsed['path'] : '/';
+        $queryString = is_array($parsed) && isset($parsed['query']) ? $parsed['query'] : '';
+        $existing = [];
+        parse_str($queryString, $existing);
 
         foreach ($keys as $key) {
             unset($existing[$key]);
