@@ -22,8 +22,8 @@
             {{ post.date('j F Y') }}
         </time>
 
-        {% if post.preview.content %}
-        <p class="card-post__excerpt">{{ post.preview.content }}</p>
+        {% if post.excerpt %}
+        <p class="card-post__excerpt">{{ post.excerpt }}</p>
         {% endif %}
     </div>
 </article>
