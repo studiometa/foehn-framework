@@ -6,14 +6,7 @@ namespace App\Hooks;
 
 use Studiometa\Foehn\Attributes\AsAction;
 use Studiometa\Foehn\Attributes\AsFilter;
-use Studiometa\Foehn\Attributes\AsImageSize;
-use Studiometa\Foehn\Attributes\AsMenu;
 
-#[AsMenu('header', 'Menu principal')]
-#[AsMenu('footer', 'Menu footer')]
-#[AsMenu('legal', 'Mentions légales')]
-#[AsImageSize('card', 400, 300, true)]
-#[AsImageSize('hero', 1920, 1080, true)]
 final class ThemeHooks
 {
     #[AsAction('after_setup_theme')]

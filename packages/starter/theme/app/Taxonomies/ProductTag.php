@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Taxonomies;
 
 use Studiometa\Foehn\Attributes\AsTaxonomy;
+use Timber\Term;
 
 #[AsTaxonomy(
     name: 'product_tag',
@@ -14,7 +15,4 @@ use Studiometa\Foehn\Attributes\AsTaxonomy;
     hierarchical: false,
     showInRest: true,
 )]
-final class ProductTag
-{
-    // No additional configuration needed
-}
+final class ProductTag extends Term {}

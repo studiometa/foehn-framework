@@ -1,6 +1,7 @@
 name: foehn-starter
 type: wordpress
 docroot: web
+disable_settings_management: true
 php_version: "8.4"
 webserver_type: nginx-fpm
 database:

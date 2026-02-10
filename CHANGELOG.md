@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Starter:** Add `index.php` file required by WordPress for standalone themes ([52c6cf5], [#85])
+- **Starter:** Disable DDEV settings management ([db27bcc], [#85])
+- **Starter:** Refactor menus and image sizes to use dedicated classes ([5717472], [#85])
+- **Starter:** Fix `FoehnConfig` parameter name (`discoveryCacheStrategy`) ([51e36ab], [#85])
+- **Starter:** Fix controllers to implement `TemplateControllerInterface` ([2fb7479], [#85])
+- **Starter:** Fix taxonomies to extend `Timber\Term` ([3b5ca5f], [#85])
+- **Starter:** Add `front-page` to ArchiveController templates ([2688ff8], [#85])
+- **Starter:** Fix deprecated `post.preview` usage in card-post template ([a22f56b], [#85])
+
 ## [0.4.0] - 2026-02-10
 
 ### Added
@@ -297,3 +308,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [3d295e9]: https://github.com/studiometa/foehn-framework/commit/3d295e9
 [#31]: https://github.com/studiometa/foehn-framework/pull/31
 [0.1.0]: https://github.com/studiometa/foehn-framework/releases/tag/0.1.0
+[#85]: https://github.com/studiometa/foehn-framework/pull/85
+[52c6cf5]: https://github.com/studiometa/foehn-framework/commit/52c6cf5
+[db27bcc]: https://github.com/studiometa/foehn-framework/commit/db27bcc
+[5717472]: https://github.com/studiometa/foehn-framework/commit/5717472
+[51e36ab]: https://github.com/studiometa/foehn-framework/commit/51e36ab
+[2fb7479]: https://github.com/studiometa/foehn-framework/commit/2fb7479
+[3b5ca5f]: https://github.com/studiometa/foehn-framework/commit/3b5ca5f
+[2688ff8]: https://github.com/studiometa/foehn-framework/commit/2688ff8
+[a22f56b]: https://github.com/studiometa/foehn-framework/commit/a22f56b
