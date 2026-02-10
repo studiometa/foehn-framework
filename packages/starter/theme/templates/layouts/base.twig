@@ -13,7 +13,7 @@
     </a>
 
     {% block header %}
-        {% include 'partials/header.twig' %}
+        {% include 'components/header.twig' %}
     {% endblock %}
 
     <main id="main" class="site-main">
@@ -21,7 +21,7 @@
     </main>
 
     {% block footer %}
-        {% include 'partials/footer.twig' %}
+        {% include 'components/footer.twig' %}
     {% endblock %}
 
     {{ function('wp_footer') }}

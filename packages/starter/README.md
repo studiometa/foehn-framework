@@ -41,13 +41,13 @@ my-project/
 │   │   ├── ContextProviders/   # Context providers
 │   │   ├── Controllers/        # Template controllers
 │   │   ├── Hooks/              # WordPress hooks (actions & filters)
-│   │   ├── Models/             # Post types, taxonomies (Timber models)
+│   │   ├── Models/             # Custom post types (Timber models)
+│   │   ├── Taxonomies/         # Custom taxonomies
 │   │   └── foehn.config.php    # Framework configuration
-│   ├── views/                  # Twig templates
-│   │   ├── base.twig           # Base layout
+│   ├── templates/              # Twig templates
+│   │   ├── layouts/            # Base layouts
 │   │   ├── pages/              # Page templates
-│   │   ├── components/         # Reusable components
-│   │   └── partials/           # Template fragments (header, footer)
+│   │   └── components/         # Reusable components
 │   ├── functions.php           # Single boot line
 │   └── style.css               # Theme header
 │
@@ -64,7 +64,7 @@ my-project/
 - **Product** — with price, sale price, and product categories
 - **Testimonial** — with author info and ratings
 
-### Custom Taxonomies (in Models/)
+### Custom Taxonomies
 
 - **ProductCategory** — hierarchical, with custom rewrite
 - **ProductTag** — flat taxonomy for products
