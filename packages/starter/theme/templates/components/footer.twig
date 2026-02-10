@@ -1,0 +1,31 @@
+<footer class="site-footer">
+    <div class="container">
+        {% if menus.footer %}
+        <nav class="site-footer__nav" aria-label="Navigation footer">
+            <ul>
+                {% for item in menus.footer.items %}
+                <li>
+                    <a href="{{ item.link }}">{{ item.title }}</a>
+                </li>
+                {% endfor %}
+            </ul>
+        </nav>
+        {% endif %}
+
+        <p class="site-footer__copy">
+            &copy; {{ current_year }} {{ site.name }}. Tous droits réservés.
+        </p>
+
+        {% if menus.legal %}
+        <nav class="site-footer__legal" aria-label="Mentions légales">
+            <ul>
+                {% for item in menus.legal.items %}
+                <li>
+                    <a href="{{ item.link }}">{{ item.title }}</a>
+                </li>
+                {% endfor %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</footer>

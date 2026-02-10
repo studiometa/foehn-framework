@@ -1,0 +1,22 @@
+{% extends 'layouts/base.twig' %}
+
+{% block content %}
+<div class="search-results container">
+    <header class="search-results__header">
+        <h1>Recherche : « {{ search_query }} »</h1>
+        <p>{{ found_posts }} résultat{{ found_posts > 1 ? 's' : '' }} trouvé{{ found_posts > 1 ? 's' : '' }}.</p>
+    </header>
+
+    {% if posts %}
+    <div class="grid grid--2">
+        {% for post in posts %}
+            {% include 'components/card-post.twig' with { post: post } %}
+        {% endfor %}
+    </div>
+
+    {% include 'components/pagination.twig' %}
+    {% else %}
+    <p>Aucun résultat pour votre recherche.</p>
+    {% endif %}
+</div>
+{% endblock %}
