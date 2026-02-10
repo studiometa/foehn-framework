@@ -143,7 +143,7 @@ final class Product extends Post
 - Class extends `Timber\Post` directly (auto-registered in Timber's classmap)
 - No manual `register_post_type()` call
 - Labels are auto-generated from `singular`/`plural`
-- Custom methods are available in Twig: `{{ post.price }}`
+- Custom methods are available in Twig: <code v-pre>{{ post.price }}</code>
 
 ## Step 4: Migrate Taxonomies
 
@@ -416,7 +416,7 @@ use Studiometa\Foehn\Attributes\AsMenu;
 final class FooterMenu {}
 ```
 
-Menus are automatically registered and added to the Timber context under `{{ menus.primary }}` and `{{ menus.footer }}`.
+Menus are automatically registered and added to the Timber context under <code v-pre>{{ menus.primary }}</code> and <code v-pre>{{ menus.footer }}</code>.
 
 ## Step 8: Migrate Template Routing
 
@@ -789,7 +789,7 @@ Føhn registers the classmap automatically when using `#[AsPostType]` or `#[AsTi
 ### Phase 5: Views & Templates
 - [ ] Migrate `timber/context` filters to `#[AsContextProvider]`
 - [ ] Migrate template routing to `#[AsTemplateController]`
-- [ ] Update Twig templates for new context variables (e.g. `{{ menus.primary }}`)
+- [ ] Update Twig templates for new context variables (e.g. <code v-pre>{{ menus.primary }}</code>)
 
 ### Phase 6: API & Services
 - [ ] Migrate REST endpoints to `#[AsRestRoute]`
