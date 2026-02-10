@@ -34,6 +34,7 @@ final class WebRootGenerator
         $this->createDirectories();
         $this->generateIndexPhp();
         $this->generateWpConfig();
+        $this->copyEnvFile();
         $this->symlinkTheme();
         $this->symlinkMuPlugins();
         $this->generateMuPluginLoader();
@@ -214,6 +215,26 @@ final class WebRootGenerator
             PHP;
 
         $this->writeFile($path, $content);
+    }
+
+    /**
+     * Copy .env.example to .env if .env doesn't exist.
+     */
+    private function copyEnvFile(): void
+    {
+        $envFile = $this->projectRoot . '/.env';
+        $envExample = $this->projectRoot . '/.env.example';
+
+        if (file_exists($envFile)) {
+            return;
+        }
+
+        if (!file_exists($envExample)) {
+            return;
+        }
+
+        copy($envExample, $envFile);
+        $this->io->write('  <comment>Created:</comment> .env (from .env.example)');
     }
 
     /**
