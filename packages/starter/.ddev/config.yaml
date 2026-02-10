@@ -37,5 +37,4 @@ hooks:
             --admin_email=admin@example.com \
             --skip-email
           wp theme activate starter-theme
-          wp plugin activate timber-library 2>/dev/null || true
         fi

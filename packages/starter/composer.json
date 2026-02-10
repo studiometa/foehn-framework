@@ -19,10 +19,10 @@
     ],
     "require": {
         "php": "^8.4",
+        "composer/installers": "^2.0",
         "johnpbloch/wordpress": "^6.7",
         "studiometa/foehn": "^0.3",
-        "studiometa/foehn-installer": "^0.3",
-        "wpackagist-plugin/timber-library": "^2.0"
+        "studiometa/foehn-installer": "^0.3"
     },
     "require-dev": {
         "stoutlogic/acf-builder": "^1.12"
@@ -31,7 +31,7 @@
         {
             "type": "composer",
             "url": "https://wpackagist.org",
-            "only": ["wpackagist-plugin/*"]
+            "only": ["wpackagist-plugin/*", "wpackagist-theme/*"]
         }
     ],
     "autoload": {

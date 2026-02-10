@@ -6,7 +6,6 @@ namespace App\Views\Composers;
 
 use Studiometa\Foehn\Attributes\AsContextProvider;
 use Studiometa\Foehn\Contracts\ContextProviderInterface;
-use Timber\Menu;
 use Timber\Site;
 use Timber\Timber;
 
