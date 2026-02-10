@@ -1,42 +1,20 @@
 {
-    "name": "studiometa/foehn",
-    "description": "🍃 A modern WordPress framework powered by Tempest, featuring attribute-based auto-discovery for hooks, post types, blocks, and more.",
-    "type": "library",
+    "name": "studiometa/foehn-monorepo",
+    "description": "Foehn monorepo — development workspace",
+    "type": "project",
     "license": "MIT",
-    "authors": [
-        {
-            "name": "Studio Meta",
-            "email": "agence@studiometa.fr",
-            "homepage": "https://www.studiometa.fr"
-        }
+    "repositories": [
+        { "type": "path", "url": "packages/foehn" },
+        { "type": "path", "url": "packages/installer" },
+        { "type": "path", "url": "packages/starter" }
     ],
-    "keywords": [
-        "wordpress",
-        "framework",
-        "tempest",
-        "timber",
-        "gutenberg",
-        "blocks",
-        "fse",
-        "attributes",
-        "discovery"
-    ],
-    "homepage": "https://github.com/studiometa/foehn",
-    "support": {
-        "issues": "https://github.com/studiometa/foehn/issues",
-        "source": "https://github.com/studiometa/foehn"
-    },
     "require": {
-        "php": "^8.4",
-        "studiometa/twig-toolkit": "^2.1",
-        "tempest/framework": "^2.14",
-        "timber/timber": "^2.0"
-    },
-    "suggest": {
-        "studiometa/webpack-config": "Required for WebpackManifest asset helper"
+        "studiometa/foehn": "@dev",
+        "studiometa/foehn-installer": "@dev"
     },
     "require-dev": {
         "carthage-software/mago": "1.4.1",
+        "composer/composer": "^2.0",
         "pestphp/pest": "^3.0",
         "php-stubs/acf-pro-stubs": "^6.5",
         "php-stubs/wordpress-stubs": "*",
@@ -44,23 +22,15 @@
         "stoutlogic/acf-builder": "^1.12",
         "studiometa/webpack-config": "^6.3"
     },
-    "autoload": {
-        "psr-4": {
-            "Studiometa\\Foehn\\": "src/"
-        },
-        "files": [
-            "src/helpers.php"
-        ]
-    },
     "autoload-dev": {
         "psr-4": {
-            "Studiometa\\Foehn\\Tests\\": "tests/",
-            "Tests\\": "tests/"
+            "Studiometa\\Foehn\\Tests\\": "packages/foehn/tests/",
+            "Tests\\": "packages/foehn/tests/"
         }
     },
     "scripts": {
-        "test": "pest",
-        "test:coverage": "pest --coverage --coverage-clover=coverage/clover.xml",
+        "test": "cd packages/foehn && ../../vendor/bin/pest",
+        "test:coverage": "cd packages/foehn && ../../vendor/bin/pest --coverage --coverage-clover=../../coverage/clover.xml",
         "analyse": "mago analyse",
         "lint": "mago lint && mago fmt --check",
         "fix": "mago lint --fix && mago fmt"
@@ -70,9 +40,10 @@
         "optimize-autoloader": true,
         "allow-plugins": {
             "carthage-software/mago": true,
-            "pestphp/pest-plugin": true
+            "pestphp/pest-plugin": true,
+            "studiometa/foehn-installer": true
         }
     },
-    "minimum-stability": "stable",
+    "minimum-stability": "dev",
     "prefer-stable": true
 }

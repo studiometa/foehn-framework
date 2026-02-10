@@ -1,0 +1,29 @@
+{% extends 'layouts/base.twig' %}
+
+{% block content %}
+<div class="archive">
+    <header class="archive__header container">
+        <h1 class="archive__title">{{ archive_title }}</h1>
+
+        {% if archive_description %}
+        <div class="archive__description">
+            {{ archive_description }}
+        </div>
+        {% endif %}
+    </header>
+
+    <div class="archive__posts container">
+        {% if posts %}
+        <div class="grid grid--3">
+            {% for post in posts %}
+                {% include 'components/card-post.twig' with { post: post } %}
+            {% endfor %}
+        </div>
+
+        {% include 'components/pagination.twig' %}
+        {% else %}
+        <p>Aucun article trouvé.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

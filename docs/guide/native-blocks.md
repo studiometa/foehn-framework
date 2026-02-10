@@ -61,7 +61,7 @@ final readonly class AlertBlock implements BlockInterface
 ## Template
 
 ```twig
-{# views/blocks/alert.twig #}
+{# templates/blocks/alert.twig #}
 <div class="alert alert--{{ type }}">
     {% if message %}
         <p class="alert__message">{{ message }}</p>
@@ -153,7 +153,7 @@ final readonly class CounterBlock implements InteractiveBlockInterface
 ## Interactive Template
 
 ```twig
-{# views/blocks/counter.twig #}
+{# templates/blocks/counter.twig #}
 <div
     class="counter"
     data-wp-interactive="theme/counter"
@@ -304,7 +304,7 @@ app/Blocks/
 └── Accordion/
     └── AccordionBlock.php
 
-views/blocks/
+templates/blocks/
 ├── alert.twig
 ├── counter.twig
 └── accordion.twig

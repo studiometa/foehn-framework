@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html {{ site.language_attributes }}>
+<head>
+    <meta charset="{{ site.charset }}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {{ function('wp_head') }}
+</head>
+<body class="{{ body_class }}">
+    {{ function('wp_body_open') }}
+
+    <a class="skip-link screen-reader-text" href="#main">
+        Aller au contenu
+    </a>
+
+    {% block header %}
+        {% include 'components/header.twig' %}
+    {% endblock %}
+
+    <main id="main" class="site-main">
+        {% block content %}{% endblock %}
+    </main>
+
+    {% block footer %}
+        {% include 'components/footer.twig' %}
+    {% endblock %}
+
+    {{ function('wp_footer') }}
+</body>
+</html>

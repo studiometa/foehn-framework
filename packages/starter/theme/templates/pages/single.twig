@@ -1,0 +1,36 @@
+{% extends 'layouts/base.twig' %}
+
+{% block content %}
+<article class="post post--single" id="post-{{ post.ID }}">
+    <header class="post__header">
+        <div class="container">
+            <h1 class="post__title">{{ post.title }}</h1>
+
+            <div class="post__meta">
+                <time datetime="{{ post.date('c') }}">{{ post.date('j F Y') }}</time>
+                {% if post.author %}
+                <span class="post__author">par {{ post.author.name }}</span>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+
+    {% if post.thumbnail %}
+    <figure class="post__thumbnail">
+        <img
+            src="{{ post.thumbnail.src('large') }}"
+            alt="{{ post.thumbnail.alt }}"
+            width="{{ post.thumbnail.width }}"
+            height="{{ post.thumbnail.height }}"
+            loading="eager"
+        >
+    </figure>
+    {% endif %}
+
+    <div class="post__content container">
+        <div class="post__body prose">
+            {{ post.content }}
+        </div>
+    </div>
+</article>
+{% endblock %}

@@ -1,0 +1,29 @@
+# Dependencies
+/vendor/
+/node_modules/
+composer.lock
+
+# Generated web root
+/web/
+
+# Environment
+.env
+
+# DDEV
+.ddev/.ddev-docker-compose-*
+.ddev/db_snapshots/
+.ddev/.homeadditions/
+.ddev/.sshimageBuild/
+.ddev/.webimageBuild/
+.ddev/commands/
+.ddev/import-db/
+.ddev/.gitignore
+.ddev/docker-compose.*.yaml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/

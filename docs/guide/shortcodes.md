@@ -79,7 +79,7 @@ final class Shortcodes
 ```
 
 ```twig
-{# views/shortcodes/testimonial.twig #}
+{# templates/shortcodes/testimonial.twig #}
 <blockquote class="testimonial">
     <p class="testimonial__content">{{ testimonial.content }}</p>
     <footer class="testimonial__author">
@@ -381,7 +381,7 @@ public function safeLink(array $atts): string
 When using Twig templates, rely on Twig's auto-escaping but be careful with `|raw`:
 
 ```twig
-{# views/shortcodes/card.twig #}
+{# templates/shortcodes/card.twig #}
 <div class="{{ class }}"> {# Auto-escaped #}
     <h3>{{ title }}</h3>   {# Auto-escaped #}
     <a href="{{ url|e('url') }}">{{ link_text }}</a>

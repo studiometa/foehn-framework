@@ -97,17 +97,23 @@ describe('Kernel::findProjectRoot', function () {
     }
 
     it('finds the project root from a subdirectory', function () {
-        // The project root is where this repo's composer.json lives
-        $projectRoot = dirname(__DIR__, 2);
-        $subDir = $projectRoot . '/src/Attributes';
+        // The project root is where composer.json + vendor/ both exist
+        // In monorepo, this is the repository root, not the package directory
+        $packageDir = dirname(__DIR__, 2);
+        $subDir = $packageDir . '/src/Attributes';
+        $result = callFindProjectRoot($subDir);
 
-        expect(callFindProjectRoot($subDir))->toBe($projectRoot);
+        // Should find a directory with both composer.json and vendor/
+        expect(file_exists($result . '/composer.json'))->toBeTrue();
+        expect(is_dir($result . '/vendor'))->toBeTrue();
     });
 
     it('finds the project root when given the root itself', function () {
-        $projectRoot = dirname(__DIR__, 2);
+        $packageDir = dirname(__DIR__, 2);
+        $result = callFindProjectRoot($packageDir);
 
-        expect(callFindProjectRoot($projectRoot))->toBe($projectRoot);
+        expect(file_exists($result . '/composer.json'))->toBeTrue();
+        expect(is_dir($result . '/vendor'))->toBeTrue();
     });
 
     it('throws when the path does not exist', function () {

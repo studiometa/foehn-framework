@@ -54,18 +54,24 @@ must-be-final = true
 reason        = "Hook classes must be final and named *Hooks."
 
 # -----------------------------------------------------------------------------
-# Models (Post Types): Must be final and extend Timber\Post or Timber\Term
+# Models (Post Types): Must be final and extend Timber\Post
 # -----------------------------------------------------------------------------
 [[guard.structural.rules]]
 on            = "App\\Models\\**"
 target        = "class"
 must-be-final = true
-must-extend   = [
-    ["Timber\\Post"],
-    ["Timber\\Term"],
-]
+must-extend   = "Timber\\Post"
 not-on        = "App\\Models\\**Interface"
-reason        = "Model classes must be final and extend Timber\\Post or Timber\\Term."
+reason        = "Model classes must be final and extend Timber\\Post."
+
+# -----------------------------------------------------------------------------
+# Taxonomies: Must be final
+# -----------------------------------------------------------------------------
+[[guard.structural.rules]]
+on            = "App\\Taxonomies\\**"
+target        = "class"
+must-be-final = true
+reason        = "Taxonomy classes must be final."
 
 # -----------------------------------------------------------------------------
 # Patterns: Must be final readonly, named *Pattern, implement interface

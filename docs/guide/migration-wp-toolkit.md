@@ -175,9 +175,9 @@ class ProductCategoryTaxonomy extends TaxonomyManager
 
 ```php
 <?php
-// app/Models/ProductCategory.php
+// app/Taxonomies/ProductCategory.php
 
-namespace App\Models;
+namespace App\Taxonomies;
 
 use Studiometa\Foehn\Attributes\AsTaxonomy;
 use Timber\Term;
@@ -661,18 +661,16 @@ theme/
 │   ├── Hooks/
 │   │   ├── ThemeHooks.php
 │   │   └── AssetHooks.php
-│   ├── Menus/
-│   │   ├── PrimaryMenu.php
-│   │   └── FooterMenu.php
 │   ├── Models/
-│   │   ├── Product.php
-│   │   └── ProductCategory.php
+│   │   └── Product.php
 │   ├── Rest/
 │   │   └── ProductsEndpoint.php
 │   ├── Services/
 │   │   └── ProductService.php
+│   ├── Taxonomies/
+│   │   └── ProductCategory.php
 │   └── foehn.config.php
-├── views/
+├── templates/
 │   └── blocks/
 │       └── hero.twig
 └── functions.php
@@ -813,4 +811,4 @@ If you encounter issues during migration:
 2. Review the [API Reference](/api/) for attribute parameters
 3. See [Theme Conventions](/guide/theme-conventions) for directory structure
 4. See [Configuration](/guide/configuration) for config file setup
-5. Open an issue on [GitHub](https://github.com/studiometa/foehn/issues)
+5. Open an issue on [GitHub](https://github.com/studiometa/foehn-framework/issues)

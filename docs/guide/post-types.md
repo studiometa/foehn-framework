@@ -144,7 +144,7 @@ final class Product extends Post
 Your custom methods are available in Twig templates:
 
 ```twig
-{# views/single-product.twig #}
+{# templates/single-product.twig #}
 {% extends 'base.twig' %}
 
 {% block content %}
