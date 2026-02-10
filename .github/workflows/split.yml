@@ -2,6 +2,8 @@ name: Split Monorepo
 
 on:
   push:
+    branches:
+      - main
     tags:
       - "[0-9]+.*"
 
@@ -24,13 +26,32 @@ jobs:
 
       - name: Get tag
         id: tag
+        if: startsWith(github.ref, 'refs/tags/')
         run: echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
 
-      - uses: symplify/monorepo-split-github-action@v2
+      - name: Get branch
+        id: branch
+        if: startsWith(github.ref, 'refs/heads/')
+        run: echo "BRANCH=${GITHUB_REF#refs/heads/}" >> $GITHUB_OUTPUT
+
+      - name: Split (tag)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: symplify/monorepo-split-github-action@v2
         with:
           package_directory: ${{ matrix.package.local }}
           repository_organization: studiometa
           repository_name: ${{ matrix.package.remote }}
           tag: ${{ steps.tag.outputs.TAG }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.MONOREPO_SPLIT_TOKEN }}
+
+      - name: Split (branch)
+        if: startsWith(github.ref, 'refs/heads/')
+        uses: symplify/monorepo-split-github-action@v2
+        with:
+          package_directory: ${{ matrix.package.local }}
+          repository_organization: studiometa
+          repository_name: ${{ matrix.package.remote }}
+          branch: ${{ steps.branch.outputs.BRANCH }}
         env:
           GITHUB_TOKEN: ${{ secrets.MONOREPO_SPLIT_TOKEN }}
