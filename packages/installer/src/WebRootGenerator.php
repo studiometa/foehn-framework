@@ -139,8 +139,8 @@ final class WebRootGenerator
 
         $content .= <<<PHP
 
-            // Load .env if vlucas/phpdotenv is available
-            if (class_exists('Dotenv\\Dotenv') && file_exists(dirname(__DIR__) . '/.env')) {
+            // Load .env file (vlucas/phpdotenv is a dependency of studiometa/foehn)
+            if (file_exists(dirname(__DIR__) . '/.env')) {
                 \$dotenv = Dotenv\\Dotenv::createImmutable(dirname(__DIR__));
                 \$dotenv->safeLoad();
             }
