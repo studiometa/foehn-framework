@@ -27,7 +27,7 @@ export default defineConfig({
       { text: "API Reference", link: "/api/" },
       {
         text: "GitHub",
-        link: "https://github.com/studiometa/foehn",
+        link: "https://github.com/studiometa/foehn-framework",
       },
     ],
 
@@ -148,7 +148,7 @@ export default defineConfig({
       ],
     },
 
-    socialLinks: [{ icon: "github", link: "https://github.com/studiometa/foehn" }],
+    socialLinks: [{ icon: "github", link: "https://github.com/studiometa/foehn-framework" }],
 
     footer: {
       message: "Released under the MIT License.",
@@ -160,7 +160,7 @@ export default defineConfig({
     },
 
     editLink: {
-      pattern: "https://github.com/studiometa/foehn/edit/main/docs/:path",
+      pattern: "https://github.com/studiometa/foehn-framework/edit/main/docs/:path",
       text: "Edit this page on GitHub",
     },
 

@@ -1,6 +1,10 @@
 # Foehn Starter Theme
 
-A complete WordPress starter theme demonstrating all [Foehn](https://github.com/studiometa/foehn) features.
+A complete WordPress starter theme demonstrating all [Føhn](https://github.com/studiometa/foehn-framework) features.
+
+> **Note**
+> This package is part of the [Føhn Framework](https://github.com/studiometa/foehn-framework) monorepo.
+> Please report issues and submit pull requests in the [main repository](https://github.com/studiometa/foehn-framework).
 
 ## Quick Start with DDEV
 

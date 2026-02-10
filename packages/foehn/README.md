@@ -2,6 +2,10 @@
 
 A modern WordPress framework powered by [Tempest Framework](https://tempestphp.com/), featuring attribute-based auto-discovery for hooks, post types, blocks, and more.
 
+> **Note**
+> This package is part of the [Føhn Framework](https://github.com/studiometa/foehn-framework) monorepo.
+> Please report issues and submit pull requests in the [main repository](https://github.com/studiometa/foehn-framework).
+
 ## Requirements
 
 - PHP 8.4+
@@ -403,7 +407,7 @@ return [
 
 ## Documentation
 
-For complete documentation, see the [main repository](https://github.com/studiometa/foehn-framework).
+For complete documentation, see the [Føhn documentation](https://github.com/studiometa/foehn-framework).
 
 ## License
 
