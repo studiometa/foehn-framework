@@ -5,17 +5,18 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use Studiometa\Foehn\Attributes\AsTemplateController;
+use Studiometa\Foehn\Contracts\TemplateControllerInterface;
 use Studiometa\Foehn\Contracts\ViewEngineInterface;
 use Timber\Timber;
 
-#[AsTemplateController('single', 'single-*')]
-final readonly class SingleController
+#[AsTemplateController(['single', 'single-*'])]
+final readonly class SingleController implements TemplateControllerInterface
 {
     public function __construct(
         private ViewEngineInterface $view,
     ) {}
 
-    public function __invoke(): string
+    public function handle(): string
     {
         $context = Timber::context();
         $post = $context['post'];
