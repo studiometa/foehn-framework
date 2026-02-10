@@ -11,26 +11,18 @@ nodejs_version: "22"
 
 # WordPress core is installed in web/wp/ via Composer
 # The foehn-installer generates web/wp-config.php, web/index.php, and symlinks
-web_environment:
-  - DB_NAME=db
-  - DB_USER=db
-  - DB_PASSWORD=db
-  - DB_HOST=db
-  - DB_PREFIX=wp_
-  - WP_HOME=${DDEV_PRIMARY_URL}
-  - WP_SITEURL=${DDEV_PRIMARY_URL}/wp
-  - WP_ENVIRONMENT_TYPE=local
-  - WP_DEBUG=true
-  - WP_POST_REVISIONS=5
+# Environment variables are loaded from .env via vlucas/phpdotenv
 
 hooks:
   post-start:
+    # Generate .env from example if it doesn't exist
+    - exec: test -f .env || cp .env.example .env
     - exec: composer install --no-interaction
     # Install WordPress if not already done
     - exec: |
         if ! wp core is-installed 2>/dev/null; then
           wp core install \
-            --url="${DDEV_PRIMARY_URL}" \
+            --url="https://${DDEV_HOSTNAME}" \
             --title="Foehn Starter" \
             --admin_user=admin \
             --admin_password=admin \

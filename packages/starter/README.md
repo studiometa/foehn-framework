@@ -13,9 +13,10 @@ ddev start
 That's it. DDEV will:
 
 1. Start PHP 8.4 + MariaDB + nginx
-2. Run `composer install` (generates `web/`, symlinks, wp-config.php)
-3. Install WordPress with admin/admin credentials
-4. Activate the starter theme and Timber plugin
+2. Copy `.env.example` to `.env` (with DDEV defaults)
+3. Run `composer install` (generates `web/`, symlinks, wp-config.php)
+4. Install WordPress with admin/admin credentials
+5. Activate the starter theme
 
 Open the site: `ddev launch`
 Admin panel: `ddev launch /wp/wp-admin` (admin / admin)
