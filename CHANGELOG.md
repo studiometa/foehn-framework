@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Installer:** Copy `.env.example` to `.env` during `composer install` ([c8259d8], [#86])
+- **Starter:** Remove `.env` hook from DDEV config ([95e990c], [#86])
+
 ### Fixed
 
 - **Starter:** Add `index.php` file required by WordPress for standalone themes ([df70d24], [#85])
@@ -317,3 +322,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [282c2fd]: https://github.com/studiometa/foehn-framework/commit/282c2fd
 [a472622]: https://github.com/studiometa/foehn-framework/commit/a472622
 [6e172c5]: https://github.com/studiometa/foehn-framework/commit/6e172c5
+[#86]: https://github.com/studiometa/foehn-framework/pull/86
+[c8259d8]: https://github.com/studiometa/foehn-framework/commit/c8259d8
+[95e990c]: https://github.com/studiometa/foehn-framework/commit/95e990c
