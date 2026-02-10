@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Views\Composers;
+namespace App\ContextProviders;
 
 use Studiometa\Foehn\Attributes\AsContextProvider;
 use Studiometa\Foehn\Contracts\ContextProviderInterface;
@@ -10,7 +10,7 @@ use Timber\Site;
 use Timber\Timber;
 
 #[AsContextProvider('*')]
-final class GlobalComposer implements ContextProviderInterface
+final class GlobalContextProvider implements ContextProviderInterface
 {
     public function provide(array $context): array
     {

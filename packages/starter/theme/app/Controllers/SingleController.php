@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Controllers;
+namespace App\Controllers;
 
 use Studiometa\Foehn\Attributes\AsTemplateController;
 use Studiometa\Foehn\Contracts\ViewEngineInterface;
