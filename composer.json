@@ -28,8 +28,8 @@
         }
     },
     "scripts": {
-        "test": "pest -c packages/foehn/phpunit.xml",
-        "test:coverage": "pest -c packages/foehn/phpunit.xml --coverage --coverage-clover=coverage/clover.xml",
+        "test": "cd packages/foehn && ../../vendor/bin/pest",
+        "test:coverage": "cd packages/foehn && ../../vendor/bin/pest --coverage --coverage-clover=../../coverage/clover.xml",
         "analyse": "mago analyse",
         "lint": "mago lint && mago fmt --check",
         "fix": "mago lint --fix && mago fmt"
