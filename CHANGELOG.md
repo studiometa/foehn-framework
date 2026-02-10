@@ -7,21 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-02-10
+
 ### Changed
 
-- **Installer:** Copy `.env.example` to `.env` during `composer install` ([c8259d8], [#86])
-- **Starter:** Remove `.env` hook from DDEV config ([95e990c], [#86])
+- **Installer:** Copy `.env.example` to `.env` during `composer install` ([aabcca6], [#86])
+- **Starter:** Remove `.env` hook from DDEV config ([aabcca6], [#86])
+- **Starter:** Remove project name from DDEV config to inherit from folder ([8525092])
 
 ### Fixed
 
-- **Starter:** Add `index.php` file required by WordPress for standalone themes ([df70d24], [#85])
-- **Starter:** Disable DDEV settings management ([81f6ee6], [#85])
-- **Starter:** Refactor menus and image sizes to use dedicated classes ([2ad3e9b], [#85])
-- **Starter:** Fix `FoehnConfig` parameter name (`discoveryCacheStrategy`) ([f9fa543], [#85])
-- **Starter:** Fix controllers to implement `TemplateControllerInterface` ([3e85e9f], [#85])
-- **Starter:** Fix taxonomies to extend `Timber\Term` ([282c2fd], [#85])
-- **Starter:** Add `front-page` to ArchiveController templates ([a472622], [#85])
-- **Starter:** Fix deprecated `post.preview` usage in card-post template ([6e172c5], [#85])
+- **Starter:** Add `index.php` file required by WordPress for standalone themes ([df9c428], [#85])
+- **Starter:** Disable DDEV settings management ([df9c428], [#85])
+- **Starter:** Refactor menus and image sizes to use dedicated classes ([df9c428], [#85])
+- **Starter:** Fix `FoehnConfig` parameter name (`discoveryCacheStrategy`) ([df9c428], [#85])
+- **Starter:** Fix controllers to implement `TemplateControllerInterface` ([df9c428], [#85])
+- **Starter:** Fix taxonomies to extend `Timber\Term` ([df9c428], [#85])
+- **Starter:** Add `front-page` to ArchiveController templates ([df9c428], [#85])
+- **Starter:** Fix deprecated `post.preview` usage in card-post template ([df9c428], [#85])
+- **Starter:** Move `index.php` to correct theme folder ([f1526a3])
 
 ## [0.4.0] - 2026-02-10
 
@@ -67,6 +71,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fix user config files being overwritten by framework defaults ([73d9443], [#74])
 
+[0.4.1]: https://github.com/studiometa/foehn-framework/releases/tag/0.4.1
+[aabcca6]: https://github.com/studiometa/foehn-framework/commit/aabcca6
+[8525092]: https://github.com/studiometa/foehn-framework/commit/8525092
+[f1526a3]: https://github.com/studiometa/foehn-framework/commit/f1526a3
 [3231e72]: https://github.com/studiometa/foehn-framework/commit/3231e72
 [0.4.0]: https://github.com/studiometa/foehn-framework/releases/tag/0.4.0
 [8919d50]: https://github.com/studiometa/foehn-framework/commit/8919d50
@@ -314,14 +322,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#31]: https://github.com/studiometa/foehn-framework/pull/31
 [0.1.0]: https://github.com/studiometa/foehn-framework/releases/tag/0.1.0
 [#85]: https://github.com/studiometa/foehn-framework/pull/85
-[df70d24]: https://github.com/studiometa/foehn-framework/commit/df70d24
-[81f6ee6]: https://github.com/studiometa/foehn-framework/commit/81f6ee6
-[2ad3e9b]: https://github.com/studiometa/foehn-framework/commit/2ad3e9b
-[f9fa543]: https://github.com/studiometa/foehn-framework/commit/f9fa543
-[3e85e9f]: https://github.com/studiometa/foehn-framework/commit/3e85e9f
-[282c2fd]: https://github.com/studiometa/foehn-framework/commit/282c2fd
-[a472622]: https://github.com/studiometa/foehn-framework/commit/a472622
-[6e172c5]: https://github.com/studiometa/foehn-framework/commit/6e172c5
+[df9c428]: https://github.com/studiometa/foehn-framework/commit/df9c428
 [#86]: https://github.com/studiometa/foehn-framework/pull/86
-[c8259d8]: https://github.com/studiometa/foehn-framework/commit/c8259d8
-[95e990c]: https://github.com/studiometa/foehn-framework/commit/95e990c
