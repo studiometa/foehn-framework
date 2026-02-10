@@ -1,0 +1,18 @@
+# Dependencies
+/vendor/
+/node_modules/
+composer.lock
+
+# Generated web root
+/web/
+
+# Environment
+.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
