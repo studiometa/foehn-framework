@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Transform repository into a monorepo with three packages ([3c65232], [#83]):
+  - `studiometa/foehn` — core framework (moved to `packages/foehn/`)
+  - `studiometa/foehn-installer` — Composer plugin that generates WordPress web root, symlinks, and wp-config.php ([fd46199])
+  - `studiometa/foehn-starter` — starter theme with models, taxonomies, hooks, controllers, templates, and DDEV config ([48d7ce0])
+- Add `GenericLoginErrors` security hook to prevent username enumeration on login ([74ca34f])
+- Add `vlucas/phpdotenv` as framework dependency for `.env` file loading ([4a467ea])
+- Add monorepo split CI workflow to distribute packages to read-only repos on tag push ([03365b6])
+- Add DDEV configuration for starter theme with automated WordPress setup ([41bc400])
+
+### Changed
+
+- **BREAKING:** Repository renamed from `studiometa/foehn` to `studiometa/foehn-framework` ([09f8e64])
+- Starter theme follows documented conventions: `Controllers/`, `ContextProviders/`, `Taxonomies/` separate from `Models/`, `templates/` with `layouts/components/pages/` ([07d8858], [cf0ff30])
+- Update all documentation to use `templates/` directory and `Taxonomies/` namespace ([ed29249])
+- Update Mago guard rules: `Models` restricted to `Timber\Post`, new `Taxonomies` rule ([ed29249])
+
 ## [0.3.0] - 2026-02-09
 
 ### Added
@@ -31,6 +49,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fix user config files being overwritten by framework defaults ([95ba3d7], [#74])
 
+[3c65232]: https://github.com/studiometa/foehn-framework/commit/3c65232
+[#83]: https://github.com/studiometa/foehn-framework/pull/83
+[fd46199]: https://github.com/studiometa/foehn-framework/commit/fd46199
+[48d7ce0]: https://github.com/studiometa/foehn-framework/commit/48d7ce0
+[74ca34f]: https://github.com/studiometa/foehn-framework/commit/74ca34f
+[4a467ea]: https://github.com/studiometa/foehn-framework/commit/4a467ea
+[03365b6]: https://github.com/studiometa/foehn-framework/commit/03365b6
+[41bc400]: https://github.com/studiometa/foehn-framework/commit/41bc400
+[09f8e64]: https://github.com/studiometa/foehn-framework/commit/09f8e64
+[07d8858]: https://github.com/studiometa/foehn-framework/commit/07d8858
+[cf0ff30]: https://github.com/studiometa/foehn-framework/commit/cf0ff30
+[ed29249]: https://github.com/studiometa/foehn-framework/commit/ed29249
 [43f1f95]: https://github.com/studiometa/foehn-framework/commit/43f1f95
 [#78]: https://github.com/studiometa/foehn-framework/pull/78
 [a487181]: https://github.com/studiometa/foehn-framework/commit/a487181
