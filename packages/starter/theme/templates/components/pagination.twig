@@ -1,0 +1,31 @@
+{% if pagination %}
+<nav class="pagination" aria-label="Pagination">
+    {% if pagination.prev %}
+    <a href="{{ pagination.prev.link }}" class="pagination__prev" aria-label="Page précédente">
+        &larr; Précédent
+    </a>
+    {% endif %}
+
+    <ul class="pagination__pages">
+        {% for page in pagination.pages %}
+        <li>
+            {% if page.current %}
+            <span class="pagination__page pagination__page--current" aria-current="page">
+                {{ page.title }}
+            </span>
+            {% else %}
+            <a href="{{ page.link }}" class="pagination__page">
+                {{ page.title }}
+            </a>
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+
+    {% if pagination.next %}
+    <a href="{{ pagination.next.link }}" class="pagination__next" aria-label="Page suivante">
+        Suivant &rarr;
+    </a>
+    {% endif %}
+</nav>
+{% endif %}

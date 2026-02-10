@@ -1,0 +1,21 @@
+<header class="site-header">
+    <div class="container">
+        <a href="{{ site.url }}" class="site-header__logo" rel="home">
+            {{ site.name }}
+        </a>
+
+        {% if menus.header %}
+        <nav class="site-header__nav" aria-label="Navigation principale">
+            <ul>
+                {% for item in menus.header.items %}
+                <li class="{{ item.classes | join(' ') }}">
+                    <a href="{{ item.link }}" {% if item.is_external %}target="_blank" rel="noopener"{% endif %}>
+                        {{ item.title }}
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</header>

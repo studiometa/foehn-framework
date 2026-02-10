@@ -1,0 +1,29 @@
+<article class="card-post">
+    {% if post.thumbnail %}
+    <figure class="card-post__thumbnail">
+        <a href="{{ post.link }}">
+            <img
+                src="{{ post.thumbnail.src('card') }}"
+                alt="{{ post.thumbnail.alt }}"
+                loading="lazy"
+                width="400"
+                height="300"
+            >
+        </a>
+    </figure>
+    {% endif %}
+
+    <div class="card-post__content">
+        <h3 class="card-post__title">
+            <a href="{{ post.link }}">{{ post.title }}</a>
+        </h3>
+
+        <time class="card-post__date" datetime="{{ post.date('c') }}">
+            {{ post.date('j F Y') }}
+        </time>
+
+        {% if post.preview.content %}
+        <p class="card-post__excerpt">{{ post.preview.content }}</p>
+        {% endif %}
+    </div>
+</article>
