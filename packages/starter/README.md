@@ -79,7 +79,6 @@ my-project/
 ### Hooks
 
 - **ThemeHooks** — theme setup, image sizes, menus
-- **SecurityHooks** — generic login error message
 
 ### Context Providers
 
@@ -92,6 +91,7 @@ my-project/
 - `DisableOembed` — removes oEmbed discovery
 - `DisableVersionDisclosure` — hides WordPress version
 - `DisableXmlRpc` — disables XML-RPC + pingback
+- `GenericLoginErrors` — hides username enumeration on login
 - `YouTubeNoCookieHooks` — converts YouTube embeds to no-cookie variant
 
 ## Development
