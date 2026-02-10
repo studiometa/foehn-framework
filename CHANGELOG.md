@@ -9,90 +9,90 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- **Starter:** Add `index.php` file required by WordPress for standalone themes ([52c6cf5], [#85])
-- **Starter:** Disable DDEV settings management ([db27bcc], [#85])
-- **Starter:** Refactor menus and image sizes to use dedicated classes ([5717472], [#85])
-- **Starter:** Fix `FoehnConfig` parameter name (`discoveryCacheStrategy`) ([51e36ab], [#85])
-- **Starter:** Fix controllers to implement `TemplateControllerInterface` ([2fb7479], [#85])
-- **Starter:** Fix taxonomies to extend `Timber\Term` ([3b5ca5f], [#85])
-- **Starter:** Add `front-page` to ArchiveController templates ([2688ff8], [#85])
-- **Starter:** Fix deprecated `post.preview` usage in card-post template ([a22f56b], [#85])
+- **Starter:** Add `index.php` file required by WordPress for standalone themes ([df70d24], [#85])
+- **Starter:** Disable DDEV settings management ([81f6ee6], [#85])
+- **Starter:** Refactor menus and image sizes to use dedicated classes ([2ad3e9b], [#85])
+- **Starter:** Fix `FoehnConfig` parameter name (`discoveryCacheStrategy`) ([f9fa543], [#85])
+- **Starter:** Fix controllers to implement `TemplateControllerInterface` ([3e85e9f], [#85])
+- **Starter:** Fix taxonomies to extend `Timber\Term` ([282c2fd], [#85])
+- **Starter:** Add `front-page` to ArchiveController templates ([a472622], [#85])
+- **Starter:** Fix deprecated `post.preview` usage in card-post template ([6e172c5], [#85])
 
 ## [0.4.0] - 2026-02-10
 
 ### Added
 
-- Transform repository into a monorepo with three packages ([3c65232], [#83]):
+- Transform repository into a monorepo with three packages ([8919d50], [#83]):
   - `studiometa/foehn` — core framework (moved to `packages/foehn/`)
-  - `studiometa/foehn-installer` — Composer plugin that generates WordPress web root, symlinks, and wp-config.php ([fd46199])
-  - `studiometa/foehn-starter` — starter theme with models, taxonomies, hooks, controllers, templates, and DDEV config ([48d7ce0])
-- Add `GenericLoginErrors` security hook to prevent username enumeration on login ([74ca34f])
-- Add `vlucas/phpdotenv` as framework dependency for `.env` file loading ([4a467ea])
-- Add monorepo split CI workflow to distribute packages to read-only repos on tag push ([03365b6], [d185927])
-- Add DDEV configuration for starter theme with automated WordPress setup ([41bc400])
+  - `studiometa/foehn-installer` — Composer plugin that generates WordPress web root, symlinks, and wp-config.php ([76b2597])
+  - `studiometa/foehn-starter` — starter theme with models, taxonomies, hooks, controllers, templates, and DDEV config ([5e5e3a0])
+- Add `GenericLoginErrors` security hook to prevent username enumeration on login ([7825d3a])
+- Add `vlucas/phpdotenv` as framework dependency for `.env` file loading ([42e807c])
+- Add monorepo split CI workflow to distribute packages to read-only repos on tag push ([770a69f], [3231e72])
+- Add DDEV configuration for starter theme with automated WordPress setup ([0e43f8b])
 
 ### Changed
 
-- **BREAKING:** Repository renamed from `studiometa/foehn` to `studiometa/foehn-framework` ([09f8e64])
-- Starter theme follows documented conventions: `Controllers/`, `ContextProviders/`, `Taxonomies/` separate from `Models/`, `templates/` with `layouts/components/pages/` ([07d8858], [cf0ff30])
-- Update all documentation to use `templates/` directory and `Taxonomies/` namespace ([ed29249])
-- Update Mago guard rules: `Models` restricted to `Timber\Post`, new `Taxonomies` rule ([ed29249])
+- **BREAKING:** Repository renamed from `studiometa/foehn` to `studiometa/foehn-framework` ([960692a])
+- Starter theme follows documented conventions: `Controllers/`, `ContextProviders/`, `Taxonomies/` separate from `Models/`, `templates/` with `layouts/components/pages/` ([456f5d1], [f59a3ba])
+- Update all documentation to use `templates/` directory and `Taxonomies/` namespace ([30e76fd])
+- Update Mago guard rules: `Models` restricted to `Timber\Post`, new `Taxonomies` rule ([30e76fd])
 
 ## [0.3.0] - 2026-02-09
 
 ### Added
 
-- Add `Cache::tags()` for tagged cache invalidation ([43f1f95], [#78])
-- Add `DiscoveryLocation` and `WpDiscoveryItems` for location-aware discovery ([758b19f], [#79])
-- Add `ClassScanner` for dedicated PSR-4 class scanning ([50466bf], [#79])
-- Add `QueryFiltersConfig` and `QueryFiltersHook` for URL-based archive filtering ([a487181], [#77])
-- Add `QueryExtension` with `query_*` Twig helpers for filter UI building ([5911c2c], [#77])
-- Add Render API REST endpoint for cacheable template rendering via AJAX ([7d9f33a], [#67])
-- Make `FoehnConfig` discoverable via `app/foehn.config.php` ([0aaafb3], [#80])
-- Add API documentation for all config classes, discovery system, and view engine ([556dd93], [#80])
-- Add configuration and custom discovery guides ([59f39e3], [#80])
-- Add comprehensive migration guide from wp-toolkit to Føhn ([bc3227a], [#81])
+- Add `Cache::tags()` for tagged cache invalidation ([a149b4f], [#78])
+- Add `DiscoveryLocation` and `WpDiscoveryItems` for location-aware discovery ([3d0cd34], [#79])
+- Add `ClassScanner` for dedicated PSR-4 class scanning ([553efa7], [#79])
+- Add `QueryFiltersConfig` and `QueryFiltersHook` for URL-based archive filtering ([b587b62], [#77])
+- Add `QueryExtension` with `query_*` Twig helpers for filter UI building ([b587b62], [#77])
+- Add Render API REST endpoint for cacheable template rendering via AJAX ([504fe3b], [#67])
+- Make `FoehnConfig` discoverable via `app/foehn.config.php` ([4cab60d], [#80])
+- Add API documentation for all config classes, discovery system, and view engine ([20246ee], [#80])
+- Add configuration and custom discovery guides ([4a35cb2], [#80])
+- Add comprehensive migration guide from wp-toolkit to Føhn ([6fa9cc8], [#81])
 
 ### Changed
 
-- **BREAKING:** Align `WpDiscovery` interface with Tempest conventions: `discover()` now receives `DiscoveryLocation`, items managed via `WpDiscoveryItems` ([758b19f], [#79])
-- **BREAKING:** Discovery cache format changed to location-grouped structure (`array<string, array<string, list<array>>>`) ([758b19f], [#79])
+- **BREAKING:** Align `WpDiscovery` interface with Tempest conventions: `discover()` now receives `DiscoveryLocation`, items managed via `WpDiscoveryItems` ([3d0cd34], [#79])
+- **BREAKING:** Discovery cache format changed to location-grouped structure (`array<string, array<string, list<array>>>`) ([3d0cd34], [#79])
 
 ### Fixed
 
-- Fix user config files being overwritten by framework defaults ([95ba3d7], [#74])
+- Fix user config files being overwritten by framework defaults ([73d9443], [#74])
 
-[d185927]: https://github.com/studiometa/foehn-framework/commit/d185927
+[3231e72]: https://github.com/studiometa/foehn-framework/commit/3231e72
 [0.4.0]: https://github.com/studiometa/foehn-framework/releases/tag/0.4.0
-[3c65232]: https://github.com/studiometa/foehn-framework/commit/3c65232
+[8919d50]: https://github.com/studiometa/foehn-framework/commit/8919d50
 [#83]: https://github.com/studiometa/foehn-framework/pull/83
-[fd46199]: https://github.com/studiometa/foehn-framework/commit/fd46199
-[48d7ce0]: https://github.com/studiometa/foehn-framework/commit/48d7ce0
-[74ca34f]: https://github.com/studiometa/foehn-framework/commit/74ca34f
-[4a467ea]: https://github.com/studiometa/foehn-framework/commit/4a467ea
-[03365b6]: https://github.com/studiometa/foehn-framework/commit/03365b6
-[41bc400]: https://github.com/studiometa/foehn-framework/commit/41bc400
-[09f8e64]: https://github.com/studiometa/foehn-framework/commit/09f8e64
-[07d8858]: https://github.com/studiometa/foehn-framework/commit/07d8858
-[cf0ff30]: https://github.com/studiometa/foehn-framework/commit/cf0ff30
-[ed29249]: https://github.com/studiometa/foehn-framework/commit/ed29249
-[43f1f95]: https://github.com/studiometa/foehn-framework/commit/43f1f95
+[76b2597]: https://github.com/studiometa/foehn-framework/commit/76b2597
+[5e5e3a0]: https://github.com/studiometa/foehn-framework/commit/5e5e3a0
+[7825d3a]: https://github.com/studiometa/foehn-framework/commit/7825d3a
+[42e807c]: https://github.com/studiometa/foehn-framework/commit/42e807c
+[770a69f]: https://github.com/studiometa/foehn-framework/commit/770a69f
+[0e43f8b]: https://github.com/studiometa/foehn-framework/commit/0e43f8b
+[960692a]: https://github.com/studiometa/foehn-framework/commit/960692a
+[456f5d1]: https://github.com/studiometa/foehn-framework/commit/456f5d1
+[f59a3ba]: https://github.com/studiometa/foehn-framework/commit/f59a3ba
+[30e76fd]: https://github.com/studiometa/foehn-framework/commit/30e76fd
+[a149b4f]: https://github.com/studiometa/foehn-framework/commit/a149b4f
 [#78]: https://github.com/studiometa/foehn-framework/pull/78
-[a487181]: https://github.com/studiometa/foehn-framework/commit/a487181
-[5911c2c]: https://github.com/studiometa/foehn-framework/commit/5911c2c
+[b587b62]: https://github.com/studiometa/foehn-framework/commit/b587b62
+[b587b62]: https://github.com/studiometa/foehn-framework/commit/b587b62
 [#77]: https://github.com/studiometa/foehn-framework/pull/77
-[7d9f33a]: https://github.com/studiometa/foehn-framework/commit/7d9f33a
+[504fe3b]: https://github.com/studiometa/foehn-framework/commit/504fe3b
 [#67]: https://github.com/studiometa/foehn-framework/pull/67
-[758b19f]: https://github.com/studiometa/foehn-framework/commit/758b19f
+[3d0cd34]: https://github.com/studiometa/foehn-framework/commit/3d0cd34
 [#79]: https://github.com/studiometa/foehn-framework/pull/79
-[556dd93]: https://github.com/studiometa/foehn-framework/commit/556dd93
-[0aaafb3]: https://github.com/studiometa/foehn-framework/commit/0aaafb3
-[59f39e3]: https://github.com/studiometa/foehn-framework/commit/59f39e3
+[20246ee]: https://github.com/studiometa/foehn-framework/commit/20246ee
+[4cab60d]: https://github.com/studiometa/foehn-framework/commit/4cab60d
+[4a35cb2]: https://github.com/studiometa/foehn-framework/commit/4a35cb2
 [#80]: https://github.com/studiometa/foehn-framework/pull/80
-[bc3227a]: https://github.com/studiometa/foehn-framework/commit/bc3227a
-[50466bf]: https://github.com/studiometa/foehn-framework/commit/50466bf
+[6fa9cc8]: https://github.com/studiometa/foehn-framework/commit/6fa9cc8
+[553efa7]: https://github.com/studiometa/foehn-framework/commit/553efa7
 [#81]: https://github.com/studiometa/foehn-framework/pull/81
-[95ba3d7]: https://github.com/studiometa/foehn-framework/commit/95ba3d7
+[73d9443]: https://github.com/studiometa/foehn-framework/commit/73d9443
 [#74]: https://github.com/studiometa/foehn-framework/pull/74
 [0.3.0]: https://github.com/studiometa/foehn-framework/releases/tag/0.3.0
 
@@ -100,9 +100,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Include Timber global context (`site`, `theme`, `user`, etc.) in `TimberViewEngine` ([af343d8], [#66])
+- Include Timber global context (`site`, `theme`, `user`, etc.) in `TimberViewEngine` ([ce9e046], [#66])
 
-[af343d8]: https://github.com/studiometa/foehn-framework/commit/af343d8
+[ce9e046]: https://github.com/studiometa/foehn-framework/commit/ce9e046
 [#66]: https://github.com/studiometa/foehn-framework/pull/66
 [0.2.4]: https://github.com/studiometa/foehn-framework/releases/tag/0.2.4
 
@@ -110,38 +110,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Add `BlockMarkupExtension` with `wp_block_start()`, `wp_block_end()` and `wp_block()` Twig functions for block pattern templates ([b94e17c], [#63])
-- Add `Cache` helper for WordPress transients with `remember()` pattern ([aa974a8], [#64])
-- Add `Log` helper for debug logging with PSR-3 style levels ([aa974a8], [#64])
+- Add `BlockMarkupExtension` with `wp_block_start()`, `wp_block_end()` and `wp_block()` Twig functions for block pattern templates ([66d1b3d], [#63])
+- Add `Cache` helper for WordPress transients with `remember()` pattern ([b68b0d1], [#64])
+- Add `Log` helper for debug logging with PSR-3 style levels ([b68b0d1], [#64])
 
 ### Removed
 
-- Remove `Validator` helper, recommend third-party packages instead ([54bfe25])
+- Remove `Validator` helper, recommend third-party packages instead ([0c1aa8f])
 
 ### Fixed
 
-- Fix static analysis issues ([76a4828])
-- Fix VitePress build by escaping Twig syntax in docs ([90e4906])
+- Fix static analysis issues ([fd7f1d3])
+- Fix VitePress build by escaping Twig syntax in docs ([1b5a3bb])
 
-[b94e17c]: https://github.com/studiometa/foehn-framework/commit/b94e17c
+[66d1b3d]: https://github.com/studiometa/foehn-framework/commit/66d1b3d
 [#63]: https://github.com/studiometa/foehn-framework/pull/63
-[aa974a8]: https://github.com/studiometa/foehn-framework/commit/aa974a8
+[b68b0d1]: https://github.com/studiometa/foehn-framework/commit/b68b0d1
 [#64]: https://github.com/studiometa/foehn-framework/pull/64
-[54bfe25]: https://github.com/studiometa/foehn-framework/commit/54bfe25
-[76a4828]: https://github.com/studiometa/foehn-framework/commit/76a4828
-[90e4906]: https://github.com/studiometa/foehn-framework/commit/90e4906
+[0c1aa8f]: https://github.com/studiometa/foehn-framework/commit/0c1aa8f
+[fd7f1d3]: https://github.com/studiometa/foehn-framework/commit/fd7f1d3
+[1b5a3bb]: https://github.com/studiometa/foehn-framework/commit/1b5a3bb
 [0.2.3]: https://github.com/studiometa/foehn-framework/releases/tag/0.2.3
 
 ## [0.2.2] - 2026-02-05
 
 ### Added
 
-- Add `WebpackManifest` helper for enqueuing assets from `@studiometa/webpack-config` manifests ([edd6216], [#60])
-- Bundle `studiometa/twig-toolkit` extension with `html_classes()`, `html_styles()`, `html_attributes()` and `{% element %}` tag ([5a7b8cf], [#62])
+- Add `WebpackManifest` helper for enqueuing assets from `@studiometa/webpack-config` manifests ([0898fce], [#60])
+- Bundle `studiometa/twig-toolkit` extension with `html_classes()`, `html_styles()`, `html_attributes()` and `{% element %}` tag ([13e1f56], [#62])
 
-[edd6216]: https://github.com/studiometa/foehn-framework/commit/edd6216
+[0898fce]: https://github.com/studiometa/foehn-framework/commit/0898fce
 [#60]: https://github.com/studiometa/foehn-framework/pull/60
-[5a7b8cf]: https://github.com/studiometa/foehn-framework/commit/5a7b8cf
+[13e1f56]: https://github.com/studiometa/foehn-framework/commit/13e1f56
 [#62]: https://github.com/studiometa/foehn-framework/pull/62
 [0.2.2]: https://github.com/studiometa/foehn-framework/releases/tag/0.2.2
 
@@ -149,19 +149,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Add `WP` helper for typed access to WordPress globals (`WP::db()`, `WP::query()`, `WP::post()`, `WP::user()`) ([db95247], [#58])
-- Add `Env` helper for environment detection (`Env::isProduction()`, `Env::isDevelopment()`, `Env::isDebug()`) ([db95247], [#58])
-- Add `#[AsTwigExtension]` attribute for declarative Twig extension registration ([63edb11], [#53])
+- Add `WP` helper for typed access to WordPress globals (`WP::db()`, `WP::query()`, `WP::post()`, `WP::user()`) ([4f8bfc4], [#58])
+- Add `Env` helper for environment detection (`Env::isProduction()`, `Env::isDevelopment()`, `Env::isDebug()`) ([4f8bfc4], [#58])
+- Add `#[AsTwigExtension]` attribute for declarative Twig extension registration ([3fcddec], [#53])
 
 ### Fixed
 
-- Fix `ViewEngineInterface` not registered in DI container for constructor injection ([1f5db42], [#57])
+- Fix `ViewEngineInterface` not registered in DI container for constructor injection ([c00db03], [#57])
 
-[63edb11]: https://github.com/studiometa/foehn-framework/commit/63edb11
+[3fcddec]: https://github.com/studiometa/foehn-framework/commit/3fcddec
 [#53]: https://github.com/studiometa/foehn-framework/pull/53
-[1f5db42]: https://github.com/studiometa/foehn-framework/commit/1f5db42
+[c00db03]: https://github.com/studiometa/foehn-framework/commit/c00db03
 [#57]: https://github.com/studiometa/foehn-framework/pull/57
-[db95247]: https://github.com/studiometa/foehn-framework/commit/db95247
+[4f8bfc4]: https://github.com/studiometa/foehn-framework/commit/4f8bfc4
 [#58]: https://github.com/studiometa/foehn-framework/pull/58
 [0.2.1]: https://github.com/studiometa/foehn-framework/releases/tag/0.2.1
 
@@ -169,15 +169,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Add bundled Mago config for theme conventions enforcement ([329c89b], [#52])
-- Add enhanced CLI scaffolding commands with `--dry-run` support ([4e0f58b], [#51])
-- Add `#[AsImageSize]` attribute for declarative image size registration with auto theme support ([614faa0], [#47])
-- Add `#[AsAcfOptionsPage]` attribute for ACF options pages with auto-discovery and `AcfOptionsService` helper ([4b52d3d], [#49])
-- Add `#[AsAcfFieldGroup]` attribute for non-block ACF field groups with simplified location syntax ([296e69f], [#48])
-- Add `#[AsMenu]` attribute for declarative navigation menu registration with auto-context injection ([2ce9f77], [#46])
-- Add theme conventions documentation with directory structure, naming rules, and migration guide ([7f180c4], [#43])
-- Add `DisableBlockStyles` cleanup hook to dequeue Gutenberg block styles ([a6152ef], [#44])
-- Add built-in ACF field fragments for reusable field groups ([0b1c707], [#45]):
+- Add bundled Mago config for theme conventions enforcement ([cbeb0d9], [#52])
+- Add enhanced CLI scaffolding commands with `--dry-run` support ([ca3fb53], [#51])
+- Add `#[AsImageSize]` attribute for declarative image size registration with auto theme support ([d2eb7b6], [#47])
+- Add `#[AsAcfOptionsPage]` attribute for ACF options pages with auto-discovery and `AcfOptionsService` helper ([ab97f93], [#49])
+- Add `#[AsAcfFieldGroup]` attribute for non-block ACF field groups with simplified location syntax ([01bdd55], [#48])
+- Add `#[AsMenu]` attribute for declarative navigation menu registration with auto-context injection ([c6dcd19], [#46])
+- Add theme conventions documentation with directory structure, naming rules, and migration guide ([bef4275], [#43])
+- Add `DisableBlockStyles` cleanup hook to dequeue Gutenberg block styles ([29747e3], [#44])
+- Add built-in ACF field fragments for reusable field groups ([b64002d], [#45]):
   - `ButtonLinkBuilder`: link with style/size options
   - `ResponsiveImageBuilder`: desktop/mobile image variants
   - `SpacingBuilder`: padding top/bottom controls
@@ -185,7 +185,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **BREAKING:** Rename ViewComposer to ContextProvider ([8a4c503], [#50])
+- **BREAKING:** Rename ViewComposer to ContextProvider ([70164d6], [#50])
   - `#[AsViewComposer]` → `#[AsContextProvider]`
   - `ViewComposerInterface` → `ContextProviderInterface`
   - `compose()` method → `provide()` method
@@ -193,25 +193,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `ViewComposerDiscovery` → `ContextProviderDiscovery`
   - `make:view-composer` CLI → `make:context-provider`
 
-[329c89b]: https://github.com/studiometa/foehn-framework/commit/329c89b
+[cbeb0d9]: https://github.com/studiometa/foehn-framework/commit/cbeb0d9
 [#52]: https://github.com/studiometa/foehn-framework/pull/52
-[4e0f58b]: https://github.com/studiometa/foehn-framework/commit/4e0f58b
+[ca3fb53]: https://github.com/studiometa/foehn-framework/commit/ca3fb53
 [#51]: https://github.com/studiometa/foehn-framework/pull/51
-[8a4c503]: https://github.com/studiometa/foehn-framework/commit/8a4c503
+[70164d6]: https://github.com/studiometa/foehn-framework/commit/70164d6
 [#50]: https://github.com/studiometa/foehn-framework/pull/50
-[614faa0]: https://github.com/studiometa/foehn-framework/commit/614faa0
+[d2eb7b6]: https://github.com/studiometa/foehn-framework/commit/d2eb7b6
 [#47]: https://github.com/studiometa/foehn-framework/pull/47
-[4b52d3d]: https://github.com/studiometa/foehn-framework/commit/4b52d3d
+[ab97f93]: https://github.com/studiometa/foehn-framework/commit/ab97f93
 [#49]: https://github.com/studiometa/foehn-framework/pull/49
-[296e69f]: https://github.com/studiometa/foehn-framework/commit/296e69f
+[01bdd55]: https://github.com/studiometa/foehn-framework/commit/01bdd55
 [#48]: https://github.com/studiometa/foehn-framework/pull/48
-[2ce9f77]: https://github.com/studiometa/foehn-framework/commit/2ce9f77
+[c6dcd19]: https://github.com/studiometa/foehn-framework/commit/c6dcd19
 [#46]: https://github.com/studiometa/foehn-framework/pull/46
-[7f180c4]: https://github.com/studiometa/foehn-framework/commit/7f180c4
+[bef4275]: https://github.com/studiometa/foehn-framework/commit/bef4275
 [#43]: https://github.com/studiometa/foehn-framework/pull/43
-[a6152ef]: https://github.com/studiometa/foehn-framework/commit/a6152ef
+[29747e3]: https://github.com/studiometa/foehn-framework/commit/29747e3
 [#44]: https://github.com/studiometa/foehn-framework/pull/44
-[0b1c707]: https://github.com/studiometa/foehn-framework/commit/0b1c707
+[b64002d]: https://github.com/studiometa/foehn-framework/commit/b64002d
 [#45]: https://github.com/studiometa/foehn-framework/pull/45
 [0.2.0]: https://github.com/studiometa/foehn-framework/releases/tag/0.2.0
 
@@ -219,63 +219,63 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- REST routes without explicit permission now require `edit_posts` capability instead of just authentication ([cb284f8], [#32])
+- REST routes without explicit permission now require `edit_posts` capability instead of just authentication ([2d95397], [#32])
 
 ### Added
 
-- Add `debug` config option for logging discovery failures via `trigger_error()` ([3d295e9], [#31])
-- Add `ValidatesFields` trait for optional ACF block field validation ([04c283c], [#24])
-- Add `rest_default_capability` config option to customize default REST route permission ([343e094], [#32])
-- Add `discovery:warm` CLI command to pre-warm discovery cache during deployment ([685132d], [#30])
-- Add security documentation for shortcode output escaping with comprehensive XSS prevention guide ([316cbff], [#29])
-- Transform ACF block fields via Timber's ACF integration ([8e0d11e], [!19]):
+- Add `debug` config option for logging discovery failures via `trigger_error()` ([72ab351], [#31])
+- Add `ValidatesFields` trait for optional ACF block field validation ([f4854d1], [#24])
+- Add `rest_default_capability` config option to customize default REST route permission ([2d95397], [#32])
+- Add `discovery:warm` CLI command to pre-warm discovery cache during deployment ([a2cab24], [#30])
+- Add security documentation for shortcode output escaping with comprehensive XSS prevention guide ([ab0445b], [#29])
+- Transform ACF block fields via Timber's ACF integration ([3654df6], [!19]):
   - Transforms raw ACF values (image IDs, post IDs) to Timber objects
   - Supports: image, gallery, file, post_object, relationship, taxonomy, user, date_picker
   - Handles nested fields recursively (repeater, flexible_content, group)
   - New `acf_transform_fields` config option (default: true) to enable/disable
-- Add `make:controller` command to scaffold template controllers ([fe277ae], [#20])
-- Add `make:hooks` command to scaffold hook classes ([2e98402], [#20])
-- Add `--fields` flag to `make:acf-block` for auto-generating ACF fields ([45a067d], [#20])
-- Add `VideoEmbed` helper and Twig extension for YouTube/Vimeo URL transformation ([c19eefb], [#18])
-- Add opt-in reusable hook classes for common WordPress patterns ([1bac8e8], [#13]):
+- Add `make:controller` command to scaffold template controllers ([aa08615], [#20])
+- Add `make:hooks` command to scaffold hook classes ([aa08615], [#20])
+- Add `--fields` flag to `make:acf-block` for auto-generating ACF fields ([aa08615], [#20])
+- Add `VideoEmbed` helper and Twig extension for YouTube/Vimeo URL transformation ([3b34300], [#18])
+- Add opt-in reusable hook classes for common WordPress patterns ([ff3b2b3], [#13]):
   - Cleanup: `CleanHeadTags`, `CleanContent`, `CleanImageSizes`, `DisableEmoji`, `DisableFeeds`, `DisableOembed`, `DisableGlobalStyles`
   - Security: `SecurityHeaders`, `DisableVersionDisclosure`, `DisableXmlRpc`, `DisableFileEditor`, `RestApiAuth`
   - GDPR: `YouTubeNoCookieHooks`
-- Add `hooks` config option in `Kernel::boot()` to activate opt-in hook classes ([1bac8e8], [#13])
-- Add `#[AsTimberModel]` attribute for Timber class map registration without post type/taxonomy registration ([b6fd69a], [#11])
-- Auto-initialize Timber in Kernel bootstrap with `timber_templates_dir` config option ([fae5391], [#12])
+- Add `hooks` config option in `Kernel::boot()` to activate opt-in hook classes ([ff3b2b3], [#13])
+- Add `#[AsTimberModel]` attribute for Timber class map registration without post type/taxonomy registration ([c3ebb04], [#11])
+- Auto-initialize Timber in Kernel bootstrap with `timber_templates_dir` config option ([c3bf7df], [#12])
 - Add `hierarchical`, `menuPosition`, `labels`, `rewrite` (array|false|null) to `#[AsPostType]` ([b544790], [#7])
 - Add `labels`, `rewrite` (array|false|null) to `#[AsTaxonomy]` ([b544790], [#7])
-- Add WordPress function stubs for unit testing `apply()` code paths ([e3988c7], [#7])
+- Add WordPress function stubs for unit testing `apply()` code paths ([812aa6a], [#7])
 - Add `discover()` and `apply()` tests for all 11 discovery classes — 359 tests, 1067 assertions ([d7cbe4c], [#7])
-- Add discovery cache for production performance ([adc01ed], [#2])
-- Add VitePress documentation with guides and API reference ([d80fe88], [#3])
-- Document `#[AsTimberModel]`, `timber_templates_dir`, `hooks` config, and built-in hooks ([3ec60b1], [!17])
-- Document `VideoEmbed` helper, ACF field transformation, and `make:controller`/`make:hooks` CLI commands ([433abae], [!21])
-- Add GitHub Pages deployment workflow ([02d6425], [#3])
+- Add discovery cache for production performance ([ffc7536], [#2])
+- Add VitePress documentation with guides and API reference ([f69a8b9], [#3])
+- Document `#[AsTimberModel]`, `timber_templates_dir`, `hooks` config, and built-in hooks ([a7bde4e], [!17])
+- Document `VideoEmbed` helper, ACF field transformation, and `make:controller`/`make:hooks` CLI commands ([3b34300], [!21])
+- Add GitHub Pages deployment workflow ([e1178b9], [#3])
 
 ### Changed
 
 - Decouple discoveries from Tempest's `Discovery` interface, replace with `WpDiscovery` + `IsWpDiscovery` ([748aace], [#7])
-- Rewrite `DiscoveryRunner` to own the full lifecycle: class scanning via Composer PSR-4, phased `apply()` at correct WP hooks ([b3d5134], [#7])
-- Tempest is now used only for the DI container, not for discovery ([b3d5134], [#7])
+- Rewrite `DiscoveryRunner` to own the full lifecycle: class scanning via Composer PSR-4, phased `apply()` at correct WP hooks ([509febf], [#7])
+- Tempest is now used only for the DI container, not for discovery ([509febf], [#7])
 
 ### Fixed
 
 - Fix discovery system conflicts with Tempest lifecycle — double discovery, incorrect timing, uninitialized properties ([748aace], [#7])
-- Fix root path passed to Tempest causing "Could not locate composer.json" error ([f0b4f27], [#5])
+- Fix root path passed to Tempest causing "Could not locate composer.json" error ([26cb117], [#5])
 
-[b6fd69a]: https://github.com/studiometa/foehn-framework/commit/b6fd69a
-[fae5391]: https://github.com/studiometa/foehn-framework/commit/fae5391
+[c3ebb04]: https://github.com/studiometa/foehn-framework/commit/c3ebb04
+[c3bf7df]: https://github.com/studiometa/foehn-framework/commit/c3bf7df
 [748aace]: https://github.com/studiometa/foehn-framework/commit/748aace
-[f0b4f27]: https://github.com/studiometa/foehn-framework/commit/f0b4f27
-[b3d5134]: https://github.com/studiometa/foehn-framework/commit/b3d5134
+[26cb117]: https://github.com/studiometa/foehn-framework/commit/26cb117
+[509febf]: https://github.com/studiometa/foehn-framework/commit/509febf
 [b544790]: https://github.com/studiometa/foehn-framework/commit/b544790
-[e3988c7]: https://github.com/studiometa/foehn-framework/commit/e3988c7
+[812aa6a]: https://github.com/studiometa/foehn-framework/commit/812aa6a
 [d7cbe4c]: https://github.com/studiometa/foehn-framework/commit/d7cbe4c
-[adc01ed]: https://github.com/studiometa/foehn-framework/commit/adc01ed
-[d80fe88]: https://github.com/studiometa/foehn-framework/commit/d80fe88
-[02d6425]: https://github.com/studiometa/foehn-framework/commit/02d6425
+[ffc7536]: https://github.com/studiometa/foehn-framework/commit/ffc7536
+[f69a8b9]: https://github.com/studiometa/foehn-framework/commit/f69a8b9
+[e1178b9]: https://github.com/studiometa/foehn-framework/commit/e1178b9
 [#2]: https://github.com/studiometa/foehn-framework/pull/2
 [#3]: https://github.com/studiometa/foehn-framework/pull/3
 [#5]: https://github.com/studiometa/foehn-framework/pull/5
@@ -286,34 +286,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#18]: https://github.com/studiometa/foehn-framework/pull/18
 [#20]: https://github.com/studiometa/foehn-framework/pull/20
 [!19]: https://github.com/studiometa/foehn-framework/pull/19
-[1bac8e8]: https://github.com/studiometa/foehn-framework/commit/1bac8e8
-[8e0d11e]: https://github.com/studiometa/foehn-framework/commit/8e0d11e
-[c19eefb]: https://github.com/studiometa/foehn-framework/commit/c19eefb
-[fe277ae]: https://github.com/studiometa/foehn-framework/commit/fe277ae
-[2e98402]: https://github.com/studiometa/foehn-framework/commit/2e98402
-[45a067d]: https://github.com/studiometa/foehn-framework/commit/45a067d
-[3ec60b1]: https://github.com/studiometa/foehn-framework/commit/3ec60b1
+[ff3b2b3]: https://github.com/studiometa/foehn-framework/commit/ff3b2b3
+[3654df6]: https://github.com/studiometa/foehn-framework/commit/3654df6
+[3b34300]: https://github.com/studiometa/foehn-framework/commit/3b34300
+[aa08615]: https://github.com/studiometa/foehn-framework/commit/aa08615
+[aa08615]: https://github.com/studiometa/foehn-framework/commit/aa08615
+[aa08615]: https://github.com/studiometa/foehn-framework/commit/aa08615
+[a7bde4e]: https://github.com/studiometa/foehn-framework/commit/a7bde4e
 [!17]: https://github.com/studiometa/foehn-framework/pull/17
 [!21]: https://github.com/studiometa/foehn-framework/pull/21
-[433abae]: https://github.com/studiometa/foehn-framework/commit/433abae
-[316cbff]: https://github.com/studiometa/foehn-framework/commit/316cbff
+[3b34300]: https://github.com/studiometa/foehn-framework/commit/3b34300
+[ab0445b]: https://github.com/studiometa/foehn-framework/commit/ab0445b
 [#29]: https://github.com/studiometa/foehn-framework/pull/29
-[685132d]: https://github.com/studiometa/foehn-framework/commit/685132d
+[a2cab24]: https://github.com/studiometa/foehn-framework/commit/a2cab24
 [#30]: https://github.com/studiometa/foehn-framework/pull/30
-[cb284f8]: https://github.com/studiometa/foehn-framework/commit/cb284f8
-[343e094]: https://github.com/studiometa/foehn-framework/commit/343e094
+[2d95397]: https://github.com/studiometa/foehn-framework/commit/2d95397
+[2d95397]: https://github.com/studiometa/foehn-framework/commit/2d95397
 [#32]: https://github.com/studiometa/foehn-framework/pull/32
-[04c283c]: https://github.com/studiometa/foehn-framework/commit/04c283c
+[f4854d1]: https://github.com/studiometa/foehn-framework/commit/f4854d1
 [#24]: https://github.com/studiometa/foehn-framework/pull/33
-[3d295e9]: https://github.com/studiometa/foehn-framework/commit/3d295e9
+[72ab351]: https://github.com/studiometa/foehn-framework/commit/72ab351
 [#31]: https://github.com/studiometa/foehn-framework/pull/31
 [0.1.0]: https://github.com/studiometa/foehn-framework/releases/tag/0.1.0
 [#85]: https://github.com/studiometa/foehn-framework/pull/85
-[52c6cf5]: https://github.com/studiometa/foehn-framework/commit/52c6cf5
-[db27bcc]: https://github.com/studiometa/foehn-framework/commit/db27bcc
-[5717472]: https://github.com/studiometa/foehn-framework/commit/5717472
-[51e36ab]: https://github.com/studiometa/foehn-framework/commit/51e36ab
-[2fb7479]: https://github.com/studiometa/foehn-framework/commit/2fb7479
-[3b5ca5f]: https://github.com/studiometa/foehn-framework/commit/3b5ca5f
-[2688ff8]: https://github.com/studiometa/foehn-framework/commit/2688ff8
-[a22f56b]: https://github.com/studiometa/foehn-framework/commit/a22f56b
+[df70d24]: https://github.com/studiometa/foehn-framework/commit/df70d24
+[81f6ee6]: https://github.com/studiometa/foehn-framework/commit/81f6ee6
+[2ad3e9b]: https://github.com/studiometa/foehn-framework/commit/2ad3e9b
+[f9fa543]: https://github.com/studiometa/foehn-framework/commit/f9fa543
+[3e85e9f]: https://github.com/studiometa/foehn-framework/commit/3e85e9f
+[282c2fd]: https://github.com/studiometa/foehn-framework/commit/282c2fd
+[a472622]: https://github.com/studiometa/foehn-framework/commit/a472622
+[6e172c5]: https://github.com/studiometa/foehn-framework/commit/6e172c5
