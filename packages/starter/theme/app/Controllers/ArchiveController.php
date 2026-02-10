@@ -9,7 +9,7 @@ use Studiometa\Foehn\Contracts\TemplateControllerInterface;
 use Studiometa\Foehn\Contracts\ViewEngineInterface;
 use Timber\Timber;
 
-#[AsTemplateController(['archive', 'archive-*', 'home', 'category', 'tag', 'tax-*'])]
+#[AsTemplateController(['archive', 'archive-*', 'front-page', 'home', 'category', 'tag', 'tax-*'])]
 final readonly class ArchiveController implements TemplateControllerInterface
 {
     public function __construct(
