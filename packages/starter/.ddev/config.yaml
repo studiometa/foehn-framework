@@ -28,17 +28,14 @@ hooks:
     - exec: composer install --no-interaction
     # Install WordPress if not already done
     - exec: |
-        if ! wp core is-installed --path=web/wp 2>/dev/null; then
+        if ! wp core is-installed 2>/dev/null; then
           wp core install \
-            --path=web/wp \
             --url="${DDEV_PRIMARY_URL}" \
             --title="Foehn Starter" \
             --admin_user=admin \
             --admin_password=admin \
             --admin_email=admin@example.com \
             --skip-email
-          # Activate the theme
-          wp theme activate starter-theme --path=web/wp
-          # Activate Timber plugin
-          wp plugin activate timber-library --path=web/wp 2>/dev/null || true
+          wp theme activate starter-theme
+          wp plugin activate timber-library 2>/dev/null || true
         fi
