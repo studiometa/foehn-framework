@@ -2,9 +2,9 @@
 
 A modern WordPress framework powered by [Tempest](https://github.com/tempestphp/tempest-framework), featuring attribute-based auto-discovery for hooks, post types, blocks, and more.
 
-[![Latest Version](https://img.shields.io/github/v/release/studiometa/foehn)](https://github.com/studiometa/foehn/releases)
+[![Latest Version](https://img.shields.io/github/v/release/studiometa/foehn-framework)](https://github.com/studiometa/foehn-framework/releases)
 [![PHP Version](https://img.shields.io/badge/php-%5E8.4-blue)](https://php.net)
-[![Tests](https://github.com/studiometa/foehn/actions/workflows/ci.yml/badge.svg)](https://github.com/studiometa/foehn/actions/workflows/ci.yml)
+[![Tests](https://github.com/studiometa/foehn-framework/actions/workflows/ci.yml/badge.svg)](https://github.com/studiometa/foehn-framework/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 > [!WARNING]

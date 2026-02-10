@@ -106,7 +106,7 @@ final class WebRootGenerator
              * DO NOT EDIT — this file is regenerated on `composer install`.
              *
              * Project configuration lives in config/*.config.php files.
-             * See: https://github.com/studiometa/foehn
+             * See: https://github.com/studiometa/foehn-framework
              */
 
             // Load Composer autoloader

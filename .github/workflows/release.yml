@@ -65,7 +65,7 @@ jobs:
 
             ---
 
-            **Full Changelog**: https://github.com/studiometa/foehn/blob/${{ github.ref_name }}/CHANGELOG.md
+            **Full Changelog**: https://github.com/studiometa/foehn-framework/blob/${{ github.ref_name }}/CHANGELOG.md
 
             ## Installation
 

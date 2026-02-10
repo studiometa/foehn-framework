@@ -811,4 +811,4 @@ If you encounter issues during migration:
 2. Review the [API Reference](/api/) for attribute parameters
 3. See [Theme Conventions](/guide/theme-conventions) for directory structure
 4. See [Configuration](/guide/configuration) for config file setup
-5. Open an issue on [GitHub](https://github.com/studiometa/foehn/issues)
+5. Open an issue on [GitHub](https://github.com/studiometa/foehn-framework/issues)
