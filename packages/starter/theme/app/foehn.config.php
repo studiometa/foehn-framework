@@ -8,6 +8,7 @@ use Studiometa\Foehn\Hooks\Cleanup\DisableEmoji;
 use Studiometa\Foehn\Hooks\Cleanup\DisableOembed;
 use Studiometa\Foehn\Hooks\Security\DisableVersionDisclosure;
 use Studiometa\Foehn\Hooks\Security\DisableXmlRpc;
+use Studiometa\Foehn\Hooks\Security\GenericLoginErrors;
 use Studiometa\Foehn\Hooks\YouTubeNoCookieHooks;
 
 return new FoehnConfig(
@@ -18,6 +19,7 @@ return new FoehnConfig(
         DisableOembed::class,
         DisableVersionDisclosure::class,
         DisableXmlRpc::class,
+        GenericLoginErrors::class,
         YouTubeNoCookieHooks::class,
     ],
 );
