@@ -1,0 +1,44 @@
+name: foehn-starter
+type: wordpress
+docroot: web
+php_version: "8.4"
+webserver_type: nginx-fpm
+database:
+  type: mariadb
+  version: "10.11"
+composer_version: "2"
+nodejs_version: "22"
+
+# WordPress core is installed in web/wp/ via Composer
+# The foehn-installer generates web/wp-config.php, web/index.php, and symlinks
+web_environment:
+  - DB_NAME=db
+  - DB_USER=db
+  - DB_PASSWORD=db
+  - DB_HOST=db
+  - DB_PREFIX=wp_
+  - WP_HOME=${DDEV_PRIMARY_URL}
+  - WP_SITEURL=${DDEV_PRIMARY_URL}/wp
+  - WP_ENVIRONMENT_TYPE=local
+  - WP_DEBUG=true
+  - WP_POST_REVISIONS=5
+
+hooks:
+  post-start:
+    - exec: composer install --no-interaction
+    # Install WordPress if not already done
+    - exec: |
+        if ! wp core is-installed --path=web/wp 2>/dev/null; then
+          wp core install \
+            --path=web/wp \
+            --url="${DDEV_PRIMARY_URL}" \
+            --title="Foehn Starter" \
+            --admin_user=admin \
+            --admin_password=admin \
+            --admin_email=admin@example.com \
+            --skip-email
+          # Activate the theme
+          wp theme activate starter-theme --path=web/wp
+          # Activate Timber plugin
+          wp plugin activate timber-library --path=web/wp 2>/dev/null || true
+        fi

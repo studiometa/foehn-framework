@@ -9,6 +9,17 @@ composer.lock
 # Environment
 .env
 
+# DDEV
+.ddev/.ddev-docker-compose-*
+.ddev/db_snapshots/
+.ddev/.homeadditions/
+.ddev/.sshimageBuild/
+.ddev/.webimageBuild/
+.ddev/commands/
+.ddev/import-db/
+.ddev/.gitignore
+.ddev/docker-compose.*.yaml
+
 # OS
 .DS_Store
 Thumbs.db

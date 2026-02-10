@@ -2,14 +2,35 @@
 
 A complete WordPress starter theme demonstrating all [Foehn](https://github.com/studiometa/foehn) features.
 
-## Quick Start
+## Quick Start with DDEV
+
+```bash
+composer create-project studiometa/foehn-starter my-project
+cd my-project
+ddev start
+```
+
+That's it. DDEV will:
+
+1. Start PHP 8.4 + MariaDB + nginx
+2. Run `composer install` (generates `web/`, symlinks, wp-config.php)
+3. Install WordPress with admin/admin credentials
+4. Activate the starter theme and Timber plugin
+
+Open the site: `ddev launch`
+Admin panel: `ddev launch /wp/wp-admin` (admin / admin)
+
+## Quick Start without DDEV
 
 ```bash
 composer create-project studiometa/foehn-starter my-project
 cd my-project
 cp .env.example .env
 # Edit .env with your database credentials
+composer install
 ```
+
+Then point your web server's document root to the `web/` directory.
 
 ## Project Structure
 
@@ -29,9 +50,9 @@ my-project/
 │   ├── functions.php           # Single boot line
 │   └── style.css               # Theme header
 │
-├── config/                     # Configuration files
+├── .ddev/                      # DDEV configuration
 ├── web/                        # Generated document root (gitignored)
-├── .env                        # Environment variables
+├── .env                        # Environment variables (not needed with DDEV)
 └── composer.json               # Dependencies
 ```
 
@@ -72,19 +93,27 @@ my-project/
 
 ## Development
 
-### Requirements
-
-- PHP 8.4+
-- Composer 2.x
-- Node.js 20+ (for frontend assets)
-
-### Commands
+### DDEV Commands
 
 ```bash
-# WordPress development server (via wp-cli)
+ddev start              # Start the environment
+ddev stop               # Stop the environment
+ddev launch             # Open the site in browser
+ddev ssh                # SSH into the container
+ddev composer install   # Run composer inside the container
+ddev wp <command>       # Run WP-CLI commands
+ddev describe           # Show URLs and connection info
+```
+
+### Without DDEV
+
+```bash
+# Requirements: PHP 8.4+, Composer 2.x, MySQL/MariaDB
+
+# Development server (via wp-cli)
 wp server --docroot=web
 
-# Or configure your web server to point to the web/ directory
+# Or configure nginx/apache to point to web/
 ```
 
 ## License
