@@ -70,7 +70,11 @@ jobs:
             ## Installation
 
             ```bash
+            # Core framework
             composer require studiometa/foehn:^${{ steps.version.outputs.VERSION }}
+
+            # New project from starter
+            composer create-project studiometa/foehn-starter my-project
             ```
           draft: false
           prerelease: false

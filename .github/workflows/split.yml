@@ -1,0 +1,36 @@
+name: Split Monorepo
+
+on:
+  push:
+    tags:
+      - "[0-9]+.*"
+
+jobs:
+  split:
+    name: Split ${{ matrix.package.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package:
+          - { name: "foehn", local: "packages/foehn", remote: "foehn-split" }
+          - { name: "installer", local: "packages/installer", remote: "foehn-installer" }
+          - { name: "starter", local: "packages/starter", remote: "foehn-starter" }
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get tag
+        id: tag
+        run: echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - uses: symplify/monorepo-split-github-action@v2
+        with:
+          package_directory: ${{ matrix.package.local }}
+          repository_organization: studiometa
+          repository_name: ${{ matrix.package.remote }}
+          tag: ${{ steps.tag.outputs.TAG }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.MONOREPO_SPLIT_TOKEN }}
