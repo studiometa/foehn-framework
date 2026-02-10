@@ -64,7 +64,7 @@ final readonly class HeroBlock implements AcfBlockInterface
 ## Template
 
 ```twig
-{# views/blocks/hero.twig #}
+{# templates/blocks/hero.twig #}
 <section class="hero" id="{{ block_id }}">
     {% if background %}
         <img
@@ -471,7 +471,7 @@ app/Blocks/
 └── Cta/
     └── CtaBlock.php
 
-views/blocks/
+templates/blocks/
 ├── hero.twig
 ├── features.twig
 ├── testimonial.twig

@@ -12,14 +12,22 @@ theme/
 │   │   │   └── HeroBlock.php
 │   │   └── Features/
 │   │       └── FeaturesBlock.php
+│   ├── Console/                  # CLI commands
+│   │   └── ImportProductsCommand.php
+│   ├── ContextProviders/         # Context providers
+│   │   ├── GlobalContextProvider.php
+│   │   └── NavigationContextProvider.php
+│   ├── Controllers/              # Template controllers
+│   │   ├── HomeController.php
+│   │   └── SingleController.php
 │   ├── Hooks/                    # WordPress action/filter handlers
 │   │   ├── ThemeHooks.php
 │   │   ├── AssetHooks.php
 │   │   └── AdminHooks.php
-│   ├── Models/                   # Post types and taxonomies
+│   ├── Models/                   # Custom post types (Timber models)
 │   │   ├── Product.php
 │   │   ├── Event.php
-│   │   └── ProductCategory.php
+│   │   └── TeamMember.php
 │   ├── Patterns/                 # Block patterns
 │   │   └── HeroPattern.php
 │   ├── Rest/                     # REST API endpoints
@@ -29,31 +37,27 @@ theme/
 │   │   └── NewsletterService.php
 │   ├── Shortcodes/               # Shortcode handlers
 │   │   └── ButtonShortcode.php
-│   ├── Console/                  # CLI commands
-│   │   └── ImportProductsCommand.php
-│   ├── ContextProviders/         # Context providers
-│   │   ├── GlobalContextProvider.php
-│   │   └── NavigationContextProvider.php
-│   ├── Controllers/              # Template controllers
-│   │   ├── HomeController.php
-│   │   └── SingleController.php
-│   └── render-api.config.php     # Config files (Tempest convention)
-├── views/                        # Twig templates
-│   ├── base.twig                 # Base layout
+│   ├── Taxonomies/               # Custom taxonomies
+│   │   ├── ProductCategory.php
+│   │   └── EventType.php
+│   └── foehn.config.php          # Config files (Tempest convention)
+├── templates/                    # Twig templates
 │   ├── blocks/                   # Block templates
 │   │   ├── hero.twig
 │   │   └── features.twig
 │   ├── components/               # Reusable components
 │   │   ├── button.twig
 │   │   ├── card.twig
+│   │   ├── header.twig
+│   │   ├── footer.twig
 │   │   └── pagination.twig
+│   ├── layouts/                  # Base layouts
+│   │   └── base.twig
 │   ├── pages/                    # Page-specific templates
 │   │   ├── home.twig
 │   │   └── contact.twig
-│   └── partials/                 # Template partials
-│       ├── header.twig
-│       ├── footer.twig
-│       └── sidebar.twig
+│   └── patterns/                 # Block pattern templates
+│       └── hero.twig
 ├── assets/                       # Source assets
 │   ├── scripts/
 │   └── styles/
@@ -84,18 +88,18 @@ final class TeamMember extends Post {}
 
 ### Taxonomies
 
-| Convention     | Example                              |
-| -------------- | ------------------------------------ |
-| **Location**   | `app/Models/` (alongside post types) |
-| **Class name** | Singular PascalCase                  |
-| **File name**  | `{ClassName}.php`                    |
+| Convention     | Example              |
+| -------------- | -------------------- |
+| **Location**   | `app/Taxonomies/`    |
+| **Class name** | Singular PascalCase  |
+| **File name**  | `{ClassName}.php`    |
 
 ```php
-// app/Models/ProductCategory.php
+// app/Taxonomies/ProductCategory.php
 #[AsTaxonomy(name: 'product_category', postTypes: ['product'])]
 final class ProductCategory {}
 
-// app/Models/EventType.php
+// app/Taxonomies/EventType.php
 #[AsTaxonomy(name: 'event_type', postTypes: ['event'])]
 final class EventType {}
 ```
@@ -332,32 +336,30 @@ Environment-specific configs are also supported:
 
 ### Template Locations
 
-| Template Type           | Location            | Example                                   |
-| ----------------------- | ------------------- | ----------------------------------------- |
-| **Base layouts**        | `views/`            | `views/base.twig`                         |
-| **WordPress templates** | `views/`            | `views/single.twig`, `views/archive.twig` |
-| **Block templates**     | `views/blocks/`     | `views/blocks/hero.twig`                  |
-| **Page templates**      | `views/pages/`      | `views/pages/home.twig`                   |
-| **Partials**            | `views/partials/`   | `views/partials/header.twig`              |
-| **Components**          | `views/components/` | `views/components/button.twig`            |
-| **Pattern templates**   | `views/patterns/`   | `views/patterns/hero.twig`                |
+| Template Type           | Location                | Example                                             |
+| ----------------------- | ----------------------- | --------------------------------------------------- |
+| **Base layouts**        | `templates/layouts/`    | `templates/layouts/base.twig`                       |
+| **Block templates**     | `templates/blocks/`     | `templates/blocks/hero.twig`                        |
+| **Components**          | `templates/components/` | `templates/components/button.twig`                  |
+| **Page templates**      | `templates/pages/`      | `templates/pages/home.twig`                         |
+| **Pattern templates**   | `templates/patterns/`   | `templates/patterns/hero.twig`                      |
 
 ### Template Naming
 
-| WordPress Hierarchy       | Twig Template                                      |
-| ------------------------- | -------------------------------------------------- |
-| `index.php`               | `views/index.twig`                                 |
-| `front-page.php`          | `views/front-page.twig` or `views/pages/home.twig` |
-| `single.php`              | `views/single.twig`                                |
-| `single-{post_type}.php`  | `views/single-{post_type}.twig`                    |
-| `archive.php`             | `views/archive.twig`                               |
-| `archive-{post_type}.php` | `views/archive-{post_type}.twig`                   |
-| `page.php`                | `views/page.twig`                                  |
-| `page-{slug}.php`         | `views/page-{slug}.twig`                           |
-| `category.php`            | `views/category.twig`                              |
-| `taxonomy-{taxonomy}.php` | `views/taxonomy-{taxonomy}.twig`                   |
-| `search.php`              | `views/search.twig`                                |
-| `404.php`                 | `views/404.twig`                                   |
+| WordPress Hierarchy       | Twig Template                                                    |
+| ------------------------- | ---------------------------------------------------------------- |
+| `index.php`               | `templates/pages/index.twig`                                     |
+| `front-page.php`          | `templates/pages/home.twig`                                      |
+| `single.php`              | `templates/pages/single.twig`                                    |
+| `single-{post_type}.php`  | `templates/pages/single-{post_type}.twig`                        |
+| `archive.php`             | `templates/pages/archive.twig`                                   |
+| `archive-{post_type}.php` | `templates/pages/archive-{post_type}.twig`                       |
+| `page.php`                | `templates/pages/page.twig`                                      |
+| `page-{slug}.php`         | `templates/pages/page-{slug}.twig`                               |
+| `category.php`            | `templates/pages/category.twig`                                  |
+| `taxonomy-{taxonomy}.php` | `templates/pages/taxonomy-{taxonomy}.twig`                       |
+| `search.php`              | `templates/pages/search.twig`                                    |
+| `404.php`                 | `templates/pages/404.twig`                                       |
 
 ### Block Template Naming
 
@@ -365,13 +367,13 @@ Block templates should match the block name (without prefix):
 
 ```php
 // Block: #[AsAcfBlock(name: 'hero')]
-// Template: views/blocks/hero.twig
+// Template: templates/blocks/hero.twig
 
 // Block: #[AsAcfBlock(name: 'feature-grid')]
-// Template: views/blocks/feature-grid.twig
+// Template: templates/blocks/feature-grid.twig
 
 // Block: #[AsBlock(name: 'theme/counter')]
-// Template: views/blocks/counter.twig
+// Template: templates/blocks/counter.twig
 ```
 
 ### Component Template Conventions
@@ -379,7 +381,7 @@ Block templates should match the block name (without prefix):
 Components should be self-contained and reusable:
 
 ```twig
-{# views/components/button.twig #}
+{# templates/components/button.twig #}
 {% set classes = html_classes('btn', {
     'btn--primary': variant == 'primary',
     'btn--secondary': variant == 'secondary',
@@ -399,22 +401,6 @@ Usage:
     url: '/about',
     variant: 'primary',
 } %}
-```
-
-### Partial Template Conventions
-
-Partials are template fragments that are included in layouts:
-
-```twig
-{# views/partials/header.twig #}
-<header class="site-header">
-    <div class="site-header__logo">
-        <a href="{{ site.url }}">{{ site.name }}</a>
-    </div>
-    <nav class="site-header__nav">
-        {% include 'partials/navigation.twig' with { menu: menus.primary } %}
-    </nav>
-</header>
 ```
 
 ## Namespace Conventions
@@ -442,6 +428,7 @@ Use a consistent namespace structure:
 | `app/Rest/`             | `App\Rest`             |
 | `app/Services/`         | `App\Services`         |
 | `app/Shortcodes/`       | `App\Shortcodes`       |
+| `app/Taxonomies/`       | `App\Taxonomies`       |
 
 ## Migration from wp-toolkit
 
@@ -449,17 +436,17 @@ If migrating from `studiometa/wp-toolkit`, the directory structure changes signi
 
 ### Key Changes
 
-| wp-toolkit                            | Føhn                            |
-| ------------------------------------- | ------------------------------- |
-| `app/PostTypes/ProductPostType.php`   | `app/Models/Product.php`        |
-| `app/Taxonomies/CategoryTaxonomy.php` | `app/Models/Category.php`       |
-| `app/Blocks/HeroBlock.php`            | `app/Blocks/Hero/HeroBlock.php` |
-| Manual Manager registration           | Automatic discovery             |
+| wp-toolkit                            | Føhn                               |
+| ------------------------------------- | ---------------------------------- |
+| `app/PostTypes/ProductPostType.php`   | `app/Models/Product.php`           |
+| `app/Taxonomies/CategoryTaxonomy.php` | `app/Taxonomies/Category.php`      |
+| `app/Blocks/HeroBlock.php`            | `app/Blocks/Hero/HeroBlock.php`    |
+| Manual Manager registration           | Automatic discovery                |
 
 ### File Relocation Checklist
 
 1. **Post types**: Move from `app/PostTypes/` to `app/Models/`, rename from `{Name}PostType.php` to `{Name}.php`
-2. **Taxonomies**: Move from `app/Taxonomies/` to `app/Models/`, rename from `{Name}Taxonomy.php` to `{Name}.php`
+2. **Taxonomies**: Keep in `app/Taxonomies/`, rename from `{Name}Taxonomy.php` to `{Name}.php`
 3. **Blocks**: Move from `app/Blocks/{Name}Block.php` to `app/Blocks/{Name}/{Name}Block.php`
 4. **Hooks**: Create `app/Hooks/` directory and extract hooks from `functions.php`
 5. **Context Providers**: Create `app/ContextProviders/` directory
@@ -592,18 +579,24 @@ must-be-final = true
 reason        = "Hook classes must be final and named *Hooks."
 
 # -----------------------------------------------------------------------------
-# Models (Post Types): Must be final and extend Timber\Post or Timber\Term
+# Models (Post Types): Must be final and extend Timber\Post
 # -----------------------------------------------------------------------------
 [[guard.structural.rules]]
 on            = "App\\Models\\**"
 target        = "class"
 must-be-final = true
-must-extend   = [
-    ["Timber\\Post"],
-    ["Timber\\Term"],
-]
+must-extend   = "Timber\\Post"
 not-on        = "App\\Models\\**Interface"
-reason        = "Model classes must be final and extend Timber\\Post or Timber\\Term."
+reason        = "Model classes must be final and extend Timber\\Post."
+
+# -----------------------------------------------------------------------------
+# Taxonomies: Must be final
+# -----------------------------------------------------------------------------
+[[guard.structural.rules]]
+on            = "App\\Taxonomies\\**"
+target        = "class"
+must-be-final = true
+reason        = "Taxonomy classes must be final."
 
 # -----------------------------------------------------------------------------
 # Patterns: Must be final readonly, named *Pattern, implement interface
