@@ -304,4 +304,4 @@ If Mago reports violations after migration, ensure:
 
 - [Context Providers Guide](/guide/context-providers)
 - [Theme Conventions](/guide/theme-conventions)
-- [Changelog](https://github.com/studiometa/foehn/blob/main/CHANGELOG.md)
+- [Changelog](https://github.com/studiometa/foehn-framework/blob/main/CHANGELOG.md)

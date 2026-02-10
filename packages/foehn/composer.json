@@ -23,7 +23,7 @@
     ],
     "homepage": "https://github.com/studiometa/foehn",
     "support": {
-        "issues": "https://github.com/studiometa/foehn/issues",
+        "issues": "https://github.com/studiometa/foehn-framework/issues",
         "source": "https://github.com/studiometa/foehn"
     },
     "require": {
