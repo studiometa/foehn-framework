@@ -1,4 +1,3 @@
-name: foehn-starter
 type: wordpress
 docroot: web
 disable_settings_management: true
