@@ -109,3 +109,75 @@ jobs:
           fail_ci_if_error: false
           flags: unittests
           name: codecov-foehn
+
+  vite-plugin-lint:
+    name: Vite Plugin - Lint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/vite-plugin
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: packages/vite-plugin/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run oxlint
+        run: npm run lint
+
+      - name: Run oxfmt check
+        run: npm run fmt:check
+
+      - name: Run typecheck
+        run: npm run typecheck
+
+  vite-plugin-test:
+    name: Vite Plugin - Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/vite-plugin
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: packages/vite-plugin/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+  vite-plugin-build:
+    name: Vite Plugin - Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/vite-plugin
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: packages/vite-plugin/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
