@@ -38,15 +38,16 @@ Then point your web server's document root to the `web/` directory.
 my-project/
 ├── theme/                      # WordPress theme (versioned)
 │   ├── app/
+│   │   ├── ContextProviders/   # Context providers
+│   │   ├── Controllers/        # Template controllers
 │   │   ├── Hooks/              # WordPress hooks (actions & filters)
-│   │   ├── Http/Controllers/   # Template controllers
-│   │   ├── Models/             # Custom post types (Timber models)
-│   │   ├── Taxonomies/         # Custom taxonomies
-│   │   └── Views/Composers/    # Context providers
-│   ├── templates/              # Twig templates
-│   │   ├── layouts/            # Base layouts
+│   │   ├── Models/             # Post types, taxonomies (Timber models)
+│   │   └── foehn.config.php    # Framework configuration
+│   ├── views/                  # Twig templates
+│   │   ├── base.twig           # Base layout
 │   │   ├── pages/              # Page templates
-│   │   └── components/         # Reusable components
+│   │   ├── components/         # Reusable components
+│   │   └── partials/           # Template fragments (header, footer)
 │   ├── functions.php           # Single boot line
 │   └── style.css               # Theme header
 │
@@ -63,7 +64,7 @@ my-project/
 - **Product** — with price, sale price, and product categories
 - **Testimonial** — with author info and ratings
 
-### Custom Taxonomies
+### Custom Taxonomies (in Models/)
 
 - **ProductCategory** — hierarchical, with custom rewrite
 - **ProductTag** — flat taxonomy for products
@@ -78,17 +79,19 @@ my-project/
 ### Hooks
 
 - **ThemeHooks** — theme setup, image sizes, menus
-- **SecurityHooks** — head cleanup, XML-RPC, login errors
+- **SecurityHooks** — generic login error message
 
 ### Context Providers
 
-- **GlobalComposer** — site info, menus, available on all templates
+- **GlobalContextProvider** — site info, menus, available on all templates
 
-### Built-in Foehn Hooks
+### Built-in Foehn Hooks (via foehn.config.php)
 
 - `CleanHeadTags` — removes unnecessary `<head>` tags
 - `DisableEmoji` — removes emoji scripts/styles
-- `DisableXmlRpc` — disables XML-RPC
+- `DisableOembed` — removes oEmbed discovery
+- `DisableVersionDisclosure` — hides WordPress version
+- `DisableXmlRpc` — disables XML-RPC + pingback
 - `YouTubeNoCookieHooks` — converts YouTube embeds to no-cookie variant
 
 ## Development
