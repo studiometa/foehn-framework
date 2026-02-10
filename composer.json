@@ -14,6 +14,7 @@
     },
     "require-dev": {
         "carthage-software/mago": "1.4.1",
+        "composer/composer": "^2.0",
         "pestphp/pest": "^3.0",
         "php-stubs/acf-pro-stubs": "^6.5",
         "php-stubs/wordpress-stubs": "*",
