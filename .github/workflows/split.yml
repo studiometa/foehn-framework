@@ -13,7 +13,7 @@ jobs:
       fail-fast: false
       matrix:
         package:
-          - { name: "foehn", local: "packages/foehn", remote: "foehn-split" }
+          - { name: "foehn", local: "packages/foehn", remote: "foehn" }
           - { name: "installer", local: "packages/installer", remote: "foehn-installer" }
           - { name: "starter", local: "packages/starter", remote: "foehn-starter" }
 
