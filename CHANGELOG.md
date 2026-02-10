@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-02-10
+
 ### Added
 
 - Transform repository into a monorepo with three packages ([3c65232], [#83]):
@@ -15,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `studiometa/foehn-starter` — starter theme with models, taxonomies, hooks, controllers, templates, and DDEV config ([48d7ce0])
 - Add `GenericLoginErrors` security hook to prevent username enumeration on login ([74ca34f])
 - Add `vlucas/phpdotenv` as framework dependency for `.env` file loading ([4a467ea])
-- Add monorepo split CI workflow to distribute packages to read-only repos on tag push ([03365b6])
+- Add monorepo split CI workflow to distribute packages to read-only repos on tag push ([03365b6], [d185927])
 - Add DDEV configuration for starter theme with automated WordPress setup ([41bc400])
 
 ### Changed
@@ -49,6 +51,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fix user config files being overwritten by framework defaults ([95ba3d7], [#74])
 
+[d185927]: https://github.com/studiometa/foehn-framework/commit/d185927
+[0.4.0]: https://github.com/studiometa/foehn-framework/releases/tag/0.4.0
 [3c65232]: https://github.com/studiometa/foehn-framework/commit/3c65232
 [#83]: https://github.com/studiometa/foehn-framework/pull/83
 [fd46199]: https://github.com/studiometa/foehn-framework/commit/fd46199
