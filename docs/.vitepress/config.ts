@@ -15,7 +15,7 @@ export default defineConfig({
   description:
     "A modern WordPress framework powered by Tempest, featuring attribute-based auto-discovery",
 
-  base: "/foehn/",
+  base: "/foehn-framework/",
 
   head: [["link", { rel: "icon", type: "image/svg+xml", href: "/foehn/favicon.svg" }]],
 
