@@ -125,7 +125,7 @@ final readonly class CounterBlock implements InteractiveBlockInterface
 ## Template
 
 ```twig
-{# views/blocks/counter.twig #}
+{# templates/blocks/counter.twig #}
 <div
     class="counter"
     data-wp-interactive="theme/counter"

@@ -66,7 +66,7 @@ final class MobileMenu {}
 Menus are automatically available in Timber context under `menus.<location>`:
 
 ```twig
-{# views/partials/header.twig #}
+{# templates/components/header.twig #}
 <header>
     <nav class="primary-nav">
         {% if menus.primary %}
@@ -99,7 +99,7 @@ Menus are automatically available in Timber context under `menus.<location>`:
 ```
 
 ```twig
-{# views/partials/footer.twig #}
+{# templates/components/footer.twig #}
 <footer>
     {% if menus.footer %}
         <nav class="footer-nav">
