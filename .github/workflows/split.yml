@@ -29,11 +29,6 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         run: echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
 
-      - name: Get branch
-        id: branch
-        if: startsWith(github.ref, 'refs/heads/')
-        run: echo "BRANCH=${GITHUB_REF#refs/heads/}" >> $GITHUB_OUTPUT
-
       - name: Split (tag)
         if: startsWith(github.ref, 'refs/tags/')
         uses: symplify/monorepo-split-github-action@v2.4.4
@@ -42,6 +37,8 @@ jobs:
           repository_organization: studiometa
           repository_name: ${{ matrix.package.remote }}
           tag: ${{ steps.tag.outputs.TAG }}
+          user_name: "github-actions[bot]"
+          user_email: "github-actions[bot]@users.noreply.github.com"
         env:
           GITHUB_TOKEN: ${{ secrets.MONOREPO_SPLIT_TOKEN }}
 
@@ -52,6 +49,8 @@ jobs:
           package_directory: ${{ matrix.package.local }}
           repository_organization: studiometa
           repository_name: ${{ matrix.package.remote }}
-          branch: ${{ steps.branch.outputs.BRANCH }}
+          branch: main
+          user_name: "github-actions[bot]"
+          user_email: "github-actions[bot]@users.noreply.github.com"
         env:
           GITHUB_TOKEN: ${{ secrets.MONOREPO_SPLIT_TOKEN }}
