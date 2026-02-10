@@ -15,7 +15,7 @@ use wpdb;
  * Provides a clean API to access WordPress globals while centralizing
  * the "unsafe" $GLOBALS access in a single, auditable location.
  *
- * @see https://github.com/studiometa/foehn/issues/54
+ * @see https://github.com/studiometa/foehn-framework/issues/54
  */
 final class WP
 {

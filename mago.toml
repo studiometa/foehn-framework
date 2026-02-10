@@ -1,7 +1,7 @@
 php-version = "8.4"
 
 [source]
-paths = ["src"]
+paths = ["packages/foehn/src", "packages/installer/src"]
 includes = ["vendor"]
 
 [formatter]

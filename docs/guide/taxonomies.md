@@ -6,9 +6,9 @@ Føhn uses `#[AsTaxonomy]` to register custom taxonomies.
 
 ```php
 <?php
-// app/Models/ProductCategory.php
+// app/Taxonomies/ProductCategory.php
 
-namespace App\Models;
+namespace App\Taxonomies;
 
 use Studiometa\Foehn\Attributes\AsTaxonomy;
 
@@ -29,7 +29,7 @@ final class ProductCategory
 ```php
 <?php
 
-namespace App\Models;
+namespace App\Taxonomies;
 
 use Studiometa\Foehn\Attributes\AsTaxonomy;
 
@@ -94,7 +94,7 @@ For complex taxonomies, implement `ConfiguresTaxonomy` interface:
 ```php
 <?php
 
-namespace App\Models;
+namespace App\Taxonomies;
 
 use Studiometa\Foehn\Attributes\AsTaxonomy;
 use Studiometa\Foehn\Contracts\ConfiguresTaxonomy;
@@ -164,16 +164,18 @@ $products = Timber::get_posts([
 
 ## Organizing Files
 
-Group post types and taxonomies together:
+Post types and taxonomies live in separate directories:
 
 ```
-app/Models/
-├── Product.php           # Post type
-├── ProductCategory.php   # Taxonomy for products
-├── ProductTag.php        # Taxonomy for products
-├── Event.php             # Post type
-├── EventType.php         # Taxonomy for events
-└── Location.php          # Shared taxonomy
+app/
+├── Models/               # Custom post types
+│   ├── Product.php
+│   └── Event.php
+└── Taxonomies/           # Custom taxonomies
+    ├── ProductCategory.php
+    ├── ProductTag.php
+    ├── EventType.php
+    └── Location.php
 ```
 
 ## Attribute Parameters

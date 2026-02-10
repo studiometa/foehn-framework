@@ -1,0 +1,32 @@
+name: foehn-starter
+type: wordpress
+docroot: web
+php_version: "8.4"
+webserver_type: nginx-fpm
+database:
+  type: mariadb
+  version: "10.11"
+composer_version: "2"
+nodejs_version: "22"
+
+# WordPress core is installed in web/wp/ via Composer
+# The foehn-installer generates web/wp-config.php, web/index.php, and symlinks
+# Environment variables are loaded from .env via vlucas/phpdotenv
+
+hooks:
+  post-start:
+    # Generate .env from example if it doesn't exist
+    - exec: test -f .env || cp .env.example .env
+    - exec: composer install --no-interaction
+    # Install WordPress if not already done
+    - exec: |
+        if ! wp core is-installed 2>/dev/null; then
+          wp core install \
+            --url="https://${DDEV_HOSTNAME}" \
+            --title="Foehn Starter" \
+            --admin_user=admin \
+            --admin_password=admin \
+            --admin_email=admin@example.com \
+            --skip-email
+          wp theme activate starter-theme
+        fi

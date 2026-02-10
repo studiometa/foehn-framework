@@ -1,0 +1,68 @@
+{
+    "name": "studiometa/foehn-starter",
+    "description": "Starter theme for Foehn — a modern WordPress framework powered by Tempest.",
+    "type": "project",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Studio Meta",
+            "email": "agence@studiometa.fr",
+            "homepage": "https://www.studiometa.fr"
+        }
+    ],
+    "keywords": [
+        "wordpress",
+        "theme",
+        "starter",
+        "foehn",
+        "tempest"
+    ],
+    "require": {
+        "php": "^8.4",
+        "composer/installers": "^2.0",
+        "johnpbloch/wordpress": "^6.7",
+        "studiometa/foehn": "^0.3",
+        "studiometa/foehn-installer": "^0.3"
+    },
+    "require-dev": {
+        "stoutlogic/acf-builder": "^1.12"
+    },
+    "repositories": [
+        {
+            "type": "composer",
+            "url": "https://wpackagist.org",
+            "only": ["wpackagist-plugin/*", "wpackagist-theme/*"]
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "App\\": "theme/app/"
+        }
+    },
+    "extra": {
+        "foehn": {
+            "theme-name": "starter-theme"
+        },
+        "wordpress-install-dir": "web/wp",
+        "installer-paths": {
+            "web/wp-content/plugins/{$name}/": ["type:wordpress-plugin"],
+            "web/wp-content/mu-plugins/{$name}/": ["type:wordpress-muplugin"]
+        }
+    },
+    "config": {
+        "sort-packages": true,
+        "optimize-autoloader": true,
+        "allow-plugins": {
+            "studiometa/foehn-installer": true,
+            "johnpbloch/wordpress-core-installer": true,
+            "composer/installers": true
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "scripts": {
+        "post-create-project-cmd": [
+            "@php -r \"copy('.env.example', '.env');\""
+        ]
+    }
+}

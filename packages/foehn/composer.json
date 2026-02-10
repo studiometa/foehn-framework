@@ -1,0 +1,59 @@
+{
+    "name": "studiometa/foehn",
+    "description": "🍃 A modern WordPress framework powered by Tempest, featuring attribute-based auto-discovery for hooks, post types, blocks, and more.",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Studio Meta",
+            "email": "agence@studiometa.fr",
+            "homepage": "https://www.studiometa.fr"
+        }
+    ],
+    "keywords": [
+        "wordpress",
+        "framework",
+        "tempest",
+        "timber",
+        "gutenberg",
+        "blocks",
+        "fse",
+        "attributes",
+        "discovery"
+    ],
+    "homepage": "https://github.com/studiometa/foehn",
+    "support": {
+        "issues": "https://github.com/studiometa/foehn-framework/issues",
+        "source": "https://github.com/studiometa/foehn"
+    },
+    "require": {
+        "php": "^8.4",
+        "studiometa/twig-toolkit": "^2.1",
+        "tempest/framework": "^2.14",
+        "timber/timber": "^2.0",
+        "vlucas/phpdotenv": "^5.6"
+    },
+    "suggest": {
+        "studiometa/webpack-config": "Required for WebpackManifest asset helper"
+    },
+    "autoload": {
+        "psr-4": {
+            "Studiometa\\Foehn\\": "src/"
+        },
+        "files": [
+            "src/helpers.php"
+        ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Studiometa\\Foehn\\Tests\\": "tests/",
+            "Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "sort-packages": true,
+        "optimize-autoloader": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

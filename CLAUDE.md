@@ -14,28 +14,41 @@ It provides attribute-based auto-discovery for hooks, post types, blocks, and mo
 
 ## Project Structure
 
-```
-src/
-├── Attributes/     # PHP 8 attributes (#[AsAction], #[AsPostType], etc.)
-├── Blocks/         # Block rendering and management
-├── Console/        # CLI commands
-├── Contracts/      # Interfaces
-├── Discovery/      # Tempest discovery classes
-├── FSE/            # Full Site Editing support
-├── PostTypes/      # Post type and taxonomy builders
-├── Views/          # View engine abstraction
-├── Kernel.php      # Main bootstrap class
-└── helpers.php     # Global helper functions
+This is a monorepo containing multiple packages:
 
-tests/
-└── Unit/           # Unit tests organized by component
+```
+packages/
+├── foehn/              # Core framework (studiometa/foehn)
+│   ├── src/
+│   │   ├── Attributes/ # PHP 8 attributes (#[AsAction], #[AsPostType], etc.)
+│   │   ├── Blocks/     # Block rendering and management
+│   │   ├── Console/    # CLI commands
+│   │   ├── Contracts/  # Interfaces
+│   │   ├── Discovery/  # Tempest discovery classes
+│   │   ├── FSE/        # Full Site Editing support
+│   │   ├── PostTypes/  # Post type and taxonomy builders
+│   │   ├── Views/      # View engine abstraction
+│   │   ├── Kernel.php  # Main bootstrap class
+│   │   └── helpers.php # Global helper functions
+│   ├── tests/
+│   └── composer.json
+│
+├── installer/          # Composer installer plugin (studiometa/foehn-installer)
+│   ├── src/
+│   ├── tests/
+│   └── composer.json
+│
+└── starter/            # Starter theme (studiometa/foehn-starter)
+    ├── app/
+    ├── templates/
+    └── composer.json
 ```
 
 ## Commands
 
 ```bash
-# Testing
-composer test              # Run Pest tests
+# Testing (from monorepo root)
+composer test              # Run Pest tests for all packages
 composer test:coverage     # Run with coverage
 
 # Code Quality

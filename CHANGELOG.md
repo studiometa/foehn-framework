@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Transform repository into a monorepo with three packages ([3c65232], [#83]):
+  - `studiometa/foehn` — core framework (moved to `packages/foehn/`)
+  - `studiometa/foehn-installer` — Composer plugin that generates WordPress web root, symlinks, and wp-config.php ([fd46199])
+  - `studiometa/foehn-starter` — starter theme with models, taxonomies, hooks, controllers, templates, and DDEV config ([48d7ce0])
+- Add `GenericLoginErrors` security hook to prevent username enumeration on login ([74ca34f])
+- Add `vlucas/phpdotenv` as framework dependency for `.env` file loading ([4a467ea])
+- Add monorepo split CI workflow to distribute packages to read-only repos on tag push ([03365b6])
+- Add DDEV configuration for starter theme with automated WordPress setup ([41bc400])
+
+### Changed
+
+- **BREAKING:** Repository renamed from `studiometa/foehn` to `studiometa/foehn-framework` ([09f8e64])
+- Starter theme follows documented conventions: `Controllers/`, `ContextProviders/`, `Taxonomies/` separate from `Models/`, `templates/` with `layouts/components/pages/` ([07d8858], [cf0ff30])
+- Update all documentation to use `templates/` directory and `Taxonomies/` namespace ([ed29249])
+- Update Mago guard rules: `Models` restricted to `Timber\Post`, new `Taxonomies` rule ([ed29249])
+
 ## [0.3.0] - 2026-02-09
 
 ### Added
@@ -31,25 +49,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fix user config files being overwritten by framework defaults ([95ba3d7], [#74])
 
-[43f1f95]: https://github.com/studiometa/foehn/commit/43f1f95
-[#78]: https://github.com/studiometa/foehn/pull/78
-[a487181]: https://github.com/studiometa/foehn/commit/a487181
-[5911c2c]: https://github.com/studiometa/foehn/commit/5911c2c
-[#77]: https://github.com/studiometa/foehn/pull/77
-[7d9f33a]: https://github.com/studiometa/foehn/commit/7d9f33a
-[#67]: https://github.com/studiometa/foehn/pull/67
-[758b19f]: https://github.com/studiometa/foehn/commit/758b19f
-[#79]: https://github.com/studiometa/foehn/pull/79
-[556dd93]: https://github.com/studiometa/foehn/commit/556dd93
-[0aaafb3]: https://github.com/studiometa/foehn/commit/0aaafb3
-[59f39e3]: https://github.com/studiometa/foehn/commit/59f39e3
-[#80]: https://github.com/studiometa/foehn/pull/80
-[bc3227a]: https://github.com/studiometa/foehn/commit/bc3227a
-[50466bf]: https://github.com/studiometa/foehn/commit/50466bf
-[#81]: https://github.com/studiometa/foehn/pull/81
-[95ba3d7]: https://github.com/studiometa/foehn/commit/95ba3d7
-[#74]: https://github.com/studiometa/foehn/pull/74
-[0.3.0]: https://github.com/studiometa/foehn/releases/tag/0.3.0
+[3c65232]: https://github.com/studiometa/foehn-framework/commit/3c65232
+[#83]: https://github.com/studiometa/foehn-framework/pull/83
+[fd46199]: https://github.com/studiometa/foehn-framework/commit/fd46199
+[48d7ce0]: https://github.com/studiometa/foehn-framework/commit/48d7ce0
+[74ca34f]: https://github.com/studiometa/foehn-framework/commit/74ca34f
+[4a467ea]: https://github.com/studiometa/foehn-framework/commit/4a467ea
+[03365b6]: https://github.com/studiometa/foehn-framework/commit/03365b6
+[41bc400]: https://github.com/studiometa/foehn-framework/commit/41bc400
+[09f8e64]: https://github.com/studiometa/foehn-framework/commit/09f8e64
+[07d8858]: https://github.com/studiometa/foehn-framework/commit/07d8858
+[cf0ff30]: https://github.com/studiometa/foehn-framework/commit/cf0ff30
+[ed29249]: https://github.com/studiometa/foehn-framework/commit/ed29249
+[43f1f95]: https://github.com/studiometa/foehn-framework/commit/43f1f95
+[#78]: https://github.com/studiometa/foehn-framework/pull/78
+[a487181]: https://github.com/studiometa/foehn-framework/commit/a487181
+[5911c2c]: https://github.com/studiometa/foehn-framework/commit/5911c2c
+[#77]: https://github.com/studiometa/foehn-framework/pull/77
+[7d9f33a]: https://github.com/studiometa/foehn-framework/commit/7d9f33a
+[#67]: https://github.com/studiometa/foehn-framework/pull/67
+[758b19f]: https://github.com/studiometa/foehn-framework/commit/758b19f
+[#79]: https://github.com/studiometa/foehn-framework/pull/79
+[556dd93]: https://github.com/studiometa/foehn-framework/commit/556dd93
+[0aaafb3]: https://github.com/studiometa/foehn-framework/commit/0aaafb3
+[59f39e3]: https://github.com/studiometa/foehn-framework/commit/59f39e3
+[#80]: https://github.com/studiometa/foehn-framework/pull/80
+[bc3227a]: https://github.com/studiometa/foehn-framework/commit/bc3227a
+[50466bf]: https://github.com/studiometa/foehn-framework/commit/50466bf
+[#81]: https://github.com/studiometa/foehn-framework/pull/81
+[95ba3d7]: https://github.com/studiometa/foehn-framework/commit/95ba3d7
+[#74]: https://github.com/studiometa/foehn-framework/pull/74
+[0.3.0]: https://github.com/studiometa/foehn-framework/releases/tag/0.3.0
 
 ## [0.2.4] - 2026-02-09
 
@@ -57,9 +87,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Include Timber global context (`site`, `theme`, `user`, etc.) in `TimberViewEngine` ([af343d8], [#66])
 
-[af343d8]: https://github.com/studiometa/foehn/commit/af343d8
-[#66]: https://github.com/studiometa/foehn/pull/66
-[0.2.4]: https://github.com/studiometa/foehn/releases/tag/0.2.4
+[af343d8]: https://github.com/studiometa/foehn-framework/commit/af343d8
+[#66]: https://github.com/studiometa/foehn-framework/pull/66
+[0.2.4]: https://github.com/studiometa/foehn-framework/releases/tag/0.2.4
 
 ## [0.2.3] - 2026-02-05
 
@@ -78,14 +108,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix static analysis issues ([76a4828])
 - Fix VitePress build by escaping Twig syntax in docs ([90e4906])
 
-[b94e17c]: https://github.com/studiometa/foehn/commit/b94e17c
-[#63]: https://github.com/studiometa/foehn/pull/63
-[aa974a8]: https://github.com/studiometa/foehn/commit/aa974a8
-[#64]: https://github.com/studiometa/foehn/pull/64
-[54bfe25]: https://github.com/studiometa/foehn/commit/54bfe25
-[76a4828]: https://github.com/studiometa/foehn/commit/76a4828
-[90e4906]: https://github.com/studiometa/foehn/commit/90e4906
-[0.2.3]: https://github.com/studiometa/foehn/releases/tag/0.2.3
+[b94e17c]: https://github.com/studiometa/foehn-framework/commit/b94e17c
+[#63]: https://github.com/studiometa/foehn-framework/pull/63
+[aa974a8]: https://github.com/studiometa/foehn-framework/commit/aa974a8
+[#64]: https://github.com/studiometa/foehn-framework/pull/64
+[54bfe25]: https://github.com/studiometa/foehn-framework/commit/54bfe25
+[76a4828]: https://github.com/studiometa/foehn-framework/commit/76a4828
+[90e4906]: https://github.com/studiometa/foehn-framework/commit/90e4906
+[0.2.3]: https://github.com/studiometa/foehn-framework/releases/tag/0.2.3
 
 ## [0.2.2] - 2026-02-05
 
@@ -94,11 +124,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `WebpackManifest` helper for enqueuing assets from `@studiometa/webpack-config` manifests ([edd6216], [#60])
 - Bundle `studiometa/twig-toolkit` extension with `html_classes()`, `html_styles()`, `html_attributes()` and `{% element %}` tag ([5a7b8cf], [#62])
 
-[edd6216]: https://github.com/studiometa/foehn/commit/edd6216
-[#60]: https://github.com/studiometa/foehn/pull/60
-[5a7b8cf]: https://github.com/studiometa/foehn/commit/5a7b8cf
-[#62]: https://github.com/studiometa/foehn/pull/62
-[0.2.2]: https://github.com/studiometa/foehn/releases/tag/0.2.2
+[edd6216]: https://github.com/studiometa/foehn-framework/commit/edd6216
+[#60]: https://github.com/studiometa/foehn-framework/pull/60
+[5a7b8cf]: https://github.com/studiometa/foehn-framework/commit/5a7b8cf
+[#62]: https://github.com/studiometa/foehn-framework/pull/62
+[0.2.2]: https://github.com/studiometa/foehn-framework/releases/tag/0.2.2
 
 ## [0.2.1] - 2026-02-05
 
@@ -112,13 +142,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fix `ViewEngineInterface` not registered in DI container for constructor injection ([1f5db42], [#57])
 
-[63edb11]: https://github.com/studiometa/foehn/commit/63edb11
-[#53]: https://github.com/studiometa/foehn/pull/53
-[1f5db42]: https://github.com/studiometa/foehn/commit/1f5db42
-[#57]: https://github.com/studiometa/foehn/pull/57
-[db95247]: https://github.com/studiometa/foehn/commit/db95247
-[#58]: https://github.com/studiometa/foehn/pull/58
-[0.2.1]: https://github.com/studiometa/foehn/releases/tag/0.2.1
+[63edb11]: https://github.com/studiometa/foehn-framework/commit/63edb11
+[#53]: https://github.com/studiometa/foehn-framework/pull/53
+[1f5db42]: https://github.com/studiometa/foehn-framework/commit/1f5db42
+[#57]: https://github.com/studiometa/foehn-framework/pull/57
+[db95247]: https://github.com/studiometa/foehn-framework/commit/db95247
+[#58]: https://github.com/studiometa/foehn-framework/pull/58
+[0.2.1]: https://github.com/studiometa/foehn-framework/releases/tag/0.2.1
 
 ## [0.2.0] - 2026-02-05
 
@@ -148,27 +178,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `ViewComposerDiscovery` → `ContextProviderDiscovery`
   - `make:view-composer` CLI → `make:context-provider`
 
-[329c89b]: https://github.com/studiometa/foehn/commit/329c89b
-[#52]: https://github.com/studiometa/foehn/pull/52
-[4e0f58b]: https://github.com/studiometa/foehn/commit/4e0f58b
-[#51]: https://github.com/studiometa/foehn/pull/51
-[8a4c503]: https://github.com/studiometa/foehn/commit/8a4c503
-[#50]: https://github.com/studiometa/foehn/pull/50
-[614faa0]: https://github.com/studiometa/foehn/commit/614faa0
-[#47]: https://github.com/studiometa/foehn/pull/47
-[4b52d3d]: https://github.com/studiometa/foehn/commit/4b52d3d
-[#49]: https://github.com/studiometa/foehn/pull/49
-[296e69f]: https://github.com/studiometa/foehn/commit/296e69f
-[#48]: https://github.com/studiometa/foehn/pull/48
-[2ce9f77]: https://github.com/studiometa/foehn/commit/2ce9f77
-[#46]: https://github.com/studiometa/foehn/pull/46
-[7f180c4]: https://github.com/studiometa/foehn/commit/7f180c4
-[#43]: https://github.com/studiometa/foehn/pull/43
-[a6152ef]: https://github.com/studiometa/foehn/commit/a6152ef
-[#44]: https://github.com/studiometa/foehn/pull/44
-[0b1c707]: https://github.com/studiometa/foehn/commit/0b1c707
-[#45]: https://github.com/studiometa/foehn/pull/45
-[0.2.0]: https://github.com/studiometa/foehn/releases/tag/0.2.0
+[329c89b]: https://github.com/studiometa/foehn-framework/commit/329c89b
+[#52]: https://github.com/studiometa/foehn-framework/pull/52
+[4e0f58b]: https://github.com/studiometa/foehn-framework/commit/4e0f58b
+[#51]: https://github.com/studiometa/foehn-framework/pull/51
+[8a4c503]: https://github.com/studiometa/foehn-framework/commit/8a4c503
+[#50]: https://github.com/studiometa/foehn-framework/pull/50
+[614faa0]: https://github.com/studiometa/foehn-framework/commit/614faa0
+[#47]: https://github.com/studiometa/foehn-framework/pull/47
+[4b52d3d]: https://github.com/studiometa/foehn-framework/commit/4b52d3d
+[#49]: https://github.com/studiometa/foehn-framework/pull/49
+[296e69f]: https://github.com/studiometa/foehn-framework/commit/296e69f
+[#48]: https://github.com/studiometa/foehn-framework/pull/48
+[2ce9f77]: https://github.com/studiometa/foehn-framework/commit/2ce9f77
+[#46]: https://github.com/studiometa/foehn-framework/pull/46
+[7f180c4]: https://github.com/studiometa/foehn-framework/commit/7f180c4
+[#43]: https://github.com/studiometa/foehn-framework/pull/43
+[a6152ef]: https://github.com/studiometa/foehn-framework/commit/a6152ef
+[#44]: https://github.com/studiometa/foehn-framework/pull/44
+[0b1c707]: https://github.com/studiometa/foehn-framework/commit/0b1c707
+[#45]: https://github.com/studiometa/foehn-framework/pull/45
+[0.2.0]: https://github.com/studiometa/foehn-framework/releases/tag/0.2.0
 
 ## [0.1.0] - 2026-02-04
 
@@ -220,46 +250,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix discovery system conflicts with Tempest lifecycle — double discovery, incorrect timing, uninitialized properties ([748aace], [#7])
 - Fix root path passed to Tempest causing "Could not locate composer.json" error ([f0b4f27], [#5])
 
-[b6fd69a]: https://github.com/studiometa/foehn/commit/b6fd69a
-[fae5391]: https://github.com/studiometa/foehn/commit/fae5391
-[748aace]: https://github.com/studiometa/foehn/commit/748aace
-[f0b4f27]: https://github.com/studiometa/foehn/commit/f0b4f27
-[b3d5134]: https://github.com/studiometa/foehn/commit/b3d5134
-[b544790]: https://github.com/studiometa/foehn/commit/b544790
-[e3988c7]: https://github.com/studiometa/foehn/commit/e3988c7
-[d7cbe4c]: https://github.com/studiometa/foehn/commit/d7cbe4c
-[adc01ed]: https://github.com/studiometa/foehn/commit/adc01ed
-[d80fe88]: https://github.com/studiometa/foehn/commit/d80fe88
-[02d6425]: https://github.com/studiometa/foehn/commit/02d6425
-[#2]: https://github.com/studiometa/foehn/pull/2
-[#3]: https://github.com/studiometa/foehn/pull/3
-[#5]: https://github.com/studiometa/foehn/pull/5
-[#7]: https://github.com/studiometa/foehn/pull/7
-[#11]: https://github.com/studiometa/foehn/pull/11
-[#12]: https://github.com/studiometa/foehn/pull/12
-[#13]: https://github.com/studiometa/foehn/pull/13
-[#18]: https://github.com/studiometa/foehn/pull/18
-[#20]: https://github.com/studiometa/foehn/pull/20
-[!19]: https://github.com/studiometa/foehn/pull/19
-[1bac8e8]: https://github.com/studiometa/foehn/commit/1bac8e8
-[8e0d11e]: https://github.com/studiometa/foehn/commit/8e0d11e
-[c19eefb]: https://github.com/studiometa/foehn/commit/c19eefb
-[fe277ae]: https://github.com/studiometa/foehn/commit/fe277ae
-[2e98402]: https://github.com/studiometa/foehn/commit/2e98402
-[45a067d]: https://github.com/studiometa/foehn/commit/45a067d
-[3ec60b1]: https://github.com/studiometa/foehn/commit/3ec60b1
-[!17]: https://github.com/studiometa/foehn/pull/17
-[!21]: https://github.com/studiometa/foehn/pull/21
-[433abae]: https://github.com/studiometa/foehn/commit/433abae
-[316cbff]: https://github.com/studiometa/foehn/commit/316cbff
-[#29]: https://github.com/studiometa/foehn/pull/29
-[685132d]: https://github.com/studiometa/foehn/commit/685132d
-[#30]: https://github.com/studiometa/foehn/pull/30
-[cb284f8]: https://github.com/studiometa/foehn/commit/cb284f8
-[343e094]: https://github.com/studiometa/foehn/commit/343e094
-[#32]: https://github.com/studiometa/foehn/pull/32
-[04c283c]: https://github.com/studiometa/foehn/commit/04c283c
-[#24]: https://github.com/studiometa/foehn/pull/33
-[3d295e9]: https://github.com/studiometa/foehn/commit/3d295e9
-[#31]: https://github.com/studiometa/foehn/pull/31
-[0.1.0]: https://github.com/studiometa/foehn/releases/tag/0.1.0
+[b6fd69a]: https://github.com/studiometa/foehn-framework/commit/b6fd69a
+[fae5391]: https://github.com/studiometa/foehn-framework/commit/fae5391
+[748aace]: https://github.com/studiometa/foehn-framework/commit/748aace
+[f0b4f27]: https://github.com/studiometa/foehn-framework/commit/f0b4f27
+[b3d5134]: https://github.com/studiometa/foehn-framework/commit/b3d5134
+[b544790]: https://github.com/studiometa/foehn-framework/commit/b544790
+[e3988c7]: https://github.com/studiometa/foehn-framework/commit/e3988c7
+[d7cbe4c]: https://github.com/studiometa/foehn-framework/commit/d7cbe4c
+[adc01ed]: https://github.com/studiometa/foehn-framework/commit/adc01ed
+[d80fe88]: https://github.com/studiometa/foehn-framework/commit/d80fe88
+[02d6425]: https://github.com/studiometa/foehn-framework/commit/02d6425
+[#2]: https://github.com/studiometa/foehn-framework/pull/2
+[#3]: https://github.com/studiometa/foehn-framework/pull/3
+[#5]: https://github.com/studiometa/foehn-framework/pull/5
+[#7]: https://github.com/studiometa/foehn-framework/pull/7
+[#11]: https://github.com/studiometa/foehn-framework/pull/11
+[#12]: https://github.com/studiometa/foehn-framework/pull/12
+[#13]: https://github.com/studiometa/foehn-framework/pull/13
+[#18]: https://github.com/studiometa/foehn-framework/pull/18
+[#20]: https://github.com/studiometa/foehn-framework/pull/20
+[!19]: https://github.com/studiometa/foehn-framework/pull/19
+[1bac8e8]: https://github.com/studiometa/foehn-framework/commit/1bac8e8
+[8e0d11e]: https://github.com/studiometa/foehn-framework/commit/8e0d11e
+[c19eefb]: https://github.com/studiometa/foehn-framework/commit/c19eefb
+[fe277ae]: https://github.com/studiometa/foehn-framework/commit/fe277ae
+[2e98402]: https://github.com/studiometa/foehn-framework/commit/2e98402
+[45a067d]: https://github.com/studiometa/foehn-framework/commit/45a067d
+[3ec60b1]: https://github.com/studiometa/foehn-framework/commit/3ec60b1
+[!17]: https://github.com/studiometa/foehn-framework/pull/17
+[!21]: https://github.com/studiometa/foehn-framework/pull/21
+[433abae]: https://github.com/studiometa/foehn-framework/commit/433abae
+[316cbff]: https://github.com/studiometa/foehn-framework/commit/316cbff
+[#29]: https://github.com/studiometa/foehn-framework/pull/29
+[685132d]: https://github.com/studiometa/foehn-framework/commit/685132d
+[#30]: https://github.com/studiometa/foehn-framework/pull/30
+[cb284f8]: https://github.com/studiometa/foehn-framework/commit/cb284f8
+[343e094]: https://github.com/studiometa/foehn-framework/commit/343e094
+[#32]: https://github.com/studiometa/foehn-framework/pull/32
+[04c283c]: https://github.com/studiometa/foehn-framework/commit/04c283c
+[#24]: https://github.com/studiometa/foehn-framework/pull/33
+[3d295e9]: https://github.com/studiometa/foehn-framework/commit/3d295e9
+[#31]: https://github.com/studiometa/foehn-framework/pull/31
+[0.1.0]: https://github.com/studiometa/foehn-framework/releases/tag/0.1.0

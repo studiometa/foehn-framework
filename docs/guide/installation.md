@@ -22,10 +22,12 @@ Create an `app/` directory in your theme for your classes:
 your-theme/
 ├── app/
 │   ├── Blocks/
+│   ├── ContextProviders/
+│   ├── Controllers/
 │   ├── Hooks/
 │   ├── Models/
-│   └── Views/
-├── views/
+│   └── Taxonomies/
+├── templates/
 ├── functions.php
 └── style.css
 ```
@@ -82,21 +84,24 @@ your-theme/
 │   │   └── Counter/
 │   │       ├── CounterBlock.php
 │   │       └── counter.twig
+│   ├── ContextProviders/ # Context providers
+│   │   └── GlobalContextProvider.php
+│   ├── Controllers/      # Template controllers
+│   │   └── SingleController.php
 │   ├── Hooks/            # Hook handlers
 │   │   └── ThemeHooks.php
-│   ├── Models/           # Post types and taxonomies
-│   │   ├── Product.php
-│   │   └── ProductCategory.php
+│   ├── Models/           # Custom post types
+│   │   └── Product.php
 │   ├── Rest/             # REST API endpoints
 │   │   └── ProductsApi.php
-│   └── Views/            # Context providers and controllers
-│       ├── ContextProviders/
-│       └── Controllers/
-├── views/                # Twig templates
-│   ├── single.twig
-│   ├── archive.twig
-│   └── partials/
-├── patterns/             # Block patterns (Twig)
+│   └── Taxonomies/       # Custom taxonomies
+│       └── ProductCategory.php
+├── templates/            # Twig templates
+│   ├── layouts/
+│   ├── pages/
+│   ├── components/
+│   ├── blocks/
+│   └── patterns/
 ├── functions.php
 ├── composer.json
 └── style.css

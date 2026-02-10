@@ -10,7 +10,7 @@ namespace Studiometa\Foehn\Helpers;
  * Provides a consistent API for detecting the current environment
  * and debug mode, supporting multiple env variable conventions.
  *
- * @see https://github.com/studiometa/foehn/issues/55
+ * @see https://github.com/studiometa/foehn-framework/issues/55
  */
 final class Env
 {

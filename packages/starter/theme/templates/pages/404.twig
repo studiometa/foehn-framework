@@ -1,0 +1,9 @@
+{% extends 'layouts/base.twig' %}
+
+{% block content %}
+<div class="error-404 container">
+    <h1>Page introuvable</h1>
+    <p>La page que vous cherchez n'existe pas ou a été déplacée.</p>
+    <a href="{{ site.url }}" class="btn btn--primary">Retour à l'accueil</a>
+</div>
+{% endblock %}

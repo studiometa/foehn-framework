@@ -65,12 +65,16 @@ jobs:
 
             ---
 
-            **Full Changelog**: https://github.com/studiometa/foehn/blob/${{ github.ref_name }}/CHANGELOG.md
+            **Full Changelog**: https://github.com/studiometa/foehn-framework/blob/${{ github.ref_name }}/CHANGELOG.md
 
             ## Installation
 
             ```bash
+            # Core framework
             composer require studiometa/foehn:^${{ steps.version.outputs.VERSION }}
+
+            # New project from starter
+            composer create-project studiometa/foehn-starter my-project
             ```
           draft: false
           prerelease: false
