@@ -70,7 +70,7 @@ final readonly class FoehnConfig
         $strategy = DiscoveryCacheStrategy::NONE;
 
         if (isset($config['discovery_cache'])) {
-            $strategy = DiscoveryCacheStrategy::make($config['discovery_cache']);
+            $strategy = DiscoveryCacheStrategy::resolveFromInput($config['discovery_cache']);
         }
 
         /** @var list<class-string> $hooks */
