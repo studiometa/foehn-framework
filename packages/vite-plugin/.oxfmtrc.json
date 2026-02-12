@@ -1,0 +1,9 @@
+{
+  "$schema": "https://raw.githubusercontent.com/user/oxfmt/main/schema.json",
+  "indentStyle": "space",
+  "indentWidth": 2,
+  "lineWidth": 100,
+  "quoteStyle": "double",
+  "semicolons": "always",
+  "trailingCommas": "all"
+}

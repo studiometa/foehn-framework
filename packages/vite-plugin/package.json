@@ -1,0 +1,61 @@
+{
+  "name": "@studiometa/foehn-vite-plugin",
+  "version": "0.1.0",
+  "description": "Vite plugin for Føhn WordPress framework",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint": "oxlint src tests",
+    "lint:fix": "oxlint src tests --fix",
+    "fmt": "oxfmt --write src tests",
+    "fmt:check": "oxfmt --check src tests",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "vite",
+    "vite-plugin",
+    "wordpress",
+    "foehn"
+  ],
+  "author": "Studio Meta <agence@studiometa.fr>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/studiometa/foehn-framework.git",
+    "directory": "packages/vite-plugin"
+  },
+  "bugs": {
+    "url": "https://github.com/studiometa/foehn-framework/issues"
+  },
+  "homepage": "https://github.com/studiometa/foehn-framework/tree/main/packages/vite-plugin#readme",
+  "dependencies": {
+    "fast-glob": "^3.3.0"
+  },
+  "peerDependencies": {
+    "vite": "^5.0.0 || ^6.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "oxfmt": "^0.28.0",
+    "oxlint": "^0.16.0",
+    "typescript": "^5.7.0",
+    "vite": "^6.0.0",
+    "vite-plugin-dts": "^4.5.0",
+    "vitest": "^3.0.0"
+  }
+}
