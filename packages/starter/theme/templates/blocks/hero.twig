@@ -1,0 +1,25 @@
+<section class="hero hero--{{ height }}" {% if anchor is defined %}id="{{ anchor }}"{% endif %}>
+    {% if background %}
+        <img
+            class="hero__background"
+            src="{{ background.src }}"
+            alt="{{ background.alt }}"
+            {% if background.width %}width="{{ background.width }}"{% endif %}
+            {% if background.height %}height="{{ background.height }}"{% endif %}
+        >
+    {% endif %}
+
+    <div class="hero__content">
+        <h1 class="hero__title">{{ title }}</h1>
+
+        {% if subtitle %}
+            <p class="hero__subtitle">{{ subtitle }}</p>
+        {% endif %}
+
+        {% if cta %}
+            <a class="hero__cta" href="{{ cta.url }}" {% if cta.target %}target="{{ cta.target }}"{% endif %}>
+                {{ cta.title }}
+            </a>
+        {% endif %}
+    </div>
+</section>
