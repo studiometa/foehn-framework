@@ -2,24 +2,24 @@
 
 declare(strict_types=1);
 
-use Studiometa\Foehn\Helpers\Cache;
+use Studiometa\Foehn\Cache\TransientCache;
 
-describe('Cache', function () {
+describe('TransientCache', function () {
     beforeEach(function () {
         wp_stub_reset();
-        Cache::setPrefix('foehn_');
+        $this->cache = new TransientCache();
     });
 
     describe('get/set', function () {
         it('returns default when key not found', function () {
             $GLOBALS['wp_stub_transients'] = [];
 
-            expect(Cache::get('missing'))->toBeNull();
-            expect(Cache::get('missing', 'default'))->toBe('default');
+            expect($this->cache->get('missing'))->toBeNull();
+            expect($this->cache->get('missing', 'default'))->toBe('default');
         });
 
         it('stores and retrieves values', function () {
-            Cache::set('key', 'value', 3600);
+            $this->cache->set('key', 'value', 3600);
 
             $calls = wp_stub_get_calls('set_transient');
             expect($calls)->toHaveCount(1);
@@ -28,9 +28,9 @@ describe('Cache', function () {
             expect($calls[0]['args']['expiration'])->toBe(3600);
         });
 
-        it('uses prefix for keys', function () {
-            Cache::setPrefix('custom_');
-            Cache::set('key', 'value');
+        it('uses custom prefix for keys', function () {
+            $cache = new TransientCache('custom_');
+            $cache->set('key', 'value');
 
             $calls = wp_stub_get_calls('set_transient');
             expect($calls[0]['args']['transient'])->toBe('custom_key');
@@ -41,13 +41,13 @@ describe('Cache', function () {
         it('returns false when key not found', function () {
             $GLOBALS['wp_stub_transients'] = [];
 
-            expect(Cache::has('missing'))->toBeFalse();
+            expect($this->cache->has('missing'))->toBeFalse();
         });
 
         it('returns true when key exists', function () {
             $GLOBALS['wp_stub_transients'] = ['foehn_exists' => 'value'];
 
-            expect(Cache::has('exists'))->toBeTrue();
+            expect($this->cache->has('exists'))->toBeTrue();
         });
     });
 
@@ -56,7 +56,7 @@ describe('Cache', function () {
             $GLOBALS['wp_stub_transients'] = ['foehn_key' => 'cached'];
             $called = false;
 
-            $result = Cache::remember('key', 3600, function () use (&$called) {
+            $result = $this->cache->remember('key', 3600, function () use (&$called) {
                 $called = true;
 
                 return 'computed';
@@ -69,7 +69,7 @@ describe('Cache', function () {
         it('computes and caches value if not exists', function () {
             $GLOBALS['wp_stub_transients'] = [];
 
-            $result = Cache::remember('key', 3600, fn() => 'computed');
+            $result = $this->cache->remember('key', 3600, fn() => 'computed');
 
             expect($result)->toBe('computed');
 
@@ -80,7 +80,7 @@ describe('Cache', function () {
 
     describe('forget', function () {
         it('deletes cached value', function () {
-            Cache::forget('key');
+            $this->cache->forget('key');
 
             $calls = wp_stub_get_calls('delete_transient');
             expect($calls)->toHaveCount(1);
@@ -90,7 +90,7 @@ describe('Cache', function () {
 
     describe('forever', function () {
         it('stores value with no expiration', function () {
-            Cache::forever('key', 'value');
+            $this->cache->forever('key', 'value');
 
             $calls = wp_stub_get_calls('set_transient');
             expect($calls[0]['args']['expiration'])->toBe(0);
@@ -101,7 +101,7 @@ describe('Cache', function () {
         it('increments numeric value', function () {
             $GLOBALS['wp_stub_transients'] = ['foehn_counter' => 5];
 
-            $result = Cache::increment('counter');
+            $result = $this->cache->increment('counter');
 
             expect($result)->toBe(6);
         });
@@ -109,7 +109,7 @@ describe('Cache', function () {
         it('decrements numeric value', function () {
             $GLOBALS['wp_stub_transients'] = ['foehn_counter' => 5];
 
-            $result = Cache::decrement('counter');
+            $result = $this->cache->decrement('counter');
 
             expect($result)->toBe(4);
         });
@@ -117,9 +117,20 @@ describe('Cache', function () {
         it('starts from zero if not exists', function () {
             $GLOBALS['wp_stub_transients'] = [];
 
-            $result = Cache::increment('new_counter', 10);
+            $result = $this->cache->increment('new_counter', 10);
 
             expect($result)->toBe(10);
+        });
+    });
+
+    describe('getPrefix', function () {
+        it('returns the default prefix', function () {
+            expect($this->cache->getPrefix())->toBe('foehn_');
+        });
+
+        it('returns a custom prefix', function () {
+            $cache = new TransientCache('app_');
+            expect($cache->getPrefix())->toBe('app_');
         });
     });
 });
