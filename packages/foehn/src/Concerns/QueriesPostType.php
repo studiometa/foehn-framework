@@ -34,12 +34,10 @@ trait QueriesPostType
 {
     /**
      * Create a new query builder for this post type.
-     *
-     * @return PostQueryBuilder<static>
      */
     public static function query(): PostQueryBuilder
     {
-        return new PostQueryBuilder(PostTypeRegistry::get(static::class), static::class);
+        return new PostQueryBuilder(PostTypeRegistry::get(static::class));
     }
 
     /**
@@ -50,6 +48,7 @@ trait QueriesPostType
      */
     public static function all(int $limit = -1): array
     {
+        /** @var list<static> */
         return static::query()->limit($limit)->get();
     }
 
@@ -72,6 +71,7 @@ trait QueriesPostType
      */
     public static function first(array $args = []): ?static
     {
+        /** @var static|null */
         return static::query()->merge($args)->first();
     }
 

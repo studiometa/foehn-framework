@@ -11,8 +11,6 @@ use Timber\Timber;
  *
  * Accumulates WP_Query parameters and delegates to Timber::get_posts().
  * All filtering methods are null-safe (no-op when receiving empty/null values).
- *
- * @template TPost of \Timber\Post
  */
 final class PostQueryBuilder
 {
@@ -21,12 +19,9 @@ final class PostQueryBuilder
 
     /**
      * @param string $postType The post type to query
-     * @param class-string<TPost>|null $class The Timber class for results (used for type inference)
      */
-    public function __construct(
-        string $postType,
-        private readonly ?string $class = null,
-    ) {
+    public function __construct(string $postType)
+    {
         $this->params['post_type'] = $postType;
         $this->params['post_status'] = 'publish';
     }
@@ -138,10 +133,9 @@ final class PostQueryBuilder
             return $this;
         }
 
-        $this->params['post__in'] = [
-            ...($this->params['post__in'] ?? []),
-            ...$ids,
-        ];
+        /** @var list<int> $existing */
+        $existing = $this->params['post__in'] ?? [];
+        $this->params['post__in'] = [...$existing, ...$ids];
 
         return $this;
     }
@@ -157,10 +151,9 @@ final class PostQueryBuilder
             return $this;
         }
 
-        $this->params['post__not_in'] = [
-            ...($this->params['post__not_in'] ?? []),
-            ...$ids,
-        ];
+        /** @var list<int> $existing */
+        $existing = $this->params['post__not_in'] ?? [];
+        $this->params['post__not_in'] = [...$existing, ...$ids];
 
         return $this;
     }
@@ -388,18 +381,18 @@ final class PostQueryBuilder
     /**
      * Execute the query and return posts.
      *
-     * @return list<TPost>
+     * @return list<\Timber\Post>
      */
     public function get(): array
     {
-        /** @var list<TPost> */
+        /** @var list<\Timber\Post> */
         return Timber::get_posts($this->params);
     }
 
     /**
      * Execute the query and return the first post.
      *
-     * @return TPost|null
+     * @return \Timber\Post|null
      */
     public function first(): mixed
     {
