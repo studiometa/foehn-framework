@@ -11,7 +11,7 @@ use Studiometa\Foehn\Contracts\TemplateControllerInterface;
 use Studiometa\Foehn\Discovery\Concerns\CacheableDiscovery;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
 
-use function Tempest\get;
+use function Tempest\Container\get;
 
 /**
  * Discovers classes marked with #[AsTemplateController] attribute

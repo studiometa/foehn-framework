@@ -12,7 +12,7 @@ use Studiometa\Foehn\Discovery\Concerns\CacheableDiscovery;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
 use WP_REST_Request;
 
-use function Tempest\get;
+use function Tempest\Container\get;
 
 /**
  * Discovers methods marked with #[AsRestRoute] attribute

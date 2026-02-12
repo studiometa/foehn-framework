@@ -13,7 +13,7 @@ use Studiometa\Foehn\Discovery\Concerns\CacheableDiscovery;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
 use WP_Block;
 
-use function Tempest\get;
+use function Tempest\Container\get;
 
 /**
  * Discovers classes marked with #[AsBlock] attribute

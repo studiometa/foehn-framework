@@ -6,7 +6,7 @@ namespace Studiometa\Foehn\Console;
 
 use Studiometa\Foehn\Kernel;
 use Tempest\Discovery\SkipDiscovery;
-use Tempest\Generation\ClassManipulator;
+use Tempest\Generation\Php\ClassManipulator;
 use Tempest\Support\Filesystem;
 
 use function Tempest\Support\str;

@@ -27,9 +27,9 @@
         "source": "https://github.com/studiometa/foehn-framework"
     },
     "require": {
-        "php": "^8.4",
+        "php": "^8.5",
         "studiometa/twig-toolkit": "^2.1",
-        "tempest/framework": "^2.14",
+        "tempest/framework": "^3.0",
         "timber/timber": "^2.0",
         "vlucas/phpdotenv": "^5.6"
     },

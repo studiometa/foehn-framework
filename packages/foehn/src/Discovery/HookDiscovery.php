@@ -97,7 +97,7 @@ final class HookDiscovery implements WpDiscovery
     private function registerHook(array $item): void
     {
         // Get the class instance from the container (enables DI)
-        $instance = \Tempest\get($item['className']);
+        $instance = \Tempest\Container\get($item['className']);
 
         // Create the callback
         $callback = [$instance, $item['methodName']];

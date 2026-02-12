@@ -12,7 +12,7 @@ use Studiometa\Foehn\Discovery\Concerns\CacheableDiscovery;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
 use Studiometa\Foehn\Views\ContextProviderRegistry;
 
-use function Tempest\get;
+use function Tempest\Container\get;
 
 /**
  * Discovers classes marked with #[AsContextProvider] attribute
