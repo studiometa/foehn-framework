@@ -1,0 +1,5 @@
+@import "tailwindcss";
+@import "@studiometa/tailwind-config";
+
+@import "./base/index.css";
+@import "./components/index.css";
