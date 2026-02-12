@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
+use Studiometa\Foehn\Discovery\DiscoveryLocation;
 use Studiometa\Foehn\Discovery\TwigExtensionDiscovery;
 use Tests\Fixtures\TwigExtensionFixture;
 use Tests\Fixtures\TwigExtensionWithPriorityFixture;
 use Twig\Environment;
 use Twig\Loader\ArrayLoader;
-use Studiometa\Foehn\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
     $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
     wp_stub_reset();
-    bootTestContainer();
-    $this->discovery = new TwigExtensionDiscovery();
+    $container = bootTestContainer();
+    $this->discovery = new TwigExtensionDiscovery($container);
 });
 
 afterEach(fn() => tearDownTestContainer());

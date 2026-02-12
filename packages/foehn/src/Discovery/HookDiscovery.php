@@ -10,6 +10,7 @@ use Studiometa\Foehn\Attributes\AsAction;
 use Studiometa\Foehn\Attributes\AsFilter;
 use Studiometa\Foehn\Discovery\Concerns\CacheableDiscovery;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
+use Tempest\Container\Container;
 
 /**
  * Discovers methods marked with #[AsAction] or #[AsFilter] attributes
@@ -19,6 +20,10 @@ final class HookDiscovery implements WpDiscovery
 {
     use IsWpDiscovery;
     use CacheableDiscovery;
+
+    public function __construct(
+        private readonly Container $container,
+    ) {}
 
     /**
      * Discover hook attributes on class methods.
@@ -96,8 +101,7 @@ final class HookDiscovery implements WpDiscovery
      */
     private function registerHook(array $item): void
     {
-        // Get the class instance from the container (enables DI)
-        $instance = \Tempest\Container\get($item['className']);
+        $instance = $this->container->get($item['className']);
 
         // Create the callback
         $callback = [$instance, $item['methodName']];

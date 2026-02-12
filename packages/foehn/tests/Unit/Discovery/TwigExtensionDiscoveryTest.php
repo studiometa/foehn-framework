@@ -2,16 +2,17 @@
 
 declare(strict_types=1);
 
+use Studiometa\Foehn\Discovery\DiscoveryLocation;
 use Studiometa\Foehn\Discovery\TwigExtensionDiscovery;
+use Tempest\Container\GenericContainer;
 use Tests\Fixtures\InvalidTwigExtensionFixture;
 use Tests\Fixtures\NoAttributeFixture;
 use Tests\Fixtures\TwigExtensionFixture;
 use Tests\Fixtures\TwigExtensionWithPriorityFixture;
-use Studiometa\Foehn\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
     $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
-    $this->discovery = new TwigExtensionDiscovery();
+    $this->discovery = new TwigExtensionDiscovery(new GenericContainer());
 });
 
 describe('TwigExtensionDiscovery', function () {

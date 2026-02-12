@@ -2,14 +2,15 @@
 
 declare(strict_types=1);
 
+use Studiometa\Foehn\Discovery\DiscoveryLocation;
 use Studiometa\Foehn\Discovery\HookDiscovery;
+use Tempest\Container\GenericContainer;
 use Tests\Fixtures\HookFixture;
 use Tests\Fixtures\NoAttributeFixture;
-use Studiometa\Foehn\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
     $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
-    $this->discovery = new HookDiscovery();
+    $this->discovery = new HookDiscovery(new GenericContainer());
 });
 
 describe('HookDiscovery', function () {

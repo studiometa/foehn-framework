@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
+use Studiometa\Foehn\Discovery\DiscoveryLocation;
 use Studiometa\Foehn\Discovery\HookDiscovery;
 use Tests\Fixtures\HookFixture;
-use Studiometa\Foehn\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
     $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
     wp_stub_reset();
-    bootTestContainer();
-    $this->discovery = new HookDiscovery();
+    $container = bootTestContainer();
+    $this->discovery = new HookDiscovery($container);
 });
 
 afterEach(fn() => tearDownTestContainer());

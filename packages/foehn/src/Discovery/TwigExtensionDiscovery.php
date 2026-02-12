@@ -8,6 +8,7 @@ use ReflectionClass;
 use Studiometa\Foehn\Attributes\AsTwigExtension;
 use Studiometa\Foehn\Discovery\Concerns\CacheableDiscovery;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
+use Tempest\Container\Container;
 use Twig\Environment;
 use Twig\Extension\AbstractExtension;
 
@@ -19,6 +20,10 @@ final class TwigExtensionDiscovery implements WpDiscovery
 {
     use IsWpDiscovery;
     use CacheableDiscovery;
+
+    public function __construct(
+        private readonly Container $container,
+    ) {}
 
     /**
      * Discover Twig extension classes.
@@ -61,10 +66,12 @@ final class TwigExtensionDiscovery implements WpDiscovery
 
         usort($items, static fn(array $a, array $b): int => $a['priority'] <=> $b['priority']);
 
-        add_filter('timber/twig', static function (Environment $twig) use ($items): Environment {
+        $container = $this->container;
+
+        add_filter('timber/twig', static function (Environment $twig) use ($items, $container): Environment {
             foreach ($items as $item) {
                 /** @var AbstractExtension $extension */
-                $extension = \Tempest\Container\get($item['className']);
+                $extension = $container->get($item['className']);
                 $twig->addExtension($extension);
             }
 
