@@ -25,10 +25,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `SpacingData` — matches `SpacingBuilder` output
 - Widen `compose()` return type to `array|Arrayable` on block interfaces ([#97])
 - **Starter:** Add Hero block example demonstrating DTO context composition ([#97])
+- **New package:** `@studiometa/foehn-vite-plugin` — Vite plugin for front-end bundling ([#89]):
+  - Glob input resolution for entry points
+  - Vite manifest generation for asset versioning
+  - Twig/PHP file watching with full reload
+  - Hot file generation for dev server detection
+  - Auto DDEV proxy configuration
 
 [#98]: https://github.com/studiometa/foehn-framework/pull/98
 [#97]: https://github.com/studiometa/foehn-framework/pull/97
 [#96]: https://github.com/studiometa/foehn-framework/pull/96
+[#89]: https://github.com/studiometa/foehn-framework/pull/89
 
 ## [0.4.1] - 2026-02-10
 
