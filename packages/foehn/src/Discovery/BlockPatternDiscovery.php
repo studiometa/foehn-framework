@@ -6,6 +6,7 @@ namespace Studiometa\Foehn\Discovery;
 
 use ReflectionClass;
 use Studiometa\Foehn\Attributes\AsBlockPattern;
+use Studiometa\Foehn\Contracts\Arrayable;
 use Studiometa\Foehn\Contracts\BlockPatternInterface;
 use Studiometa\Foehn\Contracts\ViewEngineInterface;
 use Studiometa\Foehn\Discovery\Concerns\CacheableDiscovery;
@@ -178,6 +179,10 @@ final class BlockPatternDiscovery implements WpDiscovery
             /** @var BlockPatternInterface $instance */
             $instance = get($className);
             $context = $instance->compose();
+
+            if ($context instanceof Arrayable) {
+                $context = $context->toArray();
+            }
         }
 
         return $view->render($templatePath, $context);
