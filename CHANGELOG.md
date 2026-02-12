@@ -18,8 +18,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add `CacheInterface` contract and `TransientCache` implementation for dependency injection ([#96])
 - Add `TaggedCache` for tag-based cache invalidation via `CacheInterface::tags()` ([#96])
+- Add `Arrayable` interface and `HasToArray` trait for typed DTO context composition ([#97])
+- Add built-in DTOs for common ACF field patterns ([#97]):
+  - `LinkData` — matches `ButtonLinkBuilder` output
+  - `ImageData` — matches `ResponsiveImageBuilder` output  
+  - `SpacingData` — matches `SpacingBuilder` output
+- Widen `compose()` return type to `array|Arrayable` on block interfaces ([#97])
+- **Starter:** Add Hero block example demonstrating DTO context composition ([#97])
 
 [#98]: https://github.com/studiometa/foehn-framework/pull/98
+[#97]: https://github.com/studiometa/foehn-framework/pull/97
 [#96]: https://github.com/studiometa/foehn-framework/pull/96
 
 ## [0.4.1] - 2026-02-10
