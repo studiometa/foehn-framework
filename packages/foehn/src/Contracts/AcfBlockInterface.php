@@ -23,11 +23,14 @@ interface AcfBlockInterface
     /**
      * Compose data for the view.
      *
+     * May return a plain array or an Arrayable DTO (which will be
+     * flattened to array before passing to render()).
+     *
      * @param array<string, mixed> $block Block data from ACF
      * @param array<string, mixed> $fields Field values from get_fields()
-     * @return array<string, mixed> Context for the template
+     * @return array<string, mixed>|Arrayable Context for the template
      */
-    public function compose(array $block, array $fields): array;
+    public function compose(array $block, array $fields): array|Arrayable;
 
     /**
      * Render the block.
