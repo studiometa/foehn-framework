@@ -1,0 +1,7 @@
+{
+  "$schema": "https://raw.githubusercontent.com/nicolo-ribaudo/oxlint-config-inspector/refs/heads/main/bundled-schema.json",
+  "rules": {
+    "no-unused-vars": "warn",
+    "no-console": "warn"
+  }
+}
