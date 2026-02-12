@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **BREAKING:** Require PHP 8.5+ and Tempest Framework v3.0 ([#98])
+- **BREAKING:** Remove static `Helpers\Log` helper — use Tempest Logger (`tempest/log`) instead ([#96])
+- **BREAKING:** Remove static `Helpers\Cache` helper — use injectable `CacheInterface` instead ([#96])
+- Replace `\Tempest\get()` with injected `Container` in `HookDiscovery` and `TwigExtensionDiscovery` ([#96])
+
+### Added
+
+- Add `CacheInterface` contract and `TransientCache` implementation for dependency injection ([#96])
+- Add `TaggedCache` for tag-based cache invalidation via `CacheInterface::tags()` ([#96])
+
+[#98]: https://github.com/studiometa/foehn-framework/pull/98
+[#96]: https://github.com/studiometa/foehn-framework/pull/96
+
 ## [0.4.1] - 2026-02-10
 
 ### Changed
