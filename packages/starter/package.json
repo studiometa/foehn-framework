@@ -1,0 +1,31 @@
+{
+  "name": "@studiometa/foehn-starter",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "npm run lint:scripts && npm run lint:styles && npm run lint:templates",
+    "lint:scripts": "oxlint theme/assets/js",
+    "lint:styles": "stylelint 'theme/assets/css/**/*.css' --cache",
+    "lint:templates": "prettier -c 'theme/templates/**/*.twig' --cache",
+    "fix": "npm run fix:scripts && npm run fix:styles && npm run fix:templates",
+    "fix:scripts": "npm run lint:scripts -- --fix && oxfmt --write 'theme/assets/**/*.{js,ts}'",
+    "fix:styles": "npm run lint:styles -- --fix",
+    "fix:templates": "npm run lint:templates -- --write"
+  },
+  "devDependencies": {
+    "@studiometa/foehn-vite-plugin": "*",
+    "@studiometa/js-toolkit": "^3.4.0",
+    "@studiometa/prettier-config": "^4.4.0",
+    "@studiometa/stylelint-config": "^4.0.0",
+    "@studiometa/tailwind-config": "^3.0.0",
+    "@tailwindcss/vite": "^4.0.0",
+    "oxfmt": "^0.28.0",
+    "oxlint": "^0.16.0",
+    "prettier": "^3.6.0",
+    "stylelint": "^16.0.0",
+    "tailwindcss": "^4.0.0",
+    "vite": "^6.0.0"
+  }
+}

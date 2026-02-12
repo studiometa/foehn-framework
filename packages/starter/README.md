@@ -43,12 +43,24 @@ Then point your web server's document root to the `web/` directory.
 my-project/
 ├── theme/                      # WordPress theme (versioned)
 │   ├── app/
+│   │   ├── Blocks/             # ACF blocks
 │   │   ├── ContextProviders/   # Context providers
 │   │   ├── Controllers/        # Template controllers
+│   │   ├── Data/               # DTOs for block context
 │   │   ├── Hooks/              # WordPress hooks (actions & filters)
+│   │   ├── ImageSizes/         # Custom image sizes
+│   │   ├── Menus/              # Navigation menus
 │   │   ├── Models/             # Custom post types (Timber models)
 │   │   ├── Taxonomies/         # Custom taxonomies
 │   │   └── foehn.config.php    # Framework configuration
+│   ├── assets/
+│   │   ├── js/                 # JavaScript (js-toolkit)
+│   │   │   ├── app.js          # Entry point
+│   │   │   └── components/     # Custom components
+│   │   └── css/                # CSS (Tailwind v4)
+│   │       ├── app.css         # Entry point
+│   │       ├── base/           # Base styles
+│   │       └── components/     # Component styles
 │   ├── templates/              # Twig templates
 │   │   ├── layouts/            # Base layouts
 │   │   ├── pages/              # Page templates
@@ -57,9 +69,11 @@ my-project/
 │   └── style.css               # Theme header
 │
 ├── .ddev/                      # DDEV configuration
+├── vite.config.js              # Vite build config
 ├── web/                        # Generated document root (gitignored)
 ├── .env                        # Environment variables (not needed with DDEV)
-└── composer.json               # Dependencies
+├── composer.json               # PHP dependencies
+└── package.json                # JS dependencies
 ```
 
 ## What's included
@@ -100,6 +114,16 @@ my-project/
 - `YouTubeNoCookieHooks` — converts YouTube embeds to no-cookie variant
 
 ## Development
+
+### Front-end
+
+```bash
+npm install             # Install JS dependencies
+npm run dev             # Start Vite dev server (HMR)
+npm run build           # Build for production
+npm run lint            # Lint JS, CSS and Twig
+npm run fix             # Auto-fix linting issues
+```
 
 ### DDEV Commands
 

@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "workspaces": [
-    "packages/vite-plugin"
+    "packages/vite-plugin",
+    "packages/starter"
   ],
   "scripts": {
     "fmt": "oxfmt --write README.md .planning/ packages/*/README.md",
