@@ -168,7 +168,7 @@ final class Kernel
         Tempest::boot(self::findProjectRoot($this->appPath));
 
         // Get the container from Tempest
-        $this->container = \Tempest\get(Container::class);
+        $this->container = \Tempest\Container\get(Container::class);
     }
 
     /**

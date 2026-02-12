@@ -64,7 +64,7 @@ final class TwigExtensionDiscovery implements WpDiscovery
         add_filter('timber/twig', static function (Environment $twig) use ($items): Environment {
             foreach ($items as $item) {
                 /** @var AbstractExtension $extension */
-                $extension = \Tempest\get($item['className']);
+                $extension = \Tempest\Container\get($item['className']);
                 $twig->addExtension($extension);
             }
 

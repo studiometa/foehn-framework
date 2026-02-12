@@ -101,7 +101,7 @@ final class DiscoveryWarmCommand implements CliCommandInterface
     private function determineStrategy(array $assocArgs): DiscoveryCacheStrategy
     {
         if (isset($assocArgs['strategy'])) {
-            return DiscoveryCacheStrategy::make($assocArgs['strategy']);
+            return DiscoveryCacheStrategy::resolveFromInput($assocArgs['strategy']);
         }
 
         // Use configured strategy, defaulting to FULL if not set

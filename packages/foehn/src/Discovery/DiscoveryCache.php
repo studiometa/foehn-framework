@@ -172,7 +172,7 @@ final class DiscoveryCache
             return null;
         }
 
-        return DiscoveryCacheStrategy::make(trim($value));
+        return DiscoveryCacheStrategy::resolveFromInput(trim($value));
     }
 
     /**

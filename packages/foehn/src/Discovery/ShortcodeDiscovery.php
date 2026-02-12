@@ -10,7 +10,7 @@ use Studiometa\Foehn\Attributes\AsShortcode;
 use Studiometa\Foehn\Discovery\Concerns\CacheableDiscovery;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
 
-use function Tempest\get;
+use function Tempest\Container\get;
 
 /**
  * Discovers methods marked with #[AsShortcode] attribute
