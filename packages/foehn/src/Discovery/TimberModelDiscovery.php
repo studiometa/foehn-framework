@@ -9,6 +9,7 @@ use ReflectionClass;
 use Studiometa\Foehn\Attributes\AsTimberModel;
 use Studiometa\Foehn\Discovery\Concerns\CacheableDiscovery;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
+use Studiometa\Foehn\PostTypes\PostTypeRegistry;
 use Timber\Post;
 use Timber\Term;
 
@@ -85,6 +86,11 @@ final class TimberModelDiscovery implements WpDiscovery
 
             return $map;
         });
+
+        // Register in PostTypeRegistry for QueriesPostType trait
+        if ($type === 'post') {
+            PostTypeRegistry::register($className, $name);
+        }
     }
 
     /**

@@ -11,6 +11,7 @@ use Studiometa\Foehn\Contracts\ConfiguresPostType;
 use Studiometa\Foehn\Discovery\Concerns\CacheableDiscovery;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
 use Studiometa\Foehn\PostTypes\PostTypeBuilder;
+use Studiometa\Foehn\PostTypes\PostTypeRegistry;
 use Timber\Post;
 
 /**
@@ -84,6 +85,9 @@ final class PostTypeDiscovery implements WpDiscovery
 
         // Register the post type
         $builder->register();
+
+        // Register in PostTypeRegistry for QueriesPostType trait
+        PostTypeRegistry::register($className, $attribute->name);
 
         // Register Timber class map
         $this->registerTimberClassMap($attribute->name, $className);

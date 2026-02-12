@@ -31,10 +31,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Twig/PHP file watching with full reload
   - Hot file generation for dev server detection
   - Auto DDEV proxy configuration
+- Add fluent `PostQueryBuilder` for null-safe query building ([#91], [#100]):
+  - Accumulates `WP_Query` parameters with fluent API
+  - Null-safe methods: `exclude()`, `page()`, `whereTax()`, `search()` skip empty values
+  - Escape hatch: `set()` and `merge()` for any `WP_Query` parameter
+  - Execution: `get()`, `first()`, `count()`, `exists()`
+- Add `QueriesPostType` trait with `query()`, `all()`, `find()`, `first()`, `count()`, `exists()` ([#91], [#100])
+- Add `PostTypeRegistry` for class-to-post-type mapping ([#91], [#100])
+- Add `Foehn\Models\Post` and `Foehn\Models\Page` base classes with query support ([#91], [#100])
 
+[#100]: https://github.com/studiometa/foehn-framework/pull/100
 [#98]: https://github.com/studiometa/foehn-framework/pull/98
 [#97]: https://github.com/studiometa/foehn-framework/pull/97
 [#96]: https://github.com/studiometa/foehn-framework/pull/96
+[#91]: https://github.com/studiometa/foehn-framework/issues/91
 [#89]: https://github.com/studiometa/foehn-framework/pull/89
 
 ## [0.4.1] - 2026-02-10

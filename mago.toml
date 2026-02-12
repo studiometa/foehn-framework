@@ -12,7 +12,7 @@ cyclomatic-complexity = { threshold = 55 }  # WP template hierarchy + opt-in hoo
 kan-defect = { threshold = 5.0 }            # Increased for complex discoveries
 halstead = { effort-threshold = 10000, volume-threshold = 2000, difficulty-threshold = 17 }
 too-many-enum-cases = { threshold = 30 }
-too-many-methods = { threshold = 20 }
+too-many-methods = { threshold = 25 }       # Query builders need many fluent methods
 too-many-properties = { threshold = 15 }    # Builders wrap many WP register args
 
 # Disable rules that don't fit WordPress/attribute patterns
