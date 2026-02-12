@@ -123,6 +123,43 @@ describe('TransientCache', function () {
         });
     });
 
+    describe('rememberForever', function () {
+        it('stores value with no expiration', function () {
+            $GLOBALS['wp_stub_transients'] = [];
+
+            $result = $this->cache->rememberForever('key', fn() => 'computed');
+
+            expect($result)->toBe('computed');
+
+            $calls = wp_stub_get_calls('set_transient');
+            expect($calls[0]['args']['expiration'])->toBe(0);
+        });
+    });
+
+    describe('tags', function () {
+        it('returns a TaggedCache instance', function () {
+            $tagged = $this->cache->tags(['products']);
+
+            expect($tagged)->toBeInstanceOf(\Studiometa\Foehn\Cache\TaggedCache::class);
+        });
+    });
+
+    describe('flushTags', function () {
+        it('flushes multiple tags', function () {
+            $GLOBALS['wp_stub_transients'] = [
+                'foehn_a' => 'data1',
+                'foehn_b' => 'data2',
+            ];
+
+            $this->cache->tags(['x'])->put('a', 'data1');
+            $this->cache->tags(['y'])->put('b', 'data2');
+
+            $flushed = $this->cache->flushTags(['x', 'y']);
+
+            expect($flushed)->toBe(2);
+        });
+    });
+
     describe('getPrefix', function () {
         it('returns the default prefix', function () {
             expect($this->cache->getPrefix())->toBe('foehn_');
