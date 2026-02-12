@@ -6,6 +6,7 @@ namespace Studiometa\Foehn\Blocks;
 
 use Studiometa\Foehn\Config\AcfConfig;
 use Studiometa\Foehn\Contracts\AcfBlockInterface;
+use Studiometa\Foehn\Contracts\Arrayable;
 
 /**
  * Handles rendering of ACF blocks.
@@ -42,6 +43,10 @@ final class AcfBlockRenderer
 
         // Compose the context
         $context = $block->compose($blockData, $fields);
+
+        if ($context instanceof Arrayable) {
+            $context = $context->toArray();
+        }
 
         // Add common block data to context
         $context = $this->enrichContext($context, $blockData, $isPreview);

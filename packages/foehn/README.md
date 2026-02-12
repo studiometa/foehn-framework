@@ -156,6 +156,57 @@ final readonly class HeroBlock implements AcfBlockInterface
 }
 ```
 
+### Typed DTOs for Block Context
+
+Instead of returning plain arrays from `compose()`, use typed DTOs for autocompletion and type safety:
+
+```php
+<?php
+
+use Studiometa\Foehn\Concerns\HasToArray;
+use Studiometa\Foehn\Contracts\Arrayable;
+use Studiometa\Foehn\Data\ImageData;
+use Studiometa\Foehn\Data\LinkData;
+
+final readonly class HeroContext implements Arrayable
+{
+    use HasToArray;
+
+    public function __construct(
+        public string $title,
+        public ?ImageData $background = null,
+        public ?LinkData $cta = null,
+        public string $height = 'medium',
+    ) {}
+}
+```
+
+Then use it in your block:
+
+```php
+public function compose(array $block, array $fields): HeroContext
+{
+    return new HeroContext(
+        title: $fields['title'] ?? '',
+        background: ImageData::fromAttachmentId($fields['background'] ?? null),
+        cta: LinkData::fromAcf($fields['cta_link'] ?? null),
+        height: $fields['height'] ?? 'medium',
+    );
+}
+```
+
+The DTO is automatically flattened to a snake_case array before reaching `render()` and Twig templates. Property names like `imageUrl` become `image_url` in the template context.
+
+**Built-in DTOs:**
+
+| DTO           | Description             | Factory                                  |
+| ------------- | ----------------------- | ---------------------------------------- |
+| `LinkData`    | Link/button fields      | `LinkData::fromAcf($acfLink)`            |
+| `ImageData`   | Image/attachment fields | `ImageData::fromAttachmentId($id)`       |
+| `SpacingData` | Spacing fields          | `SpacingData::fromAcf($fields, $prefix)` |
+
+All `compose()` methods on `AcfBlockInterface`, `BlockInterface` and `BlockPatternInterface` accept either `array` or `Arrayable` return types.
+
 ### Native Gutenberg Blocks with Interactivity API
 
 ```php

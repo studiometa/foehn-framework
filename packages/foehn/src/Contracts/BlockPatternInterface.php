@@ -14,7 +14,10 @@ interface BlockPatternInterface
     /**
      * Compose data for the pattern template.
      *
-     * @return array<string, mixed> Context variables for the template
+     * May return a plain array or an Arrayable DTO (which will be
+     * flattened to array before rendering).
+     *
+     * @return array<string, mixed>|Arrayable Context variables for the template
      */
-    public function compose(): array;
+    public function compose(): array|Arrayable;
 }
