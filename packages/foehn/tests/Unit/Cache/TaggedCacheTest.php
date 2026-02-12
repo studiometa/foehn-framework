@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-use Studiometa\Foehn\Helpers\Cache;
-use Studiometa\Foehn\Helpers\TaggedCache;
+use Studiometa\Foehn\Cache\TaggedCache;
+use Studiometa\Foehn\Cache\TransientCache;
 
 describe('TaggedCache', function () {
     beforeEach(function () {
         wp_stub_reset();
-        Cache::setPrefix('foehn_');
+        $this->cache = new TransientCache();
     });
 
     describe('put', function () {
         it('stores value in cache', function () {
-            Cache::tags(['products'])->put('products_list', ['item1', 'item2'], 3600);
+            $this->cache->tags(['products'])->put('products_list', ['item1', 'item2'], 3600);
 
             $calls = wp_stub_get_calls('set_transient');
             expect($calls)->toHaveCount(1);
@@ -22,7 +22,7 @@ describe('TaggedCache', function () {
         });
 
         it('registers key with tags', function () {
-            Cache::tags(['products', 'shop'])->put('products_list', 'value');
+            $this->cache->tags(['products', 'shop'])->put('products_list', 'value');
 
             $mapping = TaggedCache::getTagsMapping();
             expect($mapping)->toHaveKey('products');
@@ -32,8 +32,8 @@ describe('TaggedCache', function () {
         });
 
         it('does not duplicate keys in tag mapping', function () {
-            Cache::tags(['products'])->put('products_list', 'value1');
-            Cache::tags(['products'])->put('products_list', 'value2');
+            $this->cache->tags(['products'])->put('products_list', 'value1');
+            $this->cache->tags(['products'])->put('products_list', 'value2');
 
             $mapping = TaggedCache::getTagsMapping();
             expect($mapping['products'])->toHaveCount(1);
@@ -45,7 +45,7 @@ describe('TaggedCache', function () {
             $GLOBALS['wp_stub_transients'] = ['foehn_key' => 'cached'];
             $called = false;
 
-            $result = Cache::tags(['test'])->remember('key', 3600, function () use (&$called) {
+            $result = $this->cache->tags(['test'])->remember('key', 3600, function () use (&$called) {
                 $called = true;
 
                 return 'computed';
@@ -58,7 +58,11 @@ describe('TaggedCache', function () {
         it('computes and caches value with tags if not exists', function () {
             $GLOBALS['wp_stub_transients'] = [];
 
-            $result = Cache::tags(['products', 'archive'])->remember('products_page_1', 3600, fn() => 'computed');
+            $result = $this->cache->tags(['products', 'archive'])->remember(
+                'products_page_1',
+                3600,
+                fn() => 'computed',
+            );
 
             expect($result)->toBe('computed');
 
@@ -72,7 +76,7 @@ describe('TaggedCache', function () {
         it('stores value with no expiration', function () {
             $GLOBALS['wp_stub_transients'] = [];
 
-            Cache::tags(['permanent'])->rememberForever('key', fn() => 'value');
+            $this->cache->tags(['permanent'])->rememberForever('key', fn() => 'value');
 
             $calls = wp_stub_get_calls('set_transient');
             expect($calls[0]['args']['expiration'])->toBe(0);
@@ -81,7 +85,7 @@ describe('TaggedCache', function () {
 
     describe('forever', function () {
         it('stores value with no expiration', function () {
-            Cache::tags(['test'])->forever('key', 'value');
+            $this->cache->tags(['test'])->forever('key', 'value');
 
             $calls = wp_stub_get_calls('set_transient');
             expect($calls[0]['args']['expiration'])->toBe(0);
@@ -90,8 +94,8 @@ describe('TaggedCache', function () {
 
     describe('forget', function () {
         it('removes value from cache', function () {
-            Cache::tags(['products'])->put('products_list', 'value');
-            Cache::tags(['products'])->forget('products_list');
+            $this->cache->tags(['products'])->put('products_list', 'value');
+            $this->cache->tags(['products'])->forget('products_list');
 
             $calls = wp_stub_get_calls('delete_transient');
             expect($calls)->toHaveCount(1);
@@ -99,8 +103,8 @@ describe('TaggedCache', function () {
         });
 
         it('removes key from tag mapping', function () {
-            Cache::tags(['products', 'shop'])->put('products_list', 'value');
-            Cache::tags(['products'])->forget('products_list');
+            $this->cache->tags(['products', 'shop'])->put('products_list', 'value');
+            $this->cache->tags(['products'])->forget('products_list');
 
             $mapping = TaggedCache::getTagsMapping();
             expect($mapping)->not->toHaveKey('products');
@@ -116,11 +120,11 @@ describe('TaggedCache', function () {
                 'foehn_categories' => 'data3',
             ];
 
-            Cache::tags(['products'])->put('products_page_1', 'data1');
-            Cache::tags(['products'])->put('products_page_2', 'data2');
-            Cache::tags(['categories'])->put('categories', 'data3');
+            $this->cache->tags(['products'])->put('products_page_1', 'data1');
+            $this->cache->tags(['products'])->put('products_page_2', 'data2');
+            $this->cache->tags(['categories'])->put('categories', 'data3');
 
-            $flushed = Cache::flushTag('products');
+            $flushed = $this->cache->flushTag('products');
 
             expect($flushed)->toBe(2);
 
@@ -131,25 +135,25 @@ describe('TaggedCache', function () {
         });
 
         it('removes the tag from mapping', function () {
-            Cache::tags(['products'])->put('products_list', 'value');
+            $this->cache->tags(['products'])->put('products_list', 'value');
 
-            Cache::flushTag('products');
+            $this->cache->flushTag('products');
 
             $mapping = TaggedCache::getTagsMapping();
             expect($mapping)->not->toHaveKey('products');
         });
 
         it('returns 0 for non-existent tag', function () {
-            $flushed = Cache::flushTag('nonexistent');
+            $flushed = $this->cache->flushTag('nonexistent');
 
             expect($flushed)->toBe(0);
         });
 
         it('cleans up keys from other tags when flushed', function () {
-            Cache::tags(['products', 'archive'])->put('products_page_1', 'data1');
-            Cache::tags(['categories', 'archive'])->put('categories_list', 'data2');
+            $this->cache->tags(['products', 'archive'])->put('products_page_1', 'data1');
+            $this->cache->tags(['categories', 'archive'])->put('categories_list', 'data2');
 
-            Cache::flushTag('products');
+            $this->cache->flushTag('products');
 
             $mapping = TaggedCache::getTagsMapping();
             expect($mapping)->not->toHaveKey('products');
@@ -158,29 +162,23 @@ describe('TaggedCache', function () {
         });
 
         it('handles failed cache deletion gracefully', function () {
-            // Register a key with a tag but don't add it to transients
-            // so delete_transient will return false
-            Cache::tags(['products'])->put('products_list', 'data');
+            $this->cache->tags(['products'])->put('products_list', 'data');
 
             // Remove the transient so forget() returns false
             unset($GLOBALS['wp_stub_transients']['foehn_products_list']);
 
-            $flushed = Cache::flushTag('products');
+            $flushed = $this->cache->flushTag('products');
 
-            // Should return 0 since deletion failed
             expect($flushed)->toBe(0);
 
-            // Tag should still be removed from mapping
             $mapping = TaggedCache::getTagsMapping();
             expect($mapping)->not->toHaveKey('products');
         });
 
         it('removes empty tags after cleanup', function () {
-            // Create a scenario where tag 'archive' only contains keys from 'products'
-            Cache::tags(['products', 'archive'])->put('products_page_1', 'data1');
+            $this->cache->tags(['products', 'archive'])->put('products_page_1', 'data1');
 
-            // Flush products - this should also remove 'archive' since it becomes empty
-            Cache::flushTag('products');
+            $this->cache->flushTag('products');
 
             $mapping = TaggedCache::getTagsMapping();
             expect($mapping)->not->toHaveKey('products');
@@ -196,11 +194,11 @@ describe('TaggedCache', function () {
                 'foehn_users' => 'data3',
             ];
 
-            Cache::tags(['products'])->put('products', 'data1');
-            Cache::tags(['categories'])->put('categories', 'data2');
-            Cache::tags(['users'])->put('users', 'data3');
+            $this->cache->tags(['products'])->put('products', 'data1');
+            $this->cache->tags(['categories'])->put('categories', 'data2');
+            $this->cache->tags(['users'])->put('users', 'data3');
 
-            $flushed = Cache::flushTags(['products', 'categories']);
+            $flushed = $this->cache->flushTags(['products', 'categories']);
 
             expect($flushed)->toBe(2);
 
@@ -213,8 +211,8 @@ describe('TaggedCache', function () {
 
     describe('clearTagsMapping', function () {
         it('clears all tag mappings', function () {
-            Cache::tags(['products'])->put('key1', 'value1');
-            Cache::tags(['categories'])->put('key2', 'value2');
+            $this->cache->tags(['products'])->put('key1', 'value1');
+            $this->cache->tags(['categories'])->put('key2', 'value2');
 
             TaggedCache::clearTagsMapping();
 
@@ -232,8 +230,8 @@ describe('TaggedCache', function () {
         });
 
         it('returns current mapping', function () {
-            Cache::tags(['a', 'b'])->put('key1', 'value1');
-            Cache::tags(['b', 'c'])->put('key2', 'value2');
+            $this->cache->tags(['a', 'b'])->put('key1', 'value1');
+            $this->cache->tags(['b', 'c'])->put('key2', 'value2');
 
             $mapping = TaggedCache::getTagsMapping();
 

@@ -2,23 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Studiometa\Foehn\Helpers;
+namespace Studiometa\Foehn\Cache;
+
+use Studiometa\Foehn\Contracts\CacheInterface;
 
 /**
  * Tagged cache wrapper for grouping cache keys by tags.
  *
  * Allows flushing multiple cache keys at once by tag.
- *
- * Usage:
- * ```php
- * use Studiometa\Foehn\Helpers\Cache;
- *
- * // Store with tags
- * Cache::tags(['products', 'shop'])->remember('products_list', 3600, fn() => get_products());
- *
- * // Invalidate by tag (in hook class)
- * Cache::flushTag('products'); // Clears all keys tagged with 'products'
- * ```
+ * Tag-to-key mappings are stored in a WordPress option.
  */
 final class TaggedCache
 {
@@ -28,10 +20,12 @@ final class TaggedCache
     private const string TAGS_OPTION = 'foehn_cache_tags';
 
     /**
-     * @param array<string> $tags Tags to associate with cached keys
+     * @param CacheInterface $cache The underlying cache instance
+     * @param list<string> $tags Tags to associate with cached keys
      */
     public function __construct(
-        private array $tags,
+        private readonly CacheInterface $cache,
+        private readonly array $tags,
     ) {}
 
     /**
@@ -45,7 +39,7 @@ final class TaggedCache
      */
     public function remember(string $key, int $ttl, callable $callback): mixed
     {
-        $value = Cache::get($key);
+        $value = $this->cache->get($key);
 
         if ($value !== null) {
             return $value;
@@ -76,21 +70,16 @@ final class TaggedCache
      * @param string $key Cache key
      * @param mixed $value Value to cache
      * @param int $ttl Time to live in seconds (0 = no expiration)
-     * @return bool True on success
      */
     public function put(string $key, mixed $value, int $ttl = 0): bool
     {
         $this->registerKeyWithTags($key);
 
-        return Cache::set($key, $value, $ttl);
+        return $this->cache->set($key, $value, $ttl);
     }
 
     /**
      * Store a value forever (no expiration).
-     *
-     * @param string $key Cache key
-     * @param mixed $value Value to cache
-     * @return bool True on success
      */
     public function forever(string $key, mixed $value): bool
     {
@@ -99,36 +88,22 @@ final class TaggedCache
 
     /**
      * Remove a value from cache and its tag associations.
-     *
-     * @param string $key Cache key
-     * @return bool True on success
      */
     public function forget(string $key): bool
     {
         $this->unregisterKeyFromTags($key);
 
-        return Cache::forget($key);
-    }
-
-    /**
-     * Get the current tag → keys mapping.
-     *
-     * @return array<string, array<string>>
-     */
-    public static function getTagsMapping(): array
-    {
-        $mapping = get_option(self::TAGS_OPTION, []);
-
-        return is_array($mapping) ? $mapping : [];
+        return $this->cache->forget($key);
     }
 
     /**
      * Flush all cache keys associated with a tag.
      *
+     * @param CacheInterface $cache The cache instance to use for deletion
      * @param string $tag Tag to flush
      * @return int Number of keys flushed
      */
-    public static function flushTag(string $tag): int
+    public static function flush(CacheInterface $cache, string $tag): int
     {
         $mapping = self::getTagsMapping();
 
@@ -140,7 +115,7 @@ final class TaggedCache
         $flushed = 0;
 
         foreach ($keys as $key) {
-            if (!Cache::forget($key)) {
+            if (!$cache->forget($key)) {
                 continue;
             }
 
@@ -158,24 +133,19 @@ final class TaggedCache
     }
 
     /**
-     * Flush all cache keys associated with multiple tags.
+     * Get the current tag → keys mapping.
      *
-     * @param array<string> $tags Tags to flush
-     * @return int Total number of keys flushed
+     * @return array<string, list<string>>
      */
-    public static function flushTags(array $tags): int
+    public static function getTagsMapping(): array
     {
-        $flushed = 0;
+        $mapping = get_option(self::TAGS_OPTION, []);
 
-        foreach ($tags as $tag) {
-            $flushed += self::flushTag($tag);
-        }
-
-        return $flushed;
+        return is_array($mapping) ? $mapping : [];
     }
 
     /**
-     * Clear all tag mappings (useful for testing).
+     * Clear all tag mappings.
      */
     public static function clearTagsMapping(): void
     {
@@ -212,7 +182,6 @@ final class TaggedCache
         foreach ($mapping as $tag => $keys) {
             $mapping[$tag] = array_values(array_filter($keys, static fn(string $k) => $k !== $key));
 
-            // Remove empty tags
             if (empty($mapping[$tag])) {
                 unset($mapping[$tag]);
             }
@@ -224,8 +193,8 @@ final class TaggedCache
     /**
      * Remove keys from all tags after a flush.
      *
-     * @param array<string> $keysToRemove Keys to remove
-     * @param array<string, array<string>> $mapping Current mapping
+     * @param list<string> $keysToRemove Keys to remove
+     * @param array<string, list<string>> $mapping Current mapping
      */
     private static function cleanupOrphanedKeys(array $keysToRemove, array $mapping): void
     {
@@ -255,7 +224,7 @@ final class TaggedCache
     /**
      * Save the tag → keys mapping.
      *
-     * @param array<string, array<string>> $mapping
+     * @param array<string, list<string>> $mapping
      */
     private static function saveTagsMapping(array $mapping): void
     {

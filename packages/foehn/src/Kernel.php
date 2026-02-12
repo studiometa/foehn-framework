@@ -6,11 +6,13 @@ namespace Studiometa\Foehn;
 
 use RuntimeException;
 use Studiometa\Foehn\Blocks\AcfBlockRenderer;
+use Studiometa\Foehn\Cache\TransientCache;
 use Studiometa\Foehn\Config\AcfConfig;
 use Studiometa\Foehn\Config\FoehnConfig;
 use Studiometa\Foehn\Config\RenderApiConfig;
 use Studiometa\Foehn\Config\RestConfig;
 use Studiometa\Foehn\Config\TimberConfig;
+use Studiometa\Foehn\Contracts\CacheInterface;
 use Studiometa\Foehn\Contracts\ViewEngineInterface;
 use Studiometa\Foehn\Discovery\DiscoveryCache;
 use Studiometa\Foehn\Discovery\DiscoveryRunner;
@@ -237,6 +239,9 @@ final class Kernel
         if (!$this->container->has(RenderApiConfig::class)) {
             $this->container->singleton(RenderApiConfig::class, static fn() => new RenderApiConfig());
         }
+
+        // Register cache service
+        $this->container->singleton(CacheInterface::class, static fn() => new TransientCache());
 
         // Register discovery cache
         $this->container->singleton(DiscoveryCache::class, fn() => new DiscoveryCache($this->foehnConfig));
