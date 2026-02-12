@@ -3,8 +3,10 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Blocks\AcfBlockRenderer;
+use Studiometa\Foehn\Concerns\HasToArray;
 use Studiometa\Foehn\Config\AcfConfig;
 use Studiometa\Foehn\Contracts\AcfBlockInterface;
+use Studiometa\Foehn\Contracts\Arrayable;
 
 describe('AcfBlockRenderer', function () {
     it('renders a block with composed context', function () {
@@ -163,6 +165,57 @@ describe('AcfBlockRenderer', function () {
         $result = $renderer->render($block, $blockData, false);
 
         expect($result)->toBe('0');
+    });
+
+    it('flattens Arrayable DTOs from compose() to array', function () {
+        $renderer = new AcfBlockRenderer();
+        $capturedContext = [];
+
+        $dto = new class('Hello', 'https://example.com') implements Arrayable {
+            use HasToArray;
+
+            public function __construct(
+                public string $title,
+                public string $imageUrl,
+            ) {}
+        };
+
+        $block = new class($capturedContext, $dto) implements AcfBlockInterface {
+            public function __construct(
+                private array &$captured,
+                private Arrayable $dto,
+            ) {}
+
+            public static function fields(): \StoutLogic\AcfBuilder\FieldsBuilder
+            {
+                return new \StoutLogic\AcfBuilder\FieldsBuilder('test');
+            }
+
+            public function compose(array $block, array $fields): Arrayable
+            {
+                return $this->dto;
+            }
+
+            public function render(array $context, bool $isPreview = false): string
+            {
+                $this->captured = $context;
+                return sprintf('%s|%s', $context['title'], $context['image_url']);
+            }
+        };
+
+        $blockData = [
+            'id' => 'block_dto',
+            'name' => 'acf/dto-test',
+            'data' => [],
+        ];
+
+        $result = $renderer->render($block, $blockData, false);
+
+        // DTO properties flattened to snake_case keys
+        expect($result)->toBe('Hello|https://example.com');
+        // Block metadata still enriched
+        expect($capturedContext['block_id'])->toBe('block_dto');
+        expect($capturedContext['is_preview'])->toBeFalse();
     });
 });
 
