@@ -1,4 +1,6 @@
-# Installation
+# Manual Installation
+
+This guide covers installing Føhn manually into an existing theme. For new projects, we recommend using the [Starter Theme](./starter-theme.md) instead.
 
 ## Requirements
 
