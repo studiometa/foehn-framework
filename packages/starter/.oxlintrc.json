@@ -1,7 +1,4 @@
 {
-  "$schema": "https://raw.githubusercontent.com/nicolo-ribaudo/oxlint-config-inspector/refs/heads/main/bundled-schema.json",
-  "rules": {
-    "no-unused-vars": "warn",
-    "no-console": "warn"
-  }
+  "$schema": "https://raw.githubusercontent.com/oxc-project/oxc/main/npm/oxlint/configuration_schema.json",
+  "extends": ["../../node_modules/@studiometa/oxlint-config/oxlintrc.json"]
 }
