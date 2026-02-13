@@ -175,23 +175,39 @@ final class QueryExtension extends AbstractExtension
         $value = (string) $value;
 
         if ($this->contains($key, $value)) {
-            // Remove value
-            $current = $this->get($key, []);
-            $current = is_array($current) ? $current : [$current];
-            $current = array_filter($current, static fn(mixed $v): bool => (string) $v !== $value);
-
-            if ($current === []) {
-                return $this->urlWithout($key);
-            }
-
-            return $this->escUrl($this->addQueryArg([$key => array_values($current)]));
+            return $this->urlToggleRemove($key, $value);
         }
 
-        // Add value
+        return $this->urlToggleAdd($key, $value);
+    }
+
+    /**
+     * Remove a value from a query parameter array.
+     */
+    private function urlToggleRemove(string $key, string $value): string
+    {
         $current = $this->get($key, []);
+        $current = is_array($current) ? $current : [$current];
+        $current = array_filter($current, static fn(mixed $v): bool => (string) $v !== $value);
+
+        if ($current === []) {
+            return $this->urlWithout($key);
+        }
+
+        return $this->escUrl($this->addQueryArg([$key => array_values($current)]));
+    }
+
+    /**
+     * Add a value to a query parameter array.
+     */
+    private function urlToggleAdd(string $key, string $value): string
+    {
+        $current = $this->get($key, []);
+
         if (!is_array($current)) {
             $current = $current !== null ? [$current] : [];
         }
+
         $current[] = $value;
 
         return $this->escUrl($this->addQueryArg([$key => array_values($current)]));
