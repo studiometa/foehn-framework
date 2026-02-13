@@ -7,7 +7,7 @@ It provides attribute-based auto-discovery for hooks, post types, blocks, and mo
 
 ## Tech Stack
 
-- **PHP 8.4+** (required for modern features)
+- **PHP 8.5+** (required for modern features)
 - **Tempest Framework** - Discovery, DI container, reflection
 - **Timber/Twig** - Template engine for WordPress
 - **Pest** - Testing framework

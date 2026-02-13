@@ -133,7 +133,7 @@ use Studiometa\Foehn\Contracts\BlockPatternInterface;
 )]
 final class LatestPosts implements BlockPatternInterface
 {
-    public function context(): array
+    public function compose(): array
     {
         $posts = \Timber\Timber::get_posts([
             'post_type' => 'post',

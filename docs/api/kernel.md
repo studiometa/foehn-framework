@@ -104,6 +104,19 @@ Kernel::boot(__DIR__ . '/app', [
 
 See [FoehnConfig](./foehn-config), [Discovery Cache](/guide/discovery-cache), and [Built-in Hooks](/guide/hooks#built-in-hooks) for details.
 
+### Registered Services
+
+The kernel automatically registers these services as singletons:
+
+| Service                   | Implementation     | Description                     |
+| ------------------------- | ------------------ | ------------------------------- |
+| `CacheInterface`          | `TransientCache`   | WordPress transient-based cache |
+| `ViewEngineInterface`     | `TimberViewEngine` | Twig template rendering         |
+| `ContextProviderRegistry` | —                  | Context provider management     |
+| `DiscoveryRunner`         | —                  | Discovery orchestration         |
+| `AcfBlockRenderer`        | —                  | ACF block rendering             |
+| `RenderApi`               | —                  | Template render API             |
+
 ### getInstance()
 
 Get the singleton kernel instance.

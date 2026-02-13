@@ -92,12 +92,17 @@ By default, Føhn automatically transforms ACF field values into Timber objects.
 
 ### Enabled by Default
 
-Field transformation is enabled by default. To disable it:
+Field transformation is enabled by default. To disable it, create an ACF config file:
 
 ```php
-Kernel::boot(__DIR__, [
-    'acf_transform_fields' => false,
-]);
+<?php
+// app/acf.config.php
+
+use Studiometa\Foehn\Config\AcfConfig;
+
+return new AcfConfig(
+    transformFields: false,
+);
 ```
 
 ### Transformed Field Types
@@ -402,25 +407,25 @@ public function compose(array $block, array $fields): array
 
 ### Available Methods
 
-| Method | Description |
-| ------ | ----------- |
-| `validateRequired(array $fields, array $required)` | Throws if required fields are missing or empty |
-| `validateType(mixed $value, string $type)` | Returns `true` if value matches expected type |
-| `sanitizeField(mixed $value, string $type)` | Coerces value to expected type |
-| `validateFields(array $fields, array $schema)` | Validates and sanitizes fields against a schema |
+| Method                                             | Description                                     |
+| -------------------------------------------------- | ----------------------------------------------- |
+| `validateRequired(array $fields, array $required)` | Throws if required fields are missing or empty  |
+| `validateType(mixed $value, string $type)`         | Returns `true` if value matches expected type   |
+| `sanitizeField(mixed $value, string $type)`        | Coerces value to expected type                  |
+| `validateFields(array $fields, array $schema)`     | Validates and sanitizes fields against a schema |
 
 ### Supported Types
 
-| Type | Description |
-| ---- | ----------- |
-| `string` | Trimmed string |
-| `int` | Integer (coerced from numeric strings) |
-| `float` | Float (coerced from numeric values) |
-| `bool` | Boolean (handles `'true'`, `'yes'`, `'1'`, `'on'`) |
-| `array` | Array |
-| `html` | HTML content (sanitized via `wp_kses_post`) |
-| `email` | Email address (sanitized) |
-| `url` | URL (sanitized via `esc_url_raw`) |
+| Type     | Description                                        |
+| -------- | -------------------------------------------------- |
+| `string` | Trimmed string                                     |
+| `int`    | Integer (coerced from numeric strings)             |
+| `float`  | Float (coerced from numeric values)                |
+| `bool`   | Boolean (handles `'true'`, `'yes'`, `'1'`, `'on'`) |
+| `array`  | Array                                              |
+| `html`   | HTML content (sanitized via `wp_kses_post`)        |
+| `email`  | Email address (sanitized)                          |
+| `url`    | URL (sanitized via `esc_url_raw`)                  |
 
 ### Advanced Validation
 

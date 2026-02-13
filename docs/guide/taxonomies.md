@@ -11,6 +11,7 @@ Føhn uses `#[AsTaxonomy]` to register custom taxonomies.
 namespace App\Taxonomies;
 
 use Studiometa\Foehn\Attributes\AsTaxonomy;
+use Timber\Term;
 
 #[AsTaxonomy(
     name: 'product_category',
@@ -19,7 +20,7 @@ use Studiometa\Foehn\Attributes\AsTaxonomy;
     plural: 'Categories',
     hierarchical: true,
 )]
-final class ProductCategory
+final class ProductCategory extends Term
 {
 }
 ```
@@ -32,6 +33,7 @@ final class ProductCategory
 namespace App\Taxonomies;
 
 use Studiometa\Foehn\Attributes\AsTaxonomy;
+use Timber\Term;
 
 #[AsTaxonomy(
     name: 'product_category',
@@ -44,7 +46,7 @@ use Studiometa\Foehn\Attributes\AsTaxonomy;
     showAdminColumn: true,
     rewriteSlug: 'shop/category',
 )]
-final class ProductCategory
+final class ProductCategory extends Term
 {
 }
 ```
@@ -59,7 +61,7 @@ final class ProductCategory
     postTypes: ['product'],
     hierarchical: true,
 )]
-final class ProductCategory {}
+final class ProductCategory extends Term {}
 ```
 
 ### Flat (like Tags)
@@ -70,7 +72,7 @@ final class ProductCategory {}
     postTypes: ['product'],
     hierarchical: false,
 )]
-final class ProductTag {}
+final class ProductTag extends Term {}
 ```
 
 ## Multiple Post Types
@@ -84,7 +86,7 @@ A taxonomy can be attached to multiple post types:
     singular: 'Location',
     plural: 'Locations',
 )]
-final class Location {}
+final class Location extends Term {}
 ```
 
 ## Advanced Configuration
@@ -98,6 +100,8 @@ namespace App\Taxonomies;
 
 use Studiometa\Foehn\Attributes\AsTaxonomy;
 use Studiometa\Foehn\Contracts\ConfiguresTaxonomy;
+use Studiometa\Foehn\PostTypes\TaxonomyBuilder;
+use Timber\Term;
 
 #[AsTaxonomy(
     name: 'skill',
@@ -105,26 +109,24 @@ use Studiometa\Foehn\Contracts\ConfiguresTaxonomy;
     singular: 'Skill',
     plural: 'Skills',
 )]
-final class Skill implements ConfiguresTaxonomy
+final class Skill extends Term implements ConfiguresTaxonomy
 {
     /**
-     * Customize the taxonomy arguments.
+     * Customize the taxonomy via the builder.
      */
-    public static function taxonomyArgs(array $args): array
+    public static function configureTaxonomy(TaxonomyBuilder $builder): TaxonomyBuilder
     {
-        // Custom capabilities
-        $args['capabilities'] = [
-            'manage_terms' => 'manage_skills',
-            'edit_terms' => 'edit_skills',
-            'delete_terms' => 'delete_skills',
-            'assign_terms' => 'assign_skills',
-        ];
-
-        // Custom labels
-        $args['labels']['add_new_item'] = 'Add New Skill';
-        $args['labels']['search_items'] = 'Search Skills';
-
-        return $args;
+        return $builder
+            ->setCapabilities([
+                'manage_terms' => 'manage_skills',
+                'edit_terms' => 'edit_skills',
+                'delete_terms' => 'delete_skills',
+                'assign_terms' => 'assign_skills',
+            ])
+            ->setLabels([
+                'add_new_item' => 'Add New Skill',
+                'search_items' => 'Search Skills',
+            ]);
     }
 }
 ```
@@ -180,17 +182,19 @@ app/
 
 ## Attribute Parameters
 
-| Parameter         | Type       | Default    | Description                    |
-| ----------------- | ---------- | ---------- | ------------------------------ |
-| `name`            | `string`   | _required_ | Taxonomy slug                  |
-| `postTypes`       | `string[]` | `[]`       | Associated post types          |
-| `singular`        | `?string`  | `null`     | Singular label                 |
-| `plural`          | `?string`  | `null`     | Plural label                   |
-| `public`          | `bool`     | `true`     | Public visibility              |
-| `hierarchical`    | `bool`     | `false`    | Hierarchical (like categories) |
-| `showInRest`      | `bool`     | `true`     | REST API & Gutenberg support   |
-| `showAdminColumn` | `bool`     | `true`     | Show in admin list             |
-| `rewriteSlug`     | `?string`  | `null`     | Custom URL slug                |
+| Parameter         | Type                    | Default    | Description                                        |
+| ----------------- | ----------------------- | ---------- | -------------------------------------------------- |
+| `name`            | `string`                | _required_ | Taxonomy slug                                      |
+| `postTypes`       | `string[]`              | `[]`       | Associated post types                              |
+| `singular`        | `?string`               | `null`     | Singular label                                     |
+| `plural`          | `?string`               | `null`     | Plural label                                       |
+| `public`          | `bool`                  | `true`     | Public visibility                                  |
+| `hierarchical`    | `bool`                  | `false`    | Hierarchical (like categories)                     |
+| `showInRest`      | `bool`                  | `true`     | REST API & Gutenberg support                       |
+| `showAdminColumn` | `bool`                  | `true`     | Show in admin list                                 |
+| `rewriteSlug`     | `?string`               | `null`     | Custom URL slug (shorthand for `rewrite`)          |
+| `labels`          | `array<string, string>` | `[]`       | Custom labels (merged with auto-generated ones)    |
+| `rewrite`         | `array\|false\|null`    | `null`     | Full rewrite config, `false` to disable, or `null` |
 
 ## See Also
 

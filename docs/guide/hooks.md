@@ -212,15 +212,20 @@ Føhn provides a collection of **opt-in** reusable hook classes for common WordP
 
 ### Enabling Built-in Hooks
 
+Create a `foehn.config.php` file in your app directory:
+
 ```php
-use Studiometa\Foehn\Kernel;
+<?php
+// app/foehn.config.php
+
+use Studiometa\Foehn\Config\FoehnConfig;
 use Studiometa\Foehn\Hooks\Cleanup\DisableEmoji;
 use Studiometa\Foehn\Hooks\Cleanup\CleanHeadTags;
 use Studiometa\Foehn\Hooks\Security\SecurityHeaders;
 use Studiometa\Foehn\Hooks\YouTubeNoCookieHooks;
 
-Kernel::boot(__DIR__ . '/app', [
-    'hooks' => [
+return new FoehnConfig(
+    hooks: [
         // Cleanup
         DisableEmoji::class,
         CleanHeadTags::class,
@@ -231,7 +236,7 @@ Kernel::boot(__DIR__ . '/app', [
         // GDPR
         YouTubeNoCookieHooks::class,
     ],
-]);
+);
 ```
 
 ### Cleanup Hooks
@@ -282,7 +287,10 @@ Located in `Studiometa\Foehn\Hooks`:
 ### Example: Production Configuration
 
 ```php
-use Studiometa\Foehn\Kernel;
+<?php
+// app/foehn.config.php
+
+use Studiometa\Foehn\Config\FoehnConfig;
 use Studiometa\Foehn\Hooks\Cleanup\{
     CleanContent,
     CleanHeadTags,
@@ -297,10 +305,11 @@ use Studiometa\Foehn\Hooks\Security\{
     SecurityHeaders,
 };
 use Studiometa\Foehn\Hooks\YouTubeNoCookieHooks;
+use Tempest\Core\DiscoveryCacheStrategy;
 
-Kernel::boot(__DIR__ . '/app', [
-    'discovery_cache' => 'full',
-    'hooks' => [
+return new FoehnConfig(
+    discoveryCacheStrategy: DiscoveryCacheStrategy::FULL,
+    hooks: [
         // Cleanup for leaner output
         CleanContent::class,
         CleanHeadTags::class,
@@ -317,7 +326,7 @@ Kernel::boot(__DIR__ . '/app', [
         // GDPR compliance
         YouTubeNoCookieHooks::class,
     ],
-]);
+);
 ```
 
 ## See Also

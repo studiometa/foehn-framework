@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use Studiometa\Foehn\Attributes\AsPostType;
-use Timber\Post as TimberPost;
+use Studiometa\Foehn\Models\Post;
 
 #[AsPostType(
     name: 'testimonial',
@@ -16,7 +16,7 @@ use Timber\Post as TimberPost;
     menuIcon: 'dashicons-format-quote',
     supports: ['title', 'editor', 'thumbnail'],
 )]
-final class Testimonial extends TimberPost
+final class Testimonial extends Post
 {
     public function authorName(): string
     {

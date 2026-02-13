@@ -25,9 +25,9 @@ interface AcfBlockInterface
      *
      * @param array<string, mixed> $block Block data from ACF
      * @param array<string, mixed> $fields Field values from get_fields()
-     * @return array<string, mixed> Context for the template
+     * @return array<string, mixed>|Arrayable Context for the template
      */
-    public function compose(array $block, array $fields): array;
+    public function compose(array $block, array $fields): array|Arrayable;
 
     /**
      * Render the block.

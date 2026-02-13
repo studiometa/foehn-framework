@@ -88,20 +88,20 @@ final class TeamMember extends Post {}
 
 ### Taxonomies
 
-| Convention     | Example              |
-| -------------- | -------------------- |
-| **Location**   | `app/Taxonomies/`    |
-| **Class name** | Singular PascalCase  |
-| **File name**  | `{ClassName}.php`    |
+| Convention     | Example             |
+| -------------- | ------------------- |
+| **Location**   | `app/Taxonomies/`   |
+| **Class name** | Singular PascalCase |
+| **File name**  | `{ClassName}.php`   |
 
 ```php
 // app/Taxonomies/ProductCategory.php
 #[AsTaxonomy(name: 'product_category', postTypes: ['product'])]
-final class ProductCategory {}
+final class ProductCategory extends Term {}
 
 // app/Taxonomies/EventType.php
 #[AsTaxonomy(name: 'event_type', postTypes: ['event'])]
-final class EventType {}
+final class EventType extends Term {}
 ```
 
 ### ACF Blocks
@@ -242,8 +242,8 @@ final class NewsletterEndpoint {
 
 ```php
 // app/Shortcodes/ButtonShortcode.php
-#[AsShortcode('button')]
 final class ButtonShortcode {
+    #[AsShortcode('button')]
     public function render(array $atts, ?string $content): string {}
 }
 ```
@@ -336,30 +336,30 @@ Environment-specific configs are also supported:
 
 ### Template Locations
 
-| Template Type           | Location                | Example                                             |
-| ----------------------- | ----------------------- | --------------------------------------------------- |
-| **Base layouts**        | `templates/layouts/`    | `templates/layouts/base.twig`                       |
-| **Block templates**     | `templates/blocks/`     | `templates/blocks/hero.twig`                        |
-| **Components**          | `templates/components/` | `templates/components/button.twig`                  |
-| **Page templates**      | `templates/pages/`      | `templates/pages/home.twig`                         |
-| **Pattern templates**   | `templates/patterns/`   | `templates/patterns/hero.twig`                      |
+| Template Type         | Location                | Example                            |
+| --------------------- | ----------------------- | ---------------------------------- |
+| **Base layouts**      | `templates/layouts/`    | `templates/layouts/base.twig`      |
+| **Block templates**   | `templates/blocks/`     | `templates/blocks/hero.twig`       |
+| **Components**        | `templates/components/` | `templates/components/button.twig` |
+| **Page templates**    | `templates/pages/`      | `templates/pages/home.twig`        |
+| **Pattern templates** | `templates/patterns/`   | `templates/patterns/hero.twig`     |
 
 ### Template Naming
 
-| WordPress Hierarchy       | Twig Template                                                    |
-| ------------------------- | ---------------------------------------------------------------- |
-| `index.php`               | `templates/pages/index.twig`                                     |
-| `front-page.php`          | `templates/pages/home.twig`                                      |
-| `single.php`              | `templates/pages/single.twig`                                    |
-| `single-{post_type}.php`  | `templates/pages/single-{post_type}.twig`                        |
-| `archive.php`             | `templates/pages/archive.twig`                                   |
-| `archive-{post_type}.php` | `templates/pages/archive-{post_type}.twig`                       |
-| `page.php`                | `templates/pages/page.twig`                                      |
-| `page-{slug}.php`         | `templates/pages/page-{slug}.twig`                               |
-| `category.php`            | `templates/pages/category.twig`                                  |
-| `taxonomy-{taxonomy}.php` | `templates/pages/taxonomy-{taxonomy}.twig`                       |
-| `search.php`              | `templates/pages/search.twig`                                    |
-| `404.php`                 | `templates/pages/404.twig`                                       |
+| WordPress Hierarchy       | Twig Template                              |
+| ------------------------- | ------------------------------------------ |
+| `index.php`               | `templates/pages/index.twig`               |
+| `front-page.php`          | `templates/pages/home.twig`                |
+| `single.php`              | `templates/pages/single.twig`              |
+| `single-{post_type}.php`  | `templates/pages/single-{post_type}.twig`  |
+| `archive.php`             | `templates/pages/archive.twig`             |
+| `archive-{post_type}.php` | `templates/pages/archive-{post_type}.twig` |
+| `page.php`                | `templates/pages/page.twig`                |
+| `page-{slug}.php`         | `templates/pages/page-{slug}.twig`         |
+| `category.php`            | `templates/pages/category.twig`            |
+| `taxonomy-{taxonomy}.php` | `templates/pages/taxonomy-{taxonomy}.twig` |
+| `search.php`              | `templates/pages/search.twig`              |
+| `404.php`                 | `templates/pages/404.twig`                 |
 
 ### Block Template Naming
 
@@ -436,12 +436,12 @@ If migrating from `studiometa/wp-toolkit`, the directory structure changes signi
 
 ### Key Changes
 
-| wp-toolkit                            | Føhn                               |
-| ------------------------------------- | ---------------------------------- |
-| `app/PostTypes/ProductPostType.php`   | `app/Models/Product.php`           |
-| `app/Taxonomies/CategoryTaxonomy.php` | `app/Taxonomies/Category.php`      |
-| `app/Blocks/HeroBlock.php`            | `app/Blocks/Hero/HeroBlock.php`    |
-| Manual Manager registration           | Automatic discovery                |
+| wp-toolkit                            | Føhn                            |
+| ------------------------------------- | ------------------------------- |
+| `app/PostTypes/ProductPostType.php`   | `app/Models/Product.php`        |
+| `app/Taxonomies/CategoryTaxonomy.php` | `app/Taxonomies/Category.php`   |
+| `app/Blocks/HeroBlock.php`            | `app/Blocks/Hero/HeroBlock.php` |
+| Manual Manager registration           | Automatic discovery             |
 
 ### File Relocation Checklist
 
@@ -535,7 +535,7 @@ If you prefer to configure Mago manually, add the following rules to your theme'
 <summary>Click to expand full configuration</summary>
 
 ```toml
-php-version = "8.4"
+php-version = "8.5"
 
 [source]
 paths = ["app"]
@@ -579,24 +579,25 @@ must-be-final = true
 reason        = "Hook classes must be final and named *Hooks."
 
 # -----------------------------------------------------------------------------
-# Models (Post Types): Must be final and extend Timber\Post
+# Models (Post Types): Must be final and extend Foehn\Models\Post
 # -----------------------------------------------------------------------------
 [[guard.structural.rules]]
 on            = "App\\Models\\**"
 target        = "class"
 must-be-final = true
-must-extend   = "Timber\\Post"
+must-extend   = "Studiometa\\Foehn\\Models\\Post"
 not-on        = "App\\Models\\**Interface"
-reason        = "Model classes must be final and extend Timber\\Post."
+reason        = "Model classes must be final and extend Studiometa\\Foehn\\Models\\Post."
 
 # -----------------------------------------------------------------------------
-# Taxonomies: Must be final
+# Taxonomies: Must be final and extend Timber\Term
 # -----------------------------------------------------------------------------
 [[guard.structural.rules]]
 on            = "App\\Taxonomies\\**"
 target        = "class"
 must-be-final = true
-reason        = "Taxonomy classes must be final."
+must-extend   = "Timber\\Term"
+reason        = "Taxonomy classes must be final and extend Timber\\Term."
 
 # -----------------------------------------------------------------------------
 # Patterns: Must be final readonly, named *Pattern, implement interface

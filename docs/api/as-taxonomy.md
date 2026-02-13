@@ -18,23 +18,27 @@ final readonly class AsTaxonomy
         public bool $showInRest = true,
         public bool $showAdminColumn = true,
         public ?string $rewriteSlug = null,
+        public array $labels = [],
+        public array|false|null $rewrite = null,
     ) {}
 }
 ```
 
 ## Parameters
 
-| Parameter         | Type       | Default | Description                    |
-| ----------------- | ---------- | ------- | ------------------------------ |
-| `name`            | `string`   | —       | Taxonomy slug (required)       |
-| `postTypes`       | `string[]` | `[]`    | Associated post type slugs     |
-| `singular`        | `?string`  | `null`  | Singular label                 |
-| `plural`          | `?string`  | `null`  | Plural label                   |
-| `public`          | `bool`     | `true`  | Whether publicly visible       |
-| `hierarchical`    | `bool`     | `false` | Hierarchical like categories   |
-| `showInRest`      | `bool`     | `true`  | Enable REST API and Gutenberg  |
-| `showAdminColumn` | `bool`     | `true`  | Show column in admin post list |
-| `rewriteSlug`     | `?string`  | `null`  | Custom URL slug                |
+| Parameter         | Type                    | Default | Description                                        |
+| ----------------- | ----------------------- | ------- | -------------------------------------------------- |
+| `name`            | `string`                | —       | Taxonomy slug (required)                           |
+| `postTypes`       | `string[]`              | `[]`    | Associated post type slugs                         |
+| `singular`        | `?string`               | `null`  | Singular label                                     |
+| `plural`          | `?string`               | `null`  | Plural label                                       |
+| `public`          | `bool`                  | `true`  | Whether publicly visible                           |
+| `hierarchical`    | `bool`                  | `false` | Hierarchical like categories                       |
+| `showInRest`      | `bool`                  | `true`  | Enable REST API and Gutenberg                      |
+| `showAdminColumn` | `bool`                  | `true`  | Show column in admin post list                     |
+| `rewriteSlug`     | `?string`               | `null`  | Custom URL slug (shorthand for `rewrite`)          |
+| `labels`          | `array<string, string>` | `[]`    | Custom labels (merged with auto-generated ones)    |
+| `rewrite`         | `array\|false\|null`    | `null`  | Full rewrite config, `false` to disable, or `null` |
 
 ## Usage
 
@@ -43,9 +47,10 @@ final readonly class AsTaxonomy
 ```php
 <?php
 
-namespace App\Models;
+namespace App\Taxonomies;
 
 use Studiometa\Foehn\Attributes\AsTaxonomy;
+use Timber\Term;
 
 #[AsTaxonomy(
     name: 'product_category',
@@ -54,7 +59,7 @@ use Studiometa\Foehn\Attributes\AsTaxonomy;
     plural: 'Categories',
     hierarchical: true,
 )]
-final class ProductCategory {}
+final class ProductCategory extends Term {}
 ```
 
 ### Tag-style Taxonomy
@@ -67,7 +72,7 @@ final class ProductCategory {}
     plural: 'Tags',
     hierarchical: false,
 )]
-final class ProductTag {}
+final class ProductTag extends Term {}
 ```
 
 ### Shared Taxonomy
@@ -79,7 +84,7 @@ final class ProductTag {}
     singular: 'Location',
     plural: 'Locations',
 )]
-final class Location {}
+final class Location extends Term {}
 ```
 
 ### With Advanced Configuration
@@ -89,10 +94,12 @@ Implement `ConfiguresTaxonomy` for full control:
 ```php
 <?php
 
-namespace App\Models;
+namespace App\Taxonomies;
 
 use Studiometa\Foehn\Attributes\AsTaxonomy;
 use Studiometa\Foehn\Contracts\ConfiguresTaxonomy;
+use Studiometa\Foehn\PostTypes\TaxonomyBuilder;
+use Timber\Term;
 
 #[AsTaxonomy(
     name: 'skill',
@@ -100,18 +107,17 @@ use Studiometa\Foehn\Contracts\ConfiguresTaxonomy;
     singular: 'Skill',
     plural: 'Skills',
 )]
-final class Skill implements ConfiguresTaxonomy
+final class Skill extends Term implements ConfiguresTaxonomy
 {
-    public static function taxonomyArgs(array $args): array
+    public static function configureTaxonomy(TaxonomyBuilder $builder): TaxonomyBuilder
     {
-        $args['capabilities'] = [
-            'manage_terms' => 'manage_skills',
-            'edit_terms' => 'edit_skills',
-            'delete_terms' => 'delete_skills',
-            'assign_terms' => 'assign_skills',
-        ];
-
-        return $args;
+        return $builder
+            ->setCapabilities([
+                'manage_terms' => 'manage_skills',
+                'edit_terms' => 'edit_skills',
+                'delete_terms' => 'delete_skills',
+                'assign_terms' => 'assign_skills',
+            ]);
     }
 }
 ```
