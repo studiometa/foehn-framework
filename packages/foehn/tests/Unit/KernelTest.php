@@ -246,15 +246,15 @@ describe('Kernel respects user config files', function () {
     });
 
     it('uses has() check before registering default configs', function () {
-        // Use reflection to verify the registerCoreServices method checks has()
+        // Use reflection to verify the registerConfigs method checks has()
         $reflection = new ReflectionClass(Kernel::class);
-        $method = $reflection->getMethod('registerCoreServices');
         $source = file_get_contents($reflection->getFileName());
 
-        // Verify the code contains has() checks for each config
-        expect($source)->toContain('if (!$this->container->has(TimberConfig::class))');
-        expect($source)->toContain('if (!$this->container->has(AcfConfig::class))');
-        expect($source)->toContain('if (!$this->container->has(RestConfig::class))');
-        expect($source)->toContain('if (!$this->container->has(RenderApiConfig::class))');
+        // Verify the code registers all default configs with has() guard
+        expect($source)->toContain('$this->container->has($class)');
+        expect($source)->toContain('TimberConfig::class =>');
+        expect($source)->toContain('AcfConfig::class =>');
+        expect($source)->toContain('RestConfig::class =>');
+        expect($source)->toContain('RenderApiConfig::class =>');
     });
 });

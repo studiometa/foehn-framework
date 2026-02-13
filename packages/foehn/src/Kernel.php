@@ -211,63 +211,72 @@ final class Kernel
         // Register the kernel itself
         $this->container->singleton(self::class, fn() => $this);
 
+        // Resolve and register configurations
+        $this->registerConfigs();
+
+        // Register infrastructure services
+        $this->registerInfrastructureServices();
+    }
+
+    /**
+     * Resolve FoehnConfig and register default configs.
+     */
+    private function registerConfigs(): void
+    {
         // Resolve FoehnConfig: prefer discovered config file, fall back to boot() array, then defaults
-        if ($this->container->has(FoehnConfig::class)) {
-            $this->foehnConfig = $this->container->get(FoehnConfig::class);
-        } elseif ($this->config !== []) {
-            $this->foehnConfig = FoehnConfig::fromArray($this->config);
-            $this->container->singleton(FoehnConfig::class, fn() => $this->foehnConfig);
-        } else {
-            $this->foehnConfig = new FoehnConfig();
+        $this->foehnConfig = match (true) {
+            $this->container->has(FoehnConfig::class) => $this->container->get(FoehnConfig::class),
+            $this->config !== [] => FoehnConfig::fromArray($this->config),
+            default => new FoehnConfig(),
+        };
+
+        if (!$this->container->has(FoehnConfig::class)) {
             $this->container->singleton(FoehnConfig::class, fn() => $this->foehnConfig);
         }
 
         // Register default configs only if user hasn't provided their own via *.config.php
         // Tempest's LoadConfig discovery runs before this, so user configs are already registered
-        if (!$this->container->has(TimberConfig::class)) {
-            $this->container->singleton(TimberConfig::class, static fn() => new TimberConfig());
-        }
+        $defaults = [
+            TimberConfig::class => static fn() => new TimberConfig(),
+            AcfConfig::class => static fn() => new AcfConfig(),
+            RestConfig::class => static fn() => new RestConfig(),
+            RenderApiConfig::class => static fn() => new RenderApiConfig(),
+        ];
 
-        if (!$this->container->has(AcfConfig::class)) {
-            $this->container->singleton(AcfConfig::class, static fn() => new AcfConfig());
-        }
+        foreach ($defaults as $class => $factory) {
+            if ($this->container->has($class)) {
+                continue;
+            }
 
-        if (!$this->container->has(RestConfig::class)) {
-            $this->container->singleton(RestConfig::class, static fn() => new RestConfig());
+            $this->container->singleton($class, $factory);
         }
+    }
 
-        if (!$this->container->has(RenderApiConfig::class)) {
-            $this->container->singleton(RenderApiConfig::class, static fn() => new RenderApiConfig());
-        }
-
-        // Register cache service
+    /**
+     * Register infrastructure services (cache, discovery, views, etc.).
+     */
+    private function registerInfrastructureServices(): void
+    {
         $this->container->singleton(CacheInterface::class, static fn() => new TransientCache());
-
-        // Register discovery cache
         $this->container->singleton(DiscoveryCache::class, fn() => new DiscoveryCache($this->foehnConfig));
 
-        // Register the discovery runner with cache support and app path
         $this->container->singleton(
             DiscoveryRunner::class,
             fn() => new DiscoveryRunner($this->container, $this->container->get(DiscoveryCache::class), $this->appPath),
         );
 
-        // Register ACF block renderer with config
         $this->container->singleton(
             AcfBlockRenderer::class,
             fn() => new AcfBlockRenderer($this->container->get(AcfConfig::class)),
         );
 
-        // Register context provider registry
         $this->container->singleton(ContextProviderRegistry::class, static fn() => new ContextProviderRegistry());
 
-        // Register view engine interface binding
         $this->container->singleton(
             ViewEngineInterface::class,
             fn() => new TimberViewEngine($this->container->get(ContextProviderRegistry::class)),
         );
 
-        // Register RenderApi (used by RenderApiHook when opted-in)
         $this->container->singleton(
             RenderApi::class,
             fn() => new RenderApi(
