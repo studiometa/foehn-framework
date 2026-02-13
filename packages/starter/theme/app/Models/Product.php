@@ -6,8 +6,8 @@ namespace App\Models;
 
 use Studiometa\Foehn\Attributes\AsPostType;
 use Studiometa\Foehn\Contracts\ConfiguresPostType;
+use Studiometa\Foehn\Models\Post;
 use Studiometa\Foehn\PostTypes\PostTypeBuilder;
-use Timber\Post as TimberPost;
 
 #[AsPostType(
     name: 'product',
@@ -20,13 +20,11 @@ use Timber\Post as TimberPost;
     supports: ['title', 'editor', 'thumbnail', 'excerpt', 'revisions'],
     taxonomies: ['product_category', 'product_tag'],
 )]
-final class Product extends TimberPost implements ConfiguresPostType
+final class Product extends Post implements ConfiguresPostType
 {
     public static function configurePostType(PostTypeBuilder $builder): PostTypeBuilder
     {
-        return $builder
-            ->setRewrite(['slug' => 'boutique', 'with_front' => false])
-            ->setMenuPosition(5);
+        return $builder->setRewrite(['slug' => 'boutique', 'with_front' => false])->setMenuPosition(5);
     }
 
     public function price(): ?float
