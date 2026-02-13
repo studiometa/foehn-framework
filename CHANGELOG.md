@@ -24,7 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `Arrayable` interface and `HasToArray` trait for typed DTO context composition ([#97])
 - Add built-in DTOs for common ACF field patterns ([#97]):
   - `LinkData` — matches `ButtonLinkBuilder` output
-  - `ImageData` — matches `ResponsiveImageBuilder` output  
+  - `ImageData` — matches `ResponsiveImageBuilder` output
   - `SpacingData` — matches `SpacingBuilder` output
 - Widen `compose()` return type to `array|Arrayable` on block interfaces ([#97])
 - **Starter:** Add Hero block example demonstrating DTO context composition ([#97])
@@ -48,7 +48,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Safe post type casting via `post(Product::class)` and `posts(Product::class)`
   - Immutable updates: `with()`, `merge()`, `withDto()`
   - DTO support with `withDto()` / `dto()` for type-safe retrieval
-  - ArrayAccess support for dynamic keys
   - ArrayAccess for dynamic keys
 
 [#107]: https://github.com/studiometa/foehn-framework/pull/107
