@@ -97,11 +97,11 @@ final class TeamMember extends Post {}
 ```php
 // app/Taxonomies/ProductCategory.php
 #[AsTaxonomy(name: 'product_category', postTypes: ['product'])]
-final class ProductCategory {}
+final class ProductCategory extends Term {}
 
 // app/Taxonomies/EventType.php
 #[AsTaxonomy(name: 'event_type', postTypes: ['event'])]
-final class EventType {}
+final class EventType extends Term {}
 ```
 
 ### ACF Blocks
@@ -242,8 +242,8 @@ final class NewsletterEndpoint {
 
 ```php
 // app/Shortcodes/ButtonShortcode.php
-#[AsShortcode('button')]
 final class ButtonShortcode {
+    #[AsShortcode('button')]
     public function render(array $atts, ?string $content): string {}
 }
 ```
@@ -579,24 +579,25 @@ must-be-final = true
 reason        = "Hook classes must be final and named *Hooks."
 
 # -----------------------------------------------------------------------------
-# Models (Post Types): Must be final and extend Timber\Post
+# Models (Post Types): Must be final and extend Foehn\Models\Post
 # -----------------------------------------------------------------------------
 [[guard.structural.rules]]
 on            = "App\\Models\\**"
 target        = "class"
 must-be-final = true
-must-extend   = "Timber\\Post"
+must-extend   = "Studiometa\\Foehn\\Models\\Post"
 not-on        = "App\\Models\\**Interface"
-reason        = "Model classes must be final and extend Timber\\Post."
+reason        = "Model classes must be final and extend Studiometa\\Foehn\\Models\\Post."
 
 # -----------------------------------------------------------------------------
-# Taxonomies: Must be final
+# Taxonomies: Must be final and extend Timber\Term
 # -----------------------------------------------------------------------------
 [[guard.structural.rules]]
 on            = "App\\Taxonomies\\**"
 target        = "class"
 must-be-final = true
-reason        = "Taxonomy classes must be final."
+must-extend   = "Timber\\Term"
+reason        = "Taxonomy classes must be final and extend Timber\\Term."
 
 # -----------------------------------------------------------------------------
 # Patterns: Must be final readonly, named *Pattern, implement interface
