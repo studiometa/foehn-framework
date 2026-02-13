@@ -12,19 +12,29 @@ namespace App\ContextProviders;
 
 use Studiometa\Foehn\Attributes\AsContextProvider;
 use Studiometa\Foehn\Contracts\ContextProviderInterface;
+use Studiometa\Foehn\Views\TemplateContext;
 
 #[AsContextProvider('*')]
 final class HeaderContextProvider implements ContextProviderInterface
 {
-    public function provide(array $context): array
+    public function provide(TemplateContext $context): TemplateContext
     {
-        $context['site_name'] = get_bloginfo('name');
-        $context['primary_menu'] = \Timber\Timber::get_menu('primary');
-
-        return $context;
+        return $context
+            ->with('site_name', get_bloginfo('name'))
+            ->with('primary_menu', \Timber\Timber::get_menu('primary'));
     }
 }
 ```
+
+## TemplateContext
+
+The `provide()` method receives a typed `TemplateContext` object - the same one used in template controllers. This provides:
+
+- **Typed access** to Timber globals (`$context->post`, `$context->site`, etc.)
+- **Immutable updates** via `with()`, `merge()`, `withDto()`
+- **Post type casting** via `$context->post(Product::class)`
+
+See [Template Controllers](./template-controllers#templatecontext) for full `TemplateContext` documentation.
 
 ## Template Matching
 
@@ -34,10 +44,9 @@ final class HeaderContextProvider implements ContextProviderInterface
 #[AsContextProvider('single')]
 final class SingleContextProvider implements ContextProviderInterface
 {
-    public function provide(array $context): array
+    public function provide(TemplateContext $context): TemplateContext
     {
-        $context['related_posts'] = $this->getRelatedPosts($context['post']);
-        return $context;
+        return $context->with('related_posts', $this->getRelatedPosts($context->post));
     }
 }
 ```
@@ -48,11 +57,17 @@ final class SingleContextProvider implements ContextProviderInterface
 #[AsContextProvider('single-product')]
 final class ProductContextProvider implements ContextProviderInterface
 {
-    public function provide(array $context): array
+    public function provide(TemplateContext $context): TemplateContext
     {
-        $context['categories'] = $context['post']->terms('product_category');
-        $context['related'] = $context['post']->relatedProducts(4);
-        return $context;
+        $product = $context->post(Product::class);
+
+        if (!$product) {
+            return $context;
+        }
+
+        return $context
+            ->with('categories', $product->terms('product_category'))
+            ->with('related', $product->relatedProducts(4));
     }
 }
 ```
@@ -79,15 +94,13 @@ final class GlobalContextProvider implements ContextProviderInterface {}
 #[AsContextProvider(['home', 'front-page'])]
 final class HomeContextProvider implements ContextProviderInterface
 {
-    public function provide(array $context): array
+    public function provide(TemplateContext $context): TemplateContext
     {
-        $context['featured_posts'] = \Timber\Timber::get_posts([
+        return $context->with('featured_posts', \Timber\Timber::get_posts([
             'posts_per_page' => 3,
             'meta_key' => 'featured',
             'meta_value' => '1',
-        ]);
-
-        return $context;
+        ]));
     }
 }
 ```
@@ -122,6 +135,7 @@ namespace App\ContextProviders;
 use App\Services\CartService;
 use Studiometa\Foehn\Attributes\AsContextProvider;
 use Studiometa\Foehn\Contracts\ContextProviderInterface;
+use Studiometa\Foehn\Views\TemplateContext;
 
 #[AsContextProvider('*')]
 final class CartContextProvider implements ContextProviderInterface
@@ -130,38 +144,36 @@ final class CartContextProvider implements ContextProviderInterface
         private readonly CartService $cart,
     ) {}
 
-    public function provide(array $context): array
+    public function provide(TemplateContext $context): TemplateContext
     {
-        $context['cart'] = [
+        return $context->with('cart', [
             'count' => $this->cart->getItemCount(),
             'total' => $this->cart->getTotal(),
-        ];
-
-        return $context;
+        ]);
     }
 }
 ```
 
 ## Real-World Examples
 
-### Navigation Provider
+### Global Provider
 
 ```php
 #[AsContextProvider('*')]
-final class NavigationContextProvider implements ContextProviderInterface
+final class GlobalContextProvider implements ContextProviderInterface
 {
-    public function provide(array $context): array
+    public function provide(TemplateContext $context): TemplateContext
     {
-        $context['menus'] = [
-            'primary' => \Timber\Timber::get_menu('primary'),
-            'footer' => \Timber\Timber::get_menu('footer'),
-            'social' => \Timber\Timber::get_menu('social'),
-        ];
-
-        return $context;
+        return $context
+            ->with('current_year', date('Y'))
+            ->with('is_home', is_front_page());
     }
 }
 ```
+
+::: tip Menus are auto-injected
+When using `#[AsMenu]` attributes, menus are automatically added to the context under the `menus` key. You don't need to add them manually in a context provider.
+:::
 
 ### Archive Provider
 
@@ -169,16 +181,17 @@ final class NavigationContextProvider implements ContextProviderInterface
 #[AsContextProvider('archive-*')]
 final class ArchiveContextProvider implements ContextProviderInterface
 {
-    public function provide(array $context): array
+    public function provide(TemplateContext $context): TemplateContext
     {
-        global $wp_query;
+        if (!$context->posts) {
+            return $context;
+        }
 
-        $context['pagination'] = \Timber\Timber::get_pagination();
-        $context['found_posts'] = $wp_query->found_posts;
-        $context['current_page'] = max(1, get_query_var('paged'));
-        $context['total_pages'] = $wp_query->max_num_pages;
-
-        return $context;
+        return $context
+            ->with('pagination', $context->posts->pagination())
+            ->with('found_posts', WP::query()->found_posts)
+            ->with('current_page', max(1, get_query_var('paged')))
+            ->with('total_pages', WP::query()->max_num_pages);
     }
 }
 ```
@@ -186,15 +199,53 @@ final class ArchiveContextProvider implements ContextProviderInterface
 ### Search Provider
 
 ```php
+use Studiometa\Foehn\Helpers\WP;
+
 #[AsContextProvider('search')]
 final class SearchContextProvider implements ContextProviderInterface
 {
-    public function provide(array $context): array
+    public function provide(TemplateContext $context): TemplateContext
     {
-        $context['search_query'] = get_search_query();
-        $context['result_count'] = $GLOBALS['wp_query']->found_posts;
+        return $context
+            ->with('search_query', get_search_query())
+            ->with('result_count', WP::query()->found_posts);
+    }
+}
+```
 
-        return $context;
+### With Typed DTO
+
+```php
+use Studiometa\Foehn\Contracts\Arrayable;
+use Studiometa\Foehn\Concerns\HasToArray;
+
+final readonly class ArchiveData implements Arrayable
+{
+    use HasToArray;
+
+    public function __construct(
+        public int $foundPosts,
+        public int $currentPage,
+        public int $totalPages,
+        public ?object $pagination,
+    ) {}
+}
+
+#[AsContextProvider('archive-*')]
+final class ArchiveContextProvider implements ContextProviderInterface
+{
+    public function provide(TemplateContext $context): TemplateContext
+    {
+        if (!$context->posts) {
+            return $context;
+        }
+
+        return $context->withDto(new ArchiveData(
+            foundPosts: WP::query()->found_posts,
+            currentPage: max(1, get_query_var('paged')),
+            totalPages: WP::query()->max_num_pages,
+            pagination: $context->posts->pagination(),
+        ));
     }
 }
 ```
@@ -204,7 +255,6 @@ final class SearchContextProvider implements ContextProviderInterface
 ```
 app/ContextProviders/
 ├── GlobalContextProvider.php        # Site-wide data
-├── NavigationContextProvider.php    # Menus
 ├── ArchiveContextProvider.php       # Archive pages
 ├── SingleContextProvider.php        # Single posts
 ├── ProductContextProvider.php       # Product-specific

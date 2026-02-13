@@ -13,6 +13,7 @@ namespace App\Controllers;
 use Studiometa\Foehn\Attributes\AsTemplateController;
 use Studiometa\Foehn\Contracts\TemplateControllerInterface;
 use Studiometa\Foehn\Contracts\ViewEngineInterface;
+use Studiometa\Foehn\Views\TemplateContext;
 
 #[AsTemplateController('single')]
 final class SingleController implements TemplateControllerInterface
@@ -21,14 +22,13 @@ final class SingleController implements TemplateControllerInterface
         private readonly ViewEngineInterface $view,
     ) {}
 
-    public function handle(): ?string
+    public function handle(TemplateContext $context): ?string
     {
-        $post = \Timber\Timber::get_post();
+        $post = $context->post;
 
-        return $this->view->render('single', [
-            'post' => $post,
-            'related' => $this->getRelatedPosts($post),
-        ]);
+        $context = $context->with('related', $this->getRelatedPosts($post));
+
+        return $this->view->render('single', $context);
     }
 
     private function getRelatedPosts($post): array
@@ -40,6 +40,181 @@ final class SingleController implements TemplateControllerInterface
         ]);
     }
 }
+```
+
+## TemplateContext
+
+The `handle()` method receives a typed `TemplateContext` object that provides:
+
+- **Typed properties** for Timber globals (`post`, `posts`, `site`, `user`)
+- **Safe casting** for custom post types
+- **Immutable updates** via `with()` and `merge()`
+- **DTO support** for type-safe custom data
+
+### Typed Properties
+
+```php
+public function handle(TemplateContext $context): ?string
+{
+    // Typed access to Timber globals
+    $post = $context->post;     // ?Post
+    $posts = $context->posts;   // ?PostCollectionInterface
+    $site = $context->site;     // Site
+    $user = $context->user;     // ?User
+
+    return $this->view->render('single', $context);
+}
+```
+
+### Custom Post Type Casting
+
+Use `post()` method to safely cast to your custom post type:
+
+```php
+use App\Models\Product;
+
+public function handle(TemplateContext $context): ?string
+{
+    // Returns ?Product with full IDE support
+    $product = $context->post(Product::class);
+
+    if ($product === null) {
+        return null; // Let WordPress handle it
+    }
+
+    // Full autocomplete for Product methods
+    $context = $context->with('price', $product->formattedPrice());
+
+    return $this->view->render('single-product', $context);
+}
+```
+
+### Typed Posts Collection
+
+Use `posts()` method to validate the collection contains your expected post type:
+
+```php
+use App\Models\Product;
+
+#[AsTemplateController('archive-product')]
+final class ProductArchiveController implements TemplateControllerInterface
+{
+    public function handle(TemplateContext $context): ?string
+    {
+        // Returns ?PostCollectionInterface<Product>
+        $products = $context->posts(Product::class);
+
+        if ($products === null) {
+            return null;
+        }
+
+        // All items in $products are Product instances
+        foreach ($products as $product) {
+            $product->formattedPrice(); // IDE support
+        }
+
+        return $this->view->render('archive-product', $context);
+    }
+}
+```
+
+### Adding Data (Immutable)
+
+The context is immutable. Use `with()` or `merge()` to add data:
+
+```php
+public function handle(TemplateContext $context): ?string
+{
+    // Single key
+    $context = $context->with('featured', $this->getFeatured());
+
+    // Multiple keys
+    $context = $context->merge([
+        'categories' => $this->getCategories(),
+        'tags' => $this->getTags(),
+    ]);
+
+    // Chained
+    $context = $context
+        ->with('hero', $this->getHeroData())
+        ->with('testimonials', $this->getTestimonials());
+
+    return $this->view->render('home', $context);
+}
+```
+
+### Dynamic Keys
+
+Access dynamic keys (from context providers, etc.) via `get()` or array syntax:
+
+```php
+public function handle(TemplateContext $context): ?string
+{
+    // Via get() method
+    $pagination = $context->get('pagination');
+    $customData = $context->get('custom_key', 'default');
+
+    // Via ArrayAccess
+    $pagination = $context['pagination'];
+
+    // Check existence
+    if ($context->has('pagination')) {
+        // ...
+    }
+
+    return $this->view->render('archive', $context);
+}
+```
+
+### Typed DTOs
+
+For complex page data, use typed DTOs with `withDto()`:
+
+```php
+use Studiometa\Foehn\Contracts\Arrayable;
+use Studiometa\Foehn\Concerns\HasToArray;
+
+final readonly class ProductPageData implements Arrayable
+{
+    use HasToArray;
+
+    public function __construct(
+        public PostCollection $related,
+        public array $categories,
+        public ?float $averageRating,
+    ) {}
+}
+
+public function handle(TemplateContext $context): ?string
+{
+    $product = $context->post(Product::class);
+
+    $pageData = new ProductPageData(
+        related: $product->related(4),
+        categories: $product->categories(),
+        averageRating: $product->averageRating(),
+    );
+
+    // DTO properties are flattened for Twig access
+    $context = $context->withDto($pageData);
+
+    // Later, retrieve the typed DTO if needed
+    $data = $context->dto(ProductPageData::class);
+    $data->averageRating; // ?float with IDE support
+
+    return $this->view->render('single-product', $context);
+}
+```
+
+In Twig, DTO properties are directly accessible:
+
+```twig
+<h1>{{ post.title }}</h1>
+<p>Rating: {{ averageRating }}</p>
+
+{% for item in related %}
+    <a href="{{ item.link }}">{{ item.title }}</a>
+{% endfor %}
 ```
 
 ## Template Matching
@@ -105,16 +280,16 @@ Return `null` to let WordPress handle the template normally:
 #[AsTemplateController('single')]
 final class SingleController implements TemplateControllerInterface
 {
-    public function handle(): ?string
+    public function handle(TemplateContext $context): ?string
     {
-        $post = \Timber\Timber::get_post();
+        $post = $context->post;
 
         // Only handle published posts
-        if ($post->post_status !== 'publish') {
+        if ($post?->post_status !== 'publish') {
             return null; // Let WordPress handle it
         }
 
-        return $this->view->render('single', ['post' => $post]);
+        return $this->view->render('single', $context);
     }
 }
 ```
@@ -131,6 +306,7 @@ namespace App\Controllers;
 use Studiometa\Foehn\Attributes\AsTemplateController;
 use Studiometa\Foehn\Contracts\TemplateControllerInterface;
 use Studiometa\Foehn\Contracts\ViewEngineInterface;
+use Studiometa\Foehn\Views\TemplateContext;
 
 #[AsTemplateController('front-page')]
 final class HomeController implements TemplateControllerInterface
@@ -139,14 +315,15 @@ final class HomeController implements TemplateControllerInterface
         private readonly ViewEngineInterface $view,
     ) {}
 
-    public function handle(): ?string
+    public function handle(TemplateContext $context): ?string
     {
-        return $this->view->render('pages/home', [
-            'hero' => $this->getHeroData(),
-            'featured_products' => $this->getFeaturedProducts(),
-            'testimonials' => $this->getTestimonials(),
-            'latest_posts' => $this->getLatestPosts(),
-        ]);
+        $context = $context
+            ->with('hero', $this->getHeroData())
+            ->with('featured_products', $this->getFeaturedProducts())
+            ->with('testimonials', $this->getTestimonials())
+            ->with('latest_posts', $this->getLatestPosts());
+
+        return $this->view->render('pages/home', $context);
     }
 
     private function getHeroData(): array
@@ -187,7 +364,7 @@ final class HomeController implements TemplateControllerInterface
 }
 ```
 
-### Product Archive Controller
+### Archive Controller with Pagination
 
 ```php
 <?php
@@ -197,39 +374,29 @@ namespace App\Controllers;
 use Studiometa\Foehn\Attributes\AsTemplateController;
 use Studiometa\Foehn\Contracts\TemplateControllerInterface;
 use Studiometa\Foehn\Contracts\ViewEngineInterface;
+use Studiometa\Foehn\Views\TemplateContext;
 
-#[AsTemplateController('archive-product')]
-final class ProductArchiveController implements TemplateControllerInterface
+#[AsTemplateController(['archive', 'archive-*', 'category', 'tag'])]
+final class ArchiveController implements TemplateControllerInterface
 {
     public function __construct(
         private readonly ViewEngineInterface $view,
     ) {}
 
-    public function handle(): ?string
+    public function handle(TemplateContext $context): ?string
     {
-        return $this->view->render('archive-product', [
-            'products' => \Timber\Timber::get_posts(),
-            'categories' => $this->getCategories(),
-            'filters' => $this->getActiveFilters(),
-            'pagination' => \Timber\Timber::get_pagination(),
-        ]);
-    }
+        if ($context->posts) {
+            $context = $context->with('pagination', $context->posts->pagination([
+                'mid_size' => 2,
+                'end_size' => 1,
+            ]));
+        }
 
-    private function getCategories(): array
-    {
-        return \Timber\Timber::get_terms([
-            'taxonomy' => 'product_category',
-            'hide_empty' => true,
-        ]);
-    }
+        $context = $context
+            ->with('archive_title', get_the_archive_title())
+            ->with('archive_description', get_the_archive_description());
 
-    private function getActiveFilters(): array
-    {
-        return [
-            'category' => $_GET['category'] ?? null,
-            'sort' => $_GET['sort'] ?? 'date',
-            'order' => $_GET['order'] ?? 'desc',
-        ];
+        return $this->view->render('pages/archive', $context);
     }
 }
 ```
@@ -244,6 +411,8 @@ namespace App\Controllers;
 use Studiometa\Foehn\Attributes\AsTemplateController;
 use Studiometa\Foehn\Contracts\TemplateControllerInterface;
 use Studiometa\Foehn\Contracts\ViewEngineInterface;
+use Studiometa\Foehn\Helpers\WP;
+use Studiometa\Foehn\Views\TemplateContext;
 
 #[AsTemplateController('search')]
 final class SearchController implements TemplateControllerInterface
@@ -252,16 +421,17 @@ final class SearchController implements TemplateControllerInterface
         private readonly ViewEngineInterface $view,
     ) {}
 
-    public function handle(): ?string
+    public function handle(TemplateContext $context): ?string
     {
-        global $wp_query;
+        $context = $context
+            ->with('search_query', get_search_query())
+            ->with('found_posts', WP::query()->found_posts);
 
-        return $this->view->render('search', [
-            'query' => get_search_query(),
-            'results' => \Timber\Timber::get_posts(),
-            'found' => $wp_query->found_posts,
-            'pagination' => \Timber\Timber::get_pagination(),
-        ]);
+        if ($context->posts) {
+            $context = $context->with('pagination', $context->posts->pagination());
+        }
+
+        return $this->view->render('pages/search', $context);
     }
 }
 ```

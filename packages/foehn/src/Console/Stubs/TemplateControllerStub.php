@@ -6,28 +6,36 @@ namespace Studiometa\Foehn\Console\Stubs;
 
 use Studiometa\Foehn\Attributes\AsTemplateController;
 use Studiometa\Foehn\Contracts\TemplateControllerInterface;
+use Studiometa\Foehn\Contracts\ViewEngineInterface;
+use Studiometa\Foehn\Views\TemplateContext;
 use Tempest\Discovery\SkipDiscovery;
-use Timber\Timber;
 
 #[SkipDiscovery]
 #[AsTemplateController(templates: 'dummy-template')]
-final class TemplateControllerStub implements TemplateControllerInterface
+final readonly class TemplateControllerStub implements TemplateControllerInterface
 {
+    public function __construct(
+        private ViewEngineInterface $view,
+    ) {}
+
     /**
      * Handle the template request.
      *
+     * @param TemplateContext $context Typed Timber context
      * @return string|null Rendered HTML or null to pass through
      */
-    public function handle(): ?string
+    public function handle(TemplateContext $context): ?string
     {
-        $context = Timber::context();
+        // Access typed properties
+        // $post = $context->post;
+        // $site = $context->site;
 
-        // Add your custom context data here
-        // $context['post'] = Timber::get_post();
-        // $context['custom_data'] = $this->loadCustomData();
+        // Cast to specific post type
+        // $product = $context->post(Product::class);
 
-        $result = Timber::compile('dummy-template.twig', $context);
+        // Add custom data (immutable)
+        // $context = $context->with('custom_data', $this->loadCustomData());
 
-        return is_string($result) ? $result : null;
+        return $this->view->render('dummy-template', $context);
     }
 }

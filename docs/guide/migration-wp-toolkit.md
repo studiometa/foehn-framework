@@ -489,18 +489,16 @@ namespace App\ContextProviders;
 
 use Studiometa\Foehn\Attributes\AsContextProvider;
 use Studiometa\Foehn\Contracts\ContextProviderInterface;
+use Studiometa\Foehn\Views\TemplateContext;
 
 #[AsContextProvider(templates: ['*'])]
 final class GlobalContextProvider implements ContextProviderInterface
 {
-    public function provide(array $context): array
+    public function provide(TemplateContext $context): TemplateContext
     {
-        $context['site_settings'] = function_exists('get_fields')
-            ? get_fields('options')
-            : [];
-        $context['current_year'] = date('Y');
-
-        return $context;
+        return $context
+            ->with('site_settings', function_exists('get_fields') ? get_fields('options') : [])
+            ->with('current_year', date('Y'));
     }
 }
 ```

@@ -109,24 +109,27 @@ Use a Context Provider to resolve IDs to Timber objects:
 ```php
 use Studiometa\Foehn\Attributes\AsContextProvider;
 use Studiometa\Foehn\Contracts\ContextProviderInterface;
+use Studiometa\Foehn\Views\TemplateContext;
 use Timber\Timber;
 
 #[AsContextProvider('partials/*')]
 final class PostContextProvider implements ContextProviderInterface
 {
-    public function provide(array $context): array
+    public function provide(TemplateContext $context): TemplateContext
     {
-        if (isset($context['post_id'])) {
-            $post = Timber::get_post((int) $context['post_id']);
+        $postId = $context->get('post_id');
+        if ($postId !== null) {
+            $post = Timber::get_post((int) $postId);
 
             if ($post && $post->post_status === 'publish') {
-                $context['post'] = $post;
+                $context = $context->with('post', $post);
             }
         }
 
-        if (isset($context['term_id'])) {
-            $taxonomy = $context['taxonomy'] ?? 'category';
-            $context['term'] = Timber::get_term_by('id', (int) $context['term_id'], $taxonomy);
+        $termId = $context->get('term_id');
+        if ($termId !== null) {
+            $taxonomy = $context->get('taxonomy', 'category');
+            $context = $context->with('term', Timber::get_term_by('id', (int) $termId, $taxonomy));
         }
 
         return $context;

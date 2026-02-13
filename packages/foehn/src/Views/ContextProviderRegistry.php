@@ -50,10 +50,10 @@ final class ContextProviderRegistry
      * Provide context for a template by running all matching providers.
      *
      * @param string $template Template name being rendered
-     * @param array<string, mixed> $context Current context
-     * @return array<string, mixed> Modified context
+     * @param TemplateContext $context Current context
+     * @return TemplateContext Modified context
      */
-    public function provide(string $template, array $context): array
+    public function provide(string $template, TemplateContext $context): TemplateContext
     {
         $matchingProviders = $this->getMatchingProviders($template);
 

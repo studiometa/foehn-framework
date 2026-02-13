@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Contracts;
 
+use Studiometa\Foehn\Views\TemplateContext;
+
 /**
  * Interface for context providers.
  *
@@ -15,8 +17,8 @@ interface ContextProviderInterface
     /**
      * Provide additional data for the view context.
      *
-     * @param array<string, mixed> $context Current template context
-     * @return array<string, mixed> Modified context with additional data
+     * @param TemplateContext $context Current template context
+     * @return TemplateContext Modified context with additional data
      */
-    public function provide(array $context): array;
+    public function provide(TemplateContext $context): TemplateContext;
 }

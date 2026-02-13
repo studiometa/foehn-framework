@@ -7,7 +7,8 @@ namespace App\Controllers;
 use Studiometa\Foehn\Attributes\AsTemplateController;
 use Studiometa\Foehn\Contracts\TemplateControllerInterface;
 use Studiometa\Foehn\Contracts\ViewEngineInterface;
-use Timber\Timber;
+use Studiometa\Foehn\Helpers\WP;
+use Studiometa\Foehn\Views\TemplateContext;
 
 #[AsTemplateController('search')]
 final readonly class SearchController implements TemplateControllerInterface
@@ -16,15 +17,14 @@ final readonly class SearchController implements TemplateControllerInterface
         private ViewEngineInterface $view,
     ) {}
 
-    public function handle(): string
+    public function handle(TemplateContext $context): string
     {
-        $context = Timber::context();
+        $context = $context
+            ->with('search_query', get_search_query())
+            ->with('found_posts', WP::query()->found_posts);
 
-        $context['search_query'] = get_search_query();
-        $context['found_posts'] = $GLOBALS['wp_query']->found_posts;
-
-        if (isset($context['posts'])) {
-            $context['pagination'] = $context['posts']->pagination();
+        if ($context->posts) {
+            $context = $context->with('pagination', $context->posts->pagination());
         }
 
         return $this->view->render('pages/search', $context);
