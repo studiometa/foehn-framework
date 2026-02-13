@@ -312,15 +312,18 @@ final class WebRootGenerator
      */
     private function createSymlink(string $source, string $target): void
     {
-        // Remove existing symlink or directory
-        if (is_link($target)) {
-            unlink($target);
-        } elseif (is_dir($target)) {
+        // Skip if target is a real directory (not a symlink)
+        if (!is_link($target) && is_dir($target)) {
             $this->io->write(
                 "  <warning>Skipped symlink:</warning> {$this->relativePath($target)} already exists as directory",
             );
 
             return;
+        }
+
+        // Remove existing symlink
+        if (is_link($target)) {
+            unlink($target);
         }
 
         // Create relative symlink
