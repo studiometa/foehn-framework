@@ -26,9 +26,9 @@ interface BlockInterface
      * @param array<string, mixed> $attributes Block attributes
      * @param string $content Inner block content
      * @param WP_Block $block Block instance
-     * @return array<string, mixed> Context for the template
+     * @return array<string, mixed>|Arrayable Context for the template
      */
-    public function compose(array $attributes, string $content, WP_Block $block): array;
+    public function compose(array $attributes, string $content, WP_Block $block): array|Arrayable;
 
     /**
      * Render the block.

@@ -12,22 +12,24 @@ namespace Studiometa\Foehn\Contracts;
 interface BlockPatternInterface
 {
     /**
-     * Provide dynamic context for the pattern template.
+     * Compose data for the pattern template.
      *
-     * @return array<string, mixed> Template context
+     * May return a plain array or an Arrayable DTO.
+     *
+     * @return array<string, mixed>|Arrayable Context variables for the template
      */
-    public function context(): array;
+    public function compose(): array|Arrayable;
 }
 ```
 
 ## Methods
 
-### context()
+### compose()
 
-Return data that will be passed to the pattern's Twig template.
+Return data that will be passed to the pattern's Twig template. Can return either a plain array or an `Arrayable` DTO.
 
 ```php
-public function context(): array
+public function compose(): array
 {
     return [
         'posts' => \Timber\Timber::get_posts([
@@ -69,7 +71,7 @@ use Studiometa\Foehn\Contracts\BlockPatternInterface;
 )]
 final class LatestPosts implements BlockPatternInterface
 {
-    public function context(): array
+    public function compose(): array
     {
         return [
             'posts' => \Timber\Timber::get_posts([
@@ -84,7 +86,7 @@ final class LatestPosts implements BlockPatternInterface
 ### Template
 
 ```twig
-{# patterns/latest-posts.twig #}
+{% verbatim %}{# patterns/latest-posts.twig #}
 <!-- wp:columns -->
 <div class="wp-block-columns">
     {% for post in posts %}
@@ -101,36 +103,38 @@ final class LatestPosts implements BlockPatternInterface
     <!-- /wp:column -->
     {% endfor %}
 </div>
-<!-- /wp:columns -->
+<!-- /wp:columns -->{% endverbatim %}
 ```
 
-### With Dependencies
+### With Arrayable DTO
 
 ```php
-<?php
+use Studiometa\Foehn\Contracts\Arrayable;
+use Studiometa\Foehn\Concerns\HasToArray;
 
-namespace App\Patterns;
+final readonly class FeaturedContext implements Arrayable
+{
+    use HasToArray;
 
-use App\Services\ProductService;
-use Studiometa\Foehn\Attributes\AsBlockPattern;
-use Studiometa\Foehn\Contracts\BlockPatternInterface;
+    public function __construct(
+        public array $products,
+        public string $heading,
+    ) {}
+}
 
-#[AsBlockPattern(
-    name: 'theme/featured-products',
-    title: 'Featured Products',
-    categories: ['products'],
-)]
+#[AsBlockPattern(name: 'theme/featured-products', title: 'Featured Products')]
 final class FeaturedProducts implements BlockPatternInterface
 {
     public function __construct(
         private readonly ProductService $products,
     ) {}
 
-    public function context(): array
+    public function compose(): FeaturedContext
     {
-        return [
-            'products' => $this->products->getFeatured(4),
-        ];
+        return new FeaturedContext(
+            products: $this->products->getFeatured(4),
+            heading: __('Featured', 'theme'),
+        );
     }
 }
 ```
@@ -138,4 +142,5 @@ final class FeaturedProducts implements BlockPatternInterface
 ## Related
 
 - [Guide: Block Patterns](/guide/block-patterns)
+- [Guide: Arrayable DTOs](/guide/arrayable-dtos)
 - [`#[AsBlockPattern]`](./as-block-pattern)
