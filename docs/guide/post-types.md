@@ -11,7 +11,7 @@ Føhn uses `#[AsPostType]` to register custom post types with Timber integration
 namespace App\Models;
 
 use Studiometa\Foehn\Attributes\AsPostType;
-use Timber\Post;
+use Studiometa\Foehn\Models\Post;
 
 #[AsPostType(
     name: 'product',
@@ -23,7 +23,11 @@ final class Product extends Post
 }
 ```
 
-This registers a post type with sensible defaults and automatically maps it in Timber's classmap.
+This registers a post type with sensible defaults, maps it in Timber's classmap, and provides fluent query methods via the `QueriesPostType` trait.
+
+::: tip Base Models
+Extend `Studiometa\Foehn\Models\Post` instead of `Timber\Post` to get built-in query methods like `Product::query()`, `Product::all()`, `Product::find()`, etc. See [Querying Posts](./querying-posts) for details.
+:::
 
 ## Full Configuration
 
@@ -33,7 +37,7 @@ This registers a post type with sensible defaults and automatically maps it in T
 namespace App\Models;
 
 use Studiometa\Foehn\Attributes\AsPostType;
-use Timber\Post;
+use Studiometa\Foehn\Models\Post;
 
 #[AsPostType(
     name: 'product',
@@ -62,7 +66,7 @@ Add business logic directly to your post type class:
 namespace App\Models;
 
 use Studiometa\Foehn\Attributes\AsPostType;
-use Timber\Post;
+use Studiometa\Foehn\Models\Post;
 
 #[AsPostType(
     name: 'product',
@@ -113,9 +117,9 @@ final class Product extends Post
     }
 
     /**
-     * Get related products.
+     * Get related products using the fluent query builder.
      *
-     * @return Product[]
+     * @return list<self>
      */
     public function relatedProducts(int $limit = 4): array
     {
@@ -124,17 +128,11 @@ final class Product extends Post
             return [];
         }
 
-        return \Timber\Timber::get_posts([
-            'post_type' => 'product',
-            'posts_per_page' => $limit,
-            'post__not_in' => [$this->ID],
-            'tax_query' => [
-                [
-                    'taxonomy' => 'product_category',
-                    'terms' => wp_list_pluck($categories, 'term_id'),
-                ],
-            ],
-        ]);
+        return static::query()
+            ->whereTax('product_category', wp_list_pluck($categories, 'term_id'), field: 'term_id')
+            ->exclude($this->ID)
+            ->limit($limit)
+            ->get();
     }
 }
 ```
@@ -194,7 +192,7 @@ namespace App\Models;
 
 use Studiometa\Foehn\Attributes\AsPostType;
 use Studiometa\Foehn\Contracts\ConfiguresPostType;
-use Timber\Post;
+use Studiometa\Foehn\Models\Post;
 
 #[AsPostType(name: 'event', singular: 'Event', plural: 'Events')]
 final class Event extends Post implements ConfiguresPostType
@@ -247,5 +245,6 @@ app/Models/
 
 ## See Also
 
+- [Querying Posts](./querying-posts)
 - [Taxonomies](./taxonomies)
 - [API Reference: #[AsPostType]](/api/as-post-type)
