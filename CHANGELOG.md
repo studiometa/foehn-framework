@@ -39,7 +39,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `QueriesPostType` trait with `query()`, `all()`, `find()`, `first()`, `count()`, `exists()` ([#91], [#100])
 - Add `PostTypeRegistry` for class-to-post-type mapping ([#91], [#100])
 - Add `Foehn\Models\Post` and `Foehn\Models\Page` base classes with query support ([#91], [#100])
+- Add Starter Theme documentation with quick start guide and feature overview ([#101])
 
+[#101]: https://github.com/studiometa/foehn-framework/pull/101
 [#100]: https://github.com/studiometa/foehn-framework/pull/100
 [#98]: https://github.com/studiometa/foehn-framework/pull/98
 [#97]: https://github.com/studiometa/foehn-framework/pull/97
