@@ -3,7 +3,7 @@
 A modern WordPress framework powered by [Tempest](https://github.com/tempestphp/tempest-framework), featuring attribute-based auto-discovery for hooks, post types, blocks, and more.
 
 [![Latest Version](https://img.shields.io/github/v/release/studiometa/foehn-framework)](https://github.com/studiometa/foehn-framework/releases)
-[![PHP Version](https://img.shields.io/badge/php-%5E8.4-blue)](https://php.net)
+[![PHP Version](https://img.shields.io/badge/php-%5E8.5-blue)](https://php.net)
 [![Tests](https://github.com/studiometa/foehn-framework/actions/workflows/ci.yml/badge.svg)](https://github.com/studiometa/foehn-framework/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
@@ -14,11 +14,11 @@ A modern WordPress framework powered by [Tempest](https://github.com/tempestphp/
 
 This monorepo contains the following packages:
 
-| Package | Description | Packagist |
-| --- | --- | --- |
-| [`studiometa/foehn`](packages/foehn) | Core framework — auto-discovery, DI, blocks, hooks | [![Latest](https://img.shields.io/packagist/v/studiometa/foehn)](https://packagist.org/packages/studiometa/foehn) |
-| [`studiometa/foehn-installer`](packages/installer) | Composer plugin — generates web root, symlinks, wp-config | [![Latest](https://img.shields.io/packagist/v/studiometa/foehn-installer)](https://packagist.org/packages/studiometa/foehn-installer) |
-| [`studiometa/foehn-starter`](packages/starter) | Starter theme — complete example with create-project support | [![Latest](https://img.shields.io/packagist/v/studiometa/foehn-starter)](https://packagist.org/packages/studiometa/foehn-starter) |
+| Package                                            | Description                                                  | Packagist                                                                                                                             |
+| -------------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| [`studiometa/foehn`](packages/foehn)               | Core framework — auto-discovery, DI, blocks, hooks           | [![Latest](https://img.shields.io/packagist/v/studiometa/foehn)](https://packagist.org/packages/studiometa/foehn)                     |
+| [`studiometa/foehn-installer`](packages/installer) | Composer plugin — generates web root, symlinks, wp-config    | [![Latest](https://img.shields.io/packagist/v/studiometa/foehn-installer)](https://packagist.org/packages/studiometa/foehn-installer) |
+| [`studiometa/foehn-starter`](packages/starter)     | Starter theme — complete example with create-project support | [![Latest](https://img.shields.io/packagist/v/studiometa/foehn-starter)](https://packagist.org/packages/studiometa/foehn-starter)     |
 
 ## Quick Start
 
@@ -53,23 +53,23 @@ Kernel::boot(__DIR__ . '/app');
 
 ## Available Attributes
 
-| Attribute | Description |
-| --- | --- |
-| `#[AsAction]` | Register a WordPress action hook |
-| `#[AsFilter]` | Register a WordPress filter hook |
-| `#[AsPostType]` | Register a custom post type |
-| `#[AsTaxonomy]` | Register a custom taxonomy |
-| `#[AsBlock]` | Register a native Gutenberg block |
-| `#[AsAcfBlock]` | Register an ACF block |
-| `#[AsBlockPattern]` | Register a block pattern |
-| `#[AsContextProvider]` | Add data to specific views |
-| `#[AsTemplateController]` | Handle template rendering |
-| `#[AsShortcode]` | Register a shortcode |
-| `#[AsRestRoute]` | Register a REST API endpoint |
-| `#[AsCliCommand]` | Register a WP-CLI command |
-| `#[AsTimberModel]` | Register a Timber class map |
-| `#[AsMenu]` | Register a navigation menu |
-| `#[AsImageSize]` | Register a custom image size |
+| Attribute                 | Description                       |
+| ------------------------- | --------------------------------- |
+| `#[AsAction]`             | Register a WordPress action hook  |
+| `#[AsFilter]`             | Register a WordPress filter hook  |
+| `#[AsPostType]`           | Register a custom post type       |
+| `#[AsTaxonomy]`           | Register a custom taxonomy        |
+| `#[AsBlock]`              | Register a native Gutenberg block |
+| `#[AsAcfBlock]`           | Register an ACF block             |
+| `#[AsBlockPattern]`       | Register a block pattern          |
+| `#[AsContextProvider]`    | Add data to specific views        |
+| `#[AsTemplateController]` | Handle template rendering         |
+| `#[AsShortcode]`          | Register a shortcode              |
+| `#[AsRestRoute]`          | Register a REST API endpoint      |
+| `#[AsCliCommand]`         | Register a WP-CLI command         |
+| `#[AsTimberModel]`        | Register a Timber class map       |
+| `#[AsMenu]`               | Register a navigation menu        |
+| `#[AsImageSize]`          | Register a custom image size      |
 
 ## Architecture
 

@@ -58,25 +58,26 @@ final class ThemeHooks
 ## Features
 
 - **Hooks** — `#[AsAction]` and `#[AsFilter]` for WordPress hooks
-- **Post Types** — `#[AsPostType]` with Timber integration
+- **Post Types** — `#[AsPostType]` with Timber integration and fluent queries
 - **Taxonomies** — `#[AsTaxonomy]` with hierarchical support
 - **Views** — `#[AsContextProvider]` and `#[AsTemplateController]`
-- **ACF Blocks** — `#[AsAcfBlock]` with FieldsBuilder
+- **ACF Blocks** — `#[AsAcfBlock]` with FieldsBuilder and Arrayable DTOs
 - **Native Blocks** — `#[AsBlock]` with Interactivity API support
 - **Block Patterns** — `#[AsBlockPattern]` with Twig templates
 - **REST API** — `#[AsRestRoute]` for custom endpoints
 - **Shortcodes** — `#[AsShortcode]` for shortcode handlers
+- **Caching** — Injectable `CacheInterface` with tagged cache support
 - **CLI** — `#[AsCliCommand]` for WP-CLI commands
 
 ## Requirements
 
-- PHP 8.4+
+- PHP 8.5+
 - WordPress 6.4+
 - Composer
 
 ## Next Steps
 
-1. [Install Føhn](./installation.md)
-2. Learn about [Hooks](./hooks.md)
-3. Create [Post Types](./post-types.md)
-4. Build [ACF Blocks](./acf-blocks.md)
+1. [Install Føhn](./installation)
+2. Learn about [Hooks](./hooks)
+3. Create [Post Types](./post-types) and [Query Posts](./querying-posts)
+4. Build [ACF Blocks](./acf-blocks) with [Arrayable DTOs](./arrayable-dtos)

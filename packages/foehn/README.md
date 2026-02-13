@@ -8,7 +8,7 @@ A modern WordPress framework powered by [Tempest Framework](https://tempestphp.c
 
 ## Requirements
 
-- PHP 8.4+
+- PHP 8.5+
 - WordPress 6.4+
 - Composer
 
@@ -71,7 +71,7 @@ Define custom post types as classes with automatic Timber classmap integration:
 <?php
 
 use Studiometa\Foehn\Attributes\AsPostType;
-use Timber\Post;
+use Studiometa\Foehn\Models\Post;
 
 #[AsPostType(
     name: 'product',
@@ -117,7 +117,7 @@ Create ACF blocks with dependency injection:
 
 use Studiometa\Foehn\Attributes\AsAcfBlock;
 use Studiometa\Foehn\Contracts\AcfBlockInterface;
-use Studiometa\Foehn\Views\ViewEngineInterface;
+use Studiometa\Foehn\Contracts\ViewEngineInterface;
 use StoutLogic\AcfBuilder\FieldsBuilder;
 
 #[AsAcfBlock(
@@ -149,7 +149,7 @@ final readonly class HeroBlock implements AcfBlockInterface
         ];
     }
 
-    public function render(array $context): string
+    public function render(array $context, bool $isPreview = false): string
     {
         return $this->view->render('blocks/hero', $context);
     }
@@ -252,27 +252,27 @@ final readonly class AccordionBlock implements InteractiveBlockInterface
 }
 ```
 
-### View Composers
+### Context Providers
 
 Inject data into specific templates:
 
 ```php
 <?php
 
-use Studiometa\Foehn\Attributes\AsViewComposer;
-use Studiometa\Foehn\Contracts\ViewComposerInterface;
+use Studiometa\Foehn\Attributes\AsContextProvider;
+use Studiometa\Foehn\Contracts\ContextProviderInterface;
 
-#[AsViewComposer(['single', 'single-*'])]
-final readonly class SingleComposer implements ViewComposerInterface
+#[AsContextProvider(templates: ['single', 'single-*'])]
+final readonly class SingleContext implements ContextProviderInterface
 {
-    public function compose(array $context): array
+    public function provide(array $context): array
     {
         $post = $context['post'] ?? null;
 
-        return array_merge($context, [
-            'reading_time' => $this->calculateReadingTime($post->content()),
-            'related_posts' => $this->getRelatedPosts($post),
-        ]);
+        $context['reading_time'] = $this->calculateReadingTime($post->content());
+        $context['related_posts'] = $this->getRelatedPosts($post);
+
+        return $context;
     }
 }
 ```
@@ -285,7 +285,7 @@ Handle template rendering with full control:
 <?php
 
 use Studiometa\Foehn\Attributes\AsTemplateController;
-use Studiometa\Foehn\Views\ViewEngineInterface;
+use Studiometa\Foehn\Contracts\ViewEngineInterface;
 use Timber\Timber;
 
 #[AsTemplateController('single', 'single-*')]
