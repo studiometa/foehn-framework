@@ -269,13 +269,13 @@ final class GlobalContext implements ContextProviderInterface
 Then in Twig:
 
 ```twig
-{% if is_debug %}
+{% verbatim %}{% if is_debug %}
     {{ dump(post) }}
 {% endif %}
 
 {% if not is_production %}
     <div class="env-banner">Environment: {{ environment }}</div>
-{% endif %}
+{% endif %}{% endverbatim %}
 ```
 
 ## VideoEmbed
@@ -378,13 +378,13 @@ VideoEmbed::isSupported('https://example.com/video');
 VideoEmbed also provides Twig filters:
 
 ```twig
-{# Convert URL to embed URL #}
+{% verbatim %}{# Convert URL to embed URL #}
 {{ video_url|video_embed }}
 {{ video_url|video_embed({autoplay: true, loop: true}) }}
 
 {# Get platform name #}
 {{ video_url|video_platform }}
-{# → 'youtube' or 'vimeo' or null #}
+{# → 'youtube' or 'vimeo' or null #}{% endverbatim %}
 ```
 
 ### Usage in ACF Blocks
@@ -408,215 +408,34 @@ public function compose(array $block, array $fields): array
 }
 ```
 
-## Cache
+## Logging
 
-Helper class for caching data using WordPress transients.
-
-### get() / set()
-
-Store and retrieve values from cache.
+For logging, use Tempest's built-in logger via dependency injection:
 
 ```php
-use Studiometa\Foehn\Helpers\Cache;
+use Tempest\Log\Logger;
 
-// Store a value (TTL in seconds)
-Cache::set('key', $value, 3600);
-
-// Retrieve a value
-$value = Cache::get('key');
-$value = Cache::get('key', 'default');
-```
-
-### has()
-
-Check if a key exists in cache.
-
-```php
-if (Cache::has('key')) {
-    // ...
-}
-```
-
-### remember()
-
-Get from cache or compute and store.
-
-```php
-use Studiometa\Foehn\Helpers\Cache;
-
-$posts = Cache::remember('recent_posts', 3600, function () {
-    return get_posts(['numberposts' => 10]);
-});
-```
-
-### forget()
-
-Remove a value from cache.
-
-```php
-Cache::forget('key');
-```
-
-### forever()
-
-Store a value with no expiration.
-
-```php
-Cache::forever('key', $value);
-```
-
-### increment() / decrement()
-
-Modify numeric values.
-
-```php
-Cache::increment('counter');
-Cache::increment('counter', 5);
-Cache::decrement('counter');
-```
-
-### Prefix
-
-All keys are prefixed with `foehn_` by default.
-
-```php
-Cache::setPrefix('myapp_');
-```
-
-### Cache Tags
-
-Tags allow grouping cache keys for batch invalidation. This is the industry-standard pattern used by Laravel and Symfony.
-
-#### Storing with Tags
-
-```php
-use Studiometa\Foehn\Helpers\Cache;
-
-// Store with single tag
-$products = Cache::tags(['products'])
-    ->remember('products_list', 3600, fn() => get_products());
-
-// Store with multiple tags
-$featured = Cache::tags(['products', 'featured'])
-    ->remember('featured_products', 3600, fn() => get_featured_products());
-
-// Other tagged methods
-Cache::tags(['products'])->put('key', $value, 3600);
-Cache::tags(['products'])->forever('key', $value);
-Cache::tags(['products'])->forget('key');
-```
-
-#### Flushing by Tag
-
-```php
-// Flush all keys with a tag
-Cache::flushTag('products');
-// Clears: products_list, featured_products, etc.
-
-// Flush multiple tags at once
-Cache::flushTags(['products', 'categories']);
-```
-
-#### Practical Example
-
-Use cache tags with hooks to automatically invalidate cache when content changes:
-
-```php
-use Studiometa\Foehn\Attributes\AsAction;
-use Studiometa\Foehn\Helpers\Cache;
-
-final readonly class ProductCache
+final readonly class MyService
 {
-    /**
-     * Get cached products list.
-     */
-    public function list(): array
-    {
-        return Cache::tags(['products'])
-            ->remember('products_list', 3600, fn() => get_posts([
-                'post_type' => 'product',
-                'numberposts' => -1,
-            ]));
-    }
+    public function __construct(
+        private Logger $logger,
+    ) {}
 
-    /**
-     * Get cached products by category.
-     */
-    public function byCategory(int $categoryId): array
+    public function doSomething(): void
     {
-        return Cache::tags(['products', "category_{$categoryId}"])
-            ->remember("products_cat_{$categoryId}", 3600, fn() => get_posts([
-                'post_type' => 'product',
-                'tax_query' => [['taxonomy' => 'product_cat', 'terms' => $categoryId]],
-            ]));
-    }
-
-    /**
-     * Invalidate product cache when a product is saved.
-     */
-    #[AsAction('save_post_product')]
-    public function invalidate(int $postId): void
-    {
-        Cache::flushTag('products');
+        $this->logger->info('Something happened', ['key' => 'value']);
     }
 }
 ```
 
-::: tip Tag Storage
-Tag-to-key mappings are stored in a WordPress option (`foehn_cache_tags`). When a tag is flushed, all associated transients are deleted and the mapping is cleaned up automatically.
-:::
-
-## Log
-
-Helper class for logging to WordPress debug.log.
-
-### Log Levels
-
-```php
-use Studiometa\Foehn\Helpers\Log;
-
-Log::emergency('System is unusable');
-Log::alert('Action must be taken immediately');
-Log::critical('Critical conditions');
-Log::error('Error conditions');
-Log::warning('Warning conditions');
-Log::notice('Normal but significant conditions');
-Log::info('Informational messages');
-Log::debug('Debug-level messages');
-```
-
-### Context
-
-Pass additional data as context:
-
-```php
-Log::info('User logged in', ['user_id' => 123, 'ip' => $ip]);
-Log::error('Payment failed', ['order_id' => 456, 'error' => $e->getMessage()]);
-```
-
-### Output Format
-
-Messages are formatted as:
-
-```
-[2026-02-05 15:30:00] [FOEHN.INFO] User logged in {"user_id":123}
-```
-
-### Enabling Logging
-
-Logging only works when `WP_DEBUG_LOG` is enabled in `wp-config.php`:
-
-```php
-define('WP_DEBUG', true);
-define('WP_DEBUG_LOG', true);
-```
+See [Tempest Logger documentation](https://tempestphp.com/docs/logging/) for details.
 
 ## Validation
 
 For data validation, we recommend using a dedicated third-party package:
 
-- **[rakit/validation](https://github.com/rakit/validation)** - Laravel-style validation
-- **[respect/validation](https://github.com/Respect/Validation)** - Fluent validation library
+- **[rakit/validation](https://github.com/rakit/validation)** — Laravel-style validation
+- **[respect/validation](https://github.com/Respect/Validation)** — Fluent validation library
 
 ### Example with rakit/validation
 
@@ -648,4 +467,5 @@ $data = $validation->getValidData();
 ## Related
 
 - [Kernel](./kernel)
+- [CacheInterface](./cache-interface)
 - [Guide: Installation](/guide/installation)
