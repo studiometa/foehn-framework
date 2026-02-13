@@ -66,13 +66,13 @@ When a `.ddev/config.yaml` file is detected, the plugin automatically configures
 
 ## Options
 
-| Option     | Type                 | Default                    | Description                        |
-| ---------- | -------------------- | -------------------------- | ---------------------------------- |
-| `input`    | `string \| string[]` | *required*                 | Entry point glob patterns          |
-| `reload`   | `string \| string[]` | `["templates/**/*.twig"]`  | Patterns to watch for full reload  |
-| `outDir`   | `string`             | `"dist"`                   | Output directory for built assets  |
-| `themeDir` | `string`             | `process.cwd()`            | Theme directory context            |
-| `hotFile`  | `string`             | `"hot"`                    | Name of the hot file               |
+| Option     | Type                 | Default                   | Description                       |
+| ---------- | -------------------- | ------------------------- | --------------------------------- |
+| `input`    | `string \| string[]` | _required_                | Entry point glob patterns         |
+| `reload`   | `string \| string[]` | `["templates/**/*.twig"]` | Patterns to watch for full reload |
+| `outDir`   | `string`             | `"dist"`                  | Output directory for built assets |
+| `themeDir` | `string`             | `process.cwd()`           | Theme directory context           |
+| `hotFile`  | `string`             | `"hot"`                   | Name of the hot file              |
 
 ## PHP Integration
 

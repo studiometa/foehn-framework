@@ -29,29 +29,29 @@ Configure via `extra.foehn` in your project's `composer.json`:
 
 ```json
 {
-    "extra": {
-        "foehn": {
-            "web-dir": "web",
-            "wp-dir": "wp",
-            "theme-dir": "theme",
-            "theme-name": "my-theme",
-            "mu-plugins-dir": "mu-plugins",
-            "config-dir": "config"
-        }
+  "extra": {
+    "foehn": {
+      "web-dir": "web",
+      "wp-dir": "wp",
+      "theme-dir": "theme",
+      "theme-name": "my-theme",
+      "mu-plugins-dir": "mu-plugins",
+      "config-dir": "config"
     }
+  }
 }
 ```
 
 All options are optional and have sensible defaults.
 
-| Option | Default | Description |
-| --- | --- | --- |
-| `web-dir` | `web` | Web root directory (document root) |
-| `wp-dir` | `wp` | WordPress core directory within web root |
-| `theme-dir` | `theme` | Theme source directory to symlink |
-| `theme-name` | `theme` | Theme directory name in `wp-content/themes/` |
-| `mu-plugins-dir` | `mu-plugins` | Custom mu-plugins directory to symlink |
-| `config-dir` | `config` | Configuration files directory |
+| Option           | Default      | Description                                  |
+| ---------------- | ------------ | -------------------------------------------- |
+| `web-dir`        | `web`        | Web root directory (document root)           |
+| `wp-dir`         | `wp`         | WordPress core directory within web root     |
+| `theme-dir`      | `theme`      | Theme source directory to symlink            |
+| `theme-name`     | `theme`      | Theme directory name in `wp-content/themes/` |
+| `mu-plugins-dir` | `mu-plugins` | Custom mu-plugins directory to symlink       |
+| `config-dir`     | `config`     | Configuration files directory                |
 
 ## Generated structure
 
