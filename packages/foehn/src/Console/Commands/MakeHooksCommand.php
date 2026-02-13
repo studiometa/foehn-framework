@@ -60,8 +60,8 @@ final class MakeHooksCommand implements CliCommandInterface
         }
 
         $className = $assocArgs['class'] ?? str($name)->pascal()->toString() . 'Hooks';
-        $force = isset($assocArgs['force']);
-        $dryRun = isset($assocArgs['dry-run']);
+        $force = ($assocArgs['force'] ?? null) !== null;
+        $dryRun = ($assocArgs['dry-run'] ?? null) !== null;
 
         $targetPath = $this->getTargetPath('Hooks', $className);
 

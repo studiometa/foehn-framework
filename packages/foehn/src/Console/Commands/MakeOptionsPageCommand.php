@@ -74,8 +74,8 @@ final class MakeOptionsPageCommand implements CliCommandInterface
         $menuTitle = $assocArgs['menu-title'] ?? $title;
         $parent = $assocArgs['parent'] ?? '';
         $icon = $assocArgs['icon'] ?? 'dashicons-admin-generic';
-        $force = isset($assocArgs['force']);
-        $dryRun = isset($assocArgs['dry-run']);
+        $force = ($assocArgs['force'] ?? null) !== null;
+        $dryRun = ($assocArgs['dry-run'] ?? null) !== null;
 
         $targetPath = $this->getTargetPath('Fields/Options', $className);
 

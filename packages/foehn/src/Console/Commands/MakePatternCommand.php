@@ -74,12 +74,12 @@ final class MakePatternCommand implements CliCommandInterface
         $className = $assocArgs['class'] ?? str($name)->pascal()->toString() . 'Pattern';
         $title = $assocArgs['title'] ?? str($name)->replace('-', ' ')->title()->toString();
         $description = $assocArgs['description'] ?? 'A custom block pattern.';
-        $categories = isset($assocArgs['categories'])
+        $categories = ($assocArgs['categories'] ?? null) !== null
             ? array_map('trim', explode(',', $assocArgs['categories']))
             : ['featured'];
         $namespace = $assocArgs['namespace'] ?? 'theme';
-        $force = isset($assocArgs['force']);
-        $dryRun = isset($assocArgs['dry-run']);
+        $force = ($assocArgs['force'] ?? null) !== null;
+        $dryRun = ($assocArgs['dry-run'] ?? null) !== null;
 
         $fullPatternName = $namespace . '/' . $name;
         $targetPath = $this->getTargetPath('Patterns', $className);

@@ -64,10 +64,10 @@ final class MakeContextCommand implements CliCommandInterface
         }
 
         $className = str($name)->pascal()->toString();
-        $isGlobal = isset($assocArgs['global']);
+        $isGlobal = ($assocArgs['global'] ?? null) !== null;
         $templates = $this->resolveTemplates($isGlobal, $assocArgs, $name);
-        $force = isset($assocArgs['force']);
-        $dryRun = isset($assocArgs['dry-run']);
+        $force = ($assocArgs['force'] ?? null) !== null;
+        $dryRun = ($assocArgs['dry-run'] ?? null) !== null;
 
         $targetPath = $this->getTargetPath('Context', $className);
 
@@ -116,7 +116,7 @@ final class MakeContextCommand implements CliCommandInterface
             return ['*'];
         }
 
-        if (isset($assocArgs['templates'])) {
+        if (($assocArgs['templates'] ?? null) !== null) {
             return array_map('trim', explode(',', $assocArgs['templates']));
         }
 

@@ -74,12 +74,12 @@ final class MakeTaxonomyCommand implements CliCommandInterface
         $className = $assocArgs['class'] ?? str($name)->pascal()->toString() . 'Term';
         $singular = $assocArgs['singular'] ?? str($name)->replace('-', ' ')->title()->toString();
         $plural = $assocArgs['plural'] ?? $singular . 's';
-        $postTypes = isset($assocArgs['post-types'])
+        $postTypes = ($assocArgs['post-types'] ?? null) !== null
             ? array_map('trim', explode(',', $assocArgs['post-types']))
             : ['post'];
-        $hierarchical = isset($assocArgs['hierarchical']);
-        $force = isset($assocArgs['force']);
-        $dryRun = isset($assocArgs['dry-run']);
+        $hierarchical = ($assocArgs['hierarchical'] ?? null) !== null;
+        $force = ($assocArgs['force'] ?? null) !== null;
+        $dryRun = ($assocArgs['dry-run'] ?? null) !== null;
 
         $targetPath = $this->getTargetPath('Taxonomies', $className);
 

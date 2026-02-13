@@ -77,7 +77,7 @@ final class WpCli
      */
     public function confirm(string $question, array $assocArgs = []): bool
     {
-        if (isset($assocArgs['yes']) || isset($assocArgs['y'])) {
+        if (($assocArgs['yes'] ?? null) !== null || ($assocArgs['y'] ?? null) !== null) {
             return true;
         }
 

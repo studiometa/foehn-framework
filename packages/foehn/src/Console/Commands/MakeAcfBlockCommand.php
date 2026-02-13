@@ -116,9 +116,9 @@ final class MakeAcfBlockCommand implements CliCommandInterface
         $title = $assocArgs['title'] ?? str($name)->replace('-', ' ')->title()->toString();
         $category = $assocArgs['category'] ?? 'common';
         $mode = $assocArgs['mode'] ?? 'preview';
-        $fields = isset($assocArgs['fields']) ? array_map('trim', explode(',', $assocArgs['fields'])) : [];
-        $force = isset($assocArgs['force']);
-        $dryRun = isset($assocArgs['dry-run']);
+        $fields = ($assocArgs['fields'] ?? null) !== null ? array_map('trim', explode(',', $assocArgs['fields'])) : [];
+        $force = ($assocArgs['force'] ?? null) !== null;
+        $dryRun = ($assocArgs['dry-run'] ?? null) !== null;
 
         // Validate mode
         if (!in_array($mode, ['preview', 'edit', 'auto'], true)) {

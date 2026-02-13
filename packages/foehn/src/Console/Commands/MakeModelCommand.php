@@ -70,12 +70,12 @@ final class MakeModelCommand implements CliCommandInterface
         }
 
         $className = str($name)->pascal()->toString();
-        $withPostType = isset($assocArgs['post-type']);
+        $withPostType = ($assocArgs['post-type'] ?? null) !== null;
         $slug = $assocArgs['slug'] ?? str($name)->kebab()->toString();
         $singular = $assocArgs['singular'] ?? str($name)->replace('-', ' ')->title()->toString();
         $plural = $assocArgs['plural'] ?? $singular . 's';
-        $force = isset($assocArgs['force']);
-        $dryRun = isset($assocArgs['dry-run']);
+        $force = ($assocArgs['force'] ?? null) !== null;
+        $dryRun = ($assocArgs['dry-run'] ?? null) !== null;
 
         $targetPath = $this->getTargetPath('Models', $className);
 

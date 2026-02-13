@@ -63,11 +63,11 @@ final class MakeContextProviderCommand implements CliCommandInterface
         }
 
         $className = $assocArgs['class'] ?? str($name)->pascal()->toString() . 'ContextProvider';
-        $templates = isset($assocArgs['templates'])
+        $templates = ($assocArgs['templates'] ?? null) !== null
             ? array_map('trim', explode(',', $assocArgs['templates']))
             : [$name, $name . '-*'];
-        $force = isset($assocArgs['force']);
-        $dryRun = isset($assocArgs['dry-run']);
+        $force = ($assocArgs['force'] ?? null) !== null;
+        $dryRun = ($assocArgs['dry-run'] ?? null) !== null;
 
         $targetPath = $this->getTargetPath('ContextProviders', $className);
 

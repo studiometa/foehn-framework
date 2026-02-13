@@ -72,9 +72,9 @@ final class MakeImageSizeCommand implements CliCommandInterface
         $sizeName = $assocArgs['size-name'] ?? str($name)->replace(['Image', 'Size'], '')->kebab()->toString();
         $width = (int) ($assocArgs['width'] ?? 800);
         $height = (int) ($assocArgs['height'] ?? 0);
-        $crop = isset($assocArgs['crop']);
-        $force = isset($assocArgs['force']);
-        $dryRun = isset($assocArgs['dry-run']);
+        $crop = ($assocArgs['crop'] ?? null) !== null;
+        $force = ($assocArgs['force'] ?? null) !== null;
+        $dryRun = ($assocArgs['dry-run'] ?? null) !== null;
 
         $targetPath = $this->getTargetPath('ImageSizes', $className);
 

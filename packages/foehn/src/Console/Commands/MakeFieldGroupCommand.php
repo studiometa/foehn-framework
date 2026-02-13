@@ -74,8 +74,8 @@ final class MakeFieldGroupCommand implements CliCommandInterface
         $postType = $assocArgs['post-type'] ?? null;
         $pageTemplate = $assocArgs['page-template'] ?? null;
         $taxonomy = $assocArgs['taxonomy'] ?? null;
-        $force = isset($assocArgs['force']);
-        $dryRun = isset($assocArgs['dry-run']);
+        $force = ($assocArgs['force'] ?? null) !== null;
+        $dryRun = ($assocArgs['dry-run'] ?? null) !== null;
 
         // Determine subdirectory based on location type
         $subdirectory = $this->getSubdirectory($postType, $pageTemplate, $taxonomy);

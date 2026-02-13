@@ -57,8 +57,8 @@ final class MakeShortcodeCommand implements CliCommandInterface
         }
 
         $className = $assocArgs['class'] ?? str($tag)->pascal()->toString() . 'Shortcode';
-        $force = isset($assocArgs['force']);
-        $dryRun = isset($assocArgs['dry-run']);
+        $force = ($assocArgs['force'] ?? null) !== null;
+        $dryRun = ($assocArgs['dry-run'] ?? null) !== null;
 
         $targetPath = $this->getTargetPath('Shortcodes', $className);
 

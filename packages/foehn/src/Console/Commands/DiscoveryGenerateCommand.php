@@ -70,7 +70,7 @@ final class DiscoveryGenerateCommand implements CliCommandInterface
         }
 
         // Clear if requested
-        if (isset($assocArgs['clear'])) {
+        if (($assocArgs['clear'] ?? null) !== null) {
             $this->cli->log('Clearing existing cache...');
             $this->discoveryCache->clear();
         }
@@ -103,7 +103,7 @@ final class DiscoveryGenerateCommand implements CliCommandInterface
      */
     private function determineStrategy(array $assocArgs): DiscoveryCacheStrategy
     {
-        if (isset($assocArgs['strategy'])) {
+        if (($assocArgs['strategy'] ?? null) !== null) {
             return DiscoveryCacheStrategy::resolveFromInput($assocArgs['strategy']);
         }
 

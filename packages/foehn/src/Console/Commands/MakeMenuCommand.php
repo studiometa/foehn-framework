@@ -65,8 +65,8 @@ final class MakeMenuCommand implements CliCommandInterface
         $className = str($name)->pascal()->toString();
         $location = $assocArgs['location'] ?? str($name)->replace('Menu', '')->kebab()->toString();
         $description = $assocArgs['description'] ?? str($name)->replace(['-', '_'], ' ')->title()->toString();
-        $force = isset($assocArgs['force']);
-        $dryRun = isset($assocArgs['dry-run']);
+        $force = ($assocArgs['force'] ?? null) !== null;
+        $dryRun = ($assocArgs['dry-run'] ?? null) !== null;
 
         $targetPath = $this->getTargetPath('Menus', $className);
 

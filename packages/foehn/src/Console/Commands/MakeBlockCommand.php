@@ -79,9 +79,9 @@ final class MakeBlockCommand implements CliCommandInterface
         $title = $assocArgs['title'] ?? str($name)->replace('-', ' ')->title()->toString();
         $category = $assocArgs['category'] ?? 'theme';
         $namespace = $assocArgs['namespace'] ?? 'theme';
-        $interactive = isset($assocArgs['interactive']);
-        $force = isset($assocArgs['force']);
-        $dryRun = isset($assocArgs['dry-run']);
+        $interactive = ($assocArgs['interactive'] ?? null) !== null;
+        $force = ($assocArgs['force'] ?? null) !== null;
+        $dryRun = ($assocArgs['dry-run'] ?? null) !== null;
 
         $fullBlockName = $namespace . '/' . $name;
         $targetPath = $this->getTargetPath('Blocks', $className);
