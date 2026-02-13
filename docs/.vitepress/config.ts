@@ -46,6 +46,7 @@ export default defineConfig({
             { text: "Hooks", link: "/guide/hooks" },
             { text: "Assets", link: "/guide/assets" },
             { text: "Post Types", link: "/guide/post-types" },
+            { text: "Querying Posts", link: "/guide/querying-posts" },
             { text: "Taxonomies", link: "/guide/taxonomies" },
             { text: "Menus", link: "/guide/menus" },
           ],
@@ -63,6 +64,7 @@ export default defineConfig({
           text: "Blocks",
           items: [
             { text: "ACF Blocks", link: "/guide/acf-blocks" },
+            { text: "Arrayable DTOs", link: "/guide/arrayable-dtos" },
             { text: "Field Fragments", link: "/guide/field-fragments" },
             { text: "Native Blocks", link: "/guide/native-blocks" },
             { text: "Block Patterns", link: "/guide/block-patterns" },
@@ -135,6 +137,22 @@ export default defineConfig({
             { text: "ContextProviderInterface", link: "/api/context-provider-interface" },
             { text: "TemplateControllerInterface", link: "/api/template-controller-interface" },
             { text: "BlockPatternInterface", link: "/api/block-pattern-interface" },
+            { text: "Arrayable", link: "/api/arrayable" },
+            { text: "CacheInterface", link: "/api/cache-interface" },
+          ],
+        },
+        {
+          text: "DTOs & Traits",
+          items: [
+            { text: "HasToArray", link: "/api/has-to-array" },
+            { text: "Data DTOs", link: "/api/data-dtos" },
+            { text: "QueriesPostType", link: "/api/queries-post-type" },
+          ],
+        },
+        {
+          text: "Query",
+          items: [
+            { text: "PostQueryBuilder", link: "/api/post-query-builder" },
           ],
         },
         {
