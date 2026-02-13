@@ -36,9 +36,6 @@ describe('Kernel configuration', function () {
     it('stores app path', function () {
         // Use reflection to test without full WordPress environment
         $reflection = new ReflectionClass(Kernel::class);
-        $constructor = $reflection->getConstructor();
-        $constructor->setAccessible(true);
-
         $kernel = $reflection->newInstanceWithoutConstructor();
         $appPathProperty = $reflection->getProperty('appPath');
         $appPathProperty->setValue($kernel, '/path/to/app');
