@@ -988,6 +988,118 @@ if (!function_exists('get_post_meta')) {
 $GLOBALS['wp_stub_attachments'] = [];
 $GLOBALS['wp_stub_post_meta'] = [];
 
+// ──────────────────────────────────────────────
+// Locale & i18n
+// ──────────────────────────────────────────────
+
+if (!function_exists('get_locale')) {
+    function get_locale(): string
+    {
+        return $GLOBALS['wp_stub_locale'] ?? 'en_US';
+    }
+}
+
+if (!function_exists('__')) {
+    function __(string $text, string $domain = 'default'): string
+    {
+        return $text;
+    }
+}
+
+if (!function_exists('_e')) {
+    function _e(string $text, string $domain = 'default'): void
+    {
+        echo $text;
+    }
+}
+
+if (!function_exists('_x')) {
+    function _x(string $text, string $context, string $domain = 'default'): string
+    {
+        return $text;
+    }
+}
+
+if (!function_exists('_n')) {
+    function _n(string $single, string $plural, int $number, string $domain = 'default'): string
+    {
+        return $number === 1 ? $single : $plural;
+    }
+}
+
+if (!function_exists('esc_html__')) {
+    function esc_html__(string $text, string $domain = 'default'): string
+    {
+        return htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
+    }
+}
+
+if (!function_exists('esc_attr__')) {
+    function esc_attr__(string $text, string $domain = 'default'): string
+    {
+        return htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
+    }
+}
+
+if (!class_exists('WP_Theme')) {
+    class WP_Theme
+    {
+        private array $data = [];
+
+        public function __construct(string $theme_dir = '', string $theme_root = '')
+        {
+            $this->data = [
+                'Name' => 'Test Theme',
+                'Version' => '1.0.0',
+                'ThemeURI' => 'http://example.com',
+                'Description' => 'A test theme',
+                'Author' => 'Test Author',
+                'AuthorURI' => 'http://example.com',
+                'TextDomain' => 'test-theme',
+            ];
+        }
+
+        public function get(string $header): string
+        {
+            return $this->data[$header] ?? '';
+        }
+
+        public function get_stylesheet(): string
+        {
+            return 'test-theme';
+        }
+
+        public function get_template_directory_uri(): string
+        {
+            return 'http://example.com/wp-content/themes/test-theme';
+        }
+
+        public function parent(): ?WP_Theme
+        {
+            return null;
+        }
+
+        public function exists(): bool
+        {
+            return true;
+        }
+    }
+}
+
+if (!function_exists('wp_get_theme')) {
+    function wp_get_theme(?string $stylesheet = null): WP_Theme
+    {
+        return new WP_Theme();
+    }
+}
+
+if (!function_exists('is_ssl')) {
+    function is_ssl(): bool
+    {
+        return false;
+    }
+}
+
 // Default template state
 $GLOBALS['wp_stub_template'] = 'index';
 $GLOBALS['wp_stub_logged_in'] = false;
@@ -997,3 +1109,4 @@ $GLOBALS['wp_stub_query_vars'] = [];
 $GLOBALS['wp_stub_is_admin'] = false;
 $GLOBALS['wp_stub_user_can'] = [];
 $GLOBALS['wp_stub_nav_menus'] = [];
+$GLOBALS['wp_stub_locale'] = 'en_US';

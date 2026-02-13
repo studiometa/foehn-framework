@@ -10,6 +10,9 @@ use Studiometa\Foehn\Attributes\AsTemplateController;
 use Studiometa\Foehn\Contracts\TemplateControllerInterface;
 use Studiometa\Foehn\Discovery\Concerns\CacheableDiscovery;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
+use Studiometa\Foehn\Views\TemplateContext;
+use Timber\Site;
+use Timber\Timber;
 
 use function Tempest\Container\get;
 
@@ -122,7 +125,15 @@ final class TemplateControllerDiscovery implements WpDiscovery
         /** @var TemplateControllerInterface $instance */
         $instance = get($controller['className']);
 
-        $result = $instance->handle();
+        $timberContext = Timber::context();
+        $context = new TemplateContext(
+            post: $timberContext['post'] ?? null,
+            posts: $timberContext['posts'] ?? null,
+            site: $timberContext['site'] ?? new Site(),
+            user: $timberContext['user'] ?? null,
+            extra: array_diff_key($timberContext, array_flip(['post', 'posts', 'site', 'user'])),
+        );
+        $result = $instance->handle($context);
 
         if ($result === null) {
             return $template;

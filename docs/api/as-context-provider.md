@@ -42,16 +42,16 @@ namespace App\ContextProviders;
 
 use Studiometa\Foehn\Attributes\AsContextProvider;
 use Studiometa\Foehn\Contracts\ContextProviderInterface;
+use Studiometa\Foehn\Views\TemplateContext;
 
 #[AsContextProvider('*')]
 final class GlobalContextProvider implements ContextProviderInterface
 {
-    public function provide(array $context): array
+    public function provide(TemplateContext $context): TemplateContext
     {
-        $context['site_name'] = get_bloginfo('name');
-        $context['primary_menu'] = \Timber\Timber::get_menu('primary');
-
-        return $context;
+        return $context
+            ->with('current_year', date('Y'))
+            ->with('is_home', is_front_page());
     }
 }
 ```
@@ -59,13 +59,20 @@ final class GlobalContextProvider implements ContextProviderInterface
 ### Template-Specific
 
 ```php
+use App\Models\Product;
+
 #[AsContextProvider('single-product')]
 final class ProductContextProvider implements ContextProviderInterface
 {
-    public function provide(array $context): array
+    public function provide(TemplateContext $context): TemplateContext
     {
-        $context['related'] = $context['post']->relatedProducts(4);
-        return $context;
+        $product = $context->post(Product::class);
+
+        if (!$product) {
+            return $context;
+        }
+
+        return $context->with('related', $product->relatedProducts(4));
     }
 }
 ```
@@ -76,10 +83,13 @@ final class ProductContextProvider implements ContextProviderInterface
 #[AsContextProvider('archive-*')]
 final class ArchiveContextProvider implements ContextProviderInterface
 {
-    public function provide(array $context): array
+    public function provide(TemplateContext $context): TemplateContext
     {
-        $context['pagination'] = \Timber\Timber::get_pagination();
-        return $context;
+        if (!$context->posts) {
+            return $context;
+        }
+
+        return $context->with('pagination', $context->posts->pagination());
     }
 }
 ```
@@ -90,10 +100,9 @@ final class ArchiveContextProvider implements ContextProviderInterface
 #[AsContextProvider(['home', 'front-page'])]
 final class HomeContextProvider implements ContextProviderInterface
 {
-    public function provide(array $context): array
+    public function provide(TemplateContext $context): TemplateContext
     {
-        $context['featured'] = $this->getFeaturedPosts();
-        return $context;
+        return $context->with('featured', $this->getFeaturedPosts());
     }
 }
 ```
@@ -115,9 +124,11 @@ final class FinalContextProvider implements ContextProviderInterface {}
 Classes must implement `ContextProviderInterface`:
 
 ```php
+use Studiometa\Foehn\Views\TemplateContext;
+
 interface ContextProviderInterface
 {
-    public function provide(array $context): array;
+    public function provide(TemplateContext $context): TemplateContext;
 }
 ```
 

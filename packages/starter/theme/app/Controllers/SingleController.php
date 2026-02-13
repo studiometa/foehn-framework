@@ -7,7 +7,7 @@ namespace App\Controllers;
 use Studiometa\Foehn\Attributes\AsTemplateController;
 use Studiometa\Foehn\Contracts\TemplateControllerInterface;
 use Studiometa\Foehn\Contracts\ViewEngineInterface;
-use Timber\Timber;
+use Studiometa\Foehn\Views\TemplateContext;
 
 #[AsTemplateController(['single', 'single-*'])]
 final readonly class SingleController implements TemplateControllerInterface
@@ -16,18 +16,17 @@ final readonly class SingleController implements TemplateControllerInterface
         private ViewEngineInterface $view,
     ) {}
 
-    public function handle(): string
+    public function handle(TemplateContext $context): string
     {
-        $context = Timber::context();
-        $post = $context['post'];
+        $post = $context->post;
 
-        if (post_password_required($post->ID)) {
+        if ($post && post_password_required($post->ID)) {
             return $this->view->render('pages/password', $context);
         }
 
         $templates = [
-            "pages/single-{$post->post_type}-{$post->slug}",
-            "pages/single-{$post->post_type}",
+            "pages/single-{$post?->post_type}-{$post?->slug}",
+            "pages/single-{$post?->post_type}",
             'pages/single',
         ];
 

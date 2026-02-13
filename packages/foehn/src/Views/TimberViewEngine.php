@@ -6,6 +6,7 @@ namespace Studiometa\Foehn\Views;
 
 use RuntimeException;
 use Studiometa\Foehn\Contracts\ViewEngineInterface;
+use Timber\Site;
 use Timber\Timber;
 
 /**
@@ -26,18 +27,20 @@ final class TimberViewEngine implements ViewEngineInterface
     /**
      * @inheritDoc
      */
-    public function render(string $template, array $context = []): string
+    public function render(string $template, array|object $context = []): string
     {
         $resolved = $this->resolveTemplate($template);
 
-        // Merge Timber's global context first (site, theme, user, etc.),
-        // then shared data, then context (context wins)
-        $context = array_merge(Timber::context_global(), $this->shared, $context);
+        // Convert to TemplateContext if needed
+        $templateContext = $this->toTemplateContext($context);
 
         // Apply context providers
-        $context = $this->contextProviders->provide($template, $context);
+        $templateContext = $this->contextProviders->provide($template, $templateContext);
 
-        $result = Timber::compile($resolved, $context);
+        // Convert to array and merge with Timber globals and shared data
+        $contextArray = array_merge(Timber::context_global(), $this->shared, $templateContext->toArray());
+
+        $result = Timber::compile($resolved, $contextArray);
 
         if ($result === false) {
             throw new RuntimeException("Failed to render template: {$template}");
@@ -49,7 +52,7 @@ final class TimberViewEngine implements ViewEngineInterface
     /**
      * @inheritDoc
      */
-    public function renderFirst(array $templates, array $context = []): string
+    public function renderFirst(array $templates, array|object $context = []): string
     {
         foreach ($templates as $template) {
             if (!$this->exists($template)) {
@@ -60,6 +63,33 @@ final class TimberViewEngine implements ViewEngineInterface
         }
 
         throw new RuntimeException('No template found: ' . implode(', ', $templates));
+    }
+
+    /**
+     * Convert context to TemplateContext.
+     *
+     * @param array<string, mixed>|object $context
+     * @return TemplateContext
+     */
+    private function toTemplateContext(array|object $context): TemplateContext
+    {
+        if ($context instanceof TemplateContext) {
+            return $context;
+        }
+
+        $array = match (true) {
+            is_array($context) => $context,
+            method_exists($context, 'toArray') => $context->toArray(),
+            default => get_object_vars($context),
+        };
+
+        return new TemplateContext(
+            post: $array['post'] ?? null,
+            posts: $array['posts'] ?? null,
+            site: $array['site'] ?? new Site(),
+            user: $array['user'] ?? null,
+            extra: array_diff_key($array, array_flip(['post', 'posts', 'site', 'user'])),
+        );
     }
 
     /**

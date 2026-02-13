@@ -105,9 +105,11 @@ final class Product extends TimberPost implements ConfiguresPostType
 
 ### Template Controllers
 
-Controllers handle WordPress template hierarchy with dependency injection:
+Controllers handle WordPress template hierarchy with dependency injection. The `handle()` method receives a typed `TemplateContext` object:
 
 ```php
+use Studiometa\Foehn\Views\TemplateContext;
+
 #[AsTemplateController(['single', 'single-*'])]
 final readonly class SingleController implements TemplateControllerInterface
 {
@@ -115,14 +117,13 @@ final readonly class SingleController implements TemplateControllerInterface
         private ViewEngineInterface $view,
     ) {}
 
-    public function handle(): string
+    public function handle(TemplateContext $context): string
     {
-        $context = Timber::context();
-        $post = $context['post'];
+        $post = $context->post; // Typed ?Post with IDE support
 
         return $this->view->renderFirst([
-            "pages/single-{$post->post_type}-{$post->slug}",
-            "pages/single-{$post->post_type}",
+            "pages/single-{$post?->post_type}-{$post?->slug}",
+            "pages/single-{$post?->post_type}",
             'pages/single',
         ], $context);
     }
@@ -140,19 +141,18 @@ Included controllers:
 Global context available on all templates:
 
 ```php
+use Studiometa\Foehn\Views\TemplateContext;
+
 #[AsContextProvider('*')]
 final class GlobalContextProvider implements ContextProviderInterface
 {
-    public function provide(array $context): array
+    public function provide(TemplateContext $context): TemplateContext
     {
-        return array_merge($context, [
-            'site' => new Site(),
-            'menus' => [
-                'header' => Timber::get_menu('header'),
-                'footer' => Timber::get_menu('footer'),
-            ],
-            'current_year' => date('Y'),
-        ]);
+        // Note: site, user, post, posts are already in TemplateContext
+        // Menus are auto-injected by MenuDiscovery
+        return $context
+            ->with('current_year', date('Y'))
+            ->with('is_home', is_front_page());
     }
 }
 ```

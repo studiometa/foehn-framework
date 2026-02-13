@@ -4,6 +4,28 @@ declare(strict_types=1);
 
 use Studiometa\Foehn\Contracts\ContextProviderInterface;
 use Studiometa\Foehn\Views\ContextProviderRegistry;
+use Studiometa\Foehn\Views\TemplateContext;
+use Timber\Site;
+
+// Simple stub for Site to avoid WordPress dependency
+class RegistrySiteStub extends Site
+{
+    public function __construct()
+    {
+        // Skip parent constructor which requires WordPress
+    }
+}
+
+function createTestContext(array $extra = []): TemplateContext
+{
+    return new TemplateContext(
+        post: null,
+        posts: null,
+        site: new RegistrySiteStub(),
+        user: null,
+        extra: $extra,
+    );
+}
 
 describe('ContextProviderRegistry', function () {
     it('starts with zero providers', function () {
@@ -15,9 +37,9 @@ describe('ContextProviderRegistry', function () {
     it('can register a provider for a template', function () {
         $registry = new ContextProviderRegistry();
         $provider = new class implements ContextProviderInterface {
-            public function provide(array $context): array
+            public function provide(TemplateContext $context): TemplateContext
             {
-                return array_merge($context, ['foo' => 'bar']);
+                return $context->with('foo', 'bar');
             }
         };
 
@@ -31,7 +53,7 @@ describe('ContextProviderRegistry', function () {
     it('can register a provider for multiple templates', function () {
         $registry = new ContextProviderRegistry();
         $provider = new class implements ContextProviderInterface {
-            public function provide(array $context): array
+            public function provide(TemplateContext $context): TemplateContext
             {
                 return $context;
             }
@@ -48,7 +70,7 @@ describe('ContextProviderRegistry', function () {
     it('can register wildcard patterns', function () {
         $registry = new ContextProviderRegistry();
         $provider = new class implements ContextProviderInterface {
-            public function provide(array $context): array
+            public function provide(TemplateContext $context): TemplateContext
             {
                 return $context;
             }
@@ -66,29 +88,28 @@ describe('ContextProviderRegistry', function () {
         $registry = new ContextProviderRegistry();
 
         $provider1 = new class implements ContextProviderInterface {
-            public function provide(array $context): array
+            public function provide(TemplateContext $context): TemplateContext
             {
-                return array_merge($context, ['provider1' => true]);
+                return $context->with('provider1', true);
             }
         };
 
         $provider2 = new class implements ContextProviderInterface {
-            public function provide(array $context): array
+            public function provide(TemplateContext $context): TemplateContext
             {
-                return array_merge($context, ['provider2' => true]);
+                return $context->with('provider2', true);
             }
         };
 
         $registry->register(['single'], $provider1);
         $registry->register(['single'], $provider2);
 
-        $context = $registry->provide('single', ['original' => true]);
+        $context = createTestContext(['original' => true]);
+        $result = $registry->provide('single', $context);
 
-        expect($context)->toBe([
-            'original' => true,
-            'provider1' => true,
-            'provider2' => true,
-        ]);
+        expect($result->get('original'))->toBeTrue();
+        expect($result->get('provider1'))->toBeTrue();
+        expect($result->get('provider2'))->toBeTrue();
     });
 
     it('respects provider priority', function () {
@@ -100,7 +121,7 @@ describe('ContextProviderRegistry', function () {
                 private array &$order,
             ) {}
 
-            public function provide(array $context): array
+            public function provide(TemplateContext $context): TemplateContext
             {
                 $this->order[] = 'low';
                 return $context;
@@ -112,7 +133,7 @@ describe('ContextProviderRegistry', function () {
                 private array &$order,
             ) {}
 
-            public function provide(array $context): array
+            public function provide(TemplateContext $context): TemplateContext
             {
                 $this->order[] = 'high';
                 return $context;
@@ -123,7 +144,7 @@ describe('ContextProviderRegistry', function () {
         $registry->register(['single'], $lowPriority, priority: 20);
         $registry->register(['single'], $highPriority, priority: 5);
 
-        $registry->provide('single', []);
+        $registry->provide('single', createTestContext());
 
         expect($order)->toBe(['high', 'low']);
     });
@@ -131,9 +152,9 @@ describe('ContextProviderRegistry', function () {
     it('matches wildcard patterns correctly', function () {
         $registry = new ContextProviderRegistry();
         $provider = new class implements ContextProviderInterface {
-            public function provide(array $context): array
+            public function provide(TemplateContext $context): TemplateContext
             {
-                return array_merge($context, ['matched' => true]);
+                return $context->with('matched', true);
             }
         };
 
@@ -152,34 +173,32 @@ describe('ContextProviderRegistry', function () {
         $registry = new ContextProviderRegistry();
 
         $exactProvider = new class implements ContextProviderInterface {
-            public function provide(array $context): array
+            public function provide(TemplateContext $context): TemplateContext
             {
-                return array_merge($context, ['exact' => true]);
+                return $context->with('exact', true);
             }
         };
 
         $wildcardProvider = new class implements ContextProviderInterface {
-            public function provide(array $context): array
+            public function provide(TemplateContext $context): TemplateContext
             {
-                return array_merge($context, ['wildcard' => true]);
+                return $context->with('wildcard', true);
             }
         };
 
         $registry->register(['single-post'], $exactProvider);
         $registry->register(['single-*'], $wildcardProvider);
 
-        $context = $registry->provide('single-post', []);
+        $result = $registry->provide('single-post', createTestContext());
 
-        expect($context)->toBe([
-            'exact' => true,
-            'wildcard' => true,
-        ]);
+        expect($result->get('exact'))->toBeTrue();
+        expect($result->get('wildcard'))->toBeTrue();
     });
 
     it('counts wildcard providers correctly', function () {
         $registry = new ContextProviderRegistry();
         $provider = new class implements ContextProviderInterface {
-            public function provide(array $context): array
+            public function provide(TemplateContext $context): TemplateContext
             {
                 return $context;
             }
@@ -194,8 +213,9 @@ describe('ContextProviderRegistry', function () {
     it('returns unmodified context when no providers match', function () {
         $registry = new ContextProviderRegistry();
 
-        $context = $registry->provide('nonexistent', ['original' => true]);
+        $context = createTestContext(['original' => true]);
+        $result = $registry->provide('nonexistent', $context);
 
-        expect($context)->toBe(['original' => true]);
+        expect($result->get('original'))->toBeTrue();
     });
 });

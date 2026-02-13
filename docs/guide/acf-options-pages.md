@@ -54,6 +54,7 @@ namespace App\ContextProviders;
 use Studiometa\Foehn\Attributes\AsContextProvider;
 use Studiometa\Foehn\Contracts\ContextProviderInterface;
 use Studiometa\Foehn\Services\AcfOptionsService;
+use Studiometa\Foehn\Views\TemplateContext;
 
 #[AsContextProvider(templates: ['*'])]
 final readonly class GlobalContextProvider implements ContextProviderInterface
@@ -62,14 +63,12 @@ final readonly class GlobalContextProvider implements ContextProviderInterface
         private AcfOptionsService $options,
     ) {}
 
-    public function provide(array $context): array
+    public function provide(TemplateContext $context): TemplateContext
     {
-        return [
-            ...$context,
-            'site_name' => $this->options->get('site_name', 'theme-settings'),
-            'footer_text' => $this->options->get('footer_text', 'theme-settings'),
-            'logo' => $this->options->get('logo', 'theme-settings'),
-        ];
+        return $context
+            ->with('site_name', $this->options->get('site_name', 'theme-settings'))
+            ->with('footer_text', $this->options->get('footer_text', 'theme-settings'))
+            ->with('logo', $this->options->get('logo', 'theme-settings'));
     }
 }
 ```

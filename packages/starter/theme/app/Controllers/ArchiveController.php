@@ -7,7 +7,7 @@ namespace App\Controllers;
 use Studiometa\Foehn\Attributes\AsTemplateController;
 use Studiometa\Foehn\Contracts\TemplateControllerInterface;
 use Studiometa\Foehn\Contracts\ViewEngineInterface;
-use Timber\Timber;
+use Studiometa\Foehn\Views\TemplateContext;
 
 #[AsTemplateController(['archive', 'archive-*', 'front-page', 'home', 'category', 'tag', 'tax-*'])]
 final readonly class ArchiveController implements TemplateControllerInterface
@@ -16,37 +16,26 @@ final readonly class ArchiveController implements TemplateControllerInterface
         private ViewEngineInterface $view,
     ) {}
 
-    public function handle(): string
+    public function handle(TemplateContext $context): string
     {
-        $context = Timber::context();
-
-        if (isset($context['posts']) && method_exists($context['posts'], 'pagination')) {
-            $context['pagination'] = $context['posts']->pagination([
+        if ($context->posts && method_exists($context->posts, 'pagination')) {
+            $context = $context->with('pagination', $context->posts->pagination([
                 'mid_size' => 2,
                 'end_size' => 1,
-            ]);
+            ]));
         }
 
-        $context['archive_title'] = get_the_archive_title();
-        $context['archive_description'] = get_the_archive_description();
+        $context = $context
+            ->with('archive_title', get_the_archive_title())
+            ->with('archive_description', get_the_archive_description());
 
-        $templates = [];
+        $template = match (true) {
+            is_post_type_archive() => 'pages/archive-' . get_query_var('post_type'),
+            is_category() => 'pages/category',
+            is_tag() => 'pages/tag',
+            default => 'pages/archive',
+        };
 
-        if (is_post_type_archive()) {
-            $postType = get_query_var('post_type');
-            $templates[] = "pages/archive-{$postType}";
-        }
-
-        if (is_category()) {
-            $templates[] = 'pages/category';
-        }
-
-        if (is_tag()) {
-            $templates[] = 'pages/tag';
-        }
-
-        $templates[] = 'pages/archive';
-
-        return $this->view->renderFirst($templates, $context);
+        return $this->view->render($template, $context);
     }
 }

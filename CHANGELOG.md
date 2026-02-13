@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **BREAKING:** Require PHP 8.5+ and Tempest Framework v3.0 ([#98])
 - **BREAKING:** Remove static `Helpers\Log` helper — use Tempest Logger (`tempest/log`) instead ([#96])
 - **BREAKING:** Remove static `Helpers\Cache` helper — use injectable `CacheInterface` instead ([#96])
+- **BREAKING:** `TemplateControllerInterface::handle()` now receives typed `TemplateContext` parameter ([#107])
+- **BREAKING:** `ContextProviderInterface::provide()` now receives and returns `TemplateContext` ([#107])
+- **BREAKING:** `ViewEngineInterface::render()` and `renderFirst()` now accept `array|object` context ([#107])
 - Replace `\Tempest\get()` with injected `Container` in `HookDiscovery` and `TwigExtensionDiscovery` ([#96])
 
 ### Added
@@ -40,7 +43,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `PostTypeRegistry` for class-to-post-type mapping ([#91], [#100])
 - Add `Foehn\Models\Post` and `Foehn\Models\Page` base classes with query support ([#91], [#100])
 - Add Starter Theme documentation with quick start guide and feature overview ([#101])
+- Add `TemplateContext` class for typed template controller context ([#107]):
+  - Typed properties: `post`, `posts`, `site`, `user`
+  - Safe post type casting via `post(Product::class)` and `posts(Product::class)`
+  - Immutable updates: `with()`, `merge()`, `withDto()`
+  - DTO support with `withDto()` / `dto()` for type-safe retrieval
+  - ArrayAccess support for dynamic keys
+  - ArrayAccess for dynamic keys
 
+[#107]: https://github.com/studiometa/foehn-framework/pull/107
 [#101]: https://github.com/studiometa/foehn-framework/pull/101
 [#100]: https://github.com/studiometa/foehn-framework/pull/100
 [#98]: https://github.com/studiometa/foehn-framework/pull/98
