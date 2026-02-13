@@ -37,7 +37,7 @@ final class PostTypeRegistry
      */
     public static function get(string $className): string
     {
-        if (!isset(self::$map[$className])) {
+        if ((self::$map[$className] ?? null) === null) {
             throw new RuntimeException(sprintf(
                 'Class %s is not registered in PostTypeRegistry. Ensure it has the #[AsPostType] attribute and discovery has run.',
                 $className,
@@ -54,7 +54,7 @@ final class PostTypeRegistry
      */
     public static function has(string $className): bool
     {
-        return isset(self::$map[$className]);
+        return (self::$map[$className] ?? null) !== null;
     }
 
     /**

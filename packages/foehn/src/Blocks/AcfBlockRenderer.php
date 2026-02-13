@@ -64,7 +64,7 @@ final class AcfBlockRenderer
     private function getFields(array $blockData): array
     {
         // In ACF, fields are stored in the block data
-        if (isset($blockData['data']) && is_array($blockData['data'])) {
+        if (is_array($blockData['data'] ?? null)) {
             return $this->parseAcfData($blockData['data']);
         }
 
@@ -152,7 +152,7 @@ final class AcfBlockRenderer
         $classes = [];
 
         // Base class from block name
-        if (isset($blockData['name']) && is_string($blockData['name'])) {
+        if (is_string($blockData['name'] ?? null)) {
             $classes[] = 'wp-block-' . str_replace('/', '-', $blockData['name']);
         }
 

@@ -79,7 +79,7 @@ final class ContextProviderRegistry
         $matching = [];
 
         // Exact matches
-        if (isset($this->providers[$template])) {
+        if (($this->providers[$template] ?? null) !== null) {
             $matching = [...$matching, ...$this->providers[$template]];
         }
 

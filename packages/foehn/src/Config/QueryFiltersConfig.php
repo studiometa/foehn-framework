@@ -94,7 +94,7 @@ final readonly class QueryFiltersConfig
      */
     public function hasTaxonomy(string $taxonomy): bool
     {
-        return isset($this->taxonomies[$taxonomy]);
+        return ($this->taxonomies[$taxonomy] ?? null) !== null;
     }
 
     /**
@@ -118,7 +118,7 @@ final readonly class QueryFiltersConfig
      */
     public function validatePublicVar(string $var, mixed $value): bool
     {
-        if (!isset($this->publicVars[$var])) {
+        if (($this->publicVars[$var] ?? null) === null) {
             return false;
         }
 

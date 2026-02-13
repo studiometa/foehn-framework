@@ -69,7 +69,7 @@ final readonly class FoehnConfig
     {
         $strategy = DiscoveryCacheStrategy::NONE;
 
-        if (isset($config['discovery_cache'])) {
+        if (($config['discovery_cache'] ?? null) !== null) {
             $strategy = DiscoveryCacheStrategy::resolveFromInput($config['discovery_cache']);
         }
 

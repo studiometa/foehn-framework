@@ -107,7 +107,7 @@ final class TaggedCache
     {
         $mapping = self::getTagsMapping();
 
-        if (!isset($mapping[$tag])) {
+        if (($mapping[$tag] ?? null) === null) {
             return 0;
         }
 
@@ -160,7 +160,7 @@ final class TaggedCache
         $mapping = self::getTagsMapping();
 
         foreach ($this->tags as $tag) {
-            if (!isset($mapping[$tag])) {
+            if (($mapping[$tag] ?? null) === null) {
                 $mapping[$tag] = [];
             }
 

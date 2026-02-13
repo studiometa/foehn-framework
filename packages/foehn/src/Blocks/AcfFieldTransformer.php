@@ -73,7 +73,7 @@ final class AcfFieldTransformer
         // Get the field object to determine its type
         $fieldObject = get_field_object($fieldName, $blockId);
 
-        if ($fieldObject === false || !isset($fieldObject['type'])) {
+        if ($fieldObject === false || ($fieldObject['type'] ?? null) === null) {
             return $value;
         }
 
@@ -174,7 +174,7 @@ final class AcfFieldTransformer
      */
     private function transformSubField(mixed $subValue, string|int $key, array $subFieldMap, string $blockId): mixed
     {
-        if (!is_string($key) || !isset($subFieldMap[$key])) {
+        if (!is_string($key) || ($subFieldMap[$key] ?? null) === null) {
             return $subValue;
         }
 
@@ -276,7 +276,7 @@ final class AcfFieldTransformer
     {
         $layoutName = $row['acf_fc_layout'] ?? null;
 
-        if (!is_string($layoutName) || !isset($layoutMap[$layoutName])) {
+        if (!is_string($layoutName) || ($layoutMap[$layoutName] ?? null) === null) {
             return $row;
         }
 

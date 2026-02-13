@@ -247,11 +247,11 @@ final class ThemeJsonGenerator
             return $this;
         }
 
-        if (isset($existing['settings'])) {
+        if (($existing['settings'] ?? null) !== null) {
             $this->settings = array_merge_recursive($existing['settings'], $this->settings);
         }
 
-        if (isset($existing['styles'])) {
+        if (($existing['styles'] ?? null) !== null) {
             $this->styles = array_merge_recursive($existing['styles'], $this->styles);
         }
 

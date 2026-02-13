@@ -221,7 +221,7 @@ final class VideoEmbed
 
         parse_str($query, $params);
 
-        if (!isset($params['t'])) {
+        if (($params['t'] ?? null) === null) {
             return null;
         }
 
