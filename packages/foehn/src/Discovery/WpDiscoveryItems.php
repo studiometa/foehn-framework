@@ -60,7 +60,7 @@ final class WpDiscoveryItems implements IteratorAggregate, Countable
      */
     public function hasLocation(DiscoveryLocation $location): bool
     {
-        return isset($this->items[$location->namespace]) && $this->items[$location->namespace] !== [];
+        return ($this->items[$location->namespace] ?? null) !== null && $this->items[$location->namespace] !== [];
     }
 
     /**

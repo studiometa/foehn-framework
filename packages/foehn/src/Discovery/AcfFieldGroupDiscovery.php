@@ -60,7 +60,7 @@ final class AcfFieldGroupDiscovery implements WpDiscovery
         add_action('acf/init', function (): void {
             foreach ($this->getItems() as $item) {
                 // Handle cached format
-                if (isset($item['name'])) {
+                if (($item['name'] ?? null) !== null) {
                     $this->registerFieldGroupFromCache($item);
 
                     continue;
@@ -240,7 +240,7 @@ final class AcfFieldGroupDiscovery implements WpDiscovery
 
         $firstRule = reset($firstElement);
 
-        return is_array($firstRule) && isset($firstRule['param']);
+        return is_array($firstRule) && ($firstRule['param'] ?? null) !== null;
     }
 
     /**

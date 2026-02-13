@@ -119,7 +119,7 @@ final class AcfOptionsPageDiscovery implements WpDiscovery
      */
     private function resolveAttribute(array $item): AsAcfOptionsPage
     {
-        if (isset($item['attribute'])) {
+        if (($item['attribute'] ?? null) !== null) {
             return $item['attribute'];
         }
 

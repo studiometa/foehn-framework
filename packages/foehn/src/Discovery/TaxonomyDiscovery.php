@@ -96,7 +96,7 @@ final class TaxonomyDiscovery implements WpDiscovery
      */
     private function resolveAttribute(array $item): AsTaxonomy
     {
-        if (isset($item['attribute'])) {
+        if (($item['attribute'] ?? null) !== null) {
             return $item['attribute'];
         }
 

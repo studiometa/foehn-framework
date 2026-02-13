@@ -145,7 +145,7 @@ final class DiscoveryRunner
 
         // Initialize all discovery instances
         foreach (self::getAllDiscoveryClasses() as $discoveryClass) {
-            if (isset($this->discoveries[$discoveryClass])) {
+            if (($this->discoveries[$discoveryClass] ?? null) !== null) {
                 continue;
             }
 
@@ -155,7 +155,10 @@ final class DiscoveryRunner
         // If we have cached data, restore discoveries from cache
         if ($this->cachedData !== null) {
             foreach ($this->discoveries as $className => $discovery) {
-                if (!isset($this->cachedData[$className]) || !method_exists($discovery, 'restoreFromCache')) {
+                if (
+                    ($this->cachedData[$className] ?? null) === null
+                    || !method_exists($discovery, 'restoreFromCache')
+                ) {
                     continue;
                 }
 
@@ -237,7 +240,7 @@ final class DiscoveryRunner
      */
     private function applyDiscovery(string $discoveryClass): void
     {
-        if (!isset($this->discoveries[$discoveryClass])) {
+        if (($this->discoveries[$discoveryClass] ?? null) === null) {
             return;
         }
 

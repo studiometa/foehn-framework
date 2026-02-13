@@ -17,7 +17,7 @@ use Studiometa\Foehn\Discovery\WpDiscoveryItems;
  */
 trait IsWpDiscovery
 {
-    private WpDiscoveryItems $discoveryItems;
+    private ?WpDiscoveryItems $discoveryItems = null;
 
     /**
      * Add a discovered item for the given location.
@@ -35,7 +35,7 @@ trait IsWpDiscovery
      */
     public function getItems(): WpDiscoveryItems
     {
-        if (!isset($this->discoveryItems)) {
+        if ($this->discoveryItems === null) {
             $this->discoveryItems = new WpDiscoveryItems();
         }
 

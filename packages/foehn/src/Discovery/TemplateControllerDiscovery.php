@@ -324,7 +324,7 @@ final class TemplateControllerDiscovery implements WpDiscovery
     private function findController(string $template): ?array
     {
         // Exact match
-        if (isset($this->controllers[$template])) {
+        if (($this->controllers[$template] ?? null) !== null) {
             return $this->controllers[$template];
         }
 

@@ -100,7 +100,7 @@ final class PostTypeDiscovery implements WpDiscovery
      */
     private function resolveAttribute(array $item): AsPostType
     {
-        if (isset($item['attribute'])) {
+        if (($item['attribute'] ?? null) !== null) {
             return $item['attribute'];
         }
 

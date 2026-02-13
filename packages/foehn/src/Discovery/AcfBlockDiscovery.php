@@ -63,7 +63,7 @@ final class AcfBlockDiscovery implements WpDiscovery
         add_action('acf/init', function (): void {
             foreach ($this->getItems() as $item) {
                 // Handle cached format
-                if (isset($item['name'])) {
+                if (($item['name'] ?? null) !== null) {
                     $this->registerBlockFromCache($item);
 
                     continue;

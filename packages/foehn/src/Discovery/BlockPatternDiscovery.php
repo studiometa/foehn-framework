@@ -54,7 +54,7 @@ final class BlockPatternDiscovery implements WpDiscovery
         add_action('init', function (): void {
             foreach ($this->getItems() as $item) {
                 // Handle cached format
-                if (isset($item['patternName'])) {
+                if (($item['patternName'] ?? null) !== null) {
                     $this->registerPatternFromCache($item);
 
                     continue;

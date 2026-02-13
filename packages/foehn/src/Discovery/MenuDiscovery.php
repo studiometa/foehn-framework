@@ -72,7 +72,7 @@ final class MenuDiscovery implements WpDiscovery
      */
     private function resolveAttribute(array $item): AsMenu
     {
-        if (isset($item['attribute'])) {
+        if (($item['attribute'] ?? null) !== null) {
             return $item['attribute'];
         }
 
@@ -88,7 +88,7 @@ final class MenuDiscovery implements WpDiscovery
     private function addMenusToTimberContext(array $locations): void
     {
         add_filter('timber/context', static function (array $context) use ($locations): array {
-            if (!isset($context['menus'])) {
+            if (($context['menus'] ?? null) === null) {
                 $context['menus'] = [];
             }
 

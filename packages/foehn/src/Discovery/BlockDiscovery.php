@@ -63,7 +63,7 @@ final class BlockDiscovery implements WpDiscovery
         add_action('init', function (): void {
             foreach ($this->getItems() as $item) {
                 // Handle cached format
-                if (isset($item['blockName'])) {
+                if (($item['blockName'] ?? null) !== null) {
                     $this->registerBlockFromCache($item);
 
                     continue;
