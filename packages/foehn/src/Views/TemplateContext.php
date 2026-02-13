@@ -23,6 +23,7 @@ final readonly class TemplateContext implements ArrayAccess
 {
     /**
      * @param array<string, mixed> $extra
+     * @param array<class-string<Arrayable>, Arrayable> $dtos
      */
     public function __construct(
         public ?Post $post,
@@ -30,6 +31,7 @@ final readonly class TemplateContext implements ArrayAccess
         public Site $site,
         public ?User $user,
         private array $extra = [],
+        private array $dtos = [],
     ) {}
 
     /**
@@ -113,10 +115,17 @@ final readonly class TemplateContext implements ArrayAccess
      */
     public function with(string $key, mixed $value): self
     {
-        return new self(post: $this->post, posts: $this->posts, site: $this->site, user: $this->user, extra: [
-            ...$this->extra,
-            $key => $value,
-        ]);
+        return new self(
+            post: $this->post,
+            posts: $this->posts,
+            site: $this->site,
+            user: $this->user,
+            extra: [
+                ...$this->extra,
+                $key => $value,
+            ],
+            dtos: $this->dtos,
+        );
     }
 
     /**
@@ -128,10 +137,17 @@ final readonly class TemplateContext implements ArrayAccess
     {
         $array = $data instanceof Arrayable ? $data->toArray() : $data;
 
-        return new self(post: $this->post, posts: $this->posts, site: $this->site, user: $this->user, extra: [
-            ...$this->extra,
-            ...$array,
-        ]);
+        return new self(
+            post: $this->post,
+            posts: $this->posts,
+            site: $this->site,
+            user: $this->user,
+            extra: [
+                ...$this->extra,
+                ...$array,
+            ],
+            dtos: $this->dtos,
+        );
     }
 
     /**
@@ -145,15 +161,20 @@ final readonly class TemplateContext implements ArrayAccess
      */
     public function withDto(Arrayable $dto): self
     {
-        /** @var array<class-string<Arrayable>, Arrayable> $dtos */
-        $dtos = $this->extra['__dtos'] ?? [];
-        $dtos[$dto::class] = $dto;
-
-        return new self(post: $this->post, posts: $this->posts, site: $this->site, user: $this->user, extra: [
-            ...$this->extra,
-            ...$dto->toArray(),
-            '__dtos' => $dtos,
-        ]);
+        return new self(
+            post: $this->post,
+            posts: $this->posts,
+            site: $this->site,
+            user: $this->user,
+            extra: [
+                ...$this->extra,
+                ...$dto->toArray(),
+            ],
+            dtos: [
+                ...$this->dtos,
+                $dto::class => $dto,
+            ],
+        );
     }
 
     /**
@@ -165,7 +186,7 @@ final readonly class TemplateContext implements ArrayAccess
      */
     public function dto(string $class): ?Arrayable
     {
-        return $this->extra['__dtos'][$class] ?? null;
+        return $this->dtos[$class] ?? null;
     }
 
     /**
@@ -175,20 +196,13 @@ final readonly class TemplateContext implements ArrayAccess
      */
     public function toArray(): array
     {
-        $array = [
+        return [
             'post' => $this->post,
             'posts' => $this->posts,
             'site' => $this->site,
             'user' => $this->user,
             ...$this->extra,
         ];
-
-        // Remove internal DTO storage if present
-        if (isset($array['__dtos'])) {
-            unset($array['__dtos']);
-        }
-
-        return $array;
     }
 
     // ──────────────────────────────────────────────
