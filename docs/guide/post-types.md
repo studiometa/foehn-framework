@@ -193,24 +193,23 @@ namespace App\Models;
 use Studiometa\Foehn\Attributes\AsPostType;
 use Studiometa\Foehn\Contracts\ConfiguresPostType;
 use Studiometa\Foehn\Models\Post;
+use Studiometa\Foehn\PostTypes\PostTypeBuilder;
 
 #[AsPostType(name: 'event', singular: 'Event', plural: 'Events')]
 final class Event extends Post implements ConfiguresPostType
 {
     /**
-     * Customize the post type arguments.
+     * Customize the post type via the builder.
      */
-    public static function postTypeArgs(array $args): array
+    public static function configurePostType(PostTypeBuilder $builder): PostTypeBuilder
     {
-        // Add custom capabilities
-        $args['capability_type'] = 'event';
-        $args['map_meta_cap'] = true;
-
-        // Customize labels
-        $args['labels']['menu_name'] = 'Calendar';
-        $args['labels']['all_items'] = 'All Events';
-
-        return $args;
+        return $builder
+            ->setCapabilityType('event')
+            ->setMapMetaCap(true)
+            ->setLabels([
+                'menu_name' => 'Calendar',
+                'all_items' => 'All Events',
+            ]);
     }
 }
 ```
@@ -230,18 +229,22 @@ app/Models/
 
 ## Attribute Parameters
 
-| Parameter     | Type       | Default                            | Description                  |
-| ------------- | ---------- | ---------------------------------- | ---------------------------- |
-| `name`        | `string`   | _required_                         | Post type slug               |
-| `singular`    | `?string`  | `null`                             | Singular label               |
-| `plural`      | `?string`  | `null`                             | Plural label                 |
-| `public`      | `bool`     | `true`                             | Public visibility            |
-| `hasArchive`  | `bool`     | `false`                            | Enable archive pages         |
-| `showInRest`  | `bool`     | `true`                             | REST API & Gutenberg support |
-| `menuIcon`    | `?string`  | `null`                             | Dashicon or URL              |
-| `supports`    | `string[]` | `['title', 'editor', 'thumbnail']` | Supported features           |
-| `taxonomies`  | `string[]` | `[]`                               | Associated taxonomies        |
-| `rewriteSlug` | `?string`  | `null`                             | Custom URL slug              |
+| Parameter      | Type                    | Default                            | Description                                        |
+| -------------- | ----------------------- | ---------------------------------- | -------------------------------------------------- |
+| `name`         | `string`                | _required_                         | Post type slug                                     |
+| `singular`     | `?string`               | `null`                             | Singular label                                     |
+| `plural`       | `?string`               | `null`                             | Plural label                                       |
+| `public`       | `bool`                  | `true`                             | Public visibility                                  |
+| `hasArchive`   | `bool`                  | `false`                            | Enable archive pages                               |
+| `showInRest`   | `bool`                  | `true`                             | REST API & Gutenberg support                       |
+| `menuIcon`     | `?string`               | `null`                             | Dashicon or URL                                    |
+| `supports`     | `string[]`              | `['title', 'editor', 'thumbnail']` | Supported features                                 |
+| `taxonomies`   | `string[]`              | `[]`                               | Associated taxonomies                              |
+| `rewriteSlug`  | `?string`               | `null`                             | Custom URL slug (shorthand for `rewrite`)          |
+| `hierarchical` | `bool`                  | `false`                            | Whether hierarchical (like pages)                  |
+| `menuPosition` | `?int`                  | `null`                             | Position in the admin menu                         |
+| `labels`       | `array<string, string>` | `[]`                               | Custom labels (merged with auto-generated ones)    |
+| `rewrite`      | `array\|false\|null`    | `null`                             | Full rewrite config, `false` to disable, or `null` |
 
 ## See Also
 

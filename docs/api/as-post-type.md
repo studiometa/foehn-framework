@@ -19,24 +19,32 @@ final readonly class AsPostType
         public array $supports = ['title', 'editor', 'thumbnail'],
         public array $taxonomies = [],
         public ?string $rewriteSlug = null,
+        public bool $hierarchical = false,
+        public ?int $menuPosition = null,
+        public array $labels = [],
+        public array|false|null $rewrite = null,
     ) {}
 }
 ```
 
 ## Parameters
 
-| Parameter     | Type       | Default                            | Description                      |
-| ------------- | ---------- | ---------------------------------- | -------------------------------- |
-| `name`        | `string`   | —                                  | Post type slug (required)        |
-| `singular`    | `?string`  | `null`                             | Singular label                   |
-| `plural`      | `?string`  | `null`                             | Plural label                     |
-| `public`      | `bool`     | `true`                             | Whether publicly visible         |
-| `hasArchive`  | `bool`     | `false`                            | Enable archive pages             |
-| `showInRest`  | `bool`     | `true`                             | Enable REST API and Gutenberg    |
-| `menuIcon`    | `?string`  | `null`                             | Dashicon name or custom icon URL |
-| `supports`    | `string[]` | `['title', 'editor', 'thumbnail']` | Supported features               |
-| `taxonomies`  | `string[]` | `[]`                               | Associated taxonomy slugs        |
-| `rewriteSlug` | `?string`  | `null`                             | Custom URL slug                  |
+| Parameter      | Type                    | Default                            | Description                                        |
+| -------------- | ----------------------- | ---------------------------------- | -------------------------------------------------- |
+| `name`         | `string`                | —                                  | Post type slug (required)                          |
+| `singular`     | `?string`               | `null`                             | Singular label                                     |
+| `plural`       | `?string`               | `null`                             | Plural label                                       |
+| `public`       | `bool`                  | `true`                             | Whether publicly visible                           |
+| `hasArchive`   | `bool`                  | `false`                            | Enable archive pages                               |
+| `showInRest`   | `bool`                  | `true`                             | Enable REST API and Gutenberg                      |
+| `menuIcon`     | `?string`               | `null`                             | Dashicon name or custom icon URL                   |
+| `supports`     | `string[]`              | `['title', 'editor', 'thumbnail']` | Supported features                                 |
+| `taxonomies`   | `string[]`              | `[]`                               | Associated taxonomy slugs                          |
+| `rewriteSlug`  | `?string`               | `null`                             | Custom URL slug (shorthand for `rewrite`)          |
+| `hierarchical` | `bool`                  | `false`                            | Whether hierarchical (like pages)                  |
+| `menuPosition` | `?int`                  | `null`                             | Position in the admin menu                         |
+| `labels`       | `array<string, string>` | `[]`                               | Custom labels (merged with auto-generated ones)    |
+| `rewrite`      | `array\|false\|null`    | `null`                             | Full rewrite config, `false` to disable, or `null` |
 
 ## Usage
 
@@ -48,7 +56,7 @@ final readonly class AsPostType
 namespace App\Models;
 
 use Studiometa\Foehn\Attributes\AsPostType;
-use Timber\Post;
+use Studiometa\Foehn\Models\Post;
 
 #[AsPostType(
     name: 'product',
@@ -93,17 +101,17 @@ namespace App\Models;
 
 use Studiometa\Foehn\Attributes\AsPostType;
 use Studiometa\Foehn\Contracts\ConfiguresPostType;
-use Timber\Post;
+use Studiometa\Foehn\Models\Post;
+use Studiometa\Foehn\PostTypes\PostTypeBuilder;
 
 #[AsPostType(name: 'event', singular: 'Event', plural: 'Events')]
 final class Event extends Post implements ConfiguresPostType
 {
-    public static function postTypeArgs(array $args): array
+    public static function configurePostType(PostTypeBuilder $builder): PostTypeBuilder
     {
-        $args['capability_type'] = 'event';
-        $args['map_meta_cap'] = true;
-
-        return $args;
+        return $builder
+            ->setCapabilityType('event')
+            ->setMapMetaCap(true);
     }
 }
 ```
