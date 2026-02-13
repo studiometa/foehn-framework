@@ -16,7 +16,7 @@ ddev start
 
 That's it. DDEV will:
 
-1. Start PHP 8.4 + MariaDB + nginx
+1. Start PHP 8.5 + MariaDB + nginx
 2. Copy `.env.example` to `.env` (with DDEV defaults)
 3. Run `composer install` (generates `web/`, symlinks, wp-config.php)
 4. Install WordPress with admin/admin credentials
@@ -140,7 +140,7 @@ ddev describe           # Show URLs and connection info
 ### Without DDEV
 
 ```bash
-# Requirements: PHP 8.4+, Composer 2.x, MySQL/MariaDB
+# Requirements: PHP 8.5+, Composer 2.x, MySQL/MariaDB
 
 # Development server (via wp-cli)
 wp server --docroot=web

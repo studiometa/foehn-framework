@@ -16,10 +16,10 @@ interface ViewEngineInterface
      * Render a template with the given context.
      *
      * @param string $template Template name/path (without extension)
-     * @param array<string, mixed> $context Variables to pass to the template
+     * @param array<string, mixed>|object $context Variables to pass to the template (array or TemplateContext)
      * @return string Rendered HTML
      */
-    public function render(string $template, array $context = []): string;
+    public function render(string $template, array|object $context = []): string;
 
     /**
      * Render the first existing template from a list.
@@ -27,11 +27,11 @@ interface ViewEngineInterface
      * Useful for WordPress template hierarchy fallbacks.
      *
      * @param string[] $templates List of template names to try
-     * @param array<string, mixed> $context Variables to pass to the template
+     * @param array<string, mixed>|object $context Variables to pass to the template (array or TemplateContext)
      * @return string Rendered HTML
      * @throws \RuntimeException If no template is found
      */
-    public function renderFirst(array $templates, array $context = []): string;
+    public function renderFirst(array $templates, array|object $context = []): string;
 
     /**
      * Check if a template exists.

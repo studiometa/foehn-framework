@@ -77,7 +77,7 @@ final class ThemeHooks
 
 ## Next Steps
 
-1. [Install Føhn](./installation)
-2. Learn about [Hooks](./hooks)
-3. Create [Post Types](./post-types) and [Query Posts](./querying-posts)
+1. **New project?** Start with the [Starter Theme](./starter-theme) — get a full working setup in minutes
+2. **Existing theme?** Follow the [Manual Installation](./installation) guide
+3. Learn about [Hooks](./hooks), [Post Types](./post-types), and [Query Posts](./querying-posts)
 4. Build [ACF Blocks](./acf-blocks) with [Arrayable DTOs](./arrayable-dtos)

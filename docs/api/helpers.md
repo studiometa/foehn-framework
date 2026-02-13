@@ -251,17 +251,17 @@ if (Env::isDebug()) {
 use Studiometa\Foehn\Attributes\AsContextProvider;
 use Studiometa\Foehn\Contracts\ContextProviderInterface;
 use Studiometa\Foehn\Helpers\Env;
+use Studiometa\Foehn\Views\TemplateContext;
 
 #[AsContextProvider(templates: ['*'])]
 final class GlobalContext implements ContextProviderInterface
 {
-    public function provide(array $context): array
+    public function provide(TemplateContext $context): TemplateContext
     {
-        $context['is_production'] = Env::isProduction();
-        $context['is_debug'] = Env::isDebug();
-        $context['environment'] = Env::get();
-
-        return $context;
+        return $context
+            ->with('is_production', Env::isProduction())
+            ->with('is_debug', Env::isDebug())
+            ->with('environment', Env::get());
     }
 }
 ```

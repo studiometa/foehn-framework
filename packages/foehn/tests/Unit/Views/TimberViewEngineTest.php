@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use Studiometa\Foehn\Contracts\ContextProviderInterface;
 use Studiometa\Foehn\Views\ContextProviderRegistry;
+use Studiometa\Foehn\Views\TemplateContext;
 use Studiometa\Foehn\Views\TimberViewEngine;
-use Timber\Timber;
 
 describe('TimberViewEngine', function () {
     beforeEach(function () {
@@ -92,42 +92,18 @@ describe('TimberViewEngine template resolution', function () {
     });
 });
 
-describe('TimberViewEngine context merging', function () {
-    beforeEach(function () {
-        // Pre-populate Timber's context cache to avoid WordPress dependencies
-        $reflection = new ReflectionClass(Timber::class);
-        $property = $reflection->getProperty('context_cache');
-        $property->setValue(null, [
-            'site' => (object) ['name' => 'Test Site', 'url' => 'http://example.com'],
-            'theme' => (object) ['name' => 'Test Theme'],
-            'user' => false,
-            'http_host' => 'http://example.com',
-            'wp_title' => 'Test Page',
-            'body_class' => 'home page',
-        ]);
-    });
-
-    afterEach(function () {
-        // Reset Timber's context cache
-        $reflection = new ReflectionClass(Timber::class);
-        $property = $reflection->getProperty('context_cache');
-        $property->setValue(null, []);
-    });
-
-    it('includes Timber global context in render', function () {
-        // Capture the context passed to context providers
+describe('TimberViewEngine context providers', function () {
+    it('passes TemplateContext to providers', function () {
         $capturedContext = null;
         $capturingProvider = new class($capturedContext) implements ContextProviderInterface {
             public function __construct(
                 private mixed &$captured,
             ) {}
 
-            public function provide(array $context): array
+            public function provide(TemplateContext $context): TemplateContext
             {
                 $this->captured = $context;
 
-                // Return empty array to make Timber::compile return false
-                // This triggers the RuntimeException, which we catch
                 return $context;
             }
         };
@@ -143,27 +119,26 @@ describe('TimberViewEngine context merging', function () {
             // Expected: Timber::compile returns false for non-existent template
         }
 
-        // Verify Timber's global context keys are present
-        expect($capturedContext)->toHaveKey('site');
-        expect($capturedContext)->toHaveKey('theme');
-        expect($capturedContext)->toHaveKey('user');
-        expect($capturedContext)->toHaveKey('http_host');
-        expect($capturedContext)->toHaveKey('wp_title');
-        expect($capturedContext)->toHaveKey('body_class');
-
-        // Verify custom context is also included
-        expect($capturedContext)->toHaveKey('custom');
-        expect($capturedContext['custom'])->toBe('value');
+        // Verify TemplateContext is passed
+        expect($capturedContext)->toBeInstanceOf(TemplateContext::class);
+        expect($capturedContext->get('custom'))->toBe('value');
     });
 
-    it('allows shared data to override Timber global context', function () {
+    it('allows providers to modify context', function () {
+        $modifyingProvider = new class implements ContextProviderInterface {
+            public function provide(TemplateContext $context): TemplateContext
+            {
+                return $context->with('added_by_provider', 'yes');
+            }
+        };
+
         $capturedContext = null;
         $capturingProvider = new class($capturedContext) implements ContextProviderInterface {
             public function __construct(
                 private mixed &$captured,
             ) {}
 
-            public function provide(array $context): array
+            public function provide(TemplateContext $context): TemplateContext
             {
                 $this->captured = $context;
 
@@ -172,10 +147,10 @@ describe('TimberViewEngine context merging', function () {
         };
 
         $registry = new ContextProviderRegistry();
-        $registry->register(['*'], $capturingProvider, 0);
+        $registry->register(['*'], $modifyingProvider, 5);
+        $registry->register(['*'], $capturingProvider, 10);
 
         $engine = new TimberViewEngine($registry);
-        $engine->share('http_host', 'https://custom-host.com');
 
         try {
             $engine->render('test-template', []);
@@ -183,38 +158,7 @@ describe('TimberViewEngine context merging', function () {
             // Expected
         }
 
-        // Shared data should override Timber's default
-        expect($capturedContext['http_host'])->toBe('https://custom-host.com');
-    });
-
-    it('allows render context to override shared data and Timber global context', function () {
-        $capturedContext = null;
-        $capturingProvider = new class($capturedContext) implements ContextProviderInterface {
-            public function __construct(
-                private mixed &$captured,
-            ) {}
-
-            public function provide(array $context): array
-            {
-                $this->captured = $context;
-
-                return $context;
-            }
-        };
-
-        $registry = new ContextProviderRegistry();
-        $registry->register(['*'], $capturingProvider, 0);
-
-        $engine = new TimberViewEngine($registry);
-        $engine->share('http_host', 'https://shared-host.com');
-
-        try {
-            $engine->render('test-template', ['http_host' => 'https://render-host.com']);
-        } catch (RuntimeException) {
-            // Expected
-        }
-
-        // Render context should win over shared data
-        expect($capturedContext['http_host'])->toBe('https://render-host.com');
+        // The second provider should see data added by the first
+        expect($capturedContext->get('added_by_provider'))->toBe('yes');
     });
 });

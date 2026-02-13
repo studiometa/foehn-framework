@@ -14,12 +14,12 @@ beforeEach(function () {
 
     // Register a stub ViewEngine that returns rendered content
     $container->singleton(ViewEngineInterface::class, fn() => new class implements ViewEngineInterface {
-        public function render(string $template, array $context = []): string
+        public function render(string $template, array|object $context = []): string
         {
             return '<div>Pattern: ' . $template . '</div>';
         }
 
-        public function renderFirst(array $templates, array $context = []): string
+        public function renderFirst(array $templates, array|object $context = []): string
         {
             return $this->render($templates[0], $context);
         }
