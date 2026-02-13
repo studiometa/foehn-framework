@@ -92,12 +92,13 @@ final readonly class QueryFiltersHook
                 }
 
                 // Parse comma-separated values
-                if (is_string($value)) {
-                    $terms = array_filter(array_map('trim', explode(',', $value)));
-                } elseif (is_array($value)) {
-                    /** @var list<string> $terms */
-                    $terms = $value;
-                } else {
+                $terms = match (true) {
+                    is_string($value) => array_filter(array_map('trim', explode(',', $value))),
+                    is_array($value) => $value,
+                    default => null,
+                };
+
+                if ($terms === null) {
                     continue;
                 }
 
@@ -117,7 +118,7 @@ final readonly class QueryFiltersHook
             }
 
             // Default relation is AND between different taxonomies
-            if (!isset($taxQuery['relation'])) {
+            if (($taxQuery['relation'] ?? null) === null) {
                 $taxQuery['relation'] = 'AND';
             }
 
