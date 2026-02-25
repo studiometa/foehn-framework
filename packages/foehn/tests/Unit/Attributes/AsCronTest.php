@@ -3,33 +3,34 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Attributes\AsCron;
+use Studiometa\Foehn\Jobs\CronInterval;
 
 describe('AsCron', function () {
-    it('can be instantiated with a named interval', function () {
-        $cron = new AsCron('daily');
+    it('can be instantiated with a CronInterval enum', function () {
+        $cron = new AsCron(CronInterval::Daily);
 
-        expect($cron->interval)->toBe('daily');
-        expect($cron->intervalSeconds)->toBe(86400);
+        expect($cron->interval)->toBe(CronInterval::Daily);
+        expect($cron->intervalSeconds)->toBe(86_400);
         expect($cron->group)->toBe('foehn');
         expect($cron->hook)->toBeNull();
     });
 
-    it('supports hourly interval', function () {
-        $cron = new AsCron('hourly');
+    it('supports Hourly interval', function () {
+        $cron = new AsCron(CronInterval::Hourly);
 
-        expect($cron->intervalSeconds)->toBe(3600);
+        expect($cron->intervalSeconds)->toBe(3_600);
     });
 
-    it('supports twicedaily interval', function () {
-        $cron = new AsCron('twicedaily');
+    it('supports TwiceDaily interval', function () {
+        $cron = new AsCron(CronInterval::TwiceDaily);
 
-        expect($cron->intervalSeconds)->toBe(43200);
+        expect($cron->intervalSeconds)->toBe(43_200);
     });
 
-    it('supports weekly interval', function () {
-        $cron = new AsCron('weekly');
+    it('supports Weekly interval', function () {
+        $cron = new AsCron(CronInterval::Weekly);
 
-        expect($cron->intervalSeconds)->toBe(604800);
+        expect($cron->intervalSeconds)->toBe(604_800);
     });
 
     it('supports custom integer interval in seconds', function () {
@@ -40,20 +41,16 @@ describe('AsCron', function () {
     });
 
     it('accepts a custom group', function () {
-        $cron = new AsCron('daily', group: 'my-plugin');
+        $cron = new AsCron(CronInterval::Daily, group: 'my-plugin');
 
         expect($cron->group)->toBe('my-plugin');
     });
 
     it('accepts a custom hook name', function () {
-        $cron = new AsCron('daily', hook: 'my_plugin/cleanup');
+        $cron = new AsCron(CronInterval::Daily, hook: 'my_plugin/cleanup');
 
         expect($cron->hook)->toBe('my_plugin/cleanup');
     });
-
-    it('throws on invalid interval string', function () {
-        new AsCron('monthly');
-    })->throws(InvalidArgumentException::class, "Invalid cron interval 'monthly'");
 
     it('is readonly', function () {
         expect(AsCron::class)->toBeReadonly();

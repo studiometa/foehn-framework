@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace Tests\Fixtures;
 
 use Studiometa\Foehn\Attributes\AsCron;
+use Studiometa\Foehn\Jobs\CronInterval;
 
-#[AsCron('daily')]
+#[AsCron(CronInterval::Daily)]
 final class CronFixture
 {
     public function __invoke(): void
