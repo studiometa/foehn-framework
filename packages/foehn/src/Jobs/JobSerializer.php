@@ -42,7 +42,7 @@ final class JobSerializer
     /**
      * Deserialize an array back into a job DTO.
      *
-     * @param array{__class: class-string, __data: array<string, mixed>} $payload
+     * @param array<string, mixed> $payload
      */
     public static function deserialize(array $payload): object
     {
@@ -50,27 +50,29 @@ final class JobSerializer
             throw new InvalidArgumentException('Invalid job payload: missing __class or __data.');
         }
 
-        /** @var class-string $className */
-        $className = $payload['__class'];
+        $className = (string) $payload['__class'];
 
         if (!class_exists($className)) {
             throw new InvalidArgumentException("Job class '{$className}' does not exist.");
         }
 
+        /** @var ReflectionClass<object> $reflection */
         $reflection = new ReflectionClass($className);
         $constructor = $reflection->getConstructor();
 
         if ($constructor === null) {
-            return new $className();
+            return $reflection->newInstance();
         }
 
+        /** @var array<string, mixed> $payloadData */
+        $payloadData = $payload['__data'];
         $args = [];
 
         foreach ($constructor->getParameters() as $param) {
             $name = $param->getName();
 
-            if (array_key_exists($name, $payload['__data'])) {
-                $args[] = self::castValue($param, $payload['__data'][$name]);
+            if (array_key_exists($name, $payloadData)) {
+                $args[] = self::castValue($param, $payloadData[$name]);
 
                 continue;
             }
@@ -84,6 +86,7 @@ final class JobSerializer
             throw new InvalidArgumentException("Missing required parameter '{$name}' for job class '{$className}'.");
         }
 
+        /** @var object */
         return $reflection->newInstanceArgs($args);
     }
 
@@ -117,6 +120,10 @@ final class JobSerializer
         $type = $param->getType();
 
         if (!$type instanceof ReflectionNamedType || $type->isBuiltin() === false) {
+            return $value;
+        }
+
+        if (!is_scalar($value) && $value !== null) {
             return $value;
         }
 

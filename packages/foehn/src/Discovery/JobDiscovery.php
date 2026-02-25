@@ -108,6 +108,7 @@ final class JobDiscovery implements WpDiscovery
         // Register the WordPress action callback
         add_action($hook, static function (array $payload) use ($handlerClass): void {
             $job = JobSerializer::deserialize($payload);
+            /** @var callable $handler */
             $handler = get($handlerClass);
             $handler($job);
         });

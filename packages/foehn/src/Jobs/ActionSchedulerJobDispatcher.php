@@ -42,7 +42,7 @@ final class ActionSchedulerJobDispatcher implements JobDispatcher
         $payload = JobSerializer::serialize($job);
         $timestamp = time() + ($delay ?? 0);
 
-        as_schedule_single_action($timestamp, $registration['hook'], [$payload], $registration['group']);
+        \as_schedule_single_action($timestamp, $registration['hook'], [$payload], $registration['group']);
     }
 
     /**

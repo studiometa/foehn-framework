@@ -83,13 +83,14 @@ final class CronDiscovery implements WpDiscovery
 
         // Register the callback
         add_action($hook, static function () use ($className): void {
+            /** @var callable $instance */
             $instance = get($className);
             $instance();
         });
 
         // Schedule if not already scheduled (idempotent)
-        if (!as_has_scheduled_action($hook, [], $group)) {
-            as_schedule_recurring_action(time(), $intervalSeconds, $hook, [], $group);
+        if (!\as_has_scheduled_action($hook, [], $group)) {
+            \as_schedule_recurring_action(time(), $intervalSeconds, $hook, [], $group);
         }
     }
 
