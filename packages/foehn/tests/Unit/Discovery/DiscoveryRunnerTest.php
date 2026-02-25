@@ -61,7 +61,7 @@ describe('DiscoveryRunner', function () {
         $phases = DiscoveryRunner::getDiscoveryPhases();
 
         expect($phases['early'])->toHaveCount(6);
-        expect($phases['main'])->toHaveCount(8);
+        expect($phases['main'])->toHaveCount(10);
         expect($phases['late'])->toHaveCount(3);
     });
 

@@ -22,6 +22,7 @@ function wp_stub_reset(): void
     $GLOBALS['wp_stub_options'] = [];
     $GLOBALS['wp_stub_attachments'] = [];
     $GLOBALS['wp_stub_post_meta'] = [];
+    $GLOBALS['wp_stub_as_has_scheduled'] = [];
 }
 
 /**
@@ -1099,6 +1100,64 @@ if (!function_exists('is_ssl')) {
         return false;
     }
 }
+
+// ──────────────────────────────────────────────
+// Action Scheduler stubs
+// ──────────────────────────────────────────────
+
+if (!function_exists('as_schedule_single_action')) {
+    function as_schedule_single_action(
+        int $timestamp,
+        string $hook,
+        array $args = [],
+        string $group = '',
+        bool $unique = false,
+    ): int {
+        wp_stub_record('as_schedule_single_action', compact('timestamp', 'hook', 'args', 'group', 'unique'));
+
+        return random_int(1, 99999);
+    }
+}
+
+if (!function_exists('as_schedule_recurring_action')) {
+    function as_schedule_recurring_action(
+        int $timestamp,
+        int $intervalInSeconds,
+        string $hook,
+        array $args = [],
+        string $group = '',
+        bool $unique = false,
+    ): int {
+        wp_stub_record('as_schedule_recurring_action', compact(
+            'timestamp',
+            'intervalInSeconds',
+            'hook',
+            'args',
+            'group',
+            'unique',
+        ));
+
+        return random_int(1, 99999);
+    }
+}
+
+if (!function_exists('as_has_scheduled_action')) {
+    function as_has_scheduled_action(string $hook, ?array $args = null, string $group = ''): bool
+    {
+        wp_stub_record('as_has_scheduled_action', compact('hook', 'args', 'group'));
+
+        return $GLOBALS['wp_stub_as_has_scheduled'][$hook] ?? false;
+    }
+}
+
+if (!function_exists('as_unschedule_all_actions')) {
+    function as_unschedule_all_actions(string $hook, ?array $args = null, string $group = ''): void
+    {
+        wp_stub_record('as_unschedule_all_actions', compact('hook', 'args', 'group'));
+    }
+}
+
+$GLOBALS['wp_stub_as_has_scheduled'] = [];
 
 // Default template state
 $GLOBALS['wp_stub_template'] = 'index';
