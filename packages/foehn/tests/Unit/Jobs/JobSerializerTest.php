@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use Studiometa\Foehn\Jobs\JobSerializer;
 use Tests\Fixtures\JobDtoFixture;
+use Tests\Fixtures\JobDtoNoConstructorFixture;
+use Tests\Fixtures\JobDtoWithDefaultsFixture;
 
 describe('JobSerializer', function () {
     describe('serialize', function () {
@@ -120,5 +122,63 @@ describe('JobSerializer', function () {
 
             JobSerializer::deserialize($payload);
         })->throws(InvalidArgumentException::class, "Missing required parameter 'source'");
+
+        it('handles class with no constructor', function () {
+            $payload = [
+                '__class' => JobDtoNoConstructorFixture::class,
+                '__data' => [],
+            ];
+
+            $job = JobSerializer::deserialize($payload);
+
+            expect($job)->toBeInstanceOf(JobDtoNoConstructorFixture::class);
+        });
+
+        it('uses default values for missing optional parameters', function () {
+            $payload = [
+                '__class' => JobDtoWithDefaultsFixture::class,
+                '__data' => [
+                    'id' => 1,
+                    // 'format' and 'dryRun' are missing, should use defaults
+                ],
+            ];
+
+            $job = JobSerializer::deserialize($payload);
+
+            expect($job)->toBeInstanceOf(JobDtoWithDefaultsFixture::class);
+            expect($job->id)->toBe(1);
+            expect($job->format)->toBe('json');
+            expect($job->dryRun)->toBeFalse();
+        });
+
+        it('casts bool values correctly', function () {
+            $payload = [
+                '__class' => JobDtoWithDefaultsFixture::class,
+                '__data' => [
+                    'id' => 5,
+                    'format' => 'csv',
+                    'dryRun' => 1,
+                ],
+            ];
+
+            $job = JobSerializer::deserialize($payload);
+
+            expect($job->dryRun)->toBeTrue();
+            expect($job->dryRun)->toBeBool();
+        });
+
+        it('casts float values correctly', function () {
+            $dto = new class(3.14) {
+                public function __construct(
+                    public float $value,
+                ) {}
+            };
+
+            $payload = JobSerializer::serialize($dto);
+            $restored = JobSerializer::deserialize($payload);
+
+            expect($restored->value)->toBe(3.14);
+            expect($restored->value)->toBeFloat();
+        });
     });
 });

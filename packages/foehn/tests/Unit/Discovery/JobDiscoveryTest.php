@@ -82,6 +82,14 @@ describe('JobDiscovery', function () {
         expect($jobActions)->toHaveCount(1);
     });
 
+    it('does nothing on apply when no items discovered', function () {
+        wp_stub_reset();
+        $this->discovery->apply();
+
+        expect(wp_stub_get_calls('add_action'))->toBeEmpty();
+        expect($this->registry->all())->toBeEmpty();
+    });
+
     it('supports caching', function () {
         $this->discovery->discover($this->location, new ReflectionClass(JobHandlerFixture::class));
 
