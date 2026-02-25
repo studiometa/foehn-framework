@@ -106,6 +106,10 @@ final class DiscoveryRunner
         // Block patterns
         $this->applyDiscovery(BlockPatternDiscovery::class);
 
+        // Background jobs and cron
+        $this->applyDiscovery(CronDiscovery::class);
+        $this->applyDiscovery(JobDiscovery::class);
+
         $this->mainRan = true;
     }
 
@@ -341,6 +345,8 @@ final class DiscoveryRunner
                 BlockDiscovery::class,
                 BlockPatternDiscovery::class,
                 AcfOptionsPageDiscovery::class,
+                CronDiscovery::class,
+                JobDiscovery::class,
             ],
             'late' => [
                 ContextProviderDiscovery::class,
