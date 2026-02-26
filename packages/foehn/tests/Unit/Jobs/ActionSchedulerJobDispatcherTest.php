@@ -15,18 +15,10 @@ beforeEach(function () {
 
 describe('ActionSchedulerJobDispatcher', function () {
     it('reports availability based on Action Scheduler functions', function () {
-        // as_schedule_single_action is defined in this test file's setup
-        if (function_exists('as_schedule_single_action')) {
-            expect($this->dispatcher->isAvailable())->toBeTrue();
-        } else {
-            expect($this->dispatcher->isAvailable())->toBeFalse();
-        }
+        expect($this->dispatcher->isAvailable())->toBeTrue();
     });
 
-    it('throws when dispatching without Action Scheduler', function () {
-        // When AS is not available, this should throw
-        // This test only applies if we can control AS availability,
-        // so we test the error case for unregistered handler instead
+    it('dispatches a registered job via Action Scheduler', function () {
         $this->registry->register(
             JobDtoFixture::class,
             JobHandlerFixture::class,
@@ -34,26 +26,31 @@ describe('ActionSchedulerJobDispatcher', function () {
             'foehn',
         );
 
-        if (!function_exists('as_schedule_single_action')) {
-            expect(fn() => $this->dispatcher->dispatch(new JobDtoFixture(42, 'csv')))
-                ->toThrow(RuntimeException::class, 'Action Scheduler is not available');
-        } else {
-            // AS stubs are available, dispatch should work
-            $this->dispatcher->dispatch(new JobDtoFixture(42, 'csv'));
+        $this->dispatcher->dispatch(new JobDtoFixture(42, 'csv'));
 
-            $calls = wp_stub_get_calls('as_schedule_single_action');
-            expect($calls)->toHaveCount(1);
-            expect($calls[0]['args']['hook'])->toBe('foehn/tests/fixtures/job_dto_fixture');
-            expect($calls[0]['args']['group'])->toBe('foehn');
-        }
+        $calls = wp_stub_get_calls('as_schedule_single_action');
+        expect($calls)->toHaveCount(1);
+        expect($calls[0]['args']['hook'])->toBe('foehn/tests/fixtures/job_dto_fixture');
+        expect($calls[0]['args']['group'])->toBe('foehn');
+    });
+
+    it('throws when Action Scheduler is not available', function () {
+        // Create a dispatcher that reports AS as unavailable
+        $unavailableDispatcher = new class($this->registry) extends ActionSchedulerJobDispatcher {
+            public function isAvailable(): bool
+            {
+                return false;
+            }
+        };
+
+        expect(fn() => $unavailableDispatcher->dispatch(new JobDtoFixture(42, 'csv')))
+            ->toThrow(RuntimeException::class, 'Action Scheduler is not available');
     });
 
     it('throws when no handler is registered for the DTO', function () {
         // Registry is empty, no handler for JobDtoFixture
-        if (function_exists('as_schedule_single_action')) {
-            expect(fn() => $this->dispatcher->dispatch(new JobDtoFixture(42, 'csv')))
-                ->toThrow(RuntimeException::class, 'No #[AsJob] handler registered');
-        }
+        expect(fn() => $this->dispatcher->dispatch(new JobDtoFixture(42, 'csv')))
+            ->toThrow(RuntimeException::class, 'No #[AsJob] handler registered');
     });
 
     it('includes delay in timestamp when provided', function () {

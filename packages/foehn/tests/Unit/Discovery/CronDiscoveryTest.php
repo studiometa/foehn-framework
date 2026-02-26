@@ -108,6 +108,23 @@ describe('CronDiscovery', function () {
         expect(wp_stub_get_calls('as_schedule_recurring_action'))->toBeEmpty();
     });
 
+    it('does nothing when Action Scheduler is not available', function () {
+        // Create a subclass that reports AS as unavailable
+        $unavailableDiscovery = new class extends CronDiscovery {
+            protected function isActionSchedulerAvailable(): bool
+            {
+                return false;
+            }
+        };
+
+        $unavailableDiscovery->discover($this->location, new ReflectionClass(CronFixture::class));
+        $unavailableDiscovery->apply();
+
+        // No actions should have been registered
+        expect(wp_stub_get_calls('add_action'))->toBeEmpty();
+        expect(wp_stub_get_calls('as_schedule_recurring_action'))->toBeEmpty();
+    });
+
     it('supports caching', function () {
         $this->discovery->discover($this->location, new ReflectionClass(CronFixture::class));
 

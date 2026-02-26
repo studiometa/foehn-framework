@@ -16,7 +16,7 @@ use function Tempest\Container\get;
  * Discovers classes marked with #[AsCron] attribute
  * and registers them as recurring Action Scheduler actions.
  */
-final class CronDiscovery implements WpDiscovery
+class CronDiscovery implements WpDiscovery
 {
     use IsWpDiscovery;
     use CacheableDiscovery;
@@ -56,13 +56,21 @@ final class CronDiscovery implements WpDiscovery
     public function apply(): void
     {
         // Action Scheduler must be available
-        if (!function_exists('as_schedule_recurring_action') || !function_exists('as_has_scheduled_action')) {
+        if (!$this->isActionSchedulerAvailable()) {
             return;
         }
 
         foreach ($this->getItems() as $item) {
             $this->registerCron($item);
         }
+    }
+
+    /**
+     * Check if Action Scheduler functions are available.
+     */
+    protected function isActionSchedulerAvailable(): bool
+    {
+        return function_exists('as_schedule_recurring_action') && function_exists('as_has_scheduled_action');
     }
 
     /**

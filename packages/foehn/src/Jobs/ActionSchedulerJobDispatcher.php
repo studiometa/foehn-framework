@@ -13,7 +13,7 @@ use Studiometa\Foehn\Contracts\JobDispatcher;
  * Serializes job DTOs and schedules them as single Action Scheduler actions.
  * The corresponding `#[AsJob]` handler will deserialize and process them.
  */
-final class ActionSchedulerJobDispatcher implements JobDispatcher
+class ActionSchedulerJobDispatcher implements JobDispatcher
 {
     public function __construct(
         private readonly JobRegistry $jobRegistry,

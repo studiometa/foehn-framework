@@ -6,8 +6,10 @@ use Studiometa\Foehn\Discovery\DiscoveryLocation;
 use Studiometa\Foehn\Discovery\JobDiscovery;
 use Studiometa\Foehn\Jobs\JobRegistry;
 use Tests\Fixtures\InvalidJobHandlerFixture;
+use Tests\Fixtures\JobHandlerBuiltinParamFixture;
 use Tests\Fixtures\JobHandlerCustomHookFixture;
 use Tests\Fixtures\JobHandlerFixture;
+use Tests\Fixtures\JobHandlerNoInvokeFixture;
 use Tests\Fixtures\NoAttributeFixture;
 
 beforeEach(function () {
@@ -47,6 +49,18 @@ describe('JobDiscovery', function () {
 
     it('ignores handlers without a DTO parameter', function () {
         $this->discovery->discover($this->location, new ReflectionClass(InvalidJobHandlerFixture::class));
+
+        expect($this->discovery->getItems()->isEmpty())->toBeTrue();
+    });
+
+    it('ignores handlers without __invoke method', function () {
+        $this->discovery->discover($this->location, new ReflectionClass(JobHandlerNoInvokeFixture::class));
+
+        expect($this->discovery->getItems()->isEmpty())->toBeTrue();
+    });
+
+    it('ignores handlers with builtin parameter type', function () {
+        $this->discovery->discover($this->location, new ReflectionClass(JobHandlerBuiltinParamFixture::class));
 
         expect($this->discovery->getItems()->isEmpty())->toBeTrue();
     });

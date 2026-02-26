@@ -222,5 +222,18 @@ describe('JobSerializer', function () {
 
             expect($payload['__data']['matrix'])->toBe([[1, 2], [3, 4]]);
         });
+
+        it('passes through value for untyped parameters', function () {
+            $dto = new class('hello') {
+                public function __construct(
+                    public $value,
+                ) {}
+            };
+
+            $payload = JobSerializer::serialize($dto);
+            $restored = JobSerializer::deserialize($payload);
+
+            expect($restored->value)->toBe('hello');
+        });
     });
 });
