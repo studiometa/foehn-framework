@@ -3,26 +3,26 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Contracts\JobDispatcher;
-use Studiometa\Foehn\Jobs\JobRegistry;
+use Studiometa\Foehn\Kernel;
 use Tests\Fixtures\JobDtoFixture;
-use Tests\Fixtures\JobHandlerFixture;
 
 use function Studiometa\Foehn\dispatch;
 
-beforeEach(function () {
-    wp_stub_reset();
-    $this->container = bootTestContainer();
-});
-
 afterEach(function () {
-    tearDownTestContainer();
+    Kernel::reset();
+    wp_stub_reset();
 });
 
 describe('dispatch() helper', function () {
-    it('dispatches a job via the JobDispatcher service', function () {
-        $dispatched = [];
+    it('dispatches a job via the Kernel container', function () {
+        $kernel = Kernel::boot(dirname(__DIR__, 3) . '/src');
 
-        // Register a fake dispatcher
+        // Restore error/exception handlers set by Tempest::boot()
+        restore_error_handler();
+        restore_exception_handler();
+
+        // Replace the dispatcher with a fake
+        $dispatched = [];
         $fakeDispatcher = new class($dispatched) implements JobDispatcher {
             /** @var list<array{job: object, delay: int|null}> */
             private array $dispatched;
@@ -43,15 +43,10 @@ describe('dispatch() helper', function () {
             }
         };
 
-        // Boot a minimal kernel with our fake dispatcher
-        $this->container->singleton(JobDispatcher::class, fn() => $fakeDispatcher);
+        Kernel::container()->singleton(JobDispatcher::class, fn() => $fakeDispatcher);
 
-        \Studiometa\Foehn\Kernel::reset();
-
-        // We can't easily use dispatch() without a full Kernel boot,
-        // so test the dispatcher directly through the container
-        $dispatcher = $this->container->get(JobDispatcher::class);
-        $dispatcher->dispatch(new JobDtoFixture(42, 'csv'));
+        // Call the actual dispatch() helper function
+        dispatch(new JobDtoFixture(42, 'csv'));
 
         expect($dispatched)->toHaveCount(1);
         expect($dispatched[0]['job'])->toBeInstanceOf(JobDtoFixture::class);
@@ -59,9 +54,13 @@ describe('dispatch() helper', function () {
         expect($dispatched[0]['delay'])->toBeNull();
     });
 
-    it('passes delay to the dispatcher', function () {
-        $dispatched = [];
+    it('passes delay to the dispatcher via helper', function () {
+        $kernel = Kernel::boot(dirname(__DIR__, 3) . '/src');
 
+        restore_error_handler();
+        restore_exception_handler();
+
+        $dispatched = [];
         $fakeDispatcher = new class($dispatched) implements JobDispatcher {
             /** @var list<array{job: object, delay: int|null}> */
             private array $dispatched;
@@ -82,10 +81,9 @@ describe('dispatch() helper', function () {
             }
         };
 
-        $this->container->singleton(JobDispatcher::class, fn() => $fakeDispatcher);
+        Kernel::container()->singleton(JobDispatcher::class, fn() => $fakeDispatcher);
 
-        $dispatcher = $this->container->get(JobDispatcher::class);
-        $dispatcher->dispatch(new JobDtoFixture(42, 'csv'), delay: 3600);
+        dispatch(new JobDtoFixture(99, 'api'), delay: 3600);
 
         expect($dispatched)->toHaveCount(1);
         expect($dispatched[0]['delay'])->toBe(3600);

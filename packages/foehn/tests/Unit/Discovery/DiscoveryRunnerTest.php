@@ -82,6 +82,73 @@ describe('DiscoveryRunner', function () {
                 ->toBeTrue("Expected {$class} to implement WpDiscovery");
         }
     });
+
+    it('includes CronDiscovery and JobDiscovery in main phase', function () {
+        $phases = DiscoveryRunner::getDiscoveryPhases();
+
+        expect($phases['main'])->toContain(\Studiometa\Foehn\Discovery\CronDiscovery::class);
+        expect($phases['main'])->toContain(\Studiometa\Foehn\Discovery\JobDiscovery::class);
+    });
+});
+
+describe('DiscoveryRunner phase execution', function () {
+    beforeEach(function () {
+        wp_stub_reset();
+        $this->container = bootTestContainer();
+    });
+
+    afterEach(fn() => tearDownTestContainer());
+
+    it('runs phases and sets hasRun flag', function () {
+        // Register all needed discovery dependencies in the container
+        $this->container->singleton(
+            \Studiometa\Foehn\Jobs\JobRegistry::class,
+            fn() => new \Studiometa\Foehn\Jobs\JobRegistry(),
+        );
+
+        $runner = new DiscoveryRunner(container: $this->container, cache: null, appPath: null, config: null);
+
+        expect($runner->hasRun('early'))->toBeFalse();
+        expect($runner->hasRun('main'))->toBeFalse();
+        expect($runner->hasRun('late'))->toBeFalse();
+
+        $runner->runEarlyDiscoveries();
+        expect($runner->hasRun('early'))->toBeTrue();
+        expect($runner->hasRun('main'))->toBeFalse();
+
+        $runner->runMainDiscoveries();
+        expect($runner->hasRun('main'))->toBeTrue();
+        expect($runner->hasRun('late'))->toBeFalse();
+
+        $runner->runLateDiscoveries();
+        expect($runner->hasRun('late'))->toBeTrue();
+    });
+
+    it('does not re-run a phase that has already run', function () {
+        $this->container->singleton(
+            \Studiometa\Foehn\Jobs\JobRegistry::class,
+            fn() => new \Studiometa\Foehn\Jobs\JobRegistry(),
+        );
+
+        $runner = new DiscoveryRunner(container: $this->container, cache: null, appPath: null, config: null);
+
+        $runner->runEarlyDiscoveries();
+
+        // Reset stubs after first run
+        wp_stub_reset();
+
+        // Running again should be a no-op
+        $runner->runEarlyDiscoveries();
+
+        // No new add_action calls should have been recorded
+        expect(wp_stub_get_calls('add_action'))->toBeEmpty();
+    });
+
+    it('returns default false for unknown phase', function () {
+        $runner = new DiscoveryRunner(container: $this->container, cache: null, appPath: null, config: null);
+
+        expect($runner->hasRun('unknown'))->toBeFalse();
+    });
 });
 
 describe('DiscoveryRunner debug logging', function () {

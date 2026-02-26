@@ -180,5 +180,47 @@ describe('JobSerializer', function () {
             expect($restored->value)->toBe(3.14);
             expect($restored->value)->toBeFloat();
         });
+
+        it('passes through array values without casting', function () {
+            $dto = new class([1, 2, 3]) {
+                public function __construct(
+                    public array $items,
+                ) {}
+            };
+
+            $payload = JobSerializer::serialize($dto);
+            $restored = JobSerializer::deserialize($payload);
+
+            expect($restored->items)->toBe([1, 2, 3]);
+        });
+
+        it('passes through non-builtin typed parameter without casting', function () {
+            // Test the castValue path where type is not builtin (object type)
+            $innerDto = new \stdClass();
+            $innerDto->foo = 'bar';
+
+            $payload = [
+                '__class' => get_class(new class(null) {
+                    public function __construct(
+                        public ?object $nested,
+                    ) {}
+                }),
+                '__data' => ['nested' => null],
+            ];
+
+            $restored = JobSerializer::deserialize($payload);
+
+            expect($restored->nested)->toBeNull();
+        });
+
+        it('handles nested arrays in serialization validation', function () {
+            $dto = new class {
+                public array $matrix = [[1, 2], [3, 4]];
+            };
+
+            $payload = JobSerializer::serialize($dto);
+
+            expect($payload['__data']['matrix'])->toBe([[1, 2], [3, 4]]);
+        });
     });
 });
