@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `#[AsCron]` attribute for recurring background jobs via Action Scheduler ([db208f7], [#111], [#110]):
+  - `CronInterval` backed enum with common intervals (Minute, FiveMinutes, Hourly, Daily, Weekly)
+  - Custom interval support via `CronInterval::custom(seconds)`
+  - Auto-discovery with idempotent scheduling (skips if already scheduled)
+- Add `#[AsJob]` attribute for async job dispatch with typed DTO payloads ([db208f7], [#111], [#110]):
+  - `JobSerializer` for DTO ↔ array serialization with type casting
+  - `JobRegistry` for DTO → handler mapping
+  - `ActionSchedulerJobDispatcher` with optional delay support
+  - `dispatch()` helper function for one-line job dispatch
+  - `JobDispatcher` contract for testability and future transport swaps
+- Add `HookNameResolver` for deterministic hook names derived from FQCN ([1a728f9], [#111])
+
+### Changed
+
+- Refactor `DiscoveryRunner` to use `runPhase()` loop, reducing code duplication ([aa22c38], [#111])
+
+### Fixed
+
+- Fix CI lint/analyse failures by removing obsolete `mago:install-binary` step ([3699f4d], [#111])
+
+[db208f7]: https://github.com/studiometa/foehn-framework/commit/db208f7
+[1a728f9]: https://github.com/studiometa/foehn-framework/commit/1a728f9
+[aa22c38]: https://github.com/studiometa/foehn-framework/commit/aa22c38
+[3699f4d]: https://github.com/studiometa/foehn-framework/commit/3699f4d
+[#111]: https://github.com/studiometa/foehn-framework/pull/111
+[#110]: https://github.com/studiometa/foehn-framework/issues/110
+
 ### Changed
 
 - **BREAKING:** Require PHP 8.5+ and Tempest Framework v3.0 ([#98])
