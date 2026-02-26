@@ -33,9 +33,6 @@ jobs:
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress
 
-      - name: Install Mago binary
-        run: composer mago:install-binary
-
       - name: Run Mago lint
         run: composer lint
 
@@ -64,9 +61,6 @@ jobs:
 
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress
-
-      - name: Install Mago binary
-        run: composer mago:install-binary
 
       - name: Run Mago analyse
         run: composer analyse

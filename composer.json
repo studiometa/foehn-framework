@@ -40,7 +40,6 @@
         "sort-packages": true,
         "optimize-autoloader": true,
         "allow-plugins": {
-            "carthage-software/mago": true,
             "pestphp/pest-plugin": true,
             "studiometa/foehn-installer": true
         }

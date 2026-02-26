@@ -48,65 +48,16 @@ final class DiscoveryRunner
      */
     public function runEarlyDiscoveries(): void
     {
-        if ($this->earlyRan) {
-            return;
-        }
-
-        $this->ensureDiscovered();
-
-        // Hook discovery runs early to catch after_setup_theme hooks
-        $this->applyDiscovery(HookDiscovery::class);
-
-        // Image sizes need to be registered early (enables post-thumbnails support)
-        $this->applyDiscovery(ImageSizeDiscovery::class);
-
-        // Shortcodes can be registered early
-        $this->applyDiscovery(ShortcodeDiscovery::class);
-
-        // CLI commands are registered early so they're available immediately
-        $this->applyDiscovery(CliCommandDiscovery::class);
-
-        // Timber class maps need to be available before queries
-        $this->applyDiscovery(TimberModelDiscovery::class);
-
-        // Twig extensions are registered early so they're available for all templates
-        $this->applyDiscovery(TwigExtensionDiscovery::class);
-
-        $this->earlyRan = true;
+        $this->runPhase('early');
     }
 
     /**
      * Run main discoveries (init).
-     * Post types, taxonomies, and blocks are registered here.
+     * Post types, taxonomies, blocks, and background jobs are registered here.
      */
     public function runMainDiscoveries(): void
     {
-        if ($this->mainRan) {
-            return;
-        }
-
-        $this->ensureDiscovered();
-
-        // Post types and taxonomies
-        $this->applyDiscovery(PostTypeDiscovery::class);
-        $this->applyDiscovery(TaxonomyDiscovery::class);
-
-        // Menus
-        $this->applyDiscovery(MenuDiscovery::class);
-
-        // Blocks
-        $this->applyDiscovery(AcfBlockDiscovery::class);
-        $this->applyDiscovery(BlockDiscovery::class);
-
-        // ACF Field Groups
-        $this->applyDiscovery(AcfFieldGroupDiscovery::class);
-
-        // ACF Options Pages
-        $this->applyDiscovery(AcfOptionsPageDiscovery::class);
-        // Block patterns
-        $this->applyDiscovery(BlockPatternDiscovery::class);
-
-        $this->mainRan = true;
+        $this->runPhase('main');
     }
 
     /**
@@ -115,20 +66,31 @@ final class DiscoveryRunner
      */
     public function runLateDiscoveries(): void
     {
-        if ($this->lateRan) {
+        $this->runPhase('late');
+    }
+
+    /**
+     * Run all discoveries for a given phase.
+     *
+     * @param 'early'|'main'|'late' $phase
+     */
+    private function runPhase(string $phase): void
+    {
+        if ($this->hasRun($phase)) {
             return;
         }
 
         $this->ensureDiscovered();
 
-        // Context providers and template controllers
-        $this->applyDiscovery(ContextProviderDiscovery::class);
-        $this->applyDiscovery(TemplateControllerDiscovery::class);
+        foreach (self::getDiscoveryPhases()[$phase] as $discoveryClass) {
+            $this->applyDiscovery($discoveryClass);
+        }
 
-        // REST API routes
-        $this->applyDiscovery(RestRouteDiscovery::class);
-
-        $this->lateRan = true;
+        match ($phase) {
+            'early' => $this->earlyRan = true,
+            'main' => $this->mainRan = true,
+            'late' => $this->lateRan = true,
+        };
     }
 
     /**
@@ -341,6 +303,8 @@ final class DiscoveryRunner
                 BlockDiscovery::class,
                 BlockPatternDiscovery::class,
                 AcfOptionsPageDiscovery::class,
+                CronDiscovery::class,
+                JobDiscovery::class,
             ],
             'late' => [
                 ContextProviderDiscovery::class,

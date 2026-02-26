@@ -2,7 +2,7 @@ php-version = "8.4"
 
 [source]
 paths = ["packages/foehn/src", "packages/installer/src"]
-includes = ["vendor"]
+includes = ["vendor", "packages/foehn/stubs"]
 
 [formatter]
 print-width = 120

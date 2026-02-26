@@ -13,9 +13,12 @@ use Studiometa\Foehn\Config\RenderApiConfig;
 use Studiometa\Foehn\Config\RestConfig;
 use Studiometa\Foehn\Config\TimberConfig;
 use Studiometa\Foehn\Contracts\CacheInterface;
+use Studiometa\Foehn\Contracts\JobDispatcher;
 use Studiometa\Foehn\Contracts\ViewEngineInterface;
 use Studiometa\Foehn\Discovery\DiscoveryCache;
 use Studiometa\Foehn\Discovery\DiscoveryRunner;
+use Studiometa\Foehn\Jobs\ActionSchedulerJobDispatcher;
+use Studiometa\Foehn\Jobs\JobRegistry;
 use Studiometa\Foehn\Rest\RenderApi;
 use Studiometa\Foehn\Views\ContextProviderRegistry;
 use Studiometa\Foehn\Views\TimberViewEngine;
@@ -268,6 +271,13 @@ final class Kernel
         $this->container->singleton(
             AcfBlockRenderer::class,
             fn() => new AcfBlockRenderer($this->container->get(AcfConfig::class)),
+        );
+
+        $this->container->singleton(JobRegistry::class, static fn() => new JobRegistry());
+
+        $this->container->singleton(
+            JobDispatcher::class,
+            fn() => new ActionSchedulerJobDispatcher($this->container->get(JobRegistry::class)),
         );
 
         $this->container->singleton(ContextProviderRegistry::class, static fn() => new ContextProviderRegistry());
