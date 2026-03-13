@@ -136,12 +136,14 @@ final class DiscoveryRunner
         $this->appLocation = $this->buildAppLocation();
 
         // No cache — scan classes and run discover()
-        if ($this->appLocation !== null) {
+        $appLocation = $this->appLocation;
+
+        if ($appLocation !== null) {
             $classes = $this->scanClasses();
 
             foreach ($classes as $class) {
                 foreach ($this->discoveries as $discovery) {
-                    $discovery->discover($this->appLocation, $class);
+                    $discovery->discover($appLocation, $class);
                 }
             }
         }

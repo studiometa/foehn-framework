@@ -76,6 +76,8 @@ final class VideoEmbed
      */
     public static function extractId(string $url): ?string
     {
+        $matches = [];
+
         // Try YouTube patterns
         foreach (self::YOUTUBE_PATTERNS as $pattern) {
             if (preg_match($pattern, $url, $matches) !== 1) {
@@ -218,6 +220,7 @@ final class VideoEmbed
         // Parse the URL to get query parameters
         $parsed = parse_url($url);
         $query = $parsed['query'] ?? '';
+        $params = [];
 
         parse_str($query, $params);
 
@@ -234,6 +237,7 @@ final class VideoEmbed
 
         // Parse formats like 2m30s, 1h2m30s
         $seconds = 0;
+        $matches = [];
 
         if (preg_match('/(\d+)h/', $time, $matches) === 1) {
             $seconds += (int) $matches[1] * 3600;

@@ -23,7 +23,7 @@ use Studiometa\Foehn\Rest\RenderApi;
 use Studiometa\Foehn\Views\ContextProviderRegistry;
 use Studiometa\Foehn\Views\TimberViewEngine;
 use Tempest\Container\Container;
-use Tempest\Core\Tempest;
+use Tempest\Container\GenericContainer;
 use Timber\Timber;
 
 /**
@@ -151,8 +151,8 @@ final class Kernel
      */
     private function bootstrap(): void
     {
-        // Initialize Tempest container
-        $this->initializeTempest();
+        // Initialize the DI container
+        $this->initializeContainer();
 
         // Register core services
         $this->registerCoreServices();
@@ -165,45 +165,17 @@ final class Kernel
     }
 
     /**
-     * Initialize Tempest framework.
-     */
-    private function initializeTempest(): void
-    {
-        // Boot Tempest with the project root (where composer.json lives)
-        Tempest::boot(self::findProjectRoot($this->appPath));
-
-        // Get the container from Tempest
-        $this->container = \Tempest\Container\get(Container::class);
-    }
-
-    /**
-     * Walk up from the given path to find the project root containing
-     * both composer.json and a vendor/ directory.
+     * Initialize the DI container.
      *
-     * @throws RuntimeException If the project root cannot be found in any parent directory
+     * Creates a standalone Tempest GenericContainer without booting the full
+     * Tempest framework. Foehn manages its own discovery lifecycle via
+     * DiscoveryRunner, so we only need the container for autowiring.
      */
-    private static function findProjectRoot(string $path): string
+    private function initializeContainer(): void
     {
-        $directory = realpath($path);
+        $this->container = new GenericContainer();
 
-        if ($directory === false) {
-            throw new RuntimeException("Path does not exist: {$path}");
-        }
-
-        $previous = null;
-
-        while ($directory !== $previous) {
-            if (file_exists($directory . '/composer.json') && is_dir($directory . '/vendor')) {
-                return $directory;
-            }
-
-            $previous = $directory;
-            $directory = dirname($directory);
-        }
-
-        throw new RuntimeException(
-            "Could not locate project root (composer.json + vendor/) in any parent directory of: {$path}",
-        );
+        GenericContainer::setInstance($this->container);
     }
 
     /**
@@ -226,33 +198,16 @@ final class Kernel
      */
     private function registerConfigs(): void
     {
-        // Resolve FoehnConfig: prefer discovered config file, fall back to boot() array, then defaults
-        $this->foehnConfig = match (true) {
-            $this->container->has(FoehnConfig::class) => $this->container->get(FoehnConfig::class),
-            $this->config !== [] => FoehnConfig::fromArray($this->config),
-            default => new FoehnConfig(),
-        };
+        // Resolve FoehnConfig from boot() array or use defaults
+        $this->foehnConfig = $this->config !== [] ? FoehnConfig::fromArray($this->config) : new FoehnConfig();
 
-        if (!$this->container->has(FoehnConfig::class)) {
-            $this->container->singleton(FoehnConfig::class, fn() => $this->foehnConfig);
-        }
+        $this->container->singleton(FoehnConfig::class, fn() => $this->foehnConfig);
 
-        // Register default configs only if user hasn't provided their own via *.config.php
-        // Tempest's LoadConfig discovery runs before this, so user configs are already registered
-        $defaults = [
-            TimberConfig::class => static fn() => new TimberConfig(),
-            AcfConfig::class => static fn() => new AcfConfig(),
-            RestConfig::class => static fn() => new RestConfig(),
-            RenderApiConfig::class => static fn() => new RenderApiConfig(),
-        ];
-
-        foreach ($defaults as $class => $factory) {
-            if ($this->container->has($class)) {
-                continue;
-            }
-
-            $this->container->singleton($class, $factory);
-        }
+        // Register default configs (can be overridden by user via container singletons)
+        $this->container->singleton(TimberConfig::class, static fn() => new TimberConfig());
+        $this->container->singleton(AcfConfig::class, static fn() => new AcfConfig());
+        $this->container->singleton(RestConfig::class, static fn() => new RestConfig());
+        $this->container->singleton(RenderApiConfig::class, static fn() => new RenderApiConfig());
     }
 
     /**

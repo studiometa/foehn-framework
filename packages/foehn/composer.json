@@ -29,7 +29,9 @@
     "require": {
         "php": "^8.5",
         "studiometa/twig-toolkit": "^2.1",
-        "tempest/framework": "^3.0",
+        "tempest/container": "^3.4",
+        "tempest/discovery": "^3.4",
+        "tempest/generation": "^3.4",
         "timber/timber": "^2.0",
         "vlucas/phpdotenv": "^5.6"
     },

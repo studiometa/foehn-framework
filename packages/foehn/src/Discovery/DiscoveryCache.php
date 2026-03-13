@@ -6,7 +6,7 @@ namespace Studiometa\Foehn\Discovery;
 
 use RuntimeException;
 use Studiometa\Foehn\Config\FoehnConfig;
-use Tempest\Core\DiscoveryCacheStrategy;
+use Tempest\Discovery\DiscoveryCacheStrategy;
 
 /**
  * Manages discovery cache for Foehn.

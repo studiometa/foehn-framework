@@ -5,7 +5,7 @@ declare(strict_types=1);
 use Studiometa\Foehn\Config\FoehnConfig;
 use Studiometa\Foehn\Hooks\Cleanup\CleanHeadTags;
 use Studiometa\Foehn\Hooks\Security\SecurityHeaders;
-use Tempest\Core\DiscoveryCacheStrategy;
+use Tempest\Discovery\DiscoveryCacheStrategy;
 
 describe('FoehnConfig', function () {
     it('can be instantiated with defaults', function () {

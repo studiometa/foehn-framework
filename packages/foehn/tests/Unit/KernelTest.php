@@ -82,46 +82,6 @@ describe('Kernel configuration', function () {
     });
 });
 
-describe('Kernel::findProjectRoot', function () {
-    /**
-     * Helper to call the private static method via reflection.
-     */
-    function callFindProjectRoot(string $path): string
-    {
-        $method = new ReflectionMethod(Kernel::class, 'findProjectRoot');
-
-        return $method->invoke(null, $path);
-    }
-
-    it('finds the project root from a subdirectory', function () {
-        // The project root is where composer.json + vendor/ both exist
-        // In monorepo, this is the repository root, not the package directory
-        $packageDir = dirname(__DIR__, 2);
-        $subDir = $packageDir . '/src/Attributes';
-        $result = callFindProjectRoot($subDir);
-
-        // Should find a directory with both composer.json and vendor/
-        expect(file_exists($result . '/composer.json'))->toBeTrue();
-        expect(is_dir($result . '/vendor'))->toBeTrue();
-    });
-
-    it('finds the project root when given the root itself', function () {
-        $packageDir = dirname(__DIR__, 2);
-        $result = callFindProjectRoot($packageDir);
-
-        expect(file_exists($result . '/composer.json'))->toBeTrue();
-        expect(is_dir($result . '/vendor'))->toBeTrue();
-    });
-
-    it('throws when the path does not exist', function () {
-        callFindProjectRoot('/non/existent/path');
-    })->throws(RuntimeException::class, 'Path does not exist');
-
-    it('throws when composer.json is not found', function () {
-        callFindProjectRoot('/');
-    })->throws(RuntimeException::class, 'Could not locate project root');
-});
-
 describe('Kernel Timber initialization', function () {
     afterEach(function () {
         Kernel::reset();
@@ -131,9 +91,6 @@ describe('Kernel Timber initialization', function () {
     it('calls initializeTimber during bootstrap', function () {
         $kernel = Kernel::boot(dirname(__DIR__, 2) . '/src');
 
-        // Restore error/exception handlers set by Tempest::boot()
-        restore_error_handler();
-        restore_exception_handler();
 
         // Timber::$dirname should be set to the default config value
         expect(Timber::$dirname)->toBe(['templates']);
@@ -142,9 +99,6 @@ describe('Kernel Timber initialization', function () {
     it('registers TimberConfig in container with defaults', function () {
         $kernel = Kernel::boot(dirname(__DIR__, 2) . '/src', []);
 
-        // Restore error/exception handlers set by Tempest::boot()
-        restore_error_handler();
-        restore_exception_handler();
 
         $config = Kernel::get(\Studiometa\Foehn\Config\TimberConfig::class);
         expect($config)->toBeInstanceOf(\Studiometa\Foehn\Config\TimberConfig::class);
@@ -154,9 +108,6 @@ describe('Kernel Timber initialization', function () {
     it('registers timber/context filter', function () {
         $kernel = Kernel::boot(dirname(__DIR__, 2) . '/src');
 
-        // Restore error/exception handlers set by Tempest::boot()
-        restore_error_handler();
-        restore_exception_handler();
 
         $contextFilters = wp_stub_get_calls('add_filter');
         $timberContextFilter = array_filter(
@@ -170,9 +121,6 @@ describe('Kernel Timber initialization', function () {
     it('registers AcfConfig in container with defaults', function () {
         $kernel = Kernel::boot(dirname(__DIR__, 2) . '/src', []);
 
-        // Restore error/exception handlers set by Tempest::boot()
-        restore_error_handler();
-        restore_exception_handler();
 
         $config = Kernel::get(\Studiometa\Foehn\Config\AcfConfig::class);
         expect($config)->toBeInstanceOf(\Studiometa\Foehn\Config\AcfConfig::class);
@@ -182,9 +130,6 @@ describe('Kernel Timber initialization', function () {
     it('registers RestConfig in container with defaults', function () {
         $kernel = Kernel::boot(dirname(__DIR__, 2) . '/src', []);
 
-        // Restore error/exception handlers set by Tempest::boot()
-        restore_error_handler();
-        restore_exception_handler();
 
         $config = Kernel::get(\Studiometa\Foehn\Config\RestConfig::class);
         expect($config)->toBeInstanceOf(\Studiometa\Foehn\Config\RestConfig::class);
@@ -194,9 +139,6 @@ describe('Kernel Timber initialization', function () {
     it('registers RenderApi in container', function () {
         $kernel = Kernel::boot(dirname(__DIR__, 2) . '/src', []);
 
-        // Restore error/exception handlers set by Tempest::boot()
-        restore_error_handler();
-        restore_exception_handler();
 
         // RenderApi should be available in container
         $renderApi = Kernel::get(\Studiometa\Foehn\Rest\RenderApi::class);
@@ -206,9 +148,6 @@ describe('Kernel Timber initialization', function () {
     it('registers RenderApiConfig in container with defaults', function () {
         $kernel = Kernel::boot(dirname(__DIR__, 2) . '/src', []);
 
-        // Restore error/exception handlers set by Tempest::boot()
-        restore_error_handler();
-        restore_exception_handler();
 
         // RenderApiConfig should be available with empty templates by default
         $config = Kernel::get(\Studiometa\Foehn\Config\RenderApiConfig::class);
@@ -227,9 +166,6 @@ describe('Kernel respects user config files', function () {
         // Boot kernel
         $kernel = Kernel::boot(dirname(__DIR__, 2) . '/src', []);
 
-        // Restore error/exception handlers set by Tempest::boot()
-        restore_error_handler();
-        restore_exception_handler();
 
         // Get the container
         $container = Kernel::container();
@@ -245,16 +181,14 @@ describe('Kernel respects user config files', function () {
         expect($config->templatesDir)->toBe(['custom-views']);
     });
 
-    it('uses has() check before registering default configs', function () {
-        // Use reflection to verify the registerConfigs method checks has()
+    it('registers all default config classes', function () {
         $reflection = new ReflectionClass(Kernel::class);
         $source = file_get_contents($reflection->getFileName());
 
-        // Verify the code registers all default configs with has() guard
-        expect($source)->toContain('$this->container->has($class)');
-        expect($source)->toContain('TimberConfig::class =>');
-        expect($source)->toContain('AcfConfig::class =>');
-        expect($source)->toContain('RestConfig::class =>');
-        expect($source)->toContain('RenderApiConfig::class =>');
+        // Verify the code registers all default configs as singletons
+        expect($source)->toContain('TimberConfig::class');
+        expect($source)->toContain('AcfConfig::class');
+        expect($source)->toContain('RestConfig::class');
+        expect($source)->toContain('RenderApiConfig::class');
     });
 });

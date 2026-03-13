@@ -41,7 +41,8 @@
         "optimize-autoloader": true,
         "allow-plugins": {
             "pestphp/pest-plugin": true,
-            "studiometa/foehn-installer": true
+            "studiometa/foehn-installer": true,
+            "carthage-software/mago": true
         }
     },
     "minimum-stability": "dev",

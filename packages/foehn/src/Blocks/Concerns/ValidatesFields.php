@@ -286,9 +286,7 @@ trait ValidatesFields
             return sanitize_email($string);
         }
 
-        $filtered = filter_var($string, FILTER_SANITIZE_EMAIL);
-
-        return $filtered !== false ? $filtered : '';
+        return filter_var($string, FILTER_SANITIZE_EMAIL);
     }
 
     /**
@@ -302,8 +300,6 @@ trait ValidatesFields
             return esc_url_raw($string);
         }
 
-        $filtered = filter_var($string, FILTER_SANITIZE_URL);
-
-        return $filtered !== false ? $filtered : '';
+        return filter_var($string, FILTER_SANITIZE_URL);
     }
 }

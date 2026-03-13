@@ -10,7 +10,7 @@ use Studiometa\Foehn\Discovery\WpDiscovery;
 use Studiometa\Foehn\Hooks\Cleanup\CleanHeadTags;
 use Tempest\Container\Container;
 use Tempest\Container\GenericContainer;
-use Tempest\Core\DiscoveryCacheStrategy;
+use Tempest\Discovery\DiscoveryCacheStrategy;
 
 function createTestContainer(): GenericContainer
 {
