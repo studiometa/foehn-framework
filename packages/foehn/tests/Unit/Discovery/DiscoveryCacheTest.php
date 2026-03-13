@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use Studiometa\Foehn\Config\FoehnConfig;
 use Studiometa\Foehn\Discovery\DiscoveryCache;
-use Tempest\Core\DiscoveryCacheStrategy;
+use Tempest\Discovery\DiscoveryCacheStrategy;
 
 beforeEach(function () {
     // Create a temp directory for each test

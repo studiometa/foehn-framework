@@ -11,7 +11,7 @@ use Studiometa\Foehn\Console\WpCli;
 use Studiometa\Foehn\Discovery\DiscoveryCache;
 use Studiometa\Foehn\Discovery\DiscoveryRunner;
 use Tempest\Container\Container;
-use Tempest\Core\DiscoveryCacheStrategy;
+use Tempest\Discovery\DiscoveryCacheStrategy;
 
 #[AsCliCommand(name: 'discovery:warm', description: 'Warm discovery cache by running all discoveries', longDescription: <<<'DOC'
     ## DESCRIPTION

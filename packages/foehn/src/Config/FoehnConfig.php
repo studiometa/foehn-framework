@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Config;
 
-use Tempest\Core\DiscoveryCacheStrategy;
+use Tempest\Discovery\DiscoveryCacheStrategy;
 
 /**
  * Core configuration for Føhn.
@@ -15,7 +15,7 @@ use Tempest\Core\DiscoveryCacheStrategy;
  * ```php
  * // app/foehn.config.php
  * use Studiometa\Foehn\Config\FoehnConfig;
- * use Tempest\Core\DiscoveryCacheStrategy;
+ * use Tempest\Discovery\DiscoveryCacheStrategy;
  *
  * return new FoehnConfig(
  *     discoveryCacheStrategy: DiscoveryCacheStrategy::FULL,
