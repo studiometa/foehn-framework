@@ -4,10 +4,10 @@
 > Blog post: https://tempestphp.com/blog/truly-decoupled-discovery
 > PR: https://github.com/tempestphp/tempest-framework/pull/2041
 
-## Status: ✅ Phase 1 done — namespace migration complete
+## Status: ✅ Phases 1–3 done
 
-**Current constraint**: `"tempest/framework": "^3.4"` in `packages/foehn/composer.json`.
-All 1120 tests passing on PHP 8.5.
+Dependency changed from `tempest/framework` (all ~30 packages) to 3 individual sub-packages.
+All 1124 tests passing on PHP 8.5.
 
 ## What Tempest 3.4 brings
 
@@ -39,46 +39,26 @@ Rector handles this automatically via `TempestSetList::TEMPEST_34`.
 - `tests/Unit/Discovery/DiscoveryCacheTest.php` — `DiscoveryCacheStrategy`
 - `tests/Unit/Discovery/DiscoveryRunnerIntegrationTest.php` — `DiscoveryCacheStrategy`
 
-## Upgrade phases (when PHP 8.5 is available)
+## Upgrade phases
 
-### Phase 1: Bump + namespace fixes (effort: low) ✅ DONE
+### Phase 1: Bump + namespace fixes ✅ DONE
 
 Applied manually (7 files, `Tempest\Core\DiscoveryCacheStrategy` → `Tempest\Discovery\DiscoveryCacheStrategy`).
 
-### Phase 2: Replace `Tempest::boot()` with `BootDiscovery` (effort: medium)
+### Phase 2: Replace `Tempest::boot()` with `GenericContainer` ✅ DONE
 
-Replace the full framework bootstrap in `Kernel::initializeTempest()`:
+Removed full framework bootstrap. Kernel now creates a standalone `GenericContainer`
+without loading dotenv, Composer, config discovery, event bus, exception handlers, etc.
 
-```php
-// Before (boots entire Tempest framework)
-Tempest::boot(self::findProjectRoot($this->appPath));
-$this->container = \Tempest\Container\get(Container::class);
+### Phase 3: Replace `tempest/framework` with sub-packages ✅ DONE
 
-// After (boots only container + discovery)
-$container = new GenericContainer();
-new BootDiscovery(
-    container: $container,
-    config: DiscoveryConfig::autoload($projectRoot),
-)();
-$this->container = $container;
-```
+Replaced single `tempest/framework` dependency with:
+- `tempest/container` — DI container, autowiring
+- `tempest/discovery` — SkipDiscovery, DiscoveryCacheStrategy
+- `tempest/generation` — ClassManipulator for stubs
 
-**Benefits**: faster boot, reduced memory, no unused packages loaded.
-**Risk**: need to verify all services resolve correctly without full Tempest kernel.
-
-### Phase 3: Replace `tempest/framework` with sub-packages (effort: medium-high)
-
-What Foehn actually uses:
-
-| Package              | Usage                                                          |
-| -------------------- | -------------------------------------------------------------- |
-| `tempest/container`  | DI container, `get()`, `GenericContainer`, `Singleton`         |
-| `tempest/discovery`  | `SkipDiscovery`, `DiscoveryCacheStrategy`, `DiscoveryLocation` |
-| `tempest/reflection` | Indirectly via container                                       |
-| `tempest/support`    | `Filesystem` (in `GeneratesFiles`)                             |
-| `tempest/generation` | `ClassManipulator` (in `GeneratesFiles`)                       |
-
-Would go from ~30 installed packages to ~5.
+Transitive: `tempest/reflection`, `tempest/support`.
+Went from ~30 installed Tempest packages to 5.
 
 ### Phase 4: Extend `Tempest\Discovery\Discovery` (effort: high)
 
