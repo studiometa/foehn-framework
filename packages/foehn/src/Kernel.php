@@ -199,9 +199,7 @@ final class Kernel
     private function registerConfigs(): void
     {
         // Resolve FoehnConfig from boot() array or use defaults
-        $this->foehnConfig = $this->config !== []
-            ? FoehnConfig::fromArray($this->config)
-            : new FoehnConfig();
+        $this->foehnConfig = $this->config !== [] ? FoehnConfig::fromArray($this->config) : new FoehnConfig();
 
         $this->container->singleton(FoehnConfig::class, fn() => $this->foehnConfig);
 

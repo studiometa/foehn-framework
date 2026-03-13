@@ -10,9 +10,9 @@ use Studiometa\Foehn\Console\CliCommandInterface;
 use Studiometa\Foehn\Console\WpCli;
 use Studiometa\Foehn\Discovery\DiscoveryCache;
 use Studiometa\Foehn\Discovery\DiscoveryRunner;
+use Studiometa\Foehn\Discovery\WpDiscovery;
 use Tempest\Container\Container;
 use Tempest\Discovery\DiscoveryCacheStrategy;
-use Studiometa\Foehn\Discovery\WpDiscovery;
 
 #[AsCliCommand(name: 'discovery:generate', description: 'Generate and cache all discoveries', longDescription: <<<'DOC'
     ## DESCRIPTION
