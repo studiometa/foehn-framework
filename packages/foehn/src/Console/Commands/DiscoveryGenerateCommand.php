@@ -12,7 +12,7 @@ use Studiometa\Foehn\Discovery\DiscoveryCache;
 use Studiometa\Foehn\Discovery\DiscoveryRunner;
 use Tempest\Container\Container;
 use Tempest\Discovery\DiscoveryCacheStrategy;
-use Tempest\Discovery\Discovery;
+use Studiometa\Foehn\Discovery\WpDiscovery;
 
 #[AsCliCommand(name: 'discovery:generate', description: 'Generate and cache all discoveries', longDescription: <<<'DOC'
     ## DESCRIPTION
@@ -129,7 +129,7 @@ final class DiscoveryGenerateCommand implements CliCommandInterface
         $cacheData = [];
 
         foreach (DiscoveryRunner::getAllDiscoveryClasses() as $discoveryClass) {
-            /** @var Discovery $discovery */
+            /** @var WpDiscovery $discovery */
             $discovery = $this->container->get($discoveryClass);
 
             // Get cacheable data from the discovery
