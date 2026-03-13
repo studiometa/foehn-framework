@@ -4,10 +4,10 @@
 > Blog post: https://tempestphp.com/blog/truly-decoupled-discovery
 > PR: https://github.com/tempestphp/tempest-framework/pull/2041
 
-## Status: ✅ Phases 1–3 done
+## Status: ✅ Migration complete
 
 Dependency changed from `tempest/framework` (all ~30 packages) to 3 individual sub-packages.
-All 1124 tests passing on PHP 8.5.
+All 1124 tests passing on PHP 8.5. Phase 4 (Discovery interface alignment) deferred.
 
 ## What Tempest 3.4 brings
 
@@ -60,24 +60,21 @@ Replaced single `tempest/framework` dependency with:
 Transitive: `tempest/reflection`, `tempest/support`.
 Went from ~30 installed Tempest packages to 5.
 
-### Phase 4: Extend `Tempest\Discovery\Discovery` (effort: high)
+### Phase 4: Extend `Tempest\Discovery\Discovery` — DEFERRED
 
-Migrate `WpDiscovery` to extend `Tempest\Discovery\Discovery`:
+After analysis, aligning `WpDiscovery` with Tempest's `Discovery` interface offers
+minimal value vs significant churn (19 discoveries + 50+ test files):
 
-- Switch from `ReflectionClass` to `ClassReflector`
-- Switch from `WpDiscoveryItems` to `DiscoveryItems`
-- Remove custom `ClassScanner` (replaced by `BootDiscovery`)
-- Keep WordPress phase management (early/main/late)
+- **`ClassScanner`**: Still needed — `BootDiscovery` manages its own discovery classes,
+  while we need phased `DiscoveryRunner` calling `ClassScanner::scan()`.
+- **`DiscoveryLocation`**: Tempest's version calls `realpath()` in constructor, breaking
+  all tests that use fake paths like `/tmp/test-app`. Only 42 lines saved.
+- **`WpDiscoveryItems`**: Different keying (namespace vs path) and serialization.
+- **`ReflectionClass` → `ClassReflector`**: Would require `$class->getReflection()->`
+  for `isSubclassOf()`, `implementsInterface()`, `getMethods()` — more verbose, no gain.
 
-19 discovery files + ClassScanner + DiscoveryRunner + tests affected.
-
-### Phase 5: Not recommended
-
-Replacing our own `WpDiscovery` entirely with Tempest's `Discovery` is **not recommended** because:
-
-- Tempest has no concept of lifecycle phases (early/main/late)
-- WordPress hooks must be registered at specific moments
-- Our `WpDiscoveryItems` supports location-based caching tailored for WP
+This phase can be revisited if Tempest's Discovery API evolves to support lifecycle
+phases or if we need interop with third-party Tempest discoveries.
 
 ## Architecture validation
 
@@ -85,3 +82,12 @@ Tempest 3.4 **validates our architecture**: we already decoupled our discovery f
 Tempest's, which is exactly the direction Tempest is taking for third-party projects.
 Our `WpDiscovery` interface, `WpDiscoveryItems`, `DiscoveryLocation`, `ClassScanner`,
 and `DiscoveryRunner` all exist because WordPress needs lifecycle-aware discovery.
+
+## Summary
+
+| Phase | Status | Impact |
+|-------|--------|--------|
+| 1. Namespace fixes | ✅ Done | 7 files, 1 import each |
+| 2. Remove `Tempest::boot()` | ✅ Done | -109 lines, faster boot |
+| 3. Sub-packages | ✅ Done | 30 → 5 Tempest packages |
+| 4. Align Discovery | ⏸ Deferred | Low value, high churn |
