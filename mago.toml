@@ -56,5 +56,6 @@ ignore = [
     "redundant-type-comparison",  # WP runtime types differ from stubs
     "redundant-condition",        # Intentional defensive code for WP
     "non-existent-method",        # Traits calling methods from other traits
+    "non-documented-method",      # ACF Builder uses __call() extensively
     "template-constraint-violation",  # WP_REST_Request::get_param() has complex generics
 ]

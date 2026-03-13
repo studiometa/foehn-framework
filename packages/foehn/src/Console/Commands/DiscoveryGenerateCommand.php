@@ -152,8 +152,7 @@ final class DiscoveryGenerateCommand implements CliCommandInterface
     private function getShortClassName(string $fqcn): string
     {
         $parts = explode('\\', $fqcn);
-        $last = end($parts);
 
-        return $last !== false ? $last : $fqcn;
+        return end($parts);
     }
 }

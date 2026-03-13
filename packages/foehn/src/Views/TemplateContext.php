@@ -186,6 +186,7 @@ final readonly class TemplateContext implements ArrayAccess
      */
     public function dto(string $class): ?Arrayable
     {
+        /** @var T|null */
         return $this->dtos[$class] ?? null;
     }
 
