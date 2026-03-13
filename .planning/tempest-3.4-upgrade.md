@@ -4,12 +4,10 @@
 > Blog post: https://tempestphp.com/blog/truly-decoupled-discovery
 > PR: https://github.com/tempestphp/tempest-framework/pull/2041
 
-## Status: ⏳ Blocked — PHP 8.5 required
+## Status: ✅ Phase 1 done — namespace migration complete
 
-Tempest 3.4 requires **PHP 8.5** (uses `clone($this, [...])` and `private(set)` syntax).
-Our runtime is PHP 8.4. The upgrade is blocked until PHP 8.5 is available.
-
-**Current constraint**: `"tempest/framework": ">=3.0 <3.4"` (pinned in `packages/foehn/composer.json`).
+**Current constraint**: `"tempest/framework": "^3.4"` in `packages/foehn/composer.json`.
+All 1120 tests passing on PHP 8.5.
 
 ## What Tempest 3.4 brings
 
@@ -43,14 +41,9 @@ Rector handles this automatically via `TempestSetList::TEMPEST_34`.
 
 ## Upgrade phases (when PHP 8.5 is available)
 
-### Phase 1: Bump + namespace fixes (effort: low)
+### Phase 1: Bump + namespace fixes (effort: low) ✅ DONE
 
-```bash
-composer require tempest/framework:^3.4 --no-scripts
-# Configure Rector
-vendor/bin/rector  # handles namespace moves automatically
-# Run tests
-```
+Applied manually (7 files, `Tempest\Core\DiscoveryCacheStrategy` → `Tempest\Discovery\DiscoveryCacheStrategy`).
 
 ### Phase 2: Replace `Tempest::boot()` with `BootDiscovery` (effort: medium)
 
