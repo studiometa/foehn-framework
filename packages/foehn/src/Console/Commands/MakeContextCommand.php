@@ -7,44 +7,48 @@ namespace Studiometa\Foehn\Console\Commands;
 use Studiometa\Foehn\Attributes\AsCliCommand;
 use Studiometa\Foehn\Console\CliCommandInterface;
 use Studiometa\Foehn\Console\GeneratesFiles;
-use Studiometa\Foehn\Console\Stubs\ContextStub;
+use Studiometa\Foehn\Console\Stubs\ContextProviderStub;
 use Studiometa\Foehn\Console\WpCli;
 
 use function Tempest\Support\str;
 
-#[AsCliCommand(name: 'make:context', description: 'Create a new context provider (view composer)', longDescription: <<<'DOC'
-    ## OPTIONS
+#[AsCliCommand(
+    name: 'make:context',
+    description: 'Create a new context provider (view composer)',
+    longDescription: <<<'DOC'
+        ## OPTIONS
 
-    <name>
-    : The context provider name (e.g., 'GlobalContext', 'SingleContext')
+        <name>
+        : The context provider name (e.g., 'GlobalContext', 'SingleContext')
 
-    [--templates=<templates>]
-    : Comma-separated template patterns to match (e.g., 'single,single-*')
-      Use '*' for global context that applies to all templates.
+        [--templates=<templates>]
+        : Comma-separated template patterns to match (e.g., 'single,single-*')
+          Use '*' for global context that applies to all templates.
 
-    [--global]
-    : Shorthand for --templates=* (applies to all templates)
+        [--global]
+        : Shorthand for --templates=* (applies to all templates)
 
-    [--force]
-    : Overwrite existing file
+        [--force]
+        : Overwrite existing file
 
-    [--dry-run]
-    : Show what would be created without creating
+        [--dry-run]
+        : Show what would be created without creating
 
-    ## EXAMPLES
+        ## EXAMPLES
 
-        # Create a global context provider
-        wp tempest make:context GlobalContext --global
+            # Create a global context provider
+            wp tempest make:context GlobalContext --global
 
-        # Create a context for single posts
-        wp tempest make:context SingleContext --templates=single,single-*
+            # Create a context for single posts
+            wp tempest make:context SingleContext --templates=single,single-*
 
-        # Create a context for product templates
-        wp tempest make:context ProductContext --templates=single-product,archive-product
+            # Create a context for product templates
+            wp tempest make:context ProductContext --templates=single-product,archive-product
 
-        # Preview what would be created
-        wp tempest make:context GlobalContext --global --dry-run
-    DOC)]
+            # Preview what would be created
+            wp tempest make:context GlobalContext --global --dry-run
+        DOC,
+)]
 final class MakeContextCommand implements CliCommandInterface
 {
     use GeneratesFiles;
@@ -79,11 +83,12 @@ final class MakeContextCommand implements CliCommandInterface
         $templatesCode = "['" . implode("', '", $templates) . "']";
 
         $content = $this->generateClassFile(
-            stubClass: ContextStub::class,
+            stubClass: ContextProviderStub::class,
             targetPath: $targetPath,
             replacements: [
+                // The class name comes from the target path, so only the templates
+                // still have to be substituted in the stub source.
                 "['dummy-template', 'dummy-template-*']" => $templatesCode,
-                'DummyContext' => $className,
             ],
             dryRun: $dryRun,
         );
@@ -96,7 +101,7 @@ final class MakeContextCommand implements CliCommandInterface
 
         $this->cli->success("Context provider created: {$this->cli->getRelativePath($targetPath)}");
         $this->cli->line('');
-        $this->cli->log('Edit the compose() method to add data to the Timber context.');
+        $this->cli->log('Edit the provide() method to add data to the view context.');
         $this->cli->line('');
         $this->cli->log('Template patterns:');
         foreach ($templates as $template) {
