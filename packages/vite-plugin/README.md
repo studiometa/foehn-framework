@@ -17,22 +17,22 @@ import tailwindcss from "@tailwindcss/vite";
 import foehn from "@studiometa/foehn-vite-plugin";
 
 export default defineConfig({
-  plugins: [
-    foehn({
-      // Glob patterns for entry points
-      input: ["src/js/app.js", "src/css/app.css"],
+    plugins: [
+        foehn({
+            // Glob patterns for entry points
+            input: ["src/js/app.js", "src/css/app.css"],
 
-      // Files to watch for full reload (default: ["templates/**/*.twig"])
-      reload: ["templates/**/*.twig", "app/**/*.php"],
+            // Files to watch for full reload (default: ["templates/**/*.twig"])
+            reload: ["templates/**/*.twig", "app/**/*.php"],
 
-      // Output directory (default: "dist")
-      outDir: "dist",
+            // Output directory (default: "dist")
+            outDir: "dist",
 
-      // Theme directory context (default: process.cwd())
-      themeDir: "./theme",
-    }),
-    tailwindcss(),
-  ],
+            // Theme directory context (default: process.cwd())
+            themeDir: "./theme",
+        }),
+        tailwindcss(),
+    ],
 });
 ```
 
@@ -44,7 +44,7 @@ Input patterns support glob syntax:
 
 ```ts
 foehn({
-  input: ["src/js/*.js", "src/css/*.css"],
+    input: ["src/js/*.js", "src/css/*.css"],
 });
 ```
 

@@ -31,7 +31,7 @@ Controls the bootstrap process: discovery caching, debug mode, and opt-in hooks.
 
 use Studiometa\Foehn\Config\FoehnConfig;
 use Studiometa\Foehn\Hooks\Cleanup\CleanHeadTags;
-use Tempest\Core\DiscoveryCacheStrategy;
+use Tempest\Discovery\DiscoveryCacheStrategy;
 
 return new FoehnConfig(
     discoveryCacheStrategy: DiscoveryCacheStrategy::FULL,
@@ -176,7 +176,7 @@ Use PHP logic in your config files for environment-specific settings:
 // app/foehn.config.php
 
 use Studiometa\Foehn\Config\FoehnConfig;
-use Tempest\Core\DiscoveryCacheStrategy;
+use Tempest\Discovery\DiscoveryCacheStrategy;
 
 $isDev = defined('WP_DEBUG') && WP_DEBUG;
 

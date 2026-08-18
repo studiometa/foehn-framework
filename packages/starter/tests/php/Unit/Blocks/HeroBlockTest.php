@@ -6,43 +6,6 @@ use App\Blocks\HeroBlock;
 use App\Data\HeroContext;
 use Studiometa\Foehn\Attributes\AsAcfBlock;
 use Studiometa\Foehn\Contracts\AcfBlockInterface;
-use Studiometa\Foehn\Contracts\ViewEngineInterface;
-
-function createFakeViewEngine(?Closure $renderCallback = null): ViewEngineInterface
-{
-    return new class($renderCallback) implements ViewEngineInterface {
-        private array $shared = [];
-
-        public function __construct(
-            private readonly ?Closure $renderCallback = null,
-        ) {}
-
-        public function render(string $template, array|object $context = []): string
-        {
-            return $this->renderCallback ? ($this->renderCallback)($template, $context) : '';
-        }
-
-        public function renderFirst(array $templates, array|object $context = []): string
-        {
-            return $this->render($templates[0] ?? '', $context);
-        }
-
-        public function exists(string $template): bool
-        {
-            return true;
-        }
-
-        public function share(string $key, mixed $value): void
-        {
-            $this->shared[$key] = $value;
-        }
-
-        public function getShared(): array
-        {
-            return $this->shared;
-        }
-    };
-}
 
 describe('HeroBlock', function () {
     it('implements AcfBlockInterface', function () {

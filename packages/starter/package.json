@@ -18,20 +18,21 @@
   },
   "devDependencies": {
     "@studiometa/foehn-vite-plugin": "*",
-    "@studiometa/js-toolkit": "^3.4.0",
+    "@studiometa/js-toolkit": "^3.9.0",
     "@studiometa/oxlint-config": "^0.2.0",
     "@studiometa/prettier-config": "^4.4.0",
-    "@studiometa/stylelint-config": "^4.0.0",
+    "@studiometa/stylelint-config": "^4.1.0",
     "@studiometa/tailwind-config": "^3.0.0",
-    "@tailwindcss/vite": "^4.0.0",
-    "@vitest/browser": "^3.0.0",
-    "oxfmt": "^0.28.0",
-    "oxlint": "^0.16.0",
-    "playwright": "^1.50.0",
-    "prettier": "^3.6.0",
-    "stylelint": "^16.0.0",
-    "tailwindcss": "^4.0.0",
-    "vite": "^6.0.0",
-    "vitest": "^3.0.0"
+    "@tailwindcss/vite": "^4.3.0",
+    "@vitest/browser": "^4.1.0",
+    "@vitest/browser-playwright": "^4.1.0",
+    "oxfmt": "^0.63.0",
+    "oxlint": "^0.16.12",
+    "playwright": "^1.62.0",
+    "prettier": "^3.9.0",
+    "stylelint": "^16.26.0",
+    "tailwindcss": "^4.3.0",
+    "vite": "^8.0.0",
+    "vitest": "^4.1.0"
   }
 }

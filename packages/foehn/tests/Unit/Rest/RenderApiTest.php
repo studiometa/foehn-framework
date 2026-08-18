@@ -58,6 +58,7 @@ describe('RenderApi handle', function () {
     it('renders template with scalar context params', function () {
         $view = $this->createMock(ViewEngineInterface::class);
         $view
+            ->expects($this->once())
             ->method('render')
             ->with('partials/card', ['title' => 'Hello', 'count' => '5'])
             ->willReturn('<div>Hello</div>');
@@ -166,7 +167,11 @@ describe('RenderApi handle', function () {
 
     it('filters out non-scalar context values', function () {
         $view = $this->createMock(ViewEngineInterface::class);
-        $view->method('render')->with('partials/card', ['title' => 'Hello'])->willReturn('<div>Hello</div>');
+        $view
+            ->expects($this->once())
+            ->method('render')
+            ->with('partials/card', ['title' => 'Hello'])
+            ->willReturn('<div>Hello</div>');
 
         $config = new RenderApiConfig(templates: ['partials/*']);
 
@@ -258,6 +263,7 @@ describe('RenderApi handle', function () {
     it('passes post_id and term_id as scalar context values', function () {
         $view = $this->createMock(ViewEngineInterface::class);
         $view
+            ->expects($this->once())
             ->method('render')
             ->with('partials/card', ['post_id' => 123, 'term_id' => 5, 'taxonomy' => 'category'])
             ->willReturn('<div>Content</div>');

@@ -13,14 +13,14 @@
         "studiometa/foehn-installer": "@dev"
     },
     "require-dev": {
-        "carthage-software/mago": "^1.8",
-        "composer/composer": "^2.0",
-        "pestphp/pest": "^3.0",
-        "php-stubs/acf-pro-stubs": "^6.5",
+        "carthage-software/mago": "~1.46.0",
+        "composer/composer": "^2.10",
+        "pestphp/pest": "^5.1",
+        "php-stubs/acf-pro-stubs": "^6.8",
         "php-stubs/wordpress-stubs": "*",
         "php-stubs/wp-cli-stubs": "^2.12",
         "stoutlogic/acf-builder": "^1.12",
-        "studiometa/webpack-config": "^6.3"
+        "studiometa/webpack-config": "^6.4"
     },
     "autoload-dev": {
         "psr-4": {
@@ -30,9 +30,10 @@
         }
     },
     "scripts": {
-        "test": "cd packages/foehn && ../../vendor/bin/pest && cd ../starter && ../../vendor/bin/pest --configuration=phpunit.xml",
-        "test:starter": "cd packages/starter && ../../vendor/bin/pest --configuration=phpunit.xml",
-        "test:coverage": "cd packages/foehn && ../../vendor/bin/pest --coverage --coverage-clover=../../coverage/clover.xml",
+        "test": ["@test:foehn", "@test:starter"],
+        "test:foehn": "pest --configuration=packages/foehn/phpunit.xml --test-directory=packages/foehn/tests",
+        "test:starter": "pest --configuration=packages/starter/phpunit.xml --test-directory=packages/starter/tests/php",
+        "test:coverage": "pest --configuration=packages/foehn/phpunit.xml --test-directory=packages/foehn/tests --coverage --coverage-clover=coverage/clover.xml",
         "analyse": "mago analyse",
         "lint": "mago lint && mago fmt --check",
         "fix": "mago lint --fix && mago fmt"

@@ -13,13 +13,13 @@
   --callout-surface: #eff6ff;
 
   display: flex;
-  gap: 1rem;
   align-items: flex-start;
   padding: 1rem 1.25rem;
+  color: #1f2937;
+  background: var(--callout-surface);
   border-left: 4px solid var(--callout-accent);
   border-radius: 0.375rem;
-  background: var(--callout-surface);
-  color: #1f2937;
+  gap: 1rem;
 }
 
 .callout--success {
@@ -51,8 +51,8 @@
 /* The inline column-count comes from the block's `columns` attribute. */
 .callout__body {
   margin: 0;
-  column-gap: 1.5rem;
   line-height: 1.6;
+  column-gap: 1.5rem;
 }
 
 .callout__dismiss {
@@ -60,13 +60,13 @@
   width: 1.75rem;
   height: 1.75rem;
   padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: transparent;
-  color: inherit;
   font-size: 1.125rem;
   line-height: 1;
+  color: inherit;
   cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
   opacity: 0.6;
 }
 

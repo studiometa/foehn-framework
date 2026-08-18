@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Upgrade PHP dependencies: Tempest `^3.4` → `^3.18`, Timber `^2.0` → `^2.5`, Pest `^3.0` → `^5.1` (PHPUnit 13), Mago `^1.8` → `^1.46`, `composer/composer` `^2.0` → `^2.10`, ACF Pro stubs `^6.5` → `^6.8`, `studiometa/webpack-config` `^6.3` → `^6.4`
+- Declare `tempest/support` as a direct dependency of `studiometa/foehn` — `Filesystem` and `str()` were used across ~15 files but only resolved transitively
+- **Starter:** Upgrade WordPress `^6.7` → `^7.0`
+- Upgrade front-end dependencies: Vite `^6` → `^8`, Vitest `^3` → `^4`, TypeScript `^5.7` → `^7.0`, `vite-plugin-dts` `^4.5` → `^5.0`, lint-staged `^15` → `^17`, oxfmt `^0.28` → `^0.63`, Tailwind `^4.0` → `^4.3`, js-toolkit `^3.4` → `^3.9`, Playwright `^1.50` → `^1.62`, Prettier `^3.6` → `^3.9`
+- Widen the `@studiometa/foehn-vite-plugin` Vite peer range to `^6 || ^7 || ^8`
+- Run Pest from the monorepo root with `--test-directory`; Pest 5 resolves the test path from the Composer root, not the working directory
+- Bump CI to Node 24 — lint-staged 17 requires Node >= 22.22.1
+
+### Fixed
+
+- Fix a fatal error in the starter config and in four doc pages: `DiscoveryCacheStrategy` was imported from `Tempest\Core`, which no longer exists — it lives in `Tempest\Discovery`
+- **Vite plugin:** Import `fast-glob` as a default export — `import { glob }` is not resolvable from real Node ESM and broke every consumer build
+- **Vite plugin:** Rename the `vite-plugin-dts` option `rollupTypes` to `bundleTypes` and add the now-optional `@microsoft/api-extractor` peer; without both, v5 silently emitted per-file declarations and never wrote `dist/index.d.ts`
+- **Vite plugin:** Correct `.oxfmtrc.json`, which used Biome option names (`indentWidth`, `lineWidth`, …) and was therefore ignored
+- **Vite plugin:** Replace `__dirname` with `import.meta.dirname` in `vite.config.ts` for Vite's native config loader
+- **Starter:** Remove a duplicate `createFakeViewEngine()` in `HeroBlockTest`, which shadowed the one in `Pest.php` and made the file fatal once Pest loaded `Pest.php`
+- **Starter:** Exclude `vendor/**` from Vitest — the framework's Node-only editor test was being collected into the browser suite
+- Remove unpaired `restore_error_handler()` / `restore_exception_handler()` calls in `DispatchHelperTest`; nothing installs handlers any more, so they popped PHPUnit's own and PHPUnit 13 fails the run as risky
+- Replace `->method()->with()` with `->expects($this->once())->method()->with()` in `RenderApiTest`, deprecated in PHPUnit 13 and removed in 14
+
 ### Added
 
 - Add `#[AsCron]` attribute for recurring background jobs via Action Scheduler ([db208f7], [#111], [#110]):
