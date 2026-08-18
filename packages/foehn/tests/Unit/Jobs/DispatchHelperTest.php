@@ -17,10 +17,6 @@ describe('dispatch() helper', function () {
     it('dispatches a job via the Kernel container', function () {
         $kernel = Kernel::boot(dirname(__DIR__, 3) . '/src');
 
-        // Restore error/exception handlers set by Tempest::boot()
-        restore_error_handler();
-        restore_exception_handler();
-
         // Replace the dispatcher with a fake
         $dispatched = [];
         $fakeDispatcher = new class($dispatched) implements JobDispatcher {
@@ -56,9 +52,6 @@ describe('dispatch() helper', function () {
 
     it('passes delay to the dispatcher via helper', function () {
         $kernel = Kernel::boot(dirname(__DIR__, 3) . '/src');
-
-        restore_error_handler();
-        restore_exception_handler();
 
         $dispatched = [];
         $fakeDispatcher = new class($dispatched) implements JobDispatcher {
