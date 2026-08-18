@@ -31,6 +31,9 @@ final readonly class AsBlock
      * @param string|null $editorStyle Editor style handle or path
      * @param string|null $style Frontend style handle or path
      * @param string|null $viewScript Frontend script for interactivity (view.js)
+     * @param list<string> $allowedBlocks Block names allowed inside this block
+     * @param list<mixed> $innerBlocksTemplate InnerBlocks template array
+     * @param string|bool|null $innerBlocksTemplateLock InnerBlocks template lock ('all', 'insert', 'contentOnly' or false)
      */
     public function __construct(
         public string $name,
@@ -49,6 +52,9 @@ final readonly class AsBlock
         public ?string $editorStyle = null,
         public ?string $style = null,
         public ?string $viewScript = null,
+        public array $allowedBlocks = [],
+        public array $innerBlocksTemplate = [],
+        public string|bool|null $innerBlocksTemplateLock = null,
     ) {}
 
     /**
@@ -57,5 +63,23 @@ final readonly class AsBlock
     public function getInteractivityNamespace(): string
     {
         return $this->interactivityNamespace ?? $this->name;
+    }
+
+    /**
+     * The single definition of what makes a block a container.
+     *
+     * A block accepts inner blocks as soon as one of the three innerBlocks
+     * parameters is set. Static because blocks restored from the discovery cache
+     * have those values without an attribute instance.
+     *
+     * @param list<string> $allowedBlocks
+     * @param list<mixed> $innerBlocksTemplate
+     */
+    public static function hasInnerBlocks(
+        array $allowedBlocks,
+        array $innerBlocksTemplate,
+        string|bool|null $innerBlocksTemplateLock,
+    ): bool {
+        return $allowedBlocks !== [] || $innerBlocksTemplate !== [] || $innerBlocksTemplateLock !== null;
     }
 }
