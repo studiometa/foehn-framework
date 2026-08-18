@@ -3,12 +3,12 @@ import { resolve } from "node:path";
 
 // We need to mock fast-glob before importing the module that uses it
 vi.mock("fast-glob", () => ({
-    glob: vi.fn(),
+    default: vi.fn(),
 }));
 
 // Import after mocking
 import { resolveGlobPatterns } from "../../src/utils/glob.js";
-import { glob } from "fast-glob";
+import fastGlob from "fast-glob";
 
 describe("resolveGlobPatterns", () => {
     beforeEach(() => {
@@ -25,7 +25,7 @@ describe("resolveGlobPatterns", () => {
         expect(result).toEqual({
             "src/app": resolve("/project", "src/app.js"),
         });
-        expect(glob).not.toHaveBeenCalled();
+        expect(fastGlob).not.toHaveBeenCalled();
     });
 
     it("resolves multiple direct paths with different names", async () => {
@@ -45,11 +45,11 @@ describe("resolveGlobPatterns", () => {
     });
 
     it("resolves glob patterns with *", async () => {
-        vi.mocked(glob).mockResolvedValue(["/project/src/app.js", "/project/src/vendor.js"]);
+        vi.mocked(fastGlob).mockResolvedValue(["/project/src/app.js", "/project/src/vendor.js"]);
 
         const result = await resolveGlobPatterns(["src/*.js"], "/project");
 
-        expect(glob).toHaveBeenCalledWith("src/*.js", { cwd: "/project", absolute: true });
+        expect(fastGlob).toHaveBeenCalledWith("src/*.js", { cwd: "/project", absolute: true });
         expect(result).toEqual({
             "src/app": "/project/src/app.js",
             "src/vendor": "/project/src/vendor.js",
@@ -57,7 +57,7 @@ describe("resolveGlobPatterns", () => {
     });
 
     it("resolves glob patterns with **", async () => {
-        vi.mocked(glob).mockResolvedValue([
+        vi.mocked(fastGlob).mockResolvedValue([
             "/project/src/js/app.js",
             "/project/src/js/pages/home.js",
         ]);
@@ -71,26 +71,26 @@ describe("resolveGlobPatterns", () => {
     });
 
     it("resolves glob patterns with ?", async () => {
-        vi.mocked(glob).mockResolvedValue(["/project/src/app1.js", "/project/src/app2.js"]);
+        vi.mocked(fastGlob).mockResolvedValue(["/project/src/app1.js", "/project/src/app2.js"]);
 
         await resolveGlobPatterns(["src/app?.js"], "/project");
 
-        expect(glob).toHaveBeenCalledWith("src/app?.js", { cwd: "/project", absolute: true });
+        expect(fastGlob).toHaveBeenCalledWith("src/app?.js", { cwd: "/project", absolute: true });
     });
 
     it("resolves glob patterns with braces", async () => {
-        vi.mocked(glob).mockResolvedValue(["/project/src/app.js", "/project/src/app.ts"]);
+        vi.mocked(fastGlob).mockResolvedValue(["/project/src/app.js", "/project/src/app.ts"]);
 
         await resolveGlobPatterns(["src/app.{js,ts}"], "/project");
 
-        expect(glob).toHaveBeenCalledWith("src/app.{js,ts}", {
+        expect(fastGlob).toHaveBeenCalledWith("src/app.{js,ts}", {
             cwd: "/project",
             absolute: true,
         });
     });
 
     it("handles mixed patterns", async () => {
-        vi.mocked(glob).mockResolvedValue([
+        vi.mocked(fastGlob).mockResolvedValue([
             "/project/src/pages/home.js",
             "/project/src/pages/about.js",
         ]);

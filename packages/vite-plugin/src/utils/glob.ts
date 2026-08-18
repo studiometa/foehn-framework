@@ -1,4 +1,4 @@
-import { glob } from "fast-glob";
+import fastGlob from "fast-glob";
 import { resolve, relative } from "node:path";
 
 /**
@@ -13,7 +13,7 @@ export async function resolveGlobPatterns(
     for (const pattern of patterns) {
         // Check if pattern contains glob characters
         if (pattern.includes("*") || pattern.includes("?") || pattern.includes("{")) {
-            const files = await glob(pattern, { cwd, absolute: true });
+            const files = await fastGlob(pattern, { cwd, absolute: true });
             for (const file of files) {
                 const relativePath = relative(cwd, file);
                 // Remove extension for entry name
