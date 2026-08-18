@@ -1,0 +1,47 @@
+/**
+ * Section block.
+ *
+ * Static stylesheet, registered per block — see callout.css for why.
+ */
+
+.section {
+  --section-spacing: 3rem;
+
+  padding-block: var(--section-spacing);
+}
+
+.section--light {
+  background: #f9fafb;
+}
+
+.section--dark {
+  background: #111827;
+  color: #f9fafb;
+}
+
+/* Inner blocks bring their own colours, so anchor them to the section's. */
+.section--dark :is(h1, h2, h3, h4, p, a, li) {
+  color: inherit;
+}
+
+.section--spacing-small {
+  --section-spacing: 1.5rem;
+}
+
+.section--spacing-medium {
+  --section-spacing: 3rem;
+}
+
+.section--spacing-large {
+  --section-spacing: 5rem;
+}
+
+.section__inner {
+  max-width: 48rem;
+  margin-inline: auto;
+  padding-inline: 1.5rem;
+}
+
+.section__inner > * + * {
+  margin-block-start: 1rem;
+}
