@@ -13,7 +13,7 @@
         "studiometa/foehn-installer": "@dev"
     },
     "require-dev": {
-        "carthage-software/mago": "^1.46",
+        "carthage-software/mago": "~1.46.0",
         "composer/composer": "^2.10",
         "pestphp/pest": "^5.1",
         "php-stubs/acf-pro-stubs": "^6.8",
