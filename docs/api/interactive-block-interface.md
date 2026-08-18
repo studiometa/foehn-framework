@@ -77,7 +77,6 @@ use WP_Block;
     name: 'theme/counter',
     title: 'Counter',
     interactivity: true,
-    viewScript: 'blocks/counter/view.js',
 )]
 final readonly class CounterBlock implements InteractiveBlockInterface
 {
@@ -140,7 +139,7 @@ final readonly class CounterBlock implements InteractiveBlockInterface
 ## View Script
 
 ```javascript
-// assets/blocks/counter/view.js
+// assets/js/blocks/counter.js
 import { store, getContext } from "@wordpress/interactivity";
 
 store("theme/counter", {

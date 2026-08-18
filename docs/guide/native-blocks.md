@@ -96,7 +96,6 @@ use WP_Block;
     category: 'widgets',
     icon: 'calculator',
     interactivity: true,
-    viewScript: 'blocks/counter/view.js',
 )]
 final readonly class CounterBlock implements InteractiveBlockInterface
 {
@@ -187,7 +186,7 @@ final readonly class CounterBlock implements InteractiveBlockInterface
 ## View Script
 
 ```javascript
-// assets/blocks/counter/view.js
+// assets/js/blocks/counter.js
 import { store, getContext } from "@wordpress/interactivity";
 
 store("theme/counter", {
@@ -291,9 +290,6 @@ final class ThemeBlocks {}
     allowedBlocks: ['core/heading', 'core/paragraph'],
     innerBlocksTemplate: [['core/heading', ['level' => 3]]],
     innerBlocksTemplateLock: 'insert',
-    editorStyle: 'blocks/accordion/editor.css',
-    style: 'blocks/accordion/style.css',
-    viewScript: 'blocks/accordion/view.js',
 )]
 ```
 
@@ -313,39 +309,36 @@ templates/blocks/
 ├── counter.twig
 └── accordion.twig
 
-assets/blocks/
-├── counter/
-│   ├── view.js
-│   ├── editor.js
-│   └── style.css
-└── accordion/
-    ├── view.js
-    └── style.css
+assets/css/blocks/
+├── counter.css
+└── accordion.css
+
+assets/js/blocks/
+├── counter.js
+└── accordion.js
 ```
+
+A block's assets are named after the block and loaded when they exist — nothing declares them. `theme/counter` picks up `assets/css/blocks/counter.css` on the front end and in the editor, and `assets/js/blocks/counter.js` on the front end. Both load only on pages that render the block. A block that needs neither file simply has neither.
 
 ## Attribute Parameters
 
-| Parameter                 | Type                 | Default       | Description                     |
-| ------------------------- | -------------------- | ------------- | ------------------------------- |
-| `name`                    | `string`             | _required_    | Block name with namespace       |
-| `title`                   | `string`             | _required_    | Display title                   |
-| `category`                | `string`             | `'widgets'`   | Block category                  |
-| `icon`                    | `?string`            | `null`        | Dashicon or SVG                 |
-| `description`             | `?string`            | `null`        | Block description               |
-| `keywords`                | `string[]`           | `[]`          | Search keywords                 |
-| `supports`                | `array`              | `[]`          | Block supports                  |
-| `parent`                  | `?string`            | `null`        | Parent block                    |
-| `ancestor`                | `string[]`           | `[]`          | Ancestor blocks                 |
-| `interactivity`           | `bool`               | `false`       | Enable Interactivity API        |
-| `interactivityNamespace`  | `?string`            | Block name    | Interactivity namespace         |
-| `template`                | `?string`            | Auto-resolved | Template path                   |
-| `editorScript`            | `?string`            | `null`        | Editor script (rarely needed)   |
-| `editorStyle`             | `?string`            | `null`        | Editor styles                   |
-| `style`                   | `?string`            | `null`        | Frontend styles                 |
-| `viewScript`              | `?string`            | `null`        | Frontend script (interactivity) |
-| `allowedBlocks`           | `string[]`           | `[]`          | Allowed inner block names       |
-| `innerBlocksTemplate`     | `array`              | `[]`          | InnerBlocks template            |
-| `innerBlocksTemplateLock` | `string\|bool\|null` | `null`        | InnerBlocks lock                |
+| Parameter                 | Type                 | Default       | Description               |
+| ------------------------- | -------------------- | ------------- | ------------------------- |
+| `name`                    | `string`             | _required_    | Block name with namespace |
+| `title`                   | `string`             | _required_    | Display title             |
+| `category`                | `string`             | `'widgets'`   | Block category            |
+| `icon`                    | `?string`            | `null`        | Dashicon or SVG           |
+| `description`             | `?string`            | `null`        | Block description         |
+| `keywords`                | `string[]`           | `[]`          | Search keywords           |
+| `supports`                | `array`              | `[]`          | Block supports            |
+| `parent`                  | `?string`            | `null`        | Parent block              |
+| `ancestor`                | `string[]`           | `[]`          | Ancestor blocks           |
+| `interactivity`           | `bool`               | `false`       | Enable Interactivity API  |
+| `interactivityNamespace`  | `?string`            | Block name    | Interactivity namespace   |
+| `template`                | `?string`            | Auto-resolved | Template path             |
+| `allowedBlocks`           | `string[]`           | `[]`          | Allowed inner block names |
+| `innerBlocksTemplate`     | `array`              | `[]`          | InnerBlocks template      |
+| `innerBlocksTemplateLock` | `string\|bool\|null` | `null`        | InnerBlocks lock          |
 
 No editor JavaScript is needed. Foehn derives the sidebar controls from the block's `attributes()` schema and previews the block with its own server-side rendering, so a block is a PHP class plus a Twig template and nothing else. See the [Block Editor](./block-editor) guide for the control table and how `allowedBlocks` / `innerBlocksTemplate` / `innerBlocksTemplateLock` turn a block into a container.
 
