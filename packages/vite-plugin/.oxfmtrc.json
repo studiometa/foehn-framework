@@ -1,9 +1,9 @@
 {
-  "$schema": "https://raw.githubusercontent.com/user/oxfmt/main/schema.json",
-  "indentStyle": "space",
-  "indentWidth": 2,
-  "lineWidth": 100,
-  "quoteStyle": "double",
-  "semicolons": "always",
-  "trailingCommas": "all"
+  "$schema": "https://raw.githubusercontent.com/nicolo-ribaudo/oxc-project.github.io/oxfmt-schema/src/docs/guide/schemas/v0/oxfmtrc.json",
+  "printWidth": 100,
+  "tabWidth": 4,
+  "useTabs": false,
+  "semi": true,
+  "singleQuote": false,
+  "trailingComma": "all"
 }
