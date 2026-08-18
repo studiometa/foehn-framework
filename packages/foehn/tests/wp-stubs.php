@@ -97,6 +97,21 @@ if (!class_exists('WP_Post')) {
     }
 }
 
+if (!class_exists('WP_Block')) {
+    class WP_Block
+    {
+        /**
+         * @param array<string, mixed> $attributes
+         * @param array<int, mixed> $inner_blocks
+         */
+        public function __construct(
+            public array $attributes = [],
+            public string $name = '',
+            public array $inner_blocks = [],
+        ) {}
+    }
+}
+
 if (!class_exists('WP_Term')) {
     class WP_Term
     {
