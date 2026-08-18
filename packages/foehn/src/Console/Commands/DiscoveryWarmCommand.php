@@ -13,34 +13,38 @@ use Studiometa\Foehn\Discovery\DiscoveryRunner;
 use Tempest\Container\Container;
 use Tempest\Discovery\DiscoveryCacheStrategy;
 
-#[AsCliCommand(name: 'discovery:warm', description: 'Warm discovery cache by running all discoveries', longDescription: <<<'DOC'
-    ## DESCRIPTION
+#[AsCliCommand(
+    name: 'discovery:warm',
+    description: 'Warm discovery cache by running all discoveries',
+    longDescription: <<<'DOC'
+        ## DESCRIPTION
 
-    Warms up the discovery cache by running all discoveries and caching the results.
-    This is useful during deployment to avoid slow initial page loads.
+        Warms up the discovery cache by running all discoveries and caching the results.
+        This is useful during deployment to avoid slow initial page loads.
 
-    Unlike discovery:generate which only scans and caches, this command actually
-    runs all discovery phases (early, main, late) to ensure everything is discovered
-    and properly cached.
+        Unlike discovery:generate which only scans and caches, this command actually
+        runs all discovery phases (early, main, late) to ensure everything is discovered
+        and properly cached.
 
-    Run this command:
-    - During deployment after code changes
-    - After clearing the discovery cache
-    - As part of your CI/CD pipeline
+        Run this command:
+        - During deployment after code changes
+        - After clearing the discovery cache
+        - As part of your CI/CD pipeline
 
-    ## OPTIONS
+        ## OPTIONS
 
-    [--strategy=<strategy>]
-    : Cache strategy to use (full, partial). Defaults to configured strategy.
+        [--strategy=<strategy>]
+        : Cache strategy to use (full, partial). Defaults to configured strategy.
 
-    ## EXAMPLES
+        ## EXAMPLES
 
-        # Warm discovery cache
-        wp tempest discovery:warm
+            # Warm discovery cache
+            wp tempest discovery:warm
 
-        # Warm with specific strategy
-        wp tempest discovery:warm --strategy=full
-    DOC)]
+            # Warm with specific strategy
+            wp tempest discovery:warm --strategy=full
+        DOC,
+)]
 final class DiscoveryWarmCommand implements CliCommandInterface
 {
     public function __construct(

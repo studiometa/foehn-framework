@@ -12,38 +12,42 @@ use Studiometa\Foehn\Console\WpCli;
 
 use function Tempest\Support\str;
 
-#[AsCliCommand(name: 'make:context-provider', description: 'Create a new context provider class', longDescription: <<<'DOC'
-    ## OPTIONS
+#[AsCliCommand(
+    name: 'make:context-provider',
+    description: 'Create a new context provider class',
+    longDescription: <<<'DOC'
+        ## OPTIONS
 
-    <name>
-    : The provider name (e.g., 'header', 'single-post')
+        <name>
+        : The provider name (e.g., 'header', 'single-post')
 
-    [--class=<class>]
-    : Custom class name (defaults to PascalCase of name + ContextProvider)
+        [--class=<class>]
+        : Custom class name (defaults to PascalCase of name + ContextProvider)
 
-    [--templates=<templates>]
-    : Comma-separated template patterns to match (defaults to name and name-*)
+        [--templates=<templates>]
+        : Comma-separated template patterns to match (defaults to name and name-*)
 
-    [--force]
-    : Overwrite existing file
+        [--force]
+        : Overwrite existing file
 
-    [--dry-run]
-    : Show what would be created without creating
+        [--dry-run]
+        : Show what would be created without creating
 
-    ## EXAMPLES
+        ## EXAMPLES
 
-        # Create a provider for header template
-        wp tempest make:context-provider header
+            # Create a provider for header template
+            wp tempest make:context-provider header
 
-        # Create a provider for multiple templates
-        wp tempest make:context-provider post --templates=single-post,archive-post
+            # Create a provider for multiple templates
+            wp tempest make:context-provider post --templates=single-post,archive-post
 
-        # Create a global provider
-        wp tempest make:context-provider global --templates=*
+            # Create a global provider
+            wp tempest make:context-provider global --templates=*
 
-        # Preview what would be created
-        wp tempest make:context-provider header --dry-run
-    DOC)]
+            # Preview what would be created
+            wp tempest make:context-provider header --dry-run
+        DOC,
+)]
 final class MakeContextProviderCommand implements CliCommandInterface
 {
     use GeneratesFiles;
