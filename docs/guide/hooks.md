@@ -305,7 +305,7 @@ use Studiometa\Foehn\Hooks\Security\{
     SecurityHeaders,
 };
 use Studiometa\Foehn\Hooks\YouTubeNoCookieHooks;
-use Tempest\Core\DiscoveryCacheStrategy;
+use Tempest\Discovery\DiscoveryCacheStrategy;
 
 return new FoehnConfig(
     discoveryCacheStrategy: DiscoveryCacheStrategy::FULL,

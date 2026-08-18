@@ -9,7 +9,7 @@ Core configuration class for Føhn. Like all other config classes, it can be aut
 
 namespace Studiometa\Foehn\Config;
 
-use Tempest\Core\DiscoveryCacheStrategy;
+use Tempest\Discovery\DiscoveryCacheStrategy;
 
 final readonly class FoehnConfig
 {
@@ -50,7 +50,7 @@ Create a config file in your app directory:
 use Studiometa\Foehn\Config\FoehnConfig;
 use Studiometa\Foehn\Hooks\Cleanup\CleanHeadTags;
 use Studiometa\Foehn\Hooks\Security\SecurityHeaders;
-use Tempest\Core\DiscoveryCacheStrategy;
+use Tempest\Discovery\DiscoveryCacheStrategy;
 
 return new FoehnConfig(
     discoveryCacheStrategy: DiscoveryCacheStrategy::FULL,

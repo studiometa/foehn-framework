@@ -82,7 +82,7 @@ Configuration is handled via config files in your app directory (recommended):
 <?php
 // app/foehn.config.php
 use Studiometa\Foehn\Config\FoehnConfig;
-use Tempest\Core\DiscoveryCacheStrategy;
+use Tempest\Discovery\DiscoveryCacheStrategy;
 
 return new FoehnConfig(
     discoveryCacheStrategy: DiscoveryCacheStrategy::FULL,
