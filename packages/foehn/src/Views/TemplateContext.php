@@ -35,6 +35,43 @@ final readonly class TemplateContext implements ArrayAccess
     ) {}
 
     /**
+     * Build a context from Timber's own context array.
+     *
+     * Timber does not use null to mean absent: an anonymous visitor gets
+     * `user => false`, so reaching for `$context['user'] ?? null` hands `false`
+     * to a typed property and fatals the request. Every value is therefore
+     * checked by type rather than by presence.
+     *
+     * @param array<string, mixed> $timberContext
+     */
+    public static function fromTimberContext(array $timberContext): self
+    {
+        return new self(
+            post: self::objectOrNull($timberContext, 'post', Post::class),
+            posts: self::objectOrNull($timberContext, 'posts', PostCollectionInterface::class),
+            site: self::objectOrNull($timberContext, 'site', Site::class) ?? new Site(),
+            user: self::objectOrNull($timberContext, 'user', User::class),
+            extra: array_diff_key($timberContext, array_flip(['post', 'posts', 'site', 'user'])),
+        );
+    }
+
+    /**
+     * Get a context value only when it really is an instance of the expected class.
+     *
+     * @template T of object
+     * @param array<string, mixed> $context
+     * @param class-string<T> $class
+     * @return T|null
+     */
+    private static function objectOrNull(array $context, string $key, string $class): ?object
+    {
+        /** @var mixed $value */
+        $value = $context[$key] ?? null;
+
+        return $value instanceof $class ? $value : null;
+    }
+
+    /**
      * Get typed post, optionally cast to a specific class.
      *
      * @template T of Post
