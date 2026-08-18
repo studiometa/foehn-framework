@@ -196,7 +196,10 @@ trait ValidatesFields
             return $value;
         }
 
-        if (is_numeric($value)) {
+        // Spelled out per type instead of a bare is_numeric() call: the analyser
+        // cannot narrow `mixed` minus `int` through is_numeric() and folds the
+        // remaining branch to `never`.
+        if (is_float($value) || is_string($value) && is_numeric($value)) {
             return (int) $value;
         }
 
@@ -216,7 +219,8 @@ trait ValidatesFields
             return $value;
         }
 
-        if (is_numeric($value)) {
+        // See sanitizeInt(): the per-type check keeps the analyser's narrowing correct.
+        if (is_int($value) || is_string($value) && is_numeric($value)) {
             return (float) $value;
         }
 
