@@ -16,13 +16,16 @@ namespace Studiometa\Foehn\Blocks;
  * WordPress loads them only for pages that actually render the block, and loads
  * the stylesheet into the editor as well — which is what makes the
  * server-rendered preview look like the front end.
+ *
+ * The script is registered as a script module, so it is served with
+ * `type="module"` and can use `import`.
  */
 final class BlockAssets
 {
     /** Theme-relative stylesheet path, by block slug. */
     private const string STYLE_PATH = 'assets/css/blocks/%s.css';
 
-    /** Theme-relative front-end script path, by block slug. */
+    /** Theme-relative front-end script module path, by block slug. */
     private const string SCRIPT_PATH = 'assets/js/blocks/%s.js';
 
     /**
@@ -43,12 +46,12 @@ final class BlockAssets
             $args['style_handles'] = [$style];
         }
 
-        $script = self::registerScript(sprintf(self::SCRIPT_PATH, $slug), $handle . '-view-script');
+        $script = self::registerScriptModule(sprintf(self::SCRIPT_PATH, $slug), $blockName . '/view');
 
         if ($script !== null) {
-            // A view script loads only when the block is on the page, which is
-            // the right default for behaviour attached to a single block.
-            $args['view_script_handles'] = [$script];
+            // A view script module loads only when the block is on the page, which
+            // is the right default for behaviour attached to a single block.
+            $args['view_script_module_ids'] = [$script];
         }
 
         return $args;
@@ -81,9 +84,15 @@ final class BlockAssets
     }
 
     /**
-     * Register a script, or nothing at all when the file is absent.
+     * Register a script module, or nothing at all when the file is absent.
+     *
+     * A block's script is a module, not a classic script: it is served with
+     * `type="module"`, so it can use `import` — including bare specifiers such as
+     * `@wordpress/interactivity`, which WordPress resolves through the import map
+     * it prints for registered modules. Modules are deferred and run in strict
+     * mode, so nothing has to be said about load order.
      */
-    private static function registerScript(string $relativePath, string $handle): ?string
+    private static function registerScriptModule(string $relativePath, string $id): ?string
     {
         $path = self::existingPath($relativePath);
 
@@ -91,9 +100,9 @@ final class BlockAssets
             return null;
         }
 
-        wp_register_script($handle, get_theme_file_uri($relativePath), [], (string) filemtime($path), true);
+        wp_register_script_module($id, get_theme_file_uri($relativePath), [], (string) filemtime($path));
 
-        return $handle;
+        return $id;
     }
 
     /**

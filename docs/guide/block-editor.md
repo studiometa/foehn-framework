@@ -175,14 +175,14 @@ Write the PHP class, write the Twig template, and the block is authorable. There
 
 A block's own CSS and JS are named after the block, and are loaded when the files exist:
 
-| File                            | Loaded                            |
-| ------------------------------- | --------------------------------- |
-| `assets/css/blocks/callout.css` | front end and editor              |
-| `assets/js/blocks/callout.js`   | front end, when the block is used |
+| File                            | Loaded                                                         |
+| ------------------------------- | -------------------------------------------------------------- |
+| `assets/css/blocks/callout.css` | front end and editor                                           |
+| `assets/js/blocks/callout.js`   | front end, when the block is used, as a `type="module"` script |
 
 Nothing declares them — `theme/callout` finds `callout.css` and `callout.js` because of their names. Both are attached to the block type, so WordPress loads them only on pages that render the block, and loads the stylesheet into the editor too. That last part is what makes the sidebar worth using: the server-rendered preview is styled exactly like the front end, because it is the same markup with the same stylesheet.
 
-These files are served as they are, so they are also outside any build pipeline. Keep them plain CSS and plain JS, and a block stays self-contained — it works in a checkout that has never run `npm install`. Anything that needs Tailwind or bundling belongs in the theme's main stylesheet instead.
+The script is a script module, so `import` works in it — including `@wordpress/interactivity`, which WordPress resolves through its import map. These files are served as they are, so they are also outside any build pipeline. Keep them plain CSS and plain JS, and a block stays self-contained — it works in a checkout that has never run `npm install`. Anything that needs Tailwind or bundling belongs in the theme's main stylesheet instead.
 
 ## See Also
 

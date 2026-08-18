@@ -318,7 +318,7 @@ assets/js/blocks/
 └── accordion.js
 ```
 
-A block's assets are named after the block and loaded when they exist — nothing declares them. `theme/counter` picks up `assets/css/blocks/counter.css` on the front end and in the editor, and `assets/js/blocks/counter.js` on the front end. Both load only on pages that render the block. A block that needs neither file simply has neither.
+A block's assets are named after the block and loaded when they exist — nothing declares them. `theme/counter` picks up `assets/css/blocks/counter.css` on the front end and in the editor, and `assets/js/blocks/counter.js` on the front end as a `type="module"` script. Both load only on pages that render the block. A block that needs neither file simply has neither.
 
 ## Attribute Parameters
 

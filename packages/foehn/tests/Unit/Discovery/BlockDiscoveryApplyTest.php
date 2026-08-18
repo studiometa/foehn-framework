@@ -98,7 +98,7 @@ describe('BlockDiscovery apply', function () {
 
         // BlockFixture is test/hero, so it picks up assets/{css,js}/blocks/hero.*
         expect($args['style_handles'])->toBe(['test-hero-style']);
-        expect($args['view_script_handles'])->toBe(['test-hero-view-script']);
+        expect($args['view_script_module_ids'])->toBe(['test/hero/view']);
     });
 
     it('omits the asset arguments when the theme has no files for the block', function () {
@@ -112,7 +112,7 @@ describe('BlockDiscovery apply', function () {
         $args = wp_stub_get_calls('register_block_type')[0]['args']['args'];
 
         expect($args)->not->toHaveKey('style_handles');
-        expect($args)->not->toHaveKey('view_script_handles');
+        expect($args)->not->toHaveKey('view_script_module_ids');
     });
 
     it('omits allowed_blocks for a non container block', function () {

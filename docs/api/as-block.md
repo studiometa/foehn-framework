@@ -62,14 +62,16 @@ Setting any of the three `allowedBlocks` / `innerBlocksTemplate` / `innerBlocksT
 
 There is no parameter for a block's stylesheet or script. Both are found by naming them after the block, and are loaded when the files exist:
 
-| File                            | Loaded                            | WordPress argument    |
-| ------------------------------- | --------------------------------- | --------------------- |
-| `assets/css/blocks/callout.css` | front end and editor              | `style_handles`       |
-| `assets/js/blocks/callout.js`   | front end, when the block is used | `view_script_handles` |
+| File                            | Loaded                            | WordPress argument       |
+| ------------------------------- | --------------------------------- | ------------------------ |
+| `assets/css/blocks/callout.css` | front end and editor              | `style_handles`          |
+| `assets/js/blocks/callout.js`   | front end, when the block is used | `view_script_module_ids` |
 
 For a block named `theme/callout`, the file name is the part after the namespace — `callout`. Both paths are theme-relative and resolved with `get_theme_file_path()`, so a child theme can override either file.
 
 Because the assets are attached to the block type rather than enqueued globally, WordPress loads them only on pages that actually render the block, and loads the stylesheet into the editor as well — which is what makes the server-rendered preview look like the front end.
+
+The script is registered as a [script module](https://developer.wordpress.org/reference/functions/wp_register_script_module/), so it is served with `type="module"`. It can use `import`, including bare specifiers such as `@wordpress/interactivity`, which WordPress resolves through the import map it prints for registered modules. Modules are deferred and run in strict mode, so load order needs no thought.
 
 A block with no such files needs no configuration, and a file that does not exist registers nothing: registering an absent asset would emit a 404 on every page using the block.
 

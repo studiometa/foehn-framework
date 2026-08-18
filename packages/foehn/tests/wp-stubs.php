@@ -680,6 +680,18 @@ if (!function_exists('wp_register_style')) {
     }
 }
 
+if (!function_exists('wp_register_script_module')) {
+    function wp_register_script_module(
+        string $id,
+        string $src = '',
+        array $deps = [],
+        string|bool|null $version = false,
+        array $args = [],
+    ): void {
+        wp_stub_record('wp_register_script_module', compact('id', 'src', 'deps', 'version', 'args'));
+    }
+}
+
 if (!function_exists('wp_register_script')) {
     function wp_register_script(
         string $handle,

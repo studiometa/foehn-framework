@@ -18,7 +18,7 @@ describe('BlockAssets', function () {
 
         expect($args)->toBe([
             'style_handles' => ['theme-callout-style'],
-            'view_script_handles' => ['theme-callout-view-script'],
+            'view_script_module_ids' => ['theme/callout/view'],
         ]);
     });
 
@@ -26,7 +26,7 @@ describe('BlockAssets', function () {
         BlockAssets::register('theme/callout');
 
         $style = wp_stub_get_calls('wp_register_style')[0]['args'];
-        $script = wp_stub_get_calls('wp_register_script')[0]['args'];
+        $script = wp_stub_get_calls('wp_register_script_module')[0]['args'];
 
         expect($style['src'])
             ->toBe('https://example.test/wp-content/themes/theme/assets/css/blocks/callout.css');
@@ -36,21 +36,20 @@ describe('BlockAssets', function () {
         $themeDir = $GLOBALS['wp_stub_template_directory'];
 
         expect($style['ver'])->toBe((string) filemtime($themeDir . '/assets/css/blocks/callout.css'));
-        expect($script['ver'])->toBe((string) filemtime($themeDir . '/assets/js/blocks/callout.js'));
-        expect($script['inFooter'])->toBeTrue();
+        expect($script['version'])->toBe((string) filemtime($themeDir . '/assets/js/blocks/callout.js'));
     });
 
     it('attaches only what exists', function () {
         $args = BlockAssets::register('theme/styled-only');
 
         expect($args)->toBe(['style_handles' => ['theme-styled-only-style']]);
-        expect(wp_stub_get_calls('wp_register_script'))->toBe([]);
+        expect(wp_stub_get_calls('wp_register_script_module'))->toBe([]);
     });
 
     it('registers nothing at all for a block with no assets', function () {
         expect(BlockAssets::register('theme/bare'))->toBe([]);
         expect(wp_stub_get_calls('wp_register_style'))->toBe([]);
-        expect(wp_stub_get_calls('wp_register_script'))->toBe([]);
+        expect(wp_stub_get_calls('wp_register_script_module'))->toBe([]);
     });
 
     it('takes the file name from the block slug, not its namespace', function () {
@@ -59,14 +58,14 @@ describe('BlockAssets', function () {
 
         expect($args)->toBe([
             'style_handles' => ['acme-callout-style'],
-            'view_script_handles' => ['acme-callout-view-script'],
+            'view_script_module_ids' => ['acme/callout/view'],
         ]);
     });
 
     it('handles a block name with no namespace', function () {
         expect(BlockAssets::register('callout'))->toBe([
             'style_handles' => ['callout-style'],
-            'view_script_handles' => ['callout-view-script'],
+            'view_script_module_ids' => ['callout/view'],
         ]);
     });
 });
