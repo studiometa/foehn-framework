@@ -39,6 +39,18 @@ function wp_stub_record(string $function, array $args): void
 }
 
 // ──────────────────────────────────────────────
+// WordPress constants
+// ──────────────────────────────────────────────
+
+if (!defined('WP_CONTENT_DIR')) {
+    define('WP_CONTENT_DIR', sys_get_temp_dir() . '/foehn-tests/wp-content');
+}
+
+if (!defined('WP_CONTENT_URL')) {
+    define('WP_CONTENT_URL', 'http://example.com/wp-content');
+}
+
+// ──────────────────────────────────────────────
 // WordPress classes (minimal stubs for test runtime)
 // ──────────────────────────────────────────────
 
@@ -647,6 +659,15 @@ if (!function_exists('wp_enqueue_script')) {
     }
 }
 
+if (!function_exists('wp_add_inline_script')) {
+    function wp_add_inline_script(string $handle, string $data, string $position = 'after'): bool
+    {
+        wp_stub_record('wp_add_inline_script', compact('handle', 'data', 'position'));
+
+        return true;
+    }
+}
+
 if (!function_exists('wp_dequeue_style')) {
     function wp_dequeue_style(string $handle): void
     {
@@ -873,6 +894,22 @@ if (!function_exists('site_url')) {
         $url = $GLOBALS['wp_stub_site_url'] ?? 'http://example.com';
 
         return $path ? rtrim($url, '/') . '/' . ltrim($path, '/') : $url;
+    }
+}
+
+if (!function_exists('content_url')) {
+    function content_url(string $path = ''): string
+    {
+        $url = $GLOBALS['wp_stub_content_url'] ?? WP_CONTENT_URL;
+
+        return $path ? rtrim($url, '/') . '/' . ltrim($path, '/') : $url;
+    }
+}
+
+if (!function_exists('wp_json_encode')) {
+    function wp_json_encode(mixed $data, int $flags = 0, int $depth = 512): string|false
+    {
+        return json_encode($data, $flags, $depth);
     }
 }
 

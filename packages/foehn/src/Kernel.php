@@ -6,6 +6,7 @@ namespace Studiometa\Foehn;
 
 use RuntimeException;
 use Studiometa\Foehn\Blocks\AcfBlockRenderer;
+use Studiometa\Foehn\Blocks\BlockEditorAssets;
 use Studiometa\Foehn\Cache\TransientCache;
 use Studiometa\Foehn\Config\AcfConfig;
 use Studiometa\Foehn\Config\FoehnConfig;
@@ -228,6 +229,11 @@ final class Kernel
             fn() => new AcfBlockRenderer($this->container->get(AcfConfig::class)),
         );
 
+        $this->container->singleton(
+            BlockEditorAssets::class,
+            fn() => new BlockEditorAssets($this->container->get(DiscoveryRunner::class), $this->foehnConfig),
+        );
+
         $this->container->singleton(JobRegistry::class, static fn() => new JobRegistry());
 
         $this->container->singleton(
@@ -297,6 +303,10 @@ final class Kernel
 
         // Late phase: wp_loaded
         add_action('wp_loaded', $this->onWpLoaded(...), 1);
+
+        // Editor phase: ship the block editor registrar and the block definitions.
+        // Always on — block authoring must not be opt-in like the classes in src/Hooks/.
+        add_action('enqueue_block_editor_assets', $this->onEnqueueBlockEditorAssets(...));
     }
 
     /**
@@ -332,5 +342,18 @@ final class Kernel
         /** @var DiscoveryRunner $runner */
         $runner = $this->container->get(DiscoveryRunner::class);
         $runner->runLateDiscoveries();
+    }
+
+    /**
+     * Handle enqueue_block_editor_assets hook.
+     * Ship the generic registrar and the discovered block definitions to the editor.
+     *
+     * BlockEditorAssets is resolved lazily: discoveries have not run at bootstrap time.
+     */
+    public function onEnqueueBlockEditorAssets(): void
+    {
+        /** @var BlockEditorAssets $assets */
+        $assets = $this->container->get(BlockEditorAssets::class);
+        $assets->enqueue();
     }
 }

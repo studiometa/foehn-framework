@@ -156,6 +156,47 @@ describe('Kernel Timber initialization', function () {
     });
 });
 
+describe('Kernel block editor assets', function () {
+    afterEach(function () {
+        Kernel::reset();
+        wp_stub_reset();
+    });
+
+    it('registers BlockEditorAssets in container', function () {
+        Kernel::boot(dirname(__DIR__, 2) . '/src', []);
+
+        $assets = Kernel::get(\Studiometa\Foehn\Blocks\BlockEditorAssets::class);
+        expect($assets)->toBeInstanceOf(\Studiometa\Foehn\Blocks\BlockEditorAssets::class);
+    });
+
+    it('always registers the enqueue_block_editor_assets action', function () {
+        Kernel::boot(dirname(__DIR__, 2) . '/src', []);
+
+        $actions = array_filter(
+            wp_stub_get_calls('add_action'),
+            fn(array $call) => $call['args']['hook'] === 'enqueue_block_editor_assets',
+        );
+
+        expect($actions)->toHaveCount(1);
+    });
+
+    it('resolves and runs BlockEditorAssets from the registered callback', function () {
+        Kernel::boot(dirname(__DIR__, 2) . '/src', []);
+
+        $actions = array_values(array_filter(
+            wp_stub_get_calls('add_action'),
+            fn(array $call) => $call['args']['hook'] === 'enqueue_block_editor_assets',
+        ));
+
+        wp_stub_reset();
+
+        // No block is discovered here, so the callback is a no-op — but it must not fatal.
+        ($actions[0]['args']['callback'])();
+
+        expect(wp_stub_get_calls('wp_enqueue_script'))->toBeEmpty();
+    });
+});
+
 describe('Kernel respects user config files', function () {
     afterEach(function () {
         Kernel::reset();
