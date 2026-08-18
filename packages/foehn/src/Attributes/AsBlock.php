@@ -10,6 +10,16 @@ use Attribute;
  * Register a class as a native Gutenberg block.
  *
  * The class must implement BlockInterface or InteractiveBlockInterface.
+ *
+ * Assets are found by convention rather than declared. A block named
+ * `theme/callout` picks up these theme files when they exist, and needs no
+ * configuration when they do not:
+ *
+ * - `assets/css/blocks/callout.css` — loaded on the front end and in the editor
+ * - `assets/js/blocks/callout.js` — loaded on the front end
+ *
+ * Both are attached to the block type, so WordPress only loads them on pages
+ * that actually render the block. See Blocks\BlockAssets.
  */
 #[Attribute(Attribute::TARGET_CLASS)]
 final readonly class AsBlock
@@ -27,10 +37,6 @@ final readonly class AsBlock
      * @param bool $interactivity Enable WordPress Interactivity API
      * @param string|null $interactivityNamespace Custom namespace for interactivity (defaults to block name)
      * @param string|null $template Template path (auto-resolved if null)
-     * @param string|null $editorScript Editor script handle or path
-     * @param string|null $editorStyle Editor style handle or path
-     * @param string|null $style Frontend style handle or path
-     * @param string|null $viewScript Frontend script for interactivity (view.js)
      * @param list<string> $allowedBlocks Block names allowed inside this block
      * @param list<mixed> $innerBlocksTemplate InnerBlocks template array
      * @param string|bool|null $innerBlocksTemplateLock InnerBlocks template lock ('all', 'insert', 'contentOnly' or false)
@@ -48,10 +54,6 @@ final readonly class AsBlock
         public bool $interactivity = false,
         public ?string $interactivityNamespace = null,
         public ?string $template = null,
-        public ?string $editorScript = null,
-        public ?string $editorStyle = null,
-        public ?string $style = null,
-        public ?string $viewScript = null,
         public array $allowedBlocks = [],
         public array $innerBlocksTemplate = [],
         public string|bool|null $innerBlocksTemplateLock = null,

@@ -71,23 +71,6 @@ final class BlockJsonGenerator
             $json['supports']['interactivity'] = true;
         }
 
-        // Assets
-        if ($attribute->editorScript !== null) {
-            $json['editorScript'] = $attribute->editorScript;
-        }
-
-        if ($attribute->editorStyle !== null) {
-            $json['editorStyle'] = $attribute->editorStyle;
-        }
-
-        if ($attribute->style !== null) {
-            $json['style'] = $attribute->style;
-        }
-
-        if ($attribute->viewScript !== null) {
-            $json['viewScript'] = $attribute->viewScript;
-        }
-
         return $json;
     }
 

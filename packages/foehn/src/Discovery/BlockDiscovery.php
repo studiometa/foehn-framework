@@ -7,6 +7,7 @@ namespace Studiometa\Foehn\Discovery;
 use InvalidArgumentException;
 use ReflectionClass;
 use Studiometa\Foehn\Attributes\AsBlock;
+use Studiometa\Foehn\Blocks\BlockAssets;
 use Studiometa\Foehn\Blocks\BlockAttributeSchema;
 use Studiometa\Foehn\Blocks\BlockRenderer;
 use Studiometa\Foehn\Contracts\BlockInterface;
@@ -197,6 +198,9 @@ final class BlockDiscovery implements WpDiscovery
         if (method_exists($className, 'attributes')) {
             $args['attributes'] = BlockAttributeSchema::toRegistration($className::attributes());
         }
+
+        // Per-block stylesheet and front-end script, found by convention
+        $args += BlockAssets::register($blockName);
 
         // Register the block
         register_block_type($blockName, $args);

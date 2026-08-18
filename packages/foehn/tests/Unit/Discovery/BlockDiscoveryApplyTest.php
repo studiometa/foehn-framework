@@ -85,6 +85,36 @@ describe('BlockDiscovery apply', function () {
         expect($args)->not->toHaveKey('template_lock');
     });
 
+    it('attaches the per-block assets found by convention', function () {
+        $GLOBALS['wp_stub_template_directory'] = dirname(__DIR__, 2) . '/Fixtures/theme';
+
+        $this->discovery->discover($this->location, new ReflectionClass(BlockFixture::class));
+        $this->discovery->apply();
+
+        $callback = wp_stub_get_calls('add_action')[0]['args']['callback'];
+        $callback();
+
+        $args = wp_stub_get_calls('register_block_type')[0]['args']['args'];
+
+        // BlockFixture is test/hero, so it picks up assets/{css,js}/blocks/hero.*
+        expect($args['style_handles'])->toBe(['test-hero-style']);
+        expect($args['view_script_handles'])->toBe(['test-hero-view-script']);
+    });
+
+    it('omits the asset arguments when the theme has no files for the block', function () {
+        // The default stub theme directory does not exist, so nothing can be found.
+        $this->discovery->discover($this->location, new ReflectionClass(BlockFixture::class));
+        $this->discovery->apply();
+
+        $callback = wp_stub_get_calls('add_action')[0]['args']['callback'];
+        $callback();
+
+        $args = wp_stub_get_calls('register_block_type')[0]['args']['args'];
+
+        expect($args)->not->toHaveKey('style_handles');
+        expect($args)->not->toHaveKey('view_script_handles');
+    });
+
     it('omits allowed_blocks for a non container block', function () {
         $this->discovery->discover($this->location, new ReflectionClass(BlockFixture::class));
         $this->discovery->apply();

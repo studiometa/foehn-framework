@@ -23,6 +23,10 @@ function wp_stub_reset(): void
     $GLOBALS['wp_stub_attachments'] = [];
     $GLOBALS['wp_stub_post_meta'] = [];
     $GLOBALS['wp_stub_as_has_scheduled'] = [];
+
+    // Theme paths fall back to their stub defaults, so a test that points them at
+    // a fixture directory cannot leak that into the next one.
+    unset($GLOBALS['wp_stub_template_directory'], $GLOBALS['wp_stub_template_directory_uri']);
 }
 
 /**
@@ -662,6 +666,34 @@ if (!function_exists('wp_enqueue_style')) {
     }
 }
 
+if (!function_exists('wp_register_style')) {
+    function wp_register_style(
+        string $handle,
+        string $src = '',
+        array $deps = [],
+        ?string $ver = null,
+        string $media = 'all',
+    ): bool {
+        wp_stub_record('wp_register_style', compact('handle', 'src', 'deps', 'ver', 'media'));
+
+        return true;
+    }
+}
+
+if (!function_exists('wp_register_script')) {
+    function wp_register_script(
+        string $handle,
+        string $src = '',
+        array $deps = [],
+        ?string $ver = null,
+        bool $inFooter = false,
+    ): bool {
+        wp_stub_record('wp_register_script', compact('handle', 'src', 'deps', 'ver', 'inFooter'));
+
+        return true;
+    }
+}
+
 if (!function_exists('wp_enqueue_script')) {
     function wp_enqueue_script(
         string $handle,
@@ -712,6 +744,24 @@ if (!function_exists('get_template_directory_uri')) {
     function get_template_directory_uri(): string
     {
         return $GLOBALS['wp_stub_template_directory_uri'] ?? 'http://example.com/wp-content/themes/theme';
+    }
+}
+
+if (!function_exists('get_theme_file_path')) {
+    function get_theme_file_path(string $file = ''): string
+    {
+        $directory = $GLOBALS['wp_stub_template_directory'] ?? '/var/www/wp-content/themes/theme';
+
+        return $file === '' ? $directory : $directory . '/' . ltrim($file, '/');
+    }
+}
+
+if (!function_exists('get_theme_file_uri')) {
+    function get_theme_file_uri(string $file = ''): string
+    {
+        $uri = $GLOBALS['wp_stub_template_directory_uri'] ?? 'http://example.com/wp-content/themes/theme';
+
+        return $file === '' ? $uri : $uri . '/' . ltrim($file, '/');
     }
 }
 

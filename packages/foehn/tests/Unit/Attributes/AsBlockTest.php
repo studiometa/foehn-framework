@@ -39,10 +39,6 @@ describe('AsBlock', function () {
             interactivity: true,
             interactivityNamespace: 'custom/namespace',
             template: 'blocks/counter',
-            editorScript: 'file:./editor.js',
-            editorStyle: 'file:./editor.css',
-            style: 'file:./style.css',
-            viewScript: 'file:./view.js',
             allowedBlocks: ['core/paragraph'],
             innerBlocksTemplate: [['core/paragraph', ['placeholder' => 'Text']]],
             innerBlocksTemplateLock: 'insert',
@@ -60,10 +56,6 @@ describe('AsBlock', function () {
         expect($attribute->interactivity)->toBeTrue();
         expect($attribute->interactivityNamespace)->toBe('custom/namespace');
         expect($attribute->template)->toBe('blocks/counter');
-        expect($attribute->editorScript)->toBe('file:./editor.js');
-        expect($attribute->editorStyle)->toBe('file:./editor.css');
-        expect($attribute->style)->toBe('file:./style.css');
-        expect($attribute->viewScript)->toBe('file:./view.js');
         expect($attribute->allowedBlocks)->toBe(['core/paragraph']);
         expect($attribute->innerBlocksTemplate)->toBe([['core/paragraph', ['placeholder' => 'Text']]]);
         expect($attribute->innerBlocksTemplateLock)->toBe('insert');

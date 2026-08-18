@@ -99,10 +99,6 @@ describe('BlockJsonGenerator', function () {
             parent: 'theme/parent',
             ancestor: ['theme/ancestor'],
             interactivity: true,
-            editorScript: 'file:./editor.js',
-            editorStyle: 'file:./editor.css',
-            style: 'file:./style.css',
-            viewScript: 'file:./view.js',
         );
 
         $className = new class implements BlockInterface {
@@ -138,10 +134,6 @@ describe('BlockJsonGenerator', function () {
         expect($json['parent'])->toBe(['theme/parent']);
         expect($json['ancestor'])->toBe(['theme/ancestor']);
         expect($json['attributes'])->toHaveKey('count');
-        expect($json['editorScript'])->toBe('file:./editor.js');
-        expect($json['editorStyle'])->toBe('file:./editor.css');
-        expect($json['style'])->toBe('file:./style.css');
-        expect($json['viewScript'])->toBe('file:./view.js');
     });
 
     it('extracts text domain from block name', function () {
