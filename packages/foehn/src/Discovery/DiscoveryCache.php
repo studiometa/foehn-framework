@@ -18,6 +18,17 @@ final class DiscoveryCache
 {
     private const CACHE_FILE = 'discoveries.php';
     private const STRATEGY_FILE = 'strategy';
+    private const VERSION_FILE = 'version';
+
+    /**
+     * Shape version of the cached discovery items.
+     *
+     * A cache file is only readable by the code that wrote it: every discovery reads
+     * its item keys without defaults, so a file written by another Foehn version would
+     * half-load and fail. Bump this whenever the shape of any cached item changes, and
+     * a cache from another version is rejected instead of being restored.
+     */
+    private const SCHEMA_VERSION = '1';
 
     public function __construct(
         private readonly FoehnConfig $config,
@@ -38,9 +49,16 @@ final class DiscoveryCache
 
     /**
      * Check if the cache is valid.
+     *
+     * A cache is only valid when it was written for the configured strategy and by a
+     * Foehn version that agrees on the item shape.
      */
     public function isValid(): bool
     {
+        if ($this->getStoredVersion() !== self::SCHEMA_VERSION) {
+            return false;
+        }
+
         $storedStrategy = $this->getStoredStrategy();
 
         if ($storedStrategy === null) {
@@ -125,14 +143,13 @@ final class DiscoveryCache
     public function clear(): void
     {
         $cacheFile = $this->getCacheFilePath();
-        $strategyFile = $this->getStrategyFilePath();
 
-        if (file_exists($cacheFile)) {
-            unlink($cacheFile);
-        }
+        foreach ([$cacheFile, $this->getStrategyFilePath(), $this->getVersionFilePath()] as $file) {
+            if (!file_exists($file)) {
+                continue;
+            }
 
-        if (file_exists($strategyFile)) {
-            unlink($strategyFile);
+            unlink($file);
         }
 
         // Clear opcode cache if available
@@ -142,7 +159,7 @@ final class DiscoveryCache
     }
 
     /**
-     * Store the cache strategy.
+     * Store the cache strategy, stamped with the schema version it was written for.
      */
     public function storeStrategy(DiscoveryCacheStrategy $strategy): void
     {
@@ -153,6 +170,23 @@ final class DiscoveryCache
         }
 
         file_put_contents($this->getStrategyFilePath(), $strategy->value);
+        file_put_contents($this->getVersionFilePath(), self::SCHEMA_VERSION);
+    }
+
+    /**
+     * Get the schema version the cache on disk was written for.
+     */
+    private function getStoredVersion(): ?string
+    {
+        $versionFile = $this->getVersionFilePath();
+
+        if (!file_exists($versionFile)) {
+            return null;
+        }
+
+        $value = file_get_contents($versionFile);
+
+        return $value === false ? null : trim($value);
     }
 
     /**
@@ -189,5 +223,13 @@ final class DiscoveryCache
     private function getStrategyFilePath(): string
     {
         return $this->config->getDiscoveryCachePath() . '/' . self::STRATEGY_FILE;
+    }
+
+    /**
+     * Get the schema version file path.
+     */
+    private function getVersionFilePath(): string
+    {
+        return $this->config->getDiscoveryCachePath() . '/' . self::VERSION_FILE;
     }
 }
