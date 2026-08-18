@@ -55,8 +55,73 @@ class PostCollectionStub implements PostCollectionInterface, \IteratorAggregate
     public function getIterator(): \Traversable { return new \ArrayIterator($this->posts); }
 }
 
+class UserStub extends User
+{
+    public function __construct()
+    {
+        // Skip parent constructor which requires WordPress
+    }
+}
+
 beforeEach(function () {
     $this->site = new SiteStub();
+});
+
+describe('TemplateContext::fromTimberContext', function () {
+    it('maps a logged out visitor to a null user', function () {
+        // Timber writes `user => false` for anonymous visitors, so the key exists
+        // and `?? null` never fires. Passing false on to a ?User property fatals
+        // the whole request, which took down every front-end page for visitors.
+        $context = TemplateContext::fromTimberContext([
+            'site' => $this->site,
+            'user' => false,
+        ]);
+
+        expect($context->user)->toBeNull();
+    });
+
+    it('keeps a real user', function () {
+        $user = new UserStub();
+
+        $context = TemplateContext::fromTimberContext(['site' => $this->site, 'user' => $user]);
+
+        expect($context->user)->toBe($user);
+    });
+
+    it('ignores values of the wrong type for every typed property', function () {
+        $context = TemplateContext::fromTimberContext([
+            'post' => false,
+            'posts' => false,
+            'site' => $this->site,
+            'user' => false,
+        ]);
+
+        expect($context->post)->toBeNull();
+        expect($context->posts)->toBeNull();
+        expect($context->user)->toBeNull();
+        expect($context->site)->toBe($this->site);
+    });
+
+    it('maps the typed properties and leaves everything else in extra', function () {
+        $post = new PostStub();
+        $posts = new PostCollectionStub([$post]);
+
+        $context = TemplateContext::fromTimberContext([
+            'post' => $post,
+            'posts' => $posts,
+            'site' => $this->site,
+            'user' => false,
+            'menu' => 'primary',
+            'theme' => 'starter',
+        ]);
+
+        expect($context->post)->toBe($post);
+        expect($context->posts)->toBe($posts);
+        expect($context->get('menu'))->toBe('primary');
+        expect($context->get('theme'))->toBe('starter');
+        // The rejected `false` must not survive anywhere in the context.
+        expect($context->get('user'))->toBeNull();
+    });
 });
 
 describe('TemplateContext', function () {
