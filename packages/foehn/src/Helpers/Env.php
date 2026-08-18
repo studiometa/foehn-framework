@@ -71,6 +71,8 @@ final class Env
      */
     public static function isDebug(): bool
     {
-        return defined('WP_DEBUG') && \WP_DEBUG;
+        // Read through constant() rather than the bare constant: the WordPress stubs
+        // declare WP_DEBUG as literal false, which the analyser then folds away.
+        return defined('WP_DEBUG') && (bool) constant('WP_DEBUG');
     }
 }
