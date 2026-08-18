@@ -28,6 +28,10 @@ final class BlockJsonGenerator
             'title' => $attribute->title,
             'category' => $attribute->category,
             'textdomain' => $this->getTextDomain($attribute->name),
+            // Every Foehn block is dynamic, so "Edit as HTML" can only ever invalidate it.
+            // Mirrors the seed in BlockDiscovery::doRegisterBlock(): an author who sets
+            // `html` explicitly still wins.
+            'supports' => $attribute->supports + ['html' => false],
         ];
 
         // Optional fields
@@ -43,10 +47,6 @@ final class BlockJsonGenerator
             $json['keywords'] = $attribute->keywords;
         }
 
-        if (!empty($attribute->supports)) {
-            $json['supports'] = $attribute->supports;
-        }
-
         if ($attribute->parent !== null) {
             $json['parent'] = [$attribute->parent];
         }
@@ -55,16 +55,20 @@ final class BlockJsonGenerator
             $json['ancestor'] = $attribute->ancestor;
         }
 
-        // Attributes from class
+        // Inner blocks: only allowedBlocks is a block.json property.
+        // The template and the template lock travel in the editor payload.
+        if (!empty($attribute->allowedBlocks)) {
+            $json['allowedBlocks'] = $attribute->allowedBlocks;
+        }
+
+        // Attributes from class, without the editor-only keys
         if (method_exists($className, 'attributes')) {
-            $json['attributes'] = $className::attributes();
+            $json['attributes'] = BlockAttributeSchema::toRegistration($className::attributes());
         }
 
         // Interactivity support
         if ($attribute->interactivity) {
-            $json['supports'] = array_merge($json['supports'] ?? [], [
-                'interactivity' => true,
-            ]);
+            $json['supports']['interactivity'] = true;
         }
 
         // Assets
@@ -95,9 +99,8 @@ final class BlockJsonGenerator
      */
     private function getTextDomain(string $name): string
     {
-        $parts = explode('/', $name);
-
-        return $parts[0] ?? 'theme';
+        // explode() always yields at least one element, so the namespace is the first one.
+        return explode('/', $name)[0];
     }
 
     /**

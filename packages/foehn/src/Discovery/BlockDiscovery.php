@@ -7,6 +7,7 @@ namespace Studiometa\Foehn\Discovery;
 use InvalidArgumentException;
 use ReflectionClass;
 use Studiometa\Foehn\Attributes\AsBlock;
+use Studiometa\Foehn\Blocks\BlockAttributeSchema;
 use Studiometa\Foehn\Blocks\BlockRenderer;
 use Studiometa\Foehn\Contracts\BlockInterface;
 use Studiometa\Foehn\Discovery\Concerns\CacheableDiscovery;
@@ -101,6 +102,7 @@ final class BlockDiscovery implements WpDiscovery
             $attribute->ancestor,
             $attribute->interactivity,
             $attribute->interactivity ? $attribute->getInteractivityNamespace() : null,
+            $attribute->allowedBlocks,
         );
     }
 
@@ -124,16 +126,21 @@ final class BlockDiscovery implements WpDiscovery
             $item['ancestor'],
             $item['interactivity'],
             $item['interactivityNamespace'],
+            $item['allowedBlocks'],
         );
     }
 
     /**
      * Actually register the block.
      *
+     * Only `allowedBlocks` has a WP_Block_Type counterpart. The inner blocks template
+     * and its lock are editor-side only, so they travel in the editor payload instead.
+     *
      * @param class-string<BlockInterface> $className
      * @param array<string> $keywords
      * @param array<string, mixed> $supports
      * @param array<string> $ancestor
+     * @param list<string> $allowedBlocks
      */
     private function doRegisterBlock(
         string $className,
@@ -148,11 +155,17 @@ final class BlockDiscovery implements WpDiscovery
         array $ancestor,
         bool $interactivity,
         ?string $interactivityNamespace,
+        array $allowedBlocks,
     ): void {
         $args = [
+            'api_version' => 3,
             'title' => $title,
             'category' => $category,
             'render_callback' => $this->createRenderCallback($className, $interactivityNamespace),
+            // Every Foehn block is dynamic, so "Edit as HTML" can only ever invalidate it:
+            // there is no static save output for the editor to validate the markup against.
+            // Seeded rather than forced, so an author who really wants it can opt back in.
+            'supports' => $supports + ['html' => false],
         ];
 
         // Add optional configuration
@@ -168,10 +181,6 @@ final class BlockDiscovery implements WpDiscovery
             $args['keywords'] = $keywords;
         }
 
-        if (!empty($supports)) {
-            $args['supports'] = $supports;
-        }
-
         if ($parent !== null) {
             $args['parent'] = [$parent];
         }
@@ -180,9 +189,13 @@ final class BlockDiscovery implements WpDiscovery
             $args['ancestor'] = $ancestor;
         }
 
-        // Add attributes from class
+        if (!empty($allowedBlocks)) {
+            $args['allowed_blocks'] = $allowedBlocks;
+        }
+
+        // Add attributes from class, without the editor-only keys
         if (method_exists($className, 'attributes')) {
-            $args['attributes'] = $className::attributes();
+            $args['attributes'] = BlockAttributeSchema::toRegistration($className::attributes());
         }
 
         // Register the block
@@ -241,6 +254,98 @@ final class BlockDiscovery implements WpDiscovery
             'ancestor' => $attribute->ancestor,
             'interactivity' => $attribute->interactivity,
             'interactivityNamespace' => $attribute->interactivity ? $attribute->getInteractivityNamespace() : null,
+            'allowedBlocks' => $attribute->allowedBlocks,
+            'innerBlocksTemplate' => $attribute->innerBlocksTemplate,
+            'innerBlocksTemplateLock' => $attribute->innerBlocksTemplateLock,
+        ];
+    }
+
+    /**
+     * Get the editor payload for every discovered block.
+     *
+     * The payload is exposed to the block editor as `window.foehnBlocks` and
+     * drives the generic block registrar: it describes the sidebar fields and
+     * the inner blocks configuration of each block.
+     *
+     * @return list<array{name: string, attributes: array<string, mixed>, innerBlocks: array{allowedBlocks: list<string>, template: list<mixed>, templateLock: string|bool|null}|null}>
+     */
+    public function getEditorDefinitions(): array
+    {
+        $definitions = [];
+
+        /** @var array<string, mixed> $item */
+        foreach ($this->getItems() as $item) {
+            $definitions[] = $this->itemToEditorDefinition($item);
+        }
+
+        return $definitions;
+    }
+
+    /**
+     * Build the editor payload of a single discovered item.
+     *
+     * @param array<string, mixed> $item
+     * @return array{name: string, attributes: array<string, mixed>, innerBlocks: array{allowedBlocks: list<string>, template: list<mixed>, templateLock: string|bool|null}|null}
+     */
+    private function itemToEditorDefinition(array $item): array
+    {
+        /** @var class-string<BlockInterface> $className */
+        $className = $item['className'];
+
+        // Cached items are flat arrays, live items carry the attribute instance.
+        // A cache written by another Foehn version never reaches this point:
+        // DiscoveryCache stamps its own schema version and rejects a stale file.
+        if (($item['blockName'] ?? null) !== null) {
+            return self::buildEditorDefinition(
+                $className,
+                $item['blockName'],
+                $item['allowedBlocks'],
+                $item['innerBlocksTemplate'],
+                $item['innerBlocksTemplateLock'],
+            );
+        }
+
+        /** @var AsBlock $attribute */
+        $attribute = $item['attribute'];
+
+        return self::buildEditorDefinition(
+            $className,
+            $attribute->name,
+            $attribute->allowedBlocks,
+            $attribute->innerBlocksTemplate,
+            $attribute->innerBlocksTemplateLock,
+        );
+    }
+
+    /**
+     * Assemble one editor definition from already normalized values.
+     *
+     * @param class-string<BlockInterface> $className
+     * @param list<string> $allowedBlocks
+     * @param list<mixed> $template
+     * @return array{name: string, attributes: array<string, mixed>, innerBlocks: array{allowedBlocks: list<string>, template: list<mixed>, templateLock: string|bool|null}|null}
+     */
+    private static function buildEditorDefinition(
+        string $className,
+        string $name,
+        array $allowedBlocks,
+        array $template,
+        string|bool|null $templateLock,
+    ): array {
+        return [
+            'name' => $name,
+            'attributes' => method_exists($className, 'attributes')
+                ? BlockAttributeSchema::toEditorFields($className::attributes())
+                : [],
+            // The payload keys are the InnerBlocks prop names, not the AsBlock
+            // parameter names: this array is spread onto the component as is.
+            'innerBlocks' => AsBlock::hasInnerBlocks($allowedBlocks, $template, $templateLock)
+                ? [
+                    'allowedBlocks' => $allowedBlocks,
+                    'template' => $template,
+                    'templateLock' => $templateLock,
+                ]
+                : null,
         ];
     }
 }
