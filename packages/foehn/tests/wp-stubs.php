@@ -23,6 +23,10 @@ function wp_stub_reset(): void
     $GLOBALS['wp_stub_attachments'] = [];
     $GLOBALS['wp_stub_post_meta'] = [];
     $GLOBALS['wp_stub_as_has_scheduled'] = [];
+
+    // Theme paths fall back to their stub defaults, so a test that points them at
+    // a fixture directory cannot leak that into the next one.
+    unset($GLOBALS['wp_stub_template_directory'], $GLOBALS['wp_stub_template_directory_uri']);
 }
 
 /**
@@ -36,6 +40,18 @@ function wp_stub_get_calls(string $function): array
 function wp_stub_record(string $function, array $args): void
 {
     $GLOBALS['wp_stub_calls'][] = ['function' => $function, 'args' => $args];
+}
+
+// ──────────────────────────────────────────────
+// WordPress constants
+// ──────────────────────────────────────────────
+
+if (!defined('WP_CONTENT_DIR')) {
+    define('WP_CONTENT_DIR', sys_get_temp_dir() . '/foehn-tests/wp-content');
+}
+
+if (!defined('WP_CONTENT_URL')) {
+    define('WP_CONTENT_URL', 'http://example.com/wp-content');
 }
 
 // ──────────────────────────────────────────────
@@ -82,6 +98,21 @@ if (!class_exists('WP_Post')) {
         public int $ID = 0;
         public string $post_name = '';
         public string $post_type = 'post';
+    }
+}
+
+if (!class_exists('WP_Block')) {
+    class WP_Block
+    {
+        /**
+         * @param array<string, mixed> $attributes
+         * @param array<int, mixed> $inner_blocks
+         */
+        public function __construct(
+            public array $attributes = [],
+            public string $name = '',
+            public array $inner_blocks = [],
+        ) {}
     }
 }
 
@@ -635,6 +666,46 @@ if (!function_exists('wp_enqueue_style')) {
     }
 }
 
+if (!function_exists('wp_register_style')) {
+    function wp_register_style(
+        string $handle,
+        string $src = '',
+        array $deps = [],
+        ?string $ver = null,
+        string $media = 'all',
+    ): bool {
+        wp_stub_record('wp_register_style', compact('handle', 'src', 'deps', 'ver', 'media'));
+
+        return true;
+    }
+}
+
+if (!function_exists('wp_register_script_module')) {
+    function wp_register_script_module(
+        string $id,
+        string $src = '',
+        array $deps = [],
+        string|bool|null $version = false,
+        array $args = [],
+    ): void {
+        wp_stub_record('wp_register_script_module', compact('id', 'src', 'deps', 'version', 'args'));
+    }
+}
+
+if (!function_exists('wp_register_script')) {
+    function wp_register_script(
+        string $handle,
+        string $src = '',
+        array $deps = [],
+        ?string $ver = null,
+        bool $inFooter = false,
+    ): bool {
+        wp_stub_record('wp_register_script', compact('handle', 'src', 'deps', 'ver', 'inFooter'));
+
+        return true;
+    }
+}
+
 if (!function_exists('wp_enqueue_script')) {
     function wp_enqueue_script(
         string $handle,
@@ -644,6 +715,15 @@ if (!function_exists('wp_enqueue_script')) {
         bool $in_footer = false,
     ): void {
         wp_stub_record('wp_enqueue_script', compact('handle', 'src', 'deps', 'ver', 'in_footer'));
+    }
+}
+
+if (!function_exists('wp_add_inline_script')) {
+    function wp_add_inline_script(string $handle, string $data, string $position = 'after'): bool
+    {
+        wp_stub_record('wp_add_inline_script', compact('handle', 'data', 'position'));
+
+        return true;
     }
 }
 
@@ -676,6 +756,24 @@ if (!function_exists('get_template_directory_uri')) {
     function get_template_directory_uri(): string
     {
         return $GLOBALS['wp_stub_template_directory_uri'] ?? 'http://example.com/wp-content/themes/theme';
+    }
+}
+
+if (!function_exists('get_theme_file_path')) {
+    function get_theme_file_path(string $file = ''): string
+    {
+        $directory = $GLOBALS['wp_stub_template_directory'] ?? '/var/www/wp-content/themes/theme';
+
+        return $file === '' ? $directory : $directory . '/' . ltrim($file, '/');
+    }
+}
+
+if (!function_exists('get_theme_file_uri')) {
+    function get_theme_file_uri(string $file = ''): string
+    {
+        $uri = $GLOBALS['wp_stub_template_directory_uri'] ?? 'http://example.com/wp-content/themes/theme';
+
+        return $file === '' ? $uri : $uri . '/' . ltrim($file, '/');
     }
 }
 
@@ -873,6 +971,22 @@ if (!function_exists('site_url')) {
         $url = $GLOBALS['wp_stub_site_url'] ?? 'http://example.com';
 
         return $path ? rtrim($url, '/') . '/' . ltrim($path, '/') : $url;
+    }
+}
+
+if (!function_exists('content_url')) {
+    function content_url(string $path = ''): string
+    {
+        $url = $GLOBALS['wp_stub_content_url'] ?? WP_CONTENT_URL;
+
+        return $path ? rtrim($url, '/') . '/' . ltrim($path, '/') : $url;
+    }
+}
+
+if (!function_exists('wp_json_encode')) {
+    function wp_json_encode(mixed $data, int $flags = 0, int $depth = 512): string|false
+    {
+        return json_encode($data, $flags, $depth);
     }
 }
 

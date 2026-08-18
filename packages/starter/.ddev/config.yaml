@@ -1,3 +1,7 @@
+# Without an explicit name, ddev derives it from the directory ("starter"), which
+# does not match the WP_HOME in .env.example and leaves WordPress redirecting to a
+# hostname ddev never serves.
+name: foehn-starter
 type: wordpress
 docroot: web
 disable_settings_management: true

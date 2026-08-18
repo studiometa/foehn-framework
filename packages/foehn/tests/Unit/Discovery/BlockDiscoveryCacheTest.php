@@ -42,6 +42,66 @@ describe('BlockDiscovery caching', function () {
         expect($cacheableData['App\\'][0]['className'])->toBe('App\\Blocks\\HeroBlock');
         expect($cacheableData['App\\'][0]['interactivity'])->toBeFalse();
         expect($cacheableData['App\\'][0]['interactivityNamespace'])->toBeNull();
+        expect($cacheableData['App\\'][0]['allowedBlocks'])->toBe([]);
+        expect($cacheableData['App\\'][0]['innerBlocksTemplate'])->toBe([]);
+        expect($cacheableData['App\\'][0]['innerBlocksTemplateLock'])->toBeNull();
+    });
+
+    it('caches the inner blocks configuration of a container block', function () {
+        $attribute = new AsBlock(
+            name: 'my-theme/section',
+            title: 'Section',
+            allowedBlocks: ['core/heading', 'core/paragraph'],
+            innerBlocksTemplate: [['core/heading', ['level' => 2]]],
+            innerBlocksTemplateLock: 'insert',
+        );
+
+        $ref = new ReflectionMethod($this->discovery, 'addItem');
+        $ref->invoke($this->discovery, $this->location, [
+            'attribute' => $attribute,
+            'className' => 'App\\Blocks\\SectionBlock',
+        ]);
+
+        $cacheableData = $this->discovery->getCacheableData();
+
+        expect($cacheableData['App\\'][0]['allowedBlocks'])->toBe(['core/heading', 'core/paragraph']);
+        expect($cacheableData['App\\'][0]['innerBlocksTemplate'])->toBe([['core/heading', ['level' => 2]]]);
+        expect($cacheableData['App\\'][0]['innerBlocksTemplateLock'])->toBe('insert');
+    });
+
+    it('produces cacheable keys the cached registration path can read', function () {
+        $attribute = new AsBlock(
+            name: 'my-theme/section',
+            title: 'Section',
+            allowedBlocks: ['core/heading'],
+            innerBlocksTemplateLock: false,
+        );
+
+        $ref = new ReflectionMethod($this->discovery, 'addItem');
+        $ref->invoke($this->discovery, $this->location, [
+            'attribute' => $attribute,
+            'className' => 'Tests\\Fixtures\\ContainerBlockFixture',
+        ]);
+
+        $cacheableData = $this->discovery->getCacheableData();
+
+        wp_stub_reset();
+        bootTestContainer();
+
+        $restored = new BlockDiscovery();
+        $restored->restoreFromCache($cacheableData);
+        $restored->apply();
+
+        $callback = wp_stub_get_calls('add_action')[0]['args']['callback'];
+        $callback();
+
+        $blocks = wp_stub_get_calls('register_block_type');
+
+        expect($blocks)->toHaveCount(1);
+        expect($blocks[0]['args']['blockName'])->toBe('my-theme/section');
+        expect($blocks[0]['args']['args']['allowed_blocks'])->toBe(['core/heading']);
+
+        tearDownTestContainer();
     });
 
     it('handles interactive block', function () {
@@ -116,6 +176,9 @@ describe('BlockDiscovery caching', function () {
                 'interactivity' => false,
                 'interactivityNamespace' => null,
                 'className' => 'App\\Blocks\\HeroBlock',
+                'allowedBlocks' => [],
+                'innerBlocksTemplate' => [],
+                'innerBlocksTemplateLock' => null,
             ],
         ];
 

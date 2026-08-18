@@ -7,6 +7,8 @@
     "packages/starter"
   ],
   "scripts": {
+    "lint:editor": "node --check packages/foehn/resources/js/editor.js",
+    "test:editor": "node --test \"packages/foehn/tests/js/*.test.mjs\"",
     "fmt": "oxfmt --write README.md .planning/ packages/*/README.md",
     "fmt:check": "oxfmt --check README.md .planning/ packages/*/README.md",
     "docs:dev": "npm run --prefix docs dev",
@@ -25,6 +27,9 @@
     ],
     "*.md": [
       "oxfmt --write"
+    ],
+    "packages/foehn/resources/js/editor.js": [
+      "node --check"
     ]
   },
   "version": "0.2.0"

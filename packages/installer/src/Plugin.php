@@ -21,6 +21,7 @@ use Composer\Script\ScriptEvents;
  * 4. Generates `wp-config.php`
  * 5. Generates `index.php`
  * 6. Generates the mu-plugin loader
+ * 7. Copies the editor registrar script into the web root
  */
 final class Plugin implements PluginInterface, EventSubscriberInterface
 {
@@ -72,8 +73,23 @@ final class Plugin implements PluginInterface, EventSubscriberInterface
             return;
         }
 
-        $generator = new WebRootGenerator($this->io, $projectRoot, $config);
+        $generator = new WebRootGenerator($this->io, $projectRoot, $config, $this->getFoehnPackagePath());
         $generator->generate();
+    }
+
+    /**
+     * Resolve the install path of the `studiometa/foehn` package using Composer's own APIs,
+     * so it is correct for every layout, including path repositories and symlinks.
+     */
+    private function getFoehnPackagePath(): ?string
+    {
+        $package = $this->composer->getRepositoryManager()->getLocalRepository()->findPackage('studiometa/foehn', '*');
+
+        if ($package === null) {
+            return null;
+        }
+
+        return $this->composer->getInstallationManager()->getInstallPath($package);
     }
 
     private function getProjectRoot(): string

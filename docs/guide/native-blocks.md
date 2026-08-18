@@ -2,6 +2,8 @@
 
 Føhn provides `#[AsBlock]` for creating native Gutenberg blocks with optional WordPress Interactivity API support.
 
+For how a block's `attributes()` schema becomes sidebar controls and a real editor preview, with no JavaScript to write, see the [Block Editor](./block-editor) guide.
+
 ## Basic Native Block
 
 ```php
@@ -94,7 +96,6 @@ use WP_Block;
     category: 'widgets',
     icon: 'calculator',
     interactivity: true,
-    viewScript: 'blocks/counter/view.js',
 )]
 final readonly class CounterBlock implements InteractiveBlockInterface
 {
@@ -185,7 +186,7 @@ final readonly class CounterBlock implements InteractiveBlockInterface
 ## View Script
 
 ```javascript
-// assets/blocks/counter/view.js
+// assets/js/blocks/counter.js
 import { store, getContext } from "@wordpress/interactivity";
 
 store("theme/counter", {
@@ -286,10 +287,9 @@ final class ThemeBlocks {}
     interactivity: true,
     interactivityNamespace: 'theme/accordion',
     template: 'blocks/accordion',
-    editorScript: 'blocks/accordion/editor.js',
-    editorStyle: 'blocks/accordion/editor.css',
-    style: 'blocks/accordion/style.css',
-    viewScript: 'blocks/accordion/view.js',
+    allowedBlocks: ['core/heading', 'core/paragraph'],
+    innerBlocksTemplate: [['core/heading', ['level' => 3]]],
+    innerBlocksTemplateLock: 'insert',
 )]
 ```
 
@@ -309,39 +309,42 @@ templates/blocks/
 ├── counter.twig
 └── accordion.twig
 
-assets/blocks/
-├── counter/
-│   ├── view.js
-│   ├── editor.js
-│   └── style.css
-└── accordion/
-    ├── view.js
-    └── style.css
+assets/css/blocks/
+├── counter.css
+└── accordion.css
+
+assets/js/blocks/
+├── counter.js
+└── accordion.js
 ```
+
+A block's assets are named after the block and loaded when they exist — nothing declares them. `theme/counter` picks up `assets/css/blocks/counter.css` on the front end and in the editor, and `assets/js/blocks/counter.js` on the front end as a `type="module"` script. Both load only on pages that render the block. A block that needs neither file simply has neither.
 
 ## Attribute Parameters
 
-| Parameter                | Type       | Default       | Description                     |
-| ------------------------ | ---------- | ------------- | ------------------------------- |
-| `name`                   | `string`   | _required_    | Block name with namespace       |
-| `title`                  | `string`   | _required_    | Display title                   |
-| `category`               | `string`   | `'widgets'`   | Block category                  |
-| `icon`                   | `?string`  | `null`        | Dashicon or SVG                 |
-| `description`            | `?string`  | `null`        | Block description               |
-| `keywords`               | `string[]` | `[]`          | Search keywords                 |
-| `supports`               | `array`    | `[]`          | Block supports                  |
-| `parent`                 | `?string`  | `null`        | Parent block                    |
-| `ancestor`               | `string[]` | `[]`          | Ancestor blocks                 |
-| `interactivity`          | `bool`     | `false`       | Enable Interactivity API        |
-| `interactivityNamespace` | `?string`  | Block name    | Interactivity namespace         |
-| `template`               | `?string`  | Auto-resolved | Template path                   |
-| `editorScript`           | `?string`  | `null`        | Editor script                   |
-| `editorStyle`            | `?string`  | `null`        | Editor styles                   |
-| `style`                  | `?string`  | `null`        | Frontend styles                 |
-| `viewScript`             | `?string`  | `null`        | Frontend script (interactivity) |
+| Parameter                 | Type                 | Default       | Description               |
+| ------------------------- | -------------------- | ------------- | ------------------------- |
+| `name`                    | `string`             | _required_    | Block name with namespace |
+| `title`                   | `string`             | _required_    | Display title             |
+| `category`                | `string`             | `'widgets'`   | Block category            |
+| `icon`                    | `?string`            | `null`        | Dashicon or SVG           |
+| `description`             | `?string`            | `null`        | Block description         |
+| `keywords`                | `string[]`           | `[]`          | Search keywords           |
+| `supports`                | `array`              | `[]`          | Block supports            |
+| `parent`                  | `?string`            | `null`        | Parent block              |
+| `ancestor`                | `string[]`           | `[]`          | Ancestor blocks           |
+| `interactivity`           | `bool`               | `false`       | Enable Interactivity API  |
+| `interactivityNamespace`  | `?string`            | Block name    | Interactivity namespace   |
+| `template`                | `?string`            | Auto-resolved | Template path             |
+| `allowedBlocks`           | `string[]`           | `[]`          | Allowed inner block names |
+| `innerBlocksTemplate`     | `array`              | `[]`          | InnerBlocks template      |
+| `innerBlocksTemplateLock` | `string\|bool\|null` | `null`        | InnerBlocks lock          |
+
+No editor JavaScript is needed. Foehn derives the sidebar controls from the block's `attributes()` schema and previews the block with its own server-side rendering, so a block is a PHP class plus a Twig template and nothing else. See the [Block Editor](./block-editor) guide for the control table and how `allowedBlocks` / `innerBlocksTemplate` / `innerBlocksTemplateLock` turn a block into a container.
 
 ## See Also
 
+- [Block Editor](./block-editor)
 - [ACF Blocks](./acf-blocks)
 - [Block Patterns](./block-patterns)
 - [API Reference: #[AsBlock]](/api/as-block)

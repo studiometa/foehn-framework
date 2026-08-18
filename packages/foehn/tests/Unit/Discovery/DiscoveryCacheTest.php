@@ -125,6 +125,57 @@ describe('DiscoveryCache', function () {
         expect($cache->isValid())->toBeFalse();
     });
 
+    it('rejects a cache written without a schema version', function () {
+        $config = new FoehnConfig(
+            discoveryCacheStrategy: DiscoveryCacheStrategy::FULL,
+            discoveryCachePath: $this->tempDir,
+        );
+        $cache = new DiscoveryCache($config);
+
+        $cache->store(['TestDiscovery' => [['className' => 'App\\Test']]]);
+
+        // A cache written by another Foehn version has item shapes this version reads
+        // without defaults, so restoring it would half-load and fail. Simulate one by
+        // dropping the version stamp the way a pre-versioning release left the file.
+        unlink($this->tempDir . '/version');
+
+        expect($cache->exists())->toBeTrue();
+        expect($cache->isValid())->toBeFalse();
+        expect($cache->isEnabled())->toBeFalse();
+        expect($cache->restore())->toBeNull();
+    });
+
+    it('rejects a cache written for another schema version', function () {
+        $config = new FoehnConfig(
+            discoveryCacheStrategy: DiscoveryCacheStrategy::FULL,
+            discoveryCachePath: $this->tempDir,
+        );
+        $cache = new DiscoveryCache($config);
+
+        $cache->store(['TestDiscovery' => [['className' => 'App\\Test']]]);
+        file_put_contents($this->tempDir . '/version', '0');
+
+        expect($cache->isValid())->toBeFalse();
+        expect($cache->restore())->toBeNull();
+    });
+
+    it('stamps the schema version when storing', function () {
+        $config = new FoehnConfig(
+            discoveryCacheStrategy: DiscoveryCacheStrategy::FULL,
+            discoveryCachePath: $this->tempDir,
+        );
+        $cache = new DiscoveryCache($config);
+
+        $cache->store(['TestDiscovery' => []]);
+
+        expect(file_exists($this->tempDir . '/version'))->toBeTrue();
+        expect($cache->isValid())->toBeTrue();
+
+        $cache->clear();
+
+        expect(file_exists($this->tempDir . '/version'))->toBeFalse();
+    });
+
     it('returns correct strategy', function () {
         $config = new FoehnConfig(
             discoveryCacheStrategy: DiscoveryCacheStrategy::PARTIAL,

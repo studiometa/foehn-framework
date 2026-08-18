@@ -3,8 +3,9 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Discovery\BlockDiscovery;
-use Tests\Fixtures\BlockFixture;
 use Studiometa\Foehn\Discovery\DiscoveryLocation;
+use Tests\Fixtures\BlockFixture;
+use Tests\Fixtures\ContainerBlockFixture;
 
 beforeEach(function () {
     $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
@@ -44,6 +45,98 @@ describe('BlockDiscovery apply', function () {
         expect($blocks[0]['args']['args']['icon'])->toBe('cover-image');
         expect($blocks[0]['args']['args']['description'])->toBe('A hero block.');
         expect($blocks[0]['args']['args']['keywords'])->toBe(['hero', 'banner']);
+    });
+
+    it('disables the html support so "Edit as HTML" cannot invalidate a dynamic block', function () {
+        $this->discovery->discover($this->location, new ReflectionClass(BlockFixture::class));
+        $this->discovery->apply();
+
+        $callback = wp_stub_get_calls('add_action')[0]['args']['callback'];
+        $callback();
+
+        // BlockFixture declares no supports at all, so the seed is the only source.
+        expect(wp_stub_get_calls('register_block_type')[0]['args']['args']['supports'])->toBe(['html' => false]);
+    });
+
+    it('registers blocks with the block API version 3', function () {
+        $this->discovery->discover($this->location, new ReflectionClass(BlockFixture::class));
+        $this->discovery->apply();
+
+        $callback = wp_stub_get_calls('add_action')[0]['args']['callback'];
+        $callback();
+
+        $blocks = wp_stub_get_calls('register_block_type');
+
+        expect($blocks[0]['args']['args']['api_version'])->toBe(3);
+    });
+
+    it('passes allowed_blocks for a container block', function () {
+        $this->discovery->discover($this->location, new ReflectionClass(ContainerBlockFixture::class));
+        $this->discovery->apply();
+
+        $callback = wp_stub_get_calls('add_action')[0]['args']['callback'];
+        $callback();
+
+        $args = wp_stub_get_calls('register_block_type')[0]['args']['args'];
+
+        expect($args['allowed_blocks'])->toBe(['core/heading', 'core/paragraph']);
+        // The template and the template lock are editor-side only.
+        expect($args)->not->toHaveKey('template');
+        expect($args)->not->toHaveKey('template_lock');
+    });
+
+    it('attaches the per-block assets found by convention', function () {
+        $GLOBALS['wp_stub_template_directory'] = dirname(__DIR__, 2) . '/Fixtures/theme';
+
+        $this->discovery->discover($this->location, new ReflectionClass(BlockFixture::class));
+        $this->discovery->apply();
+
+        $callback = wp_stub_get_calls('add_action')[0]['args']['callback'];
+        $callback();
+
+        $args = wp_stub_get_calls('register_block_type')[0]['args']['args'];
+
+        // BlockFixture is test/hero, so it picks up assets/{css,js}/blocks/hero.*
+        expect($args['style_handles'])->toBe(['test-hero-style']);
+        expect($args['view_script_module_ids'])->toBe(['test/hero/view']);
+    });
+
+    it('omits the asset arguments when the theme has no files for the block', function () {
+        // The default stub theme directory does not exist, so nothing can be found.
+        $this->discovery->discover($this->location, new ReflectionClass(BlockFixture::class));
+        $this->discovery->apply();
+
+        $callback = wp_stub_get_calls('add_action')[0]['args']['callback'];
+        $callback();
+
+        $args = wp_stub_get_calls('register_block_type')[0]['args']['args'];
+
+        expect($args)->not->toHaveKey('style_handles');
+        expect($args)->not->toHaveKey('view_script_module_ids');
+    });
+
+    it('omits allowed_blocks for a non container block', function () {
+        $this->discovery->discover($this->location, new ReflectionClass(BlockFixture::class));
+        $this->discovery->apply();
+
+        $callback = wp_stub_get_calls('add_action')[0]['args']['callback'];
+        $callback();
+
+        expect(wp_stub_get_calls('register_block_type')[0]['args']['args'])->not->toHaveKey('allowed_blocks');
+    });
+
+    it('registers attributes without the editor only keys', function () {
+        $this->discovery->discover($this->location, new ReflectionClass(ContainerBlockFixture::class));
+        $this->discovery->apply();
+
+        $callback = wp_stub_get_calls('add_action')[0]['args']['callback'];
+        $callback();
+
+        $attributes = wp_stub_get_calls('register_block_type')[0]['args']['args']['attributes'];
+
+        expect($attributes['ctaLabel'])->toBe(['type' => 'string', 'default' => 'Read more']);
+        expect($attributes['variant'])->toBe(['type' => 'string']);
+        expect($attributes['image_id'])->toBe(['type' => 'integer']);
     });
 
     it('registers no blocks when no items discovered', function () {

@@ -1,0 +1,19 @@
+<div class="callout callout--{{ tone }}" {% if dismissible %}data-dismissible{% endif %}>
+    {% if icon %}
+        <img class="callout__icon" src="{{ icon.src }}" alt="{{ icon.alt }}" width="48" height="48">
+    {% endif %}
+
+    <div class="callout__content">
+        {% if title %}
+            <p class="callout__title">{{ title }}</p>
+        {% endif %}
+
+        {% if body %}
+            <p class="callout__body" style="column-count: {{ columns }}">{{ body }}</p>
+        {% endif %}
+    </div>
+
+    {% if dismissible %}
+        <button class="callout__dismiss" type="button" aria-label="Dismiss">&times;</button>
+    {% endif %}
+</div>

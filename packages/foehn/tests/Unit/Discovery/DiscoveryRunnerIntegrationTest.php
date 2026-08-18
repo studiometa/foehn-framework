@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Config\FoehnConfig;
+use Studiometa\Foehn\Discovery\BlockDiscovery;
 use Studiometa\Foehn\Discovery\DiscoveryCache;
 use Studiometa\Foehn\Discovery\DiscoveryRunner;
 use Studiometa\Foehn\Discovery\HookDiscovery;
@@ -141,6 +142,57 @@ describe('DiscoveryRunner integration', function () {
         /** @var HookDiscovery $hookDiscovery */
         $hookDiscovery = $discoveries[HookDiscovery::class];
         expect($hookDiscovery->wasRestoredFromCache())->toBeTrue();
+
+        // Clean up
+        array_map('unlink', glob($tmpDir . '/*'));
+        rmdir($tmpDir);
+    });
+
+    it('ignores a cache written by another Foehn version instead of half-loading it', function () {
+        $tmpDir = sys_get_temp_dir() . '/foehn-test-stale-cache-' . uniqid();
+        mkdir($tmpDir, 0o755, true);
+
+        $config = new FoehnConfig(discoveryCacheStrategy: DiscoveryCacheStrategy::FULL, discoveryCachePath: $tmpDir);
+        $cache = new DiscoveryCache($config);
+
+        // A BlockDiscovery item as an earlier Foehn version wrote it: no allowedBlocks,
+        // no innerBlocksTemplate, no innerBlocksTemplateLock. Restoring it would read
+        // those keys undefined and hand null to a non-nullable array parameter, which is
+        // an uncatchable TypeError inside enqueue_block_editor_assets.
+        $cache->store([
+            BlockDiscovery::class => [
+                'App\\' => [
+                    [
+                        'className' => 'App\\Blocks\\HeroBlock',
+                        'blockName' => 'theme/hero',
+                        'title' => 'Hero',
+                        'category' => 'theme',
+                        'icon' => null,
+                        'description' => null,
+                        'keywords' => [],
+                        'supports' => [],
+                        'parent' => null,
+                        'ancestor' => [],
+                        'interactivity' => false,
+                        'interactivityNamespace' => null,
+                    ],
+                ],
+            ],
+        ]);
+        $cache->storeStrategy(DiscoveryCacheStrategy::FULL);
+        unlink($tmpDir . '/version');
+
+        $container = createTestContainer();
+        $runner = new DiscoveryRunner($container, $cache);
+
+        $method = new ReflectionMethod($runner, 'ensureDiscovered');
+        $method->invoke($runner);
+
+        /** @var BlockDiscovery $blockDiscovery */
+        $blockDiscovery = $runner->getDiscoveries()[BlockDiscovery::class];
+
+        expect($blockDiscovery->wasRestoredFromCache())->toBeFalse();
+        expect($blockDiscovery->getEditorDefinitions())->toBe([]);
 
         // Clean up
         array_map('unlink', glob($tmpDir . '/*'));
