@@ -104,6 +104,27 @@ jobs:
           flags: unittests
           name: codecov-foehn
 
+  editor-script:
+    name: Editor Script - Syntax & Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # The generic block editor registrar is copied verbatim into every project's
+      # web root by the installer, so a mistake in it would take out the block editor
+      # of every install with no other signal. Both steps run on the Node built-ins
+      # only, so no install step is needed.
+      - name: Check editor registrar syntax
+        run: npm run lint:editor
+
+      - name: Test editor registrar
+        run: npm run test:editor
+
   vite-plugin-lint:
     name: Vite Plugin - Lint
     runs-on: ubuntu-latest
