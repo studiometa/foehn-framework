@@ -6,6 +6,22 @@ Create a Composer package `studiometa/foehn` that integrates Tempest Framework w
 
 ## Phases
 
+### Phase 0: Block Editor Layer
+
+Prerequisite for repositioning native blocks as the default authoring model (see `.planning/editor_layer_spec.md`). Makes every `#[AsBlock]` class authorable in the block editor with no per-block JavaScript and no build tooling.
+
+- [x] 0.1 Generic block editor registrar (`packages/foehn/resources/js/editor.js`) — no build step, reads WordPress globals only
+- [x] 0.2 `WebRootGenerator::generateEditorScript()` copies the registrar into `web/wp-content/foehn/editor.js` on `composer install`/`composer update`
+- [x] 0.3 `BlockDiscovery::getEditorDefinitions()` exposes discovered blocks (name, attribute schema, container config) as a serialisable payload
+- [x] 0.4 `BlockEditorAssets` + `Kernel::onEnqueueBlockEditorAssets()` wire `enqueue_block_editor_assets`: enqueue the registrar with a static `wp-*` dependency array, inline `window.foehnBlocks` from discovery, and log to the console when the registrar is missing
+- [x] 0.5 `BlockAttributeSchema` derives the sidebar control from `type`, with an explicit `control` override (`text`, `textarea`, `toggle`, `number`, `select`, `image`) and strips the UI-only keys (`control`, `label`, `help`, `options`) before the schema reaches WordPress
+- [x] 0.6 Container support: `allowedBlocks`, `innerBlocksTemplate`, `innerBlocksTemplateLock` on `#[AsBlock]`; `allowedBlocks` registers server-side via `allowed_blocks`, the template and its lock are editor-only and render as `InnerBlocks` in the canvas
+- [x] 0.7 Dynamic-by-construction guarantee made explicit: `supports.html` defaults to `false` (no static markup for "Edit as HTML" to invalidate); `#[AsBlock]` still has no `save` parameter and `BlockDiscovery` still registers exclusively through `render_callback`
+- [x] 0.8 Tests (`BlockAttributeSchemaTest`, `BlockEditorAssetsTest`, `editor.test.mjs`, container coverage in `BlockDiscoveryApplyTest`/`BlockDiscoveryTest`/`BlockJsonGeneratorTest`)
+- [x] 0.9 Documentation (`guide/block-editor.md`, updated `guide/native-blocks.md` and `api/as-block.md`, updated `BlockStub`)
+
+Not started: `#[AsSettingsPage]` (proposal Phase 3) and object storage for uploads (proposal Phase 4) — no `register_setting`, `add_options_page`, or object-storage code exists yet outside ACF.
+
 ### Phase 1: Foundations
 
 - [x] 1.1 Composer package setup (structure, autoload, dependencies)

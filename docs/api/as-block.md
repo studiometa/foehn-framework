@@ -25,32 +25,46 @@ final readonly class AsBlock
         public ?string $editorStyle = null,
         public ?string $style = null,
         public ?string $viewScript = null,
+        public array $allowedBlocks = [],
+        public array $innerBlocksTemplate = [],
+        public string|bool|null $innerBlocksTemplateLock = null,
     ) {}
 
     public function getInteractivityNamespace(): string {}
+
+    public static function hasInnerBlocks(
+        array $allowedBlocks,
+        array $innerBlocksTemplate,
+        string|bool|null $innerBlocksTemplateLock,
+    ): bool {}
 }
 ```
 
 ## Parameters
 
-| Parameter                | Type       | Default       | Description                          |
-| ------------------------ | ---------- | ------------- | ------------------------------------ |
-| `name`                   | `string`   | —             | Block name with namespace (required) |
-| `title`                  | `string`   | —             | Display title (required)             |
-| `category`               | `string`   | `'widgets'`   | Block category                       |
-| `icon`                   | `?string`  | `null`        | Dashicon name or SVG                 |
-| `description`            | `?string`  | `null`        | Block description                    |
-| `keywords`               | `string[]` | `[]`          | Search keywords                      |
-| `supports`               | `array`    | `[]`          | Block supports configuration         |
-| `parent`                 | `?string`  | `null`        | Parent block name                    |
-| `ancestor`               | `string[]` | `[]`          | Ancestor block names                 |
-| `interactivity`          | `bool`     | `false`       | Enable WordPress Interactivity API   |
-| `interactivityNamespace` | `?string`  | Block name    | Custom interactivity namespace       |
-| `template`               | `?string`  | Auto-resolved | Template path                        |
-| `editorScript`           | `?string`  | `null`        | Editor script path                   |
-| `editorStyle`            | `?string`  | `null`        | Editor styles path                   |
-| `style`                  | `?string`  | `null`        | Frontend styles path                 |
-| `viewScript`             | `?string`  | `null`        | Frontend script path                 |
+| Parameter                 | Type                 | Default       | Description                                                       |
+| ------------------------- | -------------------- | ------------- | ----------------------------------------------------------------- |
+| `name`                    | `string`             | —             | Block name with namespace (required)                              |
+| `title`                   | `string`             | —             | Display title (required)                                          |
+| `category`                | `string`             | `'widgets'`   | Block category                                                    |
+| `icon`                    | `?string`            | `null`        | Dashicon name or SVG                                              |
+| `description`             | `?string`            | `null`        | Block description                                                 |
+| `keywords`                | `string[]`           | `[]`          | Search keywords                                                   |
+| `supports`                | `array`              | `[]`          | Block supports configuration                                      |
+| `parent`                  | `?string`            | `null`        | Parent block name                                                 |
+| `ancestor`                | `string[]`           | `[]`          | Ancestor block names                                              |
+| `interactivity`           | `bool`               | `false`       | Enable WordPress Interactivity API                                |
+| `interactivityNamespace`  | `?string`            | Block name    | Custom interactivity namespace                                    |
+| `template`                | `?string`            | Auto-resolved | Template path                                                     |
+| `editorScript`            | `?string`            | `null`        | Editor script path                                                |
+| `editorStyle`             | `?string`            | `null`        | Editor styles path                                                |
+| `style`                   | `?string`            | `null`        | Frontend styles path                                              |
+| `viewScript`              | `?string`            | `null`        | Frontend script path                                              |
+| `allowedBlocks`           | `string[]`           | `[]`          | Block names allowed as inner blocks                               |
+| `innerBlocksTemplate`     | `array`              | `[]`          | InnerBlocks template                                              |
+| `innerBlocksTemplateLock` | `string\|bool\|null` | `null`        | InnerBlocks lock: `'all'`, `'insert'`, `'contentOnly'` or `false` |
+
+Setting any of the three `allowedBlocks` / `innerBlocksTemplate` / `innerBlocksTemplateLock` parameters makes the block a container: the editor renders `InnerBlocks` instead of a server-rendered preview, and the inner markup reaches the Twig template as `content`.
 
 ## Usage
 
