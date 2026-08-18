@@ -15,8 +15,8 @@
 }
 
 .section--dark {
-  background: #111827;
   color: #f9fafb;
+  background: #111827;
 }
 
 /* Inner blocks bring their own colours, so anchor them to the section's. */
