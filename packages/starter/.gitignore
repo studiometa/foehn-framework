@@ -6,6 +6,10 @@ composer.lock
 # Generated web root
 /web/
 
+# Build output
+/dist/
+.stylelintcache
+
 # Environment
 .env
 
