@@ -80,20 +80,33 @@ wp foehn make:model Product --post-type --dry-run
 ### Discovery Cache Commands
 
 ```bash
-# Warm discovery cache (run discoveries + cache)
-wp foehn discovery:generate
-
-# Generate discovery cache for production
+# Scan every location and write the cache
 wp foehn discovery:generate
 
 # Clear the discovery cache
 wp foehn discovery:clear
 
-# Check cache status
+# Check cache status, per location
 wp foehn discovery:status
 ```
 
-See [Discovery Cache](/guide/discovery-cache) for more details on caching.
+The cache also fills itself on the first request that finds it missing, and `composer install` clears it. See [Discovery Cache](/guide/discovery-cache) for more details on caching.
+
+### Security Keys
+
+WordPress signs authentication cookies and nonces with eight keys. The installer generates them into `config/wordpress-salts.config.php` on a first install, and the generated `wp-config.php` refuses to serve a production request without them.
+
+```bash
+# Generate keys for a project that has none
+wp foehn salts:generate
+
+# Rotate them — this logs every user out
+wp foehn salts:generate --force
+```
+
+Rotating replaces the keys the current cookies were signed with, so every session ends. Keep the file out of version control; the starter's `.gitignore` already excludes it.
+
+If a deploy provisions `.env` by hand, the keys can live there instead — `wp-config.php` reads each name from the environment when the file is absent. Anything still starting with `change-me-` counts as absent.
 
 ## Custom Commands
 
