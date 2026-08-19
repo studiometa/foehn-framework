@@ -102,6 +102,20 @@ if (!defined('WP_HOME')) {
     define('WP_HOME', 'http://example.com');
 }
 
+if (!defined('TIMBER_LOADED')) {
+    // Keep Timber out of the unit suite, which it has always been in practice — and now
+    // has to be said out loud. `Timber::init()` returns early unless `ABSPATH` is defined
+    // *and* a `WP` class exists, and until now no run of this suite had both: the `WP`
+    // stub arrived with one change and `ABSPATH` with another. Together they open the gate,
+    // and Timber then calls `get_home_url()`, which nothing here stubs — fifteen Kernel and
+    // view-engine tests failed on a function neither change went anywhere near.
+    //
+    // Stubbing that one function would let Timber initialise for real, pulling Twig and the
+    // integration layer into tests that mock WordPress with plain functions. Declaring it
+    // loaded keeps the boundary where it was.
+    define('TIMBER_LOADED', true);
+}
+
 // ──────────────────────────────────────────────
 // WordPress classes (minimal stubs for test runtime)
 // ──────────────────────────────────────────────
