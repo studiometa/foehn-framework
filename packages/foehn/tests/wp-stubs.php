@@ -954,6 +954,13 @@ if (!function_exists('wp_get_current_user')) {
     }
 }
 
+if (!function_exists('esc_html')) {
+    function esc_html(string $text): string
+    {
+        return htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
+    }
+}
+
 if (!function_exists('esc_attr')) {
     function esc_attr(string $text): string
     {
@@ -979,6 +986,111 @@ if (!function_exists('absint')) {
     function absint(mixed $value): int
     {
         return abs((int) $value);
+    }
+}
+
+// ──────────────────────────────────────────────
+// Settings API
+// ──────────────────────────────────────────────
+
+if (!function_exists('register_setting')) {
+    /**
+     * @param array<string, mixed> $args
+     */
+    function register_setting(string $optionGroup, string $optionName, array $args = []): void
+    {
+        wp_stub_record('register_setting', compact('optionGroup', 'optionName', 'args'));
+    }
+}
+
+if (!function_exists('add_menu_page')) {
+    function add_menu_page(
+        string $pageTitle,
+        string $menuTitle,
+        string $capability,
+        string $menuSlug,
+        ?callable $callback = null,
+        string $icon = '',
+        int|float|null $position = null,
+    ): string {
+        wp_stub_record('add_menu_page', compact(
+            'pageTitle',
+            'menuTitle',
+            'capability',
+            'menuSlug',
+            'callback',
+            'icon',
+            'position',
+        ));
+
+        return 'toplevel_page_' . $menuSlug;
+    }
+}
+
+if (!function_exists('add_submenu_page')) {
+    function add_submenu_page(
+        string $parentSlug,
+        string $pageTitle,
+        string $menuTitle,
+        string $capability,
+        string $menuSlug,
+        ?callable $callback = null,
+        int|float|null $position = null,
+    ): string|false {
+        wp_stub_record('add_submenu_page', compact(
+            'parentSlug',
+            'pageTitle',
+            'menuTitle',
+            'capability',
+            'menuSlug',
+            'callback',
+            'position',
+        ));
+
+        return $parentSlug . '_page_' . $menuSlug;
+    }
+}
+
+if (!function_exists('settings_fields')) {
+    function settings_fields(string $optionGroup): void
+    {
+        wp_stub_record('settings_fields', compact('optionGroup'));
+
+        echo '<input type="hidden" name="option_page" value="' . esc_attr($optionGroup) . '" />';
+    }
+}
+
+if (!function_exists('do_settings_sections')) {
+    function do_settings_sections(string $page): void
+    {
+        wp_stub_record('do_settings_sections', compact('page'));
+    }
+}
+
+if (!function_exists('settings_errors')) {
+    function settings_errors(): void
+    {
+        wp_stub_record('settings_errors', []);
+    }
+}
+
+if (!function_exists('submit_button')) {
+    function submit_button(?string $text = null): void
+    {
+        wp_stub_record('submit_button', compact('text'));
+
+        echo '<button type="submit">' . esc_html($text ?? 'Save Changes') . '</button>';
+    }
+}
+
+if (!function_exists('rest_sanitize_boolean')) {
+    function rest_sanitize_boolean(mixed $value): bool
+    {
+        if (is_string($value)) {
+            return !in_array(strtolower($value), ['', '0', 'false', 'off', 'no'], true);
+        }
+
+        return (bool) $value;
     }
 }
 
