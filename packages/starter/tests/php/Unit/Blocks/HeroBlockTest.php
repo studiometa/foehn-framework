@@ -4,51 +4,84 @@ declare(strict_types=1);
 
 use App\Blocks\HeroBlock;
 use App\Data\HeroContext;
-use Studiometa\Foehn\Attributes\AsAcfBlock;
-use Studiometa\Foehn\Contracts\AcfBlockInterface;
+use Studiometa\Foehn\Attributes\AsBlock;
+use Studiometa\Foehn\Contracts\BlockInterface;
+use Studiometa\Foehn\Data\LinkData;
+use WP_Block;
 
 describe('HeroBlock', function () {
-    it('implements AcfBlockInterface', function () {
-        expect(is_subclass_of(HeroBlock::class, AcfBlockInterface::class))->toBeTrue();
+    it('implements BlockInterface', function () {
+        expect(is_subclass_of(HeroBlock::class, BlockInterface::class))->toBeTrue();
     });
 
-    it('has AsAcfBlock attribute with correct config', function () {
-        $ref = new ReflectionClass(HeroBlock::class);
-        $attrs = $ref->getAttributes(AsAcfBlock::class);
+    it('has AsBlock attribute with correct config', function () {
+        $attrs = new ReflectionClass(HeroBlock::class)->getAttributes(AsBlock::class);
 
         expect($attrs)->toHaveCount(1);
 
         $attr = $attrs[0]->newInstance();
 
-        expect($attr->name)->toBe('hero');
+        // Namespaced, unlike the ACF block it replaces: WordPress requires the
+        // slash for a block registered through register_block_type().
+        expect($attr->name)->toBe('theme/hero');
         expect($attr->title)->toBe('Hero Banner');
         expect($attr->category)->toBe('layout');
         expect($attr->icon)->toBe('cover-image');
         expect($attr->keywords)->toContain('hero', 'banner', 'header');
     });
 
-    it('fields() returns a FieldsBuilder with expected fields', function () {
-        $builder = HeroBlock::fields();
-        $config = $builder->build();
+    it('declares the controls the sidebar is derived from', function () {
+        $attributes = HeroBlock::attributes();
 
-        $fieldNames = array_column($config['fields'], 'name');
-
-        expect($fieldNames)->toContain('title');
-        expect($fieldNames)->toContain('subtitle');
-        expect($fieldNames)->toContain('background');
-        expect($fieldNames)->toContain('height');
+        expect(array_keys($attributes))->toContain('title', 'subtitle', 'backgroundId', 'height');
+        expect($attributes['height']['options'])->toHaveKeys(['auto', 'small', 'medium', 'full']);
+        expect($attributes['height']['default'])->toBe('medium');
+        expect($attributes['subtitle']['control'])->toBe('textarea');
+        expect($attributes['backgroundId']['control'])->toBe('image');
     });
 
     it('compose() returns a HeroContext DTO', function () {
-        $view = createFakeViewEngine();
-        $block = new HeroBlock($view);
+        $block = new HeroBlock(createFakeViewEngine());
 
-        $result = $block->compose(['id' => 'block_1'], ['title' => 'Hello', 'subtitle' => 'World', 'height' => 'full']);
+        $result = $block->compose(['title' => 'Hello', 'subtitle' => 'World', 'height' => 'full'], '', new WP_Block());
 
         expect($result)->toBeInstanceOf(HeroContext::class);
         expect($result->title)->toBe('Hello');
         expect($result->subtitle)->toBe('World');
         expect($result->height)->toBe('full');
+    });
+
+    it('composes a call to action from the three attributes that replace the link field', function () {
+        $block = new HeroBlock(createFakeViewEngine());
+
+        $result = $block->compose(
+            ['ctaUrl' => 'https://example.com', 'ctaLabel' => 'Read more', 'ctaTarget' => '_blank'],
+            '',
+            new WP_Block(),
+        );
+
+        expect($result->cta)->toBeInstanceOf(LinkData::class);
+        expect($result->cta->url)->toBe('https://example.com');
+        expect($result->cta->title)->toBe('Read more');
+        expect($result->cta->target)->toBe('_blank');
+    });
+
+    it('composes no call to action without a URL', function () {
+        $block = new HeroBlock(createFakeViewEngine());
+
+        // A label with nowhere to go is not a button, and the template checks
+        // for the object rather than for each of its parts.
+        $result = $block->compose(['ctaLabel' => 'Read more'], '', new WP_Block());
+
+        expect($result->cta)->toBeNull();
+    });
+
+    it('falls back to sensible defaults', function () {
+        $result = new HeroBlock(createFakeViewEngine())->compose([], '', new WP_Block());
+
+        expect($result->title)->toBe('');
+        expect($result->subtitle)->toBeNull();
+        expect($result->height)->toBe('medium');
     });
 
     it('render() delegates to ViewEngine', function () {
@@ -59,8 +92,7 @@ describe('HeroBlock', function () {
             return '<div>hero</div>';
         });
 
-        $block = new HeroBlock($view);
-        $output = $block->render(['title' => 'Test']);
+        $output = new HeroBlock($view)->render(['title' => 'Test'], '', new WP_Block());
 
         expect($output)->toBe('<div>hero</div>');
         expect($rendered)->toBe('blocks/hero');

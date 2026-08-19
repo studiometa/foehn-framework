@@ -113,25 +113,16 @@ $results->containsAll(
     array_keys(Kernel::get(DiscoveryRunner::class)->getDiscoveries()),
 );
 
-// The ACF discoveries ship in studiometa/foehn-acf, which requires the framework
-// rather than a tempest/* package. A package like that is only scanned when it
-// opts in, and the failure mode when it does not is silence — no error, no
-// blocks, no field groups.
-$results->containsAll(
-    'the ACF package discoveries are found',
-    [
-        Discovery\AcfBlockDiscovery::class,
-        Discovery\AcfFieldGroupDiscovery::class,
-        Discovery\AcfOptionsPageDiscovery::class,
-    ],
-    array_keys(Kernel::get(DiscoveryRunner::class)->getDiscoveries()),
-);
-
-// The package supplies its own AcfConfig through a config file, now that the
-// Kernel no longer registers one. A project's app/acf.config.php still wins.
-$results->true(
-    'the ACF package supplies its own config default',
-    Kernel::get(Studiometa\Foehn\Config\AcfConfig::class)->transformFields,
+// The starter ships no ACF at all now. Its only ACF block was the one thing
+// here that needed a paid plugin to run, so that path was never exercised: ACF
+// Pro is not installed in CI.
+$results->same(
+    'the starter needs no ACF package',
+    [],
+    array_values(array_filter(
+        array_keys(Kernel::get(DiscoveryRunner::class)->getDiscoveries()),
+        static fn(string $discovery): bool => str_contains($discovery, 'Acf'),
+    )),
 );
 
 // The framework's #[AsCliCommand] classes live in the same vendor package. WP-CLI
@@ -189,7 +180,7 @@ $results->containsAll(
 
 $results->containsAll(
     'starter blocks are registered',
-    ['theme/section', 'theme/callout'],
+    ['theme/section', 'theme/callout', 'theme/hero'],
     array_keys(WP_Block_Type_Registry::get_instance()->get_all_registered()),
 );
 
