@@ -53,6 +53,8 @@ function wp_stub_reset(): void
     $GLOBALS['wp_stub_post_terms'] = [];
     $GLOBALS['wp_stub_post_ancestors'] = [];
     $GLOBALS['wp_stub_adjacent_posts'] = [];
+    $GLOBALS['wp_stub_sitemap_urls'] = [];
+    unset($GLOBALS['wp_stub_sitemap_providers'], $GLOBALS['wp_stub_remote_status'], $GLOBALS['wp_stub_remote_error']);
 
     // Theme paths fall back to their stub defaults, so a test that points them at
     // a fixture directory cannot leak that into the next one.
@@ -1770,6 +1772,62 @@ $GLOBALS['wp_stub_object_taxonomies'] = [];
 $GLOBALS['wp_stub_post_terms'] = [];
 $GLOBALS['wp_stub_post_ancestors'] = [];
 $GLOBALS['wp_stub_adjacent_posts'] = [];
+
+// ──────────────────────────────────────────────
+// HTTP and sitemaps, for the page cache warmer
+// ──────────────────────────────────────────────
+
+if (!function_exists('wp_remote_get')) {
+    function wp_remote_get(string $url, array $args = []): array|WP_Error
+    {
+        wp_stub_record('wp_remote_get', compact('url', 'args'));
+
+        if ($GLOBALS['wp_stub_remote_error'] ?? false) {
+            return new WP_Error('http_request_failed', 'stubbed failure');
+        }
+
+        return ['response' => ['code' => $GLOBALS['wp_stub_remote_status'] ?? 200]];
+    }
+}
+
+if (!function_exists('wp_remote_retrieve_response_code')) {
+    function wp_remote_retrieve_response_code(mixed $response): int|string
+    {
+        return is_array($response) ? $response['response']['code'] ?? 0 : 0;
+    }
+}
+
+if (!function_exists('is_wp_error')) {
+    function is_wp_error(mixed $thing): bool
+    {
+        return $thing instanceof WP_Error;
+    }
+}
+
+if (!function_exists('wp_get_sitemap_providers')) {
+    function wp_get_sitemap_providers(): array
+    {
+        if (isset($GLOBALS['wp_stub_sitemap_providers'])) {
+            return $GLOBALS['wp_stub_sitemap_providers'];
+        }
+
+        return [
+            new class {
+                public function get_sitemap_type_data(): array
+                {
+                    return [['name' => 'post', 'pages' => 1]];
+                }
+
+                public function get_url_list(int $page, string $type = ''): array
+                {
+                    return $GLOBALS['wp_stub_sitemap_urls'] ?? [];
+                }
+            },
+        ];
+    }
+}
+
+$GLOBALS['wp_stub_sitemap_urls'] = [];
 
 $GLOBALS['wp_stub_as_has_scheduled'] = [];
 

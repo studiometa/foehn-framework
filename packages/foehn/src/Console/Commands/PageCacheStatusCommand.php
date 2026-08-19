@@ -102,28 +102,43 @@ final class PageCacheStatusCommand implements CliCommandInterface
         ));
 
         $root = SnippetPolicy::documentRoot();
+        $project = $root === null ? null : dirname($root);
 
-        foreach ([
-            'nginx' => [
-                $root === null ? null : dirname($root) . '/' . PageCacheConfigCommand::NGINX_PATH,
-                new NginxSnippet($this->config)->hash(),
-            ],
-            'apache' => [
-                $root === null ? null : $root . '/.htaccess',
-                new ApacheSnippet($this->config)->hash(),
-            ],
-        ] as $label => [$path, $hash]) {
-            if ($path === null || !is_file($path)) {
-                $this->cli->log("  · {$label}");
+        $this->reportSnippet(
+            'nginx',
+            new NginxSnippet($this->config)->hash(),
+            $project === null
+                ? []
+                : [
+                    $project . '/' . PageCacheConfigCommand::NGINX_PATH,
+                    // Where the starter keeps it, because ddev includes .ddev/nginx/*.conf
+                    // inside its server block.
+                    $project . '/.ddev/nginx/foehn-page-cache.conf',
+                ],
+        );
 
+        $this->reportSnippet(
+            'apache',
+            new ApacheSnippet($this->config)->hash(),
+            $root === null ? [] : [$root . '/.htaccess'],
+        );
+    }
+
+    /**
+     * Report one generated snippet, and whether it still matches the loaded config.
+     *
+     * @param list<string> $candidates
+     */
+    private function reportSnippet(string $label, string $hash, array $candidates): void
+    {
+        foreach ($candidates as $path) {
+            if (!is_file($path)) {
                 continue;
             }
 
             $contents = (string) file_get_contents($path);
 
             if (!str_contains($contents, 'Foehn')) {
-                $this->cli->log("  · {$label}");
-
                 continue;
             }
 
@@ -136,7 +151,11 @@ final class PageCacheStatusCommand implements CliCommandInterface
                 $path,
                 $current ? '' : ' — generated from a different config, re-run cache:config',
             ));
+
+            return;
         }
+
+        $this->cli->log("  · {$label}");
     }
 
     private function bytes(int $bytes): string
