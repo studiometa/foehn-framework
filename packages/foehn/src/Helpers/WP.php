@@ -47,6 +47,33 @@ final class WP
     }
 
     /**
+     * Run a callback with `$post` set to a given post, then put back what was there.
+     *
+     * Some WordPress functions read the global rather than taking a post —
+     * `get_adjacent_post()` is the one this exists for — so a caller that needs an
+     * answer about a post other than the current one has to lend it the global. Doing
+     * that here keeps the borrowing, and the restoring, in the auditable place.
+     *
+     * @template T
+     * @param callable(): T $callback
+     * @return T
+     */
+    public static function withPost(?WP_Post $post, callable $callback): mixed
+    {
+        // @mago-expect lint:no-global
+        $previous = $GLOBALS['post'] ?? null;
+        // @mago-expect lint:no-global
+        $GLOBALS['post'] = $post;
+
+        try {
+            return $callback();
+        } finally {
+            // @mago-expect lint:no-global
+            $GLOBALS['post'] = $previous;
+        }
+    }
+
+    /**
      * Get the current user.
      *
      * Returns null if no user is logged in (user ID is 0).
