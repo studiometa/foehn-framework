@@ -13,6 +13,9 @@ composer.lock
 # Environment
 .env
 
+# Generated secrets
+/config/wordpress-salts.config.php
+
 # DDEV
 .ddev/.ddev-docker-compose-*
 .ddev/db_snapshots/

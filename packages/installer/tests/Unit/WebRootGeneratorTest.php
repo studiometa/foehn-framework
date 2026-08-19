@@ -168,6 +168,126 @@ describe('WebRootGenerator', function () {
         expect($this->root . '/web/index.php')->toBeFile();
     });
 
+    it('generates the security keys on a first install', function () {
+        ($this->generate)();
+
+        $path = $this->root . '/config/wordpress-salts.config.php';
+
+        expect($path)->toBeFile();
+
+        $contents = file_get_contents($path);
+
+        foreach ([
+            'AUTH_KEY',
+            'SECURE_AUTH_KEY',
+            'LOGGED_IN_KEY',
+            'NONCE_KEY',
+            'AUTH_SALT',
+            'SECURE_AUTH_SALT',
+            'LOGGED_IN_SALT',
+            'NONCE_SALT',
+        ] as $name) {
+            expect($contents)->toContain("define('{$name}',");
+        }
+
+        // Every key random, and none of them each other.
+        preg_match_all("/define\('[A-Z_]+', '([^']+)'\);/", $contents, $matches);
+
+        expect($matches[1])->toHaveCount(8);
+        expect(array_unique($matches[1]))->toHaveCount(8);
+
+        foreach ($matches[1] as $value) {
+            expect(strlen($value))->toBeGreaterThanOrEqual(64);
+            expect($value)->not->toContain('change-me-');
+        }
+    });
+
+    it('writes the keys as parsable PHP', function () {
+        ($this->generate)();
+
+        $output = [];
+        $status = 0;
+        exec(
+            'php -l ' . escapeshellarg($this->root . '/config/wordpress-salts.config.php') . ' 2>&1',
+            $output,
+            $status,
+        );
+
+        expect($status)->toBe(0, implode("\n", $output));
+    });
+
+    it('keeps the keys readable by their owner alone', function () {
+        ($this->generate)();
+
+        $mode = fileperms($this->root . '/config/wordpress-salts.config.php') & 0o777;
+
+        expect(decoct($mode))->toBe('600');
+    });
+
+    it('never replaces keys that already exist', function () {
+        mkdir($this->root . '/config', 0o777, true);
+        file_put_contents($this->root . '/config/wordpress-salts.config.php', "<?php // mine\n");
+
+        ($this->generate)();
+
+        // Rewriting on every composer install would log every user out on every deploy.
+        expect(file_get_contents($this->root . '/config/wordpress-salts.config.php'))->toContain('// mine');
+    });
+
+    it('refuses to serve production without the keys', function () {
+        ($this->generate)();
+
+        $config = file_get_contents($this->root . '/web/wp-config.php');
+
+        expect($config)->toContain('wp foehn salts:generate');
+        expect($config)->toContain("!defined('WP_CLI')");
+        // The old build defined guessable keys from md5(__DIR__) instead of stopping.
+        expect($config)->not->toContain("'change-me-' . \$salt");
+    });
+
+    it('stops a production request that has no keys', function () {
+        // The generated wp-config.php is only ever executed by a booting WordPress,
+        // so the guard is run here for real rather than matched as a string.
+        mkdir($this->root . '/vendor', 0o777, true);
+        file_put_contents($this->root . '/vendor/autoload.php', "<?php\n");
+
+        ($this->generate)();
+
+        unlink($this->root . '/config/wordpress-salts.config.php');
+
+        $output = [];
+        $status = 0;
+        exec(
+            'WP_ENVIRONMENT_TYPE=production php ' . escapeshellarg($this->root . '/web/wp-config.php') . ' 2>&1',
+            $output,
+            $status,
+        );
+
+        expect($status)->not->toBe(0);
+        expect(implode("\n", $output))->toContain('wp foehn salts:generate');
+    });
+
+    it('serves a development request that has no keys', function () {
+        mkdir($this->root . '/vendor', 0o777, true);
+        file_put_contents($this->root . '/vendor/autoload.php', "<?php\n");
+
+        ($this->generate)();
+
+        unlink($this->root . '/config/wordpress-salts.config.php');
+
+        $output = [];
+        $status = 0;
+        exec(
+            'WP_ENVIRONMENT_TYPE=development php ' . escapeshellarg($this->root . '/web/wp-config.php') . ' 2>&1',
+            $output,
+            $status,
+        );
+
+        // It gets far enough to fail on WordPress itself being absent, which is proof
+        // it did not stop at the keys.
+        expect(implode("\n", $output))->not->toContain('wp foehn salts:generate');
+    });
+
     it('clears a discovery cache left by the previous release', function () {
         $cache = $this->root . '/web/wp-content/cache/foehn/discovery';
         mkdir($cache, 0o777, true);
