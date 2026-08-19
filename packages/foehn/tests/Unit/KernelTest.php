@@ -115,14 +115,6 @@ describe('Kernel Timber initialization', function () {
         expect($timberContextFilter)->not->toBeEmpty();
     });
 
-    it('registers AcfConfig in container with defaults', function () {
-        $kernel = Kernel::boot(dirname(__DIR__, 2) . '/src', []);
-
-        $config = Kernel::get(\Studiometa\Foehn\Config\AcfConfig::class);
-        expect($config)->toBeInstanceOf(\Studiometa\Foehn\Config\AcfConfig::class);
-        expect($config->transformFields)->toBeTrue();
-    });
-
     it('registers RestConfig in container with defaults', function () {
         $kernel = Kernel::boot(dirname(__DIR__, 2) . '/src', []);
 
@@ -222,7 +214,6 @@ describe('Kernel respects user config files', function () {
         foreach ([
             \Studiometa\Foehn\Config\FoehnConfig::class,
             \Studiometa\Foehn\Config\TimberConfig::class,
-            \Studiometa\Foehn\Config\AcfConfig::class,
             \Studiometa\Foehn\Config\RestConfig::class,
             \Studiometa\Foehn\Config\RenderApiConfig::class,
         ] as $class) {

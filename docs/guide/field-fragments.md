@@ -1,5 +1,9 @@
 # ACF Field Fragments
 
+::: tip
+Field fragments ship in `studiometa/foehn-acf`, the optional ACF package. See [ACF Blocks](/guide/acf-blocks#requirements).
+:::
+
 Field Fragments are reusable ACF field groups that can be shared across multiple blocks. By extending `FieldsBuilder`, you create self-contained field definitions that can be appended to any block's fields.
 
 ## Why Use Field Fragments?
@@ -17,12 +21,12 @@ Instead of duplicating these fields in every block, create a **Field Fragment** 
 
 Føhn provides common fragments out of the box:
 
-| Fragment                  | Description                                |
-| ------------------------- | ------------------------------------------ |
-| `ButtonLinkBuilder`       | Link with style and size options           |
-| `ResponsiveImageBuilder`  | Desktop/mobile image variants              |
-| `SpacingBuilder`          | Padding top/bottom controls                |
-| `BackgroundBuilder`       | Color, image, and overlay background       |
+| Fragment                 | Description                          |
+| ------------------------ | ------------------------------------ |
+| `ButtonLinkBuilder`      | Link with style and size options     |
+| `ResponsiveImageBuilder` | Desktop/mobile image variants        |
+| `SpacingBuilder`         | Padding top/bottom controls          |
+| `BackgroundBuilder`      | Color, image, and overlay background |
 
 ```php
 use Studiometa\Foehn\Acf\Fragments\ButtonLinkBuilder;
@@ -109,6 +113,7 @@ final readonly class HeroBlock implements AcfBlockInterface
 ```
 
 The fragment's fields are added inline, producing:
+
 - `content` (wysiwyg)
 - `cta_link` (link)
 - `cta_style` (select)

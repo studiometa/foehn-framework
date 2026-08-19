@@ -137,7 +137,7 @@ final class DiscoveryListCommand implements CliCommandInterface
 
         foreach ($locations as $location) {
             $report['locations'][] = [
-                'namespace' => $location->namespace,
+                'namespace' => $this->locations->label($location),
                 'path' => $location->path,
                 'origin' => $this->runner->wasRestoredFromCache($location) ? 'cached' : 'scanned',
             ];
@@ -148,7 +148,7 @@ final class DiscoveryListCommand implements CliCommandInterface
 
             foreach ($locations as $location) {
                 foreach ($discovery->getItems()->getForLocation($location) as $item) {
-                    $items[] = $this->describeItem($location, $item);
+                    $items[] = $this->describeItem($this->locations->label($location), $item);
                 }
             }
 
@@ -171,14 +171,14 @@ final class DiscoveryListCommand implements CliCommandInterface
      * the attribute. Reading it back generically is what keeps this command from
      * growing a branch per discovery — a third-party one renders for free.
      *
-     * @param mixed $item
+     * @param string $location The location's unique name, from DiscoveryLocations::label()
      * @return array{location: string, attribute: ?string, values: array<string, string>}
      */
-    private function describeItem(DiscoveryLocation $location, mixed $item): array
+    private function describeItem(string $location, mixed $item): array
     {
         if (!is_array($item)) {
             return [
-                'location' => $location->namespace,
+                'location' => $location,
                 'attribute' => null,
                 'values' => ['' => self::stringify($item)],
             ];
@@ -197,7 +197,7 @@ final class DiscoveryListCommand implements CliCommandInterface
             $values[(string) $key] = self::stringify($value);
         }
 
-        return ['location' => $location->namespace, 'attribute' => $attribute, 'values' => $values];
+        return ['location' => $location, 'attribute' => $attribute, 'values' => $values];
     }
 
     /**

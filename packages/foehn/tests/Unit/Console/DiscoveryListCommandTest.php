@@ -10,6 +10,7 @@ use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use Tempest\Discovery\DiscoveryCache;
 use Tempest\Discovery\DiscoveryCacheStrategy;
 use Tests\Fixtures\App\CacheableHooks;
+use Tests\Fixtures\ScalarItems\ScalarItemDiscovery;
 
 /**
  * Everything the command wrote, as one string.
@@ -156,6 +157,24 @@ describe('discovery:list', function () {
 
         expect(wp_stub_get_calls('wp_cli_error'))->toHaveCount(1);
         expect(listedOutput())->toBe('');
+    });
+
+    it('describes an item that is not the array shape Foehn uses', function () {
+        // DiscoveryItems takes any value, so a third-party discovery may store a
+        // string. The renderer has to print it rather than fatal on it.
+        $locations = new DiscoveryLocations(dirname(__DIR__, 2) . '/Fixtures/ScalarItems');
+        $pool = new ArrayAdapter();
+
+        $runner = new DiscoveryRunner(
+            bootTestContainer(),
+            new DiscoveryCache(DiscoveryCacheStrategy::NONE, $pool),
+            $pool,
+            $locations,
+        );
+
+        (new DiscoveryListCommand(new WpCli(), $runner, $locations))([], ['discovery' => 'ScalarItem']);
+
+        expect(listedOutput())->toContain(ScalarItemDiscovery::class);
     });
 
     it('registers nothing', function () {

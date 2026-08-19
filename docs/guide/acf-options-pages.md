@@ -4,12 +4,16 @@ Føhn provides `#[AsAcfOptionsPage]` for creating ACF options pages with type-sa
 
 ## Requirements
 
-- [ACF Pro](https://www.advancedcustomfields.com/pro/) installed and active
-- `stoutlogic/acf-builder` package
+ACF is an optional package. Custom fields do not need it: [`#[AsPostMeta]`](/api/as-post-meta) registers a meta key with a REST schema, which is what puts a field in the block editor and makes it bindable. ACF is the better answer when the editing UI matters — repeaters, flexible content, conditional logic, media pickers.
 
 ```bash
-composer require stoutlogic/acf-builder
+composer require studiometa/foehn-acf
 ```
+
+- [ACF Pro](https://www.advancedcustomfields.com/pro/) installed and active
+- `studiometa/foehn-acf`, which brings `stoutlogic/acf-builder` with it
+
+Nothing registers when ACF is absent: each discovery guards on the function it needs. The classes keep their `Studiometa\Foehn\` namespaces, so a project upgrading from 0.4 changes one Composer requirement and no imports.
 
 ## Basic Options Page
 

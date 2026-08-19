@@ -4,17 +4,14 @@ declare(strict_types=1);
 
 use Studiometa\Foehn\Console\ClassFileGenerator;
 use Studiometa\Foehn\Console\CliCommandInterface;
-use Studiometa\Foehn\Console\Commands\MakeAcfBlockCommand;
 use Studiometa\Foehn\Console\Commands\MakeBlockCommand;
 use Studiometa\Foehn\Console\Commands\MakeContextCommand;
 use Studiometa\Foehn\Console\Commands\MakeContextProviderCommand;
 use Studiometa\Foehn\Console\Commands\MakeControllerCommand;
-use Studiometa\Foehn\Console\Commands\MakeFieldGroupCommand;
 use Studiometa\Foehn\Console\Commands\MakeHooksCommand;
 use Studiometa\Foehn\Console\Commands\MakeImageSizeCommand;
 use Studiometa\Foehn\Console\Commands\MakeMenuCommand;
 use Studiometa\Foehn\Console\Commands\MakeModelCommand;
-use Studiometa\Foehn\Console\Commands\MakeOptionsPageCommand;
 use Studiometa\Foehn\Console\Commands\MakePatternCommand;
 use Studiometa\Foehn\Console\Commands\MakePostTypeCommand;
 use Studiometa\Foehn\Console\Commands\MakeShortcodeCommand;
@@ -46,7 +43,6 @@ function makeCommandContracts(): array
             'path' => 'Taxonomies/FlavourTerm',
         ],
         'make:block' => ['class' => MakeBlockCommand::class, 'args' => ['banner'], 'path' => 'Blocks/BannerBlock'],
-        'make:acf-block' => ['class' => MakeAcfBlockCommand::class, 'args' => ['quote'], 'path' => 'Blocks/QuoteBlock'],
         'make:pattern' => [
             'class' => MakePatternCommand::class,
             'args' => ['promo'],
@@ -63,11 +59,6 @@ function makeCommandContracts(): array
             'args' => ['listing'],
             'path' => 'Controllers/ListingController',
         ],
-        'make:field-group' => [
-            'class' => MakeFieldGroupCommand::class,
-            'args' => ['MetaFields'],
-            'path' => 'Fields/MetaFields',
-        ],
         'make:hooks' => ['class' => MakeHooksCommand::class, 'args' => ['Cleanup'], 'path' => 'Hooks/CleanupHooks'],
         'make:image-size' => [
             'class' => MakeImageSizeCommand::class,
@@ -76,11 +67,6 @@ function makeCommandContracts(): array
         ],
         'make:menu' => ['class' => MakeMenuCommand::class, 'args' => ['SocialMenu'], 'path' => 'Menus/SocialMenu'],
         'make:model' => ['class' => MakeModelCommand::class, 'args' => ['Gizmo'], 'path' => 'Models/Gizmo'],
-        'make:options-page' => [
-            'class' => MakeOptionsPageCommand::class,
-            'args' => ['site-options'],
-            'path' => 'Fields/Options/SiteOptions',
-        ],
         'make:shortcode' => [
             'class' => MakeShortcodeCommand::class,
             'args' => ['embed'],
@@ -107,85 +93,7 @@ afterEach(function () {
 });
 
 describe('every make: command', function () {
-    foreach (makeCommandContracts() as $label => $case) {
-        $class = $case['class'];
-        $args = $case['args'];
-        $relative = $case['path'] . '.php';
-
-        it("{$label} generates its file", function () use ($class, $args, $relative) {
-            ($this->make)($class)($args, []);
-
-            $path = "{$this->appPath}/{$relative}";
-
-            expect($path)->toBeFile();
-            expect(file_get_contents($path))->toContain('declare(strict_types=1);');
-            expect(wp_stub_get_calls('wp_cli_success'))->toHaveCount(1);
-            expect(wp_stub_get_calls('wp_cli_error'))->toBeEmpty();
-        });
-
-        it("{$label} generates valid PHP", function () use ($class, $args, $relative) {
-            ($this->make)($class)($args, []);
-
-            exec('php -l ' . escapeshellarg("{$this->appPath}/{$relative}") . ' 2>&1', $output, $status);
-
-            expect($status)->toBe(0, implode("\n", $output));
-        });
-
-        it("{$label} leaves no placeholder behind", function () use ($class, $args, $relative) {
-            ($this->make)($class)($args, []);
-
-            $contents = (string) file_get_contents("{$this->appPath}/{$relative}");
-
-            expect($contents)->not->toContain('dummy');
-            expect($contents)->not->toContain('Dummy');
-        });
-
-        it("{$label} writes nothing on --dry-run but previews the file", function () use ($class, $args, $relative) {
-            ($this->make)($class)($args, ['dry-run' => true]);
-
-            expect(file_exists("{$this->appPath}/{$relative}"))->toBeFalse();
-            expect(wp_stub_get_calls('wp_cli_success'))->toBeEmpty();
-
-            $logged = implode("\n", array_column(array_column(wp_stub_get_calls('wp_cli_log'), 'args'), 'message'));
-
-            expect($logged)->toContain('Would create:');
-        });
-
-        it("{$label} refuses to overwrite without --force", function () use ($class, $args, $relative) {
-            $path = "{$this->appPath}/{$relative}";
-
-            ($this->make)($class)($args, []);
-            file_put_contents($path, '<?php // hand-edited');
-            wp_stub_reset();
-
-            ($this->make)($class)($args, []);
-
-            expect(file_get_contents($path))->toBe('<?php // hand-edited');
-            expect(wp_stub_get_calls('wp_cli_error'))->toHaveCount(1);
-            expect(wp_stub_get_calls('wp_cli_success'))->toBeEmpty();
-        });
-
-        it("{$label} overwrites with --force", function () use ($class, $args, $relative) {
-            $path = "{$this->appPath}/{$relative}";
-
-            ($this->make)($class)($args, []);
-            file_put_contents($path, '<?php // hand-edited');
-
-            ($this->make)($class)($args, ['force' => true]);
-
-            expect(file_get_contents($path))->toContain('declare(strict_types=1);');
-        });
-
-        it("{$label} reports a missing name instead of generating", function () use ($class, $case) {
-            ($this->make)($class)([], []);
-
-            expect(wp_stub_get_calls('wp_cli_error'))->toHaveCount(1);
-
-            $directory = dirname("{$this->appPath}/{$case['path']}");
-
-            expect(is_dir($directory) ? (glob($directory . '/*.php') ?: []) : [])->toBeEmpty();
-        });
-    }
+    makeCommandContractSuite(makeCommandContracts());
 
     it('covers every make: command Foehn ships', function () {
         $shipped = array_map(

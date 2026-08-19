@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use Studiometa\Foehn\Config\AcfConfig;
 use Studiometa\Foehn\Config\ConfigLoader;
+use Studiometa\Foehn\Config\RestConfig;
 use Studiometa\Foehn\Config\TimberConfig;
 use Tempest\Discovery\DiscoveryLocation;
 
@@ -35,7 +35,7 @@ describe('ConfigLoader', function () {
 
         $this->loader->load([$this->location]);
 
-        expect($this->container->get(AcfConfig::class)->transformFields)->toBeFalse();
+        expect($this->container->get(RestConfig::class)->defaultCapability)->toBe('manage_options');
         // The production file exists but does not apply, so the plain one stands.
         expect($this->container->get(TimberConfig::class)->templatesDir)->toBe(['app-views']);
     });

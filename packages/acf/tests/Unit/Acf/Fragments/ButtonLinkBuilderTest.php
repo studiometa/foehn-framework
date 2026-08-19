@@ -52,9 +52,7 @@ describe('ButtonLinkBuilder', function () {
     });
 
     it('accepts custom styles', function () {
-        $builder = new ButtonLinkBuilder(
-            styles: ['btn-primary' => 'Primary', 'btn-ghost' => 'Ghost'],
-        );
+        $builder = new ButtonLinkBuilder(styles: ['btn-primary' => 'Primary', 'btn-ghost' => 'Ghost']);
         $fields = $builder->build();
 
         $styleField = findFieldByName($fields, 'style');
@@ -62,9 +60,7 @@ describe('ButtonLinkBuilder', function () {
     });
 
     it('accepts custom sizes', function () {
-        $builder = new ButtonLinkBuilder(
-            sizes: ['sm' => 'Small', 'lg' => 'Large'],
-        );
+        $builder = new ButtonLinkBuilder(sizes: ['sm' => 'Small', 'lg' => 'Large']);
         $fields = $builder->build();
 
         $sizeField = findFieldByName($fields, 'size');

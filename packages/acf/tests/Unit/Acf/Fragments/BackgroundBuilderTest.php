@@ -56,9 +56,7 @@ describe('BackgroundBuilder', function () {
     });
 
     it('accepts custom types', function () {
-        $builder = new BackgroundBuilder(
-            types: ['none' => 'None', 'image' => 'Image'],
-        );
+        $builder = new BackgroundBuilder(types: ['none' => 'None', 'image' => 'Image']);
         $fields = $builder->build();
 
         $typeField = findBgFieldByName($fields, 'type');

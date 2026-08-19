@@ -55,9 +55,7 @@ describe('SpacingBuilder', function () {
     });
 
     it('accepts custom sizes', function () {
-        $builder = new SpacingBuilder(
-            sizes: ['xs' => 'Extra Small', 'sm' => 'Small', 'lg' => 'Large'],
-        );
+        $builder = new SpacingBuilder(sizes: ['xs' => 'Extra Small', 'sm' => 'Small', 'lg' => 'Large']);
         $fields = $builder->build();
 
         $topField = findSpacingFieldByName($fields, 'top');
@@ -76,10 +74,7 @@ describe('SpacingBuilder', function () {
     });
 
     it('accepts custom labels', function () {
-        $builder = new SpacingBuilder(
-            topLabel: 'Margin Top',
-            bottomLabel: 'Margin Bottom',
-        );
+        $builder = new SpacingBuilder(topLabel: 'Margin Top', bottomLabel: 'Margin Bottom');
         $fields = $builder->build();
 
         $topField = findSpacingFieldByName($fields, 'top');

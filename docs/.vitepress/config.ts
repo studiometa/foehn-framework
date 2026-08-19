@@ -64,18 +64,18 @@ export default defineConfig({
         {
           text: "Blocks",
           items: [
-            { text: "ACF Blocks", link: "/guide/acf-blocks" },
             { text: "Arrayable DTOs", link: "/guide/arrayable-dtos" },
-            { text: "Field Fragments", link: "/guide/field-fragments" },
             { text: "Native Blocks", link: "/guide/native-blocks" },
             { text: "Block Editor", link: "/guide/block-editor" },
             { text: "Block Patterns", link: "/guide/block-patterns" },
           ],
         },
         {
-          text: "ACF",
+          text: "ACF (optional package)",
           items: [
+            { text: "ACF Blocks", link: "/guide/acf-blocks" },
             { text: "ACF Options Pages", link: "/guide/acf-options-pages" },
+            { text: "Field Fragments", link: "/guide/field-fragments" },
           ],
         },
         {

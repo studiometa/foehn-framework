@@ -93,9 +93,6 @@ $results->containsAll(
 $results->containsAll(
     'every framework discovery is found by scanning',
     [
-        Discovery\AcfBlockDiscovery::class,
-        Discovery\AcfFieldGroupDiscovery::class,
-        Discovery\AcfOptionsPageDiscovery::class,
         Discovery\BlockDiscovery::class,
         Discovery\BlockPatternDiscovery::class,
         Discovery\CliCommandDiscovery::class,
@@ -114,6 +111,27 @@ $results->containsAll(
         Discovery\TwigExtensionDiscovery::class,
     ],
     array_keys(Kernel::get(DiscoveryRunner::class)->getDiscoveries()),
+);
+
+// The ACF discoveries ship in studiometa/foehn-acf, which requires the framework
+// rather than a tempest/* package. A package like that is only scanned when it
+// opts in, and the failure mode when it does not is silence — no error, no
+// blocks, no field groups.
+$results->containsAll(
+    'the ACF package discoveries are found',
+    [
+        Discovery\AcfBlockDiscovery::class,
+        Discovery\AcfFieldGroupDiscovery::class,
+        Discovery\AcfOptionsPageDiscovery::class,
+    ],
+    array_keys(Kernel::get(DiscoveryRunner::class)->getDiscoveries()),
+);
+
+// The package supplies its own AcfConfig through a config file, now that the
+// Kernel no longer registers one. A project's app/acf.config.php still wins.
+$results->true(
+    'the ACF package supplies its own config default',
+    Kernel::get(Studiometa\Foehn\Config\AcfConfig::class)->transformFields,
 );
 
 // The framework's #[AsCliCommand] classes live in the same vendor package. WP-CLI

@@ -5,9 +5,6 @@ declare(strict_types=1);
 namespace Tests\Unit\Console;
 
 use ReflectionClass;
-use Studiometa\Foehn\Attributes\AsAcfBlock;
-use Studiometa\Foehn\Attributes\AsAcfFieldGroup;
-use Studiometa\Foehn\Attributes\AsAcfOptionsPage;
 use Studiometa\Foehn\Attributes\AsAction;
 use Studiometa\Foehn\Attributes\AsBlock;
 use Studiometa\Foehn\Attributes\AsBlockPattern;
@@ -19,22 +16,18 @@ use Studiometa\Foehn\Attributes\AsPostType;
 use Studiometa\Foehn\Attributes\AsShortcode;
 use Studiometa\Foehn\Attributes\AsTaxonomy;
 use Studiometa\Foehn\Attributes\AsTemplateController;
-use Studiometa\Foehn\Console\Stubs\AcfBlockStub;
 use Studiometa\Foehn\Console\Stubs\BlockPatternStub;
 use Studiometa\Foehn\Console\Stubs\BlockStub;
 use Studiometa\Foehn\Console\Stubs\ContextProviderStub;
-use Studiometa\Foehn\Console\Stubs\FieldGroupStub;
 use Studiometa\Foehn\Console\Stubs\HooksStub;
 use Studiometa\Foehn\Console\Stubs\ImageSizeStub;
 use Studiometa\Foehn\Console\Stubs\InteractiveBlockStub;
 use Studiometa\Foehn\Console\Stubs\MenuStub;
 use Studiometa\Foehn\Console\Stubs\ModelStub;
-use Studiometa\Foehn\Console\Stubs\OptionsPageStub;
 use Studiometa\Foehn\Console\Stubs\PostTypeStub;
 use Studiometa\Foehn\Console\Stubs\ShortcodeStub;
 use Studiometa\Foehn\Console\Stubs\TaxonomyStub;
 use Studiometa\Foehn\Console\Stubs\TemplateControllerStub;
-use Studiometa\Foehn\Contracts\AcfBlockInterface;
 use Studiometa\Foehn\Contracts\BlockInterface;
 use Studiometa\Foehn\Contracts\BlockPatternInterface;
 use Studiometa\Foehn\Contracts\ContextProviderInterface;
@@ -93,17 +86,6 @@ describe('Stubs', function (): void {
 
         $attribute = $reflection->getAttributes(AsBlock::class)[0]->newInstance();
         expect($attribute->interactivity)->toBeTrue();
-    });
-
-    it('AcfBlockStub has correct attributes and implements AcfBlockInterface', function (): void {
-        $reflection = new ReflectionClass(AcfBlockStub::class);
-
-        expect($reflection->getAttributes(SkipDiscovery::class))
-            ->toHaveCount(1)
-            ->and($reflection->getAttributes(AsAcfBlock::class))
-            ->toHaveCount(1)
-            ->and($reflection->implementsInterface(AcfBlockInterface::class))
-            ->toBeTrue();
     });
 
     it('BlockPatternStub has correct attributes and implements BlockPatternInterface', function (): void {
@@ -170,31 +152,6 @@ describe('Stubs', function (): void {
 
         expect($reflection->getAttributes(SkipDiscovery::class))->toHaveCount(1);
         expect($reflection->getParentClass()->getName())->toBe('Timber\\Post');
-    });
-
-    it('FieldGroupStub has correct attributes', function (): void {
-        $reflection = new ReflectionClass(FieldGroupStub::class);
-
-        expect($reflection->getAttributes(SkipDiscovery::class))
-            ->toHaveCount(1)
-            ->and($reflection->getAttributes(AsAcfFieldGroup::class))
-            ->toHaveCount(1);
-
-        $attribute = $reflection->getAttributes(AsAcfFieldGroup::class)[0]->newInstance();
-        expect($attribute->name)->toBe('dummy_field_group');
-        expect($attribute->title)->toBe('Dummy Field Group');
-    });
-
-    it('OptionsPageStub has correct attributes', function (): void {
-        $reflection = new ReflectionClass(OptionsPageStub::class);
-
-        expect($reflection->getAttributes(SkipDiscovery::class))
-            ->toHaveCount(1)
-            ->and($reflection->getAttributes(AsAcfOptionsPage::class))
-            ->toHaveCount(1);
-
-        $attribute = $reflection->getAttributes(AsAcfOptionsPage::class)[0]->newInstance();
-        expect($attribute->menuSlug)->toBe('dummy-options');
     });
 
     it('MenuStub has correct attributes', function (): void {

@@ -95,6 +95,11 @@ jobs:
       - name: Run tests with coverage
         run: composer test:coverage
 
+      # The ACF integration is its own package now, with its own suite. Measured
+      # too: its lines are in the same diffs as the framework's.
+      - name: Run the ACF test suite with coverage
+        run: composer test:coverage:acf
+
       # The starter's own suite covers the example theme and has to stay green too.
       - name: Run the starter test suite
         run: composer test:starter
@@ -110,7 +115,7 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage/clover.xml,./coverage/clover-installer.xml
+          files: ./coverage/clover.xml,./coverage/clover-acf.xml,./coverage/clover-installer.xml
           fail_ci_if_error: false
           flags: unittests
           name: codecov-foehn
@@ -238,12 +243,17 @@ jobs:
       # ddev mounts packages/starter alone, so Composer inside the container cannot
       # read path repositories pointing outside it. The install runs here instead,
       # and the container picks up the vendor directory that comes out of it.
+      #
+      # The framework's version is pinned rather than guessed: a pull request is
+      # checked out detached, so Composer would name it dev-<sha>, and
+      # studiometa/foehn-acf requires ^0.5.
       - name: Point the starter at this checkout of the packages
         working-directory: packages/starter
         run: |
-          composer config repositories.foehn '{"type":"path","url":"../foehn","options":{"symlink":false}}'
+          composer config repositories.foehn '{"type":"path","url":"../foehn","options":{"symlink":false,"versions":{"studiometa/foehn":"0.5.x-dev"}}}'
+          composer config repositories.foehn-acf '{"type":"path","url":"../acf","options":{"symlink":false}}'
           composer config repositories.foehn-installer '{"type":"path","url":"../installer","options":{"symlink":false}}'
-          composer require --no-update studiometa/foehn:@dev studiometa/foehn-installer:@dev
+          composer require --no-update studiometa/foehn:@dev studiometa/foehn-acf:@dev studiometa/foehn-installer:@dev
 
       - name: Install starter dependencies
         working-directory: packages/starter
