@@ -86,3 +86,17 @@ $listing" ;;
 esac
 
 printf '✓ wp foehn discovery:list reports what was found, and from where\n'
+
+# A rewrite rule only exists once WordPress has flushed the rules, which is the
+# whole difficulty the flush hash exists for. Nothing about that is visible to
+# the unit suite: it asserts what was registered, not what a URL answers.
+health="$(curl -sk -w '\n%{http_code}' "$url/_health")"
+
+case "$health" in
+*'{"status":"ok"}'*200) ;;
+*) fail "GET /_health did not reach the #[AsRewriteRule] handler
+$health" ;;
+esac
+
+printf '✓ a rewrite rule answers its URL\n'
+

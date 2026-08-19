@@ -23,6 +23,7 @@ use Studiometa\Foehn\Console\Commands\MakePatternCommand;
 use Studiometa\Foehn\Console\Commands\MakePostTypeCommand;
 use Studiometa\Foehn\Console\Commands\MakeShortcodeCommand;
 use Studiometa\Foehn\Console\Commands\MakeTaxonomyCommand;
+use Studiometa\Foehn\Console\Commands\RewriteFlushCommand;
 
 describe('Commands', function (): void {
     $commands = [
@@ -45,6 +46,7 @@ describe('Commands', function (): void {
         'DiscoveryGenerateCommand' => ['class' => DiscoveryGenerateCommand::class, 'name' => 'discovery:generate'],
         'DiscoveryStatusCommand' => ['class' => DiscoveryStatusCommand::class, 'name' => 'discovery:status'],
         'DiscoveryListCommand' => ['class' => DiscoveryListCommand::class, 'name' => 'discovery:list'],
+        'RewriteFlushCommand' => ['class' => RewriteFlushCommand::class, 'name' => 'rewrite:flush'],
     ];
 
     foreach ($commands as $label => $data) {

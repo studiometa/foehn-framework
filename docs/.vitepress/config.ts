@@ -82,6 +82,7 @@ export default defineConfig({
           text: "Advanced",
           items: [
             { text: "REST API", link: "/guide/rest-api" },
+            { text: "Rewrite Rules", link: "/guide/rewrite-rules" },
             { text: "Render API", link: "/guide/render-api" },
             { text: "Caching", link: "/guide/caching" },
             { text: "Shortcodes", link: "/guide/shortcodes" },
@@ -125,6 +126,7 @@ export default defineConfig({
             { text: "#[AsBlockCategory]", link: "/api/as-block-category" },
             { text: "#[AsAcfOptionsPage]", link: "/api/as-acf-options-page" },
             { text: "#[AsRestRoute]", link: "/api/as-rest-route" },
+            { text: "#[AsRewriteRule]", link: "/api/as-rewrite-rule" },
             { text: "#[AsShortcode]", link: "/api/as-shortcode" },
             { text: "#[AsCliCommand]", link: "/api/as-cli-command" },
             { text: "#[AsImageSize]", link: "/api/as-image-size" },

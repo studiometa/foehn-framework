@@ -401,6 +401,32 @@ if (!function_exists('register_meta')) {
 }
 
 // ──────────────────────────────────────────────
+// Rewrite rules
+// ──────────────────────────────────────────────
+
+if (!class_exists('WP')) {
+    class WP
+    {
+        /** @var array<string, mixed> */
+        public array $query_vars = [];
+    }
+}
+
+if (!function_exists('add_rewrite_rule')) {
+    function add_rewrite_rule(string $regex, string|array $query, string $after = 'bottom'): void
+    {
+        wp_stub_record('add_rewrite_rule', compact('regex', 'query', 'after'));
+    }
+}
+
+if (!function_exists('flush_rewrite_rules')) {
+    function flush_rewrite_rules(bool $hard = true): void
+    {
+        wp_stub_record('flush_rewrite_rules', compact('hard'));
+    }
+}
+
+// ──────────────────────────────────────────────
 // Menus
 // ──────────────────────────────────────────────
 

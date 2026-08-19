@@ -95,6 +95,15 @@ wp foehn discovery:status
 
 The cache also fills itself on the first request that finds it missing, and `composer install` clears it. See [Discovery Cache](/guide/discovery-cache) for more details on caching, and [Listing what was found](/guide/discovery-cache#listing-what-was-found) for `discovery:list`.
 
+### Rewrite Rules
+
+```bash
+# Rebuild the rewrite rules, and forget the hash Foehn compares them against
+wp foehn rewrite:flush
+```
+
+Foehn flushes on its own when the set of `#[AsRewriteRule]` declarations changes. This command is for when something else left the rules stale. See [Rewrite Rules](/guide/rewrite-rules#flushing-which-is-the-whole-difficulty).
+
 ### Security Keys
 
 WordPress signs authentication cookies and nonces with eight keys. They live in the environment, so a project keeps them wherever it keeps its other secrets. `composer install` fills them into `.env` on a first install, and the generated `wp-config.php` refuses to serve a production request without them.
