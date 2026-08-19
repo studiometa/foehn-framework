@@ -6,6 +6,7 @@ namespace Studiometa\Foehn\Discovery;
 
 use InvalidArgumentException;
 use Studiometa\Foehn\Attributes\AsContextProvider;
+use Studiometa\Foehn\Attributes\AsDiscovery;
 use Studiometa\Foehn\Contracts\ContextProviderInterface;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
 use Studiometa\Foehn\Views\ContextProviderRegistry;
@@ -19,6 +20,7 @@ use function Tempest\Container\get;
  * Discovers classes marked with #[AsContextProvider] attribute
  * and registers them with the ContextProviderRegistry.
  */
+#[AsDiscovery(phase: DiscoveryPhase::Late)]
 final class ContextProviderDiscovery implements Discovery
 {
     use IsWpDiscovery;

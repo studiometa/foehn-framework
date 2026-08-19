@@ -6,6 +6,7 @@ namespace Studiometa\Foehn\Discovery;
 
 use InvalidArgumentException;
 use Studiometa\Foehn\Attributes\AsAcfFieldGroup;
+use Studiometa\Foehn\Attributes\AsDiscovery;
 use Studiometa\Foehn\Contracts\AcfFieldGroupInterface;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
 use Tempest\Discovery\Discovery;
@@ -16,6 +17,7 @@ use Tempest\Reflection\ClassReflector;
  * Discovers classes marked with #[AsAcfFieldGroup] attribute
  * and registers them as ACF field groups.
  */
+#[AsDiscovery(phase: DiscoveryPhase::Main)]
 final class AcfFieldGroupDiscovery implements Discovery
 {
     use IsWpDiscovery;

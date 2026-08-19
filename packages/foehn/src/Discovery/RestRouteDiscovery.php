@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Studiometa\Foehn\Discovery;
 
 use ReflectionMethod;
+use Studiometa\Foehn\Attributes\AsDiscovery;
 use Studiometa\Foehn\Attributes\AsRestRoute;
 use Studiometa\Foehn\Config\RestConfig;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
@@ -19,6 +20,7 @@ use function Tempest\Container\get;
  * Discovers methods marked with #[AsRestRoute] attribute
  * and registers them as WordPress REST API endpoints.
  */
+#[AsDiscovery(phase: DiscoveryPhase::Late)]
 final class RestRouteDiscovery implements Discovery
 {
     use IsWpDiscovery;

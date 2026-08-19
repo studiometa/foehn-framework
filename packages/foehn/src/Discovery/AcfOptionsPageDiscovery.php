@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Studiometa\Foehn\Discovery;
 
 use Studiometa\Foehn\Attributes\AsAcfOptionsPage;
+use Studiometa\Foehn\Attributes\AsDiscovery;
 use Studiometa\Foehn\Contracts\AcfOptionsPageInterface;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
 use Tempest\Discovery\Discovery;
@@ -15,6 +16,7 @@ use Tempest\Reflection\ClassReflector;
  * Discovers classes marked with #[AsAcfOptionsPage] attribute
  * and registers them as ACF Options Pages.
  */
+#[AsDiscovery(phase: DiscoveryPhase::Main)]
 final class AcfOptionsPageDiscovery implements Discovery
 {
     use IsWpDiscovery;

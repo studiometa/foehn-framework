@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Discovery;
 
+use Studiometa\Foehn\Attributes\AsDiscovery;
 use Studiometa\Foehn\Attributes\AsMenu;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
 use Tempest\Discovery\Discovery;
@@ -15,6 +16,7 @@ use Timber\Timber;
  * Discovers classes marked with #[AsMenu] attribute
  * and registers them as WordPress navigation menu locations.
  */
+#[AsDiscovery(phase: DiscoveryPhase::Main)]
 final class MenuDiscovery implements Discovery
 {
     use IsWpDiscovery;

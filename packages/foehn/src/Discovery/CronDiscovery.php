@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Studiometa\Foehn\Discovery;
 
 use Studiometa\Foehn\Attributes\AsCron;
+use Studiometa\Foehn\Attributes\AsDiscovery;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
 use Studiometa\Foehn\Jobs\HookNameResolver;
 use Tempest\Discovery\Discovery;
@@ -17,6 +18,7 @@ use function Tempest\Container\get;
  * Discovers classes marked with #[AsCron] attribute
  * and registers them as recurring Action Scheduler actions.
  */
+#[AsDiscovery(phase: DiscoveryPhase::Main)]
 class CronDiscovery implements Discovery
 {
     use IsWpDiscovery;

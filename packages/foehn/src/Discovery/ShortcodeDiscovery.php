@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Studiometa\Foehn\Discovery;
 
 use ReflectionMethod;
+use Studiometa\Foehn\Attributes\AsDiscovery;
 use Studiometa\Foehn\Attributes\AsShortcode;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
 use Tempest\Discovery\Discovery;
@@ -17,6 +18,7 @@ use function Tempest\Container\get;
  * Discovers methods marked with #[AsShortcode] attribute
  * and registers them as WordPress shortcodes.
  */
+#[AsDiscovery(phase: DiscoveryPhase::Early)]
 final class ShortcodeDiscovery implements Discovery
 {
     use IsWpDiscovery;
