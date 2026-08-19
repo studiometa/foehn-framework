@@ -6,15 +6,17 @@ Everything else the framework generates is disposable: `web/wp/` comes from Comp
 
 Nothing in the monorepo touches `upload_dir`. This has been recorded as a gap twice: [`editor_layer_spec.md`](editor_layer_spec.md) §9 lists it as phase 4, and [`research_responsive_images.md`](research_responsive_images.md) notes that offloaded uploads break local variant generation and need detecting.
 
-| Property             | Decision                                                                                  |
-| -------------------- | ----------------------------------------------------------------------------------------- |
-| Model                | Copy after upload, not a stream wrapper. See §2.                                          |
-| Dependency           | `async-aws/s3` (MIT, PHP ^8.2). See §3.                                                   |
-| Where the code lives | A new `studiometa/foehn-uploads`, requiring `studiometa/foehn`.                           |
-| Namespace            | `Studiometa\Foehn\Uploads\` — a sub-namespace this package owns alone. See §4.            |
-| New attributes       | None. This is configuration, not discovery.                                               |
-| Escape hatch         | `humanmade/s3-uploads` stays the answer for sites that need filesystem semantics. See §8. |
-| Status               | **Undecided.** §11 lists what needs answering before this is worth approving.             |
+> **Revised 2026-08-20.** The first draft of this spec proposed building `studiometa/foehn-uploads` on `async-aws/s3`, at 6–8 days. That recommendation is withdrawn. Checking what the installer already generates showed that the plugin's only documented prerequisite is already met and most of the claimed ergonomic advantages are already available for free. §2 is the current recommendation; §5 keeps the build-it analysis for the day something makes it necessary.
+
+| Property                             | Decision                                                                                                            |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| Approach                             | Integrate [`humanmade/s3-uploads`](https://github.com/humanmade/S3-Uploads). Do not implement an offloader. See §2. |
+| Code Føhn owns                       | The constants block in the generated `wp-config.php`, one opt-in hook class, `.env.example`, docs, one smoke test.  |
+| New package                          | None.                                                                                                               |
+| New dependency in `studiometa/foehn` | None. The plugin is required by `foehn-starter` and `foehn-demo`, not by the MIT core. See §3.4.                    |
+| New attributes                       | None. This is configuration, not discovery.                                                                         |
+| Estimate                             | ~1 day, against 6–8 for building it. See §10.                                                                       |
+| Status                               | **Proposed.** Smaller than the version that was undecided; §11 is what is left to answer.                           |
 
 ## 1. What "offloading uploads" has to solve
 
@@ -25,160 +27,148 @@ WordPress treats uploads as files, in four distinct ways, and any offload has to
 3. **Reading back.** The image editor, "Regenerate thumbnails" and a long tail of plugins call `get_attached_file()` and expect a path they can `fopen()`.
 4. **Serving.** `wp_get_attachment_url()`, `wp_get_attachment_image_src()` and `wp_calculate_image_srcset()` build public URLs from the uploads base URL.
 
-Only (4) is purely about URLs. The other three are about paths, and that is where every implementation gets its scars.
+Only (4) is purely about URLs. The other three are about paths, and that is where every implementation gets its scars. `humanmade/s3-uploads` answers all four with a stream wrapper, has answered them for 2.5 million installs, and is still shipping releases — 3.0.13 in February 2026.
 
-## 2. Two models, and why the cheap-looking one is the expensive one
+## 2. Recommendation: integrate, do not implement
 
-### Model A — stream wrapper
+Two facts, both checked against the code rather than assumed, decide this.
 
-Register an `s3://` PHP stream wrapper and point `upload_dir` at it. `move_uploaded_file()`, `fopen()`, `copy()` and `unlink()` then transparently speak to object storage. This is what `humanmade/s3-uploads` does.
-
-It is elegant, and it is a large amount of load-bearing code: multipart uploads, seek semantics on a non-seekable transport, `rename` as copy-then-delete, `mkdir` against a store with no directories, `stat` caching, and the difference between "file does not exist" and "the network is having a bad day". Every one of those is a place where a bug loses a customer's media library.
-
-**The decisive fact:** there is exactly one maintained S3 stream wrapper in PHP, `Aws\S3\StreamWrapper` in the AWS SDK. [`async-aws/s3` ships none](https://async-aws.com/clients/s3.html) — it is an API client, not a filesystem. So choosing model A means choosing the AWS SDK, and having chosen the AWS SDK and written the WordPress glue, we would have written `humanmade/s3-uploads`.
-
-### Model B — copy after upload
-
-Let WordPress write locally exactly as it does today. Once the attachment's metadata exists — original plus every sub-size — upload the set, rewrite the URLs WordPress serves, and optionally delete the local copies. Fetch a file back to local disk on the rare occasion something demands a real path. This is what WP Offload Media does.
-
-It needs no stream wrapper, no `upload_dir` filter, and no filesystem emulation. It needs an API client, four or five filters, and a decision about local retention.
-
-### Why B
-
-|                                        | Model A — stream wrapper                         | Model B — copy after upload  |
-| -------------------------------------- | ------------------------------------------------ | ---------------------------- |
-| Code we own                            | A filesystem                                     | Five filters and an uploader |
-| Dependency                             | `aws/aws-sdk-php`                                | `async-aws/s3`, MIT, ^8.2    |
-| Sub-size generation (`#[AsImageSize]`) | Every intermediate write is a network round trip | Local, then one batch upload |
-| Image editor, regenerate thumbnails    | Works, slowly                                    | Needs an explicit fetch-back |
-| Failure mode of a bug                  | A write that silently did not happen             | A file that is still local   |
-| Already exists, maintained             | **Yes**                                          | No                           |
-
-The last row is the argument against building A at all, and the fourth row is the argument for B being genuinely different rather than a worse copy: **the WordPress image editor cannot use a remote path** — WP Offload Media downloads the file and hands back a local one precisely because of this. Under model B that case is the normal case, not the exception, because the file is local while it is being worked on.
-
-Model B also composes with the responsive-images work rather than fighting it. That research flagged offloaded uploads as breaking local variant generation; under B, generation happens before the upload, on a real filesystem, and the variants offload with everything else.
-
-## 3. The dependency
-
-|                | `async-aws/s3`                                  | `aws/aws-sdk-php`                                                                                               |
-| -------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| Licence        | MIT                                             | Apache-2.0                                                                                                      |
-| PHP            | ^8.2                                            | ^8.0                                                                                                            |
-| Installed size | Small; `async-aws/core` and PHP extensions only | 37.5 MB / 3,749 files as installed                                                                              |
-| Pruning        | Not needed                                      | `Composer::removeUnusedServices` gets a two-service install to 5.4 MB / 457 files, and S3 cannot be pruned away |
-| Stream wrapper | No                                              | Yes                                                                                                             |
-
-The AWS SDK's size is the folklore objection and it is weaker than it sounds — pruned to S3 it is a few megabytes. The real reason to prefer `async-aws/s3` is that under model B we never need the one thing the SDK has that it does not, and a 17.5-million-install MIT client with a small dependency tree is the smaller commitment.
-
-## 4. Shape
-
-A package, following the `studiometa/foehn-acf` precedent: the framework core gains no dependency, and a project opts in with one `composer require`.
-
-Unlike the ACF package, this one takes a **sub-namespace of its own**, `Studiometa\Foehn\Uploads\`. The ACF split kept `Studiometa\Foehn\` so that existing projects changed no imports, and paid for it with two discovery locations answering to the same namespace and a `DiscoveryLocations::label()` to tell them apart. A package with no existing users has no such debt to service, and one package owning one namespace is what we would have chosen there too.
-
-`extra.tempest.can-discover` is set from the first commit, for the reason [`post_meta_and_acf_split_spec.md`](post_meta_and_acf_split_spec.md) §3 gives.
-
-### No new attribute
-
-Nothing here is discovered. Offloading is a property of an environment, not of a class, and it is configured the way every other environment-shaped thing in Føhn is configured — a `*.config.php` read by `ConfigLoader`, with the environment suffix doing the work:
+**The plugin's only documented prerequisite is already satisfied.** Its README requires the Composer autoloader to be loaded before the plugin, in `wp-config.php`. `WebRootGenerator` already writes exactly that:
 
 ```php
-<?php
-// app/uploads.production.config.php
-
-use Studiometa\Foehn\Uploads\UploadsConfig;
-
-return new UploadsConfig(
-    bucket: env('S3_BUCKET'),
-    region: env('S3_REGION', 'auto'),
-    endpoint: env('S3_ENDPOINT'),        // null for AWS; set for R2, Scaleway, MinIO
-    prefix: 'uploads',
-    publicUrl: env('S3_PUBLIC_URL'),      // the CDN or bucket origin URLs are rewritten to
-    keepLocalCopy: false,
-    pathStyle: false,
-);
+// Load Composer autoloader
+require_once dirname(__DIR__) . '/vendor/autoload.php';
 ```
 
-Credentials come from the environment (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`) and are never a constructor argument, so nothing puts them in a file that gets committed. The package ships `src/Config/uploads.config.php` returning a disabled default, so a site that installs it and configures nothing behaves exactly as it did before.
+**And it is configured entirely through constants, in the file Føhn generates.** `S3_UPLOADS_BUCKET`, `S3_UPLOADS_REGION`, `S3_UPLOADS_KEY`, `S3_UPLOADS_SECRET`, `S3_UPLOADS_BUCKET_URL`, plus `S3_UPLOADS_USE_INSTANCE_PROFILE`, `S3_UPLOADS_OBJECT_ACL`, `S3_UPLOADS_HTTP_CACHE_CONTROL` and `S3_UPLOADS_USE_LOCAL`. That generated `wp-config.php` already loads `.env` through `vlucas/phpdotenv` and already defines every other environment-shaped constant through an `$env()` helper:
 
-### Where it hooks
+```php
+define('WP_HOME', $env('WP_HOME', 'http://localhost'));
+```
 
-| Concern           | Hook                                     | Note                                                                |
-| ----------------- | ---------------------------------------- | ------------------------------------------------------------------- |
-| Upload            | `wp_generate_attachment_metadata` (late) | The one point where the original and every sub-size are known       |
-| Upload, non-image | `add_attachment`                         | Images never reach it; PDFs and video do                            |
-| Serving           | `wp_get_attachment_url`                  | The single URL                                                      |
-| Serving           | `wp_calculate_image_srcset`              | Builds its own URLs from the uploads base; not covered by the above |
-| Serving           | `wp_get_attachment_image_src`            | Same                                                                |
-| Reading back      | `get_attached_file`                      | Fetch to a temp path when the local copy is gone                    |
-| Deletion          | `delete_attachment`, `wp_delete_file`    | Remove the remote objects too                                       |
+Five more `define()` calls in that block, guarded so a site with no bucket is untouched, is the whole configuration story. `composer/installers` already routes `type:wordpress-plugin` to `web/wp-content/plugins/{$name}/` in the starter's `installer-paths`, so the plugin lands in the right place with no packaging work at all.
 
-**The serving set is empirical and has to be pinned during implementation, not assumed.** Three filters are listed because core builds media URLs in more than one place; the test that matters is a page containing a `srcset`, rendered and diffed, not a unit test of one filter.
+The goal — _a Føhn site is deployable where local disk does not persist, and that is proven in CI_ — is reached by wiring, not by writing an upload pipeline.
 
-### CLI
+### Why not the existing config files
 
-- `wp foehn uploads:migrate` — walk the media library, upload what is missing, with `--dry-run`.
-- `wp foehn uploads:verify` — credentials, bucket reachability, a round-trip write and delete, and whether the public URL actually serves what was written. The last of those is the check that catches a misconfigured CDN, which is the failure people spend an afternoon on.
-- `wp foehn uploads:status` — how many attachments are offloaded, how many are not.
+The generated `wp-config.php` already loads `config/wordpress.config.php` and `config/wordpress.{env}.config.php`, which looks like the natural home for these constants and is not. **Those files are loaded before `.env`**, so a `define()` there reading `$_ENV` sees only real environment variables. That happens to work in a container and silently fails in ddev, which is the worst possible split. The constants belong in the installer's own block, after dotenv, where every other constant already is.
 
-## 5. Out of scope for v1
+This is worth fixing on its own merits — project config that cannot read the project's `.env` is a trap regardless of S3 — but it is a separate change and it is not a prerequisite for this one.
 
-- **Private or signed URLs.** Everything served is public. A media library with access control is a different feature with a different threat model.
-- **Multisite.**
-- **Two-way sync.** Local is the working copy, remote is the truth, and nothing watches the bucket for changes made elsewhere.
-- **Serving through the framework.** URLs point at the bucket or a CDN. Føhn does not proxy bytes.
-- **Filesystem semantics for third-party code.** A plugin that insists on `WP_CONTENT_DIR . '/uploads'` being real is the case §8 exists for.
+## 3. The work
 
-## 6. Interaction with the rest of the roadmap
+### 3.1 Installer
 
-**Page cache (item 1).** Cached HTML contains rewritten media URLs, so changing `publicUrl` invalidates every cached page. The page cache's full-flush trigger list should gain the uploads config, alongside the `updated_option` allowlist it already has. One line there, and it belongs to whoever lands second.
+`WebRootGenerator` gains a guarded block after the existing defines:
 
-**Responsive images.** The research doc's "offloaded uploads break local file generation" risk is the reason model B was chosen; that note can be closed rather than mitigated. Variants generated at upload time offload with the original. Variants generated lazily at render time would not, and that is an argument for generating at upload time that has nothing to do with S3.
+```php
+// Object storage for uploads (humanmade/s3-uploads), when a bucket is configured
+if ($env('S3_UPLOADS_BUCKET')) {
+    define('S3_UPLOADS_BUCKET', $env('S3_UPLOADS_BUCKET'));
+    define('S3_UPLOADS_REGION', $env('S3_UPLOADS_REGION', 'auto'));
+    define('S3_UPLOADS_KEY', $env('AWS_ACCESS_KEY_ID'));
+    define('S3_UPLOADS_SECRET', $env('AWS_SECRET_ACCESS_KEY'));
+    define('S3_UPLOADS_BUCKET_URL', $env('S3_UPLOADS_BUCKET_URL'));
+}
+```
 
-**`#[AsImageSize]`.** Unchanged. Sub-sizes are produced before the upload hook fires and travel with it.
+`.env.example` gains the same five, commented out, with a line saying what happens when they are absent: nothing.
 
-**The installer.** `.env.example` gains the five variables, commented out. `WebRootGenerator` needs no change: nothing about this touches the web root, which is the point.
+Credentials are read from the environment and never written to a file the installer generates, which is already true of everything else in that block.
 
-## 7. Testing
+### 3.2 One opt-in hook class
 
-Unit tests over the WordPress stubs cover the filters and the metadata walk, and prove nothing about S3 — the same limitation that made the smoke suite necessary in the first place.
+Custom endpoints — R2, Scaleway, MinIO — are the plugin's `s3_uploads_s3_client_params` filter, which its documentation tells you to write in an mu-plugin. Føhn already has the mechanism for exactly this shape of thing: opt-in hook classes listed in `foehn.config.php`, next to `YouTubeNoCookieHooks`, `DisableXmlRpc` and the rest.
 
-What earns confidence is `packages/demo`: an offload configured against **MinIO in a ddev service**, a real upload through `wp media import`, and assertions that the object exists in the bucket, that the local copy is gone when `keepLocalCopy` is false, that the rendered page's `srcset` points at the public URL, and that deleting the attachment deletes the objects. MinIO in ddev keeps that hermetic — no credentials in CI, no network flakiness, no bill.
+So `Studiometa\Foehn\Hooks\S3UploadsEndpoint` reads `S3_UPLOADS_ENDPOINT` and `S3_UPLOADS_PATH_STYLE` from the environment and returns them to that filter, and no-ops when the plugin is absent. That is the entire class, and it is the one place where Føhn genuinely makes the plugin nicer to use than the plugin.
+
+### 3.3 Proof in the demo
+
+MinIO as a ddev service in `packages/demo`, a real `wp media import`, and smoke assertions that the object exists in the bucket and that the rendered page's `srcset` points at the bucket URL. MinIO in ddev keeps it hermetic: no credentials in CI, no network flakiness, no bill.
 
 Every assertion checked to fail with the feature removed, as with items 2 through 10.
 
-## 8. What we are not replacing
+### 3.4 Where the requirement goes
 
-[`humanmade/s3-uploads`](https://github.com/humanmade/S3-Uploads) — 3.0.13, February 2026, GPL-2.0+, 2.5 million installs, actively maintained — remains the right answer for a site that needs uploads to _be_ a filesystem: a plugin that writes into the uploads directory directly, a workflow that treats `WP_CONTENT_DIR` as real. It supports MinIO, Ceph, DigitalOcean Spaces and Scaleway through an `s3_uploads_s3_client_params` filter, and ships `verify`, `ls`, `cp` and `upload-directory` commands.
+`humanmade/s3-uploads` is required by `studiometa/foehn-starter` and `studiometa/foehn-demo`, **not** by `studiometa/foehn`. That is the right dependency direction anyway — the framework should not force an S3 client on a site that has no bucket — and it disposes of the licence question entirely, since a GPL-2.0+ plugin sitting in a project scaffold alongside WordPress itself is unremarkable, while requiring one from an MIT library would not be.
 
-Føhn should document it as the alternative, in the same breath as this package, and never pretend to be a drop-in replacement for it. The honest framing is a choice between two models, not a better implementation of one.
+## 4. What owning it would have added, honestly
 
-It is GPL-2.0+ against Føhn's MIT. In a WordPress context that is unremarkable — the surrounding stack is GPL — but it is a reason to document the plugin rather than to `require` it from an MIT package.
+The first draft justified a package on four grounds. Held against what the plugin and the installer already do, three of them fail:
+
+| Claimed advantage of owning it                   | What it is actually worth                                                                                                               |
+| ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Typed `uploads.config.php` instead of `define()` | The installer _generates_ the `wp-config.php`. Constants from `.env` is the same outcome for the user, minus a package.                 |
+| Installer wiring and `.env.example`              | Identical either way. This was never an argument for owning the code.                                                                   |
+| `wp foehn uploads:migrate` / `verify` / `status` | The plugin ships `verify`, `ls`, `cp`, `upload-directory`, `enable`, `disable`. Ours would be a worse subset under a second vocabulary. |
+| Provider support for R2 and Scaleway             | One filter, which fits the existing opt-in hooks mechanism. §3.2. This one survives, at about twenty lines.                             |
+
+Two arguments for owning it are real, and neither is worth six days today:
+
+- **A plugin can be deactivated.** Someone with admin access can break the media library from a WordPress screen. Force-loading it from the mu-plugins directory the installer already symlinks would close this if it ever matters.
+- **A stream wrapper makes every intermediate sub-size write a network round trip.** Real, measurable on upload, and invisible to page visitors.
+
+## 5. What would justify building it
+
+The one place owning the pipeline genuinely wins is image processing, and it is worth keeping the analysis because the trigger is plausible.
+
+Under a stream wrapper, WordPress never has the file locally, so `#[AsImageSize]` sub-size generation writes each variant over the network, and the image editor works only because the plugin fetches originals back down. The alternative — **copy after upload**: let WordPress write locally exactly as it does today, and once `wp_generate_attachment_metadata` has produced the original and every sub-size, upload the set, rewrite the URLs and optionally delete the local copies. This is what WP Offload Media does. It needs no stream wrapper, no `upload_dir` filter and no filesystem emulation: an API client, five filters and a decision about local retention. `async-aws/s3` (MIT, ^8.2, 17.5 M installs) would be the client, since under this model the AWS SDK's stream wrapper — the one thing it has that async-aws lacks — is exactly what is not needed.
+
+It closes the [`research_responsive_images.md`](research_responsive_images.md) risk rather than mitigating it: variants get generated before the upload, on a real filesystem, and travel with the original.
+
+**Build it when, and only when, all three hold:**
+
+1. Føhn generates its own image variants, so controlling when files are local stops being theoretical.
+2. Sub-size generation over the network is measured to be a problem on a real site, not predicted to be one.
+3. More than one project is running offloaded uploads, so the maintenance has somewhere to amortise.
+
+Until then, detection is `defined('S3_UPLOADS_BUCKET')` and the responsive-images work falls back, which is what that research already planned to do.
+
+## 6. Out of scope
+
+- **Private or signed URLs.** Everything served is public.
+- **Multisite.**
+- **Two-way sync.** Nothing watches the bucket for changes made elsewhere.
+- **Serving through the framework.** URLs point at the bucket or a CDN. Føhn does not proxy bytes.
+- **A migration path off the plugin.** If §5 ever fires, that is part of §5's cost, not a thing to design for now.
+
+## 7. Interaction with the rest of the roadmap
+
+**Page cache (item 1).** Cached HTML contains media URLs, so changing `S3_UPLOADS_BUCKET_URL` makes every cached page stale. Since these are constants rather than options, no `updated_option` hook fires and the page cache cannot detect it — a deploy that changes the CDN needs a cache flush, which is a documentation line, not code. Worth saying out loud in the page cache's docs, because it is the kind of thing that produces a bug report about "images broken after deploy".
+
+**Responsive images.** See §5. The research doc's risk stands, and its planned fallback is correct.
+
+**`#[AsImageSize]`.** Unchanged in behaviour, slower per upload under the stream wrapper.
+
+**The installer.** §3.1 is the only change, and it touches the constants block, not the web root.
+
+## 8. Testing
+
+Unit tests over the WordPress stubs would cover the guard in the generated `wp-config.php` and the endpoint hook, and would prove nothing about S3 — the same limitation that made the smoke suite necessary in the first place. `WebRootGeneratorTest` gets the guarded-block assertions, because that is generated output and generated output is testable.
+
+Everything else is §3.3: MinIO, a real import, a rendered page.
 
 ## 9. Risks
 
-- **The serving filter set is discovered, not designed.** Core builds media URLs in several places and plugins add more. A `srcset` that half points at S3 is the likely first bug. Mitigated by testing rendered pages rather than filters.
-- **Eventual offload.** Between `wp_handle_upload` and the upload hook the file exists only locally. On a multi-container deploy the next request may land elsewhere and 404 an image that was uploaded seconds ago. Either offload synchronously on the request that created the attachment, accepting the latency, or accept a window and say so. **This is the decision that most shapes the implementation and it is not yet made.**
-- **`keepLocalCopy: false` makes deletion destructive.** A misconfigured bucket that silently accepts writes and serves nothing turns into data loss on the next deploy. `uploads:verify` checking that the public URL serves what was just written is the guard, and it should run before anything is deleted.
-- **S3-compatible is a spectrum.** R2, Scaleway and MinIO each differ in path-style addressing, checksum headers and multipart minimums — `humanmade/s3-uploads` documents having to disable AWS SDK 3.337+ checksums for third-party APIs. Pick the providers we support, test them, and say which they are.
-- **The image editor's fetch-back is a cache with no eviction.** Downloading originals to local disk to satisfy `get_attached_file` reintroduces the problem this feature exists to solve, in a smaller form. Temp files, cleaned on shutdown.
+- **We are trusting a third party with the media library.** Mitigated by it being the most-installed answer to this problem in WordPress, actively maintained, with a stream wrapper that has survived far more traffic than ours would.
+- **`S3_UPLOADS_USE_LOCAL` exists, and someone will ship it to production.** Test that the demo's production-shaped configuration does not set it.
+- **S3-compatible is a spectrum.** R2, Scaleway and MinIO differ in path-style addressing, checksum headers and multipart minimums; the plugin documents having to disable AWS SDK 3.337+ checksums for third-party APIs. Pick the providers we claim to support, test them, say which they are.
+- **A misconfigured bucket that accepts writes and serves nothing is data loss.** `wp s3-uploads verify` before trusting it — the plugin's command, not one we write.
+- **The AWS SDK lands in every project that requires the plugin.** ~5.4 MB pruned to two services. Acceptable; noted so nobody rediscovers it as a surprise.
 
-## 10. Phases and estimates
+## 10. Phases and estimate
 
-| Phase | Work                                                                                | Estimate |
-| ----- | ----------------------------------------------------------------------------------- | -------- |
-| 1     | Package skeleton, `UploadsConfig`, the client, upload on metadata, `uploads:verify` | 2 d      |
-| 2     | URL rewriting across the serving filters, with a rendered-page test                 | 1–2 d    |
-| 3     | Fetch-back, deletion, `uploads:migrate`, `uploads:status`                           | 2 d      |
-| 4     | MinIO in the demo's ddev, smoke assertions, provider matrix, documentation          | 1–2 d    |
+| Phase | Work                                                                      | Estimate |
+| ----- | ------------------------------------------------------------------------- | -------- |
+| 1     | Installer constants block, `.env.example`, `WebRootGeneratorTest`         | 2 h      |
+| 2     | `S3UploadsEndpoint` opt-in hook class, with tests                         | 2 h      |
+| 3     | MinIO in the demo's ddev, smoke assertions, provider notes, documentation | 4 h      |
 
-**6 to 8 days**, which is more than the estimate I gave verbally and less than model A would cost.
+**About a day**, against 6 to 8 for building it.
 
 ## 11. Open questions
 
-These are why this is undecided rather than approved.
-
-1. **Is the demand real, or anticipated?** Every item on the roadmap so far closed a gap someone had hit. This one closes a gap someone will hit _if_ Føhn sites are deployed to ephemeral infrastructure. If the projects in flight deploy to a VPS with persistent disk, this is a solution waiting for its problem, and `humanmade/s3-uploads` covers the case that arrives first.
-2. **Synchronous or deferred offload?** See §9. Synchronous is simpler and correct and makes uploading a large video slow. Deferred needs `JobDispatcher` and a window during which the file is local-only.
-3. **Which providers?** R2 and Scaleway are the plausible ones for our projects; AWS is the one everyone tests against. Each added provider is a row in a test matrix somebody maintains.
-4. **Does this belong before or after a `0.5.0` release?** It is additive and lives in its own package, so it does not block a tag. Item 12 remains waiting on the page cache either way.
+1. **Is the demand real, or anticipated?** Unchanged from the first draft and still the question that matters most — every roadmap item so far closed a gap someone had hit. At a day's work the answer matters less than it did at six, and phases 1 and 2 are worth doing on speculation in a way that a package never was.
+2. **Which providers do we claim?** R2 and Scaleway are the plausible ones for our projects; AWS is the one everyone tests against. Each is a row in a matrix somebody maintains.
+3. **Before or after `0.5.0`?** Phase 1 touches the installer, which is released with the framework, so it wants to be in a tag rather than trailing one. It does not block anything.
