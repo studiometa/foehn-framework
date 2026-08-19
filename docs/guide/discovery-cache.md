@@ -3,7 +3,7 @@
 Føhn uses PHP reflection to discover attributes at runtime. While this provides a great developer experience, it can add overhead in production: the scan covers your theme's app directory _and_ the framework package, which is where its Twig extensions and CLI commands come from. The discovery cache stores discovery results to avoid that reflection.
 
 ::: tip
-`wp foehn discovery:generate` is a deployment step. With caching enabled but no cache written, every request scans from scratch.
+You do not have to run anything. `composer install` clears the cache, and the first request that finds it missing writes it — so a deploy warms itself. `wp foehn discovery:generate` is there for when you would rather pay that first request's cost yourself, before traffic arrives.
 :::
 
 ## Configuration
@@ -46,7 +46,7 @@ Kernel::boot(__DIR__ . '/app', [
 
 ### Generate Cache
 
-Scan every discovery location and write the result to the cache. This is the deployment step: without it, a site with caching enabled reflects over the framework and the theme on every request.
+Scan every discovery location and write the result to the cache. Optional — a request that finds the cache missing warms it — but useful when you want the scan to happen on your deploy rather than on the first visitor's page load.
 
 ```bash
 wp foehn discovery:generate
@@ -127,10 +127,14 @@ Discovery cache is active and valid.
 # 1. Deploy your code
 git pull origin main
 
-# 2. Install dependencies
+# 2. Install dependencies — this also clears the discovery cache
 composer install --no-dev --optimize-autoloader
+```
 
-# 3. Generate the discovery cache
+The next request warms the cache. Add a third step only if you would rather that request were yours than a visitor's:
+
+```bash
+# 3. Optional: warm the cache before traffic arrives
 wp foehn discovery:generate
 ```
 
@@ -211,7 +215,13 @@ Kernel::boot(__DIR__ . '/app', [
 
 2. **With cache**: each location's results are stored, and a location that is cached is not scanned at all. This is why `discovery:status` reports how many of them are warm rather than a single yes or no.
 
-3. **Cache invalidation**: nothing invalidates itself. Regenerate the cache whenever the code changes — that is what makes it a deployment step. A cache written by a version of Føhn whose attributes have a different shape is ignored rather than half-restored.
+3. **Warming**: a request that had to scan a location writes what it found, so the next one does not. Under `partial`, only vendor locations are written, because the app is rescanned every request anyway and the file would never be read. A cache that cannot be written — a read-only `wp-content` — is not an error: the page is served, and the scan happens again next time.
+
+4. **Invalidation**: `composer install` and `composer update` delete the cache, through the same installer plugin that generates the web root. That is the deploy hook, and it needs no database and no WP-CLI. A cache written by a version of Føhn whose attributes have a different shape is ignored rather than half-restored.
+
+::: warning
+Two cases invalidation does not cover. A project that sets `FoehnConfig::$discoveryCachePath` puts the cache somewhere the installer cannot find, and owns clearing it. And editing a class on a live server without running Composer leaves the cache describing the previous code — run `wp foehn discovery:clear`.
+:::
 
 ### What's Cached
 

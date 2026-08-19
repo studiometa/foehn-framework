@@ -168,6 +168,36 @@ describe('WebRootGenerator', function () {
         expect($this->root . '/web/index.php')->toBeFile();
     });
 
+    it('clears a discovery cache left by the previous release', function () {
+        $cache = $this->root . '/web/wp-content/cache/foehn/discovery';
+        mkdir($cache, 0o777, true);
+        file_put_contents($cache . '/entry.php', '<?php return [];');
+
+        ($this->generate)();
+
+        // Foehn refills it on the first request; what must not survive is the entry
+        // describing the code this install just replaced.
+        expect(file_exists($cache . '/entry.php'))->toBeFalse();
+        expect(is_dir($this->root . '/web/wp-content/cache/foehn'))->toBeFalse();
+        expect($this->io->getOutput())->toContain('Cleared:');
+    });
+
+    it('leaves other caches in wp-content alone', function () {
+        $other = $this->root . '/web/wp-content/cache/some-plugin';
+        mkdir($other, 0o777, true);
+        file_put_contents($other . '/keep.txt', 'keep me');
+
+        ($this->generate)();
+
+        expect(file_exists($other . '/keep.txt'))->toBeTrue();
+    });
+
+    it('says nothing about a cache that was never written', function () {
+        ($this->generate)();
+
+        expect($this->io->getOutput())->not->toContain('Cleared:');
+    });
+
     it('refuses to replace a real directory with a symlink', function () {
         mkdir($this->root . '/web/wp-content/themes/theme', 0o777, true);
 
