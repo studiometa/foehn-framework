@@ -59,6 +59,12 @@ Attributes are PHP 8 annotations that enable auto-discovery and registration of 
 | ---------------------------------------------- | ---------------------------- |
 | [`#[AsAcfOptionsPage]`](./as-acf-options-page) | Register an ACF options page |
 
+### Settings
+
+| Attribute                                 | Description                                 |
+| ----------------------------------------- | ------------------------------------------- |
+| [`#[AsSettingsPage]`](./as-settings-page) | An admin page on the WordPress Settings API |
+
 ### API & CLI
 
 | Attribute                               | Description                            |
