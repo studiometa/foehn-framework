@@ -5,6 +5,10 @@ declare(strict_types=1);
 namespace Studiometa\FoehnInstaller;
 
 use Composer\IO\IOInterface;
+use FilesystemIterator;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
+use SplFileInfo;
 
 /**
  * Generates the WordPress web root directory structure.
@@ -16,6 +20,9 @@ use Composer\IO\IOInterface;
  * - web/wp-content/mu-plugins/00-loader.php
  * - web/wp-content/mu-plugins/_custom → symlink to ../../mu-plugins/
  * - web/wp-content/foehn/editor.js ← copied from the studiometa/foehn package
+ *
+ * And removes web/wp-content/cache/foehn/, whose contents describe the code that
+ * has just been replaced.
  */
 final class WebRootGenerator
 {
@@ -42,6 +49,7 @@ final class WebRootGenerator
         $this->symlinkMuPlugins();
         $this->generateMuPluginLoader();
         $this->generateEditorScript();
+        $this->clearDiscoveryCache();
 
         $this->io->write('<info>Foehn:</info> Web root generated successfully.');
     }
@@ -359,6 +367,56 @@ final class WebRootGenerator
             JS;
 
         $this->writeRawFile($target, $header . $script);
+    }
+
+    /**
+     * Drop the discovery cache, because the code it describes has just changed.
+     *
+     * Foehn refills the cache by itself on the first request that finds it missing,
+     * so this is the whole of cache invalidation on a deploy: `composer install`
+     * clears, and the next request warms with the code that is now live. Nothing has
+     * to boot WordPress for it — the files are simply removed.
+     *
+     * Only the default location is cleared. A project that set
+     * `FoehnConfig::$discoveryCachePath` chose a path this plugin cannot read, and
+     * owns clearing it.
+     */
+    private function clearDiscoveryCache(): void
+    {
+        $path = $this->webPath('wp-content/cache/foehn');
+
+        if (!is_dir($path)) {
+            return;
+        }
+
+        if (!is_writable($path)) {
+            $this->io->write(
+                "  <warning>Could not clear:</warning> {$this->relativePath($path)} is not writable — "
+                . 'run `wp foehn discovery:clear`',
+            );
+
+            return;
+        }
+
+        $entries = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($path, FilesystemIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::CHILD_FIRST,
+        );
+
+        /** @var SplFileInfo $entry */
+        foreach ($entries as $entry) {
+            if ($entry->isDir() && !$entry->isLink()) {
+                rmdir($entry->getPathname());
+
+                continue;
+            }
+
+            unlink($entry->getPathname());
+        }
+
+        rmdir($path);
+
+        $this->io->write("  <comment>Cleared:</comment> {$this->relativePath($path)}");
     }
 
     /**

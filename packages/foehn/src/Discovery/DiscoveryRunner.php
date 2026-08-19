@@ -12,6 +12,7 @@ use Tempest\Discovery\Discovery;
 use Tempest\Discovery\DiscoveryCache;
 use Tempest\Discovery\DiscoveryCacheStrategy;
 use Tempest\Discovery\DiscoveryConfig;
+use Tempest\Discovery\DiscoveryLocation;
 use Tempest\Reflection\ClassReflector;
 use Throwable;
 
@@ -118,14 +119,101 @@ final class DiscoveryRunner
     {
         $locations = $this->locations->all();
 
+        // Which locations are about to be scanned rather than restored. Asked before
+        // the build, because the build is what fills the cache in.
+        $scanned = array_values(array_filter($locations, fn(DiscoveryLocation $location): bool => $this->shouldStore(
+            $cache,
+            $location,
+        )));
+
         $discoveries = new BootDiscovery($this->container, new DiscoveryConfig(locations: $locations), $cache)->build(
             self::getAllDiscoveryClasses(),
             $locations,
         );
 
         $this->discoverOptInHooks($discoveries, $cache);
+        $this->store($cache, $scanned, $discoveries);
 
         return $discoveries;
+    }
+
+    /**
+     * Write what was scanned, so the next request does not scan it again.
+     *
+     * Caching is enabled by configuration and then never happens on its own: a
+     * project that turned it on and did not run `discovery:generate` reflected over
+     * every location on every request. Storing what a scan produced is the same work
+     * the command does, at the one moment the result is already in hand.
+     *
+     * Nothing here may break a request. A read-only wp-content is a deployment
+     * choice, not an error, and a site that cannot write its cache should still
+     * serve pages.
+     *
+     * @param list<DiscoveryLocation> $locations
+     * @param array<array-key, Discovery> $discoveries
+     */
+    private function store(DiscoveryCache $cache, array $locations, array $discoveries): void
+    {
+        foreach ($locations as $location) {
+            try {
+                $cache->store($location, $discoveries);
+            } catch (Throwable $e) {
+                $this->logDiscoveryFailure($location->namespace, $e);
+            }
+        }
+    }
+
+    /**
+     * Whether a scan of this location is worth writing to the cache.
+     *
+     * Only what the strategy would read back: under PARTIAL, Tempest restores vendor
+     * locations and always rescans the app, so storing the app's would write a file
+     * on every request that nothing ever reads.
+     */
+    private function shouldStore(DiscoveryCache $cache, DiscoveryLocation $location): bool
+    {
+        if (!$cache->enabled) {
+            return false;
+        }
+
+        if ($cache->strategy === DiscoveryCacheStrategy::PARTIAL && !$location->isVendor()) {
+            return false;
+        }
+
+        return !$this->isCached($location);
+    }
+
+    /**
+     * Whether the cache holds an entry this runner can use for a location.
+     *
+     * An entry written before a discovery class existed is missing that key, and
+     * Tempest rejects and rescans the whole location rather than restoring part of
+     * it — so from here such an entry counts as absent, and gets rewritten.
+     *
+     * The pool is read rather than DiscoveryCache::restore(), which answers null for
+     * a disabled cache and so cannot distinguish "nothing stored" from "not reading".
+     */
+    private function isCached(DiscoveryLocation $location): bool
+    {
+        $item = $this->pool->getItem($location->key);
+
+        if (!$item->isHit()) {
+            return false;
+        }
+
+        $entry = $item->get();
+
+        if (!is_array($entry)) {
+            return false;
+        }
+
+        foreach (self::getAllDiscoveryClasses() as $discoveryClass) {
+            if (!array_key_exists($discoveryClass, $entry)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
