@@ -24,9 +24,9 @@ final class AcfFieldGroupFixture implements AcfFieldGroupInterface
     public static function fields(): FieldsBuilder
     {
         $builder = new FieldsBuilder('property_fields');
-        $builder
-            ->addText('external_id', ['label' => 'External ID'])
-            ->addWysiwyg('description', ['label' => 'Description']);
+        $builder->addText('external_id', ['label' => 'External ID'])->addWysiwyg('description', [
+            'label' => 'Description',
+        ]);
 
         return $builder;
     }

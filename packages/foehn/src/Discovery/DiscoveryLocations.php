@@ -80,6 +80,26 @@ final class DiscoveryLocations
     }
 
     /**
+     * A name for a location that is unique among them.
+     *
+     * Two packages may map the same PSR-4 prefix: studiometa/foehn-acf adds to
+     * Studiometa\Foehn\ so that a project moving to it changes one Composer
+     * requirement and no imports. A diagnostic printing the namespace alone
+     * would then give both locations the same name, and "0 items" against the
+     * wrong one is worse than no answer.
+     */
+    public function label(DiscoveryLocation $location): string
+    {
+        $namespaces = array_map(static fn(DiscoveryLocation $candidate): string => $candidate->namespace, $this->all());
+
+        if (count(array_keys($namespaces, $location->namespace, true)) < 2) {
+            return $location->namespace;
+        }
+
+        return sprintf('%s (%s)', $location->namespace, basename(dirname($location->path)));
+    }
+
+    /**
      * The app directory as a location of its own.
      *
      * @return list<DiscoveryLocation>

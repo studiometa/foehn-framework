@@ -59,10 +59,7 @@ describe('AsAcfOptionsPage', function () {
     });
 
     it('returns explicit menu slug when set', function () {
-        $attribute = new AsAcfOptionsPage(
-            pageTitle: 'Site Settings',
-            menuSlug: 'custom-slug',
-        );
+        $attribute = new AsAcfOptionsPage(pageTitle: 'Site Settings', menuSlug: 'custom-slug');
 
         expect($attribute->getMenuSlug())->toBe('custom-slug');
     });
@@ -74,37 +71,25 @@ describe('AsAcfOptionsPage', function () {
     });
 
     it('returns explicit menu title when set', function () {
-        $attribute = new AsAcfOptionsPage(
-            pageTitle: 'Site Settings',
-            menuTitle: 'Settings',
-        );
+        $attribute = new AsAcfOptionsPage(pageTitle: 'Site Settings', menuTitle: 'Settings');
 
         expect($attribute->getMenuTitle())->toBe('Settings');
     });
 
     it('returns effective post_id from menu slug when not set', function () {
-        $attribute = new AsAcfOptionsPage(
-            pageTitle: 'Site Settings',
-            menuSlug: 'my-settings',
-        );
+        $attribute = new AsAcfOptionsPage(pageTitle: 'Site Settings', menuSlug: 'my-settings');
 
         expect($attribute->getPostId())->toBe('my-settings');
     });
 
     it('returns explicit post_id when set', function () {
-        $attribute = new AsAcfOptionsPage(
-            pageTitle: 'Site Settings',
-            postId: 'custom_post_id',
-        );
+        $attribute = new AsAcfOptionsPage(pageTitle: 'Site Settings', postId: 'custom_post_id');
 
         expect($attribute->getPostId())->toBe('custom_post_id');
     });
 
     it('detects sub-page when parentSlug is set', function () {
-        $attribute = new AsAcfOptionsPage(
-            pageTitle: 'Sub Page',
-            parentSlug: 'parent-page',
-        );
+        $attribute = new AsAcfOptionsPage(pageTitle: 'Sub Page', parentSlug: 'parent-page');
 
         expect($attribute->isSubPage())->toBeTrue();
     });

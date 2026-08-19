@@ -6,10 +6,8 @@ namespace Studiometa\Foehn;
 
 use Psr\Cache\CacheItemPoolInterface;
 use RuntimeException;
-use Studiometa\Foehn\Blocks\AcfBlockRenderer;
 use Studiometa\Foehn\Blocks\BlockEditorAssets;
 use Studiometa\Foehn\Cache\TransientCache;
-use Studiometa\Foehn\Config\AcfConfig;
 use Studiometa\Foehn\Config\ConfigLoader;
 use Studiometa\Foehn\Config\FoehnConfig;
 use Studiometa\Foehn\Config\RenderApiConfig;
@@ -221,7 +219,6 @@ final class Kernel
         // about. Kernel::boot()'s array is one of those defaults: a foehn.config.php
         // replaces it wholesale, which is why the array is the legacy way in.
         $this->container->config(new TimberConfig());
-        $this->container->config(new AcfConfig());
         $this->container->config(new RestConfig());
         $this->container->config(new RenderApiConfig());
         $this->container->config($this->config !== [] ? FoehnConfig::fromArray($this->config) : new FoehnConfig());
@@ -272,11 +269,6 @@ final class Kernel
                 $this->container->get(DiscoveryLocations::class),
                 $this->foehnConfig,
             ),
-        );
-
-        $this->container->singleton(
-            AcfBlockRenderer::class,
-            fn() => new AcfBlockRenderer($this->container->get(AcfConfig::class)),
         );
 
         $this->container->singleton(

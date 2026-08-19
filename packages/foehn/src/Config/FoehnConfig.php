@@ -25,9 +25,11 @@ use Tempest\Discovery\DiscoveryCacheStrategy;
  *
  * For other configurations, use dedicated config files:
  * - `app/timber.config.php` → TimberConfig
- * - `app/acf.config.php` → AcfConfig
  * - `app/rest.config.php` → RestConfig
  * - `app/render-api.config.php` → RenderApiConfig
+ *
+ * A package may ship its own: studiometa/foehn-acf supplies the default
+ * AcfConfig that way, and `app/acf.config.php` still overrides it.
  */
 final readonly class FoehnConfig
 {

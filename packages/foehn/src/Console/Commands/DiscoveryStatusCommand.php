@@ -66,7 +66,7 @@ final class DiscoveryStatusCommand implements CliCommandInterface
             $isCached = $this->pool->getItem($location->key)->isHit();
             $cached += $isCached ? 1 : 0;
 
-            $this->cli->log(sprintf('  %s %s', $isCached ? '✓' : '·', $location->namespace));
+            $this->cli->log(sprintf('  %s %s', $isCached ? '✓' : '·', $this->locations->label($location)));
         }
 
         $this->cli->log(sprintf('Locations cached: %d/%d', $cached, count($locations)));

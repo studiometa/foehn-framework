@@ -17,7 +17,7 @@ use Stringable;
  * ```php
  * use Studiometa\Foehn\Blocks\Concerns\ValidatesFields;
  *
- * final readonly class HeroBlock implements AcfBlockInterface
+ * final readonly class HeroBlock implements BlockInterface
  * {
  *     use ValidatesFields;
  *

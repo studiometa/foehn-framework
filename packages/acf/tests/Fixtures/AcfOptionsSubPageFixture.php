@@ -6,11 +6,7 @@ namespace Tests\Fixtures;
 
 use Studiometa\Foehn\Attributes\AsAcfOptionsPage;
 
-#[AsAcfOptionsPage(
-    pageTitle: 'Social Media',
-    parentSlug: 'theme-settings',
-    capability: 'manage_options',
-)]
+#[AsAcfOptionsPage(pageTitle: 'Social Media', parentSlug: 'theme-settings', capability: 'manage_options')]
 final class AcfOptionsSubPageFixture
 {
     // This fixture doesn't implement AcfOptionsPageInterface

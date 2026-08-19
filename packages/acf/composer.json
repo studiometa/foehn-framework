@@ -1,0 +1,58 @@
+{
+    "name": "studiometa/foehn-acf",
+    "description": "Advanced Custom Fields integration for Foehn — ACF blocks, field groups and options pages, discovered from attributes.",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Studio Meta",
+            "email": "agence@studiometa.fr",
+            "homepage": "https://www.studiometa.fr"
+        }
+    ],
+    "keywords": [
+        "wordpress",
+        "acf",
+        "advanced-custom-fields",
+        "foehn",
+        "blocks",
+        "attributes",
+        "discovery"
+    ],
+    "homepage": "https://github.com/studiometa/foehn-framework",
+    "support": {
+        "issues": "https://github.com/studiometa/foehn-framework/issues",
+        "source": "https://github.com/studiometa/foehn-framework"
+    },
+    "require": {
+        "php": "^8.5",
+        "stoutlogic/acf-builder": "^1.12",
+        "studiometa/foehn": "^0.5",
+        "tempest/container": "^3.18",
+        "tempest/discovery": "^3.18",
+        "tempest/generation": "^3.18",
+        "timber/timber": "^2.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "Studiometa\\Foehn\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "tempest": {
+            "//": "DiscoveryLocations builds its list from vendor/composer/installed.json, and only scans a package that either requires a tempest/* package or opts in here. The tempest requirements above happen to qualify this one today; the flag is what says it is meant to be scanned, and is all that would keep it working if they ever became transitive. Without either, its discoveries are never found and every ACF block, field group and options page fails quietly.",
+            "can-discover": true
+        }
+    },
+    "config": {
+        "sort-packages": true,
+        "optimize-autoloader": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

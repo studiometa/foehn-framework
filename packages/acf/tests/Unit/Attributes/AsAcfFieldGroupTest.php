@@ -6,11 +6,9 @@ use Studiometa\Foehn\Attributes\AsAcfFieldGroup;
 
 describe('AsAcfFieldGroup', function () {
     it('can be instantiated with minimal parameters', function () {
-        $attribute = new AsAcfFieldGroup(
-            name: 'product_fields',
-            title: 'Product Fields',
-            location: ['post_type' => 'product'],
-        );
+        $attribute = new AsAcfFieldGroup(name: 'product_fields', title: 'Product Fields', location: [
+            'post_type' => 'product',
+        ]);
 
         expect($attribute->name)->toBe('product_fields');
         expect($attribute->title)->toBe('Product Fields');
@@ -48,11 +46,9 @@ describe('AsAcfFieldGroup', function () {
     });
 
     it('supports simplified location syntax', function () {
-        $attribute = new AsAcfFieldGroup(
-            name: 'page_fields',
-            title: 'Page Fields',
-            location: ['page_template' => 'page-faq.php'],
-        );
+        $attribute = new AsAcfFieldGroup(name: 'page_fields', title: 'Page Fields', location: [
+            'page_template' => 'page-faq.php',
+        ]);
 
         expect($attribute->location)->toBe(['page_template' => 'page-faq.php']);
     });
@@ -68,11 +64,7 @@ describe('AsAcfFieldGroup', function () {
             ],
         ];
 
-        $attribute = new AsAcfFieldGroup(
-            name: 'complex_fields',
-            title: 'Complex Fields',
-            location: $location,
-        );
+        $attribute = new AsAcfFieldGroup(name: 'complex_fields', title: 'Complex Fields', location: $location);
 
         expect($attribute->location)->toBe($location);
     });
