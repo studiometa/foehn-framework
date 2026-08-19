@@ -241,6 +241,14 @@ describe('AttributeCodec', function (): void {
             ->toBeFalse();
     });
 
+    it('encodes an attribute that declares no constructor', function (): void {
+        $attribute = new class {};
+
+        $encoded = AttributeCodec::encode($attribute);
+
+        expect($encoded['args'])->toBe([])->and(AttributeCodec::decode($encoded))->toBeInstanceOf($attribute::class);
+    });
+
     it('refuses an attribute whose constructor parameters are not promoted', function (): void {
         $attribute = new class('hero') {
             public string $name;
