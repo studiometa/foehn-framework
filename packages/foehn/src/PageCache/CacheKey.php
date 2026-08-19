@@ -1,0 +1,288 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Studiometa\Foehn\PageCache;
+
+/**
+ * A request turned into the one filename that every reader can compute.
+ *
+ * ```
+ * {cache root}/{host}/{path}/index.html                 # no query, or ignored args only
+ * {cache root}/{host}/{path}/index__lang=fr&page=2&.html # keyed args, in canonical order
+ * ```
+ *
+ * Two properties make this class load-bearing rather than string concatenation.
+ *
+ * **The host is validated, never trusted.** A cache path built from an unchecked
+ * `Host` header is a cache-poisoning primitive: one request with
+ * `Host: evil.test` writes a file that a later request for that host reads back. So
+ * the host is compared to the site's own, and a mismatch is a bypass rather than a
+ * write. It stays in the path because the read side cannot query WordPress, and
+ * because multisite then fits without a change of layout.
+ *
+ * **The path is decoded exactly once, then validated.** Decoded, because nginx's
+ * `$uri` is decoded and the readers have to agree on the filename — French slugs make
+ * this real: `/%C3%A0-propos/` and `/à-propos/` are one page and must be one file.
+ * Once, because a value that still contains a `%` after decoding was double-encoded,
+ * and there is no reading of it that all four readers would share.
+ */
+final readonly class CacheKey
+{
+    /**
+     * The stored filename for a request whose query string does not change the page.
+     */
+    public const FILENAME = 'index.html';
+
+    /**
+     * What separates the keyed query args from `index` in a filename.
+     *
+     * Doubled so it cannot be confused with a `-` inside a value, and the trailing `&`
+     * of {@see QueryKey::canonical()} is kept rather than trimmed: nginx cannot strip a
+     * character from a variable, so the format keeps the separator instead of asking PHP
+     * and nginx to agree about removing it.
+     */
+    private const VARIANT_SEPARATOR = '__';
+
+    /** Longest single path segment, in bytes. */
+    private const MAX_SEGMENT_BYTES = 200;
+
+    /** Longest whole path, in bytes. */
+    private const MAX_PATH_BYTES = 512;
+
+    /**
+     * Anything a decoded path may not contain.
+     *
+     * An allowlist rather than a denylist, and a rejection rather than a rewrite. The
+     * unreserved characters of RFC 3986 plus `/`, plus any non-ASCII codepoint so that
+     * `/à-propos/` survives — and nothing else. A space, a colon, a quote, an angle
+     * bracket, a backslash, a control character, a leftover `%`: any of them fails the
+     * whole path.
+     *
+     * Sanitizing instead would be worse than refusing. `/x/:8080/evil` is a real probe,
+     * and a cache that quietly turns a probe into a valid filename is a cache that has
+     * agreed to store the attacker's page.
+     */
+    private const FORBIDDEN_IN_PATH = '#[^A-Za-z0-9/_.~\-\x{0080}-\x{10FFFF}]#u';
+
+    /**
+     * The filenames this cache is allowed to write.
+     *
+     * Checked immediately before the write, though every part of the name was
+     * validated on the way in: the string that reaches a filename has passed through
+     * more hands than the one that was validated, and this is the last of them.
+     */
+    public const FILENAME_PATTERN = '/^index(__[A-Za-z0-9=&_.-]+)?\.html$/';
+
+    private function __construct(
+        /** Lowercased, port-stripped request host. */
+        public string $host,
+        /** Decoded path, leading slash, no trailing slash. The site root is `/`. */
+        public string $path,
+        /** Canonical keyed query args, or an empty string. See {@see QueryKey}. */
+        public string $variant,
+    ) {}
+
+    /**
+     * Build a key, or return null when the request cannot be keyed safely.
+     *
+     * Null is never an error to report to a visitor — it is a bypass. Every rejection
+     * here is a request whose filename this cache would rather not compute.
+     *
+     * @param string $variant The canonical query suffix from {@see QueryKey::canonical()}.
+     */
+    public static function create(string $host, string $requestUri, string $variant = ''): ?self
+    {
+        $normalizedHost = self::normalizeHost($host);
+
+        if ($normalizedHost === null) {
+            return null;
+        }
+
+        $path = self::normalizePath($requestUri);
+
+        if ($path === null) {
+            return null;
+        }
+
+        // The variant arrives validated argument by argument, and is checked again here as
+        // one assembled string. The name that reaches a filename has passed through more
+        // hands than the values that were validated, and this is the last of them.
+        if (!self::isWritableFilename(self::filenameFor($variant))) {
+            return null;
+        }
+
+        return new self($normalizedHost, $path, $variant);
+    }
+
+    /**
+     * The stored filename for this key.
+     */
+    public function filename(): string
+    {
+        return self::filenameFor($this->variant);
+    }
+
+    /**
+     * The path of the stored file, relative to the cache root.
+     */
+    public function relativePath(): string
+    {
+        return rtrim($this->host . $this->path, '/') . '/' . $this->filename();
+    }
+
+    /**
+     * The filename a canonical query suffix stores under.
+     */
+    private static function filenameFor(string $variant): string
+    {
+        if ($variant === '') {
+            return self::FILENAME;
+        }
+
+        return 'index' . self::VARIANT_SEPARATOR . $variant . '.html';
+    }
+
+    /**
+     * The directory the stored file lives in, relative to the cache root.
+     */
+    public function relativeDirectory(): string
+    {
+        return rtrim($this->host . $this->path, '/');
+    }
+
+    /**
+     * A host reduced to what a directory name can hold, or null when it is not a host.
+     *
+     * The port goes: `example.com` and `example.com:8443` are one site, and a colon is
+     * not a character to put in a path on every filesystem.
+     */
+    public static function normalizeHost(string $rawHost): ?string
+    {
+        // Before trimming, because PHP's trim() strips a null byte and a newline and
+        // would hand back a host that looks clean. A Host header carrying either is
+        // not a host to normalise, it is a request to refuse.
+        if (preg_match('/[\x00-\x1f\x7f]/', $rawHost) === 1) {
+            return null;
+        }
+
+        // An IPv6 literal in a Host header is bracketed; a port follows the brackets.
+        $host = (string) preg_replace('/:\d+$/', '', strtolower(trim($rawHost)));
+        $host = trim($host, '[]');
+
+        if ($host === '' || strlen($host) > 253) {
+            return null;
+        }
+
+        // Letters, digits, dots, hyphens and colons (IPv6) only. Everything a Host
+        // header could smuggle — a slash, a dot-dot, an encoded byte — is refused
+        // rather than escaped, because refusing is the behaviour we can reason about.
+        if (preg_match('/^[a-z0-9.:_-]+$/', $host) !== 1) {
+            return null;
+        }
+
+        if (str_contains($host, '..')) {
+            return null;
+        }
+
+        // A colon is legal in an IPv6 literal but not in a directory name everywhere.
+        return str_replace(':', '-', $host);
+    }
+
+    /**
+     * The site's own host, as the key must match it, or null when it cannot be read.
+     */
+    public static function siteHost(): ?string
+    {
+        $home = null;
+
+        if (defined('WP_HOME')) {
+            $home = (string) constant('WP_HOME');
+        }
+
+        if (($home === null || $home === '') && function_exists('home_url')) {
+            $home = home_url('/');
+        }
+
+        if (!is_string($home) || $home === '') {
+            return null;
+        }
+
+        $host = parse_url($home, PHP_URL_HOST);
+
+        if (!is_string($host)) {
+            return null;
+        }
+
+        return self::normalizeHost($host);
+    }
+
+    /**
+     * A request URI reduced to a validated path, or null when it cannot be one.
+     */
+    public static function normalizePath(string $requestUri): ?string
+    {
+        // The query string is never part of the key. Args that survive
+        // `PageCacheConfig::$ignoredQueryArgs` are a bypass, decided by `Bypass`.
+        $path = explode('?', $requestUri, 2)[0];
+        $path = explode('#', $path, 2)[0];
+
+        // Once. A value that still holds a `%` after this was double-encoded, and the
+        // four readers would each pick a different meaning for it.
+        //
+        // Decoding is also what makes invalidation work at all. WordPress stores a
+        // non-ASCII slug with *lowercase* percent escapes — `utf8_uri_encode()` builds
+        // them with `dechex()` — while a browser sends uppercase ones. So
+        // `get_permalink()` hands the purger a different spelling of the URL than the
+        // one the recorder was asked for, and only a decode collapses the two onto one
+        // file. Every caller goes through this one function for that reason.
+        $path = rawurldecode($path);
+
+        // Invalid UTF-8 would be written to disk as bytes nginx's decoded `$uri` never
+        // produces, so the file would exist and never be found. Checked before the
+        // allowlist, which is a `/u` pattern and would simply fail on bad bytes.
+        if (preg_match('//u', $path) !== 1) {
+            return null;
+        }
+
+        if (preg_match(self::FORBIDDEN_IN_PATH, $path) === 1) {
+            return null;
+        }
+
+        if (str_contains($path, '..')) {
+            return null;
+        }
+
+        $path = '/' . trim((string) preg_replace('#/+#', '/', $path), '/');
+
+        // The front controller is the home page, not a second URL for it.
+        if ($path === '/index.php') {
+            $path = '/';
+        }
+
+        if (strlen($path) > self::MAX_PATH_BYTES) {
+            return null;
+        }
+
+        foreach (explode('/', trim($path, '/')) as $segment) {
+            if (strlen($segment) > self::MAX_SEGMENT_BYTES) {
+                return null;
+            }
+
+            // A segment of dots is a filesystem reference, not a slug.
+            if ($segment !== '' && trim($segment, '.') === '') {
+                return null;
+            }
+        }
+
+        return $path;
+    }
+
+    /**
+     * Whether a filename is one this cache is allowed to write.
+     */
+    public static function isWritableFilename(string $filename): bool
+    {
+        return preg_match(self::FILENAME_PATTERN, $filename) === 1;
+    }
+}

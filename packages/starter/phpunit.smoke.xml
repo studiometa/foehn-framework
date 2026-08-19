@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    The page cache's end-to-end suite. Needs a running ddev project, so it is not part of
+    `composer test` — CI runs that on a bare runner. Run it with `composer test:smoke`.
+
+    The bootstrap is tests/smoke/bootstrap.php, not tests/php/bootstrap.php: the latter
+    loads WordPress function stubs, and a stub in scope here would let a test believe it
+    had asked the site something when it had not.
+-->
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/11.0/phpunit.xsd"
+         bootstrap="tests/smoke/bootstrap.php"
+         colors="true"
+         cacheDirectory=".phpunit.smoke.cache"
+         beStrictAboutOutputDuringTests="true"
+         failOnRisky="true"
+         failOnWarning="true">
+    <testsuites>
+        <testsuite name="Smoke">
+            <directory>tests/smoke</directory>
+        </testsuite>
+    </testsuites>
+</phpunit>

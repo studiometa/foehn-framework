@@ -51,7 +51,8 @@
             "Demo\\": "packages/demo/theme/app/",
             "Studiometa\\Foehn\\Tests\\": "packages/foehn/tests/",
             "Tests\\": ["packages/foehn/tests/", "packages/acf/tests/"],
-            "Studiometa\\FoehnInstaller\\Tests\\": "packages/installer/tests/"
+            "Studiometa\\FoehnInstaller\\Tests\\": "packages/installer/tests/",
+            "Studiometa\\Foehn\\Smoke\\": "packages/starter/tests/smoke/"
         }
     },
     "scripts": {
@@ -67,6 +68,7 @@
         "test:starter": "pest --configuration=packages/starter/phpunit.xml --test-directory=packages/starter/tests/php",
         "test:demo": "pest --configuration=packages/demo/phpunit.xml --test-directory=packages/demo/tests/php",
         "test:installer": "pest --configuration=packages/installer/phpunit.xml --test-directory=packages/installer/tests",
+        "test:smoke": "pest --configuration=packages/starter/phpunit.smoke.xml --test-directory=packages/starter/tests/smoke",
         "test:coverage": "pest --configuration=packages/foehn/phpunit.xml --test-directory=packages/foehn/tests --coverage --coverage-clover=coverage/clover.xml",
         "test:coverage:installer": "pest --configuration=packages/installer/phpunit.xml --test-directory=packages/installer/tests --coverage --coverage-clover=coverage/clover-installer.xml",
         "test:coverage:acf": "pest --configuration=packages/acf/phpunit.xml --test-directory=packages/acf/tests --coverage --coverage-clover=coverage/clover-acf.xml",
