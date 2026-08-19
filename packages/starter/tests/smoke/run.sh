@@ -66,3 +66,23 @@ ddev exec 'cd /var/www/html && wp foehn discovery:status' >/dev/null 2>&1 ||
 	fail '`wp foehn discovery:status` did not run'
 
 printf '✓ wp foehn commands are registered\n'
+
+# discovery:list is the only thing that can say what discovery found, so a run
+# against stubs proves nothing about it. This asserts the whole path at once: the
+# command is registered, the filter matches, the item is described and the
+# attribute's arguments are read back off it.
+listing="$(ddev exec 'cd /var/www/html && wp foehn discovery:list --discovery=PostType' 2>/dev/null || true)"
+
+case "$listing" in
+*"AsPostType(name: product"*) ;;
+*) fail "wp foehn discovery:list did not describe the starter's post types
+$listing" ;;
+esac
+
+case "$listing" in
+*"Locations:"*"App\\"*) ;;
+*) fail "wp foehn discovery:list did not report where it looked
+$listing" ;;
+esac
+
+printf '✓ wp foehn discovery:list reports what was found, and from where\n'
