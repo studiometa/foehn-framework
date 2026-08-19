@@ -38,6 +38,7 @@ export default defineConfig({
           items: [
             { text: "Getting Started", link: "/guide/getting-started" },
             { text: "Starter Theme", link: "/guide/starter-theme" },
+            { text: "Demo Project", link: "/guide/demo" },
             { text: "Manual Installation", link: "/guide/installation" },
           ],
         },

@@ -14,12 +14,13 @@ A modern WordPress framework powered by [Tempest](https://github.com/tempestphp/
 
 This monorepo contains the following packages:
 
-| Package                                            | Description                                                  | Packagist                                                                                                                             |
-| -------------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
-| [`studiometa/foehn`](packages/foehn)               | Core framework — auto-discovery, DI, blocks, hooks           | [![Latest](https://img.shields.io/packagist/v/studiometa/foehn)](https://packagist.org/packages/studiometa/foehn)                     |
-| [`studiometa/foehn-acf`](packages/acf)             | ACF integration — blocks, field groups, options pages        | [![Latest](https://img.shields.io/packagist/v/studiometa/foehn-acf)](https://packagist.org/packages/studiometa/foehn-acf)             |
-| [`studiometa/foehn-installer`](packages/installer) | Composer plugin — generates web root, symlinks, wp-config    | [![Latest](https://img.shields.io/packagist/v/studiometa/foehn-installer)](https://packagist.org/packages/studiometa/foehn-installer) |
-| [`studiometa/foehn-starter`](packages/starter)     | Starter theme — complete example with create-project support | [![Latest](https://img.shields.io/packagist/v/studiometa/foehn-starter)](https://packagist.org/packages/studiometa/foehn-starter)     |
+| Package                                            | Description                                               | Packagist                                                                                                                             |
+| -------------------------------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| [`studiometa/foehn`](packages/foehn)               | Core framework — auto-discovery, DI, blocks, hooks        | [![Latest](https://img.shields.io/packagist/v/studiometa/foehn)](https://packagist.org/packages/studiometa/foehn)                     |
+| [`studiometa/foehn-acf`](packages/acf)             | ACF integration — blocks, field groups, options pages     | [![Latest](https://img.shields.io/packagist/v/studiometa/foehn-acf)](https://packagist.org/packages/studiometa/foehn-acf)             |
+| [`studiometa/foehn-installer`](packages/installer) | Composer plugin — generates web root, symlinks, wp-config | [![Latest](https://img.shields.io/packagist/v/studiometa/foehn-installer)](https://packagist.org/packages/studiometa/foehn-installer) |
+| [`studiometa/foehn-starter`](packages/starter)     | Starter theme — the minimum a new project needs           | [![Latest](https://img.shields.io/packagist/v/studiometa/foehn-starter)](https://packagist.org/packages/studiometa/foehn-starter)     |
+| [`studiometa/foehn-demo`](packages/demo)           | Demo theme — every feature, and the end-to-end tests      | [![Latest](https://img.shields.io/packagist/v/studiometa/foehn-demo)](https://packagist.org/packages/studiometa/foehn-demo)           |
 
 ## Quick Start
 
