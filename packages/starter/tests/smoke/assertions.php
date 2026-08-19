@@ -181,6 +181,22 @@ $results->containsAll(
     array_keys(get_registered_nav_menus()),
 );
 
+// A meta key registered against every post type instead of one is the mistake
+// #[AsPostMeta] exists to prevent, so the subtype is what is asserted rather
+// than the key alone.
+$results->containsAll(
+    'starter post meta is registered against its post type',
+    ['price', 'sale_price'],
+    array_keys(get_registered_meta_keys('post', 'product')),
+);
+
+// The point of registering it: without show_in_rest the key is invisible to the
+// block editor and cannot be bound through core/post-meta.
+$results->true(
+    'starter post meta is exposed to REST',
+    (get_registered_meta_keys('post', 'product')['price']['show_in_rest'] ?? false) !== false,
+);
+
 // ──────────────────────────────────────────────
 // Report
 // ──────────────────────────────────────────────
