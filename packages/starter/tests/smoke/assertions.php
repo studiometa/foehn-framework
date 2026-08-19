@@ -18,6 +18,7 @@ use Studiometa\Foehn\Discovery\CliCommandDiscovery;
 use Studiometa\Foehn\Discovery\DiscoveryRunner;
 use Studiometa\Foehn\Kernel;
 use Studiometa\Foehn\Security\Salts;
+use Studiometa\Foehn\Settings\Settings;
 
 // `wp eval-file` runs this inside a function, so the results live in an object
 // rather than in globals a top-level `global` statement would not reach.
@@ -205,6 +206,61 @@ $results->true(
     'starter post meta is exposed to REST',
     (get_registered_meta_keys('post', 'product')['price']['show_in_rest'] ?? false) !== false,
 );
+
+// ──────────────────────────────────────────────
+// Settings
+// ──────────────────────────────────────────────
+
+// register_setting() is what makes options.php accept a save at all: a setting
+// registered under the wrong group, or not registered, is silently discarded
+// and the page looks like it simply did not work.
+$registered = get_registered_settings();
+
+$results->containsAll(
+    'starter settings are registered',
+    ['starter_contact_email', 'starter_show_banner', 'starter_posts_per_archive'],
+    array_keys($registered),
+);
+
+$results->same(
+    'starter settings are grouped under the page slug',
+    'theme-settings',
+    $registered['starter_show_banner']['group'] ?? null,
+);
+
+// The declared default, which get_option() alone does not answer with until the
+// option has been saved once.
+$results->same('a declared default is readable before any save', 12, Settings::get('starter_posts_per_archive'));
+
+// Settings are configuration, sometimes credentials. Exposure is opt-in, which
+// is the opposite of what #[AsPostMeta] does.
+$results->same(
+    'starter settings are not exposed through REST',
+    [],
+    array_values(array_filter(
+        ['starter_contact_email', 'starter_show_banner', 'starter_posts_per_archive'],
+        static fn(string $name): bool => ($registered[$name]['show_in_rest'] ?? false) !== false,
+    )),
+);
+
+// The menu entry is the other half of a settings page, and it is registered on
+// `admin_menu`, which neither a front-end request nor this file ever reaches on
+// its own. WP-CLI also runs with no user, and add_submenu_page() refuses a page
+// the current user cannot see — so this asks as an administrator.
+require_once ABSPATH . 'wp-admin/includes/plugin.php';
+
+wp_set_current_user(1);
+
+$GLOBALS['menu'] = [];
+$GLOBALS['submenu'] = [];
+
+do_action('admin_menu');
+
+$results->true('the settings page is added under Appearance', in_array(
+    'theme-settings',
+    array_column($GLOBALS['submenu']['themes.php'] ?? [], 2),
+    true,
+));
 
 // ──────────────────────────────────────────────
 // Report
