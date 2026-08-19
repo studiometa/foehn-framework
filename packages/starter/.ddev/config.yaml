@@ -19,7 +19,11 @@ nodejs_version: "22"
 
 hooks:
   post-start:
-    - exec: composer install --no-interaction
+    # Only when nothing is installed yet. CI installs on the runner instead, where
+    # the path repositories pointing at ../foehn and ../installer are reachable —
+    # ddev mounts this directory alone, so Composer inside the container cannot see
+    # them and would fail.
+    - exec: '[ -d vendor ] || composer install --no-interaction'
     # Install WordPress if not already done
     - exec: |
         if ! wp core is-installed 2>/dev/null; then

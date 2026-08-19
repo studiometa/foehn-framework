@@ -95,6 +95,11 @@ jobs:
       - name: Run tests with coverage
         run: composer test:coverage
 
+      # The framework suite is the one measured for coverage; the starter's own
+      # suite covers the example theme and has to stay green too.
+      - name: Run the starter test suite
+        run: composer test:starter
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
@@ -184,3 +189,48 @@ jobs:
 
       - name: Build
         run: npm run -w @studiometa/foehn-vite-plugin build
+
+  integration:
+    name: Integration - Starter in WordPress
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.5"
+          tools: composer:v2
+
+      # ddev mounts packages/starter alone, so Composer inside the container cannot
+      # read path repositories pointing outside it. The install runs here instead,
+      # and the container picks up the vendor directory that comes out of it.
+      - name: Point the starter at this checkout of the packages
+        working-directory: packages/starter
+        run: |
+          composer config repositories.foehn '{"type":"path","url":"../foehn","options":{"symlink":false}}'
+          composer config repositories.foehn-installer '{"type":"path","url":"../installer","options":{"symlink":false}}'
+          composer require --no-update studiometa/foehn:@dev studiometa/foehn-installer:@dev
+
+      - name: Install starter dependencies
+        working-directory: packages/starter
+        run: |
+          cp .env.example .env
+          composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Start ddev
+        uses: ddev/github-action-setup-ddev@v1
+        with:
+          ddevDir: packages/starter
+
+      - name: Run the smoke test
+        working-directory: packages/starter
+        run: ./tests/smoke/run.sh
+
+      # The cache is a deployment step, and a warm cache is a different code path:
+      # items are restored rather than scanned. The site has to serve either way.
+      - name: Generate the discovery cache and test again
+        working-directory: packages/starter
+        run: |
+          ddev exec 'cd /var/www/html && wp foehn discovery:generate'
+          ./tests/smoke/run.sh
