@@ -16,9 +16,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Widen the `@studiometa/foehn-vite-plugin` Vite peer range to `^6 || ^7 || ^8`
 - Run Pest from the monorepo root with `--test-directory`; Pest 5 resolves the test path from the Composer root, not the working directory
 - Bump CI to Node 24 — lint-staged 17 requires Node >= 22.22.1
+- A discovered item is now the attribute instance plus the reflection facts that are not in the attribute, instead of a flattened copy of its fields. `AttributeCodec` serializes attributes for the cache in one place, so `itemToCacheable()` is gone from all 19 discoveries, along with `resolveAttribute()`, the `registerBlockFromCache()` paths and the 13-parameter `doRegisterBlock()`. Values derived from an attribute are computed in `apply()` rather than cached
+- `getCacheableData()`, `restoreFromCache()` and `wasRestoredFromCache()` are part of the `WpDiscovery` interface; every discovery is cacheable, so the three `method_exists()` probes are gone
+- Bump the discovery cache schema to `2`. A cache written by an earlier version is rejected and rebuilt on the next request
+- Generated `make:` files are built by `ClassFileGenerator`, which takes the app path as a dependency instead of reaching `Kernel::getInstance()`, and sets attribute arguments structurally rather than by matching literals in the stub's printed source. A substitution that finds no target now fails instead of silently emitting the stub's placeholder
+- Generated class files now declare `strict_types=1`
 
 ### Fixed
 
+- **`make:field-group`:** `--post-type`, `--taxonomy` and `--page-template` were ignored. The command substituted `['post_type', '==', 'post']`, but `FieldGroupStub` declares the map `['post_type' => 'post']`, so the replacement never matched and every generated field group stayed located on `post`
+- **`make:controller`:** `--templates` with more than one template generated broken code. `'dummy-template'` was replaced everywhere, so the stub's `render('dummy-template', $context)` became `render(['a', 'b'], $context)`. The attribute now takes the list and the rendered template is set separately
 - Fix a fatal error in the starter config and in four doc pages: `DiscoveryCacheStrategy` was imported from `Tempest\Core`, which no longer exists — it lives in `Tempest\Discovery`
 - **Vite plugin:** Import `fast-glob` as a default export — `import { glob }` is not resolvable from real Node ESM and broke every consumer build
 - **Vite plugin:** Rename the `vite-plugin-dts` option `rollupTypes` to `bundleTypes` and add the now-optional `@microsoft/api-extractor` peer; without both, v5 silently emitted per-file declarations and never wrote `dist/index.d.ts`
