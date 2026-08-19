@@ -9,90 +9,124 @@ use Studiometa\Foehn\Security\Salts;
 beforeEach(function () {
     wp_stub_reset();
 
-    $this->directory = sys_get_temp_dir() . '/foehn-tests/salts-command-' . uniqid('', true);
-    $this->path = $this->directory . '/config/wordpress-salts.config.php';
+    // WP_CONTENT_DIR is <temp>/foehn-tests/web/wp-content, so the project root the
+    // command works out is <temp>/foehn-tests — where a real install keeps its .env.
+    $this->root = dirname((string) constant('WP_CONTENT_DIR'), 2);
+    $this->env = $this->root . '/.env';
+    $this->php = $this->root . '/config/wordpress-salts.config.php';
     $this->command = new SaltsGenerateCommand(new WpCli());
+
+    $this->logged = fn(): string => implode("\n", array_column(
+        array_column(wp_stub_get_calls('wp_cli_warning'), 'args'),
+        'message',
+    ));
 });
 
-afterEach(fn() => removeTestDirectory($this->directory));
+afterEach(function () {
+    foreach ([$this->env, $this->php] as $path) {
+        if (is_file($path)) {
+            unlink($path);
+        }
+    }
+});
 
 describe('salts:generate', function () {
-    it('writes the keys where it was told to', function () {
-        ($this->command)([], ['path' => $this->path]);
+    it('writes the keys to .env by default', function () {
+        ($this->command)([], []);
 
-        expect($this->path)->toBeFile();
+        expect($this->env)->toBeFile();
 
         foreach (Salts::NAMES as $name) {
-            expect(file_get_contents($this->path))->toContain("define('{$name}',");
+            expect(file_get_contents($this->env))->toMatch('/^' . $name . '="[^"]{64,}"$/m');
         }
 
         expect(wp_stub_get_calls('wp_cli_success'))->toHaveCount(1);
     });
 
-    it('creates the directory it writes into', function () {
-        expect(is_dir(dirname($this->path)))->toBeFalse();
+    it('leaves the rest of .env untouched', function () {
+        file_put_contents($this->env, "DB_NAME=db\nWP_DEBUG=true\n");
 
-        ($this->command)([], ['path' => $this->path]);
+        ($this->command)([], []);
 
-        expect(is_dir(dirname($this->path)))->toBeTrue();
+        expect(file_get_contents($this->env))->toContain('DB_NAME=db')->toContain('WP_DEBUG=true');
     });
 
-    it('keeps the file readable by its owner alone', function () {
-        ($this->command)([], ['path' => $this->path]);
+    it('fills in a name that .env lists empty rather than adding it twice', function () {
+        file_put_contents($this->env, "AUTH_KEY=\nDB_NAME=db\n");
 
-        expect(decoct(fileperms($this->path) & 0o777))->toBe('600');
+        ($this->command)([], []);
+
+        expect(preg_match_all('/^AUTH_KEY=/m', file_get_contents($this->env)))->toBe(1);
+        expect(file_get_contents($this->env))->toMatch('/^AUTH_KEY="[^"]{64,}"$/m');
     });
 
-    it('refuses to replace existing keys without being told twice', function () {
-        mkdir(dirname($this->path), 0o777, true);
-        file_put_contents($this->path, "<?php // mine\n");
+    it('refuses to replace keys that are set, without being told twice', function () {
+        file_put_contents($this->env, "AUTH_KEY=\"mine\"\n");
 
-        ($this->command)([], ['path' => $this->path]);
+        ($this->command)([], []);
 
-        // Replacing keys logs every user out, so it does not happen by accident.
-        expect(file_get_contents($this->path))->toContain('// mine');
+        // Replacing keys ends every session signed with the old ones.
+        expect(file_get_contents($this->env))->toContain('AUTH_KEY="mine"');
         expect(wp_stub_get_calls('wp_cli_error'))->toHaveCount(1);
     });
 
-    it('replaces existing keys when forced', function () {
-        mkdir(dirname($this->path), 0o777, true);
-        file_put_contents($this->path, "<?php // mine\n");
+    it('replaces them when forced', function () {
+        file_put_contents($this->env, "AUTH_KEY=\"mine\"\n");
 
-        ($this->command)([], ['path' => $this->path, 'force' => true, 'yes' => true]);
+        ($this->command)([], ['force' => true, 'yes' => true]);
 
-        expect(file_get_contents($this->path))->not->toContain('// mine');
-        expect(file_get_contents($this->path))->toContain("define('AUTH_KEY',");
+        expect(file_get_contents($this->env))->not->toContain('AUTH_KEY="mine"');
+        expect(file_get_contents($this->env))->toMatch('/^AUTH_KEY="[^"]{64,}"$/m');
     });
 
     it('generates different keys each time it runs', function () {
-        ($this->command)([], ['path' => $this->path]);
-        $first = file_get_contents($this->path);
+        ($this->command)([], []);
+        $first = file_get_contents($this->env);
 
-        ($this->command)([], ['path' => $this->path, 'force' => true, 'yes' => true]);
-        $second = file_get_contents($this->path);
+        ($this->command)([], ['force' => true, 'yes' => true]);
 
-        expect($second)->not->toBe($first);
+        expect(file_get_contents($this->env))->not->toBe($first);
     });
 
-    it('defaults to the file the generated wp-config reads', function () {
+    it('writes a PHP file when the path asks for one', function () {
+        ($this->command)([], ['path' => 'config/wordpress-salts.config.php']);
+
+        expect($this->php)->toBeFile();
+        expect(file_get_contents($this->php))->toContain("define('AUTH_KEY',");
+        expect(decoct(fileperms($this->php) & 0o777))->toBe('600');
+    });
+
+    it('takes a relative path as relative to the project', function () {
+        ($this->command)([], ['path' => 'my.env']);
+
+        expect($this->root . '/my.env')->toBeFile();
+
+        unlink($this->root . '/my.env');
+    });
+
+    it('says so when a PHP file would win over the keys it just wrote', function () {
+        if (!is_dir(dirname($this->php))) {
+            mkdir(dirname($this->php), 0o777, true);
+        }
+
+        file_put_contents($this->php, "<?php\n");
+
         ($this->command)([], []);
 
-        // WP_CONTENT_DIR is <temp>/foehn-tests/wp-content, so the project root is
-        // two levels up — where the installer puts the config directory.
-        $expected = dirname((string) constant('WP_CONTENT_DIR'), 2) . '/config/wordpress-salts.config.php';
+        // wp-config.php requires that file before reading the environment, so the
+        // keys in .env would change nothing WordPress sees.
+        expect(($this->logged)())->toContain('read first');
+    });
 
-        expect($expected)->toBeFile();
+    it('says nothing about a PHP file that is not there', function () {
+        ($this->command)([], []);
 
-        unlink($expected);
+        expect(($this->logged)())->not->toContain('read first');
     });
 
     it('falls back to the default when handed an empty path', function () {
         ($this->command)([], ['path' => '']);
 
-        $expected = dirname((string) constant('WP_CONTENT_DIR'), 2) . '/config/wordpress-salts.config.php';
-
-        expect($expected)->toBeFile();
-
-        unlink($expected);
+        expect($this->env)->toBeFile();
     });
 });

@@ -13,7 +13,7 @@ composer.lock
 # Environment
 .env
 
-# Generated secrets
+# Generated secrets — .env holds the keys by default; this file is the alternative
 /config/wordpress-salts.config.php
 
 # DDEV

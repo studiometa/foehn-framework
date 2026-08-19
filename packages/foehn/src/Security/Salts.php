@@ -8,16 +8,20 @@ use Random\RandomException;
 use RuntimeException;
 
 /**
- * WordPress's eight security keys, and the file the generated wp-config.php reads
- * them from.
+ * WordPress's eight security keys, and the two shapes they are written in.
  *
  * These keys sign authentication cookies and nonces. A site whose keys are guessable
  * is a site whose login cookies can be forged, which is why nothing here has a
  * default: a value is either random or absent.
  *
- * `studiometa/foehn-installer` writes the same file on a first install, from its own
- * copy of this — a Composer plugin cannot rely on the project's autoloader. The file
- * format is the contract between the two, and wp-config.php only requires it.
+ * They belong in the environment, which is what lets a project keep them wherever it
+ * keeps its other secrets: a .env file, container environment variables, a vault.
+ * wp-config.php reads each name from the environment, and still requires
+ * config/wordpress-salts.config.php when a project would rather use a PHP file.
+ *
+ * `studiometa/foehn-installer` writes the same lines on a first install, from its own
+ * copy of this — a Composer plugin cannot rely on the project's autoloader. The two
+ * formats below are the contract between the two.
  */
 final readonly class Salts
 {
@@ -74,7 +78,22 @@ final readonly class Salts
     }
 
     /**
-     * The PHP file wp-config.php requires.
+     * The lines a dotenv file holds, which is where these belong by default.
+     */
+    public function toEnvLines(): string
+    {
+        $lines = [];
+
+        foreach ($this->values as $name => $value) {
+            // Quoted: a generated value contains `+` and `/`, and may end in `=`.
+            $lines[] = sprintf('%s="%s"', $name, $value);
+        }
+
+        return implode("\n", $lines) . "\n";
+    }
+
+    /**
+     * The PHP file wp-config.php requires, for a project that prefers one.
      */
     public function toPhpFile(): string
     {

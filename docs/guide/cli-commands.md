@@ -94,7 +94,7 @@ The cache also fills itself on the first request that finds it missing, and `com
 
 ### Security Keys
 
-WordPress signs authentication cookies and nonces with eight keys. The installer generates them into `config/wordpress-salts.config.php` on a first install, and the generated `wp-config.php` refuses to serve a production request without them.
+WordPress signs authentication cookies and nonces with eight keys. They live in the environment, so a project keeps them wherever it keeps its other secrets. `composer install` fills them into `.env` on a first install, and the generated `wp-config.php` refuses to serve a production request without them.
 
 ```bash
 # Generate keys for a project that has none
@@ -104,22 +104,28 @@ wp foehn salts:generate
 wp foehn salts:generate --force
 ```
 
-Rotating replaces the keys the current cookies were signed with, so every session ends. Keep the file out of version control; the starter's `.gitignore` already excludes it.
+Rotating replaces the keys the current cookies were signed with, so every session ends.
 
-#### Where the keys live
+#### Where the keys come from
 
-Either place works, and `wp-config.php` reads them in this order:
+`wp-config.php` reads them in this order:
 
-| Source                               | Notes                                                                                            |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------ |
-| `config/wordpress-salts.config.php`  | What the installer generates. Read first, so it wins.                                            |
-| `.env` (or any environment variable) | Read for each key the file did not define. Anything starting with `change-me-` counts as absent. |
+| Source                              | Notes                                                                                                                   |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `config/wordpress-salts.config.php` | Only if a project chooses to use a PHP file. Read first, so it wins.                                                    |
+| Environment                         | The default. `.env`, container variables, a VM's environment, a secret pulled from a vault — anything that reaches PHP. |
 
-`.env` is the better fit when your deployment already injects secrets as environment variables — Forge, Docker, a CI secret store. Set all eight names there and the installer leaves the keys alone rather than generating a file that would take precedence over them.
+`.env` is untracked and managed per install; `.env.example` lists the eight names empty, so they are visible without being committed. A value that is empty or still starts with `change-me-` counts as absent.
 
-The generated file is the default because it survives anything that rewrites `.env`. Where `.env` comes from a template or a configuration-management run, keys appended to it are lost on the next deploy — and keys that change log every user out, on every deploy. A file the deploy does not touch cannot do that.
+Because the environment is read, nothing has to end up in a file at all: export the keys from your orchestrator or your vault and the installer leaves them alone. It checks for them before generating.
 
-Whichever you choose, keep it out of version control.
+If you would rather keep them in a PHP file, write one and it takes precedence:
+
+```bash
+wp foehn salts:generate --path=config/wordpress-salts.config.php
+```
+
+The command warns when that file exists and you rotate `.env`, since the file is what WordPress would still read.
 
 ## Custom Commands
 

@@ -168,14 +168,12 @@ describe('WebRootGenerator', function () {
         expect($this->root . '/web/index.php')->toBeFile();
     });
 
-    it('generates the security keys on a first install', function () {
+    it('generates the security keys into .env on a first install', function () {
+        file_put_contents($this->root . '/.env.example', "DB_NAME=db\nAUTH_KEY=\n");
+
         ($this->generate)();
 
-        $path = $this->root . '/config/wordpress-salts.config.php';
-
-        expect($path)->toBeFile();
-
-        $contents = file_get_contents($path);
+        $env = file_get_contents($this->root . '/.env');
 
         foreach ([
             'AUTH_KEY',
@@ -187,44 +185,54 @@ describe('WebRootGenerator', function () {
             'LOGGED_IN_SALT',
             'NONCE_SALT',
         ] as $name) {
-            expect($contents)->toContain("define('{$name}',");
+            expect($env)->toMatch('/^' . $name . '="[^"]{64,}"$/m');
         }
 
-        // Every key random, and none of them each other.
-        preg_match_all("/define\('[A-Z_]+', '([^']+)'\);/", $contents, $matches);
+        // What the project already had is still there, and the name it listed empty
+        // was filled in rather than added a second time.
+        expect($env)->toContain('DB_NAME=db');
+        expect(preg_match_all('/^AUTH_KEY=/m', $env))->toBe(1);
+        expect($env)->not->toContain('change-me-');
+    });
 
-        expect($matches[1])->toHaveCount(8);
-        expect(array_unique($matches[1]))->toHaveCount(8);
+    it('generates keys with no .env at all', function () {
+        ($this->generate)();
 
-        foreach ($matches[1] as $value) {
-            expect(strlen($value))->toBeGreaterThanOrEqual(64);
-            expect($value)->not->toContain('change-me-');
+        expect($this->root . '/.env')->toBeFile();
+        expect(file_get_contents($this->root . '/.env'))->toMatch('/^AUTH_KEY="/m');
+    });
+
+    it('generates a different set for every install', function () {
+        ($this->generate)();
+        $first = file_get_contents($this->root . '/.env');
+
+        $second = makeProjectRoot('theme');
+
+        try {
+            new WebRootGenerator($this->io, $second, InstallerConfig::fromArray([], $second), null)->generate();
+
+            // Two installs of the same project must not share keys, which is what the
+            // old md5(__DIR__) fallback did.
+            expect(file_get_contents($second . '/.env'))->not->toBe($first);
+        } finally {
+            removeDirectory($second);
         }
     });
 
-    it('writes the keys as parsable PHP', function () {
+    it('never replaces keys .env already sets', function () {
+        file_put_contents($this->root . '/.env', "AUTH_KEY=\"mine\"\n");
+
         ($this->generate)();
 
-        $output = [];
-        $status = 0;
-        exec(
-            'php -l ' . escapeshellarg($this->root . '/config/wordpress-salts.config.php') . ' 2>&1',
-            $output,
-            $status,
-        );
+        $env = file_get_contents($this->root . '/.env');
 
-        expect($status)->toBe(0, implode("\n", $output));
+        // Rewriting on every composer install would log every user out every deploy.
+        expect($env)->toContain('AUTH_KEY="mine"');
+        // The seven it did not set are filled in, because a partial set still fails.
+        expect($env)->toMatch('/^NONCE_SALT="/m');
     });
 
-    it('keeps the keys readable by their owner alone', function () {
-        ($this->generate)();
-
-        $mode = fileperms($this->root . '/config/wordpress-salts.config.php') & 0o777;
-
-        expect(decoct($mode))->toBe('600');
-    });
-
-    it('leaves the keys to .env when .env defines them all', function () {
+    it('leaves the keys alone when the environment supplies them', function () {
         $names = [
             'AUTH_KEY',
             'SECURE_AUTH_KEY',
@@ -236,37 +244,31 @@ describe('WebRootGenerator', function () {
             'NONCE_SALT',
         ];
 
-        file_put_contents(
-            $this->root . '/.env',
-            implode("\n", array_map(static fn(string $name): string => "{$name}=from-dotenv-{$name}", $names)) . "\n",
-        );
+        foreach ($names as $name) {
+            putenv("{$name}=from-the-environment");
+        }
 
-        ($this->generate)();
+        try {
+            ($this->generate)();
 
-        // wp-config.php requires the file before reading the environment, so writing
-        // one here would silently replace the keys the project already set.
-        expect(file_exists($this->root . '/config/wordpress-salts.config.php'))->toBeFalse();
-        expect($this->io->getOutput())->toContain('.env already defines them');
+            // A vault or a container already provides them; .env should stay untouched.
+            expect(file_exists($this->root . '/.env'))->toBeFalse();
+        } finally {
+            foreach ($names as $name) {
+                putenv($name);
+            }
+        }
     });
 
-    it('generates keys when .env defines only some of them', function () {
-        file_put_contents($this->root . '/.env', "AUTH_KEY=only-one-of-eight\n");
-
-        ($this->generate)();
-
-        // A partial set would leave the rest to the production refusal, so the file
-        // is written and takes over.
-        expect($this->root . '/config/wordpress-salts.config.php')->toBeFile();
-    });
-
-    it('never replaces keys that already exist', function () {
+    it('leaves the keys alone when the project uses the PHP file', function () {
         mkdir($this->root . '/config', 0o777, true);
         file_put_contents($this->root . '/config/wordpress-salts.config.php', "<?php // mine\n");
 
         ($this->generate)();
 
-        // Rewriting on every composer install would log every user out on every deploy.
-        expect(file_get_contents($this->root . '/config/wordpress-salts.config.php'))->toContain('// mine');
+        // wp-config.php reads that file first, so writing .env keys would be writing
+        // keys nothing uses.
+        expect(file_exists($this->root . '/.env'))->toBeFalse();
     });
 
     it('refuses to serve production without the keys', function () {
@@ -288,7 +290,7 @@ describe('WebRootGenerator', function () {
 
         ($this->generate)();
 
-        unlink($this->root . '/config/wordpress-salts.config.php');
+        unlink($this->root . '/.env');
 
         $output = [];
         $status = 0;
@@ -308,7 +310,7 @@ describe('WebRootGenerator', function () {
 
         ($this->generate)();
 
-        unlink($this->root . '/config/wordpress-salts.config.php');
+        unlink($this->root . '/.env');
 
         $output = [];
         $status = 0;
