@@ -22,11 +22,7 @@
         "composer/installers": "^2.0",
         "johnpbloch/wordpress": "^7.0",
         "studiometa/foehn": "^0.4",
-        "studiometa/foehn-acf": "^0.5",
         "studiometa/foehn-installer": "^0.4"
-    },
-    "require-dev": {
-        "stoutlogic/acf-builder": "^1.12"
     },
     "repositories": [
         {

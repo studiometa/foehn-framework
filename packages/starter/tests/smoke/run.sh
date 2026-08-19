@@ -49,7 +49,7 @@ printf '✓ homepage returns 200 with no PHP error\n'
 cache_status="$(ddev exec 'cd /var/www/html && wp foehn discovery:status' 2>/dev/null || true)"
 
 case "$cache_status" in
-*"Locations cached: 3/3"*) ;;
+*"Locations cached: 2/2"*) ;;
 *) fail "the request did not warm the discovery cache
 $cache_status" ;;
 esac
