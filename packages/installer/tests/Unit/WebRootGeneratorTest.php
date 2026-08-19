@@ -224,6 +224,41 @@ describe('WebRootGenerator', function () {
         expect(decoct($mode))->toBe('600');
     });
 
+    it('leaves the keys to .env when .env defines them all', function () {
+        $names = [
+            'AUTH_KEY',
+            'SECURE_AUTH_KEY',
+            'LOGGED_IN_KEY',
+            'NONCE_KEY',
+            'AUTH_SALT',
+            'SECURE_AUTH_SALT',
+            'LOGGED_IN_SALT',
+            'NONCE_SALT',
+        ];
+
+        file_put_contents(
+            $this->root . '/.env',
+            implode("\n", array_map(static fn(string $name): string => "{$name}=from-dotenv-{$name}", $names)) . "\n",
+        );
+
+        ($this->generate)();
+
+        // wp-config.php requires the file before reading the environment, so writing
+        // one here would silently replace the keys the project already set.
+        expect(file_exists($this->root . '/config/wordpress-salts.config.php'))->toBeFalse();
+        expect($this->io->getOutput())->toContain('.env already defines them');
+    });
+
+    it('generates keys when .env defines only some of them', function () {
+        file_put_contents($this->root . '/.env', "AUTH_KEY=only-one-of-eight\n");
+
+        ($this->generate)();
+
+        // A partial set would leave the rest to the production refusal, so the file
+        // is written and takes over.
+        expect($this->root . '/config/wordpress-salts.config.php')->toBeFile();
+    });
+
     it('never replaces keys that already exist', function () {
         mkdir($this->root . '/config', 0o777, true);
         file_put_contents($this->root . '/config/wordpress-salts.config.php', "<?php // mine\n");

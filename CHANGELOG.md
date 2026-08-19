@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The keys may live in `.env` instead of the generated file. Set all eight names there and the installer leaves them alone, rather than generating a file that `wp-config.php` would read first
 - `wp foehn salts:generate` writes a fresh set of WordPress security keys, for rotating them or for a project whose keys were never generated. `--force` replaces existing ones, which logs every user out
 - The discovery cache fills itself. A request that had to scan a location writes what it found, so the next one does not, and `composer install` clears the cache through the installer plugin. Between them there is no manual step on a deploy: `wp foehn discovery:generate` stays for warming before traffic arrives rather than on the first visitor's request. A cache that cannot be written is not an error — the page is served and the scan happens again next time
 - Config files may be named for an environment — `foehn.production.config.php` — and are then read only in that one, as reported by `wp_get_environment_type()`. The environment's file wins over the plain file beside it

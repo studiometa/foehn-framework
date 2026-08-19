@@ -106,7 +106,20 @@ wp foehn salts:generate --force
 
 Rotating replaces the keys the current cookies were signed with, so every session ends. Keep the file out of version control; the starter's `.gitignore` already excludes it.
 
-If a deploy provisions `.env` by hand, the keys can live there instead — `wp-config.php` reads each name from the environment when the file is absent. Anything still starting with `change-me-` counts as absent.
+#### Where the keys live
+
+Either place works, and `wp-config.php` reads them in this order:
+
+| Source                               | Notes                                                                                            |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| `config/wordpress-salts.config.php`  | What the installer generates. Read first, so it wins.                                            |
+| `.env` (or any environment variable) | Read for each key the file did not define. Anything starting with `change-me-` counts as absent. |
+
+`.env` is the better fit when your deployment already injects secrets as environment variables — Forge, Docker, a CI secret store. Set all eight names there and the installer leaves the keys alone rather than generating a file that would take precedence over them.
+
+The generated file is the default because it survives anything that rewrites `.env`. Where `.env` comes from a template or a configuration-management run, keys appended to it are lost on the next deploy — and keys that change log every user out, on every deploy. A file the deploy does not touch cannot do that.
+
+Whichever you choose, keep it out of version control.
 
 ## Custom Commands
 

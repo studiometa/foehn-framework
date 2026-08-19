@@ -95,21 +95,22 @@ jobs:
       - name: Run tests with coverage
         run: composer test:coverage
 
-      # The framework suite is the one measured for coverage; the starter's own
-      # suite covers the example theme and has to stay green too.
+      # The starter's own suite covers the example theme and has to stay green too.
       - name: Run the starter test suite
         run: composer test:starter
 
       # The installer writes wp-config.php and the web root into every project
       # created from the starter, so it gets its own suite.
-      - name: Run the installer test suite
-        run: composer test:installer
+      # Measured too: its lines are in the same diffs, and a patch that only ever
+      # counted the framework's coverage reported them all as untested.
+      - name: Run the installer test suite with coverage
+        run: composer test:coverage:installer
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage/clover.xml
+          files: ./coverage/clover.xml,./coverage/clover-installer.xml
           fail_ci_if_error: false
           flags: unittests
           name: codecov-foehn

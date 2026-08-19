@@ -26,6 +26,25 @@ use SplFileInfo;
  */
 final class WebRootGenerator
 {
+    /**
+     * The keys WordPress signs authentication cookies and nonces with.
+     *
+     * The same list as `Studiometa\Foehn\Security\Salts::NAMES`, repeated because a
+     * Composer plugin cannot rely on the project's autoloader.
+     *
+     * @var list<string>
+     */
+    private const SALT_NAMES = [
+        'AUTH_KEY',
+        'SECURE_AUTH_KEY',
+        'LOGGED_IN_KEY',
+        'NONCE_KEY',
+        'AUTH_SALT',
+        'SECURE_AUTH_SALT',
+        'LOGGED_IN_SALT',
+        'NONCE_SALT',
+    ];
+
     public function __construct(
         private readonly IOInterface $io,
         private readonly string $projectRoot,
@@ -415,6 +434,15 @@ final class WebRootGenerator
             return;
         }
 
+        // A project may keep its keys in .env instead. wp-config.php reads this file
+        // first, so generating one would quietly take precedence over keys that are
+        // already set — and rotate them behind the project's back.
+        if ($this->environmentHasSalts()) {
+            $this->io->write('  <comment>Skipped security keys:</comment> .env already defines them');
+
+            return;
+        }
+
         $directory = dirname($path);
 
         if (!is_dir($directory)) {
@@ -456,6 +484,36 @@ final class WebRootGenerator
         $this->io->write(
             "  <comment>Created:</comment> {$this->relativePath($path)} <warning>(secret — do not commit)</warning>",
         );
+    }
+
+    /**
+     * Whether the project's .env already defines every security key.
+     *
+     * Read rather than parsed: a key is present when a line assigns it something.
+     * Getting this wrong in the lenient direction generates a file that overrides a
+     * working .env, so a partial set counts as absent and the file is written.
+     */
+    private function environmentHasSalts(): bool
+    {
+        $envFile = $this->projectRoot . '/.env';
+
+        if (!is_file($envFile)) {
+            return false;
+        }
+
+        $contents = file_get_contents($envFile);
+
+        if ($contents === false) {
+            return false;
+        }
+
+        foreach (self::SALT_NAMES as $name) {
+            if (preg_match('/^\s*' . $name . '\s*=\s*\S/m', $contents) !== 1) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
