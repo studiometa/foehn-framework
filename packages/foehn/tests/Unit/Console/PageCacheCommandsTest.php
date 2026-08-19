@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 use Studiometa\Foehn\Config\PageCacheConfig;
 use Studiometa\Foehn\Console\Commands\PageCacheClearCommand;
+use Studiometa\Foehn\Console\Commands\PageCacheConfigCommand;
 use Studiometa\Foehn\Console\Commands\PageCacheStatusCommand;
 use Studiometa\Foehn\Console\WpCli;
 use Studiometa\Foehn\PageCache\CacheKey;
+use Studiometa\Foehn\PageCache\ServerConfig\ApacheSnippet;
 use Studiometa\Foehn\PageCache\Store;
 
 beforeEach(function () {
@@ -69,6 +71,50 @@ describe('cache:clear', function () {
 
         expect($store->stats()['files'])->toBe(0);
         expect(wp_stub_get_calls('wp_cli_warning'))->toHaveCount(1);
+    });
+});
+
+describe('cache:config', function () {
+    beforeEach(function () {
+        // A cache under the document root, because that is the only kind a web server can
+        // reach by filename — the other cases are covered below.
+        $this->served = new PageCacheConfig(enabled: true, path: constant('WP_CONTENT_DIR') . '/cache/foehn/pages');
+    });
+
+    it('prints the nginx snippet without writing anything', function () {
+        (new PageCacheConfigCommand(new WpCli(), $this->served))([], ['server' => 'nginx']);
+
+        $printed = implode("\n", array_column(array_column(wp_stub_get_calls('wp_cli_line'), 'args'), 'message'));
+
+        expect($printed)->toContain('location @foehn_miss {');
+        expect(wp_stub_get_calls('wp_cli_success'))->toBe([]);
+    });
+
+    it('prints the Apache block', function () {
+        (new PageCacheConfigCommand(new WpCli(), $this->served))([], ['server' => 'apache']);
+
+        $printed = implode("\n", array_column(array_column(wp_stub_get_calls('wp_cli_line'), 'args'), 'message'));
+
+        expect($printed)->toContain(ApacheSnippet::BEGIN);
+    });
+
+    it('refuses a server it cannot generate for', function (array $assocArgs) {
+        (new PageCacheConfigCommand(new WpCli(), $this->config))([], $assocArgs);
+
+        expect(wp_stub_get_calls('wp_cli_error'))->toHaveCount(1);
+    })->with([
+        'nothing at all' => [[]],
+        'a server nobody supports' => [['server' => 'caddy']],
+    ]);
+
+    it('says so rather than generating a snippet no server could use', function () {
+        // A cache outside the document root has no filename a web server can reach. The
+        // drop-in still serves it, which is worth saying out loud.
+        $outside = new PageCacheConfig(enabled: true, path: '/srv/elsewhere/pages');
+
+        (new PageCacheConfigCommand(new WpCli(), $outside))([], ['server' => 'nginx']);
+
+        expect(wp_stub_get_calls('wp_cli_error')[0]['args']['message'])->toContain('drop-in still serves it');
     });
 });
 

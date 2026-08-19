@@ -87,6 +87,12 @@ if (!defined('WP_CONTENT_URL')) {
     define('WP_CONTENT_URL', 'http://example.com/wp-content');
 }
 
+if (!defined('ABSPATH')) {
+    // WordPress in a subdirectory, as this layout installs it: the document root is the
+    // directory above ABSPATH, which is what the generated server snippets derive.
+    define('ABSPATH', dirname(WP_CONTENT_DIR) . '/wp/');
+}
+
 if (!defined('WP_HOME')) {
     // The page cache validates a request's Host header against this rather than
     // trusting it, so a test that keys a request needs the site's own host to exist.

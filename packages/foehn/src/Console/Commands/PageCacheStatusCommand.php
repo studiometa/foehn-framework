@@ -8,6 +8,9 @@ use Studiometa\Foehn\Attributes\AsCliCommand;
 use Studiometa\Foehn\Config\PageCacheConfig;
 use Studiometa\Foehn\Console\CliCommandInterface;
 use Studiometa\Foehn\Console\WpCli;
+use Studiometa\Foehn\PageCache\ServerConfig\ApacheSnippet;
+use Studiometa\Foehn\PageCache\ServerConfig\NginxSnippet;
+use Studiometa\Foehn\PageCache\ServerConfig\SnippetPolicy;
 use Studiometa\Foehn\PageCache\Store;
 
 #[AsCliCommand(name: 'cache:status', description: 'Show static page cache status', longDescription: <<<'DOC'
@@ -58,6 +61,9 @@ final class PageCacheStatusCommand implements CliCommandInterface
         $this->cli->log('Newest entry: ' . $this->age($stats['newest']));
         $this->cli->line('');
 
+        $this->reportReaders();
+        $this->cli->line('');
+
         if (!$this->config->enabled) {
             $this->cli->log('Nothing is written or served. Enable it in app/page-cache.config.php.');
 
@@ -71,6 +77,66 @@ final class PageCacheStatusCommand implements CliCommandInterface
         }
 
         $this->cli->success('The page cache is active.');
+    }
+
+    /**
+     * Which of the read paths are installed, and whether they still match the config.
+     *
+     * The thing most likely to bite this feature is a snippet generated from an older
+     * policy: it keeps serving, it keeps answering HIT, and it is answering it under
+     * rules the site no longer has. So the snippets carry a policy hash and this
+     * compares it.
+     */
+    private function reportReaders(): void
+    {
+        $this->cli->log('Read paths:');
+
+        $dropIn = defined('WP_CONTENT_DIR') ? constant('WP_CONTENT_DIR') . '/advanced-cache.php' : null;
+        $hasDropIn = is_string($dropIn) && is_file($dropIn);
+        $wpCache = defined('WP_CACHE') && (bool) constant('WP_CACHE');
+
+        $this->cli->log(sprintf(
+            '  %s drop-in (advanced-cache.php%s)',
+            $hasDropIn && $wpCache ? '✓' : '·',
+            $hasDropIn && !$wpCache ? ', but WP_CACHE is not true' : '',
+        ));
+
+        $root = SnippetPolicy::documentRoot();
+
+        foreach ([
+            'nginx' => [
+                $root === null ? null : dirname($root) . '/' . PageCacheConfigCommand::NGINX_PATH,
+                new NginxSnippet($this->config)->hash(),
+            ],
+            'apache' => [
+                $root === null ? null : $root . '/.htaccess',
+                new ApacheSnippet($this->config)->hash(),
+            ],
+        ] as $label => [$path, $hash]) {
+            if ($path === null || !is_file($path)) {
+                $this->cli->log("  · {$label}");
+
+                continue;
+            }
+
+            $contents = (string) file_get_contents($path);
+
+            if (!str_contains($contents, 'Foehn')) {
+                $this->cli->log("  · {$label}");
+
+                continue;
+            }
+
+            $current = str_contains($contents, '# policy: ' . $hash);
+
+            $this->cli->log(sprintf(
+                '  %s %s (%s)%s',
+                $current ? '✓' : '!',
+                $label,
+                $path,
+                $current ? '' : ' — generated from a different config, re-run cache:config',
+            ));
+        }
     }
 
     private function bytes(int $bytes): string

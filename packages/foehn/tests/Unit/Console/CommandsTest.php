@@ -25,6 +25,7 @@ use Studiometa\Foehn\Console\Commands\MakeShortcodeCommand;
 use Studiometa\Foehn\Console\Commands\MakeTaxonomyCommand;
 use Studiometa\Foehn\Console\Commands\RewriteFlushCommand;
 use Studiometa\Foehn\Console\Commands\PageCacheClearCommand;
+use Studiometa\Foehn\Console\Commands\PageCacheConfigCommand;
 use Studiometa\Foehn\Console\Commands\PageCacheStatusCommand;
 
 describe('Commands', function (): void {
@@ -51,6 +52,7 @@ describe('Commands', function (): void {
         'RewriteFlushCommand' => ['class' => RewriteFlushCommand::class, 'name' => 'rewrite:flush'],
         'PageCacheClearCommand' => ['class' => PageCacheClearCommand::class, 'name' => 'cache:clear'],
         'PageCacheStatusCommand' => ['class' => PageCacheStatusCommand::class, 'name' => 'cache:status'],
+        'PageCacheConfigCommand' => ['class' => PageCacheConfigCommand::class, 'name' => 'cache:config'],
     ];
 
     foreach ($commands as $label => $data) {
