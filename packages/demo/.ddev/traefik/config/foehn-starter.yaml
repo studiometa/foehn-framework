@@ -1,0 +1,98 @@
+#ddev-generated
+# If you remove the ddev-generated line above you
+# are responsible for maintaining this file. DDEV will not then
+# update it, for example if you add `additional_hostnames`, etc.
+
+http:
+  routers:
+    foehn-starter-xhgui-80-http:
+      entrypoints:
+        - http-8143
+      rule: HostRegexp(`^foehn-starter\.ddev\.site$`)
+      
+      service: "foehn-starter-xhgui-80"
+      tls: false
+      # middlewares:
+      #   - "foehn-starter-redirectHttps"
+    foehn-starter-web-80-http:
+      entrypoints:
+        - http-80
+      rule: HostRegexp(`^foehn-starter\.ddev\.site$`)
+      
+      service: "foehn-starter-web-80"
+      tls: false
+      # middlewares:
+      #   - "foehn-starter-redirectHttps"
+    foehn-starter-web-8025-http:
+      entrypoints:
+        - http-8025
+      rule: HostRegexp(`^foehn-starter\.ddev\.site$`)
+      
+      service: "foehn-starter-web-8025"
+      tls: false
+      # middlewares:
+      #   - "foehn-starter-redirectHttps"
+    
+    
+    foehn-starter-xhgui-80-https:
+      entrypoints:
+        - http-8142
+      rule: HostRegexp(`^foehn-starter\.ddev\.site$`)
+      
+      service: "foehn-starter-xhgui-80"
+      
+      tls: true
+      
+    
+    
+    foehn-starter-web-80-https:
+      entrypoints:
+        - http-443
+      rule: HostRegexp(`^foehn-starter\.ddev\.site$`)
+      
+      service: "foehn-starter-web-80"
+      
+      tls: true
+      
+    foehn-starter-web-8025-https:
+      entrypoints:
+        - http-8026
+      rule: HostRegexp(`^foehn-starter\.ddev\.site$`)
+      
+      service: "foehn-starter-web-8025"
+      
+      tls: true
+      
+    
+
+  middlewares:
+    foehn-starter-redirectHttps:
+      redirectScheme:
+        scheme: https
+        permanent: true
+
+  services:
+    foehn-starter-xhgui-80:
+      loadbalancer:
+        servers:
+          - url: http://ddev-foehn-starter-xhgui:80
+        
+    
+    foehn-starter-web-80:
+      loadbalancer:
+        servers:
+          - url: http://ddev-foehn-starter-web:80
+        
+    foehn-starter-web-8025:
+      loadbalancer:
+        servers:
+          - url: http://ddev-foehn-starter-web:8025
+        
+    
+    
+    
+
+tls:
+  certificates:
+    - certFile: /mnt/ddev-global-cache/traefik/certs/foehn-starter.crt
+      keyFile: /mnt/ddev-global-cache/traefik/certs/foehn-starter.key

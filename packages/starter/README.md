@@ -1,12 +1,14 @@
 # Foehn Starter Theme
 
-A complete WordPress starter theme demonstrating all [Føhn](https://github.com/studiometa/foehn-framework) features.
+A minimal WordPress theme powered by [Føhn](https://github.com/studiometa/foehn-framework): the boot, the configuration, the templates a theme cannot render without, and the front-end build. Nothing else.
+
+That is deliberate. A starting point you delete half of is worse than one you add to, so what is here is what every project needs, and the demonstrations live in [`studiometa/foehn-demo`](../demo) — every attribute the framework ships, in a working theme you can read.
 
 > **Note**
 > This package is part of the [Føhn Framework](https://github.com/studiometa/foehn-framework) monorepo.
 > Please report issues and submit pull requests in the [main repository](https://github.com/studiometa/foehn-framework).
 
-## Quick Start with DDEV
+## Quick start with DDEV
 
 ```bash
 composer create-project studiometa/foehn-starter my-project
@@ -14,18 +16,14 @@ cd my-project
 ddev start
 ```
 
-That's it. DDEV will:
+DDEV starts PHP 8.5, MariaDB and nginx, copies `.env.example` to `.env`, runs `composer install` (which generates `web/`, the symlinks and `wp-config.php`), installs WordPress with `admin` / `admin`, and activates the theme.
 
-1. Start PHP 8.5 + MariaDB + nginx
-2. Copy `.env.example` to `.env` (with DDEV defaults)
-3. Run `composer install` (generates `web/`, symlinks, wp-config.php)
-4. Install WordPress with admin/admin credentials
-5. Activate the starter theme
+```bash
+ddev launch              # the site
+ddev launch /wp/wp-admin # the admin
+```
 
-Open the site: `ddev launch`
-Admin panel: `ddev launch /wp/wp-admin` (admin / admin)
-
-## Quick Start without DDEV
+## Quick start without DDEV
 
 ```bash
 composer create-project studiometa/foehn-starter my-project
@@ -35,118 +33,72 @@ cp .env.example .env
 composer install
 ```
 
-Then point your web server's document root to the `web/` directory.
+Then point your web server's document root at `web/`.
 
-## Project Structure
+## What is here
 
 ```
 my-project/
-├── theme/                      # WordPress theme (versioned)
+├── theme/
 │   ├── app/
-│   │   ├── Blocks/             # ACF blocks
-│   │   ├── ContextProviders/   # Context providers
-│   │   ├── Controllers/        # Template controllers
-│   │   ├── Data/               # DTOs for block context
-│   │   ├── Hooks/              # WordPress hooks (actions & filters)
-│   │   ├── ImageSizes/         # Custom image sizes
-│   │   ├── Menus/              # Navigation menus
-│   │   ├── Models/             # Custom post types (Timber models)
-│   │   ├── Taxonomies/         # Custom taxonomies
-│   │   └── foehn.config.php    # Framework configuration
+│   │   ├── ContextProviders/   # GlobalContextProvider — data every template gets
+│   │   ├── Controllers/        # single, archive, search, 404
+│   │   ├── Hooks/              # theme supports, excerpt length
+│   │   ├── Menus/              # header, footer, legal
+│   │   └── foehn.config.php    # discovery cache, opt-in cleanup and security hooks
 │   ├── assets/
-│   │   ├── js/                 # JavaScript (js-toolkit)
-│   │   │   ├── app.js          # Entry point
-│   │   │   └── components/     # Custom components
-│   │   └── css/                # CSS (Tailwind v4)
-│   │       ├── app.css         # Entry point
-│   │       ├── base/           # Base styles
-│   │       └── components/     # Component styles
-│   ├── templates/              # Twig templates
-│   │   ├── layouts/            # Base layouts
-│   │   ├── pages/              # Page templates
-│   │   └── components/         # Reusable components
-│   ├── functions.php           # Single boot line
-│   └── style.css               # Theme header
+│   │   ├── css/app.css         # Tailwind entry point
+│   │   └── js/app.js           # js-toolkit entry point
+│   ├── templates/
+│   │   ├── layouts/base.twig
+│   │   ├── pages/              # single, archive, search, 404
+│   │   └── components/         # header, footer, card, pagination
+│   ├── functions.php           # one line: Kernel::boot()
+│   └── style.css
 │
 ├── .ddev/                      # DDEV configuration
-├── vite.config.js              # Vite build config
-├── web/                        # Generated document root (gitignored)
-├── .env                        # Environment variables (not needed with DDEV)
-├── composer.json               # PHP dependencies
-└── package.json                # JS dependencies
+├── vite.config.js              # Vite, with @studiometa/foehn-vite-plugin
+├── web/                        # generated document root (gitignored)
+├── .env                        # environment variables (DDEV supplies its own)
+├── composer.json
+└── package.json
 ```
 
-## What's included
+Every class here is one a theme needs before it renders anything: the controllers that answer WordPress's template hierarchy, the menus the header and footer templates read, the context provider that puts `current_year` in the footer, and the theme supports.
 
-### Custom Post Types
+`foehn.config.php` opts into the framework's own cleanup and security hooks — `CleanHeadTags`, `DisableEmoji`, `DisableOembed`, `DisableVersionDisclosure`, `DisableXmlRpc`, `GenericLoginErrors`, `YouTubeNoCookieHooks` — and turns the discovery cache on.
 
-- **Product** — with price, sale price, and product categories
-- **Testimonial** — with author info and ratings
-
-### Custom Taxonomies
-
-- **ProductCategory** — hierarchical, with custom rewrite
-- **ProductTag** — flat taxonomy for products
-
-### Template Controllers
-
-- **SingleController** — handles all single post/page views
-- **ArchiveController** — handles archives, categories, tags
-- **SearchController** — search results page
-- **Error404Controller** — 404 error page
-
-### Hooks
-
-- **ThemeHooks** — theme setup, image sizes, menus
-
-### Context Providers
-
-- **GlobalContextProvider** — site info, menus, available on all templates
-
-### Built-in Foehn Hooks (via foehn.config.php)
-
-- `CleanHeadTags` — removes unnecessary `<head>` tags
-- `DisableEmoji` — removes emoji scripts/styles
-- `DisableOembed` — removes oEmbed discovery
-- `DisableVersionDisclosure` — hides WordPress version
-- `DisableXmlRpc` — disables XML-RPC + pingback
-- `GenericLoginErrors` — hides username enumeration on login
-- `YouTubeNoCookieHooks` — converts YouTube embeds to no-cookie variant
-
-## Development
-
-### Front-end
+## Adding to it
 
 ```bash
-npm install             # Install JS dependencies
-npm run dev             # Start Vite dev server (HMR)
-npm run build           # Build for production
-npm run lint            # Lint JS, CSS and Twig
-npm run fix             # Auto-fix linting issues
+ddev wp foehn make:post-type product
+ddev wp foehn make:block hero
+ddev wp foehn make:controller Product --templates=single-product
+ddev wp foehn discovery:list          # what the framework found, and where
 ```
 
-### DDEV Commands
+Or read [the demo](../demo), which has one of everything already written.
+
+## Front-end
 
 ```bash
-ddev start              # Start the environment
-ddev stop               # Stop the environment
-ddev launch             # Open the site in browser
-ddev ssh                # SSH into the container
-ddev composer install   # Run composer inside the container
-ddev wp <command>       # Run WP-CLI commands
-ddev describe           # Show URLs and connection info
+npm install
+npm run dev             # Vite dev server, with HMR into WordPress
+npm run build           # production build
+npm run lint            # JS, CSS and Twig
+npm run fix
 ```
 
-### Without DDEV
+There is no JavaScript test setup here, because there is no JavaScript to test yet. [The demo](../demo) has one configured with Vitest and Playwright, ready to copy.
+
+## Tests
 
 ```bash
-# Requirements: PHP 8.5+, Composer 2.x, MySQL/MariaDB
-
-# Development server (via wp-cli)
-wp server --docroot=web
-
-# Or configure nginx/apache to point to web/
+composer test:starter    # from the monorepo root
+./tests/smoke/run.sh     # against a started ddev
 ```
+
+The smoke test asks the one question this package has to answer: does a project created from it boot and serve a page? On 2026-08-19 the answer was no, with 1409 unit tests passing — those run against WordPress function stubs, so a discovery that registers nothing at all still passes them.
 
 ## License
 

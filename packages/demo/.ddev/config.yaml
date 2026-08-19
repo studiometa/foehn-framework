@@ -1,0 +1,38 @@
+# Without an explicit name, ddev derives it from the directory ("demo"), which
+# does not match the WP_HOME in .env.example and leaves WordPress redirecting to a
+# hostname ddev never serves.
+name: foehn-demo
+type: wordpress
+docroot: web
+disable_settings_management: true
+php_version: "8.5"
+webserver_type: nginx-fpm
+database:
+  type: mariadb
+  version: "10.11"
+composer_version: "2"
+nodejs_version: "22"
+
+# WordPress core is installed in web/wp/ via Composer
+# The foehn-installer generates web/wp-config.php, web/index.php, and symlinks
+# Environment variables are loaded from .env via vlucas/phpdotenv
+
+hooks:
+  post-start:
+    # Only when nothing is installed yet. CI installs on the runner instead, where
+    # the path repositories pointing at ../foehn and ../installer are reachable —
+    # ddev mounts this directory alone, so Composer inside the container cannot see
+    # them and would fail.
+    - exec: '[ -d vendor ] || composer install --no-interaction'
+    # Install WordPress if not already done
+    - exec: |
+        if ! wp core is-installed 2>/dev/null; then
+          wp core install \
+            --url="https://${DDEV_HOSTNAME}" \
+            --title="Foehn Demo" \
+            --admin_user=admin \
+            --admin_password=admin \
+            --admin_email=admin@example.com \
+            --skip-email
+          wp theme activate demo-theme
+        fi
