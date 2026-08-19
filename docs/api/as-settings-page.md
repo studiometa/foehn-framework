@@ -22,6 +22,7 @@ final readonly class AsSettingsPage
         public string $capability = 'manage_options',
         public ?string $icon = null,
         public ?int $position = null,
+        public ?string $template = null,
     ) {}
 
     public function menuTitle(): string;
@@ -39,6 +40,7 @@ final readonly class AsSettingsPage
 | `capability` | `string`  | `'manage_options'`      | What a user needs to reach the page                                   |
 | `icon`       | `?string` | `null`                  | Dashicon, URL or base64 SVG. Top-level pages only                     |
 | `position`   | `?int`    | `null`                  | Where in the menu. Top-level pages only                               |
+| `template`   | `?string` | `null`                  | A Twig template rendered as the body of the form                      |
 
 ## SettingsPageInterface
 
@@ -53,14 +55,38 @@ interface SettingsPageInterface
 {
     /** @return array<string, Setting> */
     public static function settings(): array;
-
-    public function render(): void;
 }
 ```
 
 Required. A class carrying the attribute without it is refused during discovery, because there is nothing to register.
 
-`render()` is called inside the page shell, between `do_settings_sections()` and the submit button, so it prints form fields and nothing else.
+## The form body
+
+A page supplies it in one of two ways, and discovery refuses a page that supplies neither.
+
+### A Twig template
+
+`template: 'settings/theme-settings'` on the attribute. The template is rendered through `ViewEngineInterface` and receives:
+
+| Variable   | Contents                                                      |
+| ---------- | ------------------------------------------------------------- |
+| `settings` | The current value of each declared setting, typed as declared |
+| `page`     | `slug` and `title`                                            |
+
+### SettingsFormInterface
+
+```php
+<?php
+
+namespace Studiometa\Foehn\Contracts;
+
+interface SettingsFormInterface
+{
+    public function form(): string;
+}
+```
+
+For a form that needs more than the page's own values. Returns the HTML rather than echoing it, like `TemplateControllerInterface::handle()`; the page is resolved from the container, so a `ViewEngineInterface` in its constructor renders Twig here too. Implementing it takes precedence over a `template`.
 
 ## Setting
 

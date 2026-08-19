@@ -15,9 +15,13 @@ namespace App\Settings;
 use Studiometa\Foehn\Attributes\AsSettingsPage;
 use Studiometa\Foehn\Contracts\SettingsPageInterface;
 use Studiometa\Foehn\Settings\Setting;
-use Studiometa\Foehn\Settings\Settings;
 
-#[AsSettingsPage(slug: 'theme-settings', title: 'Theme settings', parent: 'themes.php')]
+#[AsSettingsPage(
+    slug: 'theme-settings',
+    title: 'Theme settings',
+    parent: 'themes.php',
+    template: 'settings/theme-settings',
+)]
 final readonly class ThemeSettings implements SettingsPageInterface
 {
     /** @return array<string, Setting> */
@@ -28,25 +32,72 @@ final readonly class ThemeSettings implements SettingsPageInterface
             'theme_show_banner' => Setting::bool(default: false),
         ];
     }
+}
+```
 
-    public function render(): void
+```twig
+{# templates/settings/theme-settings.twig #}
+<table class="form-table" role="presentation">
+  <tr>
+    <th scope="row"><label for="theme_contact_email">Contact email</label></th>
+    <td>
+      <input
+        type="email"
+        id="theme_contact_email"
+        name="theme_contact_email"
+        value="{{ settings.theme_contact_email }}" />
+    </td>
+  </tr>
+
+  <tr>
+    <th scope="row">Banner</th>
+    <td>
+      <label>
+        <input
+          type="checkbox"
+          name="theme_show_banner"
+          value="1"
+          {{ settings.theme_show_banner ? 'checked' : '' }} />
+        Show the announcement banner
+      </label>
+    </td>
+  </tr>
+</table>
+```
+
+`settings()` says what is stored. The template says what the form looks like. That separation is the whole point, and the difference from an ACF options page, which declares both.
+
+The form is Twig, like every other view in a Føhn theme, and the page class has no PHP of its own beyond the declaration. The template receives:
+
+| Variable   | Contents                                                      |
+| ---------- | ------------------------------------------------------------- |
+| `settings` | The current value of each declared setting, typed as declared |
+| `page`     | `slug` and `title`                                            |
+
+`settings.theme_show_banner` is a boolean, not the empty string WordPress stores an unchecked box as. Each input's `name` is the option name.
+
+### When the form needs more than the values
+
+A page that has to build its form from something else — a list of post types, a value fetched from an API — implements `SettingsFormInterface` instead of naming a template:
+
+```php
+final readonly class ThemeSettings implements SettingsPageInterface, SettingsFormInterface
+{
+    public function __construct(private ViewEngineInterface $view) {}
+
+    public function form(): string
     {
-        ?>
-        <table class="form-table" role="presentation">
-            <tr>
-                <th scope="row"><label for="theme_contact_email">Contact email</label></th>
-                <td>
-                    <input type="email" id="theme_contact_email" name="theme_contact_email"
-                        value="<?php echo esc_attr((string) Settings::get('theme_contact_email')); ?>" />
-                </td>
-            </tr>
-        </table>
-        <?php
+        return $this->view->render('settings/theme-settings', [
+            'settings' => Settings::all(),
+            'post_types' => get_post_types(['public' => true], 'objects'),
+        ]);
     }
 }
 ```
 
-`settings()` says what is stored. `render()` says what the form looks like. That separation is the whole point, and the difference from an ACF options page, which declares both.
+It returns the HTML rather than echoing it, like [`TemplateControllerInterface::handle()`](/api/template-controller-interface), so the page composes it however it likes — Twig with its own context, or anything else.
+
+**A page needs one or the other.** Without a template and without `form()` there is nothing between the heading and the submit button, and discovery refuses the page rather than rendering an empty one.
 
 ## What the framework gives you, and what it does not
 
@@ -59,7 +110,7 @@ Føhn provides the menu entry, `register_setting()` for each declared setting wi
   <form action="options.php" method="post">
     settings_fields()        ← the nonce and option group, without which the save is rejected
     do_settings_sections()
-    render()                 ← yours
+    your template or form()  ← yours
     submit_button()
   </form>
 </div>
@@ -67,7 +118,7 @@ Føhn provides the menu entry, `register_setting()` for each declared setting wi
 
 `settings_fields()` is why the shell exists at all: a page that forgets it looks like it simply does not save, with no error anywhere. You cannot forget it, because you never write it.
 
-**There is no field abstraction, and that is deliberate.** Text inputs and checkboxes are a day's work; repeaters, conditional logic, media pickers and layouts are ACF's actual product, and a `Field::text(...)` builder is the first step towards maintaining a field library nobody asked Føhn for. The body of the form is plain WordPress markup — or one `@wordpress/components` island if a page earns it.
+**There is no field abstraction, and that is deliberate.** Text inputs and checkboxes are a day's work; repeaters, conditional logic, media pickers and layouts are ACF's actual product, and a `Field::text(...)` builder is the first step towards maintaining a field library nobody asked Føhn for. The body of the form is markup you write — in Twig, or one `@wordpress/components` island if a page earns it.
 
 ## Declaring a setting
 
@@ -112,7 +163,7 @@ Read through `Settings::get()` rather than `get_option()`. Two reasons, both of 
 - `get_option()` answers `false` for an option that has never been saved, whatever `register_setting()` was told the default was — the default only applies once the row exists.
 - WordPress stores an unchecked checkbox as the empty string and a checked one as `'1'`. `Settings::get()` applies the type the page declared, so a boolean setting answers `true` or `false`.
 
-In Twig, read it through a [context provider](/guide/context-providers) rather than reaching for a global.
+A settings page's own template gets them without asking, in `settings`. Elsewhere in Twig, read them through a [context provider](/guide/context-providers) rather than reaching for a global.
 
 ## Where the page appears
 
@@ -127,7 +178,7 @@ In Twig, read it through a [context provider](/guide/context-providers) rather t
 
 ## Migrating from an ACF options page
 
-The values are the same options; only the editing screen changes. Declare each field as a `Setting`, and write the form once by hand — that is the part `AcfOptionsPageInterface::fields()` was doing for you, and the reason it takes an afternoon rather than a minute. Fields ACF has no plain equivalent for (repeaters, flexible content) are the signal to keep [the ACF package](/guide/acf-options-pages) for that page.
+The values are the same options; only the editing screen changes. Declare each field as a `Setting`, and write the form once as a Twig template — that is the part `AcfOptionsPageInterface::fields()` was doing for you, and the reason it takes an afternoon rather than a minute. Fields ACF has no plain equivalent for (repeaters, flexible content) are the signal to keep [the ACF package](/guide/acf-options-pages) for that page.
 
 ## Related
 
