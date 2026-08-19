@@ -27,9 +27,13 @@ final readonly class ConfigLoader
     /**
      * Environment-specific suffixes, keyed by the environment WordPress reports.
      *
+     * Public because `PageCache\Server` has to pick the same file this loader would,
+     * from a drop-in that runs before the container exists. Two lists of suffixes is
+     * two answers to "which config file applies", and one of them would be wrong.
+     *
      * @var array<string, list<string>>
      */
-    private const ENVIRONMENT_SUFFIXES = [
+    public const ENVIRONMENT_SUFFIXES = [
         'local' => ['.local'],
         'development' => ['.dev', '.development'],
         'staging' => ['.staging', '.stg'],

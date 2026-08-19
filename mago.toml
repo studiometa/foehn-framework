@@ -11,7 +11,9 @@ print-width = 120
 cyclomatic-complexity = { threshold = 55 }  # WP template hierarchy + opt-in hooks are complex
 kan-defect = { threshold = 5.0 }            # Increased for complex discoveries
 halstead = { effort-threshold = 10000, volume-threshold = 2000, difficulty-threshold = 17 }
-too-many-enum-cases = { threshold = 30 }
+# BypassReason has one case per way a page can fail to be cacheable. Folding them
+# together is exactly the loss of diagnostics the enum exists to prevent.
+too-many-enum-cases = { threshold = 40 }
 too-many-methods = { threshold = 25 }       # Query builders need many fluent methods
 too-many-properties = { threshold = 15 }    # Builders wrap many WP register args
 

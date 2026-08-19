@@ -24,6 +24,10 @@ use Studiometa\Foehn\Console\Commands\MakePostTypeCommand;
 use Studiometa\Foehn\Console\Commands\MakeShortcodeCommand;
 use Studiometa\Foehn\Console\Commands\MakeTaxonomyCommand;
 use Studiometa\Foehn\Console\Commands\RewriteFlushCommand;
+use Studiometa\Foehn\Console\Commands\PageCacheClearCommand;
+use Studiometa\Foehn\Console\Commands\PageCacheConfigCommand;
+use Studiometa\Foehn\Console\Commands\PageCacheStatusCommand;
+use Studiometa\Foehn\Console\Commands\PageCacheWarmCommand;
 
 describe('Commands', function (): void {
     $commands = [
@@ -47,6 +51,10 @@ describe('Commands', function (): void {
         'DiscoveryStatusCommand' => ['class' => DiscoveryStatusCommand::class, 'name' => 'discovery:status'],
         'DiscoveryListCommand' => ['class' => DiscoveryListCommand::class, 'name' => 'discovery:list'],
         'RewriteFlushCommand' => ['class' => RewriteFlushCommand::class, 'name' => 'rewrite:flush'],
+        'PageCacheClearCommand' => ['class' => PageCacheClearCommand::class, 'name' => 'cache:clear'],
+        'PageCacheStatusCommand' => ['class' => PageCacheStatusCommand::class, 'name' => 'cache:status'],
+        'PageCacheConfigCommand' => ['class' => PageCacheConfigCommand::class, 'name' => 'cache:config'],
+        'PageCacheWarmCommand' => ['class' => PageCacheWarmCommand::class, 'name' => 'cache:warm'],
     ];
 
     foreach ($commands as $label => $data) {

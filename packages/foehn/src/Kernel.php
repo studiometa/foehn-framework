@@ -10,6 +10,7 @@ use Studiometa\Foehn\Blocks\BlockEditorAssets;
 use Studiometa\Foehn\Cache\TransientCache;
 use Studiometa\Foehn\Config\ConfigLoader;
 use Studiometa\Foehn\Config\FoehnConfig;
+use Studiometa\Foehn\Config\PageCacheConfig;
 use Studiometa\Foehn\Config\RenderApiConfig;
 use Studiometa\Foehn\Config\RestConfig;
 use Studiometa\Foehn\Config\TimberConfig;
@@ -21,6 +22,10 @@ use Studiometa\Foehn\Discovery\DiscoveryLocations;
 use Studiometa\Foehn\Discovery\DiscoveryRunner;
 use Studiometa\Foehn\Jobs\ActionSchedulerJobDispatcher;
 use Studiometa\Foehn\Jobs\JobRegistry;
+use Studiometa\Foehn\PageCache\Bypass;
+use Studiometa\Foehn\PageCache\Purger;
+use Studiometa\Foehn\PageCache\Recorder;
+use Studiometa\Foehn\PageCache\Store;
 use Studiometa\Foehn\Rest\RenderApi;
 use Studiometa\Foehn\Views\ContextProviderRegistry;
 use Studiometa\Foehn\Views\TimberViewEngine;
@@ -221,6 +226,7 @@ final class Kernel
         $this->container->config(new TimberConfig());
         $this->container->config(new RestConfig());
         $this->container->config(new RenderApiConfig());
+        $this->container->config(new PageCacheConfig());
         $this->container->config($this->config !== [] ? FoehnConfig::fromArray($this->config) : new FoehnConfig());
 
         new ConfigLoader($this->container)->load($this->container->get(DiscoveryLocations::class)->all());
@@ -297,6 +303,26 @@ final class Kernel
                 $this->container->get(RenderApiConfig::class),
             ),
         );
+
+        // Registered whether or not the cache is on, because `wp foehn cache:clear`
+        // and `cache:status` have to work on a site that has just turned it off.
+        $this->container->singleton(Store::class, fn() => new Store($this->container->get(PageCacheConfig::class)));
+
+        $this->container->singleton(Bypass::class, fn() => new Bypass($this->container->get(PageCacheConfig::class)));
+
+        $this->container->singleton(
+            Recorder::class,
+            fn() => new Recorder(
+                $this->container->get(PageCacheConfig::class),
+                $this->container->get(Store::class),
+                $this->container->get(Bypass::class),
+            ),
+        );
+
+        $this->container->singleton(
+            Purger::class,
+            fn() => new Purger($this->container->get(PageCacheConfig::class), $this->container->get(Store::class)),
+        );
     }
 
     /**
@@ -349,6 +375,35 @@ final class Kernel
         // Editor phase: ship the block editor registrar and the block definitions.
         // Always on — block authoring must not be opt-in like the classes in src/Hooks/.
         add_action('enqueue_block_editor_assets', $this->onEnqueueBlockEditorAssets(...));
+
+        $this->registerPageCache();
+    }
+
+    /**
+     * Wire the page cache, when a config file has asked for it.
+     *
+     * One switch, and nothing to add to `FoehnConfig::hooks`: the framework's own
+     * `#[AsAction]` classes are opt-in by design, so page-cache hooks are wired here
+     * instead — the way `enqueue_block_editor_assets` already is. The purger is wired
+     * with the recorder rather than separately, because a cache that fills without
+     * invalidating is the one failure mode worse than no cache at all.
+     */
+    private function registerPageCache(): void
+    {
+        /** @var PageCacheConfig $config */
+        $config = $this->container->get(PageCacheConfig::class);
+
+        if (!$config->enabled || !$config->allowsEnvironment()) {
+            return;
+        }
+
+        /** @var Recorder $recorder */
+        $recorder = $this->container->get(Recorder::class);
+        $recorder->register();
+
+        /** @var Purger $purger */
+        $purger = $this->container->get(Purger::class);
+        $purger->register();
     }
 
     /**

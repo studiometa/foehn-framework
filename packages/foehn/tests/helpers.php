@@ -288,3 +288,88 @@ function makeCommandContractSuite(array $contracts): void
         });
     }
 }
+
+/**
+ * A directory for a page cache under test, guaranteed not to be shared.
+ */
+function pageCacheRoot(): string
+{
+    return sys_get_temp_dir() . '/foehn-tests/page-cache-' . uniqid('', true);
+}
+
+/**
+ * A page cache store rooted at a temporary directory.
+ */
+function pageCacheStore(string $root, int $ttl = 0): \Studiometa\Foehn\PageCache\Store
+{
+    return new \Studiometa\Foehn\PageCache\Store(new \Studiometa\Foehn\Config\PageCacheConfig(
+        enabled: true,
+        path: $root,
+        ttl: $ttl,
+    ));
+}
+
+/**
+ * The `$_SERVER` of an ordinary anonymous GET for the site's own host.
+ *
+ * @param array<string, mixed> $overrides
+ * @return array<string, mixed>
+ */
+function pageCacheServer(array $overrides = []): array
+{
+    return [
+        'REQUEST_METHOD' => 'GET',
+        'HTTP_HOST' => 'example.com',
+        'REQUEST_URI' => '/blog/',
+        ...$overrides,
+    ];
+}
+
+/**
+ * The eligibility rules, on a config that has the cache switched on.
+ */
+function pageCacheBypass(?\Studiometa\Foehn\Config\PageCacheConfig $config = null): \Studiometa\Foehn\PageCache\Bypass
+{
+    return new \Studiometa\Foehn\PageCache\Bypass(
+        $config ?? new \Studiometa\Foehn\Config\PageCacheConfig(enabled: true, environments: ['production']),
+    );
+}
+
+/**
+ * A response body long enough and complete enough to be storable.
+ */
+function pageCacheBody(string $extra = ''): string
+{
+    return '<html><body>' . $extra . str_repeat('x', 300) . '</body></html>';
+}
+
+/**
+ * A published post the stubs will resolve by id.
+ */
+function pageCachePost(int $id, string $type = 'post', string $name = 'hello-world'): WP_Post
+{
+    $post = new WP_Post();
+    $post->ID = $id;
+    $post->post_type = $type;
+    $post->post_name = $name;
+    $post->post_status = 'publish';
+    $post->post_author = 7;
+    $post->post_date = '2026-08-19 09:30:00';
+
+    $GLOBALS['wp_stub_posts'][$id] = $post;
+
+    return $post;
+}
+
+/**
+ * A term whose archive URL the stubs can build.
+ */
+function pageCacheTerm(int $id, string $slug, string $taxonomy): WP_Term
+{
+    $term = new WP_Term();
+    $term->term_id = $id;
+    $term->slug = $slug;
+    $term->taxonomy = $taxonomy;
+
+    return $term;
+}

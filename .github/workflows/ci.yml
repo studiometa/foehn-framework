@@ -319,3 +319,14 @@ jobs:
         run: |
           ddev exec 'cd /var/www/html && wp foehn discovery:generate'
           ./tests/smoke/run.sh
+
+      # The page cache's end-to-end suite is Pest, and Pest lives in the monorepo's own
+      # vendor directory — the steps above install the starter's only. It drives real
+      # requests through nginx and through the PHP drop-in, which is the only place the
+      # fast path can be shown to work: a unit test cannot prove a web server reads the
+      # file PHP wrote.
+      - name: Install monorepo dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Run the page cache end-to-end suite
+        run: composer test:smoke
