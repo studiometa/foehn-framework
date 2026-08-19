@@ -74,7 +74,8 @@ final class PostTypeDiscovery implements WpDiscovery
     {
         $className = $item['className'];
         $implementsConfig = $item['implementsConfig'];
-        $attribute = $this->resolveAttribute($item);
+        /** @var AsPostType $attribute */
+        $attribute = $item['attribute'];
         $builder = PostTypeBuilder::fromAttribute($attribute);
 
         // Allow class to customize the builder
@@ -94,36 +95,6 @@ final class PostTypeDiscovery implements WpDiscovery
     }
 
     /**
-     * Resolve the AsPostType attribute from a discovered or cached item.
-     *
-     * @param array<string, mixed> $item
-     */
-    private function resolveAttribute(array $item): AsPostType
-    {
-        if (($item['attribute'] ?? null) !== null) {
-            return $item['attribute'];
-        }
-
-        // Cached format - rebuild attribute
-        return new AsPostType(
-            name: $item['name'],
-            singular: $item['singular'],
-            plural: $item['plural'],
-            public: $item['public'] ?? true,
-            hasArchive: $item['hasArchive'] ?? false,
-            showInRest: $item['showInRest'] ?? true,
-            menuIcon: $item['menuIcon'] ?? null,
-            supports: $item['supports'] ?? ['title', 'editor', 'thumbnail'],
-            taxonomies: $item['taxonomies'] ?? [],
-            rewriteSlug: $item['rewriteSlug'] ?? null,
-            hierarchical: $item['hierarchical'] ?? false,
-            menuPosition: $item['menuPosition'] ?? null,
-            labels: $item['labels'] ?? [],
-            rewrite: $item['rewrite'] ?? null,
-        );
-    }
-
-    /**
      * Register the Timber class map for this post type.
      *
      * @param string $postType
@@ -136,36 +107,5 @@ final class PostTypeDiscovery implements WpDiscovery
 
             return $map;
         });
-    }
-
-    /**
-     * Convert a discovered item to a cacheable format.
-     *
-     * @param array<string, mixed> $item
-     * @return array<string, mixed>
-     */
-    protected function itemToCacheable(array $item): array
-    {
-        /** @var AsPostType $attribute */
-        $attribute = $item['attribute'];
-
-        return [
-            'name' => $attribute->name,
-            'singular' => $attribute->singular,
-            'plural' => $attribute->plural,
-            'public' => $attribute->public,
-            'hasArchive' => $attribute->hasArchive,
-            'showInRest' => $attribute->showInRest,
-            'menuIcon' => $attribute->menuIcon,
-            'supports' => $attribute->supports,
-            'taxonomies' => $attribute->taxonomies,
-            'rewriteSlug' => $attribute->rewriteSlug,
-            'hierarchical' => $attribute->hierarchical,
-            'menuPosition' => $attribute->menuPosition,
-            'labels' => $attribute->labels,
-            'rewrite' => $attribute->rewrite,
-            'className' => $item['className'],
-            'implementsConfig' => $item['implementsConfig'],
-        ];
     }
 }

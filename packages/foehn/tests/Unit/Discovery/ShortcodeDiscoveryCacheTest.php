@@ -2,8 +2,10 @@
 
 declare(strict_types=1);
 
-use Studiometa\Foehn\Discovery\ShortcodeDiscovery;
+use Studiometa\Foehn\Attributes\AsShortcode;
 use Studiometa\Foehn\Discovery\DiscoveryLocation;
+use Studiometa\Foehn\Discovery\ShortcodeDiscovery;
+use Tests\Fixtures\ShortcodeFixture;
 
 beforeEach(function () {
     $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
@@ -11,79 +13,46 @@ beforeEach(function () {
 });
 
 describe('ShortcodeDiscovery caching', function () {
-    it('converts items to cacheable format', function () {
-        $ref = new ReflectionMethod($this->discovery, 'addItem');
-        $ref->invoke($this->discovery, $this->location, [
-            'tag' => 'my_shortcode',
-            'className' => 'App\\Shortcodes\\MyShortcode',
-            'methodName' => 'render',
-        ]);
+    it('keeps every item under its location namespace', function () {
+        discoverFixture($this->discovery, ShortcodeFixture::class, $this->location);
 
-        $cacheableData = $this->discovery->getCacheableData();
+        $cacheData = $this->discovery->getCacheableData();
 
-        expect($cacheableData['App\\'])->toHaveCount(1);
-        expect($cacheableData['App\\'][0])->toBe([
-            'tag' => 'my_shortcode',
-            'className' => 'App\\Shortcodes\\MyShortcode',
-            'methodName' => 'render',
-        ]);
+        expect($cacheData)->toHaveKey('App\\')->and($cacheData['App\\'])->toHaveCount(2);
     });
 
-    it('handles multiple shortcodes', function () {
-        $ref = new ReflectionMethod($this->discovery, 'addItem');
+    it('restores every item unchanged through a cache file', function () {
+        discoverFixture($this->discovery, ShortcodeFixture::class, $this->location);
 
-        $ref->invoke($this->discovery, $this->location, [
-            'tag' => 'gallery',
-            'className' => 'App\\Shortcodes\\Gallery',
-            'methodName' => 'renderGallery',
-        ]);
-        $ref->invoke($this->discovery, $this->location, [
-            'tag' => 'button',
-            'className' => 'App\\Shortcodes\\Button',
-            'methodName' => 'renderButton',
-        ]);
+        $restored = restoreThroughCacheFile($this->discovery, new ShortcodeDiscovery());
 
-        $cacheableData = $this->discovery->getCacheableData();
-
-        expect($cacheableData['App\\'])->toHaveCount(2);
-        expect($cacheableData['App\\'][0]['tag'])->toBe('gallery');
-        expect($cacheableData['App\\'][1]['tag'])->toBe('button');
+        expect($restored->wasRestoredFromCache())
+            ->toBeTrue()
+            ->and($restored->getItems()->all())
+            ->toEqual($this->discovery->getItems()->all());
     });
 
-    it('can restore from cache', function () {
-        $cachedData = [
-            [
-                'tag' => 'cached_shortcode',
-                'className' => 'App\\Shortcodes\\CachedShortcode',
-                'methodName' => 'handle',
-            ],
-        ];
+    it('restores the attribute as an instance, not an array', function () {
+        discoverFixture($this->discovery, ShortcodeFixture::class, $this->location);
 
-        $this->discovery->restoreFromCache(['App\\' => $cachedData]);
+        $item = restoreThroughCacheFile($this->discovery, new ShortcodeDiscovery())->getItems()->all()[0];
 
-        expect($this->discovery->wasRestoredFromCache())->toBeTrue();
+        expect($item['attribute'])
+            ->toBeInstanceOf(AsShortcode::class)
+            ->and($item['attribute']->tag)
+            ->toBe('greeting')
+            ->and($item['className'])
+            ->toBe(ShortcodeFixture::class)
+            ->and($item['methodName'])
+            ->toBe('greeting');
     });
 
-    it('handles shortcodes from same class', function () {
-        $ref = new ReflectionMethod($this->discovery, 'addItem');
+    it('keeps each method binding distinct', function () {
+        discoverFixture($this->discovery, ShortcodeFixture::class, $this->location);
 
-        $ref->invoke($this->discovery, $this->location, [
-            'tag' => 'link',
-            'className' => 'App\\Shortcodes\\LinkShortcodes',
-            'methodName' => 'renderLink',
-        ]);
-        $ref->invoke($this->discovery, $this->location, [
-            'tag' => 'external_link',
-            'className' => 'App\\Shortcodes\\LinkShortcodes',
-            'methodName' => 'renderExternalLink',
-        ]);
+        $items = restoreThroughCacheFile($this->discovery, new ShortcodeDiscovery())->getItems()->all();
 
-        $cacheableData = $this->discovery->getCacheableData();
-
-        expect($cacheableData['App\\'])->toHaveCount(2);
-        expect($cacheableData['App\\'][0]['className'])->toBe('App\\Shortcodes\\LinkShortcodes');
-        expect($cacheableData['App\\'][1]['className'])->toBe('App\\Shortcodes\\LinkShortcodes');
-        expect($cacheableData['App\\'][0]['methodName'])->toBe('renderLink');
-        expect($cacheableData['App\\'][1]['methodName'])->toBe('renderExternalLink');
+        expect(array_column($items, 'methodName'))->toBe(['greeting', 'farewell']);
+        expect(array_map(static fn(array $i): string => $i['attribute']->tag, $items))->toBe(['greeting', 'farewell']);
     });
 });

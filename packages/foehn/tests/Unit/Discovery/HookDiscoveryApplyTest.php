@@ -9,8 +9,8 @@ use Tests\Fixtures\HookFixture;
 beforeEach(function () {
     $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
     wp_stub_reset();
-    $container = bootTestContainer();
-    $this->discovery = new HookDiscovery($container);
+    $this->container = bootTestContainer();
+    $this->discovery = new HookDiscovery($this->container);
 });
 
 afterEach(fn() => tearDownTestContainer());
@@ -54,25 +54,35 @@ describe('HookDiscovery apply', function () {
         expect(wp_stub_get_calls('add_filter'))->toBeEmpty();
     });
 
-    it('registers hooks from cached data', function () {
-        $this->discovery->restoreFromCache(['App\\' => [
-            [
-                'type' => 'action',
-                'hook' => 'save_post',
-                'className' => HookFixture::class,
-                'methodName' => 'onInit',
-                'priority' => 15,
-                'acceptedArgs' => 3,
-            ],
-        ]]);
+    it('registers the same hooks whether scanned or restored from cache', function () {
+        $scanned = new HookDiscovery($this->container);
+        discoverFixture($scanned, HookFixture::class, $this->location);
 
-        $this->discovery->apply();
+        $scannedActions = [];
+        $scanned->apply();
 
-        $actions = wp_stub_get_calls('add_action');
+        foreach (wp_stub_get_calls('add_action') as $call) {
+            $scannedActions[] = [
+                'hook' => $call['args']['hook'],
+                'priority' => $call['args']['priority'],
+                'acceptedArgs' => $call['args']['acceptedArgs'],
+            ];
+        }
 
-        expect($actions)->toHaveCount(1);
-        expect($actions[0]['args']['hook'])->toBe('save_post');
-        expect($actions[0]['args']['priority'])->toBe(15);
-        expect($actions[0]['args']['acceptedArgs'])->toBe(3);
+        wp_stub_reset();
+
+        restoreThroughCacheFile($scanned, $this->discovery)->apply();
+
+        $restoredActions = [];
+
+        foreach (wp_stub_get_calls('add_action') as $call) {
+            $restoredActions[] = [
+                'hook' => $call['args']['hook'],
+                'priority' => $call['args']['priority'],
+                'acceptedArgs' => $call['args']['acceptedArgs'],
+            ];
+        }
+
+        expect($restoredActions)->toBe($scannedActions)->and($restoredActions)->not->toBeEmpty();
     });
 });

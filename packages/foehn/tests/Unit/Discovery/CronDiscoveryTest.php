@@ -23,9 +23,9 @@ describe('CronDiscovery', function () {
 
         expect($items)->toHaveCount(1);
         expect($items[0]['className'])->toBe(CronFixture::class);
-        expect($items[0]['hook'])->toBe('foehn/tests/fixtures/cron_fixture');
-        expect($items[0]['intervalSeconds'])->toBe(86400);
-        expect($items[0]['group'])->toBe('foehn');
+        expect($items[0]['attribute']->hook)->toBeNull();
+        expect($items[0]['attribute']->intervalSeconds)->toBe(86400);
+        expect($items[0]['attribute']->group)->toBe('foehn');
     });
 
     it('uses custom hook name when provided', function () {
@@ -34,9 +34,9 @@ describe('CronDiscovery', function () {
         $items = $this->discovery->getItems()->all();
 
         expect($items)->toHaveCount(1);
-        expect($items[0]['hook'])->toBe('my_plugin/sync_data');
-        expect($items[0]['intervalSeconds'])->toBe(3600);
-        expect($items[0]['group'])->toBe('my-plugin');
+        expect($items[0]['attribute']->hook)->toBe('my_plugin/sync_data');
+        expect($items[0]['attribute']->intervalSeconds)->toBe(3600);
+        expect($items[0]['attribute']->group)->toBe('my-plugin');
     });
 
     it('ignores classes without cron attributes', function () {

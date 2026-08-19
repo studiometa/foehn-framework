@@ -46,13 +46,9 @@ final class RestRouteDiscovery implements WpDiscovery
                 $attribute = $reflectionAttribute->newInstance();
 
                 $this->addItem($location, [
-                    'namespace' => $attribute->namespace,
-                    'route' => $attribute->route,
-                    'httpMethod' => $attribute->getMethodConstant(),
+                    'attribute' => $attribute,
                     'className' => $method->getDeclaringClass()->getName(),
                     'methodName' => $method->getName(),
-                    'permission' => $attribute->permission,
-                    'args' => $attribute->args,
                 ]);
             }
         }
@@ -65,53 +61,38 @@ final class RestRouteDiscovery implements WpDiscovery
     {
         add_action('rest_api_init', function (): void {
             foreach ($this->getItems() as $item) {
-                $this->doRegisterRoute(
-                    $item['namespace'],
-                    $item['route'],
-                    $item['httpMethod'],
-                    $item['className'],
-                    $item['methodName'],
-                    $item['permission'],
-                    $item['args'],
-                );
+                /** @var AsRestRoute $attribute */
+                $attribute = $item['attribute'];
+
+                $this->registerRoute($attribute, $item['className'], $item['methodName']);
             }
         });
     }
 
     /**
-     * Actually register the REST route.
+     * Register a single REST route.
      *
      * @param class-string $className
-     * @param array<string, mixed> $routeArgs
      */
-    private function doRegisterRoute(
-        string $namespace,
-        string $route,
-        string $httpMethod,
-        string $className,
-        string $methodName,
-        ?string $permission,
-        array $routeArgs,
-    ): void {
+    private function registerRoute(AsRestRoute $attribute, string $className, string $methodName): void
+    {
         $args = [
-            'methods' => $httpMethod,
+            'methods' => $attribute->getMethodConstant(),
             'callback' => $this->createCallback($className, $methodName),
-            'permission_callback' => $this->createPermissionCallback($permission, $className),
+            'permission_callback' => $this->createPermissionCallback($attribute->permission, $className),
         ];
 
-        if (!empty($routeArgs)) {
-            $args['args'] = $routeArgs;
+        if (!empty($attribute->args)) {
+            $args['args'] = $attribute->args;
         }
 
-        register_rest_route($namespace, $route, $args);
+        register_rest_route($attribute->namespace, $attribute->route, $args);
     }
 
     /**
      * Create the endpoint callback.
      *
      * @param class-string $className
-     * @param string $methodName
-     * @return callable
      */
     private function createCallback(string $className, string $methodName): callable
     {
@@ -125,9 +106,7 @@ final class RestRouteDiscovery implements WpDiscovery
     /**
      * Create the permission callback.
      *
-     * @param string|null $permission
      * @param class-string $className
-     * @return callable
      */
     private function createPermissionCallback(?string $permission, string $className): callable
     {
@@ -159,24 +138,5 @@ final class RestRouteDiscovery implements WpDiscovery
 
             return $instance->{$permission}($request);
         };
-    }
-
-    /**
-     * Convert a discovered item to a cacheable format.
-     *
-     * @param array<string, mixed> $item
-     * @return array<string, mixed>
-     */
-    protected function itemToCacheable(array $item): array
-    {
-        return [
-            'namespace' => $item['namespace'],
-            'route' => $item['route'],
-            'httpMethod' => $item['httpMethod'],
-            'className' => $item['className'],
-            'methodName' => $item['methodName'],
-            'permission' => $item['permission'],
-            'args' => $item['args'],
-        ];
     }
 }

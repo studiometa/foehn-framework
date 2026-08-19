@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
+use Studiometa\Foehn\Discovery\DiscoveryLocation;
 use Studiometa\Foehn\Discovery\PostTypeDiscovery;
 use Tests\Fixtures\PostTypeFixture;
-use Studiometa\Foehn\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
     $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
@@ -46,35 +46,19 @@ describe('PostTypeDiscovery apply', function () {
         expect(wp_stub_get_calls('register_post_type'))->toBeEmpty();
     });
 
-    it('registers post types from cached data', function () {
-        $this->discovery->restoreFromCache(['App\\' => [
-            [
-                'name' => 'event',
-                'singular' => 'Event',
-                'plural' => 'Events',
-                'public' => true,
-                'hasArchive' => true,
-                'showInRest' => true,
-                'menuIcon' => 'dashicons-calendar',
-                'supports' => ['title', 'editor'],
-                'taxonomies' => [],
-                'rewriteSlug' => null,
-                'hierarchical' => false,
-                'menuPosition' => 5,
-                'labels' => [],
-                'rewrite' => null,
-                'className' => PostTypeFixture::class,
-                'implementsConfig' => false,
-            ],
-        ]]);
+    it('registers the same post type whether scanned or restored from cache', function () {
+        $scanned = new PostTypeDiscovery();
+        discoverFixture($scanned, PostTypeFixture::class, $this->location);
 
-        $this->discovery->apply();
+        $scanned->apply();
+        $scannedArgs = wp_stub_get_calls('register_post_type')[0]['args'];
+
+        wp_stub_reset();
+
+        restoreThroughCacheFile($scanned, $this->discovery)->apply();
 
         $calls = wp_stub_get_calls('register_post_type');
 
-        expect($calls)->toHaveCount(1);
-        expect($calls[0]['args']['postType'])->toBe('event');
-        expect($calls[0]['args']['args']['has_archive'])->toBeTrue();
-        expect($calls[0]['args']['args']['menu_position'])->toBe(5);
+        expect($calls)->toHaveCount(1)->and($calls[0]['args'])->toBe($scannedArgs);
     });
 });

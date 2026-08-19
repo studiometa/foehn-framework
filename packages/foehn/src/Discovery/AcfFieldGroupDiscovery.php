@@ -59,14 +59,10 @@ final class AcfFieldGroupDiscovery implements WpDiscovery
         // ACF field groups must be registered on acf/init
         add_action('acf/init', function (): void {
             foreach ($this->getItems() as $item) {
-                // Handle cached format
-                if (($item['name'] ?? null) !== null) {
-                    $this->registerFieldGroupFromCache($item);
+                /** @var AsAcfFieldGroup $attribute */
+                $attribute = $item['attribute'];
 
-                    continue;
-                }
-
-                $this->registerFieldGroup($item['attribute'], $item['className']);
+                $this->registerFieldGroup($attribute, $item['className']);
             }
         });
     }
@@ -74,65 +70,10 @@ final class AcfFieldGroupDiscovery implements WpDiscovery
     /**
      * Register a single ACF field group.
      *
-     * @param AsAcfFieldGroup $attribute
      * @param class-string<AcfFieldGroupInterface> $className
      */
     private function registerFieldGroup(AsAcfFieldGroup $attribute, string $className): void
     {
-        $this->doRegisterFieldGroup(
-            $className,
-            $attribute->name,
-            $attribute->title,
-            $attribute->location,
-            $attribute->position,
-            $attribute->menuOrder,
-            $attribute->style,
-            $attribute->labelPlacement,
-            $attribute->instructionPlacement,
-            $attribute->hideOnScreen,
-        );
-    }
-
-    /**
-     * Register ACF field group from cached data.
-     *
-     * @param array<string, mixed> $item
-     */
-    private function registerFieldGroupFromCache(array $item): void
-    {
-        $this->doRegisterFieldGroup(
-            $item['className'],
-            $item['name'],
-            $item['title'],
-            $item['location'],
-            $item['position'],
-            $item['menuOrder'],
-            $item['style'],
-            $item['labelPlacement'],
-            $item['instructionPlacement'],
-            $item['hideOnScreen'],
-        );
-    }
-
-    /**
-     * Actually register the ACF field group.
-     *
-     * @param class-string<AcfFieldGroupInterface> $className
-     * @param array<string, mixed> $location
-     * @param string[] $hideOnScreen
-     */
-    private function doRegisterFieldGroup(
-        string $className,
-        string $name,
-        string $title,
-        array $location,
-        string $position,
-        int $menuOrder,
-        string $style,
-        string $labelPlacement,
-        string $instructionPlacement,
-        array $hideOnScreen,
-    ): void {
         if (!function_exists('acf_add_local_field_group')) {
             return;
         }
@@ -144,7 +85,7 @@ final class AcfFieldGroupDiscovery implements WpDiscovery
         $fields = $className::fields();
 
         // Parse and set location
-        $parsedLocation = $this->parseLocation($location);
+        $parsedLocation = $this->parseLocation($attribute->location);
         $firstRule = $parsedLocation[0][0];
         $locationBuilder = $fields->setLocation($firstRule['param'], $firstRule['operator'], $firstRule['value']);
 
@@ -172,15 +113,15 @@ final class AcfFieldGroupDiscovery implements WpDiscovery
         $config = $fields->build();
 
         // Override settings from attribute
-        $config['title'] = $title;
-        $config['position'] = $position;
-        $config['menu_order'] = $menuOrder;
-        $config['style'] = $style;
-        $config['label_placement'] = $labelPlacement;
-        $config['instruction_placement'] = $instructionPlacement;
+        $config['title'] = $attribute->title;
+        $config['position'] = $attribute->position;
+        $config['menu_order'] = $attribute->menuOrder;
+        $config['style'] = $attribute->style;
+        $config['label_placement'] = $attribute->labelPlacement;
+        $config['instruction_placement'] = $attribute->instructionPlacement;
 
-        if ($hideOnScreen !== []) {
-            $config['hide_on_screen'] = $hideOnScreen;
+        if ($attribute->hideOnScreen !== []) {
+            $config['hide_on_screen'] = $attribute->hideOnScreen;
         }
 
         // Register the field group
@@ -241,30 +182,5 @@ final class AcfFieldGroupDiscovery implements WpDiscovery
         $firstRule = reset($firstElement);
 
         return is_array($firstRule) && ($firstRule['param'] ?? null) !== null;
-    }
-
-    /**
-     * Convert a discovered item to a cacheable format.
-     *
-     * @param array<string, mixed> $item
-     * @return array<string, mixed>
-     */
-    protected function itemToCacheable(array $item): array
-    {
-        /** @var AsAcfFieldGroup $attribute */
-        $attribute = $item['attribute'];
-
-        return [
-            'className' => $item['className'],
-            'name' => $attribute->name,
-            'title' => $attribute->title,
-            'location' => $attribute->location,
-            'position' => $attribute->position,
-            'menuOrder' => $attribute->menuOrder,
-            'style' => $attribute->style,
-            'labelPlacement' => $attribute->labelPlacement,
-            'instructionPlacement' => $attribute->instructionPlacement,
-            'hideOnScreen' => $attribute->hideOnScreen,
-        ];
     }
 }

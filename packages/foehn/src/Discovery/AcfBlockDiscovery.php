@@ -62,14 +62,10 @@ final class AcfBlockDiscovery implements WpDiscovery
         // ACF blocks must be registered on acf/init
         add_action('acf/init', function (): void {
             foreach ($this->getItems() as $item) {
-                // Handle cached format
-                if (($item['name'] ?? null) !== null) {
-                    $this->registerBlockFromCache($item);
+                /** @var AsAcfBlock $attribute */
+                $attribute = $item['attribute'];
 
-                    continue;
-                }
-
-                $this->registerBlock($item['attribute'], $item['className']);
+                $this->registerBlock($attribute, $item['className']);
             }
         });
     }
@@ -77,89 +73,30 @@ final class AcfBlockDiscovery implements WpDiscovery
     /**
      * Register a single ACF block.
      *
-     * @param AsAcfBlock $attribute
      * @param class-string<AcfBlockInterface> $className
      */
     private function registerBlock(AsAcfBlock $attribute, string $className): void
     {
-        $this->doRegisterBlock(
-            $className,
-            $attribute->name,
-            $attribute->title,
-            $attribute->description,
-            $attribute->category,
-            $attribute->icon,
-            $attribute->keywords,
-            $attribute->mode,
-            $this->buildSupports($attribute),
-            $attribute->postTypes,
-            $attribute->parent,
-        );
-    }
-
-    /**
-     * Register ACF block from cached data.
-     *
-     * @param array<string, mixed> $item
-     */
-    private function registerBlockFromCache(array $item): void
-    {
-        $this->doRegisterBlock(
-            $item['className'],
-            $item['name'],
-            $item['title'],
-            $item['description'],
-            $item['category'],
-            $item['icon'],
-            $item['keywords'],
-            $item['mode'],
-            $item['supports'],
-            $item['postTypes'],
-            $item['parent'],
-        );
-    }
-
-    /**
-     * Actually register the ACF block.
-     *
-     * @param class-string<AcfBlockInterface> $className
-     * @param array<string> $keywords
-     * @param array<string, mixed> $supports
-     * @param array<string> $postTypes
-     */
-    private function doRegisterBlock(
-        string $className,
-        string $name,
-        string $title,
-        ?string $description,
-        string $category,
-        ?string $icon,
-        array $keywords,
-        string $mode,
-        array $supports,
-        array $postTypes,
-        ?string $parent,
-    ): void {
         // Build block configuration
         $config = [
-            'name' => $name,
-            'title' => $title,
-            'description' => $description ?? '',
-            'category' => $category,
-            'icon' => $icon ?? 'block-default',
-            'keywords' => $keywords,
-            'mode' => $mode,
-            'supports' => $supports,
+            'name' => $attribute->name,
+            'title' => $attribute->title,
+            'description' => $attribute->description ?? '',
+            'category' => $attribute->category,
+            'icon' => $attribute->icon ?? 'block-default',
+            'keywords' => $attribute->keywords,
+            'mode' => $attribute->mode,
+            'supports' => $this->buildSupports($attribute),
             'render_callback' => $this->createRenderCallback($className),
         ];
 
         // Add optional configuration
-        if (!empty($postTypes)) {
-            $config['post_types'] = $postTypes;
+        if (!empty($attribute->postTypes)) {
+            $config['post_types'] = $attribute->postTypes;
         }
 
-        if ($parent !== null) {
-            $config['parent'] = [$parent];
+        if ($attribute->parent !== null) {
+            $config['parent'] = [$attribute->parent];
         }
 
         // Register the block type
@@ -168,13 +105,12 @@ final class AcfBlockDiscovery implements WpDiscovery
         }
 
         // Register fields if the class defines them
-        $this->registerFields($name, $className);
+        $this->registerFields($attribute->name, $className);
     }
 
     /**
      * Build supports configuration with defaults.
      *
-     * @param AsAcfBlock $attribute
      * @return array<string, mixed>
      */
     private function buildSupports(AsAcfBlock $attribute): array
@@ -231,31 +167,5 @@ final class AcfBlockDiscovery implements WpDiscovery
 
         // Register the field group
         acf_add_local_field_group($fields->build());
-    }
-
-    /**
-     * Convert a discovered item to a cacheable format.
-     *
-     * @param array<string, mixed> $item
-     * @return array<string, mixed>
-     */
-    protected function itemToCacheable(array $item): array
-    {
-        /** @var AsAcfBlock $attribute */
-        $attribute = $item['attribute'];
-
-        return [
-            'className' => $item['className'],
-            'name' => $attribute->name,
-            'title' => $attribute->title,
-            'description' => $attribute->description,
-            'category' => $attribute->category,
-            'icon' => $attribute->icon,
-            'keywords' => $attribute->keywords,
-            'mode' => $attribute->mode,
-            'supports' => $this->buildSupports($attribute),
-            'postTypes' => $attribute->postTypes,
-            'parent' => $attribute->parent,
-        ];
     }
 }

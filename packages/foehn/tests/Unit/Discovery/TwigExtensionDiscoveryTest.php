@@ -23,7 +23,7 @@ describe('TwigExtensionDiscovery', function () {
 
         expect($items)->toHaveCount(1);
         expect($items[0]['className'])->toBe(TwigExtensionFixture::class);
-        expect($items[0]['priority'])->toBe(10);
+        expect($items[0]['attribute']->priority)->toBe(10);
     });
 
     it('discovers custom priority', function () {
@@ -33,7 +33,7 @@ describe('TwigExtensionDiscovery', function () {
 
         expect($items)->toHaveCount(1);
         expect($items[0]['className'])->toBe(TwigExtensionWithPriorityFixture::class);
-        expect($items[0]['priority'])->toBe(5);
+        expect($items[0]['attribute']->priority)->toBe(5);
     });
 
     it('ignores classes without the attribute', function () {
@@ -64,26 +64,20 @@ describe('TwigExtensionDiscovery', function () {
 
         $cacheableData = $this->discovery->getCacheableData();
 
-        expect($cacheableData)->toHaveKey('App\\');
-        expect($cacheableData['App\\'])->toHaveCount(2);
-        expect($cacheableData['App\\'][0])->toBe([
-            'className' => TwigExtensionFixture::class,
-            'priority' => 10,
-        ]);
-        expect($cacheableData['App\\'][1])->toBe([
-            'className' => TwigExtensionWithPriorityFixture::class,
-            'priority' => 5,
-        ]);
+        expect($cacheableData)->toHaveKey('App\\')->and($cacheableData['App\\'])->toHaveCount(2);
+        expect($cacheableData['App\\'][0]['className'])->toBe(TwigExtensionFixture::class);
+        expect($cacheableData['App\\'][1]['className'])->toBe(TwigExtensionWithPriorityFixture::class);
     });
 
     it('can restore from cache', function () {
-        $cachedData = [
-            ['className' => TwigExtensionFixture::class, 'priority' => 10],
-            ['className' => TwigExtensionWithPriorityFixture::class, 'priority' => 5],
-        ];
+        $this->discovery->discover($this->location, new ReflectionClass(TwigExtensionFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(TwigExtensionWithPriorityFixture::class));
 
-        $this->discovery->restoreFromCache(['App\\' => $cachedData]);
+        $restored = restoreThroughCacheFile($this->discovery, new TwigExtensionDiscovery(new GenericContainer()));
 
-        expect($this->discovery->wasRestoredFromCache())->toBeTrue();
+        expect($restored->wasRestoredFromCache())
+            ->toBeTrue()
+            ->and($restored->getItems()->all())
+            ->toEqual($this->discovery->getItems()->all());
     });
 });

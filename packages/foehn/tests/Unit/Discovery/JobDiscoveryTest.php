@@ -27,8 +27,8 @@ describe('JobDiscovery', function () {
         expect($items)->toHaveCount(1);
         expect($items[0]['handlerClass'])->toBe(JobHandlerFixture::class);
         expect($items[0]['dtoClass'])->toBe(\Tests\Fixtures\JobDtoFixture::class);
-        expect($items[0]['hook'])->toBe('foehn/tests/fixtures/job_dto_fixture');
-        expect($items[0]['group'])->toBe('foehn');
+        expect($items[0]['attribute']->hook)->toBeNull();
+        expect($items[0]['attribute']->group)->toBe('foehn');
     });
 
     it('uses custom hook name when provided', function () {
@@ -37,8 +37,8 @@ describe('JobDiscovery', function () {
         $items = $this->discovery->getItems()->all();
 
         expect($items)->toHaveCount(1);
-        expect($items[0]['hook'])->toBe('my_plugin/process_import');
-        expect($items[0]['group'])->toBe('my-plugin');
+        expect($items[0]['attribute']->hook)->toBe('my_plugin/process_import');
+        expect($items[0]['attribute']->group)->toBe('my-plugin');
     });
 
     it('ignores classes without job attributes', function () {

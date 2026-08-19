@@ -53,14 +53,10 @@ final class BlockPatternDiscovery implements WpDiscovery
     {
         add_action('init', function (): void {
             foreach ($this->getItems() as $item) {
-                // Handle cached format
-                if (($item['patternName'] ?? null) !== null) {
-                    $this->registerPatternFromCache($item);
+                /** @var AsBlockPattern $attribute */
+                $attribute = $item['attribute'];
 
-                    continue;
-                }
-
-                $this->registerPattern($item['attribute'], $item['className'], $item['implementsInterface']);
+                $this->registerPattern($attribute, $item['className'], $item['implementsInterface']);
             }
         });
     }
@@ -68,104 +64,45 @@ final class BlockPatternDiscovery implements WpDiscovery
     /**
      * Register a single block pattern.
      *
-     * @param AsBlockPattern $attribute
      * @param class-string $className
-     * @param bool $implementsInterface
      */
     private function registerPattern(AsBlockPattern $attribute, string $className, bool $implementsInterface): void
     {
-        // Get pattern content
+        // Content is rendered at apply time: patterns may compose dynamic data
         $content = $this->renderPatternContent($attribute->getTemplatePath(), $className, $implementsInterface);
 
-        $this->doRegisterPattern(
-            $attribute->name,
-            $attribute->title,
-            $content,
-            $attribute->viewportWidth,
-            $attribute->inserter,
-            $attribute->categories,
-            $attribute->keywords,
-            $attribute->blockTypes,
-            $attribute->description,
-        );
-    }
-
-    /**
-     * Register pattern from cached data.
-     *
-     * @param array<string, mixed> $item
-     */
-    private function registerPatternFromCache(array $item): void
-    {
-        // Render content at runtime (patterns may have dynamic data)
-        $content = $this->renderPatternContent($item['templatePath'], $item['className'], $item['implementsInterface']);
-
-        $this->doRegisterPattern(
-            $item['patternName'],
-            $item['title'],
-            $content,
-            $item['viewportWidth'],
-            $item['inserter'],
-            $item['categories'],
-            $item['keywords'],
-            $item['blockTypes'],
-            $item['description'],
-        );
-    }
-
-    /**
-     * Actually register the block pattern.
-     *
-     * @param array<string> $categories
-     * @param array<string> $keywords
-     * @param array<string> $blockTypes
-     */
-    private function doRegisterPattern(
-        string $name,
-        string $title,
-        string $content,
-        int $viewportWidth,
-        bool $inserter,
-        array $categories,
-        array $keywords,
-        array $blockTypes,
-        ?string $description,
-    ): void {
         // Build pattern configuration
         $config = [
-            'title' => $title,
+            'title' => $attribute->title,
             'content' => $content,
-            'viewportWidth' => $viewportWidth,
-            'inserter' => $inserter,
+            'viewportWidth' => $attribute->viewportWidth,
+            'inserter' => $attribute->inserter,
         ];
 
-        if (!empty($categories)) {
-            $config['categories'] = $categories;
+        if (!empty($attribute->categories)) {
+            $config['categories'] = $attribute->categories;
         }
 
-        if (!empty($keywords)) {
-            $config['keywords'] = $keywords;
+        if (!empty($attribute->keywords)) {
+            $config['keywords'] = $attribute->keywords;
         }
 
-        if (!empty($blockTypes)) {
-            $config['blockTypes'] = $blockTypes;
+        if (!empty($attribute->blockTypes)) {
+            $config['blockTypes'] = $attribute->blockTypes;
         }
 
-        if ($description !== null) {
-            $config['description'] = $description;
+        if ($attribute->description !== null) {
+            $config['description'] = $attribute->description;
         }
 
         // Register the pattern
-        register_block_pattern($name, $config);
+        register_block_pattern($attribute->name, $config);
     }
 
     /**
      * Render pattern content using ViewEngine.
      *
-     * @param string $templatePath
      * @param class-string $className
-     * @param bool $implementsInterface
-     * @return string
      */
     private function renderPatternContent(string $templatePath, string $className, bool $implementsInterface): string
     {
@@ -186,31 +123,5 @@ final class BlockPatternDiscovery implements WpDiscovery
         }
 
         return $view->render($templatePath, $context);
-    }
-
-    /**
-     * Convert a discovered item to a cacheable format.
-     *
-     * @param array<string, mixed> $item
-     * @return array<string, mixed>
-     */
-    protected function itemToCacheable(array $item): array
-    {
-        /** @var AsBlockPattern $attribute */
-        $attribute = $item['attribute'];
-
-        return [
-            'patternName' => $attribute->name,
-            'title' => $attribute->title,
-            'templatePath' => $attribute->getTemplatePath(),
-            'className' => $item['className'],
-            'implementsInterface' => $item['implementsInterface'],
-            'viewportWidth' => $attribute->viewportWidth,
-            'inserter' => $attribute->inserter,
-            'categories' => $attribute->categories,
-            'keywords' => $attribute->keywords,
-            'blockTypes' => $attribute->blockTypes,
-            'description' => $attribute->description,
-        ];
     }
 }

@@ -4,16 +4,25 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Discovery\Concerns;
 
+use Studiometa\Foehn\Discovery\AttributeCodec;
 use Studiometa\Foehn\Discovery\WpDiscoveryItems;
 
 /**
- * Trait for discoveries that support caching.
+ * Trait providing the discovery cache round trip.
  *
- * Discoveries that use this trait can export their data in a serializable format
- * and restore from cached data via WpDiscoveryItems.
+ * A discovered item is an array of plain values plus, for most discoveries, the
+ * attribute instance that produced it. The attribute is the only part that cannot
+ * go straight into a `var_export()`ed cache file, so it travels through
+ * AttributeCodec and comes back as the same instance. Every other value passes
+ * through untouched.
+ *
+ * Discoveries therefore describe no cache format of their own: apply() reads the
+ * same item shape whether it was scanned or restored.
  *
  * This trait requires the class to also use the IsWpDiscovery trait which provides
  * getItems()/setItems() methods.
+ *
+ * @phpstan-require-implements \Studiometa\Foehn\Discovery\WpDiscovery
  */
 trait CacheableDiscovery
 {
@@ -23,47 +32,40 @@ trait CacheableDiscovery
     protected bool $restoredFromCache = false;
 
     /**
-     * Get cacheable data from the discovery.
+     * Export the discovered items in a form the discovery cache can write.
      *
-     * Converts all discovered items into a serializable format grouped by location.
-     *
-     * @return array<string, list<array<string, mixed>>>
+     * @return array<string, list<array<string, mixed>>> Items grouped by location namespace
      */
     public function getCacheableData(): array
     {
-        /** @var WpDiscoveryItems $items */
-        $items = $this->getItems();
-        /** @var array<string, list<array<string, mixed>>> $data */
         $data = [];
 
-        /** @var string $namespace */
-        foreach ($items->toArray() as $namespace => $locationItems) {
-            /** @var array<string, mixed> $item */
-            foreach ($locationItems as $item) {
-                $cacheableItem = $this->itemToCacheable($item);
-
-                if ($cacheableItem !== null) {
-                    $data[$namespace][] = $cacheableItem;
-                }
-            }
+        foreach ($this->getItems()->toArray() as $namespace => $locationItems) {
+            $data[$namespace] = array_map(self::encodeItem(...), $locationItems);
         }
 
         return $data;
     }
 
     /**
-     * Restore discovery from cached data.
+     * Restore the discovered items from cached data.
      *
      * @param array<string, list<array<string, mixed>>> $data
      */
     public function restoreFromCache(array $data): void
     {
-        $this->setItems(WpDiscoveryItems::fromArray($data));
+        $items = [];
+
+        foreach ($data as $namespace => $locationItems) {
+            $items[$namespace] = array_map(self::decodeItem(...), $locationItems);
+        }
+
+        $this->setItems(WpDiscoveryItems::fromArray($items));
         $this->restoredFromCache = true;
     }
 
     /**
-     * Check if this discovery was restored from cache.
+     * Check whether the items came from the cache rather than from a scan.
      */
     public function wasRestoredFromCache(): bool
     {
@@ -71,12 +73,28 @@ trait CacheableDiscovery
     }
 
     /**
-     * Convert a discovered item to a cacheable format.
-     *
-     * Override this method in each discovery to define how items are serialized.
+     * Encode the attribute instances of a single item.
      *
      * @param array<string, mixed> $item
-     * @return array<string, mixed>|null
+     * @return array<string, mixed>
      */
-    abstract protected function itemToCacheable(array $item): ?array;
+    private static function encodeItem(array $item): array
+    {
+        return array_map(static fn(mixed $value): mixed => is_object($value)
+            ? AttributeCodec::encode($value)
+            : $value, $item);
+    }
+
+    /**
+     * Rebuild the attribute instances of a single cached item.
+     *
+     * @param array<string, mixed> $item
+     * @return array<string, mixed>
+     */
+    private static function decodeItem(array $item): array
+    {
+        return array_map(static fn(mixed $value): mixed => AttributeCodec::isEncoded($value)
+            ? AttributeCodec::decode($value)
+            : $value, $item);
+    }
 }

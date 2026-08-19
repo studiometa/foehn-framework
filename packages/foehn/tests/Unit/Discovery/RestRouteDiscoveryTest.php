@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
+use Studiometa\Foehn\Discovery\DiscoveryLocation;
 use Studiometa\Foehn\Discovery\RestRouteDiscovery;
 use Tests\Fixtures\NoAttributeFixture;
 use Tests\Fixtures\RestRouteFixture;
-use Studiometa\Foehn\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
     $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
@@ -21,21 +21,21 @@ describe('RestRouteDiscovery', function () {
         expect($items)->toHaveCount(3);
 
         // GET /items (default method)
-        expect($items[0]['namespace'])->toBe('test/v1');
-        expect($items[0]['route'])->toBe('/items');
-        expect($items[0]['httpMethod'])->toBe('GET');
+        expect($items[0]['attribute']->namespace)->toBe('test/v1');
+        expect($items[0]['attribute']->route)->toBe('/items');
+        expect($items[0]['attribute']->getMethodConstant())->toBe('GET');
         expect($items[0]['className'])->toBe(RestRouteFixture::class);
         expect($items[0]['methodName'])->toBe('getItems');
-        expect($items[0]['permission'])->toBeNull();
-        expect($items[0]['args'])->toBe([]);
+        expect($items[0]['attribute']->permission)->toBeNull();
+        expect($items[0]['attribute']->args)->toBe([]);
 
         // POST /items with public permission
-        expect($items[1]['httpMethod'])->toBe('POST');
-        expect($items[1]['permission'])->toBe('public');
+        expect($items[1]['attribute']->getMethodConstant())->toBe('POST');
+        expect($items[1]['attribute']->permission)->toBe('public');
 
         // GET /items/{id} with args
-        expect($items[2]['route'])->toBe('/items/(?P<id>\d+)');
-        expect($items[2]['args'])->toBe(['id' => ['type' => 'integer']]);
+        expect($items[2]['attribute']->route)->toBe('/items/(?P<id>\d+)');
+        expect($items[2]['attribute']->args)->toBe(['id' => ['type' => 'integer']]);
     });
 
     it('ignores classes without REST route attributes', function () {

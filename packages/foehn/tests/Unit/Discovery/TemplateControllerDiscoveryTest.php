@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
+use Studiometa\Foehn\Discovery\DiscoveryLocation;
 use Studiometa\Foehn\Discovery\TemplateControllerDiscovery;
 use Tests\Fixtures\InvalidTemplateControllerFixture;
 use Tests\Fixtures\NoAttributeFixture;
 use Tests\Fixtures\TemplateControllerFixture;
-use Studiometa\Foehn\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
     $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
@@ -21,8 +21,8 @@ describe('TemplateControllerDiscovery', function () {
 
         expect($items)->toHaveCount(1);
         expect($items[0]['className'])->toBe(TemplateControllerFixture::class);
-        expect($items[0]['templates'])->toBe(['single', 'page']);
-        expect($items[0]['priority'])->toBe(10);
+        expect($items[0]['attribute']->getTemplates())->toBe(['single', 'page']);
+        expect($items[0]['attribute']->priority)->toBe(10);
     });
 
     it('ignores classes without template controller attribute', function () {
@@ -32,7 +32,10 @@ describe('TemplateControllerDiscovery', function () {
     });
 
     it('throws when class does not implement TemplateControllerInterface', function () {
-        expect(fn() => $this->discovery->discover($this->location, new ReflectionClass(InvalidTemplateControllerFixture::class)))
+        expect(fn() => $this->discovery->discover(
+            $this->location,
+            new ReflectionClass(InvalidTemplateControllerFixture::class),
+        ))
             ->toThrow(InvalidArgumentException::class, 'must implement');
     });
 

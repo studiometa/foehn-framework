@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
+use Studiometa\Foehn\Discovery\DiscoveryLocation;
 use Studiometa\Foehn\Discovery\TaxonomyDiscovery;
 use Tests\Fixtures\TaxonomyFixture;
-use Studiometa\Foehn\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
     $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
@@ -46,31 +46,19 @@ describe('TaxonomyDiscovery apply', function () {
         expect(wp_stub_get_calls('register_taxonomy'))->toBeEmpty();
     });
 
-    it('registers taxonomies from cached data', function () {
-        $this->discovery->restoreFromCache(['App\\' => [
-            [
-                'name' => 'genre',
-                'singular' => 'Genre',
-                'plural' => 'Genres',
-                'postTypes' => ['movie'],
-                'public' => true,
-                'hierarchical' => true,
-                'showInRest' => true,
-                'showAdminColumn' => true,
-                'rewriteSlug' => null,
-                'labels' => [],
-                'rewrite' => null,
-                'className' => TaxonomyFixture::class,
-                'implementsConfig' => false,
-            ],
-        ]]);
+    it('registers the same taxonomy whether scanned or restored from cache', function () {
+        $scanned = new TaxonomyDiscovery();
+        discoverFixture($scanned, TaxonomyFixture::class, $this->location);
 
-        $this->discovery->apply();
+        $scanned->apply();
+        $scannedArgs = wp_stub_get_calls('register_taxonomy')[0]['args'];
+
+        wp_stub_reset();
+
+        restoreThroughCacheFile($scanned, $this->discovery)->apply();
 
         $calls = wp_stub_get_calls('register_taxonomy');
 
-        expect($calls)->toHaveCount(1);
-        expect($calls[0]['args']['taxonomy'])->toBe('genre');
-        expect($calls[0]['args']['objectType'])->toBe(['movie']);
+        expect($calls)->toHaveCount(1)->and($calls[0]['args'])->toBe($scannedArgs);
     });
 });

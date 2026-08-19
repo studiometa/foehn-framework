@@ -10,6 +10,7 @@ use Studiometa\Foehn\Console\CliCommandInterface;
 use Studiometa\Foehn\Console\WpCli;
 use Studiometa\Foehn\Discovery\DiscoveryCache;
 use Studiometa\Foehn\Discovery\DiscoveryRunner;
+use Studiometa\Foehn\Discovery\WpDiscovery;
 use Tempest\Container\Container;
 use Tempest\Discovery\DiscoveryCacheStrategy;
 
@@ -122,7 +123,7 @@ final class DiscoveryWarmCommand implements CliCommandInterface
     /**
      * Collect cache data and display statistics.
      *
-     * @param array<class-string, object> $discoveries
+     * @param array<class-string<WpDiscovery>, WpDiscovery> $discoveries
      * @return array<string, array<string, list<array<string, mixed>>>>
      */
     private function collectAndDisplayStats(array $discoveries): array
@@ -131,12 +132,6 @@ final class DiscoveryWarmCommand implements CliCommandInterface
         $cacheData = [];
 
         foreach ($discoveries as $className => $discovery) {
-            // Get cacheable data from the discovery
-            if (!method_exists($discovery, 'getCacheableData')) {
-                continue;
-            }
-
-            /** @var array<string, list<array<string, mixed>>> $data */
             $data = $discovery->getCacheableData();
 
             if (empty($data)) {

@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
+use Studiometa\Foehn\Attributes\AsImageSize;
+use Studiometa\Foehn\Discovery\DiscoveryLocation;
 use Studiometa\Foehn\Discovery\ImageSizeDiscovery;
 use Tests\Fixtures\ImageSizeFixture;
-use Studiometa\Foehn\Discovery\DiscoveryLocation;
+use Tests\Fixtures\ImageSizeWithNameFixture;
 
 beforeEach(function () {
     $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
@@ -12,51 +14,53 @@ beforeEach(function () {
 });
 
 describe('ImageSizeDiscovery caching', function () {
-    it('returns cacheable data', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(ImageSizeFixture::class));
+    it('keeps the item under its location namespace', function () {
+        discoverFixture($this->discovery, ImageSizeFixture::class, $this->location);
 
-        $cacheableData = $this->discovery->getCacheableData();
+        $cacheData = $this->discovery->getCacheableData();
 
-        expect($cacheableData['App\\'])->toHaveCount(1);
-        expect($cacheableData['App\\'][0])->toBe([
-            'name' => 'image_size_fixture',
-            'width' => 1200,
-            'height' => 630,
-            'crop' => true,
-            'className' => ImageSizeFixture::class,
-        ]);
+        expect($cacheData)->toHaveKey('App\\')->and($cacheData['App\\'])->toHaveCount(1);
     });
 
-    it('can restore from cache', function () {
-        $cachedData = [
-            [
-                'name' => 'cached_image',
-                'width' => 800,
-                'height' => 600,
-                'crop' => false,
-                'className' => 'App\\ImageSizes\\CachedImage',
-            ],
-        ];
+    it('restores every item unchanged through a cache file', function () {
+        discoverFixture($this->discovery, ImageSizeFixture::class, $this->location);
 
-        $this->discovery->restoreFromCache(['App\\' => $cachedData]);
+        $restored = restoreThroughCacheFile($this->discovery, new ImageSizeDiscovery());
 
-        expect($this->discovery->wasRestoredFromCache())->toBeTrue();
+        expect($restored->wasRestoredFromCache())
+            ->toBeTrue()
+            ->and($restored->getItems()->all())
+            ->toEqual($this->discovery->getItems()->all());
     });
 
-    it('returns empty cacheable data when no items discovered', function () {
-        $cacheableData = $this->discovery->getCacheableData();
+    it('restores the attribute as an instance, not an array', function () {
+        discoverFixture($this->discovery, ImageSizeFixture::class, $this->location);
 
-        expect($cacheableData)->toBeEmpty();
+        $item = restoreThroughCacheFile($this->discovery, new ImageSizeDiscovery())->getItems()->all()[0];
+
+        expect($item['attribute'])
+            ->toBeInstanceOf(AsImageSize::class)
+            ->and($item['attribute']->width)
+            ->toBe(1200)
+            ->and($item['attribute']->height)
+            ->toBe(630)
+            ->and($item['attribute']->crop)
+            ->toBeTrue()
+            ->and($item['attribute']->name)
+            ->toBeNull();
     });
 
-    it('preserves all item data through cache cycle', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(ImageSizeFixture::class));
-        $originalData = $this->discovery->getCacheableData();
+    it('reports it was not restored when it scanned', function () {
+        discoverFixture($this->discovery, ImageSizeFixture::class, $this->location);
 
-        // Create new discovery and restore from cache
-        $restoredDiscovery = new ImageSizeDiscovery();
-        $restoredDiscovery->restoreFromCache($originalData);
+        expect($this->discovery->wasRestoredFromCache())->toBeFalse();
+    });
 
-        expect($restoredDiscovery->wasRestoredFromCache())->toBeTrue();
+    it('restores an explicit name', function () {
+        discoverFixture($this->discovery, ImageSizeWithNameFixture::class, $this->location);
+
+        $item = restoreThroughCacheFile($this->discovery, new ImageSizeDiscovery())->getItems()->all()[0];
+
+        expect($item['attribute']->name)->toBe('hero_banner');
     });
 });

@@ -3,8 +3,10 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Attributes\AsTimberModel;
-use Studiometa\Foehn\Discovery\TimberModelDiscovery;
 use Studiometa\Foehn\Discovery\DiscoveryLocation;
+use Studiometa\Foehn\Discovery\TimberModelDiscovery;
+use Tests\Fixtures\TimberModelPostFixture;
+use Tests\Fixtures\TimberModelTermFixture;
 
 beforeEach(function () {
     $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
@@ -12,77 +14,51 @@ beforeEach(function () {
 });
 
 describe('TimberModelDiscovery caching', function () {
-    it('converts post items to cacheable format', function () {
-        $attribute = new AsTimberModel(name: 'post');
+    it('keeps the item under its location namespace', function () {
+        discoverFixture($this->discovery, TimberModelPostFixture::class, $this->location);
 
-        $ref = new ReflectionMethod($this->discovery, 'addItem');
-        $ref->invoke($this->discovery, $this->location, [
-            'attribute' => $attribute,
-            'className' => 'App\\Models\\CustomPost',
-            'type' => 'post',
-        ]);
+        $cacheData = $this->discovery->getCacheableData();
 
-        $cacheableData = $this->discovery->getCacheableData();
-
-        expect($cacheableData['App\\'])->toHaveCount(1);
-        expect($cacheableData['App\\'][0]['name'])->toBe('post');
-        expect($cacheableData['App\\'][0]['className'])->toBe('App\\Models\\CustomPost');
-        expect($cacheableData['App\\'][0]['type'])->toBe('post');
+        expect($cacheData)->toHaveKey('App\\')->and($cacheData['App\\'])->toHaveCount(1);
     });
 
-    it('converts term items to cacheable format', function () {
-        $attribute = new AsTimberModel(name: 'category');
+    it('restores every item unchanged through a cache file', function () {
+        discoverFixture($this->discovery, TimberModelPostFixture::class, $this->location);
 
-        $ref = new ReflectionMethod($this->discovery, 'addItem');
-        $ref->invoke($this->discovery, $this->location, [
-            'attribute' => $attribute,
-            'className' => 'App\\Models\\CustomTerm',
-            'type' => 'term',
-        ]);
+        $restored = restoreThroughCacheFile($this->discovery, new TimberModelDiscovery());
 
-        $cacheableData = $this->discovery->getCacheableData();
-
-        expect($cacheableData['App\\'])->toHaveCount(1);
-        expect($cacheableData['App\\'][0]['name'])->toBe('category');
-        expect($cacheableData['App\\'][0]['className'])->toBe('App\\Models\\CustomTerm');
-        expect($cacheableData['App\\'][0]['type'])->toBe('term');
+        expect($restored->wasRestoredFromCache())
+            ->toBeTrue()
+            ->and($restored->getItems()->all())
+            ->toEqual($this->discovery->getItems()->all());
     });
 
-    it('can restore from cache', function () {
-        $cachedData = [
-            [
-                'name' => 'post',
-                'className' => 'App\\Models\\CustomPost',
-                'type' => 'post',
-            ],
-        ];
+    it('restores the attribute as an instance, not an array', function () {
+        discoverFixture($this->discovery, TimberModelPostFixture::class, $this->location);
 
-        $this->discovery->restoreFromCache(['App\\' => $cachedData]);
+        $item = restoreThroughCacheFile($this->discovery, new TimberModelDiscovery())->getItems()->all()[0];
 
-        expect($this->discovery->wasRestoredFromCache())->toBeTrue();
+        expect($item['attribute'])
+            ->toBeInstanceOf(AsTimberModel::class)
+            ->and($item['attribute']->name)
+            ->toBe('post')
+            ->and($item['type'])
+            ->toBe('post')
+            ->and($item['className'])
+            ->toBe(TimberModelPostFixture::class);
     });
 
-    it('handles multiple models', function () {
-        $ref = new ReflectionMethod($this->discovery, 'addItem');
+    it('reports it was not restored when it scanned', function () {
+        discoverFixture($this->discovery, TimberModelPostFixture::class, $this->location);
 
-        $ref->invoke($this->discovery, $this->location, [
-            'attribute' => new AsTimberModel('post'),
-            'className' => 'App\\Models\\CustomPost',
-            'type' => 'post',
-        ]);
+        expect($this->discovery->wasRestoredFromCache())->toBeFalse();
+    });
 
-        $ref->invoke($this->discovery, $this->location, [
-            'attribute' => new AsTimberModel('category'),
-            'className' => 'App\\Models\\CustomTerm',
-            'type' => 'term',
-        ]);
+    it('keeps the term type of a term model', function () {
+        discoverFixture($this->discovery, TimberModelTermFixture::class, $this->location);
 
-        $cacheableData = $this->discovery->getCacheableData();
+        $item = restoreThroughCacheFile($this->discovery, new TimberModelDiscovery())->getItems()->all()[0];
 
-        expect($cacheableData['App\\'])->toHaveCount(2);
-        expect($cacheableData['App\\'][0]['name'])->toBe('post');
-        expect($cacheableData['App\\'][0]['type'])->toBe('post');
-        expect($cacheableData['App\\'][1]['name'])->toBe('category');
-        expect($cacheableData['App\\'][1]['type'])->toBe('term');
+        expect($item['type'])->toBe('term')->and($item['attribute']->name)->toBe('category');
     });
 });

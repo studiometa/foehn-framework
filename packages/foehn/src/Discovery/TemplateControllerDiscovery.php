@@ -60,9 +60,8 @@ final class TemplateControllerDiscovery implements WpDiscovery
         $attribute = $attributes[0]->newInstance();
 
         $this->addItem($location, [
-            'templates' => $attribute->getTemplates(),
+            'attribute' => $attribute,
             'className' => $class->getName(),
-            'priority' => $attribute->priority,
         ]);
     }
 
@@ -73,7 +72,10 @@ final class TemplateControllerDiscovery implements WpDiscovery
     {
         // Build controller maps
         foreach ($this->getItems() as $item) {
-            $this->addController($item['templates'], $item['className'], $item['priority']);
+            /** @var AsTemplateController $attribute */
+            $attribute = $item['attribute'];
+
+            $this->addController($attribute->getTemplates(), $item['className'], $attribute->priority);
         }
 
         // Hook into WordPress template_include filter
@@ -344,20 +346,5 @@ final class TemplateControllerDiscovery implements WpDiscovery
         $regex = '/^' . str_replace('\*', '.*', preg_quote($pattern, '/')) . '$/';
 
         return (bool) preg_match($regex, $template);
-    }
-
-    /**
-     * Convert a discovered item to a cacheable format.
-     *
-     * @param array<string, mixed> $item
-     * @return array<string, mixed>
-     */
-    protected function itemToCacheable(array $item): array
-    {
-        return [
-            'templates' => $item['templates'],
-            'className' => $item['className'],
-            'priority' => $item['priority'],
-        ];
     }
 }

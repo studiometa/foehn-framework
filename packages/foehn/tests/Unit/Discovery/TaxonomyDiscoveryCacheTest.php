@@ -3,8 +3,9 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Attributes\AsTaxonomy;
-use Studiometa\Foehn\Discovery\TaxonomyDiscovery;
 use Studiometa\Foehn\Discovery\DiscoveryLocation;
+use Studiometa\Foehn\Discovery\TaxonomyDiscovery;
+use Tests\Fixtures\TaxonomyFixture;
 
 beforeEach(function () {
     $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
@@ -12,103 +13,47 @@ beforeEach(function () {
 });
 
 describe('TaxonomyDiscovery caching', function () {
-    it('converts items to cacheable format', function () {
-        $attribute = new AsTaxonomy(
-            name: 'product_category',
-            postTypes: ['product'],
-            singular: 'Category',
-            plural: 'Categories',
-            public: true,
-            hierarchical: true,
-            showInRest: true,
-            showAdminColumn: true,
-            rewriteSlug: 'product-category',
-        );
+    it('keeps the item under its location namespace', function () {
+        discoverFixture($this->discovery, TaxonomyFixture::class, $this->location);
 
-        $ref = new ReflectionMethod($this->discovery, 'addItem');
-        $ref->invoke($this->discovery, $this->location, [
-            'attribute' => $attribute,
-            'className' => 'App\\Taxonomies\\ProductCategory',
-            'implementsConfig' => true,
-        ]);
+        $cacheData = $this->discovery->getCacheableData();
 
-        $cacheableData = $this->discovery->getCacheableData();
-
-        expect($cacheableData['App\\'])->toHaveCount(1);
-        expect($cacheableData['App\\'][0]['name'])->toBe('product_category');
-        expect($cacheableData['App\\'][0]['singular'])->toBe('Category');
-        expect($cacheableData['App\\'][0]['plural'])->toBe('Categories');
-        expect($cacheableData['App\\'][0]['postTypes'])->toBe(['product']);
-        expect($cacheableData['App\\'][0]['hierarchical'])->toBeTrue();
-        expect($cacheableData['App\\'][0]['showInRest'])->toBeTrue();
-        expect($cacheableData['App\\'][0]['rewriteSlug'])->toBe('product-category');
-        expect($cacheableData['App\\'][0]['className'])->toBe('App\\Taxonomies\\ProductCategory');
-        expect($cacheableData['App\\'][0]['implementsConfig'])->toBeTrue();
+        expect($cacheData)->toHaveKey('App\\')->and($cacheData['App\\'])->toHaveCount(1);
     });
 
-    it('handles taxonomy with multiple post types', function () {
-        $attribute = new AsTaxonomy(
-            name: 'tag',
-            postTypes: ['product', 'event', 'post'],
-            singular: 'Tag',
-            plural: 'Tags',
-        );
+    it('restores every item unchanged through a cache file', function () {
+        discoverFixture($this->discovery, TaxonomyFixture::class, $this->location);
 
-        $ref = new ReflectionMethod($this->discovery, 'addItem');
-        $ref->invoke($this->discovery, $this->location, [
-            'attribute' => $attribute,
-            'className' => 'App\\Taxonomies\\Tag',
-            'implementsConfig' => false,
-        ]);
+        $restored = restoreThroughCacheFile($this->discovery, new TaxonomyDiscovery());
 
-        $cacheableData = $this->discovery->getCacheableData();
-
-        expect($cacheableData['App\\'][0]['postTypes'])->toBe(['product', 'event', 'post']);
+        expect($restored->wasRestoredFromCache())
+            ->toBeTrue()
+            ->and($restored->getItems()->all())
+            ->toEqual($this->discovery->getItems()->all());
     });
 
-    it('includes new WordPress parameters in cache', function () {
-        $attribute = new AsTaxonomy(
-            name: 'genre',
-            singular: 'Genre',
-            plural: 'Genres',
-            labels: ['menu_name' => 'Music Genres'],
-            rewrite: false,
-        );
+    it('restores the attribute as an instance, not an array', function () {
+        discoverFixture($this->discovery, TaxonomyFixture::class, $this->location);
 
-        $ref = new ReflectionMethod($this->discovery, 'addItem');
-        $ref->invoke($this->discovery, $this->location, [
-            'attribute' => $attribute,
-            'className' => 'App\\Taxonomies\\Genre',
-            'implementsConfig' => false,
-        ]);
+        $item = restoreThroughCacheFile($this->discovery, new TaxonomyDiscovery())->getItems()->all()[0];
 
-        $cacheableData = $this->discovery->getCacheableData();
-
-        expect($cacheableData['App\\'][0]['labels'])->toBe(['menu_name' => 'Music Genres']);
-        expect($cacheableData['App\\'][0]['rewrite'])->toBeFalse();
+        expect($item['attribute'])
+            ->toBeInstanceOf(AsTaxonomy::class)
+            ->and($item['attribute']->name)
+            ->toBe('project_category')
+            ->and($item['attribute']->postTypes)
+            ->toBe(['project'])
+            ->and($item['attribute']->singular)
+            ->toBe('Category')
+            ->and($item['attribute']->hierarchical)
+            ->toBeTrue()
+            ->and($item['implementsConfig'])
+            ->toBeFalse();
     });
 
-    it('can restore from cache', function () {
-        $cachedData = [
-            [
-                'name' => 'product_category',
-                'singular' => 'Category',
-                'plural' => 'Categories',
-                'postTypes' => ['product'],
-                'public' => true,
-                'hierarchical' => false,
-                'showInRest' => true,
-                'showAdminColumn' => true,
-                'rewriteSlug' => null,
-                'labels' => [],
-                'rewrite' => null,
-                'className' => 'App\\Taxonomies\\ProductCategory',
-                'implementsConfig' => false,
-            ],
-        ];
+    it('reports it was not restored when it scanned', function () {
+        discoverFixture($this->discovery, TaxonomyFixture::class, $this->location);
 
-        $this->discovery->restoreFromCache(['App\\' => $cachedData]);
-
-        expect($this->discovery->wasRestoredFromCache())->toBeTrue();
+        expect($this->discovery->wasRestoredFromCache())->toBeFalse();
     });
 });

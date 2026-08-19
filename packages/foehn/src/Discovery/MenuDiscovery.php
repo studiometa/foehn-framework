@@ -50,7 +50,8 @@ final class MenuDiscovery implements WpDiscovery
         $menus = [];
 
         foreach ($this->getItems() as $item) {
-            $attribute = $this->resolveAttribute($item);
+            /** @var AsMenu $attribute */
+            $attribute = $item['attribute'];
             $menus[$attribute->location] = $attribute->description;
         }
 
@@ -63,21 +64,6 @@ final class MenuDiscovery implements WpDiscovery
 
         // Add menus to Timber context
         $this->addMenusToTimberContext(array_keys($menus));
-    }
-
-    /**
-     * Resolve the AsMenu attribute from a discovered or cached item.
-     *
-     * @param array<string, mixed> $item
-     */
-    private function resolveAttribute(array $item): AsMenu
-    {
-        if (($item['attribute'] ?? null) !== null) {
-            return $item['attribute'];
-        }
-
-        // Cached format - rebuild attribute
-        return new AsMenu(location: $item['location'], description: $item['description']);
     }
 
     /**
@@ -103,23 +89,5 @@ final class MenuDiscovery implements WpDiscovery
 
             return $context;
         });
-    }
-
-    /**
-     * Convert a discovered item to a cacheable format.
-     *
-     * @param array<string, mixed> $item
-     * @return array<string, mixed>
-     */
-    protected function itemToCacheable(array $item): array
-    {
-        /** @var AsMenu $attribute */
-        $attribute = $item['attribute'];
-
-        return [
-            'location' => $attribute->location,
-            'description' => $attribute->description,
-            'className' => $item['className'],
-        ];
     }
 }

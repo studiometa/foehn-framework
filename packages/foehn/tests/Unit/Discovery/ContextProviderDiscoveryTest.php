@@ -3,10 +3,10 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Discovery\ContextProviderDiscovery;
+use Studiometa\Foehn\Discovery\DiscoveryLocation;
 use Tests\Fixtures\ContextProviderFixture;
 use Tests\Fixtures\InvalidContextProviderFixture;
 use Tests\Fixtures\NoAttributeFixture;
-use Studiometa\Foehn\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
     $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
@@ -21,8 +21,8 @@ describe('ContextProviderDiscovery', function () {
 
         expect($items)->toHaveCount(1);
         expect($items[0]['className'])->toBe(ContextProviderFixture::class);
-        expect($items[0]['templates'])->toBe(['single', 'page']);
-        expect($items[0]['priority'])->toBe(5);
+        expect($items[0]['attribute']->getTemplates())->toBe(['single', 'page']);
+        expect($items[0]['attribute']->priority)->toBe(5);
     });
 
     it('ignores classes without context provider attribute', function () {
@@ -32,7 +32,10 @@ describe('ContextProviderDiscovery', function () {
     });
 
     it('throws when class does not implement ContextProviderInterface', function () {
-        expect(fn() => $this->discovery->discover($this->location, new ReflectionClass(InvalidContextProviderFixture::class)))
+        expect(fn() => $this->discovery->discover(
+            $this->location,
+            new ReflectionClass(InvalidContextProviderFixture::class),
+        ))
             ->toThrow(InvalidArgumentException::class, 'must implement');
     });
 

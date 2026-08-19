@@ -75,7 +75,9 @@ final class TimberModelDiscovery implements WpDiscovery
      */
     private function registerTimberModel(array $item): void
     {
-        $name = $item['name'] ?? $item['attribute']->name;
+        /** @var AsTimberModel $attribute */
+        $attribute = $item['attribute'];
+        $name = $attribute->name;
         $className = $item['className'];
         $type = $item['type'];
 
@@ -91,23 +93,5 @@ final class TimberModelDiscovery implements WpDiscovery
         if ($type === 'post') {
             PostTypeRegistry::register($className, $name);
         }
-    }
-
-    /**
-     * Convert a discovered item to a cacheable format.
-     *
-     * @param array<string, mixed> $item
-     * @return array<string, mixed>
-     */
-    protected function itemToCacheable(array $item): array
-    {
-        /** @var AsTimberModel $attribute */
-        $attribute = $item['attribute'];
-
-        return [
-            'name' => $attribute->name,
-            'className' => $item['className'],
-            'type' => $item['type'],
-        ];
     }
 }

@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Discovery\AcfFieldGroupDiscovery;
+use Studiometa\Foehn\Discovery\DiscoveryLocation;
 use Tests\Fixtures\AcfFieldGroupComplexLocationFixture;
 use Tests\Fixtures\AcfFieldGroupFixture;
-use Studiometa\Foehn\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
     $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
@@ -14,7 +14,7 @@ beforeEach(function () {
     $this->discovery = new AcfFieldGroupDiscovery();
 });
 
-afterEach(fn () => tearDownTestContainer());
+afterEach(fn() => tearDownTestContainer());
 
 describe('AcfFieldGroupDiscovery apply', function () {
     it('registers acf/init action for field group registration', function () {
@@ -79,24 +79,11 @@ describe('AcfFieldGroupDiscovery apply', function () {
         expect($config['location'])->toBeArray();
     });
 
-    it('registers field groups from cached data', function () {
-        $cachedData = [
-            [
-                'name' => 'cached_fields',
-                'title' => 'Cached Fields',
-                'location' => ['post_type' => 'page'],
-                'position' => 'normal',
-                'menuOrder' => 5,
-                'style' => 'default',
-                'labelPlacement' => 'top',
-                'instructionPlacement' => 'label',
-                'hideOnScreen' => [],
-                'className' => AcfFieldGroupFixture::class,
-            ],
-        ];
+    it('registers the same field group whether scanned or restored from cache', function () {
+        $scanned = new AcfFieldGroupDiscovery();
+        discoverFixture($scanned, AcfFieldGroupFixture::class, $this->location);
 
-        $this->discovery->restoreFromCache(['App\\' => $cachedData]);
-        $this->discovery->apply();
+        restoreThroughCacheFile($scanned, $this->discovery)->apply();
 
         $actions = wp_stub_get_calls('add_action');
         $callback = $actions[0]['args']['callback'];
@@ -107,10 +94,11 @@ describe('AcfFieldGroupDiscovery apply', function () {
         expect($fieldGroups)->toHaveCount(1);
 
         $config = $fieldGroups[0]['args']['group'];
-        expect($config['title'])->toBe('Cached Fields');
-        expect($config['position'])->toBe('normal');
-        expect($config['menu_order'])->toBe(5);
-        expect($config['style'])->toBe('default');
+        expect($config['title'])->toBe('Property Details');
+        expect($config['position'])->toBe('acf_after_title');
+        expect($config['menu_order'])->toBe(0);
+        expect($config['style'])->toBe('seamless');
+        expect($config['hide_on_screen'])->toBe(['the_content', 'excerpt']);
     });
 
     it('handles complex location rules with OR and AND conditions', function () {
@@ -133,22 +121,8 @@ describe('AcfFieldGroupDiscovery apply', function () {
     });
 
     it('does not include hide_on_screen when empty', function () {
-        $cachedData = [
-            [
-                'name' => 'no_hide_fields',
-                'title' => 'No Hide Fields',
-                'location' => ['post_type' => 'post'],
-                'position' => 'normal',
-                'menuOrder' => 0,
-                'style' => 'default',
-                'labelPlacement' => 'top',
-                'instructionPlacement' => 'label',
-                'hideOnScreen' => [],
-                'className' => AcfFieldGroupFixture::class,
-            ],
-        ];
-
-        $this->discovery->restoreFromCache(['App\\' => $cachedData]);
+        // The complex-location fixture leaves hideOnScreen at its default.
+        $this->discovery->discover($this->location, new ReflectionClass(AcfFieldGroupComplexLocationFixture::class));
         $this->discovery->apply();
 
         $actions = wp_stub_get_calls('add_action');

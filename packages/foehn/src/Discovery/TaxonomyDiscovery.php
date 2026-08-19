@@ -73,7 +73,8 @@ final class TaxonomyDiscovery implements WpDiscovery
     {
         $className = $item['className'];
         $implementsConfig = $item['implementsConfig'];
-        $attribute = $this->resolveAttribute($item);
+        /** @var AsTaxonomy $attribute */
+        $attribute = $item['attribute'];
         $builder = TaxonomyBuilder::fromAttribute($attribute);
 
         // Allow class to customize the builder
@@ -90,33 +91,6 @@ final class TaxonomyDiscovery implements WpDiscovery
     }
 
     /**
-     * Resolve the AsTaxonomy attribute from a discovered or cached item.
-     *
-     * @param array<string, mixed> $item
-     */
-    private function resolveAttribute(array $item): AsTaxonomy
-    {
-        if (($item['attribute'] ?? null) !== null) {
-            return $item['attribute'];
-        }
-
-        // Cached format - rebuild attribute
-        return new AsTaxonomy(
-            name: $item['name'],
-            postTypes: $item['postTypes'] ?? [],
-            singular: $item['singular'],
-            plural: $item['plural'],
-            public: $item['public'] ?? true,
-            hierarchical: $item['hierarchical'] ?? false,
-            showInRest: $item['showInRest'] ?? true,
-            showAdminColumn: $item['showAdminColumn'] ?? true,
-            rewriteSlug: $item['rewriteSlug'] ?? null,
-            labels: $item['labels'] ?? [],
-            rewrite: $item['rewrite'] ?? null,
-        );
-    }
-
-    /**
      * Register the Timber class map for this taxonomy.
      *
      * @param string $taxonomy
@@ -129,33 +103,5 @@ final class TaxonomyDiscovery implements WpDiscovery
 
             return $map;
         });
-    }
-
-    /**
-     * Convert a discovered item to a cacheable format.
-     *
-     * @param array<string, mixed> $item
-     * @return array<string, mixed>
-     */
-    protected function itemToCacheable(array $item): array
-    {
-        /** @var AsTaxonomy $attribute */
-        $attribute = $item['attribute'];
-
-        return [
-            'name' => $attribute->name,
-            'singular' => $attribute->singular,
-            'plural' => $attribute->plural,
-            'postTypes' => $attribute->postTypes,
-            'public' => $attribute->public,
-            'hierarchical' => $attribute->hierarchical,
-            'showInRest' => $attribute->showInRest,
-            'showAdminColumn' => $attribute->showAdminColumn,
-            'rewriteSlug' => $attribute->rewriteSlug,
-            'labels' => $attribute->labels,
-            'rewrite' => $attribute->rewrite,
-            'className' => $item['className'],
-            'implementsConfig' => $item['implementsConfig'],
-        ];
     }
 }

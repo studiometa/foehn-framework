@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
+use Studiometa\Foehn\Discovery\DiscoveryLocation;
 use Studiometa\Foehn\Discovery\ShortcodeDiscovery;
 use Tests\Fixtures\ShortcodeFixture;
-use Studiometa\Foehn\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
     $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
@@ -33,20 +33,14 @@ describe('ShortcodeDiscovery apply', function () {
         expect(wp_stub_get_calls('add_shortcode'))->toBeEmpty();
     });
 
-    it('registers shortcodes from cached data', function () {
-        $this->discovery->restoreFromCache(['App\\' => [
-            [
-                'tag' => 'cached-shortcode',
-                'className' => ShortcodeFixture::class,
-                'methodName' => 'greeting',
-            ],
-        ]]);
+    it('registers the same shortcodes whether scanned or restored from cache', function () {
+        $scanned = new ShortcodeDiscovery();
+        discoverFixture($scanned, ShortcodeFixture::class, $this->location);
 
-        $this->discovery->apply();
+        restoreThroughCacheFile($scanned, $this->discovery)->apply();
 
-        $calls = wp_stub_get_calls('add_shortcode');
+        $tags = array_map(static fn(array $call): string => $call['args']['tag'], wp_stub_get_calls('add_shortcode'));
 
-        expect($calls)->toHaveCount(1);
-        expect($calls[0]['args']['tag'])->toBe('cached-shortcode');
+        expect($tags)->toBe(['greeting', 'farewell']);
     });
 });

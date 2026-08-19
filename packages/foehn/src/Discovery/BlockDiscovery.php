@@ -64,14 +64,10 @@ final class BlockDiscovery implements WpDiscovery
     {
         add_action('init', function (): void {
             foreach ($this->getItems() as $item) {
-                // Handle cached format
-                if (($item['blockName'] ?? null) !== null) {
-                    $this->registerBlockFromCache($item);
+                /** @var AsBlock $attribute */
+                $attribute = $item['attribute'];
 
-                    continue;
-                }
-
-                $this->registerBlock($item['attribute'], $item['className']);
+                $this->registerBlock($attribute, $item['className']);
             }
         });
     }
@@ -79,89 +75,26 @@ final class BlockDiscovery implements WpDiscovery
     /**
      * Register a single native block.
      *
-     * @param AsBlock $attribute
+     * Only `allowedBlocks` has a WP_Block_Type counterpart. The inner blocks template
+     * and its lock are editor-side only, so they travel in the editor payload instead.
+     *
      * @param class-string<BlockInterface> $className
      */
     private function registerBlock(AsBlock $attribute, string $className): void
     {
+        $blockName = $attribute->name;
         $supports = $attribute->supports;
 
         if ($attribute->interactivity) {
             $supports['interactivity'] = true;
         }
 
-        $this->doRegisterBlock(
-            $className,
-            $attribute->name,
-            $attribute->title,
-            $attribute->category,
-            $attribute->icon,
-            $attribute->description,
-            $attribute->keywords,
-            $supports,
-            $attribute->parent,
-            $attribute->ancestor,
-            $attribute->interactivity,
-            $attribute->interactivity ? $attribute->getInteractivityNamespace() : null,
-            $attribute->allowedBlocks,
-        );
-    }
+        $interactivityNamespace = $attribute->interactivity ? $attribute->getInteractivityNamespace() : null;
 
-    /**
-     * Register block from cached data.
-     *
-     * @param array<string, mixed> $item
-     */
-    private function registerBlockFromCache(array $item): void
-    {
-        $this->doRegisterBlock(
-            $item['className'],
-            $item['blockName'],
-            $item['title'],
-            $item['category'],
-            $item['icon'],
-            $item['description'],
-            $item['keywords'],
-            $item['supports'],
-            $item['parent'],
-            $item['ancestor'],
-            $item['interactivity'],
-            $item['interactivityNamespace'],
-            $item['allowedBlocks'],
-        );
-    }
-
-    /**
-     * Actually register the block.
-     *
-     * Only `allowedBlocks` has a WP_Block_Type counterpart. The inner blocks template
-     * and its lock are editor-side only, so they travel in the editor payload instead.
-     *
-     * @param class-string<BlockInterface> $className
-     * @param array<string> $keywords
-     * @param array<string, mixed> $supports
-     * @param array<string> $ancestor
-     * @param list<string> $allowedBlocks
-     */
-    private function doRegisterBlock(
-        string $className,
-        string $blockName,
-        string $title,
-        string $category,
-        ?string $icon,
-        ?string $description,
-        array $keywords,
-        array $supports,
-        ?string $parent,
-        array $ancestor,
-        bool $interactivity,
-        ?string $interactivityNamespace,
-        array $allowedBlocks,
-    ): void {
         $args = [
             'api_version' => 3,
-            'title' => $title,
-            'category' => $category,
+            'title' => $attribute->title,
+            'category' => $attribute->category,
             'render_callback' => $this->createRenderCallback($className, $interactivityNamespace),
             // Every Foehn block is dynamic, so "Edit as HTML" can only ever invalidate it:
             // there is no static save output for the editor to validate the markup against.
@@ -170,28 +103,28 @@ final class BlockDiscovery implements WpDiscovery
         ];
 
         // Add optional configuration
-        if ($icon !== null) {
-            $args['icon'] = $icon;
+        if ($attribute->icon !== null) {
+            $args['icon'] = $attribute->icon;
         }
 
-        if ($description !== null) {
-            $args['description'] = $description;
+        if ($attribute->description !== null) {
+            $args['description'] = $attribute->description;
         }
 
-        if (!empty($keywords)) {
-            $args['keywords'] = $keywords;
+        if (!empty($attribute->keywords)) {
+            $args['keywords'] = $attribute->keywords;
         }
 
-        if ($parent !== null) {
-            $args['parent'] = [$parent];
+        if ($attribute->parent !== null) {
+            $args['parent'] = [$attribute->parent];
         }
 
-        if (!empty($ancestor)) {
-            $args['ancestor'] = $ancestor;
+        if (!empty($attribute->ancestor)) {
+            $args['ancestor'] = $attribute->ancestor;
         }
 
-        if (!empty($allowedBlocks)) {
-            $args['allowed_blocks'] = $allowedBlocks;
+        if (!empty($attribute->allowedBlocks)) {
+            $args['allowed_blocks'] = $attribute->allowedBlocks;
         }
 
         // Add attributes from class, without the editor-only keys
@@ -229,42 +162,6 @@ final class BlockDiscovery implements WpDiscovery
     }
 
     /**
-     * Convert a discovered item to a cacheable format.
-     *
-     * @param array<string, mixed> $item
-     * @return array<string, mixed>
-     */
-    protected function itemToCacheable(array $item): array
-    {
-        /** @var AsBlock $attribute */
-        $attribute = $item['attribute'];
-
-        $supports = $attribute->supports;
-
-        if ($attribute->interactivity) {
-            $supports['interactivity'] = true;
-        }
-
-        return [
-            'className' => $item['className'],
-            'blockName' => $attribute->name,
-            'title' => $attribute->title,
-            'category' => $attribute->category,
-            'icon' => $attribute->icon,
-            'description' => $attribute->description,
-            'keywords' => $attribute->keywords,
-            'supports' => $supports,
-            'parent' => $attribute->parent,
-            'ancestor' => $attribute->ancestor,
-            'interactivity' => $attribute->interactivity,
-            'interactivityNamespace' => $attribute->interactivity ? $attribute->getInteractivityNamespace() : null,
-            'allowedBlocks' => $attribute->allowedBlocks,
-            'innerBlocksTemplate' => $attribute->innerBlocksTemplate,
-            'innerBlocksTemplateLock' => $attribute->innerBlocksTemplateLock,
-        ];
-    }
-
-    /**
      * Get the editor payload for every discovered block.
      *
      * The payload is exposed to the block editor as `window.foehnBlocks` and
@@ -295,49 +192,15 @@ final class BlockDiscovery implements WpDiscovery
     {
         /** @var class-string<BlockInterface> $className */
         $className = $item['className'];
-
-        // Cached items are flat arrays, live items carry the attribute instance.
-        // A cache written by another Foehn version never reaches this point:
-        // DiscoveryCache stamps its own schema version and rejects a stale file.
-        if (($item['blockName'] ?? null) !== null) {
-            return self::buildEditorDefinition(
-                $className,
-                $item['blockName'],
-                $item['allowedBlocks'],
-                $item['innerBlocksTemplate'],
-                $item['innerBlocksTemplateLock'],
-            );
-        }
-
         /** @var AsBlock $attribute */
         $attribute = $item['attribute'];
 
-        return self::buildEditorDefinition(
-            $className,
-            $attribute->name,
-            $attribute->allowedBlocks,
-            $attribute->innerBlocksTemplate,
-            $attribute->innerBlocksTemplateLock,
-        );
-    }
+        $allowedBlocks = $attribute->allowedBlocks;
+        $template = $attribute->innerBlocksTemplate;
+        $templateLock = $attribute->innerBlocksTemplateLock;
 
-    /**
-     * Assemble one editor definition from already normalized values.
-     *
-     * @param class-string<BlockInterface> $className
-     * @param list<string> $allowedBlocks
-     * @param list<mixed> $template
-     * @return array{name: string, attributes: array<string, mixed>, innerBlocks: array{allowedBlocks: list<string>, template: list<mixed>, templateLock: string|bool|null}|null}
-     */
-    private static function buildEditorDefinition(
-        string $className,
-        string $name,
-        array $allowedBlocks,
-        array $template,
-        string|bool|null $templateLock,
-    ): array {
         return [
-            'name' => $name,
+            'name' => $attribute->name,
             'attributes' => method_exists($className, 'attributes')
                 ? BlockAttributeSchema::toEditorFields($className::attributes())
                 : [],

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
+use Studiometa\Foehn\Discovery\DiscoveryLocation;
 use Studiometa\Foehn\Discovery\TimberModelDiscovery;
 use Tests\Fixtures\TimberModelPostFixture;
 use Tests\Fixtures\TimberModelTermFixture;
-use Studiometa\Foehn\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
     $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
@@ -64,21 +64,12 @@ describe('TimberModelDiscovery apply', function () {
         expect(wp_stub_get_calls('add_filter'))->toBeEmpty();
     });
 
-    it('registers models from cached data', function () {
-        $this->discovery->restoreFromCache(['App\\' => [
-            [
-                'name' => 'page',
-                'className' => TimberModelPostFixture::class,
-                'type' => 'post',
-            ],
-            [
-                'name' => 'tag',
-                'className' => TimberModelTermFixture::class,
-                'type' => 'term',
-            ],
-        ]]);
+    it('registers the same class maps whether scanned or restored from cache', function () {
+        $scanned = new TimberModelDiscovery();
+        discoverFixture($scanned, TimberModelPostFixture::class, $this->location);
+        discoverFixture($scanned, TimberModelTermFixture::class, $this->location);
 
-        $this->discovery->apply();
+        restoreThroughCacheFile($scanned, $this->discovery)->apply();
 
         $filters = wp_stub_get_calls('add_filter');
 

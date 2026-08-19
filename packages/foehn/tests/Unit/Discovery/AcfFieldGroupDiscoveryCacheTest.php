@@ -5,6 +5,8 @@ declare(strict_types=1);
 use Studiometa\Foehn\Attributes\AsAcfFieldGroup;
 use Studiometa\Foehn\Discovery\AcfFieldGroupDiscovery;
 use Studiometa\Foehn\Discovery\DiscoveryLocation;
+use Tests\Fixtures\AcfFieldGroupComplexLocationFixture;
+use Tests\Fixtures\AcfFieldGroupFixture;
 
 beforeEach(function () {
     $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
@@ -12,139 +14,58 @@ beforeEach(function () {
 });
 
 describe('AcfFieldGroupDiscovery caching', function () {
-    it('converts items to cacheable format', function () {
-        $attribute = new AsAcfFieldGroup(
-            name: 'property_fields',
-            title: 'Property Details',
-            location: ['post_type' => 'property'],
-            position: 'acf_after_title',
-            menuOrder: 10,
-            style: 'seamless',
-            labelPlacement: 'left',
-            instructionPlacement: 'field',
-            hideOnScreen: ['the_content', 'excerpt'],
-        );
+    it('keeps the item under its location namespace', function () {
+        discoverFixture($this->discovery, AcfFieldGroupFixture::class, $this->location);
 
-        $ref = new ReflectionMethod($this->discovery, 'addItem');
-        $ref->invoke($this->discovery, $this->location, [
-            'attribute' => $attribute,
-            'className' => 'App\\Fields\\PropertyFields',
-        ]);
+        $cacheData = $this->discovery->getCacheableData();
 
-        $cacheableData = $this->discovery->getCacheableData();
-
-        expect($cacheableData['App\\'])->toHaveCount(1);
-        expect($cacheableData['App\\'][0]['name'])->toBe('property_fields');
-        expect($cacheableData['App\\'][0]['title'])->toBe('Property Details');
-        expect($cacheableData['App\\'][0]['location'])->toBe(['post_type' => 'property']);
-        expect($cacheableData['App\\'][0]['position'])->toBe('acf_after_title');
-        expect($cacheableData['App\\'][0]['menuOrder'])->toBe(10);
-        expect($cacheableData['App\\'][0]['style'])->toBe('seamless');
-        expect($cacheableData['App\\'][0]['labelPlacement'])->toBe('left');
-        expect($cacheableData['App\\'][0]['instructionPlacement'])->toBe('field');
-        expect($cacheableData['App\\'][0]['hideOnScreen'])->toBe(['the_content', 'excerpt']);
-        expect($cacheableData['App\\'][0]['className'])->toBe('App\\Fields\\PropertyFields');
+        expect($cacheData)->toHaveKey('App\\')->and($cacheData['App\\'])->toHaveCount(1);
     });
 
-    it('handles minimal configuration', function () {
-        $attribute = new AsAcfFieldGroup(
-            name: 'minimal_fields',
-            title: 'Minimal Fields',
-            location: ['post_type' => 'post'],
-        );
+    it('restores every item unchanged through a cache file', function () {
+        discoverFixture($this->discovery, AcfFieldGroupFixture::class, $this->location);
 
-        $ref = new ReflectionMethod($this->discovery, 'addItem');
-        $ref->invoke($this->discovery, $this->location, [
-            'attribute' => $attribute,
-            'className' => 'App\\Fields\\MinimalFields',
-        ]);
+        $restored = restoreThroughCacheFile($this->discovery, new AcfFieldGroupDiscovery());
 
-        $cacheableData = $this->discovery->getCacheableData();
-
-        expect($cacheableData['App\\'][0]['position'])->toBe('normal');
-        expect($cacheableData['App\\'][0]['menuOrder'])->toBe(0);
-        expect($cacheableData['App\\'][0]['style'])->toBe('default');
-        expect($cacheableData['App\\'][0]['labelPlacement'])->toBe('top');
-        expect($cacheableData['App\\'][0]['instructionPlacement'])->toBe('label');
-        expect($cacheableData['App\\'][0]['hideOnScreen'])->toBe([]);
+        expect($restored->wasRestoredFromCache())
+            ->toBeTrue()
+            ->and($restored->getItems()->all())
+            ->toEqual($this->discovery->getItems()->all());
     });
 
-    it('handles full ACF location format', function () {
-        $location = [
-            [
-                ['param' => 'post_type', 'operator' => '==', 'value' => 'product'],
-                ['param' => 'post_status', 'operator' => '!=', 'value' => 'draft'],
-            ],
-            [
-                ['param' => 'page_template', 'operator' => '==', 'value' => 'page-shop.php'],
-            ],
-        ];
+    it('restores the attribute as an instance, not an array', function () {
+        discoverFixture($this->discovery, AcfFieldGroupFixture::class, $this->location);
 
-        $attribute = new AsAcfFieldGroup(
-            name: 'complex_fields',
-            title: 'Complex Fields',
-            location: $location,
-        );
+        $item = restoreThroughCacheFile($this->discovery, new AcfFieldGroupDiscovery())->getItems()->all()[0];
 
-        $ref = new ReflectionMethod($this->discovery, 'addItem');
-        $ref->invoke($this->discovery, $this->location, [
-            'attribute' => $attribute,
-            'className' => 'App\\Fields\\ComplexFields',
-        ]);
-
-        $cacheableData = $this->discovery->getCacheableData();
-
-        expect($cacheableData['App\\'][0]['location'])->toBe($location);
+        expect($item['attribute'])
+            ->toBeInstanceOf(AsAcfFieldGroup::class)
+            ->and($item['attribute']->name)
+            ->toBe('property_fields')
+            ->and($item['attribute']->location)
+            ->toBe(['post_type' => 'property'])
+            ->and($item['attribute']->hideOnScreen)
+            ->toBe(['the_content', 'excerpt']);
     });
 
-    it('can restore from cache', function () {
-        $cachedData = [
-            [
-                'name' => 'property_fields',
-                'title' => 'Property Details',
-                'location' => ['post_type' => 'property'],
-                'position' => 'acf_after_title',
-                'menuOrder' => 0,
-                'style' => 'seamless',
-                'labelPlacement' => 'left',
-                'instructionPlacement' => 'field',
-                'hideOnScreen' => ['the_content'],
-                'className' => 'App\\Fields\\PropertyFields',
-            ],
-        ];
+    it('reports it was not restored when it scanned', function () {
+        discoverFixture($this->discovery, AcfFieldGroupFixture::class, $this->location);
 
-        $this->discovery->restoreFromCache(['App\\' => $cachedData]);
-
-        expect($this->discovery->wasRestoredFromCache())->toBeTrue();
+        expect($this->discovery->wasRestoredFromCache())->toBeFalse();
     });
 
-    it('can handle multiple items', function () {
-        $attribute1 = new AsAcfFieldGroup(
-            name: 'post_fields',
-            title: 'Post Fields',
-            location: ['post_type' => 'post'],
-        );
+    it('restores a full ACF location format unchanged', function () {
+        discoverFixture($this->discovery, AcfFieldGroupComplexLocationFixture::class, $this->location);
 
-        $attribute2 = new AsAcfFieldGroup(
-            name: 'page_fields',
-            title: 'Page Fields',
-            location: ['post_type' => 'page'],
-        );
+        $restored = restoreThroughCacheFile($this->discovery, new AcfFieldGroupDiscovery());
 
-        $ref = new ReflectionMethod($this->discovery, 'addItem');
-        $ref->invoke($this->discovery, $this->location, [
-            'attribute' => $attribute1,
-            'className' => 'App\\Fields\\PostFields',
-        ]);
-        $ref->invoke($this->discovery, $this->location, [
-            'attribute' => $attribute2,
-            'className' => 'App\\Fields\\PageFields',
-        ]);
+        expect($restored->getItems()->all())->toEqual($this->discovery->getItems()->all());
+    });
 
-        $cacheableData = $this->discovery->getCacheableData();
+    it('keeps one item per discovered class', function () {
+        discoverFixture($this->discovery, AcfFieldGroupFixture::class, $this->location);
+        discoverFixture($this->discovery, AcfFieldGroupComplexLocationFixture::class, $this->location);
 
-        expect($cacheableData['App\\'])->toHaveCount(2);
-        expect($cacheableData['App\\'][0]['name'])->toBe('post_fields');
-        expect($cacheableData['App\\'][1]['name'])->toBe('page_fields');
+        expect($this->discovery->getCacheableData()['App\\'])->toHaveCount(2);
     });
 });
