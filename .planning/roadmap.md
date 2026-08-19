@@ -17,9 +17,8 @@ Every planned evolution of Føhn, in one place. Detail lives in the linked specs
 | 7   | `#[AsRewriteRule]`             | Approved      | [framework_additions_spec.md](framework_additions_spec.md) §3         | 2 d    |
 | 8   | `#[AsSettingsPage]`            | Approved      | [framework_additions_spec.md](framework_additions_spec.md) §4         | 2–3 d  |
 | 9   | `#[AsBlockBinding]`            | Approved      | [framework_additions_spec.md](framework_additions_spec.md) §2         | 1–2 d  |
-| 10  | `Foehn\Testing` helpers        | Approved      | [framework_additions_spec.md](framework_additions_spec.md) §5         | 1 d    |
-| 11  | `#[AsAbility]` + AI guardrails | **Undecided** | [abilities_spec.md](abilities_spec.md)                                | 4–7 d  |
-| 12  | Release `0.5.0`                | Blocked       | —                                                                     | —      |
+| 10  | `#[AsAbility]` + AI guardrails | **Undecided** | [abilities_spec.md](abilities_spec.md)                                | 4–7 d  |
+| 11  | Release `0.5.0`                | Blocked       | —                                                                     | —      |
 
 Done and shipped: the block editor layer ([editor_layer_spec.md](editor_layer_spec.md)), and on 2026-08-19 the discovery rewrite onto `tempest/discovery`, `*.config.php` loading, the self-warming discovery cache, and generated WordPress security keys.
 
@@ -28,9 +27,9 @@ Done and shipped: the block editor layer ([editor_layer_spec.md](editor_layer_sp
 ```
 2 ─┬─→ 3
    ├─→ 5 ──→ 6
-   └─→ 7, 8, 9, 10   (any order)
+   └─→ 7, 8, 9       (any order)
 4 ─┴─→ 9
-1 ────→ 12
+1 ────→ 11
 ```
 
 **2 first, and it is not a preference.** `DiscoveryRunner::getDiscoveryPhases()` is a hardcoded map of nineteen classes, so nothing outside that file can add a discovery. Every attribute below needs it, the ACF package cannot exist without it, and `docs/guide/custom-discovery.md` documents a feature that has never worked because of it.
@@ -39,7 +38,7 @@ Done and shipped: the block editor layer ([editor_layer_spec.md](editor_layer_sp
 
 **4 before 9**, so the block bindings guide can explain when _not_ to write a binding source: meta declared with `#[AsPostMeta]` is already bindable through core's `core/post-meta`.
 
-**12 waits on 1**, by decision on 2026-08-19. Note the cost: everything merged that day is unreleased, and `packages/starter` requires `studiometa/foehn: ^0.4`, so `composer create-project` still installs `0.4.1` — the version whose front-end fatals and whose auth keys are `md5()` of the web root. No live project off the published starter until a tag exists. Cutting `0.5.0` now and shipping the page cache as `0.6.0` remains available; nothing technical couples them.
+**11 waits on 1**, by decision on 2026-08-19. Note the cost: everything merged that day is unreleased, and `packages/starter` requires `studiometa/foehn: ^0.4`, so `composer create-project` still installs `0.4.1` — the version whose front-end fatals and whose auth keys are `md5()` of the web root. No live project off the published starter until a tag exists. Cutting `0.5.0` now and shipping the page cache as `0.6.0` remains available; nothing technical couples them.
 
 ## Undecided
 
@@ -59,15 +58,15 @@ Done and shipped: the block editor layer ([editor_layer_spec.md](editor_layer_sp
 
 Recorded so the questions are not reopened without new information.
 
-| Rejected                                 | Because                                                                                                                               |
-| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| An ORM or DB layer                       | `PostQueryBuilder` and Timber models cover the WordPress data model. A second ORM over `wp_posts` fights the platform.                |
-| A full router                            | Template hierarchy, `#[AsTemplateController]` and `#[AsRestRoute]` cover it. Item 7 is the missing 10%.                               |
-| Service providers                        | Discovery is the provider mechanism. Two ways to register one thing is worse than one.                                                |
-| Sessions, broadcasting, mail, validation | WordPress or a plugin owns each; REST already validates through `args` schemas.                                                       |
-| `studiometa/foehn-testing` as a package  | `brain/monkey` (2.7.0, maintained) and `10up/wp_mock` already mock WordPress functions. Item 10 keeps only the Føhn-specific helpers. |
-| Wrapping the WordPress AI Client         | `wp_ai_client_prompt()` is already provider-agnostic. Guardrails yes, a wrapper no. See [abilities_spec.md](abilities_spec.md) §4.    |
-| An MCP server                            | `WordPress/mcp-adapter` is that, maintained by the WordPress project. Abilities are the seam.                                         |
+| Rejected                                 | Because                                                                                                                                                                                                                                                                                                                                                                                             |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| An ORM or DB layer                       | `PostQueryBuilder` and Timber models cover the WordPress data model. A second ORM over `wp_posts` fights the platform.                                                                                                                                                                                                                                                                              |
+| A full router                            | Template hierarchy, `#[AsTemplateController]` and `#[AsRestRoute]` cover it. Item 7 is the missing 10%.                                                                                                                                                                                                                                                                                             |
+| Service providers                        | Discovery is the provider mechanism. Two ways to register one thing is worse than one.                                                                                                                                                                                                                                                                                                              |
+| Sessions, broadcasting, mail, validation | WordPress or a plugin owns each; REST already validates through `args` schemas.                                                                                                                                                                                                                                                                                                                     |
+| A testing package, in any form           | `brain/monkey` (2.7.0, maintained) and `10up/wp_mock` already mock WordPress functions; `php-stubs/wordpress-stubs` covers static analysis. The Føhn-specific helpers stay in `packages/foehn/tests/`, private, where they already work — publishing sixty lines to serve people writing custom discoveries is a public API surface bought for a niche. Revisit if that niche turns out to be real. |
+| Wrapping the WordPress AI Client         | `wp_ai_client_prompt()` is already provider-agnostic. Guardrails yes, a wrapper no. See [abilities_spec.md](abilities_spec.md) §4.                                                                                                                                                                                                                                                                  |
+| An MCP server                            | `WordPress/mcp-adapter` is that, maintained by the WordPress project. Abilities are the seam.                                                                                                                                                                                                                                                                                                       |
 
 ## Rules that apply across all of it
 

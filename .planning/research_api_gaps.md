@@ -6,15 +6,15 @@ The framing that decides both: Acorn's premise is Laravel inside WordPress. Føh
 
 ## 1. Decided
 
-| Feature                    | Shape                                                                | Notes                                                                                       |
-| -------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| Typed custom fields        | `#[AsPostMeta]` → `register_meta()`                                  | 0 files touch `register_meta` today. Removes ACF Pro as a hard requirement.                 |
-| ACF as an optional package | Move `AsAcf*`, `Acf/`, `AcfOptionsService` to `studiometa/foehn-acf` | Follows from the above: ACF becomes a choice, not a dependency.                             |
-| Block bindings             | `#[AsBlockBinding]` → `register_block_bindings_source()`             | WP 6.5+. Binds core blocks to meta or a custom source. Pairs with `#[AsPostMeta]`.          |
-| Discovery introspection    | `wp foehn discovery:list`                                            | Nothing can say what was discovered. The 2026-08-19 fatal error would have been obvious.    |
-| Custom URLs                | `#[AsRewriteRule]`, query vars, `wp foehn rewrite:flush`             | 0 files touch `add_rewrite_rule`. Webhooks and form handlers without hand-rolled rewrites.  |
-| Testable themes            | `Foehn\Testing` helpers inside the framework                         | Withdrawn as a package: `brain/monkey` and `10up/wp_mock` already mock WordPress functions. |
-| Options pages without ACF  | `#[AsSettingsPage]` → Settings API                                   | 0 files today. Required once ACF is optional.                                               |
+| Feature                    | Shape                                                                | Notes                                                                                      |
+| -------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Typed custom fields        | `#[AsPostMeta]` → `register_meta()`                                  | 0 files touch `register_meta` today. Removes ACF Pro as a hard requirement.                |
+| ACF as an optional package | Move `AsAcf*`, `Acf/`, `AcfOptionsService` to `studiometa/foehn-acf` | Follows from the above: ACF becomes a choice, not a dependency.                            |
+| Block bindings             | `#[AsBlockBinding]` → `register_block_bindings_source()`             | WP 6.5+. Binds core blocks to meta or a custom source. Pairs with `#[AsPostMeta]`.         |
+| Discovery introspection    | `wp foehn discovery:list`                                            | Nothing can say what was discovered. The 2026-08-19 fatal error would have been obvious.   |
+| Custom URLs                | `#[AsRewriteRule]`, query vars, `wp foehn rewrite:flush`             | 0 files touch `add_rewrite_rule`. Webhooks and form handlers without hand-rolled rewrites. |
+| ~~Testable themes~~        | ~~a testing package~~                                                | **Dropped.** `brain/monkey` and `10up/wp_mock` already do this; the helpers stay private.  |
+| Options pages without ACF  | `#[AsSettingsPage]` → Settings API                                   | 0 files today. Required once ACF is optional.                                              |
 
 ### Not decided
 

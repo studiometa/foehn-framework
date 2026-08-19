@@ -1,6 +1,6 @@
 # Five framework additions
 
-`discovery:list`, `#[AsBlockBinding]`, `#[AsRewriteRule]`, `#[AsSettingsPage]`, and the testing helpers. Specced together because they share the same constraints and would otherwise repeat them.
+`discovery:list`, `#[AsBlockBinding]`, `#[AsRewriteRule]` and `#[AsSettingsPage]`. Specced together because they share the same constraints and would otherwise repeat them. §5 records a fifth item that was dropped.
 
 `#[AsPostMeta]`, the ACF split and the `#[AsDiscovery]` they depend on are in `post_meta_and_acf_split_spec.md`. Everything is tracked in `roadmap.md`.
 
@@ -160,9 +160,10 @@ final readonly class ThemeSettings implements SettingsPageInterface
 
 Registration spans two hooks: `register_setting()` on `init`, the menu and sections on `admin_menu`. `apply()` adds the second itself, as §0 says.
 
-## 5. Testing helpers — not a package
+## 5. Testing — nothing to build
 
-The original proposal was to publish the framework's WordPress stubs as `studiometa/foehn-testing`. That was reinventing something that exists, and the plan is withdrawn.
+The original proposal was to publish the framework's WordPress stubs as
+`studiometa/foehn-testing`. It is dropped entirely, package and namespace move alike.
 
 ### Three different things called "stubs"
 
@@ -172,35 +173,28 @@ The original proposal was to publish the framework's WordPress stubs as `studiom
 | `brain/monkey`, `10up/wp_mock`      | Executable mocks of WordPress functions for unit tests, per test expectation.      | Yes         |
 | `packages/foehn/tests/wp-stubs.php` | Executable fakes with a call recorder, shared by the whole suite.                  | Yes         |
 
-`wordpress-stubs` defines `function add_action($hook_name, $callback, $priority = 10, $accepted_args = 1) {}` — an empty body. It tells mago the function exists; it cannot record that a discovery called it. So it is not an alternative to the second and third rows, and Føhn already uses it for what it is for.
+`wordpress-stubs` defines `function add_action($hook_name, $callback, $priority = 10, $accepted_args = 1) {}` — an empty body. It tells mago the function exists; it cannot record that a discovery called it. So it is not an alternative to the other two rows, and Føhn already uses it for what it is for.
 
-The second row is the real prior art, and it is the reason not to publish. **Brain Monkey** is at 2.7.0 and actively maintained as of February 2026 (Mockery plus Patchwork); **WP_Mock** covers the same ground with different syntax. A theme developer who wants to unit-test WordPress-coupled code already has two maintained options. Publishing a third would be a maintenance burden bought with nothing.
+The second row is why nothing here needs building. **Brain Monkey** is at 2.7.0 and actively maintained as of February 2026; **WP_Mock** covers the same ground with different syntax. Anyone unit-testing WordPress-coupled code already has two maintained options.
 
 The claim that "no comparable framework offers a unit-testing story" was wrong in a way worth recording: no _framework_ ships one, but the _ecosystem_ does, and that is what matters to someone writing tests.
 
-### Keep internally, do not publish
+### What happens instead
 
-The suite keeps `tests/wp-stubs.php`. It is faster than Patchwork-based mocking, and it provides behavioural fakes — option storage, a block type registry, ACF field storage — that per-test expectations do not. Migrating 1390 passing tests to Brain Monkey for parity would buy nothing.
+The suite keeps `tests/wp-stubs.php` exactly where it is. It is faster than Patchwork-based mocking and provides behavioural fakes — option storage, a block type registry, ACF field storage — that per-test expectations do not. Migrating 1390 passing tests for parity would buy nothing.
 
-### What is genuinely Føhn's, and where it goes
+The eight Føhn-specific helpers (`bootTestContainer`, `testDiscoveryLocation`, `discoverFixture`, `testDiscoveryRunner`, `restoreThroughCacheFile` and their siblings) stay private too. Publishing sixty lines to serve people writing custom discoveries would create a public API surface for a niche that has not asked for it.
 
-Six helpers know nothing about WordPress and everything about Føhn — its container, its discovery locations, its cache round trip:
-
-`bootTestContainer`, `tearDownTestContainer`, `testDiscoveryLocation`, `testVendorLocation`, `testAppPath`, `discoverFixture`, `testDiscoveryRunner`, `restoreThroughCacheFile`.
-
-Those move into `studiometa/foehn` under a `Testing/` namespace — autoloaded, not test-only — so a theme can test its own discoveries against the framework's own harness. Roughly sixty lines, no new package, no new dependency.
-
-The guide then says: use Brain Monkey or WP_Mock for WordPress functions, use `Foehn\Testing` for Føhn's own machinery, and use `packages/starter/tests/smoke/` as the model for the integration test that catches what neither can. That last sentence is the lesson of 2026-08-19 and belongs in writing.
+What is worth writing is a page of documentation: use Brain Monkey or WP_Mock for WordPress functions, and treat `packages/starter/tests/smoke/` as the model for the integration test that catches what neither can. That last part is the lesson of 2026-08-19 and belongs in the guide rather than in a package.
 
 ## 6. Order and estimates
 
-| Item                    | Estimate | Why here                                                              |
-| ----------------------- | -------- | --------------------------------------------------------------------- |
-| `discovery:list`        | 1 day    | Makes everything after it debuggable. Do it first.                    |
-| `#[AsRewriteRule]`      | 2 days   | Self-contained; the flush hash is the only subtle part.               |
-| Settings API pages      | 2–3 days | Needed before ACF can be described as optional.                       |
-| `#[AsBlockBinding]`     | 1–2 days | After `#[AsPostMeta]`, so the guide can explain when _not_ to use it. |
-| `Foehn\Testing` helpers | 1 day    | Moving eight functions and writing the testing guide.                 |
+| Item                | Estimate | Why here                                                              |
+| ------------------- | -------- | --------------------------------------------------------------------- |
+| `discovery:list`    | 1 day    | Makes everything after it debuggable. Do it first.                    |
+| `#[AsRewriteRule]`  | 2 days   | Self-contained; the flush hash is the only subtle part.               |
+| Settings API pages  | 2–3 days | Needed before ACF can be described as optional.                       |
+| `#[AsBlockBinding]` | 1–2 days | After `#[AsPostMeta]`, so the guide can explain when _not_ to use it. |
 
 ## 7. Risks
 
