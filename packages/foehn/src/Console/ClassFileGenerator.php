@@ -79,7 +79,9 @@ final class ClassFileGenerator
      */
     public function targetPath(string $subdirectory, string $className): string
     {
-        return rtrim($this->appPath, '/') . '/' . $subdirectory . '/' . $className . '.php';
+        $segments = array_filter([rtrim($this->appPath, '/'), trim($subdirectory, '/'), $className . '.php']);
+
+        return implode('/', $segments);
     }
 
     /**

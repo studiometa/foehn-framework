@@ -12,6 +12,7 @@ use Studiometa\Foehn\Console\Stubs\MenuStub;
 use Studiometa\Foehn\Console\Stubs\ModelStub;
 use Studiometa\Foehn\Console\Stubs\PostTypeStub;
 use Tempest\Discovery\SkipDiscovery;
+use Tests\Fixtures\ArgumentlessAttributeStub;
 
 beforeEach(function () {
     $this->root = sys_get_temp_dir() . '/foehn-generator-' . bin2hex(random_bytes(6));
@@ -56,6 +57,43 @@ describe('ClassFileGenerator paths and namespaces', function () {
         ));
 
         expect($file->contents)->toContain('namespace Theme\\Fields\\Options;');
+    });
+
+    it('falls back to App when composer.json declares no psr-4 map', function () {
+        file_put_contents($this->root . '/composer.json', json_encode(['name' => 'acme/theme']));
+
+        $file = new ClassFileGenerator($this->appPath)->generate(new GenerationRequest(
+            stub: ModelStub::class,
+            subdirectory: 'Models',
+            className: 'Product',
+        ));
+
+        expect($file->contents)->toContain('namespace App\\Models;');
+    });
+
+    it('falls back to the first psr-4 namespace when none maps the app path', function () {
+        file_put_contents($this->root . '/composer.json', json_encode([
+            'autoload' => ['psr-4' => ['Acme\\' => 'src/', 'Other\\' => 'lib/']],
+        ]));
+
+        $file = new ClassFileGenerator($this->appPath)->generate(new GenerationRequest(
+            stub: ModelStub::class,
+            subdirectory: 'Models',
+            className: 'Product',
+        ));
+
+        expect($file->contents)->toContain('namespace Acme\\Models;');
+    });
+
+    it('uses the base namespace for a class at the app root', function () {
+        $file = $this->generator->generate(new GenerationRequest(
+            stub: ModelStub::class,
+            subdirectory: '',
+            className: 'Product',
+        ));
+
+        expect($file->contents)->toContain('namespace Theme;');
+        expect($file->path)->toBe($this->appPath . '/Product.php');
     });
 
     it('falls back to App when no composer.json maps the app path', function () {
@@ -180,6 +218,28 @@ describe('ClassFileGenerator attribute rewriting', function () {
             attributeArguments: ['locatoin' => 'footer'],
         )))
             ->toThrow(RuntimeException::class, 'has no argument(s) named locatoin');
+    });
+
+    it('refuses arguments for an attribute that declares no constructor', function () {
+        expect(fn() => $this->generator->generate(new GenerationRequest(
+            stub: ArgumentlessAttributeStub::class,
+            subdirectory: 'Things',
+            className: 'Thing',
+            attributeArguments: ['anything' => 'at all'],
+        )))
+            ->toThrow(RuntimeException::class, 'has no argument(s) named anything');
+    });
+
+    it('copies a stub whose attribute takes no arguments', function () {
+        $file = $this->generator->generate(new GenerationRequest(
+            stub: ArgumentlessAttributeStub::class,
+            subdirectory: 'Things',
+            className: 'Thing',
+        ));
+
+        expect($file->contents)->toContain('#[ArgumentlessAttribute]');
+        expect($file->contents)->toContain('class Thing');
+        expect($file->contents)->not->toContain('SkipDiscovery');
     });
 
     it('refuses attribute arguments for a stub with no class attribute', function () {
