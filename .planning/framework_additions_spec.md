@@ -1,6 +1,8 @@
 # Five framework additions
 
-`discovery:list`, `#[AsBlockBinding]`, `#[AsRewriteRule]`, Settings API pages, and `studiometa/foehn-testing`. Specced together because they share the same constraints and would otherwise repeat them.
+`discovery:list`, `#[AsBlockBinding]`, `#[AsRewriteRule]`, `#[AsSettingsPage]`, and the testing helpers. Specced together because they share the same constraints and would otherwise repeat them.
+
+`#[AsPostMeta]`, the ACF split and the `#[AsDiscovery]` they depend on are in `post_meta_and_acf_split_spec.md`. Everything is tracked in `roadmap.md`.
 
 Prerequisite for the attributes: `#[AsDiscovery]`, from `post_meta_and_acf_split_spec.md` §1.
 
@@ -121,69 +123,88 @@ Needed because ACF is becoming optional: `#[AsAcfOptionsPage]` is currently the 
 
 ### Shape, deliberately mirroring the ACF one
 
+Named for the API it wraps. WordPress uses both words — `add_options_page()` registers the menu entry, while everything that does the work is `register_setting()`, `add_settings_section()`, `add_settings_field()` and `settings_fields()`. The plural follows those, and leaves `#[AsAcfOptionsPage]` unambiguously the ACF one.
+
 ```php
-#[AsOptionsPage(
+#[AsSettingsPage(
     slug: 'theme-settings',
     title: 'Theme settings',
     parent: 'themes.php',
     capability: 'manage_options',
 )]
-final readonly class ThemeSettings implements OptionsPageInterface
+final readonly class ThemeSettings implements SettingsPageInterface
 {
-    /** @return list<Field> */
-    public static function fields(): array
+    /** @return array<string, Setting> */
+    public static function settings(): array
     {
         return [
-            Field::text('contact_email', 'Contact email', sanitize: 'sanitize_email'),
-            Field::textarea('footer_note', 'Footer note'),
-            Field::checkbox('show_banner', 'Show the banner', default: false),
-            Field::select('layout', 'Layout', options: ['wide' => 'Wide', 'narrow' => 'Narrow']),
+            'contact_email' => Setting::string(sanitize: 'sanitize_email'),
+            'show_banner' => Setting::bool(default: false),
         ];
+    }
+
+    public function render(): void
+    {
+        // Plain WordPress. One `@wordpress/components` island here if a page needs it.
     }
 }
 ```
 
-`fields()` returning a list mirrors `AcfOptionsPageInterface::fields()` returning a `FieldsBuilder`, so migrating a page off ACF is mechanical rather than a rewrite.
+`settings()` declares what is stored, not how it looks. That is the whole difference from `AcfOptionsPageInterface::fields()`, which declares both — and the reason a page migrated off ACF needs its form written once by hand.
 
-- **The framework renders the form.** `settings_fields()`, `do_settings_sections()` and the submit button come from Føhn; a project never writes a render callback. That is the boilerplate worth deleting — the Settings API's own ergonomics are the reason people reach for ACF.
-- **v1 field types**: text, textarea, number, checkbox, select, radio. Native inputs only. A media picker needs editor JS and belongs in a later pass.
-- **Sanitisation defaults by type** (`sanitize_text_field`, `absint`, a boolean cast), overridable per field with a function name or a method on the page class.
+- **No field abstraction.** `editor_layer_spec.md` §9 already settled this: keep `#[AsSettingsPage]` to registration and routing, and let the page render its own form. A `Field::text(...)` builder is the first step towards maintaining a field library, which is ACF's actual product and not a gap Føhn has to fill.
+- **What the framework does provide**: the menu entry, `register_setting()` per declared setting with type, default and sanitiser, the capability check, and the page shell — `settings_fields()`, `do_settings_sections()`, the submit button and `settings_errors()`. The body of the form is the page's own `render()`.
+- **Sanitisation defaults by type** (`sanitize_text_field`, `absint`, a boolean cast), overridable with a function name or a method on the page class.
 - **`show_in_rest` defaults to `false`**, unlike `#[AsPostMeta]`. Settings are configuration, sometimes credentials; exposure is opt-in. Note that `description` only has an effect when `show_in_rest` is set.
-- **Reading**: `Settings::get('contact_email')` typed from the field definition, wrapping `get_option` with the declared default. One helper, not a facade.
+- **Reading**: `Settings::get('contact_email')` typed from the declaration, wrapping `get_option` with the declared default.
 
 Registration spans two hooks: `register_setting()` on `init`, the menu and sections on `admin_menu`. `apply()` adds the second itself, as §0 says.
 
-## 5. `studiometa/foehn-testing`
+## 5. Testing helpers — not a package
 
-### What it is
+The original proposal was to publish the framework's WordPress stubs as `studiometa/foehn-testing`. That was reinventing something that exists, and the plan is withdrawn.
 
-The framework maintains 1332 lines of WordPress function stubs and a set of Pest helpers, and its own 1390 tests run on them without a WordPress install. That asset is currently private to the repository.
+### Three different things called "stubs"
 
-Contents: the stubs and their `wp_stub_*` recorders, the container helpers (`bootTestContainer`, `tearDownTestContainer`), the discovery helpers (`testDiscoveryLocation`, `testVendorLocation`, `testAppPath`, `discoverFixture`, `testDiscoveryRunner`, `restoreThroughCacheFile`), and a documented `phpunit.xml` fragment.
+| Thing                               | What it is                                                                         | Can it run? |
+| ----------------------------------- | ---------------------------------------------------------------------------------- | ----------- |
+| `php-stubs/wordpress-stubs`         | Signatures with empty bodies, for static analysis. Already wired into `mago.toml`. | No          |
+| `brain/monkey`, `10up/wp_mock`      | Executable mocks of WordPress functions for unit tests, per test expectation.      | Yes         |
+| `packages/foehn/tests/wp-stubs.php` | Executable fakes with a call recorder, shared by the whole suite.                  | Yes         |
 
-### Why it is worth publishing
+`wordpress-stubs` defines `function add_action($hook_name, $callback, $priority = 10, $accepted_args = 1) {}` — an empty body. It tells mago the function exists; it cannot record that a discovery called it. So it is not an alternative to the second and third rows, and Føhn already uses it for what it is for.
 
-A theme developer can unit-test their own blocks, hooks, controllers and discoveries with no WordPress, no database and no fixtures. Neither Acorn nor Sage offers that. It is also the honest answer to the lesson of 2026-08-19: unit tests over stubs are load-bearing but not sufficient, and the package should say so in its own README.
+The second row is the real prior art, and it is the reason not to publish. **Brain Monkey** is at 2.7.0 and actively maintained as of February 2026 (Mockery plus Patchwork); **WP_Mock** covers the same ground with different syntax. A theme developer who wants to unit-test WordPress-coupled code already has two maintained options. Publishing a third would be a maintenance burden bought with nothing.
 
-### Decisions
+The claim that "no comparable framework offers a unit-testing story" was wrong in a way worth recording: no _framework_ ships one, but the _ecosystem_ does, and that is what matters to someone writing tests.
 
-- **One home.** The stubs move to the package; `studiometa/foehn` requires it under `require-dev`. Copying them would guarantee divergence.
-- **Its surface becomes public.** Which functions are stubbed, and what each records, turn into promises. Adding a stub is a minor; removing one or changing what it records is breaking. Worth a short compatibility note in the package README.
-- **Scope boundary, stated loudly.** These are stubs, not a WordPress test harness. `wp_insert_post()` will not write to a database. Integration testing means a real WordPress, which is what `packages/starter/tests/smoke/` is for. Without that sentence the package invites the exact false confidence that let this year's fatal error ship.
+### Keep internally, do not publish
+
+The suite keeps `tests/wp-stubs.php`. It is faster than Patchwork-based mocking, and it provides behavioural fakes — option storage, a block type registry, ACF field storage — that per-test expectations do not. Migrating 1390 passing tests to Brain Monkey for parity would buy nothing.
+
+### What is genuinely Føhn's, and where it goes
+
+Six helpers know nothing about WordPress and everything about Føhn — its container, its discovery locations, its cache round trip:
+
+`bootTestContainer`, `tearDownTestContainer`, `testDiscoveryLocation`, `testVendorLocation`, `testAppPath`, `discoverFixture`, `testDiscoveryRunner`, `restoreThroughCacheFile`.
+
+Those move into `studiometa/foehn` under a `Testing/` namespace — autoloaded, not test-only — so a theme can test its own discoveries against the framework's own harness. Roughly sixty lines, no new package, no new dependency.
+
+The guide then says: use Brain Monkey or WP_Mock for WordPress functions, use `Foehn\Testing` for Føhn's own machinery, and use `packages/starter/tests/smoke/` as the model for the integration test that catches what neither can. That last sentence is the lesson of 2026-08-19 and belongs in writing.
 
 ## 6. Order and estimates
 
-| Item                       | Estimate | Why here                                                              |
-| -------------------------- | -------- | --------------------------------------------------------------------- |
-| `discovery:list`           | 1 day    | Makes everything after it debuggable. Do it first.                    |
-| `#[AsRewriteRule]`         | 2 days   | Self-contained; the flush hash is the only subtle part.               |
-| Settings API pages         | 2–3 days | Needed before ACF can be described as optional.                       |
-| `#[AsBlockBinding]`        | 1–2 days | After `#[AsPostMeta]`, so the guide can explain when _not_ to use it. |
-| `studiometa/foehn-testing` | 2–3 days | Mostly extraction, CI and documentation; no new behaviour.            |
+| Item                    | Estimate | Why here                                                              |
+| ----------------------- | -------- | --------------------------------------------------------------------- |
+| `discovery:list`        | 1 day    | Makes everything after it debuggable. Do it first.                    |
+| `#[AsRewriteRule]`      | 2 days   | Self-contained; the flush hash is the only subtle part.               |
+| Settings API pages      | 2–3 days | Needed before ACF can be described as optional.                       |
+| `#[AsBlockBinding]`     | 1–2 days | After `#[AsPostMeta]`, so the guide can explain when _not_ to use it. |
+| `Foehn\Testing` helpers | 1 day    | Moving eight functions and writing the testing guide.                 |
 
 ## 7. Risks
 
 - **`discovery:list` output on a large project** could be thousands of lines. `--format=count` and per-discovery filtering are not conveniences.
 - **Rewrite flushing is stateful.** The hash option makes it idempotent, but a project that flushes elsewhere can still fight it. The command exists so the answer to "my rule is not matching" is one line long.
 - **Settings pages are a slope.** Text and checkboxes are a day; repeaters, conditional fields and media pickers are ACF's actual product. v1 must stop at native inputs and say so, or it becomes a field builder nobody asked Føhn to maintain.
-- **Publishing the stubs freezes them.** Today they can change with the framework's needs; afterwards they cannot, without a version bump.
+- **The `Testing/` namespace is public API** once it ships inside the framework, unlike the stub file it comes from. Eight small functions is a surface worth accepting; the stub file itself stays private for exactly that reason.
