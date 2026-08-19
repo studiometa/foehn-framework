@@ -42,10 +42,17 @@ printf '✓ homepage returns 200 with no PHP error\n'
 
 # That request found no cache and had to scan, so it should have written one. This
 # is what removes the deploy step: composer install clears, the next request fills.
-if ! ddev exec 'cd /var/www/html && wp foehn discovery:status' 2>/dev/null | grep -q 'Locations cached: 2/2'; then
-	fail "the request did not warm the discovery cache
-$(ddev exec 'cd /var/www/html && wp foehn discovery:status' 2>/dev/null)"
-fi
+#
+# The output is captured rather than piped into grep: `grep -q` closes the pipe on
+# its first match, the writer takes SIGPIPE, and `set -o pipefail` then reports the
+# whole pipeline as failed even though the match succeeded.
+cache_status="$(ddev exec 'cd /var/www/html && wp foehn discovery:status' 2>/dev/null || true)"
+
+case "$cache_status" in
+*"Locations cached: 2/2"*) ;;
+*) fail "the request did not warm the discovery cache
+$cache_status" ;;
+esac
 
 printf '✓ the request warmed the discovery cache\n'
 
