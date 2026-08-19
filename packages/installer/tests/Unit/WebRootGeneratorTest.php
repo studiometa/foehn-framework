@@ -58,12 +58,56 @@ describe('WebRootGenerator', function () {
         expect($contents)->toContain('ABSPATH');
     });
 
+    it('writes the page cache drop-in, holding no policy of its own', function () {
+        ($this->generate)();
+
+        expect($this->root . '/web/wp-content/advanced-cache.php')->toBeFile();
+
+        $contents = file_get_contents($this->root . '/web/wp-content/advanced-cache.php');
+
+        expect($contents)
+            ->toContain('Studiometa\Foehn\PageCache\Server::boot')
+            ->toContain("dirname(__DIR__, 2) . '/theme/app'")
+            // Whether caching happens at all is the config file's decision, not this
+            // file's: a drop-in that carried its own switch would be a second source of
+            // truth for exactly the rules this feature keeps in one place.
+            ->not->toContain('enabled');
+    });
+
+    it('points the drop-in at the configured theme directory', function () {
+        $config = InstallerConfig::fromArray(['theme-dir' => 'src'], $this->root);
+
+        ($this->generate)(null, $config);
+
+        expect(file_get_contents($this->root . '/web/wp-content/advanced-cache.php'))
+            ->toContain("dirname(__DIR__, 2) . '/src/app'");
+    });
+
+    it('defines WP_CACHE, without which WordPress never loads the drop-in', function () {
+        ($this->generate)();
+
+        // Inert on its own: with no drop-in WordPress skips it, and with a drop-in whose
+        // config leaves the cache off it returns immediately.
+        expect(file_get_contents($this->root . '/web/wp-config.php'))->toContain("define('WP_CACHE', true);");
+    });
+
+    it('defines WP_CACHE before it hands over to WordPress', function () {
+        // wp-settings.php reads WP_CACHE as it loads; defined after the require it would
+        // never be seen, and the drop-in would silently never run.
+        ($this->generate)();
+
+        $contents = (string) file_get_contents($this->root . '/web/wp-config.php');
+
+        expect(strpos($contents, "define('WP_CACHE', true);"))
+            ->toBeLessThan(strpos($contents, "require_once ABSPATH . 'wp-settings.php';"));
+    });
+
     it('produces a web root whose PHP parses', function () {
         ($this->generate)();
 
-        // These two files are written as strings and never executed by any other
+        // These three files are written as strings and never executed by any other
         // test; a syntax error in them would only show up on a real install.
-        foreach (['/web/index.php', '/web/wp-config.php'] as $file) {
+        foreach (['/web/index.php', '/web/wp-config.php', '/web/wp-content/advanced-cache.php'] as $file) {
             $output = [];
             $status = 0;
             exec('php -l ' . escapeshellarg($this->root . $file) . ' 2>&1', $output, $status);
@@ -337,6 +381,19 @@ describe('WebRootGenerator', function () {
         expect(file_exists($cache . '/entry.php'))->toBeFalse();
         expect(is_dir($this->root . '/web/wp-content/cache/foehn'))->toBeFalse();
         expect($this->io->getOutput())->toContain('Cleared:');
+    });
+
+    it('clears a page cache left by the previous release', function () {
+        // The stored HTML was rendered by templates this install has just replaced.
+        // Nothing has to boot WordPress to invalidate it, and the next request refills.
+        $pages = $this->root . '/web/wp-content/cache/foehn/pages/example.com/blog';
+        mkdir($pages, 0o777, true);
+        file_put_contents($pages . '/index.html', '<html>old</html>');
+
+        ($this->generate)();
+
+        expect(file_exists($pages . '/index.html'))->toBeFalse();
+        expect(is_dir($this->root . '/web/wp-content/cache/foehn'))->toBeFalse();
     });
 
     it('leaves other caches in wp-content alone', function () {
