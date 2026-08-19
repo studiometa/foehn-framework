@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Starter:** `HeroBlock` is a native block, `theme/hero`, and the starter requires no ACF at all. It was the one thing in there that needed a paid plugin to run, so that path was never exercised end to end — ACF Pro is not installed in CI, and `AcfBlockDiscovery` reported an item that could never register. Everything it did survives without one: the sidebar controls come from the attribute schema, and `compose()` still returns a typed `HeroContext` DTO. The starter now demonstrates the default path, and its integration test covers the whole of what it ships
+
 ### Added
 
 - **`studiometa/foehn-acf`**, a package of its own. `#[AsAcfBlock]`, `#[AsAcfFieldGroup]`, `#[AsAcfOptionsPage]`, their discoveries and contracts, `AcfBlockRenderer`, `AcfFieldTransformer`, `AcfConfig`, `AcfOptionsService`, the four field fragment builders and the three `make:` commands all move there, with their tests and their documentation. **Breaking:** a project using any of them adds one Composer requirement — `composer require studiometa/foehn-acf` — and changes no imports, because the classes keep their `Studiometa\Foehn\` namespaces. The package supplies its own `AcfConfig` default through `src/Config/acf.config.php`, which `ConfigLoader` reads before a project's `app/acf.config.php`, so the `Kernel` no longer registers one and `AcfBlockRenderer` is autowired rather than wired by hand. Custom fields no longer need a paid plugin at all: `#[AsPostMeta]` covers the default path, and ACF is what a project reaches for when the editing UI matters

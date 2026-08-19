@@ -162,10 +162,11 @@ final class GlobalContextProvider implements ContextProviderInterface
 
 **Hero Block** (`app/Blocks/HeroBlock.php`) — Full-width banner demonstrating:
 
-- ACF FieldsBuilder integration
-- Built-in field fragments (`ButtonLinkBuilder`)
-- Typed DTO context (`HeroContext`)
+- A native block with no editor JavaScript: the sidebar controls come from the attribute schema alone
+- Typed DTO context (`HeroContext`), returned from `compose()` instead of a plain array
 - `ImageData` and `LinkData` DTOs
+
+The starter needs no plugin to run. Custom fields are declared with [`#[AsPostMeta]`](/api/as-post-meta) — see `app/Models/Product.php` — which gives a key a REST schema and makes it bindable. [ACF](./acf-blocks.md) is a separate package a project adds when it wants the editing UI.
 
 ### Menus & Image Sizes
 
@@ -256,6 +257,6 @@ For production:
 ## Next Steps
 
 - Learn about [Post Types](./post-types.md) to customize Product/Testimonial
-- Add [ACF Blocks](./acf-blocks.md) for custom content blocks
+- Declare custom fields with [#[AsPostMeta]](/api/as-post-meta), or add [ACF](./acf-blocks.md) when you want its editing UI
 - Configure [Template Controllers](./template-controllers.md) for complex layouts
 - Review [Theme Conventions](./theme-conventions.md) for best practices
