@@ -17,8 +17,9 @@ Every planned evolution of Føhn, in one place. Detail lives in the linked specs
 | 7   | `#[AsRewriteRule]`             | **Done**      | [framework_additions_spec.md](framework_additions_spec.md) §3         | 2 d    |
 | 8   | `#[AsSettingsPage]`            | Approved      | [framework_additions_spec.md](framework_additions_spec.md) §4         | 2–3 d  |
 | 9   | `#[AsBlockBinding]`            | Approved      | [framework_additions_spec.md](framework_additions_spec.md) §2         | 1–2 d  |
-| 10  | `#[AsAbility]` + AI guardrails | **Undecided** | [abilities_spec.md](abilities_spec.md)                                | 4–7 d  |
-| 11  | Release `0.5.0`                | Blocked       | —                                                                     | —      |
+| 10  | Starter / demo split           | Approved      | —                                                                     | 2–3 d  |
+| 11  | `#[AsAbility]` + AI guardrails | **Undecided** | [abilities_spec.md](abilities_spec.md)                                | 4–7 d  |
+| 12  | Release `0.5.0`                | Blocked       | —                                                                     | —      |
 
 Done and shipped: the block editor layer ([editor_layer_spec.md](editor_layer_spec.md)), and on 2026-08-19 the discovery rewrite onto `tempest/discovery`, `*.config.php` loading, the self-warming discovery cache, and generated WordPress security keys.
 
@@ -29,7 +30,8 @@ Done and shipped: the block editor layer ([editor_layer_spec.md](editor_layer_sp
    ├─→ 5 ──→ 6
    └─→ 7, 8, 9       (any order)
 4 ─┴─→ 9
-1 ────→ 11
+9 ────→ 10
+1 ────→ 12
 ```
 
 **2 first, and it is not a preference.** `DiscoveryRunner::getDiscoveryPhases()` is a hardcoded map of nineteen classes, so nothing outside that file can add a discovery. Every attribute below needs it, the ACF package cannot exist without it, and `docs/guide/custom-discovery.md` documents a feature that has never worked because of it.
@@ -38,7 +40,9 @@ Done and shipped: the block editor layer ([editor_layer_spec.md](editor_layer_sp
 
 **4 before 9**, so the block bindings guide can explain when _not_ to write a binding source: meta declared with `#[AsPostMeta]` is already bindable through core's `core/post-meta`.
 
-**11 waits on 1**, by decision on 2026-08-19. Note the cost: everything merged that day is unreleased, and `packages/starter` requires `studiometa/foehn: ^0.4`, so `composer create-project` still installs `0.4.1` — the version whose front-end fatals and whose auth keys are `md5()` of the web root. No live project off the published starter until a tag exists. Cutting `0.5.0` now and shipping the page cache as `0.6.0` remains available; nothing technical couples them.
+**10 after 9**, so each feature's example is written once, in `packages/starter`, and moved once. `packages/starter` is currently two things at odds with each other: the minimal starting point `composer create-project` gives someone, and the demonstration of everything Føhn ships. A new `packages/demo` takes the second job — every post type, block, taxonomy, route, settings page and binding, plus the whole of `tests/smoke/` and the browser suite, which is where exhaustive coverage belongs. The starter keeps what a new project cannot start without: the boot, the config files, the templates a WordPress theme needs, and the front-end tooling with `@studiometa/foehn-vite-plugin`. Where exactly the line falls in `theme/app/` is settled when it is written up.
+
+**12 waits on 1**, by decision on 2026-08-19. Note the cost: everything merged that day is unreleased, and `packages/starter` requires `studiometa/foehn: ^0.4`, so `composer create-project` still installs `0.4.1` — the version whose front-end fatals and whose auth keys are `md5()` of the web root. No live project off the published starter until a tag exists. Cutting `0.5.0` now and shipping the page cache as `0.6.0` remains available; nothing technical couples them.
 
 ## Undecided
 
