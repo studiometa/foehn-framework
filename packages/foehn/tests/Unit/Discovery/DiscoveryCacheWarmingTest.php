@@ -3,11 +3,13 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Discovery\DiscoveryLocations;
+use Studiometa\Foehn\Discovery\DiscoveryPhase;
 use Studiometa\Foehn\Discovery\DiscoveryRunner;
 use Studiometa\Foehn\Discovery\HookDiscovery;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use Tempest\Discovery\DiscoveryCache;
 use Tempest\Discovery\DiscoveryCacheStrategy;
+use Tempest\Discovery\DiscoveryDiscovery;
 use Tempest\Discovery\DiscoveryLocation;
 use Tests\Fixtures\App\CacheableHooks;
 
@@ -101,11 +103,14 @@ describe('discovery cache warming', function () {
         // an older Foehn would otherwise be re-read and re-rejected on every request.
         $this->pool->save($this->pool->getItem($this->location->key)->set([HookDiscovery::class => []]));
 
-        ($this->runner)(DiscoveryCacheStrategy::FULL)->runEarlyDiscoveries();
+        $runner = ($this->runner)(DiscoveryCacheStrategy::FULL);
+        $runner->runEarlyDiscoveries();
 
         $entry = $this->pool->getItem($this->location->key)->get();
 
-        expect(array_keys($entry))->toHaveCount(count(DiscoveryRunner::getAllDiscoveryClasses()));
+        // Every discovery that ran, plus the pass that found them in the first place.
+        expect(array_keys($entry))->toHaveCount(count($runner->getDiscoveries()) + 1);
+        expect($entry)->toHaveKey(DiscoveryDiscovery::class);
         expect($entry[HookDiscovery::class])->toHaveCount(1);
     });
 
@@ -153,6 +158,6 @@ describe('cached locations', function () {
         $unknown = new DiscoveryLocation('Nowhere\\', testAppPath());
 
         expect($this->pool->getItem($unknown->key)->isHit())->toBeFalse();
-        expect($runner->hasRun('early'))->toBeFalse();
+        expect($runner->hasRun(DiscoveryPhase::Early))->toBeFalse();
     });
 });

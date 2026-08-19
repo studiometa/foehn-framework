@@ -171,6 +171,18 @@ function testAppPath(): string
 }
 
 /**
+ * A fixture directory, used as an app path.
+ *
+ * Unlike testAppPath(), this one is inside the repository, so the locations built
+ * above it include the framework's own source — which is where the discovery
+ * classes live now that nothing lists them.
+ */
+function testFixturePath(string $name): string
+{
+    return __DIR__ . '/Fixtures/' . $name;
+}
+
+/**
  * A DiscoveryRunner wired for tests: nothing is cached and the pool never touches
  * the filesystem.
  */
