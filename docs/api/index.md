@@ -52,6 +52,7 @@ Attributes are PHP 8 annotations that enable auto-discovery and registration of 
 | [`#[AsAcfFieldGroup]`](./as-acf-field-group) | Register an ACF field group       |
 | [`#[AsBlockPattern]`](./as-block-pattern)    | Register a block pattern          |
 | [`#[AsBlockCategory]`](./as-block-category)  | Register a block category         |
+| [`#[AsBlockBinding]`](./as-block-binding)    | Register a block bindings source  |
 
 ### ACF
 

@@ -274,6 +274,50 @@ $results->true('the settings form renders from its Twig template', str_contains(
 ));
 
 // ──────────────────────────────────────────────
+// Block bindings
+// ──────────────────────────────────────────────
+
+// A source WordPress does not know about is not a source: a block bound to it
+// renders with whatever the author typed, and says nothing about why.
+$results->true(
+    'the theme block binding source is registered',
+    WP_Block_Bindings_Registry::get_instance()->is_registered('theme/reading-time'),
+);
+
+// The value is computed when a bound block renders, through the class the
+// container builds. Rendering the markup is the only way to see all of that
+// happen at once — and it needs a post in scope, because render_block() takes
+// the `postId` context a source asks for from the global post and nowhere else.
+$posts = get_posts(['numberposts' => 1, 'post_status' => 'publish']);
+
+if ($posts !== []) {
+    $GLOBALS['post'] = $posts[0];
+
+    setup_postdata($posts[0]);
+}
+
+$results->true(
+    'a bound block renders the computed value',
+    $posts !== []
+    && str_contains(
+        do_blocks(
+            '<!-- wp:paragraph {"metadata":{"bindings":{"content":'
+            . '{"source":"theme/reading-time"}}}} --><p>unbound</p><!-- /wp:paragraph -->',
+        ),
+        'read',
+    ),
+);
+
+wp_reset_postdata();
+
+// Declared meta needs no source of its own: core/post-meta binds it already,
+// which is the point the guide leads with.
+$results->true(
+    'core/post-meta is there for declared meta, with no source of our own',
+    WP_Block_Bindings_Registry::get_instance()->is_registered('core/post-meta'),
+);
+
+// ──────────────────────────────────────────────
 // Report
 // ──────────────────────────────────────────────
 
