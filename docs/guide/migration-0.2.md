@@ -241,8 +241,8 @@ Kernel::boot(__DIR__ . '/app', [
 The `--dry-run` flag is now available on scaffolding commands:
 
 ```bash
-wp tempest make:context-provider Header --dry-run
-wp tempest make:acf-block Hero --dry-run
+wp foehn make:context-provider Header --dry-run
+wp foehn make:acf-block Hero --dry-run
 ```
 
 ### Bundled Mago Configuration

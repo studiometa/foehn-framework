@@ -88,8 +88,8 @@ final class CliCommandDiscovery implements Discovery
             $command($args, $assocArgs);
         };
 
-        // Build WP-CLI command name with 'tempest' namespace
-        $commandName = 'tempest ' . $attribute->name;
+        // Every Foehn command lives under one WP-CLI namespace, so `wp foehn` lists them
+        $commandName = 'foehn ' . $attribute->name;
 
         // Register with WP-CLI
         WP_CLI::add_command($commandName, $callback, [

@@ -56,7 +56,7 @@ describe('Kernel configuration', function () {
         expect($kernel->getConfig('missing', 'default'))->toBe('default');
     });
 
-    it('returns wp foehn config', function () {
+    it('returns the Foehn config', function () {
         $reflection = new ReflectionClass(Kernel::class);
         $kernel = $reflection->newInstanceWithoutConstructor();
 

@@ -40,45 +40,12 @@ Kernel::boot(__DIR__ . '/app', [
 
 ## CLI Commands
 
-### Warm Cache
-
-Warm up the discovery cache by running all discoveries and caching the results. This is the recommended command for deployment as it ensures all discoveries are executed and cached, avoiding slow initial page loads:
-
-```bash
-wp tempest discovery:warm
-```
-
-Options:
-
-- `--strategy=<strategy>` - Override configured strategy (full, partial)
-
-```bash
-# Warm with specific strategy
-wp tempest discovery:warm --strategy=full
-```
-
-The command outputs what was discovered:
-
-```
-Warming discovery cache...
-  ✓ 24 hooks discovered
-  ✓ 3 post types discovered
-  ✓ 2 taxonomies discovered
-  ✓ 8 ACF blocks discovered
-  ✓ 4 block patterns discovered
-  ✓ 6 context providers discovered
-  ✓ 12 template controllers discovered
-  ✓ 5 REST routes discovered
-Cache written to: /var/www/html/wp-content/cache/foehn/discovery/discoveries.php
-Discovery cache warmed successfully.
-```
-
 ### Generate Cache
 
-Generate the discovery cache without running discoveries. Use `discovery:warm` for deployment; use this command if you only need to regenerate the cache from existing discovery data:
+Scan every discovery location and write the result to the cache. This is the deployment step: without it, a site with caching enabled reflects over the framework and the theme on every request.
 
 ```bash
-wp tempest discovery:generate
+wp foehn discovery:generate
 ```
 
 Options:
@@ -87,19 +54,35 @@ Options:
 - `--clear` - Clear existing cache before generating
 
 ```bash
-# Generate with specific strategy
-wp tempest discovery:generate --strategy=full
+# Generate with a specific strategy
+wp foehn discovery:generate --strategy=full
 
 # Clear and regenerate
-wp tempest discovery:generate --clear
+wp foehn discovery:generate --clear
 ```
+
+The command reports what it found:
+
+```
+Generating discovery cache using 'full' strategy...
+Success: Discovery cache generated successfully (12 discoveries cached).
+
+Cached discoveries:
+  - HookDiscovery: 18 items
+  - CliCommandDiscovery: 18 items
+  - TwigExtensionDiscovery: 3 items
+  - PostTypeDiscovery: 2 items
+  ...
+```
+
+Nothing is applied while generating: the command builds and stores, so running it inside a booted request cannot register a hook twice.
 
 ### Clear Cache
 
 Clear the discovery cache:
 
 ```bash
-wp tempest discovery:clear
+wp foehn discovery:clear
 ```
 
 Run this command when:
@@ -113,7 +96,7 @@ Run this command when:
 View the current cache status:
 
 ```bash
-wp tempest discovery:status
+wp foehn discovery:status
 ```
 
 Output example:
@@ -125,8 +108,9 @@ Discovery Cache Status
 Strategy: full
 Enabled: Yes
 Cache path: /var/www/html/wp-content/cache/foehn/discovery
-Cache exists: Yes
-Cache valid: Yes
+  ✓ Studiometa\Foehn\
+  ✓ App\
+Locations cached: 2/2
 
 Discovery cache is active and valid.
 ```
@@ -142,8 +126,8 @@ git pull origin main
 # 2. Install dependencies
 composer install --no-dev --optimize-autoloader
 
-# 3. Warm discovery cache (runs all discoveries + caches)
-wp tempest discovery:warm
+# 3. Generate the discovery cache
+wp foehn discovery:generate
 ```
 
 ### With CI/CD
@@ -158,9 +142,9 @@ deploy:
     - name: Deploy code
       run: rsync -avz ./ user@server:/var/www/html/
 
-    - name: Warm discovery cache
+    - name: Generate discovery cache
       run: |
-        ssh user@server "cd /var/www/html && wp tempest discovery:warm"
+        ssh user@server "cd /var/www/html && wp foehn discovery:generate"
 ```
 
 ### With Laravel Forge
@@ -173,8 +157,8 @@ cd /home/forge/example.com
 git pull origin main
 composer install --no-dev --optimize-autoloader
 
-# Warm Føhn discovery cache
-php wp-cli.phar tempest discovery:warm
+# Generate the Føhn discovery cache
+php wp-cli.phar foehn discovery:generate
 
 # Clear other caches
 php wp-cli.phar cache flush
@@ -274,7 +258,7 @@ return [
 1. Check if caching is enabled:
 
    ```bash
-   wp tempest discovery:status
+   wp foehn discovery:status
    ```
 
 2. Ensure the cache directory is writable:
@@ -285,7 +269,7 @@ return [
 
 3. Regenerate the cache:
    ```bash
-   wp tempest discovery:generate --clear
+   wp foehn discovery:generate --clear
    ```
 
 ### Changes Not Reflected
@@ -295,7 +279,7 @@ If your code changes aren't taking effect:
 1. Clear the discovery cache:
 
    ```bash
-   wp tempest discovery:clear
+   wp foehn discovery:clear
    ```
 
 2. Clear PHP opcode cache:

@@ -10,56 +10,56 @@ Føhn includes scaffolding and discovery management commands:
 
 ```bash
 # Generate a Timber model (with optional post type)
-wp tempest make:model Product
-wp tempest make:model Product --post-type
+wp foehn make:model Product
+wp foehn make:model Product --post-type
 
 # Generate a post type
-wp tempest make:post-type Product
+wp foehn make:post-type Product
 
 # Generate a taxonomy
-wp tempest make:taxonomy ProductCategory --post-types=product
+wp foehn make:taxonomy ProductCategory --post-types=product
 
 # Generate an ACF block
-wp tempest make:acf-block Hero
+wp foehn make:acf-block Hero
 
 # Generate a native block
-wp tempest make:block Counter --interactive
+wp foehn make:block Counter --interactive
 
 # Generate a template controller
-wp tempest make:controller single-product
+wp foehn make:controller single-product
 
 # Generate a hooks class
-wp tempest make:hooks Seo
+wp foehn make:hooks Seo
 
 # Generate a context provider
-wp tempest make:context-provider Header
+wp foehn make:context-provider Header
 
 # Generate a context provider
-wp tempest make:context GlobalContext --global
-wp tempest make:context ProductContext --templates=single-product,archive-product
+wp foehn make:context GlobalContext --global
+wp foehn make:context ProductContext --templates=single-product,archive-product
 
 # Generate a block pattern
-wp tempest make:pattern HeroWithCta
+wp foehn make:pattern HeroWithCta
 
 # Generate a shortcode
-wp tempest make:shortcode Button
+wp foehn make:shortcode Button
 
 # Generate an ACF field group
-wp tempest make:field-group ProductFields --post-type=product
-wp tempest make:field-group PageFields --page-template=front-page
-wp tempest make:field-group CategoryFields --taxonomy=category
+wp foehn make:field-group ProductFields --post-type=product
+wp foehn make:field-group PageFields --page-template=front-page
+wp foehn make:field-group CategoryFields --taxonomy=category
 
 # Generate an ACF options page
-wp tempest make:options-page ThemeSettings
-wp tempest make:options-page FooterSettings --parent=theme-settings
+wp foehn make:options-page ThemeSettings
+wp foehn make:options-page FooterSettings --parent=theme-settings
 
 # Generate a navigation menu
-wp tempest make:menu HeaderMenu --location=header
-wp tempest make:menu FooterMenu --description="Footer Navigation"
+wp foehn make:menu HeaderMenu --location=header
+wp foehn make:menu FooterMenu --description="Footer Navigation"
 
 # Generate an image size
-wp tempest make:image-size CardImage --width=400 --height=300 --crop
-wp tempest make:image-size HeroImage --width=1920 --height=0
+wp foehn make:image-size CardImage --width=400 --height=300 --crop
+wp foehn make:image-size HeroImage --width=1920 --height=0
 ```
 
 ### Global Options
@@ -74,23 +74,23 @@ All scaffolding commands support these options:
 Example with dry-run:
 
 ```bash
-wp tempest make:model Product --post-type --dry-run
+wp foehn make:model Product --post-type --dry-run
 ```
 
 ### Discovery Cache Commands
 
 ```bash
 # Warm discovery cache (run discoveries + cache)
-wp tempest discovery:warm
+wp foehn discovery:generate
 
 # Generate discovery cache for production
-wp tempest discovery:generate
+wp foehn discovery:generate
 
 # Clear the discovery cache
-wp tempest discovery:clear
+wp foehn discovery:clear
 
 # Check cache status
-wp tempest discovery:status
+wp foehn discovery:status
 ```
 
 See [Discovery Cache](/guide/discovery-cache) for more details on caching.
@@ -127,8 +127,8 @@ final class ImportProductsCommand
      *
      * ## EXAMPLES
      *
-     *     wp tempest import:products products.csv
-     *     wp tempest import:products products.csv --dry-run
+     *     wp foehn import:products products.csv
+     *     wp foehn import:products products.csv --dry-run
      *
      * @param array $args Positional arguments
      * @param array $assocArgs Named arguments
@@ -185,8 +185,8 @@ final class ImportProductsCommand
 **Usage:**
 
 ```bash
-wp tempest import:products /path/to/products.csv
-wp tempest import:products /path/to/products.csv --dry-run
+wp foehn import:products /path/to/products.csv
+wp foehn import:products /path/to/products.csv --dry-run
 ```
 
 ## Command with Progress Bar
@@ -266,7 +266,7 @@ final class CacheCommand
      *
      * ## EXAMPLES
      *
-     *     wp tempest cache clear
+     *     wp foehn cache clear
      */
     public function clear(): void
     {
@@ -279,7 +279,7 @@ final class CacheCommand
      *
      * ## EXAMPLES
      *
-     *     wp tempest cache stats
+     *     wp foehn cache stats
      */
     public function stats(): void
     {
@@ -300,8 +300,8 @@ final class CacheCommand
      *
      * ## EXAMPLES
      *
-     *     wp tempest cache warm
-     *     wp tempest cache warm --post-types=post,page,product
+     *     wp foehn cache warm
+     *     wp foehn cache warm --post-types=post,page,product
      */
     public function warm(array $args, array $assocArgs): void
     {
@@ -332,9 +332,9 @@ final class CacheCommand
 **Usage:**
 
 ```bash
-wp tempest cache clear
-wp tempest cache stats
-wp tempest cache warm --post-types=product
+wp foehn cache clear
+wp foehn cache stats
+wp foehn cache warm --post-types=product
 ```
 
 ## Command with Tables
@@ -430,10 +430,10 @@ management system.
 ## EXAMPLES
 
     # Sync all products
-    wp tempest sync:inventory
+    wp foehn sync:inventory
 
     # Force sync specific products
-    wp tempest sync:inventory --products=123,456 --force
+    wp foehn sync:inventory --products=123,456 --force
 
 ## NOTES
 

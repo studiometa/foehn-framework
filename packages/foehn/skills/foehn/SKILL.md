@@ -328,7 +328,7 @@ final class ImportProductsCommand
 }
 ```
 
-Usage: `wp tempest import:products products.csv --dry-run`
+Usage: `wp foehn import:products products.csv --dry-run`
 
 ### #[AsShortcode]
 
@@ -470,14 +470,14 @@ Log::error('Payment failed', ['order_id' => 456]);
 
 ```bash
 # Scaffolding
-wp tempest make:model Product --post-type
-wp tempest make:acf-block Hero
-wp tempest make:controller single-product
-wp tempest make:hooks Seo
+wp foehn make:model Product --post-type
+wp foehn make:acf-block Hero
+wp foehn make:controller single-product
+wp foehn make:hooks Seo
 
 # Discovery cache
-wp tempest discovery:warm
-wp tempest discovery:clear
+wp foehn discovery:generate
+wp foehn discovery:clear
 ```
 
 ## Naming Conventions

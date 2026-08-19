@@ -79,7 +79,7 @@ final class DiscoveryStatusCommand implements CliCommandInterface
         }
 
         if ($cached < count($locations)) {
-            $this->cli->warning('Discovery cache is enabled but incomplete. Run: wp foehn discovery:warm');
+            $this->cli->warning('Discovery cache is enabled but incomplete. Run: wp foehn discovery:generate');
 
             return;
         }

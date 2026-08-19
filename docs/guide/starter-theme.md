@@ -131,6 +131,7 @@ final readonly class SingleController implements TemplateControllerInterface
 ```
 
 Included controllers:
+
 - **SingleController** — Single posts/pages
 - **ArchiveController** — Archives, categories, tags, front page
 - **SearchController** — Search results
@@ -160,6 +161,7 @@ final class GlobalContextProvider implements ContextProviderInterface
 ### Blocks
 
 **Hero Block** (`app/Blocks/HeroBlock.php`) — Full-width banner demonstrating:
+
 - ACF FieldsBuilder integration
 - Built-in field fragments (`ButtonLinkBuilder`)
 - Typed DTO context (`HeroContext`)
@@ -248,7 +250,7 @@ For production:
 2. Discovery cache is already enabled (`DiscoveryCacheStrategy::FULL`)
 3. After deployment, warm the cache:
    ```bash
-   wp foehn discovery:warm
+   wp foehn discovery:generate
    ```
 
 ## Next Steps

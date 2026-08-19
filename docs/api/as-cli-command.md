@@ -26,7 +26,7 @@ final readonly class AsCliCommand
 
 ## Namespace
 
-Commands are registered under `wp tempest <name>`.
+Commands are registered under `wp foehn <name>`.
 
 ## Usage
 
@@ -54,7 +54,7 @@ final class HelloCommand
 }
 ```
 
-**Usage:** `wp tempest hello John`
+**Usage:** `wp foehn hello John`
 
 ### With Options
 
@@ -84,7 +84,7 @@ final class ImportCommand
 }
 ```
 
-**Usage:** `wp tempest import:products data.csv --dry-run`
+**Usage:** `wp foehn import:products data.csv --dry-run`
 
 ### With Subcommands
 
@@ -111,8 +111,8 @@ final class CacheCommand
 
 **Usage:**
 
-- `wp tempest cache clear`
-- `wp tempest cache warm`
+- `wp foehn cache clear`
+- `wp foehn cache warm`
 
 ### With Long Description
 
@@ -132,8 +132,8 @@ Synchronizes data from the external API.
 
 ## EXAMPLES
 
-    wp tempest sync
-    wp tempest sync --force
+    wp foehn sync
+    wp foehn sync --force
 DOC,
 )]
 ```
