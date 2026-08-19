@@ -43,16 +43,16 @@ use function Tempest\Support\str;
     ## EXAMPLES
 
         # Create a simple pattern
-        wp tempest make:pattern hero-section
+        wp foehn make:pattern hero-section
 
         # Create with custom title and description
-        wp tempest make:pattern cta-banner --title="Call to Action" --description="A banner with a call to action button"
+        wp foehn make:pattern cta-banner --title="Call to Action" --description="A banner with a call to action button"
 
         # Create with multiple categories
-        wp tempest make:pattern pricing-table --categories=featured,commerce
+        wp foehn make:pattern pricing-table --categories=featured,commerce
 
         # Preview what would be created
-        wp tempest make:pattern hero-section --dry-run
+        wp foehn make:pattern hero-section --dry-run
     DOC)]
 final class MakePatternCommand implements CliCommandInterface
 {

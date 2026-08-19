@@ -41,16 +41,16 @@ use function Tempest\Support\str;
     ## EXAMPLES
 
         # Create a simple Timber model
-        wp tempest make:model Product
+        wp foehn make:model Product
 
         # Create a model with post type registration
-        wp tempest make:model Product --post-type
+        wp foehn make:model Product --post-type
 
         # Create with custom labels
-        wp tempest make:model TeamMember --post-type --singular="Team Member" --plural="Team Members"
+        wp foehn make:model TeamMember --post-type --singular="Team Member" --plural="Team Members"
 
         # Preview what would be created
-        wp tempest make:model Product --post-type --dry-run
+        wp foehn make:model Product --post-type --dry-run
     DOC)]
 final class MakeModelCommand implements CliCommandInterface
 {

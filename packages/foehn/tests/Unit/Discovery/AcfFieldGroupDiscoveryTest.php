@@ -6,18 +6,20 @@ use Studiometa\Foehn\Discovery\AcfFieldGroupDiscovery;
 use Tests\Fixtures\AcfFieldGroupFixture;
 use Tests\Fixtures\InvalidAcfFieldGroupFixture;
 use Tests\Fixtures\NoAttributeFixture;
-use Studiometa\Foehn\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
-    $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
+    $this->location = testDiscoveryLocation();
     $this->discovery = new AcfFieldGroupDiscovery();
 });
 
 describe('AcfFieldGroupDiscovery', function () {
     it('discovers ACF field group attributes on classes', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(AcfFieldGroupFixture::class));
+        $this->discovery->discover(
+            $this->location,
+            new \Tempest\Reflection\ClassReflector(AcfFieldGroupFixture::class),
+        );
 
-        $items = $this->discovery->getItems()->all();
+        $items = iterator_to_array($this->discovery->getItems());
 
         expect($items)->toHaveCount(1);
         expect($items[0]['className'])->toBe(AcfFieldGroupFixture::class);
@@ -33,22 +35,28 @@ describe('AcfFieldGroupDiscovery', function () {
     });
 
     it('ignores classes without ACF field group attribute', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(NoAttributeFixture::class));
+        $this->discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(NoAttributeFixture::class));
 
-        expect($this->discovery->getItems()->isEmpty())->toBeTrue();
+        expect($this->discovery->getItems())->toHaveCount(0);
     });
 
     it('throws when class does not implement AcfFieldGroupInterface', function () {
-        expect(fn () => $this->discovery->discover($this->location, new ReflectionClass(InvalidAcfFieldGroupFixture::class)))
+        expect(fn() => $this->discovery->discover(
+            $this->location,
+            new \Tempest\Reflection\ClassReflector(InvalidAcfFieldGroupFixture::class),
+        ))
             ->toThrow(InvalidArgumentException::class, 'must implement');
     });
 
     it('reports hasItems correctly', function () {
-        expect($this->discovery->hasItems())->toBeFalse();
+        expect($this->discovery->getItems())->toHaveCount(0);
 
-        $this->discovery->discover($this->location, new ReflectionClass(AcfFieldGroupFixture::class));
+        $this->discovery->discover(
+            $this->location,
+            new \Tempest\Reflection\ClassReflector(AcfFieldGroupFixture::class),
+        );
 
-        expect($this->discovery->hasItems())->toBeTrue();
+        expect($this->discovery->getItems())->not->toHaveCount(0);
     });
 });
 

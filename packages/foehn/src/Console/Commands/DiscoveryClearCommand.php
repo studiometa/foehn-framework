@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Console\Commands;
 
+use Psr\Cache\CacheItemPoolInterface;
 use Studiometa\Foehn\Attributes\AsCliCommand;
 use Studiometa\Foehn\Console\CliCommandInterface;
 use Studiometa\Foehn\Console\WpCli;
-use Studiometa\Foehn\Discovery\DiscoveryCache;
 
 #[AsCliCommand(name: 'discovery:clear', description: 'Clear the discovery cache', longDescription: <<<'DOC'
     ## DESCRIPTION
@@ -23,13 +23,13 @@ use Studiometa\Foehn\Discovery\DiscoveryCache;
     ## EXAMPLES
 
         # Clear discovery cache
-        wp tempest discovery:clear
+        wp foehn discovery:clear
     DOC)]
 final class DiscoveryClearCommand implements CliCommandInterface
 {
     public function __construct(
         private readonly WpCli $cli,
-        private readonly DiscoveryCache $discoveryCache,
+        private readonly CacheItemPoolInterface $pool,
     ) {}
 
     /**
@@ -40,7 +40,14 @@ final class DiscoveryClearCommand implements CliCommandInterface
     {
         $this->cli->log('Clearing discovery cache...');
 
-        $this->discoveryCache->clear();
+        // The pool is emptied directly rather than through DiscoveryCache::clear(),
+        // which also rewrites a strategy marker next to the Tempest package and
+        // fails wherever vendor/ is deployed read-only.
+        if (!$this->pool->clear()) {
+            $this->cli->warning('Could not clear the discovery cache.');
+
+            return;
+        }
 
         $this->cli->success('Discovery cache cleared.');
     }

@@ -2,12 +2,11 @@
 
 declare(strict_types=1);
 
-use Studiometa\Foehn\Discovery\DiscoveryLocation;
 use Studiometa\Foehn\Discovery\TaxonomyDiscovery;
 use Tests\Fixtures\TaxonomyFixture;
 
 beforeEach(function () {
-    $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
+    $this->location = testDiscoveryLocation();
     wp_stub_reset();
     bootTestContainer();
     $this->discovery = new TaxonomyDiscovery();
@@ -17,7 +16,7 @@ afterEach(fn() => tearDownTestContainer());
 
 describe('TaxonomyDiscovery apply', function () {
     it('registers discovered taxonomies with WordPress', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(TaxonomyFixture::class));
+        $this->discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(TaxonomyFixture::class));
         $this->discovery->apply();
 
         $calls = wp_stub_get_calls('register_taxonomy');
@@ -31,7 +30,7 @@ describe('TaxonomyDiscovery apply', function () {
     });
 
     it('registers Timber classmap filter', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(TaxonomyFixture::class));
+        $this->discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(TaxonomyFixture::class));
         $this->discovery->apply();
 
         $filters = wp_stub_get_calls('add_filter');

@@ -38,16 +38,16 @@ use function Tempest\Support\str;
         ## EXAMPLES
 
             # Create a global context provider
-            wp tempest make:context GlobalContext --global
+            wp foehn make:context GlobalContext --global
 
             # Create a context for single posts
-            wp tempest make:context SingleContext --templates=single,single-*
+            wp foehn make:context SingleContext --templates=single,single-*
 
             # Create a context for product templates
-            wp tempest make:context ProductContext --templates=single-product,archive-product
+            wp foehn make:context ProductContext --templates=single-product,archive-product
 
             # Preview what would be created
-            wp tempest make:context GlobalContext --global --dry-run
+            wp foehn make:context GlobalContext --global --dry-run
         DOC,
 )]
 final class MakeContextCommand implements CliCommandInterface

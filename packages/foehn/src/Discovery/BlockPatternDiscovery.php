@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Discovery;
 
-use ReflectionClass;
 use Studiometa\Foehn\Attributes\AsBlockPattern;
 use Studiometa\Foehn\Contracts\Arrayable;
 use Studiometa\Foehn\Contracts\BlockPatternInterface;
 use Studiometa\Foehn\Contracts\ViewEngineInterface;
-use Studiometa\Foehn\Discovery\Concerns\CacheableDiscovery;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
+use Tempest\Discovery\Discovery;
+use Tempest\Discovery\DiscoveryLocation;
+use Tempest\Reflection\ClassReflector;
 
 use function Tempest\Container\get;
 
@@ -18,31 +19,32 @@ use function Tempest\Container\get;
  * Discovers classes marked with #[AsBlockPattern] attribute
  * and registers them as WordPress block patterns.
  */
-final class BlockPatternDiscovery implements WpDiscovery
+final class BlockPatternDiscovery implements Discovery
 {
     use IsWpDiscovery;
-    use CacheableDiscovery;
 
     /**
      * Discover block pattern attributes on classes.
      *
      * @param DiscoveryLocation $location
-     * @param ReflectionClass<object> $class
+     * @param ClassReflector $class
      */
-    public function discover(DiscoveryLocation $location, ReflectionClass $class): void
+    public function discover(DiscoveryLocation $location, ClassReflector $class): void
     {
-        $attributes = $class->getAttributes(AsBlockPattern::class);
-
-        if ($attributes === []) {
+        if (!$this->isConcrete($class)) {
             return;
         }
 
-        $attribute = $attributes[0]->newInstance();
+        $attribute = $class->getAttribute(AsBlockPattern::class);
+
+        if ($attribute === null) {
+            return;
+        }
 
         $this->addItem($location, [
             'attribute' => $attribute,
             'className' => $class->getName(),
-            'implementsInterface' => $class->implementsInterface(BlockPatternInterface::class),
+            'implementsInterface' => $class->implements(BlockPatternInterface::class),
         ]);
     }
 

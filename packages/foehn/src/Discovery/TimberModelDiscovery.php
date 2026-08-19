@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace Studiometa\Foehn\Discovery;
 
 use InvalidArgumentException;
-use ReflectionClass;
 use Studiometa\Foehn\Attributes\AsTimberModel;
-use Studiometa\Foehn\Discovery\Concerns\CacheableDiscovery;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
 use Studiometa\Foehn\PostTypes\PostTypeRegistry;
+use Tempest\Discovery\Discovery;
+use Tempest\Discovery\DiscoveryLocation;
+use Tempest\Reflection\ClassReflector;
 use Timber\Post;
 use Timber\Term;
 
@@ -18,27 +19,30 @@ use Timber\Term;
  * and registers them in Timber's class map without registering
  * a post type or taxonomy.
  */
-final class TimberModelDiscovery implements WpDiscovery
+final class TimberModelDiscovery implements Discovery
 {
     use IsWpDiscovery;
-    use CacheableDiscovery;
 
     /**
      * Discover timber model attributes on classes.
      *
      * @param DiscoveryLocation $location
-     * @param ReflectionClass<object> $class
+     * @param ClassReflector $class
      */
-    public function discover(DiscoveryLocation $location, ReflectionClass $class): void
+    public function discover(DiscoveryLocation $location, ClassReflector $class): void
     {
-        $attributes = $class->getAttributes(AsTimberModel::class);
-
-        if ($attributes === []) {
+        if (!$this->isConcrete($class)) {
             return;
         }
 
-        $isPost = $class->isSubclassOf(Post::class);
-        $isTerm = $class->isSubclassOf(Term::class);
+        $attribute = $class->getAttribute(AsTimberModel::class);
+
+        if ($attribute === null) {
+            return;
+        }
+
+        $isPost = $class->getReflection()->isSubclassOf(Post::class);
+        $isTerm = $class->getReflection()->isSubclassOf(Term::class);
 
         if (!$isPost && !$isTerm) {
             throw new InvalidArgumentException(sprintf(
@@ -48,8 +52,6 @@ final class TimberModelDiscovery implements WpDiscovery
                 Term::class,
             ));
         }
-
-        $attribute = $attributes[0]->newInstance();
 
         $this->addItem($location, [
             'attribute' => $attribute,

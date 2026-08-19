@@ -5,14 +5,15 @@ declare(strict_types=1);
 namespace Studiometa\Foehn\Discovery;
 
 use InvalidArgumentException;
-use ReflectionClass;
 use Studiometa\Foehn\Attributes\AsBlock;
 use Studiometa\Foehn\Blocks\BlockAssets;
 use Studiometa\Foehn\Blocks\BlockAttributeSchema;
 use Studiometa\Foehn\Blocks\BlockRenderer;
 use Studiometa\Foehn\Contracts\BlockInterface;
-use Studiometa\Foehn\Discovery\Concerns\CacheableDiscovery;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
+use Tempest\Discovery\Discovery;
+use Tempest\Discovery\DiscoveryLocation;
+use Tempest\Reflection\ClassReflector;
 use WP_Block;
 
 use function Tempest\Container\get;
@@ -21,35 +22,36 @@ use function Tempest\Container\get;
  * Discovers classes marked with #[AsBlock] attribute
  * and registers them as native Gutenberg blocks.
  */
-final class BlockDiscovery implements WpDiscovery
+final class BlockDiscovery implements Discovery
 {
     use IsWpDiscovery;
-    use CacheableDiscovery;
 
     /**
      * Discover block attributes on classes.
      *
      * @param DiscoveryLocation $location
-     * @param ReflectionClass<object> $class
+     * @param ClassReflector $class
      */
-    public function discover(DiscoveryLocation $location, ReflectionClass $class): void
+    public function discover(DiscoveryLocation $location, ClassReflector $class): void
     {
-        $attributes = $class->getAttributes(AsBlock::class);
+        if (!$this->isConcrete($class)) {
+            return;
+        }
 
-        if ($attributes === []) {
+        $attribute = $class->getAttribute(AsBlock::class);
+
+        if ($attribute === null) {
             return;
         }
 
         // Verify the class implements BlockInterface
-        if (!$class->implementsInterface(BlockInterface::class)) {
+        if (!$class->implements(BlockInterface::class)) {
             throw new InvalidArgumentException(sprintf(
                 'Class %s must implement %s to use #[AsBlock]',
                 $class->getName(),
                 BlockInterface::class,
             ));
         }
-
-        $attribute = $attributes[0]->newInstance();
 
         $this->addItem($location, [
             'attribute' => $attribute,

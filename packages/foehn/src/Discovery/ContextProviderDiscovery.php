@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace Studiometa\Foehn\Discovery;
 
 use InvalidArgumentException;
-use ReflectionClass;
 use Studiometa\Foehn\Attributes\AsContextProvider;
 use Studiometa\Foehn\Contracts\ContextProviderInterface;
-use Studiometa\Foehn\Discovery\Concerns\CacheableDiscovery;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
 use Studiometa\Foehn\Views\ContextProviderRegistry;
+use Tempest\Discovery\Discovery;
+use Tempest\Discovery\DiscoveryLocation;
+use Tempest\Reflection\ClassReflector;
 
 use function Tempest\Container\get;
 
@@ -18,35 +19,36 @@ use function Tempest\Container\get;
  * Discovers classes marked with #[AsContextProvider] attribute
  * and registers them with the ContextProviderRegistry.
  */
-final class ContextProviderDiscovery implements WpDiscovery
+final class ContextProviderDiscovery implements Discovery
 {
     use IsWpDiscovery;
-    use CacheableDiscovery;
 
     /**
      * Discover context provider attributes on classes.
      *
      * @param DiscoveryLocation $location
-     * @param ReflectionClass<object> $class
+     * @param ClassReflector $class
      */
-    public function discover(DiscoveryLocation $location, ReflectionClass $class): void
+    public function discover(DiscoveryLocation $location, ClassReflector $class): void
     {
-        $attributes = $class->getAttributes(AsContextProvider::class);
+        if (!$this->isConcrete($class)) {
+            return;
+        }
 
-        if ($attributes === []) {
+        $attribute = $class->getAttribute(AsContextProvider::class);
+
+        if ($attribute === null) {
             return;
         }
 
         // Verify the class implements ContextProviderInterface
-        if (!$class->implementsInterface(ContextProviderInterface::class)) {
+        if (!$class->implements(ContextProviderInterface::class)) {
             throw new InvalidArgumentException(sprintf(
                 'Class %s must implement %s to use #[AsContextProvider]',
                 $class->getName(),
                 ContextProviderInterface::class,
             ));
         }
-
-        $attribute = $attributes[0]->newInstance();
 
         $this->addItem($location, [
             'attribute' => $attribute,

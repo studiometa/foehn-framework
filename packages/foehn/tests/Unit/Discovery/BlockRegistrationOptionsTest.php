@@ -5,7 +5,6 @@ declare(strict_types=1);
 use Studiometa\Foehn\Discovery\AcfBlockDiscovery;
 use Studiometa\Foehn\Discovery\BlockDiscovery;
 use Studiometa\Foehn\Discovery\BlockPatternDiscovery;
-use Studiometa\Foehn\Discovery\DiscoveryLocation;
 use Tests\Fixtures\ConstrainedAcfBlockFixture;
 use Tests\Fixtures\ConstrainedBlockFixture;
 use Tests\Fixtures\ConstrainedBlockPatternFixture;
@@ -20,7 +19,7 @@ use Tests\Fixtures\ConstrainedBlockPatternFixture;
 beforeEach(function () {
     wp_stub_reset();
     $this->container = bootTestContainer();
-    $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
+    $this->location = testDiscoveryLocation();
 });
 
 afterEach(fn() => tearDownTestContainer());
@@ -29,7 +28,7 @@ describe('native block registration options', function () {
     beforeEach(function () {
         $this->register = function (string $fixture): array {
             $discovery = new BlockDiscovery();
-            $discovery->discover($this->location, new ReflectionClass($fixture));
+            $discovery->discover($this->location, new \Tempest\Reflection\ClassReflector($fixture));
             $discovery->apply();
 
             wp_stub_get_calls('add_action')[0]['args']['callback']();
@@ -64,7 +63,7 @@ describe('ACF block registration options', function () {
     beforeEach(function () {
         $this->register = function (string $fixture): array {
             $discovery = new AcfBlockDiscovery();
-            $discovery->discover($this->location, new ReflectionClass($fixture));
+            $discovery->discover($this->location, new \Tempest\Reflection\ClassReflector($fixture));
             $discovery->apply();
 
             wp_stub_get_calls('add_action')[0]['args']['callback']();
@@ -117,7 +116,10 @@ describe('block pattern registration options', function () {
         $this->container->singleton(Studiometa\Foehn\Contracts\ViewEngineInterface::class, fn() => $engine);
 
         $discovery = new BlockPatternDiscovery();
-        $discovery->discover($this->location, new ReflectionClass(ConstrainedBlockPatternFixture::class));
+        $discovery->discover(
+            $this->location,
+            new \Tempest\Reflection\ClassReflector(ConstrainedBlockPatternFixture::class),
+        );
         $discovery->apply();
 
         wp_stub_get_calls('add_action')[0]['args']['callback']();

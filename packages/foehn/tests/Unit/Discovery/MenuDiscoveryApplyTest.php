@@ -2,13 +2,12 @@
 
 declare(strict_types=1);
 
-use Studiometa\Foehn\Discovery\DiscoveryLocation;
 use Studiometa\Foehn\Discovery\MenuDiscovery;
 use Tests\Fixtures\FooterMenuFixture;
 use Tests\Fixtures\MenuFixture;
 
 beforeEach(function () {
-    $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
+    $this->location = testDiscoveryLocation();
     wp_stub_reset();
     bootTestContainer();
     $this->discovery = new MenuDiscovery();
@@ -18,7 +17,7 @@ afterEach(fn() => tearDownTestContainer());
 
 describe('MenuDiscovery apply', function () {
     it('registers discovered menus with WordPress', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(MenuFixture::class));
+        $this->discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(MenuFixture::class));
         $this->discovery->apply();
 
         $calls = wp_stub_get_calls('register_nav_menus');
@@ -28,7 +27,7 @@ describe('MenuDiscovery apply', function () {
     });
 
     it('registers timber/context filter for menus', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(MenuFixture::class));
+        $this->discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(MenuFixture::class));
         $this->discovery->apply();
 
         $filters = wp_stub_get_calls('add_filter');
@@ -57,8 +56,8 @@ describe('MenuDiscovery apply', function () {
     });
 
     it('registers multiple menus', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(MenuFixture::class));
-        $this->discovery->discover($this->location, new ReflectionClass(FooterMenuFixture::class));
+        $this->discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(MenuFixture::class));
+        $this->discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(FooterMenuFixture::class));
 
         $this->discovery->apply();
 
@@ -72,7 +71,7 @@ describe('MenuDiscovery apply', function () {
     });
 
     it('context filter checks has_nav_menu before adding menu', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(MenuFixture::class));
+        $this->discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(MenuFixture::class));
         $this->discovery->apply();
 
         // Get the registered filter callback

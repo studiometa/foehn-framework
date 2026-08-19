@@ -44,19 +44,19 @@ use function Tempest\Support\str;
     ## EXAMPLES
 
         # Create a simple block
-        wp tempest make:block hero
+        wp foehn make:block hero
 
         # Create with custom title
-        wp tempest make:block featured-posts --title="Featured Posts"
+        wp foehn make:block featured-posts --title="Featured Posts"
 
         # Create an interactive block
-        wp tempest make:block counter --interactive
+        wp foehn make:block counter --interactive
 
         # Create with custom namespace
-        wp tempest make:block card --namespace=theme-blocks
+        wp foehn make:block card --namespace=theme-blocks
 
         # Preview what would be created
-        wp tempest make:block hero --dry-run
+        wp foehn make:block hero --dry-run
     DOC)]
 final class MakeBlockCommand implements CliCommandInterface
 {

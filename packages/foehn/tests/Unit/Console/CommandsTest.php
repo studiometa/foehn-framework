@@ -10,10 +10,10 @@ use Studiometa\Foehn\Console\CliCommandInterface;
 use Studiometa\Foehn\Console\Commands\DiscoveryClearCommand;
 use Studiometa\Foehn\Console\Commands\DiscoveryGenerateCommand;
 use Studiometa\Foehn\Console\Commands\DiscoveryStatusCommand;
-use Studiometa\Foehn\Console\Commands\DiscoveryWarmCommand;
 use Studiometa\Foehn\Console\Commands\MakeAcfBlockCommand;
 use Studiometa\Foehn\Console\Commands\MakeBlockCommand;
 use Studiometa\Foehn\Console\Commands\MakeContextCommand;
+use Studiometa\Foehn\Console\Commands\MakeContextProviderCommand;
 use Studiometa\Foehn\Console\Commands\MakeControllerCommand;
 use Studiometa\Foehn\Console\Commands\MakeFieldGroupCommand;
 use Studiometa\Foehn\Console\Commands\MakeHooksCommand;
@@ -25,7 +25,6 @@ use Studiometa\Foehn\Console\Commands\MakePatternCommand;
 use Studiometa\Foehn\Console\Commands\MakePostTypeCommand;
 use Studiometa\Foehn\Console\Commands\MakeShortcodeCommand;
 use Studiometa\Foehn\Console\Commands\MakeTaxonomyCommand;
-use Studiometa\Foehn\Console\Commands\MakeContextProviderCommand;
 
 describe('Commands', function (): void {
     $commands = [
@@ -34,7 +33,10 @@ describe('Commands', function (): void {
         'MakeBlockCommand' => ['class' => MakeBlockCommand::class, 'name' => 'make:block'],
         'MakeAcfBlockCommand' => ['class' => MakeAcfBlockCommand::class, 'name' => 'make:acf-block'],
         'MakePatternCommand' => ['class' => MakePatternCommand::class, 'name' => 'make:pattern'],
-        'MakeContextProviderCommand' => ['class' => MakeContextProviderCommand::class, 'name' => 'make:context-provider'],
+        'MakeContextProviderCommand' => [
+            'class' => MakeContextProviderCommand::class,
+            'name' => 'make:context-provider',
+        ],
         'MakeShortcodeCommand' => ['class' => MakeShortcodeCommand::class, 'name' => 'make:shortcode'],
         'MakeControllerCommand' => ['class' => MakeControllerCommand::class, 'name' => 'make:controller'],
         'MakeHooksCommand' => ['class' => MakeHooksCommand::class, 'name' => 'make:hooks'],
@@ -47,7 +49,6 @@ describe('Commands', function (): void {
         'DiscoveryClearCommand' => ['class' => DiscoveryClearCommand::class, 'name' => 'discovery:clear'],
         'DiscoveryGenerateCommand' => ['class' => DiscoveryGenerateCommand::class, 'name' => 'discovery:generate'],
         'DiscoveryStatusCommand' => ['class' => DiscoveryStatusCommand::class, 'name' => 'discovery:status'],
-        'DiscoveryWarmCommand' => ['class' => DiscoveryWarmCommand::class, 'name' => 'discovery:warm'],
     ];
 
     foreach ($commands as $label => $data) {

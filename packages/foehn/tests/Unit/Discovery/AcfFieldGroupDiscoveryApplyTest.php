@@ -3,12 +3,11 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Discovery\AcfFieldGroupDiscovery;
-use Studiometa\Foehn\Discovery\DiscoveryLocation;
 use Tests\Fixtures\AcfFieldGroupComplexLocationFixture;
 use Tests\Fixtures\AcfFieldGroupFixture;
 
 beforeEach(function () {
-    $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
+    $this->location = testDiscoveryLocation();
     wp_stub_reset();
     bootTestContainer();
     $this->discovery = new AcfFieldGroupDiscovery();
@@ -18,7 +17,10 @@ afterEach(fn() => tearDownTestContainer());
 
 describe('AcfFieldGroupDiscovery apply', function () {
     it('registers acf/init action for field group registration', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(AcfFieldGroupFixture::class));
+        $this->discovery->discover(
+            $this->location,
+            new \Tempest\Reflection\ClassReflector(AcfFieldGroupFixture::class),
+        );
         $this->discovery->apply();
 
         $actions = wp_stub_get_calls('add_action');
@@ -28,7 +30,10 @@ describe('AcfFieldGroupDiscovery apply', function () {
     });
 
     it('registers ACF field groups when acf/init callback is invoked', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(AcfFieldGroupFixture::class));
+        $this->discovery->discover(
+            $this->location,
+            new \Tempest\Reflection\ClassReflector(AcfFieldGroupFixture::class),
+        );
         $this->discovery->apply();
 
         // Simulate WordPress calling the acf/init callback
@@ -64,7 +69,10 @@ describe('AcfFieldGroupDiscovery apply', function () {
     });
 
     it('sets location rules correctly for simplified format', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(AcfFieldGroupFixture::class));
+        $this->discovery->discover(
+            $this->location,
+            new \Tempest\Reflection\ClassReflector(AcfFieldGroupFixture::class),
+        );
         $this->discovery->apply();
 
         $actions = wp_stub_get_calls('add_action');
@@ -102,7 +110,10 @@ describe('AcfFieldGroupDiscovery apply', function () {
     });
 
     it('handles complex location rules with OR and AND conditions', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(AcfFieldGroupComplexLocationFixture::class));
+        $this->discovery->discover(
+            $this->location,
+            new \Tempest\Reflection\ClassReflector(AcfFieldGroupComplexLocationFixture::class),
+        );
         $this->discovery->apply();
 
         $actions = wp_stub_get_calls('add_action');
@@ -122,7 +133,10 @@ describe('AcfFieldGroupDiscovery apply', function () {
 
     it('does not include hide_on_screen when empty', function () {
         // The complex-location fixture leaves hideOnScreen at its default.
-        $this->discovery->discover($this->location, new ReflectionClass(AcfFieldGroupComplexLocationFixture::class));
+        $this->discovery->discover(
+            $this->location,
+            new \Tempest\Reflection\ClassReflector(AcfFieldGroupComplexLocationFixture::class),
+        );
         $this->discovery->apply();
 
         $actions = wp_stub_get_calls('add_action');

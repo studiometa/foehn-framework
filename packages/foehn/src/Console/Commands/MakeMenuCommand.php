@@ -34,16 +34,16 @@ use function Tempest\Support\str;
     ## EXAMPLES
 
         # Create a header menu
-        wp tempest make:menu HeaderMenu
+        wp foehn make:menu HeaderMenu
 
         # Create with custom location
-        wp tempest make:menu PrimaryNav --location=primary --description="Primary Navigation"
+        wp foehn make:menu PrimaryNav --location=primary --description="Primary Navigation"
 
         # Create a footer menu
-        wp tempest make:menu FooterMenu --description="Footer Navigation Links"
+        wp foehn make:menu FooterMenu --description="Footer Navigation Links"
 
         # Preview what would be created
-        wp tempest make:menu HeaderMenu --dry-run
+        wp foehn make:menu HeaderMenu --dry-run
     DOC)]
 final class MakeMenuCommand implements CliCommandInterface
 {

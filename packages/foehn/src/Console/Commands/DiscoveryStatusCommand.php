@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Console\Commands;
 
+use Psr\Cache\CacheItemPoolInterface;
 use Studiometa\Foehn\Attributes\AsCliCommand;
 use Studiometa\Foehn\Config\FoehnConfig;
 use Studiometa\Foehn\Console\CliCommandInterface;
 use Studiometa\Foehn\Console\WpCli;
-use Studiometa\Foehn\Discovery\DiscoveryCache;
+use Studiometa\Foehn\Discovery\DiscoveryLocations;
 
 #[AsCliCommand(name: 'discovery:status', description: 'Show discovery cache status', longDescription: <<<'DOC'
     ## DESCRIPTION
@@ -22,13 +23,14 @@ use Studiometa\Foehn\Discovery\DiscoveryCache;
     ## EXAMPLES
 
         # Show discovery cache status
-        wp tempest discovery:status
+        wp foehn discovery:status
     DOC)]
 final class DiscoveryStatusCommand implements CliCommandInterface
 {
     public function __construct(
         private readonly WpCli $cli,
-        private readonly DiscoveryCache $discoveryCache,
+        private readonly CacheItemPoolInterface $pool,
+        private readonly DiscoveryLocations $locations,
         private readonly FoehnConfig $config,
     ) {}
 
@@ -55,37 +57,33 @@ final class DiscoveryStatusCommand implements CliCommandInterface
         $cachePath = $this->config->getDiscoveryCachePath();
         $this->cli->log("Cache path: {$cachePath}");
 
-        // Cache exists
-        $exists = $this->discoveryCache->exists();
-        $existsText = $exists ? 'Yes' : 'No';
-        $this->cli->log("Cache exists: {$existsText}");
+        // The cache is written per discovery location, so a partly warmed cache is
+        // a real state: one location can be cached while another is scanned.
+        $locations = $this->locations->all();
+        $cached = 0;
 
-        // Cache valid
-        $valid = $this->discoveryCache->isValid();
-        $validText = $valid ? 'Yes' : 'No';
-        $this->cli->log("Cache valid: {$validText}");
+        foreach ($locations as $location) {
+            $isCached = $this->pool->getItem($location->key)->isHit();
+            $cached += $isCached ? 1 : 0;
 
+            $this->cli->log(sprintf('  %s %s', $isCached ? '✓' : '·', $location->namespace));
+        }
+
+        $this->cli->log(sprintf('Locations cached: %d/%d', $cached, count($locations)));
         $this->cli->line('');
 
-        $message = match (true) {
-            $enabled && $exists && $valid => null,
-            $enabled && !$exists => 'Discovery cache is enabled but not generated. Run: wp tempest discovery:generate',
-            $enabled && !$valid => 'Discovery cache is enabled but invalid. Run: wp tempest discovery:generate',
-            default => null,
-        };
-
-        if ($enabled && $exists && $valid) {
-            $this->cli->success('Discovery cache is active and valid.');
+        if (!$enabled) {
+            $this->cli->log('Discovery cache is disabled. Discoveries run at runtime.');
 
             return;
         }
 
-        if ($message !== null) {
-            $this->cli->warning($message);
+        if ($cached < count($locations)) {
+            $this->cli->warning('Discovery cache is enabled but incomplete. Run: wp foehn discovery:warm');
 
             return;
         }
 
-        $this->cli->log('Discovery cache is disabled. Discoveries run at runtime.');
+        $this->cli->success('Discovery cache is active and valid.');
     }
 }

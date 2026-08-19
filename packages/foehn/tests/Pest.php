@@ -65,32 +65,70 @@ function tearDownTestContainer(): void
 }
 
 /**
+ * A discovery location pointing at a real directory.
+ *
+ * Tempest's DiscoveryLocation resolves its path with realpath(), so a made-up path
+ * cannot be used: the constructor would fail on it.
+ */
+function testDiscoveryLocation(string $namespace = 'App\\', ?string $path = null): \Tempest\Discovery\DiscoveryLocation
+{
+    return new \Tempest\Discovery\DiscoveryLocation($namespace, $path ?? testAppPath());
+}
+
+/**
+ * A location that reads as a vendor package, for the discoveries that treat those
+ * differently — framework hook classes stay opt-in rather than registering because
+ * they were scanned.
+ */
+function testVendorLocation(string $namespace = 'Studiometa\\Foehn\\'): \Tempest\Discovery\DiscoveryLocation
+{
+    $path = sys_get_temp_dir() . '/foehn-tests/vendor/studiometa/foehn/src';
+
+    if (!is_dir($path)) {
+        mkdir($path, 0o777, true);
+    }
+
+    return new \Tempest\Discovery\DiscoveryLocation($namespace, $path);
+}
+
+/**
  * Restore a discovery from what another one would have written to the cache.
  *
- * The data goes through `var_export()` and `require`, the same path DiscoveryCache
- * takes, so a value that cannot survive a cache file fails here rather than in
- * production. Returns the target for chaining.
+ * The items go through a real cache pool, the same path production takes, so a
+ * value that cannot survive the round trip fails here rather than on a deploy.
+ * Returns the target for chaining.
  *
- * @template T of \Studiometa\Foehn\Discovery\WpDiscovery
+ * @template T of \Tempest\Discovery\Discovery
  * @param T $target A fresh discovery to restore into
  * @return T
  */
 function restoreThroughCacheFile(
-    \Studiometa\Foehn\Discovery\WpDiscovery $source,
-    \Studiometa\Foehn\Discovery\WpDiscovery $target,
-): \Studiometa\Foehn\Discovery\WpDiscovery {
-    $file = tempnam(sys_get_temp_dir(), 'foehn-cache-') . '.php';
+    \Tempest\Discovery\Discovery $source,
+    \Tempest\Discovery\Discovery $target,
+    ?\Tempest\Discovery\DiscoveryLocation $location = null,
+): \Tempest\Discovery\Discovery {
+    $location ??= testDiscoveryLocation();
+
+    $directory = sys_get_temp_dir() . '/foehn-tests/cache-' . uniqid('', true);
+
+    $cache = new \Tempest\Discovery\DiscoveryCache(
+        \Tempest\Discovery\DiscoveryCacheStrategy::FULL,
+        new \Symfony\Component\Cache\Adapter\PhpFilesAdapter(directory: $directory),
+    );
 
     try {
-        file_put_contents($file, '<?php return ' . var_export($source->getCacheableData(), true) . ';');
+        $cache->store($location, [$source]);
 
-        /** @var array<string, list<array<string, mixed>>> $data */
-        $data = require $file;
+        /** @var array<class-string, \Tempest\Discovery\DiscoveryItems> $restored */
+        $restored = $cache->restore($location);
     } finally {
-        @unlink($file);
+        removeTestDirectory($directory);
     }
 
-    $target->restoreFromCache($data);
+    $target->setItems(new \Tempest\Discovery\DiscoveryItems()->addForLocation(
+        $location,
+        $restored[$source::class] ?? [],
+    ));
 
     return $target;
 }
@@ -104,13 +142,71 @@ function restoreThroughCacheFile(
  * @param class-string $fixture
  */
 function discoverFixture(
-    \Studiometa\Foehn\Discovery\WpDiscovery $discovery,
+    \Tempest\Discovery\Discovery $discovery,
     string $fixture,
-    ?\Studiometa\Foehn\Discovery\DiscoveryLocation $location = null,
-): \Studiometa\Foehn\Discovery\DiscoveryLocation {
-    $location ??= \Studiometa\Foehn\Discovery\DiscoveryLocation::app('App\\', '/tmp/test-app');
+    ?\Tempest\Discovery\DiscoveryLocation $location = null,
+): \Tempest\Discovery\DiscoveryLocation {
+    $location ??= testDiscoveryLocation();
 
-    $discovery->discover($location, new ReflectionClass($fixture));
+    $discovery->discover($location, new \Tempest\Reflection\ClassReflector($fixture));
 
     return $location;
+}
+
+/**
+ * An app directory outside any Composer project.
+ *
+ * Discovery locations are built from the Composer root above the app path, so a
+ * path inside this repository would pull the whole framework into every scan.
+ */
+function testAppPath(): string
+{
+    $path = sys_get_temp_dir() . '/foehn-tests/app';
+
+    if (!is_dir($path)) {
+        mkdir($path, 0o777, true);
+    }
+
+    return $path;
+}
+
+/**
+ * A DiscoveryRunner wired for tests: nothing is cached and the pool never touches
+ * the filesystem.
+ */
+function testDiscoveryRunner(
+    \Tempest\Container\Container $container,
+    ?string $appPath = null,
+    ?\Studiometa\Foehn\Config\FoehnConfig $config = null,
+): \Studiometa\Foehn\Discovery\DiscoveryRunner {
+    $pool = new \Symfony\Component\Cache\Adapter\ArrayAdapter();
+
+    return new \Studiometa\Foehn\Discovery\DiscoveryRunner(
+        $container,
+        new \Tempest\Discovery\DiscoveryCache(\Tempest\Discovery\DiscoveryCacheStrategy::NONE, $pool),
+        $pool,
+        new \Studiometa\Foehn\Discovery\DiscoveryLocations($appPath),
+        $config,
+    );
+}
+
+/**
+ * Delete a directory and everything below it.
+ */
+function removeTestDirectory(string $directory): void
+{
+    if (!is_dir($directory)) {
+        return;
+    }
+
+    $files = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS),
+        RecursiveIteratorIterator::CHILD_FIRST,
+    );
+
+    foreach ($files as $file) {
+        $file->isDir() ? @rmdir($file->getPathname()) : @unlink($file->getPathname());
+    }
+
+    @rmdir($directory);
 }

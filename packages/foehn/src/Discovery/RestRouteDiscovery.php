@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Discovery;
 
-use ReflectionClass;
 use ReflectionMethod;
 use Studiometa\Foehn\Attributes\AsRestRoute;
 use Studiometa\Foehn\Config\RestConfig;
-use Studiometa\Foehn\Discovery\Concerns\CacheableDiscovery;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
+use Tempest\Discovery\Discovery;
+use Tempest\Discovery\DiscoveryLocation;
+use Tempest\Reflection\ClassReflector;
 use WP_REST_Request;
 
 use function Tempest\Container\get;
@@ -18,10 +19,9 @@ use function Tempest\Container\get;
  * Discovers methods marked with #[AsRestRoute] attribute
  * and registers them as WordPress REST API endpoints.
  */
-final class RestRouteDiscovery implements WpDiscovery
+final class RestRouteDiscovery implements Discovery
 {
     use IsWpDiscovery;
-    use CacheableDiscovery;
 
     public function __construct(
         private readonly ?RestConfig $config = null,
@@ -31,11 +31,15 @@ final class RestRouteDiscovery implements WpDiscovery
      * Discover REST route attributes on methods.
      *
      * @param DiscoveryLocation $location
-     * @param ReflectionClass<object> $class
+     * @param ClassReflector $class
      */
-    public function discover(DiscoveryLocation $location, ReflectionClass $class): void
+    public function discover(DiscoveryLocation $location, ClassReflector $class): void
     {
-        foreach ($class->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
+        if (!$this->isConcrete($class)) {
+            return;
+        }
+
+        foreach ($class->getReflection()->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
             if ($method->getDeclaringClass()->getName() !== $class->getName()) {
                 continue;
             }

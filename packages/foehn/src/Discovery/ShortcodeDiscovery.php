@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Discovery;
 
-use ReflectionClass;
 use ReflectionMethod;
 use Studiometa\Foehn\Attributes\AsShortcode;
-use Studiometa\Foehn\Discovery\Concerns\CacheableDiscovery;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
+use Tempest\Discovery\Discovery;
+use Tempest\Discovery\DiscoveryLocation;
+use Tempest\Reflection\ClassReflector;
 
 use function Tempest\Container\get;
 
@@ -16,20 +17,23 @@ use function Tempest\Container\get;
  * Discovers methods marked with #[AsShortcode] attribute
  * and registers them as WordPress shortcodes.
  */
-final class ShortcodeDiscovery implements WpDiscovery
+final class ShortcodeDiscovery implements Discovery
 {
     use IsWpDiscovery;
-    use CacheableDiscovery;
 
     /**
      * Discover shortcode attributes on methods.
      *
      * @param DiscoveryLocation $location
-     * @param ReflectionClass<object> $class
+     * @param ClassReflector $class
      */
-    public function discover(DiscoveryLocation $location, ReflectionClass $class): void
+    public function discover(DiscoveryLocation $location, ClassReflector $class): void
     {
-        foreach ($class->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
+        if (!$this->isConcrete($class)) {
+            return;
+        }
+
+        foreach ($class->getReflection()->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
             if ($method->getDeclaringClass()->getName() !== $class->getName()) {
                 continue;
             }
@@ -40,10 +44,8 @@ final class ShortcodeDiscovery implements WpDiscovery
                 continue;
             }
 
-            $attribute = $attributes[0]->newInstance();
-
             $this->addItem($location, [
-                'attribute' => $attribute,
+                'attribute' => $attributes[0]->newInstance(),
                 'className' => $method->getDeclaringClass()->getName(),
                 'methodName' => $method->getName(),
             ]);

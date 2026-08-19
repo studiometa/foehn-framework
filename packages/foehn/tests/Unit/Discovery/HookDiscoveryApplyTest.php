@@ -2,12 +2,11 @@
 
 declare(strict_types=1);
 
-use Studiometa\Foehn\Discovery\DiscoveryLocation;
 use Studiometa\Foehn\Discovery\HookDiscovery;
 use Tests\Fixtures\HookFixture;
 
 beforeEach(function () {
-    $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
+    $this->location = testDiscoveryLocation();
     wp_stub_reset();
     $this->container = bootTestContainer();
     $this->discovery = new HookDiscovery($this->container);
@@ -17,7 +16,7 @@ afterEach(fn() => tearDownTestContainer());
 
 describe('HookDiscovery apply', function () {
     it('registers discovered actions with WordPress', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(HookFixture::class));
+        $this->discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(HookFixture::class));
         $this->discovery->apply();
 
         $actions = wp_stub_get_calls('add_action');
@@ -33,7 +32,7 @@ describe('HookDiscovery apply', function () {
     });
 
     it('registers discovered filters with WordPress', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(HookFixture::class));
+        $this->discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(HookFixture::class));
         $this->discovery->apply();
 
         $filters = wp_stub_get_calls('add_filter');

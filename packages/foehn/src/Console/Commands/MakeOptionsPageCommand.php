@@ -40,16 +40,16 @@ use function Tempest\Support\str;
     ## EXAMPLES
 
         # Create a top-level options page
-        wp tempest make:options-page ThemeSettings
+        wp foehn make:options-page ThemeSettings
 
         # Create a submenu options page
-        wp tempest make:options-page FooterSettings --parent=theme-settings
+        wp foehn make:options-page FooterSettings --parent=theme-settings
 
         # Create with custom icon
-        wp tempest make:options-page SocialSettings --icon=dashicons-share
+        wp foehn make:options-page SocialSettings --icon=dashicons-share
 
         # Preview what would be created
-        wp tempest make:options-page ThemeSettings --dry-run
+        wp foehn make:options-page ThemeSettings --dry-run
     DOC)]
 final class MakeOptionsPageCommand implements CliCommandInterface
 {

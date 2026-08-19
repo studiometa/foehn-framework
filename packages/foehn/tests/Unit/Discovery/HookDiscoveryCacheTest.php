@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 use Studiometa\Foehn\Attributes\AsAction;
 use Studiometa\Foehn\Attributes\AsFilter;
-use Studiometa\Foehn\Discovery\DiscoveryLocation;
 use Studiometa\Foehn\Discovery\HookDiscovery;
 use Tempest\Container\GenericContainer;
 use Tests\Fixtures\HookFixture;
 
 beforeEach(function () {
-    $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
+    $this->location = testDiscoveryLocation();
     $this->discovery = new HookDiscovery(new GenericContainer());
 });
 
@@ -18,10 +17,8 @@ describe('HookDiscovery caching', function () {
     it('keeps one item per hook attribute found', function () {
         discoverFixture($this->discovery, HookFixture::class, $this->location);
 
-        $cacheData = $this->discovery->getCacheableData();
-
         // HookFixture declares two actions and two filters.
-        expect($cacheData)->toHaveKey('App\\')->and($cacheData['App\\'])->toHaveCount(4);
+        expect($this->discovery->getItems()->getForLocation($this->location))->toHaveCount(4);
     });
 
     it('restores every item unchanged through a cache file', function () {
@@ -29,19 +26,15 @@ describe('HookDiscovery caching', function () {
 
         $restored = restoreThroughCacheFile($this->discovery, new HookDiscovery(new GenericContainer()));
 
-        expect($restored->wasRestoredFromCache())
-            ->toBeTrue()
-            ->and($restored->getItems()->all())
-            ->toEqual($this->discovery->getItems()->all());
+        expect(iterator_to_array($restored->getItems()))->toEqual(iterator_to_array($this->discovery->getItems()));
     });
 
     it('keeps actions and filters apart by attribute class', function () {
         discoverFixture($this->discovery, HookFixture::class, $this->location);
 
-        $items = restoreThroughCacheFile(
-            $this->discovery,
-            new HookDiscovery(new GenericContainer()),
-        )->getItems()->all();
+        $items = restoreThroughCacheFile($this->discovery, new HookDiscovery(new GenericContainer()))
+            ->getItems()
+            ->getForLocation($this->location);
 
         $actions = array_values(array_filter($items, static fn(array $i) => $i['attribute'] instanceof AsAction));
         $filters = array_values(array_filter($items, static fn(array $i) => $i['attribute'] instanceof AsFilter));
@@ -54,10 +47,9 @@ describe('HookDiscovery caching', function () {
     it('restores the priority and accepted args of each hook', function () {
         discoverFixture($this->discovery, HookFixture::class, $this->location);
 
-        $items = restoreThroughCacheFile(
-            $this->discovery,
-            new HookDiscovery(new GenericContainer()),
-        )->getItems()->all();
+        $items = restoreThroughCacheFile($this->discovery, new HookDiscovery(new GenericContainer()))
+            ->getItems()
+            ->getForLocation($this->location);
 
         $byMethod = array_column(
             array_map(static fn(array $i): array => [
@@ -74,10 +66,9 @@ describe('HookDiscovery caching', function () {
     it('keeps the method binding of every item', function () {
         discoverFixture($this->discovery, HookFixture::class, $this->location);
 
-        $items = restoreThroughCacheFile(
-            $this->discovery,
-            new HookDiscovery(new GenericContainer()),
-        )->getItems()->all();
+        $items = restoreThroughCacheFile($this->discovery, new HookDiscovery(new GenericContainer()))
+            ->getItems()
+            ->getForLocation($this->location);
 
         foreach ($items as $item) {
             expect($item['className'])->toBe(HookFixture::class)->and($item['methodName'])->toBeString();

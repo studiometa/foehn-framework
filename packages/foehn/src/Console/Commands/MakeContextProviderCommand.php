@@ -37,16 +37,16 @@ use function Tempest\Support\str;
         ## EXAMPLES
 
             # Create a provider for header template
-            wp tempest make:context-provider header
+            wp foehn make:context-provider header
 
             # Create a provider for multiple templates
-            wp tempest make:context-provider post --templates=single-post,archive-post
+            wp foehn make:context-provider post --templates=single-post,archive-post
 
             # Create a global provider
-            wp tempest make:context-provider global --templates=*
+            wp foehn make:context-provider global --templates=*
 
             # Preview what would be created
-            wp tempest make:context-provider header --dry-run
+            wp foehn make:context-provider header --dry-run
         DOC,
 )]
 final class MakeContextProviderCommand implements CliCommandInterface

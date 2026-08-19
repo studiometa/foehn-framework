@@ -4,36 +4,38 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Discovery;
 
-use ReflectionClass;
 use Studiometa\Foehn\Attributes\AsMenu;
-use Studiometa\Foehn\Discovery\Concerns\CacheableDiscovery;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
+use Tempest\Discovery\Discovery;
+use Tempest\Discovery\DiscoveryLocation;
+use Tempest\Reflection\ClassReflector;
 use Timber\Timber;
 
 /**
  * Discovers classes marked with #[AsMenu] attribute
  * and registers them as WordPress navigation menu locations.
  */
-final class MenuDiscovery implements WpDiscovery
+final class MenuDiscovery implements Discovery
 {
     use IsWpDiscovery;
-    use CacheableDiscovery;
 
     /**
      * Discover menu attributes on classes.
      *
      * @param DiscoveryLocation $location
-     * @param ReflectionClass<object> $class
+     * @param ClassReflector $class
      */
-    public function discover(DiscoveryLocation $location, ReflectionClass $class): void
+    public function discover(DiscoveryLocation $location, ClassReflector $class): void
     {
-        $attributes = $class->getAttributes(AsMenu::class);
-
-        if ($attributes === []) {
+        if (!$this->isConcrete($class)) {
             return;
         }
 
-        $attribute = $attributes[0]->newInstance();
+        $attribute = $class->getAttribute(AsMenu::class);
+
+        if ($attribute === null) {
+            return;
+        }
 
         $this->addItem($location, [
             'attribute' => $attribute,

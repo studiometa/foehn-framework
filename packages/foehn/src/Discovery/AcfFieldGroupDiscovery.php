@@ -5,45 +5,47 @@ declare(strict_types=1);
 namespace Studiometa\Foehn\Discovery;
 
 use InvalidArgumentException;
-use ReflectionClass;
 use Studiometa\Foehn\Attributes\AsAcfFieldGroup;
 use Studiometa\Foehn\Contracts\AcfFieldGroupInterface;
-use Studiometa\Foehn\Discovery\Concerns\CacheableDiscovery;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
+use Tempest\Discovery\Discovery;
+use Tempest\Discovery\DiscoveryLocation;
+use Tempest\Reflection\ClassReflector;
 
 /**
  * Discovers classes marked with #[AsAcfFieldGroup] attribute
  * and registers them as ACF field groups.
  */
-final class AcfFieldGroupDiscovery implements WpDiscovery
+final class AcfFieldGroupDiscovery implements Discovery
 {
     use IsWpDiscovery;
-    use CacheableDiscovery;
 
     /**
      * Discover ACF field group attributes on classes.
      *
      * @param DiscoveryLocation $location
-     * @param ReflectionClass<object> $class
+     * @param ClassReflector $class
      */
-    public function discover(DiscoveryLocation $location, ReflectionClass $class): void
+    public function discover(DiscoveryLocation $location, ClassReflector $class): void
     {
-        $attributes = $class->getAttributes(AsAcfFieldGroup::class);
+        if (!$this->isConcrete($class)) {
+            return;
+        }
 
-        if ($attributes === []) {
+        $attribute = $class->getAttribute(AsAcfFieldGroup::class);
+
+        if ($attribute === null) {
             return;
         }
 
         // Verify the class implements AcfFieldGroupInterface
-        if (!$class->implementsInterface(AcfFieldGroupInterface::class)) {
+        if (!$class->implements(AcfFieldGroupInterface::class)) {
             throw new InvalidArgumentException(sprintf(
                 'Class %s must implement %s to use #[AsAcfFieldGroup]',
                 $class->getName(),
                 AcfFieldGroupInterface::class,
             ));
         }
-
-        $attribute = $attributes[0]->newInstance();
 
         $this->addItem($location, [
             'attribute' => $attribute,

@@ -5,73 +5,58 @@ declare(strict_types=1);
 use Studiometa\Foehn\Config\FoehnConfig;
 use Studiometa\Foehn\Console\Commands\DiscoveryGenerateCommand;
 use Studiometa\Foehn\Console\WpCli;
-use Studiometa\Foehn\Discovery\BlockDiscovery;
-use Studiometa\Foehn\Discovery\DiscoveryCache;
-use Studiometa\Foehn\Discovery\DiscoveryLocation;
-use Studiometa\Foehn\Discovery\MenuDiscovery;
+use Studiometa\Foehn\Discovery\DiscoveryLocations;
+use Studiometa\Foehn\Discovery\DiscoveryRunner;
+use Studiometa\Foehn\Discovery\HookDiscovery;
+use Symfony\Component\Cache\Adapter\ArrayAdapter;
+use Tempest\Discovery\DiscoveryCache;
 use Tempest\Discovery\DiscoveryCacheStrategy;
-use Tests\Fixtures\BlockFixture;
-use Tests\Fixtures\MenuFixture;
+use Tests\Fixtures\App\CacheableHooks;
 
 beforeEach(function () {
     wp_stub_reset();
 
-    $this->cacheDir = sys_get_temp_dir() . '/foehn-generate-' . bin2hex(random_bytes(6));
-    mkdir($this->cacheDir, 0o755, true);
-
     $this->config = new FoehnConfig(
         discoveryCacheStrategy: DiscoveryCacheStrategy::FULL,
-        discoveryCachePath: $this->cacheDir,
+        discoveryCachePath: sys_get_temp_dir() . '/foehn-tests/generate',
     );
 
-    $this->cache = new DiscoveryCache($this->config);
+    $this->pool = new ArrayAdapter();
+    $this->cache = new DiscoveryCache($this->config->discoveryCacheStrategy, $this->pool);
     $this->container = bootTestContainer();
 
-    // Two discoveries arrive with items already found, the rest stay empty —
-    // collectDiscoveryData() has to keep the first two and skip the others.
-    $location = DiscoveryLocation::app('App\\', '/tmp/test-app');
+    // A directory holding a single hook class, so the command has something real to
+    // scan and the cache it writes can be read back.
+    $this->appPath = dirname(__DIR__, 2) . '/Fixtures/App';
+    $this->locations = new DiscoveryLocations($this->appPath);
+    $this->location = $this->locations->app();
 
-    $menus = new MenuDiscovery();
-    $menus->discover($location, new ReflectionClass(MenuFixture::class));
+    $this->runner = new DiscoveryRunner($this->container, $this->cache, $this->pool, $this->locations);
 
-    $blocks = new BlockDiscovery();
-    $blocks->discover($location, new ReflectionClass(BlockFixture::class));
-
-    $this->container->singleton(MenuDiscovery::class, fn() => $menus);
-    $this->container->singleton(BlockDiscovery::class, fn() => $blocks);
-
-    $this->command = new DiscoveryGenerateCommand(new WpCli(), $this->cache, $this->config, $this->container);
+    $this->command = new DiscoveryGenerateCommand(new WpCli(), $this->cache, $this->pool, $this->runner, $this->config);
 });
 
-afterEach(function () {
-    tearDownTestContainer();
-    exec('rm -rf ' . escapeshellarg($this->cacheDir));
-});
+afterEach(fn() => tearDownTestContainer());
 
 describe('discovery:generate', function () {
-    it('writes a cache file the discoveries can be restored from', function () {
+    it('writes an entry the runner can be restored from', function () {
         ($this->command)([], []);
 
-        expect($this->cacheDir . '/discoveries.php')->toBeFile();
+        expect($this->pool->getItem($this->location->key)->isHit())->toBeTrue();
 
-        $restored = $this->cache->restore();
+        $restored = $this->cache->restore($this->location);
 
-        expect($restored)->toHaveKey(MenuDiscovery::class);
-        expect($restored)->toHaveKey(BlockDiscovery::class);
-
-        $menus = new MenuDiscovery();
-        $menus->restoreFromCache($restored[MenuDiscovery::class]);
-
-        expect($menus->getItems()->all()[0]['attribute']->location)->toBe('primary');
+        expect($restored)->toHaveKey(HookDiscovery::class);
+        expect($restored[HookDiscovery::class][0]['attribute']->hook)->toBe('init');
+        expect($restored[HookDiscovery::class][0]['className'])->toBe(CacheableHooks::class);
     });
 
-    it('skips discoveries that found nothing', function () {
+    it('writes an entry for every location', function () {
         ($this->command)([], []);
 
-        $restored = $this->cache->restore();
-
-        // Only the two seeded discoveries have items; the other 17 are omitted.
-        expect($restored)->toHaveCount(2);
+        foreach ($this->locations->all() as $location) {
+            expect($this->pool->getItem($location->key)->isHit())->toBeTrue();
+        }
     });
 
     it('reports what it cached', function () {
@@ -80,14 +65,7 @@ describe('discovery:generate', function () {
         $logged = implode("\n", array_column(array_column(wp_stub_get_calls('wp_cli_log'), 'args'), 'message'));
 
         expect(wp_stub_get_calls('wp_cli_success'))->toHaveCount(1);
-        expect($logged)->toContain('MenuDiscovery: 1 items');
-        expect($logged)->toContain('BlockDiscovery: 1 items');
-    });
-
-    it('stores the strategy it generated for', function () {
-        ($this->command)([], []);
-
-        expect($this->cache->isValid())->toBeTrue();
+        expect($logged)->toContain('HookDiscovery: 1 items');
     });
 
     it('clears an existing cache when asked', function () {
@@ -97,32 +75,37 @@ describe('discovery:generate', function () {
         $logged = implode("\n", array_column(array_column(wp_stub_get_calls('wp_cli_log'), 'args'), 'message'));
 
         expect($logged)->toContain('Clearing existing cache...');
-        expect($this->cache->restore())->toHaveCount(2);
     });
 
     it('refuses to generate when the requested strategy is none', function () {
         ($this->command)([], ['strategy' => 'none']);
 
         expect(wp_stub_get_calls('wp_cli_warning'))->toHaveCount(1);
-        expect(file_exists($this->cacheDir . '/discoveries.php'))->toBeFalse();
+        expect($this->pool->getItem($this->location->key)->isHit())->toBeFalse();
     });
 
     it('generates for a strategy given on the command line', function () {
         ($this->command)([], ['strategy' => 'partial']);
 
-        expect($this->cacheDir . '/discoveries.php')->toBeFile();
-        expect($this->cache->getStrategy())->toBe(DiscoveryCacheStrategy::FULL);
+        $logged = implode("\n", array_column(array_column(wp_stub_get_calls('wp_cli_log'), 'args'), 'message'));
+
+        expect($logged)->toContain("'partial' strategy");
     });
 
     it('defaults to a full cache when none is configured', function () {
-        $config = new FoehnConfig(
-            discoveryCacheStrategy: DiscoveryCacheStrategy::NONE,
-            discoveryCachePath: $this->cacheDir,
-        );
+        $config = new FoehnConfig(discoveryCacheStrategy: DiscoveryCacheStrategy::NONE);
 
-        (new DiscoveryGenerateCommand(new WpCli(), new DiscoveryCache($config), $config, $this->container))([], []);
+        (new DiscoveryGenerateCommand(
+            new WpCli(),
+            new DiscoveryCache(DiscoveryCacheStrategy::NONE, $this->pool),
+            $this->pool,
+            $this->runner,
+            $config,
+        ))([], []);
 
-        expect($this->cacheDir . '/discoveries.php')->toBeFile();
+        $logged = implode("\n", array_column(array_column(wp_stub_get_calls('wp_cli_log'), 'args'), 'message'));
+
+        expect($logged)->toContain("'full' strategy");
         expect(wp_stub_get_calls('wp_cli_warning'))->toBeEmpty();
     });
 });

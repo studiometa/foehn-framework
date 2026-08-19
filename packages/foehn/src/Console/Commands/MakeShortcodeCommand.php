@@ -31,13 +31,13 @@ use function Tempest\Support\str;
     ## EXAMPLES
 
         # Create a simple shortcode
-        wp tempest make:shortcode button
+        wp foehn make:shortcode button
 
         # Create with custom class name
-        wp tempest make:shortcode my-gallery --class=GalleryShortcode
+        wp foehn make:shortcode my-gallery --class=GalleryShortcode
 
         # Preview what would be created
-        wp tempest make:shortcode button --dry-run
+        wp foehn make:shortcode button --dry-run
     DOC)]
 final class MakeShortcodeCommand implements CliCommandInterface
 {
