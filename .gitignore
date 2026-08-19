@@ -16,6 +16,7 @@ Thumbs.db
 # Testing
 .phpunit.result.cache
 .phpunit.cache/
+.phpunit.smoke.cache/
 coverage/
 .pest.cache
 
