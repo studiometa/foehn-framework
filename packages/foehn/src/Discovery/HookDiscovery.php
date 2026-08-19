@@ -6,6 +6,7 @@ namespace Studiometa\Foehn\Discovery;
 
 use ReflectionMethod;
 use Studiometa\Foehn\Attributes\AsAction;
+use Studiometa\Foehn\Attributes\AsDiscovery;
 use Studiometa\Foehn\Attributes\AsFilter;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
 use Tempest\Container\Container;
@@ -17,6 +18,7 @@ use Tempest\Reflection\ClassReflector;
  * Discovers methods marked with #[AsAction] or #[AsFilter] attributes
  * and registers them as WordPress hooks.
  */
+#[AsDiscovery(phase: DiscoveryPhase::Early)]
 final class HookDiscovery implements Discovery
 {
     use IsWpDiscovery;

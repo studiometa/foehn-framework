@@ -1,18 +1,19 @@
 # Custom Discovery
 
-Føhn's discovery system can be extended with custom discoveries. This guide shows how to create a discovery that scans for your own PHP attributes and registers them with WordPress.
+Føhn's attribute scanning is not a closed set. A discovery of your own — in the theme's `app/` directory or in a Composer package — is found the same way the framework's own are, and applies at the WordPress hook it asks for.
 
-## Overview
+## What a discovery is
 
-A discovery class:
+A discovery is a class implementing `Tempest\Discovery\Discovery`:
 
-1. Implements the `WpDiscovery` interface
-2. Inspects classes in `discover()` for a specific attribute
-3. Registers discovered items with WordPress in `apply()`
+- `discover()` is called once per scanned class. It inspects the class and records what it cares about.
+- `apply()` is called once, at the phase the class declares, and registers what was recorded with WordPress.
 
-## Creating a Custom Discovery
+Between the two, the recorded items may be written to the discovery cache and read back on a later request — so `apply()` must work from data alone, without re-reflecting.
 
-### Step 1: Define Your Attribute
+## Writing one
+
+### 1. Define the attribute
 
 ```php
 <?php
@@ -33,7 +34,7 @@ final readonly class AsWidget
 }
 ```
 
-### Step 2: Create the Discovery Class
+### 2. Write the discovery
 
 ```php
 <?php
@@ -42,40 +43,40 @@ final readonly class AsWidget
 namespace App\Discovery;
 
 use App\Attributes\AsWidget;
-use ReflectionClass;
-use Studiometa\Foehn\Discovery\Concerns\CacheableDiscovery;
+use Studiometa\Foehn\Attributes\AsDiscovery;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
-use Studiometa\Foehn\Discovery\DiscoveryLocation;
-use Studiometa\Foehn\Discovery\WpDiscovery;
+use Studiometa\Foehn\Discovery\DiscoveryPhase;
+use Tempest\Discovery\Discovery;
+use Tempest\Discovery\DiscoveryLocation;
+use Tempest\Reflection\ClassReflector;
 use WP_Widget;
 
-final class WidgetDiscovery implements WpDiscovery
+#[AsDiscovery(phase: DiscoveryPhase::Early)]
+final class WidgetDiscovery implements Discovery
 {
     use IsWpDiscovery;
-    use CacheableDiscovery;
 
-    public function discover(DiscoveryLocation $location, ReflectionClass $class): void
+    public function discover(DiscoveryLocation $location, ClassReflector $class): void
     {
-        // Check for the attribute
-        $attributes = $class->getAttributes(AsWidget::class);
-
-        if ($attributes === []) {
+        // A base widget class carries the attribute its children inherit, and
+        // registering it would hand WordPress a class it cannot instantiate.
+        if (!$this->isConcrete($class)) {
             return;
         }
 
-        // Validate the class
-        if (!$class->isSubclassOf(WP_Widget::class)) {
+        $attribute = $class->getAttribute(AsWidget::class);
+
+        if ($attribute === null) {
             return;
         }
 
-        $attribute = $attributes[0]->newInstance();
+        if (!$class->getReflection()->isSubclassOf(WP_Widget::class)) {
+            return;
+        }
 
-        // Store the discovered item with its location
         $this->addItem($location, [
+            'attribute' => $attribute,
             'className' => $class->getName(),
-            'name' => $attribute->name,
-            'title' => $attribute->title,
-            'description' => $attribute->description,
         ]);
     }
 
@@ -87,168 +88,67 @@ final class WidgetDiscovery implements WpDiscovery
             }
         });
     }
-
-    protected function itemToCacheable(array $item): array
-    {
-        return [
-            'className' => $item['className'],
-            'name' => $item['name'],
-            'title' => $item['title'],
-            'description' => $item['description'],
-        ];
-    }
 }
 ```
 
-### Step 3: Register Your Discovery
+### 3. There is no step three
 
-Currently, custom discoveries must be registered manually. Add a hook in your theme to run the discovery alongside Føhn's built-in ones:
+Nothing registers the discovery. It is found because it implements `Discovery` and sits in a scanned location — the theme's `app/` directory is one, and so is any package that opts in.
 
-```php
-<?php
-// app/Hooks/CustomDiscoveryHooks.php
+## Choosing a phase
 
-namespace App\Hooks;
+`#[AsDiscovery]` names the moment `apply()` runs:
 
-use App\Discovery\WidgetDiscovery;
-use Studiometa\Foehn\Attributes\AsAction;
-use Studiometa\Foehn\Discovery\DiscoveryLocation;
-use Studiometa\Foehn\Discovery\DiscoveryRunner;
+| Phase                   | WordPress hook      | Register here                                                    |
+| ----------------------- | ------------------- | ---------------------------------------------------------------- |
+| `DiscoveryPhase::Early` | `after_setup_theme` | Theme support, hooks, image sizes, Twig extensions, CLI commands |
+| `DiscoveryPhase::Main`  | `init`              | Post types, taxonomies, blocks, meta, menus, cron                |
+| `DiscoveryPhase::Late`  | `wp_loaded`         | REST routes, template controllers, context providers             |
 
-final class CustomDiscoveryHooks
+The attribute is optional: without it a discovery applies in the `Main` phase, which is what most registration wants.
+
+If the API you are registering with wants a hook none of the three matches — `admin_menu`, say, or `widgets_init` above — call `add_action()` from inside `apply()`. A discovery wanting a different hook is not a reason for a fourth phase.
+
+Within a phase, discoveries apply in class name order. Scan order is filesystem order and a restored cache replays whatever order it was written in, so neither is something to register against.
+
+## Items have to survive the cache
+
+Whatever `addItem()` receives is written to the discovery cache through `var_export()` and read back on the next request. Attribute instances, strings, numbers and arrays of those survive that round trip. Closures, resources and objects holding either do not — and because the cache is off in development and on in production, a closure in an item works everywhere except where it matters.
+
+This is why every Føhn attribute that takes a callback takes a **method name** rather than a callable, resolved when `apply()` runs. Do the same in your own.
+
+## Making a package discoverable
+
+A Composer package is scanned when it either requires a `tempest/*` package or opts in explicitly:
+
+```json
 {
-    public function __construct(
-        private readonly DiscoveryRunner $runner,
-        private readonly WidgetDiscovery $widgetDiscovery,
-    ) {}
-
-    #[AsAction('init')]
-    public function registerWidgets(): void
-    {
-        $this->widgetDiscovery->apply();
+  "extra": {
+    "tempest": {
+      "can-discover": true
     }
+  }
 }
 ```
 
-## Key Concepts
+Without one of those, `DiscoveryLocations` never lists the package, its discoveries are never found, and everything fails quietly. A package requiring `studiometa/foehn` and nothing from Tempest needs the `extra` block.
 
-### The `discover()` Method
+## Guards worth copying
 
-Receives two parameters:
+- **`isConcrete()`**, from `IsWpDiscovery`, excludes abstract classes, traits and enums. Instantiability is deliberately not the test: `Timber\Post` and `Timber\Term` declare protected constructors, so every post type and taxonomy model would fail it.
+- **`#[SkipDiscovery]`**, from Tempest, excludes a class from discovery entirely. Command stubs carrying real attributes use it — and so must an abstract class that implements `Discovery` itself, or the runner will try to resolve it.
+- **A missing platform function is a skip, not a fatal.** If your discovery targets a plugin or a newer WordPress, guard `apply()` with `function_exists()` and say nothing unless `FoehnConfig::debug` is on.
 
-- **`DiscoveryLocation $location`** — Where the class was found (app vs vendor, namespace, path)
-- **`ReflectionClass $class`** — The class being inspected
+## Seeing what was found
 
-Use `$location` when calling `addItem()`:
-
-```php
-$this->addItem($location, ['className' => $class->getName()]);
+```bash
+wp foehn discovery:status
 ```
 
-### The `apply()` Method
-
-Called at the appropriate WordPress lifecycle phase. Iterate over items using `$this->getItems()`:
-
-```php
-public function apply(): void
-{
-    foreach ($this->getItems() as $item) {
-        // Register with WordPress
-    }
-}
-```
-
-### Caching with `CacheableDiscovery`
-
-The `CacheableDiscovery` trait adds cache support. Implement `itemToCacheable()` to define what gets serialized:
-
-```php
-protected function itemToCacheable(array $item): array
-{
-    // Return only serializable data (no objects, closures)
-    return [
-        'className' => $item['className'],
-        'name' => $item['name'],
-    ];
-}
-```
-
-Items stored during `discover()` may contain non-serializable objects (like attribute instances). `itemToCacheable()` extracts only the data needed for `apply()`.
-
-### Discovery Phases
-
-Føhn runs discoveries in three phases:
-
-| Phase     | WordPress Hook          | Use For                               |
-| --------- | ----------------------- | ------------------------------------- |
-| **Early** | `after_setup_theme`     | Theme setup, hooks, Twig extensions   |
-| **Main**  | `init`                  | Post types, taxonomies, blocks        |
-| **Late**  | `wp_loaded`             | REST routes, template controllers     |
-
-Custom discoveries should register their `apply()` at the appropriate hook.
-
-### Using `DiscoveryLocation`
-
-The location tells you where a class came from:
-
-```php
-public function discover(DiscoveryLocation $location, ReflectionClass $class): void
-{
-    // Check origin
-    if ($location->isVendor) {
-        // Class from a Composer package
-    } else {
-        // Class from the app directory
-    }
-
-    $location->namespace;  // e.g. 'App\\'
-    $location->path;       // e.g. '/path/to/theme/app'
-}
-```
-
-### Using `WpDiscoveryItems`
-
-The items collection provides useful methods:
-
-```php
-$items = $this->getItems();
-
-// Iterate
-foreach ($items as $item) { /* ... */ }
-
-// Count
-$count = $items->count();
-
-// Check
-$items->isEmpty();
-$items->hasLocation($location);
-
-// Get items for a specific location
-$appItems = $items->getForLocation($appLocation);
-```
-
-## Traits Reference
-
-### `IsWpDiscovery`
-
-| Method       | Description                          |
-| ------------ | ------------------------------------ |
-| `addItem()`  | Add an item for a location           |
-| `getItems()` | Get the `WpDiscoveryItems` collection |
-| `setItems()` | Replace the items (cache restore)    |
-| `hasItems()` | Check if any items exist             |
-
-### `CacheableDiscovery`
-
-| Method                  | Description                                |
-| ----------------------- | ------------------------------------------ |
-| `getCacheableData()`    | Export items in serializable format        |
-| `restoreFromCache()`    | Import items from cached data              |
-| `wasRestoredFromCache()`| Check if items came from cache             |
-| `itemToCacheable()`     | Convert one item to cacheable format       |
+reports how many locations are warm in the cache. If a discovery of yours finds nothing, the cache is the first suspect: an entry written before the class existed does not contain it. Clear it with `wp foehn discovery:clear`.
 
 ## Related
 
-- [API: WpDiscovery](../api/wp-discovery)
-- [API: DiscoveryRunner](../api/discovery-runner)
+- [#[AsDiscovery]](/api/as-discovery)
+- [DiscoveryRunner](/api/discovery-runner)
 - [Guide: Discovery Cache](/guide/discovery-cache)

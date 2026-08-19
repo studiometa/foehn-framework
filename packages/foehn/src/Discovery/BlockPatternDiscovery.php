@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Studiometa\Foehn\Discovery;
 
 use Studiometa\Foehn\Attributes\AsBlockPattern;
+use Studiometa\Foehn\Attributes\AsDiscovery;
 use Studiometa\Foehn\Contracts\Arrayable;
 use Studiometa\Foehn\Contracts\BlockPatternInterface;
 use Studiometa\Foehn\Contracts\ViewEngineInterface;
@@ -19,6 +20,7 @@ use function Tempest\Container\get;
  * Discovers classes marked with #[AsBlockPattern] attribute
  * and registers them as WordPress block patterns.
  */
+#[AsDiscovery(phase: DiscoveryPhase::Main)]
 final class BlockPatternDiscovery implements Discovery
 {
     use IsWpDiscovery;

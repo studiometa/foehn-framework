@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Studiometa\Foehn\Discovery;
 
 use InvalidArgumentException;
+use Studiometa\Foehn\Attributes\AsDiscovery;
 use Studiometa\Foehn\Attributes\AsTemplateController;
 use Studiometa\Foehn\Contracts\TemplateControllerInterface;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
@@ -20,6 +21,7 @@ use function Tempest\Container\get;
  * Discovers classes marked with #[AsTemplateController] attribute
  * and registers them to intercept WordPress template rendering.
  */
+#[AsDiscovery(phase: DiscoveryPhase::Late)]
 final class TemplateControllerDiscovery implements Discovery
 {
     use IsWpDiscovery;

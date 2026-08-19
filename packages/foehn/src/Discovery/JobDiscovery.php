@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Studiometa\Foehn\Discovery;
 
 use ReflectionNamedType;
+use Studiometa\Foehn\Attributes\AsDiscovery;
 use Studiometa\Foehn\Attributes\AsJob;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
 use Studiometa\Foehn\Jobs\HookNameResolver;
@@ -20,6 +21,7 @@ use function Tempest\Container\get;
  * Discovers classes marked with #[AsJob] attribute
  * and registers them as Action Scheduler action handlers.
  */
+#[AsDiscovery(phase: DiscoveryPhase::Main)]
 final class JobDiscovery implements Discovery
 {
     use IsWpDiscovery;

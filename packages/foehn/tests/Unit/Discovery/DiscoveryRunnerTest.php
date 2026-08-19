@@ -3,91 +3,92 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Config\FoehnConfig;
-use Studiometa\Foehn\Discovery\DiscoveryRunner;
+use Studiometa\Foehn\Discovery\CliCommandDiscovery;
+use Studiometa\Foehn\Discovery\DiscoveryPhase;
+use Studiometa\Foehn\Discovery\HookDiscovery;
+use Studiometa\Foehn\Discovery\PostTypeDiscovery;
+use Studiometa\Foehn\Discovery\RestRouteDiscovery;
 use Tempest\Container\GenericContainer;
+use Tempest\Discovery\Discovery;
+use Tests\Fixtures\CustomDiscovery\DefaultPhaseFixtureDiscovery;
+use Tests\Fixtures\CustomDiscovery\LateFixtureDiscovery;
 
-describe('DiscoveryRunner', function () {
-    it('returns all discovery classes', function () {
-        $classes = DiscoveryRunner::getAllDiscoveryClasses();
+describe('discovery classes are discovered', function () {
+    beforeEach(function () {
+        wp_stub_reset();
+        $this->container = bootTestContainer();
 
-        expect($classes)->toContain(\Studiometa\Foehn\Discovery\HookDiscovery::class);
-        expect($classes)->toContain(\Studiometa\Foehn\Discovery\ImageSizeDiscovery::class);
-        expect($classes)->toContain(\Studiometa\Foehn\Discovery\PostTypeDiscovery::class);
-        expect($classes)->toContain(\Studiometa\Foehn\Discovery\TaxonomyDiscovery::class);
-        expect($classes)->toContain(\Studiometa\Foehn\Discovery\MenuDiscovery::class);
-        expect($classes)->toContain(\Studiometa\Foehn\Discovery\ShortcodeDiscovery::class);
-        expect($classes)->toContain(\Studiometa\Foehn\Discovery\CliCommandDiscovery::class);
-        expect($classes)->toContain(\Studiometa\Foehn\Discovery\AcfBlockDiscovery::class);
-        expect($classes)->toContain(\Studiometa\Foehn\Discovery\AcfFieldGroupDiscovery::class);
-        expect($classes)->toContain(\Studiometa\Foehn\Discovery\BlockDiscovery::class);
-        expect($classes)->toContain(\Studiometa\Foehn\Discovery\BlockPatternDiscovery::class);
-        expect($classes)->toContain(\Studiometa\Foehn\Discovery\ContextProviderDiscovery::class);
-        expect($classes)->toContain(\Studiometa\Foehn\Discovery\TemplateControllerDiscovery::class);
-        expect($classes)->toContain(\Studiometa\Foehn\Discovery\RestRouteDiscovery::class);
-        expect($classes)->toContain(\Studiometa\Foehn\Discovery\TimberModelDiscovery::class);
-        expect($classes)->toContain(\Studiometa\Foehn\Discovery\AcfOptionsPageDiscovery::class);
+        LateFixtureDiscovery::$applied = 0;
+        DefaultPhaseFixtureDiscovery::$applied = 0;
     });
 
-    it('returns discovery phases', function () {
-        $phases = DiscoveryRunner::getDiscoveryPhases();
+    afterEach(fn() => tearDownTestContainer());
 
-        expect($phases)->toHaveKeys(['early', 'main', 'late']);
+    it('finds the framework discoveries without any of them being listed', function () {
+        $discoveries = testDiscoveryRunner($this->container, testFixturePath('CustomDiscovery'))->getDiscoveries();
 
-        // Early phase
-        expect($phases['early'])->toContain(\Studiometa\Foehn\Discovery\HookDiscovery::class);
-        expect($phases['early'])->toContain(\Studiometa\Foehn\Discovery\ImageSizeDiscovery::class);
-        expect($phases['early'])->toContain(\Studiometa\Foehn\Discovery\ShortcodeDiscovery::class);
-        expect($phases['early'])->toContain(\Studiometa\Foehn\Discovery\CliCommandDiscovery::class);
-        expect($phases['early'])->toContain(\Studiometa\Foehn\Discovery\TimberModelDiscovery::class);
-        expect($phases['early'])->toContain(\Studiometa\Foehn\Discovery\TwigExtensionDiscovery::class);
-
-        // Main phase
-        expect($phases['main'])->toContain(\Studiometa\Foehn\Discovery\PostTypeDiscovery::class);
-        expect($phases['main'])->toContain(\Studiometa\Foehn\Discovery\TaxonomyDiscovery::class);
-        expect($phases['main'])->toContain(\Studiometa\Foehn\Discovery\MenuDiscovery::class);
-        expect($phases['main'])->toContain(\Studiometa\Foehn\Discovery\AcfBlockDiscovery::class);
-        expect($phases['main'])->toContain(\Studiometa\Foehn\Discovery\AcfFieldGroupDiscovery::class);
-        expect($phases['main'])->toContain(\Studiometa\Foehn\Discovery\BlockDiscovery::class);
-        expect($phases['main'])->toContain(\Studiometa\Foehn\Discovery\BlockPatternDiscovery::class);
-        expect($phases['main'])->toContain(\Studiometa\Foehn\Discovery\AcfOptionsPageDiscovery::class);
-
-        // Late phase
-        expect($phases['late'])->toContain(\Studiometa\Foehn\Discovery\ContextProviderDiscovery::class);
-        expect($phases['late'])->toContain(\Studiometa\Foehn\Discovery\TemplateControllerDiscovery::class);
-        expect($phases['late'])->toContain(\Studiometa\Foehn\Discovery\RestRouteDiscovery::class);
+        // Nothing enumerates these any more: they are found because they implement
+        // Discovery and sit in a scanned location, exactly like a third-party one.
+        expect($discoveries)->toHaveKey(HookDiscovery::class);
+        expect($discoveries)->toHaveKey(PostTypeDiscovery::class);
+        expect($discoveries)->toHaveKey(RestRouteDiscovery::class);
+        expect($discoveries[HookDiscovery::class])->toBeInstanceOf(Discovery::class);
     });
 
-    it('has correct number of discoveries in each phase', function () {
-        $phases = DiscoveryRunner::getDiscoveryPhases();
+    it('finds a discovery that ships with neither the framework nor a package', function () {
+        $discoveries = testDiscoveryRunner($this->container, testFixturePath('CustomDiscovery'))->getDiscoveries();
 
-        expect($phases['early'])->toHaveCount(6);
-        expect($phases['main'])->toHaveCount(10);
-        expect($phases['late'])->toHaveCount(3);
+        expect($discoveries)->toHaveKey(LateFixtureDiscovery::class);
     });
 
-    it('all discovery classes total matches phase sum', function () {
-        $phases = DiscoveryRunner::getDiscoveryPhases();
-        $all = DiscoveryRunner::getAllDiscoveryClasses();
+    it('does not expose the pass that finds the discovery classes', function () {
+        $discoveries = testDiscoveryRunner($this->container, testFixturePath('CustomDiscovery'))->getDiscoveries();
 
-        $phaseTotal = count($phases['early']) + count($phases['main']) + count($phases['late']);
-
-        expect(count($all))->toBe($phaseTotal);
+        expect($discoveries)->not->toHaveKey(Tempest\Discovery\DiscoveryDiscovery::class);
     });
 
-    it('all discovery classes implement the Tempest discovery interface', function () {
-        $classes = DiscoveryRunner::getAllDiscoveryClasses();
+    it('applies a custom discovery at the phase its attribute declares', function () {
+        $runner = testDiscoveryRunner($this->container, testFixturePath('CustomDiscovery'));
 
-        foreach ($classes as $class) {
-            expect(is_subclass_of($class, \Tempest\Discovery\Discovery::class))
-                ->toBeTrue("Expected {$class} to implement Discovery");
-        }
+        $runner->runEarlyDiscoveries();
+        $runner->runMainDiscoveries();
+
+        expect(LateFixtureDiscovery::$applied)->toBe(0);
+
+        $runner->runLateDiscoveries();
+
+        expect(LateFixtureDiscovery::$applied)->toBe(1);
     });
 
-    it('includes CronDiscovery and JobDiscovery in main phase', function () {
-        $phases = DiscoveryRunner::getDiscoveryPhases();
+    it('applies a discovery without the attribute in the main phase', function () {
+        $runner = testDiscoveryRunner($this->container, testFixturePath('CustomDiscovery'));
 
-        expect($phases['main'])->toContain(\Studiometa\Foehn\Discovery\CronDiscovery::class);
-        expect($phases['main'])->toContain(\Studiometa\Foehn\Discovery\JobDiscovery::class);
+        $runner->runEarlyDiscoveries();
+
+        expect(DefaultPhaseFixtureDiscovery::$applied)->toBe(0);
+
+        $runner->runMainDiscoveries();
+
+        expect(DefaultPhaseFixtureDiscovery::$applied)->toBe(1);
+    });
+
+    it('applies each discovery once', function () {
+        $runner = testDiscoveryRunner($this->container, testFixturePath('CustomDiscovery'));
+
+        $runner->runLateDiscoveries();
+        $runner->runLateDiscoveries();
+
+        expect(LateFixtureDiscovery::$applied)->toBe(1);
+    });
+
+    it('registers the framework CLI commands in the early phase', function () {
+        $runner = testDiscoveryRunner($this->container, testFixturePath('CustomDiscovery'));
+
+        $runner->runEarlyDiscoveries();
+
+        // CliCommandDiscovery declares #[AsDiscovery(phase: Early)] and the framework
+        // is a scanned location, so its own commands are found from the fixture app.
+        expect($runner->getDiscoveries()[CliCommandDiscovery::class]->getItems())->not->toHaveCount(0);
     });
 });
 
@@ -100,37 +101,26 @@ describe('DiscoveryRunner phase execution', function () {
     afterEach(fn() => tearDownTestContainer());
 
     it('runs phases and sets hasRun flag', function () {
-        // Register all needed discovery dependencies in the container
-        $this->container->singleton(
-            \Studiometa\Foehn\Jobs\JobRegistry::class,
-            fn() => new \Studiometa\Foehn\Jobs\JobRegistry(),
-        );
+        $runner = testDiscoveryRunner($this->container, testFixturePath('CustomDiscovery'));
 
-        $runner = testDiscoveryRunner($this->container);
-
-        expect($runner->hasRun('early'))->toBeFalse();
-        expect($runner->hasRun('main'))->toBeFalse();
-        expect($runner->hasRun('late'))->toBeFalse();
+        expect($runner->hasRun(DiscoveryPhase::Early))->toBeFalse();
+        expect($runner->hasRun(DiscoveryPhase::Main))->toBeFalse();
+        expect($runner->hasRun(DiscoveryPhase::Late))->toBeFalse();
 
         $runner->runEarlyDiscoveries();
-        expect($runner->hasRun('early'))->toBeTrue();
-        expect($runner->hasRun('main'))->toBeFalse();
+        expect($runner->hasRun(DiscoveryPhase::Early))->toBeTrue();
+        expect($runner->hasRun(DiscoveryPhase::Main))->toBeFalse();
 
         $runner->runMainDiscoveries();
-        expect($runner->hasRun('main'))->toBeTrue();
-        expect($runner->hasRun('late'))->toBeFalse();
+        expect($runner->hasRun(DiscoveryPhase::Main))->toBeTrue();
+        expect($runner->hasRun(DiscoveryPhase::Late))->toBeFalse();
 
         $runner->runLateDiscoveries();
-        expect($runner->hasRun('late'))->toBeTrue();
+        expect($runner->hasRun(DiscoveryPhase::Late))->toBeTrue();
     });
 
     it('does not re-run a phase that has already run', function () {
-        $this->container->singleton(
-            \Studiometa\Foehn\Jobs\JobRegistry::class,
-            fn() => new \Studiometa\Foehn\Jobs\JobRegistry(),
-        );
-
-        $runner = testDiscoveryRunner($this->container);
+        $runner = testDiscoveryRunner($this->container, testFixturePath('App'));
 
         $runner->runEarlyDiscoveries();
 
@@ -142,12 +132,6 @@ describe('DiscoveryRunner phase execution', function () {
 
         // No new add_action calls should have been recorded
         expect(wp_stub_get_calls('add_action'))->toBeEmpty();
-    });
-
-    it('returns default false for unknown phase', function () {
-        $runner = testDiscoveryRunner($this->container);
-
-        expect($runner->hasRun('unknown'))->toBeFalse();
     });
 });
 

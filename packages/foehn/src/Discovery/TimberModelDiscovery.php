@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Studiometa\Foehn\Discovery;
 
 use InvalidArgumentException;
+use Studiometa\Foehn\Attributes\AsDiscovery;
 use Studiometa\Foehn\Attributes\AsTimberModel;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
 use Studiometa\Foehn\PostTypes\PostTypeRegistry;
@@ -19,6 +20,7 @@ use Timber\Term;
  * and registers them in Timber's class map without registering
  * a post type or taxonomy.
  */
+#[AsDiscovery(phase: DiscoveryPhase::Early)]
 final class TimberModelDiscovery implements Discovery
 {
     use IsWpDiscovery;

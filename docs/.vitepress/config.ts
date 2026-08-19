@@ -87,6 +87,7 @@ export default defineConfig({
             { text: "Shortcodes", link: "/guide/shortcodes" },
             { text: "CLI Commands", link: "/guide/cli-commands" },
             { text: "Discovery Cache", link: "/guide/discovery-cache" },
+            { text: "Custom Discovery", link: "/guide/custom-discovery" },
           ],
         },
         {
@@ -127,6 +128,7 @@ export default defineConfig({
             { text: "#[AsCliCommand]", link: "/api/as-cli-command" },
             { text: "#[AsImageSize]", link: "/api/as-image-size" },
             { text: "#[AsTwigExtension]", link: "/api/as-twig-extension" },
+            { text: "#[AsDiscovery]", link: "/api/as-discovery" },
           ],
         },
         {
@@ -161,6 +163,7 @@ export default defineConfig({
           text: "Core",
           items: [
             { text: "Kernel", link: "/api/kernel" },
+            { text: "DiscoveryRunner", link: "/api/discovery-runner" },
             { text: "Helpers", link: "/api/helpers" },
             { text: "WebpackManifest", link: "/api/webpack-manifest" },
           ],

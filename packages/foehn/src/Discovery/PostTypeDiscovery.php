@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Studiometa\Foehn\Discovery;
 
 use InvalidArgumentException;
+use Studiometa\Foehn\Attributes\AsDiscovery;
 use Studiometa\Foehn\Attributes\AsPostType;
 use Studiometa\Foehn\Contracts\ConfiguresPostType;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
@@ -19,6 +20,7 @@ use Timber\Post;
  * Discovers classes marked with #[AsPostType] attribute
  * and registers them as WordPress custom post types.
  */
+#[AsDiscovery(phase: DiscoveryPhase::Main)]
 final class PostTypeDiscovery implements Discovery
 {
     use IsWpDiscovery;

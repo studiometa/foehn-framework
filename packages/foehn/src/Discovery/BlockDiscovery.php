@@ -6,6 +6,7 @@ namespace Studiometa\Foehn\Discovery;
 
 use InvalidArgumentException;
 use Studiometa\Foehn\Attributes\AsBlock;
+use Studiometa\Foehn\Attributes\AsDiscovery;
 use Studiometa\Foehn\Blocks\BlockAssets;
 use Studiometa\Foehn\Blocks\BlockAttributeSchema;
 use Studiometa\Foehn\Blocks\BlockRenderer;
@@ -22,6 +23,7 @@ use function Tempest\Container\get;
  * Discovers classes marked with #[AsBlock] attribute
  * and registers them as native Gutenberg blocks.
  */
+#[AsDiscovery(phase: DiscoveryPhase::Main)]
 final class BlockDiscovery implements Discovery
 {
     use IsWpDiscovery;

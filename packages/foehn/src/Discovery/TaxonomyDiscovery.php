@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Studiometa\Foehn\Discovery;
 
 use InvalidArgumentException;
+use Studiometa\Foehn\Attributes\AsDiscovery;
 use Studiometa\Foehn\Attributes\AsTaxonomy;
 use Studiometa\Foehn\Contracts\ConfiguresTaxonomy;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
@@ -18,6 +19,7 @@ use Timber\Term;
  * Discovers classes marked with #[AsTaxonomy] attribute
  * and registers them as WordPress custom taxonomies.
  */
+#[AsDiscovery(phase: DiscoveryPhase::Main)]
 final class TaxonomyDiscovery implements Discovery
 {
     use IsWpDiscovery;

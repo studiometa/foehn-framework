@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `#[AsDiscovery]` declares the WordPress phase a discovery class applies in, and discovery classes are now themselves discovered: any class implementing `Tempest\Discovery\Discovery` inside a scanned location is found, resolved and run. A Composer package or a theme's `app/` directory can add one. `docs/guide/custom-discovery.md` documented this and it had never worked — `DiscoveryRunner::getDiscoveryPhases()` was a hardcoded list of nineteen classes that nothing outside that file could add to
+
 ### Fixed
 
 - **Every install ran on guessable WordPress security keys.** With no `config/wordpress-salts.config.php` and no keys in the environment, the generated `wp-config.php` defined them as `'change-me-' . $salt . '-' . md5(__DIR__)` — derived from the web root path, which is predictable (`/var/www/html/web`, `/home/forge/example.com/web`). Authentication cookies and nonces signed with those keys can be forged. Nothing in the starter or the documentation said to replace them. The installer now generates real keys into `.env` on a first install, and `wp-config.php` refuses to serve a production request whose keys are missing or still placeholders
@@ -16,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `DiscoveryRunner::getDiscoveryPhases()` and `DiscoveryRunner::getAllDiscoveryClasses()` are removed, and `DiscoveryRunner::hasRun()` takes a `DiscoveryPhase` rather than a string. A discovery's phase lives on the discovery, in `#[AsDiscovery]`. Within a phase they apply in class name order, so a cold request and a warm one register in the same sequence
 - Discovery is built on `tempest/discovery` — already a direct dependency — instead of Foehn's own scanner. Locations come from Composer's `installed.json`, which is what makes an installed package discoverable at all. `ClassScanner`, `DiscoveryLocation`, `DiscoveryCache`, `WpDiscoveryItems`, `AttributeCodec`, the `CacheableDiscovery` trait and the `WpDiscovery` interface are gone; discoveries implement `Tempest\Discovery\Discovery` and receive a `ClassReflector`
 - Discovery items are cached as attribute instances through `symfony/cache`, so no discovery describes a cache format. The cache is written per location, and `discovery:status` reports how many locations are warm
 - WP-CLI commands are registered under `wp foehn` rather than `wp tempest`

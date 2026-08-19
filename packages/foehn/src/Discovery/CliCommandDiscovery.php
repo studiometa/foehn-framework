@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Studiometa\Foehn\Discovery;
 
 use Studiometa\Foehn\Attributes\AsCliCommand;
+use Studiometa\Foehn\Attributes\AsDiscovery;
 use Studiometa\Foehn\Console\CliCommandInterface;
 use Studiometa\Foehn\Console\WpCli;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
@@ -17,6 +18,7 @@ use WP_CLI;
 /**
  * Discovers CLI commands and registers them with WP-CLI.
  */
+#[AsDiscovery(phase: DiscoveryPhase::Early)]
 final class CliCommandDiscovery implements Discovery
 {
     use IsWpDiscovery;

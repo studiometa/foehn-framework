@@ -6,6 +6,7 @@ namespace Studiometa\Foehn\Discovery;
 
 use InvalidArgumentException;
 use Studiometa\Foehn\Attributes\AsAcfBlock;
+use Studiometa\Foehn\Attributes\AsDiscovery;
 use Studiometa\Foehn\Blocks\AcfBlockRenderer;
 use Studiometa\Foehn\Contracts\AcfBlockInterface;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
@@ -19,6 +20,7 @@ use function Tempest\Container\get;
  * Discovers classes marked with #[AsAcfBlock] attribute
  * and registers them as ACF blocks.
  */
+#[AsDiscovery(phase: DiscoveryPhase::Main)]
 final class AcfBlockDiscovery implements Discovery
 {
     use IsWpDiscovery;

@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Studiometa\Foehn\Discovery;
 
 use Psr\Cache\CacheItemPoolInterface;
+use ReflectionClass;
+use Studiometa\Foehn\Attributes\AsDiscovery;
 use Studiometa\Foehn\Config\FoehnConfig;
 use Tempest\Container\Container;
 use Tempest\Discovery\BootDiscovery;
@@ -12,6 +14,7 @@ use Tempest\Discovery\Discovery;
 use Tempest\Discovery\DiscoveryCache;
 use Tempest\Discovery\DiscoveryCacheStrategy;
 use Tempest\Discovery\DiscoveryConfig;
+use Tempest\Discovery\DiscoveryDiscovery;
 use Tempest\Discovery\DiscoveryLocation;
 use Tempest\Reflection\ClassReflector;
 use Throwable;
@@ -24,16 +27,24 @@ use Throwable;
  * runner discovers once and then calls apply() on each discovery at the phase it
  * belongs to. Tempest's own BootDiscovery::__invoke() applies everything at once,
  * which is why only its build() step is used here.
+ *
+ * Which discoveries exist is itself a discovery. Tempest's two-pass build finds
+ * every class implementing Discovery in a scanned location and resolves it from
+ * the container, so a package or a theme's app directory can add one; the phase
+ * comes from #[AsDiscovery] on the class, defaulting to Main.
  */
 final class DiscoveryRunner
 {
     /** @var array<class-string<Discovery>, Discovery> */
     private array $discoveries = [];
 
+    /** @var array<class-string<Discovery>, DiscoveryPhase> */
+    private array $phases = [];
+
+    /** @var array<value-of<DiscoveryPhase>, bool> */
+    private array $ran = [];
+
     private bool $discovered = false;
-    private bool $earlyRan = false;
-    private bool $mainRan = false;
-    private bool $lateRan = false;
 
     public function __construct(
         private readonly Container $container,
@@ -49,7 +60,7 @@ final class DiscoveryRunner
      */
     public function runEarlyDiscoveries(): void
     {
-        $this->runPhase('early');
+        $this->runPhase(DiscoveryPhase::Early);
     }
 
     /**
@@ -58,7 +69,7 @@ final class DiscoveryRunner
      */
     public function runMainDiscoveries(): void
     {
-        $this->runPhase('main');
+        $this->runPhase(DiscoveryPhase::Main);
     }
 
     /**
@@ -67,15 +78,13 @@ final class DiscoveryRunner
      */
     public function runLateDiscoveries(): void
     {
-        $this->runPhase('late');
+        $this->runPhase(DiscoveryPhase::Late);
     }
 
     /**
      * Run all discoveries for a given phase.
-     *
-     * @param 'early'|'main'|'late' $phase
      */
-    private function runPhase(string $phase): void
+    private function runPhase(DiscoveryPhase $phase): void
     {
         if ($this->hasRun($phase)) {
             return;
@@ -83,19 +92,40 @@ final class DiscoveryRunner
 
         $this->ensureDiscovered();
 
-        foreach (self::getDiscoveryPhases()[$phase] as $discoveryClass) {
-            $this->applyDiscovery($discoveryClass);
+        foreach ($this->discoveries as $discoveryClass => $discovery) {
+            if ($this->phases[$discoveryClass] !== $phase) {
+                continue;
+            }
+
+            $discovery->apply();
         }
 
-        match ($phase) {
-            'early' => $this->earlyRan = true,
-            'main' => $this->mainRan = true,
-            'late' => $this->lateRan = true,
-        };
+        $this->ran[$phase->value] = true;
+    }
+
+    /**
+     * The phase a discovery class declares, or Main when it declares nothing.
+     *
+     * @param class-string<Discovery> $discoveryClass
+     */
+    private static function phaseOf(string $discoveryClass): DiscoveryPhase
+    {
+        $attributes = new ReflectionClass($discoveryClass)->getAttributes(AsDiscovery::class);
+
+        if ($attributes === []) {
+            return DiscoveryPhase::Main;
+        }
+
+        return $attributes[0]->newInstance()->phase;
     }
 
     /**
      * Ensure all locations have been scanned and discoveries populated.
+     *
+     * Discoveries end up sorted by class name. Scan order is filesystem order and a
+     * restored cache replays whatever order it was written in, so nothing about
+     * discovery is stable enough to register against; sorting makes a cold request
+     * and a warm one apply the same discoveries in the same sequence.
      */
     private function ensureDiscovered(): void
     {
@@ -106,12 +136,27 @@ final class DiscoveryRunner
         $this->discovered = true;
 
         foreach ($this->build($this->cache) as $discovery) {
+            // Tempest's own DiscoveryDiscovery is the first pass, not something Foehn
+            // applies at a WordPress phase: its apply() only fills the list of
+            // discovery classes the second pass then resolves.
+            if ($discovery instanceof DiscoveryDiscovery) {
+                continue;
+            }
+
             $this->discoveries[$discovery::class] = $discovery;
+            $this->phases[$discovery::class] = self::phaseOf($discovery::class);
         }
+
+        ksort($this->discoveries);
     }
 
     /**
      * Scan every location with the given cache and return the populated discoveries.
+     *
+     * The build is Tempest's two-pass form: one pass finds the discovery classes,
+     * the second runs them. Passing an explicit list instead would be the only way
+     * to reach a discovery that is not in a scanned location — which is to say, one
+     * nothing else could reach either.
      *
      * @return array<array-key, Discovery>
      */
@@ -119,19 +164,23 @@ final class DiscoveryRunner
     {
         $locations = $this->locations->all();
 
-        // Which locations are about to be scanned rather than restored. Asked before
-        // the build, because the build is what fills the cache in.
-        $scanned = array_values(array_filter($locations, fn(DiscoveryLocation $location): bool => $this->shouldStore(
-            $cache,
-            $location,
-        )));
-
         $discoveries = new BootDiscovery($this->container, new DiscoveryConfig(locations: $locations), $cache)->build(
-            self::getAllDiscoveryClasses(),
+            null,
             $locations,
         );
 
         $this->discoverOptInHooks($discoveries, $cache);
+
+        // Which locations were scanned rather than restored. Answerable only now:
+        // the discovery classes an entry has to hold are not known until the first
+        // pass has run. The build itself only reads the cache, so what the pool
+        // holds here is still what it held before it started.
+        $scanned = array_values(array_filter($locations, fn(DiscoveryLocation $location): bool => $this->shouldStore(
+            $cache,
+            $location,
+            $discoveries,
+        )));
+
         $this->store($cache, $scanned, $discoveries);
 
         return $discoveries;
@@ -169,8 +218,10 @@ final class DiscoveryRunner
      * Only what the strategy would read back: under PARTIAL, Tempest restores vendor
      * locations and always rescans the app, so storing the app's would write a file
      * on every request that nothing ever reads.
+     *
+     * @param array<array-key, Discovery> $discoveries
      */
-    private function shouldStore(DiscoveryCache $cache, DiscoveryLocation $location): bool
+    private function shouldStore(DiscoveryCache $cache, DiscoveryLocation $location, array $discoveries): bool
     {
         if (!$cache->enabled) {
             return false;
@@ -180,7 +231,7 @@ final class DiscoveryRunner
             return false;
         }
 
-        return !$this->isCached($location);
+        return !$this->isCached($location, $discoveries);
     }
 
     /**
@@ -192,8 +243,10 @@ final class DiscoveryRunner
      *
      * The pool is read rather than DiscoveryCache::restore(), which answers null for
      * a disabled cache and so cannot distinguish "nothing stored" from "not reading".
+     *
+     * @param array<array-key, Discovery> $discoveries
      */
-    private function isCached(DiscoveryLocation $location): bool
+    private function isCached(DiscoveryLocation $location, array $discoveries): bool
     {
         $item = $this->pool->getItem($location->key);
 
@@ -207,8 +260,8 @@ final class DiscoveryRunner
             return false;
         }
 
-        foreach (self::getAllDiscoveryClasses() as $discoveryClass) {
-            if (!array_key_exists($discoveryClass, $entry)) {
+        foreach ($discoveries as $discovery) {
+            if (!array_key_exists($discovery::class, $entry)) {
                 return false;
             }
         }
@@ -297,20 +350,6 @@ final class DiscoveryRunner
     }
 
     /**
-     * Apply a specific discovery.
-     *
-     * @param class-string<Discovery> $discoveryClass
-     */
-    private function applyDiscovery(string $discoveryClass): void
-    {
-        if (($this->discoveries[$discoveryClass] ?? null) === null) {
-            return;
-        }
-
-        $this->discoveries[$discoveryClass]->apply();
-    }
-
-    /**
      * Log a discovery failure when debug mode is enabled.
      */
     private function logDiscoveryFailure(string $subject, Throwable $exception): void
@@ -327,14 +366,9 @@ final class DiscoveryRunner
     /**
      * Check if a discovery phase has been run.
      */
-    public function hasRun(string $phase): bool
+    public function hasRun(DiscoveryPhase $phase): bool
     {
-        return match ($phase) {
-            'early' => $this->earlyRan,
-            'main' => $this->mainRan,
-            'late' => $this->lateRan,
-            default => false,
-        };
+        return $this->ran[$phase->value] ?? false;
     }
 
     /**
@@ -347,56 +381,5 @@ final class DiscoveryRunner
         $this->ensureDiscovered();
 
         return $this->discoveries;
-    }
-
-    /**
-     * Get discovery classes for each phase.
-     *
-     * @return array<string, array<class-string<Discovery>>>
-     */
-    public static function getDiscoveryPhases(): array
-    {
-        return [
-            'early' => [
-                HookDiscovery::class,
-                ImageSizeDiscovery::class,
-                ShortcodeDiscovery::class,
-                CliCommandDiscovery::class,
-                TimberModelDiscovery::class,
-                TwigExtensionDiscovery::class,
-            ],
-            'main' => [
-                PostTypeDiscovery::class,
-                TaxonomyDiscovery::class,
-                MenuDiscovery::class,
-                AcfBlockDiscovery::class,
-                AcfFieldGroupDiscovery::class,
-                BlockDiscovery::class,
-                BlockPatternDiscovery::class,
-                AcfOptionsPageDiscovery::class,
-                CronDiscovery::class,
-                JobDiscovery::class,
-            ],
-            'late' => [
-                ContextProviderDiscovery::class,
-                TemplateControllerDiscovery::class,
-                RestRouteDiscovery::class,
-            ],
-        ];
-    }
-
-    /**
-     * Get all discovery classes.
-     *
-     * @return array<class-string<Discovery>>
-     */
-    public static function getAllDiscoveryClasses(): array
-    {
-        /** @var array<class-string<Discovery>> */
-        return array_merge(
-            self::getDiscoveryPhases()['early'],
-            self::getDiscoveryPhases()['main'],
-            self::getDiscoveryPhases()['late'],
-        );
     }
 }

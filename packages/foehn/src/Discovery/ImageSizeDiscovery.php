@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Discovery;
 
+use Studiometa\Foehn\Attributes\AsDiscovery;
 use Studiometa\Foehn\Attributes\AsImageSize;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
 use Tempest\Discovery\Discovery;
@@ -14,6 +15,7 @@ use Tempest\Reflection\ClassReflector;
  * Discovers classes marked with #[AsImageSize] attribute
  * and registers them as WordPress custom image sizes.
  */
+#[AsDiscovery(phase: DiscoveryPhase::Early)]
 final class ImageSizeDiscovery implements Discovery
 {
     use IsWpDiscovery;

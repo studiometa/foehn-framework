@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Discovery;
 
+use Studiometa\Foehn\Attributes\AsDiscovery;
 use Studiometa\Foehn\Attributes\AsTwigExtension;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
 use Tempest\Container\Container;
@@ -17,6 +18,7 @@ use Twig\Extension\AbstractExtension;
  * Discovers classes marked with #[AsTwigExtension] attribute
  * and registers them with Timber's Twig environment.
  */
+#[AsDiscovery(phase: DiscoveryPhase::Early)]
 final class TwigExtensionDiscovery implements Discovery
 {
     use IsWpDiscovery;
