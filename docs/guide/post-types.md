@@ -137,6 +137,48 @@ final class Product extends Post
 }
 ```
 
+## Custom Fields
+
+An accessor that reads `$this->meta('price')` works whether or not the key is declared. Declaring it is what makes the field exist to everything outside your PHP: the REST API, the block editor, and block bindings.
+
+```php
+#[AsPostType(name: 'product', singular: 'Product', plural: 'Products')]
+#[AsPostMeta(key: 'price', type: 'number', description: 'Price in euros')]
+#[AsPostMeta(key: 'sku', showInRest: false, sanitize: 'sanitizeSku')]
+#[AsPostMeta(key: 'gallery', type: 'integer', single: false)]
+final class Product extends Post
+{
+    public function price(): ?float
+    {
+        $price = $this->meta('price');
+
+        return $price ? (float) $price : null;
+    }
+
+    public static function sanitizeSku(mixed $value): string
+    {
+        return strtoupper((string) $value);
+    }
+}
+```
+
+The subtype is read off the model: `#[AsPostMeta]` on a class carrying `#[AsPostType(name: 'product')]` registers the key for products alone. That matters more than it looks — `register_meta()` with no `object_subtype` registers a key for **every** post type.
+
+A key that is `single` and shown in REST is bindable through core's own `core/post-meta` source, with no binding of your own to write:
+
+```html
+<!-- wp:paragraph {"metadata":{"bindings":{"content":{"source":"core/post-meta","args":{"key":"price"}}}}} -->
+<p></p>
+<!-- /wp:paragraph -->
+```
+
+Two rules worth knowing before you write one:
+
+- **`sanitize` names a public static method, never a closure.** Discovery items reach the cache through `var_export()`, so a closure works in development and fails only where caching is on. Static because `Timber\Post` has a protected constructor: there is no instance to call.
+- **`array` and `object` types need an explicit `schema`.** WordPress cannot describe their contents, and says so only under `WP_DEBUG`; Føhn refuses the declaration instead.
+
+Declaring a key that ACF also manages is fine, and is the migration path: ACF keeps the editing UI, the declaration adds the REST schema. See [#[AsPostMeta]](/api/as-post-meta) for every parameter.
+
 ## Using in Templates
 
 Your custom methods are available in Twig templates:
