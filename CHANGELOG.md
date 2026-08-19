@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The discovery cache fills itself. A request that had to scan a location writes what it found, so the next one does not, and `composer install` clears the cache through the installer plugin. Between them there is no manual step on a deploy: `wp foehn discovery:generate` stays for warming before traffic arrives rather than on the first visitor's request. A cache that cannot be written is not an error — the page is served and the scan happens again next time
 - Config files may be named for an environment — `foehn.production.config.php` — and are then read only in that one, as reported by `wp_get_environment_type()`. The environment's file wins over the plain file beside it
 - An integration smoke test for the starter (`packages/starter/tests/smoke/run.sh`), run in CI against a real WordPress in ddev, on a cold cache and again on a warm one
 - Tests for `studiometa/foehn-installer`, which had none, and CI now runs the starter's PHP and browser suites and the installer's alongside the framework's
