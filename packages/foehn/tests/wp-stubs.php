@@ -12,9 +12,15 @@ declare(strict_types=1);
 // Global call recorder
 $GLOBALS['wp_stub_calls'] = [];
 
+// Registered filter callbacks, by hook then priority.
+$GLOBALS['wp_stub_filters'] = [];
+
 function wp_stub_reset(): void
 {
     $GLOBALS['wp_stub_calls'] = [];
+    // Registered filter callbacks run for real, so they have to be cleared: one left
+    // behind would rewrite a value in a later, unrelated test.
+    $GLOBALS['wp_stub_filters'] = [];
     $GLOBALS['wp_stub_logged_in'] = false;
     $GLOBALS['wp_stub_user_can'] = [];
     $GLOBALS['wp_stub_acf_fields'] = [];
@@ -31,6 +37,22 @@ function wp_stub_reset(): void
     }
 
     $GLOBALS['wp_stub_as_has_scheduled'] = [];
+
+    // The page cache asks a dozen template conditionals whether this request is an
+    // ordinary page. A leaked `true` would make an eligibility test pass for the
+    // wrong reason, which is the one kind of green this feature cannot afford.
+    $GLOBALS['wp_stub_conditionals'] = [];
+    $GLOBALS['wp_stub_is_admin'] = false;
+    $GLOBALS['wp_stub_template'] = 'index';
+    $GLOBALS['wp_stub_posts'] = [];
+    $GLOBALS['wp_stub_comments'] = [];
+    $GLOBALS['wp_stub_permalinks'] = [];
+    $GLOBALS['wp_stub_archive_links'] = [];
+    $GLOBALS['wp_stub_author_slugs'] = [];
+    $GLOBALS['wp_stub_object_taxonomies'] = [];
+    $GLOBALS['wp_stub_post_terms'] = [];
+    $GLOBALS['wp_stub_post_ancestors'] = [];
+    $GLOBALS['wp_stub_adjacent_posts'] = [];
 
     // Theme paths fall back to their stub defaults, so a test that points them at
     // a fixture directory cannot leak that into the next one.
@@ -63,6 +85,13 @@ if (!defined('WP_CONTENT_DIR')) {
 
 if (!defined('WP_CONTENT_URL')) {
     define('WP_CONTENT_URL', 'http://example.com/wp-content');
+}
+
+if (!defined('WP_HOME')) {
+    // The page cache validates a request's Host header against this rather than
+    // trusting it, so a test that keys a request needs the site's own host to exist.
+    // The same value `home_url()` falls back to, so the two never disagree.
+    define('WP_HOME', 'http://example.com');
 }
 
 // ──────────────────────────────────────────────
@@ -156,6 +185,9 @@ if (!class_exists('WP_Post')) {
         public int $ID = 0;
         public string $post_name = '';
         public string $post_type = 'post';
+        public string $post_status = 'publish';
+        public int $post_author = 1;
+        public string $post_date = '2026-08-19 12:00:00';
     }
 }
 
@@ -344,6 +376,9 @@ if (!function_exists('add_filter')) {
     function add_filter(string $hook, callable $callback, int $priority = 10, int $acceptedArgs = 1): void
     {
         wp_stub_record('add_filter', compact('hook', 'callback', 'priority', 'acceptedArgs'));
+
+        $GLOBALS['wp_stub_filters'][$hook][$priority][] = $callback;
+        ksort($GLOBALS['wp_stub_filters'][$hook]);
     }
 }
 
@@ -1268,6 +1303,16 @@ if (!function_exists('apply_filters')) {
     {
         wp_stub_record('apply_filters', compact('hook', 'value', 'args'));
 
+        // Callbacks registered through add_filter() actually run, as they do in
+        // WordPress. A stub that recorded the call and returned the value unchanged
+        // could not test a filter seam at all — the code under test would look wired
+        // up while nothing it offered was reachable.
+        foreach ($GLOBALS['wp_stub_filters'][$hook] ?? [] as $callbacks) {
+            foreach ($callbacks as $callback) {
+                $value = $callback($value, ...$args);
+            }
+        }
+
         return $value;
     }
 }
@@ -1523,6 +1568,202 @@ if (!function_exists('wp_get_environment_type')) {
         return $GLOBALS['wp_stub_environment_type'] ?? 'production';
     }
 }
+
+// ──────────────────────────────────────────────
+// Page cache: request context and purge targets
+// ──────────────────────────────────────────────
+
+/**
+ * The template conditionals the page cache asks about, all off by default.
+ *
+ * A stub that answered `true` here would make every eligibility test pass for the
+ * wrong reason, so the default is the state of an ordinary front-end page request.
+ */
+$GLOBALS['wp_stub_conditionals'] = [];
+
+function wp_stub_set_conditional(string $name, bool $value): void
+{
+    $GLOBALS['wp_stub_conditionals'][$name] = $value;
+}
+
+function wp_stub_conditional(string $name): bool
+{
+    return $GLOBALS['wp_stub_conditionals'][$name] ?? false;
+}
+
+if (!function_exists('wp_doing_ajax')) {
+    function wp_doing_ajax(): bool
+    {
+        return wp_stub_conditional('wp_doing_ajax');
+    }
+}
+
+if (!function_exists('wp_doing_cron')) {
+    function wp_doing_cron(): bool
+    {
+        return wp_stub_conditional('wp_doing_cron');
+    }
+}
+
+if (!function_exists('is_feed')) {
+    function is_feed(mixed $feeds = ''): bool
+    {
+        return wp_stub_conditional('is_feed');
+    }
+}
+
+if (!function_exists('is_trackback')) {
+    function is_trackback(): bool
+    {
+        return wp_stub_conditional('is_trackback');
+    }
+}
+
+if (!function_exists('is_robots')) {
+    function is_robots(): bool
+    {
+        return wp_stub_conditional('is_robots');
+    }
+}
+
+if (!function_exists('is_embed')) {
+    function is_embed(): bool
+    {
+        return wp_stub_conditional('is_embed');
+    }
+}
+
+if (!function_exists('is_preview')) {
+    function is_preview(): bool
+    {
+        return wp_stub_conditional('is_preview');
+    }
+}
+
+if (!function_exists('is_customize_preview')) {
+    function is_customize_preview(): bool
+    {
+        return wp_stub_conditional('is_customize_preview');
+    }
+}
+
+if (!function_exists('post_password_required')) {
+    function post_password_required(mixed $post = null): bool
+    {
+        return wp_stub_conditional('post_password_required');
+    }
+}
+
+if (!function_exists('get_post')) {
+    function get_post(mixed $post = null, string $output = 'OBJECT'): ?WP_Post
+    {
+        if ($post instanceof WP_Post) {
+            return $post;
+        }
+
+        return $GLOBALS['wp_stub_posts'][(int) $post] ?? null;
+    }
+}
+
+if (!function_exists('get_comment')) {
+    function get_comment(mixed $comment = null, string $output = 'OBJECT'): ?object
+    {
+        return $GLOBALS['wp_stub_comments'][(int) $comment] ?? null;
+    }
+}
+
+if (!function_exists('get_permalink')) {
+    function get_permalink(mixed $post = 0, bool $leavename = false): string|false
+    {
+        $id = $post instanceof WP_Post ? $post->ID : (int) $post;
+        $name = $post instanceof WP_Post ? $post->post_name : $GLOBALS['wp_stub_posts'][$id]->post_name ?? '';
+
+        return $GLOBALS['wp_stub_permalinks'][$id] ?? home_url('/' . $name . '/');
+    }
+}
+
+if (!function_exists('get_post_type_archive_link')) {
+    function get_post_type_archive_link(string $postType): string|false
+    {
+        return $GLOBALS['wp_stub_archive_links'][$postType] ?? false;
+    }
+}
+
+if (!function_exists('get_author_posts_url')) {
+    function get_author_posts_url(int $authorId, string $authorNicename = ''): string
+    {
+        return home_url('/author/' . ($GLOBALS['wp_stub_author_slugs'][$authorId] ?? $authorId) . '/');
+    }
+}
+
+if (!function_exists('get_month_link')) {
+    function get_month_link(int $year, int $month): string
+    {
+        return home_url(sprintf('/%04d/%02d/', $year, $month));
+    }
+}
+
+if (!function_exists('get_object_taxonomies')) {
+    function get_object_taxonomies(mixed $object, string $output = 'names'): array
+    {
+        $type = is_string($object) ? $object : $object->post_type ?? 'post';
+
+        return $GLOBALS['wp_stub_object_taxonomies'][$type] ?? [];
+    }
+}
+
+if (!function_exists('wp_get_post_terms')) {
+    function wp_get_post_terms(int $postId, mixed $taxonomy = 'post_tag', array $args = []): array
+    {
+        return $GLOBALS['wp_stub_post_terms'][$postId][(string) $taxonomy] ?? [];
+    }
+}
+
+if (!function_exists('get_post_ancestors')) {
+    function get_post_ancestors(mixed $post): array
+    {
+        $id = $post instanceof WP_Post ? $post->ID : (int) $post;
+
+        return $GLOBALS['wp_stub_post_ancestors'][$id] ?? [];
+    }
+}
+
+if (!function_exists('get_adjacent_post')) {
+    function get_adjacent_post(
+        bool $inSameTerm = false,
+        string $excludedTerms = '',
+        bool $previous = true,
+        string $taxonomy = 'category',
+    ): mixed {
+        $id = $GLOBALS['post'] instanceof WP_Post ? $GLOBALS['post']->ID : 0;
+
+        return $GLOBALS['wp_stub_adjacent_posts'][$id][$previous ? 'previous' : 'next'] ?? null;
+    }
+}
+
+if (!function_exists('get_term_link')) {
+    function get_term_link(mixed $term, string $taxonomy = ''): string|false
+    {
+        $slug = $term instanceof WP_Term ? $term->slug : (string) $term;
+        $taxonomy = $term instanceof WP_Term && $term->taxonomy !== '' ? $term->taxonomy : $taxonomy;
+
+        if ($slug === '') {
+            return false;
+        }
+
+        return home_url('/' . ($taxonomy !== '' ? $taxonomy . '/' : '') . $slug . '/');
+    }
+}
+
+$GLOBALS['wp_stub_posts'] = [];
+$GLOBALS['wp_stub_comments'] = [];
+$GLOBALS['wp_stub_permalinks'] = [];
+$GLOBALS['wp_stub_archive_links'] = [];
+$GLOBALS['wp_stub_author_slugs'] = [];
+$GLOBALS['wp_stub_object_taxonomies'] = [];
+$GLOBALS['wp_stub_post_terms'] = [];
+$GLOBALS['wp_stub_post_ancestors'] = [];
+$GLOBALS['wp_stub_adjacent_posts'] = [];
 
 $GLOBALS['wp_stub_as_has_scheduled'] = [];
 
