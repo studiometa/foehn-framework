@@ -36,3 +36,7 @@ hooks:
             --skip-email
           wp theme activate demo-theme
         fi
+    # Uploads go to the MinIO service, so the bucket has to exist and be readable
+    # before the first one. See tests/smoke/provision-bucket.php.
+    - exec: wp plugin activate s3-uploads
+    - exec: wp eval-file tests/smoke/provision-bucket.php

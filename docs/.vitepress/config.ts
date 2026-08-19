@@ -87,6 +87,7 @@ export default defineConfig({
             { text: "Rewrite Rules", link: "/guide/rewrite-rules" },
             { text: "Settings Pages", link: "/guide/settings-pages" },
             { text: "Render API", link: "/guide/render-api" },
+            { text: "Uploads", link: "/guide/uploads" },
             { text: "Caching", link: "/guide/caching" },
             { text: "Shortcodes", link: "/guide/shortcodes" },
             { text: "CLI Commands", link: "/guide/cli-commands" },

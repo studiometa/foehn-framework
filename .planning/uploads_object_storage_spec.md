@@ -16,7 +16,7 @@ Nothing in the monorepo touches `upload_dir`. This has been recorded as a gap tw
 | New dependency in `studiometa/foehn` | None. The plugin is required by `foehn-starter` and `foehn-demo`, not by the MIT core. See §3.4.                    |
 | New attributes                       | None. This is configuration, not discovery.                                                                         |
 | Estimate                             | ~1 day, against 6–8 for building it. See §10.                                                                       |
-| Status                               | **Proposed.** Smaller than the version that was undecided; §11 is what is left to answer.                           |
+| Status                               | **Done, 2026-08-20.** §12 records what building it taught that the spec had wrong.                                  |
 
 ## 1. What "offloading uploads" has to solve
 
@@ -172,3 +172,15 @@ Everything else is §3.3: MinIO, a real import, a rendered page.
 1. **Is the demand real, or anticipated?** Unchanged from the first draft and still the question that matters most — every roadmap item so far closed a gap someone had hit. At a day's work the answer matters less than it did at six, and phases 1 and 2 are worth doing on speculation in a way that a package never was.
 2. **Which providers do we claim?** R2 and Scaleway are the plausible ones for our projects; AWS is the one everyone tests against. Each is a row in a matrix somebody maintains.
 3. **Before or after `0.5.0`?** Phase 1 touches the installer, which is released with the framework, so it wants to be in a tag rather than trailing one. It does not block anything.
+
+## 12. What building it taught
+
+Three things the spec had wrong or did not say, found by building rather than by reading.
+
+**The bucket policy, not the object ACL.** The plugin uploads objects with a `public-read` ACL, which is how AWS serves them and is not how MinIO does: it ignores per-object ACLs unless the bucket policy allows anonymous reads. Every upload succeeded, every image 404'd, and nothing in the media library looked wrong. §9 predicted this failure in the abstract — "a misconfigured bucket that silently accepts writes and serves nothing" — and predicted it for the wrong reason. It is not a misconfiguration; it is the default. Any provider that is not AWS needs a policy set once, and `packages/demo/tests/smoke/provision-bucket.php` is what the demo sets.
+
+**Two URLs, not one.** The API endpoint and the public URL are different hosts and the difference is the whole configuration: PHP talks to `http://minio:9000` on the project network, a browser loads `https://<host>:9443/media`. Get them the same and either uploads fail or images 404, depending which one you picked.
+
+**The checksum switch is not optional for MinIO.** §9 listed it as something `humanmade/s3-uploads` documents having to do; in practice MinIO rejects the AWS SDK 3.337 integrity headers outright, so `S3_UPLOADS_CHECKSUMS=false` is required rather than advisable, and it is why the hook class carries a third variable the spec did not list.
+
+**What §11 still asks.** Whether the demand is real remains unanswered and now costs less to have guessed wrong: the code is a constants block, one hook class and a test. Providers claimed are AWS, and MinIO because CI proves it every run; R2 and Scaleway are untested and documented as such.

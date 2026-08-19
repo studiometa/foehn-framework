@@ -71,6 +71,19 @@ function linkRealAutoloader(string $root): void
 }
 
 /**
+ * Stand a probe where WordPress would be, and run everything before it.
+ *
+ * The generated `wp-config.php` ends on `require_once ABSPATH . 'wp-settings.php'`,
+ * so a file at that path runs with every constant already defined — which is the
+ * only way to assert on the values rather than on the strings that define them.
+ */
+function stubWordPress(string $root, string $probe): void
+{
+    mkdir($root . '/web/wp', 0o777, true);
+    file_put_contents($root . '/web/wp/wp-settings.php', "<?php\n" . $probe);
+}
+
+/**
  * Run a generated `wp-config.php` and return everything it printed.
  *
  * It always ends by failing on WordPress being absent; what comes before that is

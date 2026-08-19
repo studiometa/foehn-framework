@@ -385,6 +385,105 @@ describe('WebRootGenerator', function () {
         expect($output)->toContain('wp-settings.php');
     });
 
+    it('defines the object storage constants from the environment', function () {
+        linkRealAutoloader($this->root);
+
+        ($this->generate)();
+
+        stubWordPress($this->root, <<<'PHP'
+            foreach ([
+                'S3_UPLOADS_BUCKET', 'S3_UPLOADS_REGION', 'S3_UPLOADS_KEY',
+                'S3_UPLOADS_SECRET', 'S3_UPLOADS_BUCKET_URL',
+            ] as $constant) {
+                echo $constant, '=', defined($constant) ? constant($constant) : '<undefined>', PHP_EOL;
+            }
+            PHP);
+
+        file_put_contents(
+            $this->root . '/.env',
+            "S3_UPLOADS_BUCKET=media\nS3_UPLOADS_REGION=fr-par\n"
+            . "AWS_ACCESS_KEY_ID=key\nAWS_SECRET_ACCESS_KEY=secret\n"
+            . "S3_UPLOADS_BUCKET_URL=https://cdn.example.com\n",
+            FILE_APPEND,
+        );
+
+        $output = runWpConfig($this->root);
+
+        expect($output)->toContain('S3_UPLOADS_BUCKET=media');
+        expect($output)->toContain('S3_UPLOADS_REGION=fr-par');
+        expect($output)->toContain('S3_UPLOADS_KEY=key');
+        expect($output)->toContain('S3_UPLOADS_SECRET=secret');
+        expect($output)->toContain('S3_UPLOADS_BUCKET_URL=https://cdn.example.com');
+    });
+
+    it('defines no object storage constants without a bucket', function () {
+        linkRealAutoloader($this->root);
+
+        ($this->generate)();
+
+        stubWordPress($this->root, <<<'PHP'
+            $defined = array_filter([
+                'S3_UPLOADS_BUCKET', 'S3_UPLOADS_REGION', 'S3_UPLOADS_KEY',
+                'S3_UPLOADS_SECRET', 'S3_UPLOADS_BUCKET_URL',
+            ], 'defined');
+
+            echo '[defined:', implode(',', $defined), ']', PHP_EOL;
+            PHP);
+
+        // A site with no bucket is a site whose uploads stay on local disk, whether
+        // or not the plugin happens to be installed. The whole set has to stay
+        // undefined and not only the bucket: S3_UPLOADS_REGION defaults to 'auto',
+        // so it is the one that would slip through an unguarded block.
+        expect(runWpConfig($this->root))->toContain('[defined:]');
+    });
+
+    it('leaves the credentials undefined when the environment has none', function () {
+        linkRealAutoloader($this->root);
+
+        ($this->generate)();
+
+        stubWordPress($this->root, <<<'PHP'
+            echo 'BUCKET=', defined('S3_UPLOADS_BUCKET') ? S3_UPLOADS_BUCKET : '<undefined>', PHP_EOL;
+            echo 'KEY=', defined('S3_UPLOADS_KEY') ? 'defined' : '<undefined>', PHP_EOL;
+            echo 'URL=', defined('S3_UPLOADS_BUCKET_URL') ? 'defined' : '<undefined>', PHP_EOL;
+            PHP);
+
+        file_put_contents($this->root . '/.env', "S3_UPLOADS_BUCKET=media\n", FILE_APPEND);
+
+        // Defined-as-null is not the same as undefined: an IAM instance profile
+        // supplies the credentials, and the plugin derives its own bucket URL.
+        $output = runWpConfig($this->root);
+
+        // Asserted first, so this cannot pass by the block never having run at all.
+        expect($output)->toContain('BUCKET=media');
+        expect($output)->toContain('KEY=<undefined>');
+        expect($output)->toContain('URL=<undefined>');
+    });
+
+    it('lets the project configuration override an object storage constant', function () {
+        linkRealAutoloader($this->root);
+
+        mkdir($this->root . '/config', 0o777, true);
+        file_put_contents(
+            $this->root . '/config/wordpress.config.php',
+            "<?php define('S3_UPLOADS_REGION', 'from-config');\n",
+        );
+
+        ($this->generate)();
+
+        stubWordPress($this->root, "echo 'BUCKET=', S3_UPLOADS_BUCKET, ' REGION=', S3_UPLOADS_REGION, PHP_EOL;");
+
+        file_put_contents(
+            $this->root . '/.env',
+            "S3_UPLOADS_BUCKET=media\nS3_UPLOADS_REGION=from-dotenv\n",
+            FILE_APPEND,
+        );
+
+        // The bucket proves the block ran and read .env; the region proves it did not
+        // trample what the project had already decided.
+        expect(runWpConfig($this->root))->toContain('BUCKET=media REGION=from-config');
+    });
+
     it('clears a discovery cache left by the previous release', function () {
         $cache = $this->root . '/web/wp-content/cache/foehn/discovery';
         mkdir($cache, 0o777, true);
