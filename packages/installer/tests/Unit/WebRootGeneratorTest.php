@@ -168,6 +168,163 @@ describe('WebRootGenerator', function () {
         expect($this->root . '/web/index.php')->toBeFile();
     });
 
+    it('generates the security keys into .env on a first install', function () {
+        file_put_contents($this->root . '/.env.example', "DB_NAME=db\nAUTH_KEY=\n");
+
+        ($this->generate)();
+
+        $env = file_get_contents($this->root . '/.env');
+
+        foreach ([
+            'AUTH_KEY',
+            'SECURE_AUTH_KEY',
+            'LOGGED_IN_KEY',
+            'NONCE_KEY',
+            'AUTH_SALT',
+            'SECURE_AUTH_SALT',
+            'LOGGED_IN_SALT',
+            'NONCE_SALT',
+        ] as $name) {
+            expect($env)->toMatch('/^' . $name . '="[^"]{64,}"$/m');
+        }
+
+        // What the project already had is still there, and the name it listed empty
+        // was filled in rather than added a second time.
+        expect($env)->toContain('DB_NAME=db');
+        expect(preg_match_all('/^AUTH_KEY=/m', $env))->toBe(1);
+        expect($env)->not->toContain('change-me-');
+    });
+
+    it('generates keys with no .env at all', function () {
+        ($this->generate)();
+
+        expect($this->root . '/.env')->toBeFile();
+        expect(file_get_contents($this->root . '/.env'))->toMatch('/^AUTH_KEY="/m');
+    });
+
+    it('generates a different set for every install', function () {
+        ($this->generate)();
+        $first = file_get_contents($this->root . '/.env');
+
+        $second = makeProjectRoot('theme');
+
+        try {
+            new WebRootGenerator($this->io, $second, InstallerConfig::fromArray([], $second), null)->generate();
+
+            // Two installs of the same project must not share keys, which is what the
+            // old md5(__DIR__) fallback did.
+            expect(file_get_contents($second . '/.env'))->not->toBe($first);
+        } finally {
+            removeDirectory($second);
+        }
+    });
+
+    it('never replaces keys .env already sets', function () {
+        file_put_contents($this->root . '/.env', "AUTH_KEY=\"mine\"\n");
+
+        ($this->generate)();
+
+        $env = file_get_contents($this->root . '/.env');
+
+        // Rewriting on every composer install would log every user out every deploy.
+        expect($env)->toContain('AUTH_KEY="mine"');
+        // The seven it did not set are filled in, because a partial set still fails.
+        expect($env)->toMatch('/^NONCE_SALT="/m');
+    });
+
+    it('leaves the keys alone when the environment supplies them', function () {
+        $names = [
+            'AUTH_KEY',
+            'SECURE_AUTH_KEY',
+            'LOGGED_IN_KEY',
+            'NONCE_KEY',
+            'AUTH_SALT',
+            'SECURE_AUTH_SALT',
+            'LOGGED_IN_SALT',
+            'NONCE_SALT',
+        ];
+
+        foreach ($names as $name) {
+            putenv("{$name}=from-the-environment");
+        }
+
+        try {
+            ($this->generate)();
+
+            // A vault or a container already provides them; .env should stay untouched.
+            expect(file_exists($this->root . '/.env'))->toBeFalse();
+        } finally {
+            foreach ($names as $name) {
+                putenv($name);
+            }
+        }
+    });
+
+    it('leaves the keys alone when the project uses the PHP file', function () {
+        mkdir($this->root . '/config', 0o777, true);
+        file_put_contents($this->root . '/config/wordpress-salts.config.php', "<?php // mine\n");
+
+        ($this->generate)();
+
+        // wp-config.php reads that file first, so writing .env keys would be writing
+        // keys nothing uses.
+        expect(file_exists($this->root . '/.env'))->toBeFalse();
+    });
+
+    it('refuses to serve production without the keys', function () {
+        ($this->generate)();
+
+        $config = file_get_contents($this->root . '/web/wp-config.php');
+
+        expect($config)->toContain('wp foehn salts:generate');
+        expect($config)->toContain("!defined('WP_CLI')");
+        // The old build defined guessable keys from md5(__DIR__) instead of stopping.
+        expect($config)->not->toContain("'change-me-' . \$salt");
+    });
+
+    it('stops a production request that has no keys', function () {
+        // The generated wp-config.php is only ever executed by a booting WordPress,
+        // so the guard is run here for real rather than matched as a string.
+        mkdir($this->root . '/vendor', 0o777, true);
+        file_put_contents($this->root . '/vendor/autoload.php', "<?php\n");
+
+        ($this->generate)();
+
+        unlink($this->root . '/.env');
+
+        $output = [];
+        $status = 0;
+        exec(
+            'WP_ENVIRONMENT_TYPE=production php ' . escapeshellarg($this->root . '/web/wp-config.php') . ' 2>&1',
+            $output,
+            $status,
+        );
+
+        expect($status)->not->toBe(0);
+        expect(implode("\n", $output))->toContain('wp foehn salts:generate');
+    });
+
+    it('serves a development request that has no keys', function () {
+        mkdir($this->root . '/vendor', 0o777, true);
+        file_put_contents($this->root . '/vendor/autoload.php', "<?php\n");
+
+        ($this->generate)();
+
+        unlink($this->root . '/.env');
+
+        $output = [];
+        $status = 0;
+        exec(
+            'WP_ENVIRONMENT_TYPE=development php ' . escapeshellarg($this->root . '/web/wp-config.php') . ' 2>&1',
+            $output,
+            $status,
+        );
+
+        // It gets far enough to fail on WordPress itself being absent, which is proof
+        // it did not stop at the keys.
+        expect(implode("\n", $output))->not->toContain('wp foehn salts:generate');
+    });
+
     it('clears a discovery cache left by the previous release', function () {
         $cache = $this->root . '/web/wp-content/cache/foehn/discovery';
         mkdir($cache, 0o777, true);

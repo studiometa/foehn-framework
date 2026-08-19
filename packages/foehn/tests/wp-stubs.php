@@ -54,7 +54,10 @@ function wp_stub_record(string $function, array $args): void
 // ──────────────────────────────────────────────
 
 if (!defined('WP_CONTENT_DIR')) {
-    define('WP_CONTENT_DIR', sys_get_temp_dir() . '/foehn-tests/wp-content');
+    // Under a `web/` directory, as a real install has it: code that walks up from
+    // wp-content to the project root then lands in the test directory rather than in
+    // the system temp directory itself.
+    define('WP_CONTENT_DIR', sys_get_temp_dir() . '/foehn-tests/web/wp-content');
 }
 
 if (!defined('WP_CONTENT_URL')) {

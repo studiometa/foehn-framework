@@ -13,6 +13,9 @@ composer.lock
 # Environment
 .env
 
+# Generated secrets — .env holds the keys by default; this file is the alternative
+/config/wordpress-salts.config.php
+
 # DDEV
 .ddev/.ddev-docker-compose-*
 .ddev/db_snapshots/

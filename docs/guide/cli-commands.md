@@ -80,20 +80,52 @@ wp foehn make:model Product --post-type --dry-run
 ### Discovery Cache Commands
 
 ```bash
-# Warm discovery cache (run discoveries + cache)
-wp foehn discovery:generate
-
-# Generate discovery cache for production
+# Scan every location and write the cache
 wp foehn discovery:generate
 
 # Clear the discovery cache
 wp foehn discovery:clear
 
-# Check cache status
+# Check cache status, per location
 wp foehn discovery:status
 ```
 
-See [Discovery Cache](/guide/discovery-cache) for more details on caching.
+The cache also fills itself on the first request that finds it missing, and `composer install` clears it. See [Discovery Cache](/guide/discovery-cache) for more details on caching.
+
+### Security Keys
+
+WordPress signs authentication cookies and nonces with eight keys. They live in the environment, so a project keeps them wherever it keeps its other secrets. `composer install` fills them into `.env` on a first install, and the generated `wp-config.php` refuses to serve a production request without them.
+
+```bash
+# Generate keys for a project that has none
+wp foehn salts:generate
+
+# Rotate them — this logs every user out
+wp foehn salts:generate --force
+```
+
+Rotating replaces the keys the current cookies were signed with, so every session ends.
+
+#### Where the keys come from
+
+`wp-config.php` reads them in this order:
+
+| Source                              | Notes                                                                                                                   |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `config/wordpress-salts.config.php` | Only if a project chooses to use a PHP file. Read first, so it wins.                                                    |
+| Environment                         | The default. `.env`, container variables, a VM's environment, a secret pulled from a vault — anything that reaches PHP. |
+
+`.env` is untracked and managed per install; `.env.example` lists the eight names empty, so they are visible without being committed. A value that is empty or still starts with `change-me-` counts as absent.
+
+Because the environment is read, nothing has to end up in a file at all: export the keys from your orchestrator or your vault and the installer leaves them alone. It checks for them before generating.
+
+If you would rather keep them in a PHP file, write one and it takes precedence:
+
+```bash
+wp foehn salts:generate --path=config/wordpress-salts.config.php
+```
+
+The command warns when that file exists and you rotate `.env`, since the file is what WordPress would still read.
 
 ## Custom Commands
 

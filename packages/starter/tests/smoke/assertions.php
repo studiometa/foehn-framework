@@ -16,6 +16,7 @@ use Studiometa\Foehn\Config\FoehnConfig;
 use Studiometa\Foehn\Discovery\CliCommandDiscovery;
 use Studiometa\Foehn\Discovery\DiscoveryRunner;
 use Studiometa\Foehn\Kernel;
+use Studiometa\Foehn\Security\Salts;
 
 // `wp eval-file` runs this inside a function, so the results live in an object
 // rather than in globals a top-level `global` statement would not reach.
@@ -104,6 +105,24 @@ $results->same(
     array_values(array_filter(
         array_keys(get_post_types()),
         static fn(string $type): bool => str_contains($type, 'dummy') || str_contains($type, 'stub'),
+    )),
+);
+
+// ──────────────────────────────────────────────
+// Security keys
+// ──────────────────────────────────────────────
+
+// A site whose keys are guessable is a site whose login cookies can be forged. The
+// installer generates them; before it did, every install ran on
+// 'change-me-AUTH_KEY-' . md5(__DIR__), derived from a predictable path.
+$results->same(
+    'no security key is a placeholder',
+    [],
+    array_values(array_filter(
+        Salts::NAMES,
+        static fn(string $name): bool => (
+            !defined($name) || str_starts_with((string) constant($name), Salts::PLACEHOLDER_PREFIX)
+        ),
     )),
 );
 

@@ -21,11 +21,31 @@ use SplFileInfo;
  * - web/wp-content/mu-plugins/_custom → symlink to ../../mu-plugins/
  * - web/wp-content/foehn/editor.js ← copied from the studiometa/foehn package
  *
- * And removes web/wp-content/cache/foehn/, whose contents describe the code that
- * has just been replaced.
+ * Generates the WordPress security keys into .env on a first install, and removes
+ * web/wp-content/cache/foehn/, whose contents describe the code that has just been
+ * replaced.
  */
 final class WebRootGenerator
 {
+    /**
+     * The keys WordPress signs authentication cookies and nonces with.
+     *
+     * The same list as `Studiometa\Foehn\Security\Salts::NAMES`, repeated because a
+     * Composer plugin cannot rely on the project's autoloader.
+     *
+     * @var list<string>
+     */
+    private const SALT_NAMES = [
+        'AUTH_KEY',
+        'SECURE_AUTH_KEY',
+        'LOGGED_IN_KEY',
+        'NONCE_KEY',
+        'AUTH_SALT',
+        'SECURE_AUTH_SALT',
+        'LOGGED_IN_SALT',
+        'NONCE_SALT',
+    ];
+
     public function __construct(
         private readonly IOInterface $io,
         private readonly string $projectRoot,
@@ -49,6 +69,7 @@ final class WebRootGenerator
         $this->symlinkMuPlugins();
         $this->generateMuPluginLoader();
         $this->generateEditorScript();
+        $this->generateSalts();
         $this->clearDiscoveryCache();
 
         $this->io->write('<info>Foehn:</info> Web root generated successfully.');
@@ -181,20 +202,45 @@ final class WebRootGenerator
             define('WP_CONTENT_DIR', __DIR__ . '/wp-content');
             define('WP_CONTENT_URL', WP_HOME . '/wp-content');
 
-            // Salts — load from environment or config
-            if (file_exists(dirname(__DIR__) . '/{$configDir}/wordpress-salts.config.php')) {
-                require_once dirname(__DIR__) . '/{$configDir}/wordpress-salts.config.php';
-            } else {
-                // Fallback: generate unique salts from env vars or use defaults
-                // In production, use environment variables or config/wordpress-salts.config.php
-                \$salts = [
-                    'AUTH_KEY', 'SECURE_AUTH_KEY', 'LOGGED_IN_KEY', 'NONCE_KEY',
-                    'AUTH_SALT', 'SECURE_AUTH_SALT', 'LOGGED_IN_SALT', 'NONCE_SALT',
-                ];
-                foreach (\$salts as \$salt) {
-                    if (!defined(\$salt)) {
-                        define(\$salt, \$env(\$salt, 'change-me-' . \$salt . '-' . md5(__DIR__)));
-                    }
+            // Security keys — from config/wordpress-salts.config.php, or the environment
+            \$saltsFile = dirname(__DIR__) . '/{$configDir}/wordpress-salts.config.php';
+
+            if (file_exists(\$saltsFile)) {
+                require_once \$saltsFile;
+            }
+
+            \$missingSalts = [];
+
+            foreach ([
+                'AUTH_KEY', 'SECURE_AUTH_KEY', 'LOGGED_IN_KEY', 'NONCE_KEY',
+                'AUTH_SALT', 'SECURE_AUTH_SALT', 'LOGGED_IN_SALT', 'NONCE_SALT',
+            ] as \$salt) {
+                if (defined(\$salt)) {
+                    continue;
+                }
+
+                \$value = \$env(\$salt);
+
+                if (!is_string(\$value) || \$value === '' || str_starts_with(\$value, 'change-me-')) {
+                    \$missingSalts[] = \$salt;
+                    continue;
+                }
+
+                define(\$salt, \$value);
+            }
+
+            if (\$missingSalts !== []) {
+                // These keys sign login cookies. Guessable ones can be forged, so a
+                // production request is refused rather than served with them. WP-CLI
+                // is exempt, because that is where `wp foehn salts:generate` runs.
+                if (!defined('WP_CLI') && \$env('WP_ENVIRONMENT_TYPE', 'production') === 'production') {
+                    http_response_code(500);
+                    echo "WordPress security keys are not configured. Run: wp foehn salts:generate\\n";
+                    exit(1);
+                }
+
+                foreach (\$missingSalts as \$salt) {
+                    define(\$salt, 'insecure-development-key-' . \$salt . '-' . md5(__DIR__));
                 }
             }
 
@@ -367,6 +413,84 @@ final class WebRootGenerator
             JS;
 
         $this->writeRawFile($target, $header . $script);
+    }
+
+    /**
+     * Write the WordPress security keys, once.
+     *
+     * They go into .env, which is where wp-config.php reads them from and where the
+     * project already keeps its other secrets. A project that supplies them another
+     * way — container variables, a vault, the PHP config file — is left alone.
+     *
+     * Never rewritten: doing so on every `composer install` would log every user out
+     * on every deploy.
+     *
+     * This repeats what `Studiometa\Foehn\Security\Salts` does, because a Composer
+     * plugin cannot rely on the project's autoloader being available to it. The line
+     * format is the contract, and `wp foehn salts:generate` writes the same one.
+     */
+    private function generateSalts(): void
+    {
+        if (is_file($this->projectRoot . '/' . $this->config->configDir . '/wordpress-salts.config.php')) {
+            return;
+        }
+
+        if ($this->environmentHasSalts()) {
+            return;
+        }
+
+        $path = $this->projectRoot . '/.env';
+        $contents = is_file($path) ? (string) file_get_contents($path) : '';
+        $lines = [];
+
+        foreach (self::SALT_NAMES as $name) {
+            // A name may be listed but empty, which is how .env.example carries them.
+            if (preg_match('/^[ \t]*' . $name . '[ \t]*=[ \t]*\S/m', $contents) === 1) {
+                continue;
+            }
+
+            $line = sprintf('%s="%s"', $name, base64_encode(random_bytes(48)));
+            $pattern = '/^[ \t]*' . $name . '[ \t]*=.*$/m';
+
+            if (preg_match($pattern, $contents) === 1) {
+                $contents = (string) preg_replace($pattern, $line, $contents, 1);
+
+                continue;
+            }
+
+            $lines[] = $line;
+        }
+
+        if ($lines !== []) {
+            $contents =
+                rtrim($contents, "\n")
+                . "\n\n# WordPress security keys — secret, and specific to this install\n"
+                . implode("\n", $lines)
+                . "\n";
+        }
+
+        file_put_contents($path, $contents);
+
+        $this->io->write('  <comment>Generated:</comment> security keys in .env');
+    }
+
+    /**
+     * Whether every security key is already set in the environment.
+     *
+     * A partial set counts as absent: the rest have to come from somewhere, and
+     * wp-config.php refuses a production request that is missing any of them.
+     */
+    private function environmentHasSalts(): bool
+    {
+        // Exported variables count: a project injecting them from a vault or a
+        // container has them in the environment Composer itself runs in.
+        foreach (self::SALT_NAMES as $name) {
+            if (getenv($name) === false) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

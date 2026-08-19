@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Every install ran on guessable WordPress security keys.** With no `config/wordpress-salts.config.php` and no keys in the environment, the generated `wp-config.php` defined them as `'change-me-' . $salt . '-' . md5(__DIR__)` — derived from the web root path, which is predictable (`/var/www/html/web`, `/home/forge/example.com/web`). Authentication cookies and nonces signed with those keys can be forged. Nothing in the starter or the documentation said to replace them. The installer now generates real keys into `.env` on a first install, and `wp-config.php` refuses to serve a production request whose keys are missing or still placeholders
 - **The framework's own discoverables never registered.** Discovery scanned the theme's app directory alone, so the five bundled `#[AsTwigExtension]` classes never reached Timber and the `#[AsCliCommand]` classes never reached WP-CLI. The starter's templates call `html_attributes()`, so a stock install answered every front-end request with `Twig\Error\SyntaxError: Unknown "html_attributes" function`
 - **`*.config.php` files were never read.** `Kernel::registerConfigs()` used its defaults and the `boot()` array and stopped there, so `app/foehn.config.php`, `app/timber.config.php`, `app/acf.config.php`, `app/rest.config.php` and `app/render-api.config.php` did nothing. The starter shipped a `foehn.config.php` opting into seven cleanup and security hook classes, and none of them were applied
 - `#[SkipDiscovery]` was ignored by the scanner. It matters now that packages are scanned: the fourteen `make:` command stubs carry real `#[AsPostType]` and `#[AsBlock]` attributes
@@ -24,6 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The keys are read from the environment, so a project can keep them in `.env`, in container variables, or in a vault. `.env.example` lists the eight names empty so they are visible without being committed, and the installer generates nothing when the environment already supplies them. `config/wordpress-salts.config.php` still works for a project that prefers a PHP file, and is read first
+- `wp foehn salts:generate` writes a fresh set of WordPress security keys, for rotating them or for a project whose keys were never generated. `--force` replaces existing ones, which logs every user out
 - The discovery cache fills itself. A request that had to scan a location writes what it found, so the next one does not, and `composer install` clears the cache through the installer plugin. Between them there is no manual step on a deploy: `wp foehn discovery:generate` stays for warming before traffic arrives rather than on the first visitor's request. A cache that cannot be written is not an error — the page is served and the scan happens again next time
 - Config files may be named for an environment — `foehn.production.config.php` — and are then read only in that one, as reported by `wp_get_environment_type()`. The environment's file wins over the plain file beside it
 - An integration smoke test for the starter (`packages/starter/tests/smoke/run.sh`), run in CI against a real WordPress in ddev, on a cold cache and again on a warm one
