@@ -68,6 +68,7 @@ export default defineConfig({
             { text: "Native Blocks", link: "/guide/native-blocks" },
             { text: "Block Editor", link: "/guide/block-editor" },
             { text: "Block Patterns", link: "/guide/block-patterns" },
+            { text: "Block Bindings", link: "/guide/block-bindings" },
           ],
         },
         {
@@ -125,6 +126,7 @@ export default defineConfig({
             { text: "#[AsAcfBlock]", link: "/api/as-acf-block" },
             { text: "#[AsBlockPattern]", link: "/api/as-block-pattern" },
             { text: "#[AsBlockCategory]", link: "/api/as-block-category" },
+            { text: "#[AsBlockBinding]", link: "/api/as-block-binding" },
             { text: "#[AsAcfOptionsPage]", link: "/api/as-acf-options-page" },
             { text: "#[AsRestRoute]", link: "/api/as-rest-route" },
             { text: "#[AsRewriteRule]", link: "/api/as-rewrite-rule" },

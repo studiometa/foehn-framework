@@ -16,7 +16,7 @@ Every planned evolution of Føhn, in one place. Detail lives in the linked specs
 | 6   | Starter off ACF                | **Done**      | [post_meta_and_acf_split_spec.md](post_meta_and_acf_split_spec.md) §4 | 1 d    |
 | 7   | `#[AsRewriteRule]`             | **Done**      | [framework_additions_spec.md](framework_additions_spec.md) §3         | 2 d    |
 | 8   | `#[AsSettingsPage]`            | **Done**      | [framework_additions_spec.md](framework_additions_spec.md) §4         | 2–3 d  |
-| 9   | `#[AsBlockBinding]`            | Approved      | [framework_additions_spec.md](framework_additions_spec.md) §2         | 1–2 d  |
+| 9   | `#[AsBlockBinding]`            | **Done**      | [framework_additions_spec.md](framework_additions_spec.md) §2         | 1–2 d  |
 | 10  | Starter / demo split           | Approved      | —                                                                     | 2–3 d  |
 | 11  | `#[AsAbility]` + AI guardrails | **Undecided** | [abilities_spec.md](abilities_spec.md)                                | 4–7 d  |
 | 12  | Release `0.5.0`                | Blocked       | —                                                                     | —      |
