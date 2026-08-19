@@ -87,6 +87,12 @@ esac
 
 printf '✓ wp foehn discovery:list reports what was found, and from where\n'
 
+# Plain permalinks bypass rewrite rules entirely, so a site using them answers
+# /_health with a redirect and nothing about the rule is wrong. Asked first,
+# because "301" on its own sends you looking in the wrong place.
+permalinks="$(ddev exec 'cd /var/www/html && wp option get permalink_structure' 2>/dev/null | tail -n1 | tr -d '\r')"
+[ -n "$permalinks" ] || fail 'this site uses plain permalinks, which bypass rewrite rules entirely'
+
 # A rewrite rule only exists once WordPress has flushed the rules, which is the
 # whole difficulty the flush hash exists for. Nothing about that is visible to
 # the unit suite: it asserts what was registered, not what a URL answers.
@@ -95,7 +101,15 @@ health="$(curl -sk -w '\n%{http_code}' "$url/_health")"
 case "$health" in
 *'{"status":"ok"}'*200) ;;
 *) fail "GET /_health did not reach the #[AsRewriteRule] handler
-$health" ;;
+
+response:
+$health
+
+headers:
+$(curl -skI "$url/_health" | head -12)
+
+rewrite rules WordPress has stored:
+$(ddev exec 'cd /var/www/html && wp rewrite list --match=/_health --fields=match,query' 2>&1 | tail -5)" ;;
 esac
 
 printf '✓ a rewrite rule answers its URL\n'

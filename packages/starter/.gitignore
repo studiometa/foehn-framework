@@ -17,18 +17,15 @@ composer.lock
 /config/wordpress-salts.config.php
 
 # DDEV
-.ddev/.ddev-docker-compose-*
-.ddev/db_snapshots/
-.ddev/.homeadditions/
-.ddev/.sshimageBuild/
-.ddev/.webimageBuild/
-.ddev/commands/
-.ddev/import-db/
-.ddev/.gitignore
-.ddev/docker-compose.*.yaml
-# Machine-specific overrides. DDEV's own generated .ddev/.gitignore covers this
-# too, but that file is itself untracked, so it is absent until the first ddev run.
-.ddev/config.local.yaml
+#
+# Everything under .ddev/ is generated except the configuration: certificates,
+# router config, per-service overrides and image build context, all stamped
+# #ddev-generated and all specific to one machine and one project name. An
+# allowlist rather than a list of what ddev happens to write today — a stale
+# router config for a project that has been renamed is not an obvious thing to
+# debug from a CI log.
+/.ddev/*
+!/.ddev/config.yaml
 
 # OS
 .DS_Store
