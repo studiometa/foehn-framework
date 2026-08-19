@@ -37,16 +37,16 @@ use function Tempest\Support\str;
     ## EXAMPLES
 
         # Create a simple post type
-        wp tempest make:post-type project
+        wp foehn make:post-type project
 
         # Create with custom labels
-        wp tempest make:post-type team-member --singular="Team Member" --plural="Team Members"
+        wp foehn make:post-type team-member --singular="Team Member" --plural="Team Members"
 
         # Create with custom class name
-        wp tempest make:post-type event --class=CalendarEvent
+        wp foehn make:post-type event --class=CalendarEvent
 
         # Preview what would be created
-        wp tempest make:post-type project --dry-run
+        wp foehn make:post-type project --dry-run
     DOC)]
 final class MakePostTypeCommand implements CliCommandInterface
 {

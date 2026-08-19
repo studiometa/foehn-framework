@@ -5,7 +5,6 @@ declare(strict_types=1);
 use Studiometa\Foehn\Blocks\BlockEditorAssets;
 use Studiometa\Foehn\Config\FoehnConfig;
 use Studiometa\Foehn\Discovery\BlockDiscovery;
-use Studiometa\Foehn\Discovery\DiscoveryLocation;
 use Studiometa\Foehn\Discovery\DiscoveryRunner;
 use Tempest\Container\GenericContainer;
 use Tests\Fixtures\BlockFixture;
@@ -19,14 +18,18 @@ beforeEach(function () {
     // from the discovery instance the DiscoveryRunner holds.
     $this->discovery = new BlockDiscovery();
     $this->discovery->discover(
-        DiscoveryLocation::app('Tests\\Fixtures\\', __DIR__),
-        new ReflectionClass(BlockFixture::class),
+        testDiscoveryLocation('Tests\\Fixtures\\', __DIR__),
+        new \Tempest\Reflection\ClassReflector(BlockFixture::class),
     );
 
     $this->makeRunner = function (array $discoveries): DiscoveryRunner {
-        $runner = new DiscoveryRunner(new GenericContainer());
-        $property = new ReflectionProperty(DiscoveryRunner::class, 'discoveries');
-        $property->setValue($runner, $discoveries);
+        $runner = testDiscoveryRunner(new GenericContainer());
+
+        new ReflectionProperty(DiscoveryRunner::class, 'discoveries')->setValue($runner, $discoveries);
+
+        // Stand in for a runner that has already scanned, so that reading the
+        // discoveries back does not replace them with a fresh scan.
+        new ReflectionProperty(DiscoveryRunner::class, 'discovered')->setValue($runner, true);
 
         return $runner;
     };

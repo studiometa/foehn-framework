@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn;
 
+use Psr\Cache\CacheItemPoolInterface;
 use RuntimeException;
 use Studiometa\Foehn\Blocks\AcfBlockRenderer;
 use Studiometa\Foehn\Blocks\BlockEditorAssets;
 use Studiometa\Foehn\Cache\TransientCache;
 use Studiometa\Foehn\Config\AcfConfig;
+use Studiometa\Foehn\Config\ConfigLoader;
 use Studiometa\Foehn\Config\FoehnConfig;
 use Studiometa\Foehn\Config\RenderApiConfig;
 use Studiometa\Foehn\Config\RestConfig;
@@ -17,15 +19,17 @@ use Studiometa\Foehn\Console\ClassFileGenerator;
 use Studiometa\Foehn\Contracts\CacheInterface;
 use Studiometa\Foehn\Contracts\JobDispatcher;
 use Studiometa\Foehn\Contracts\ViewEngineInterface;
-use Studiometa\Foehn\Discovery\DiscoveryCache;
+use Studiometa\Foehn\Discovery\DiscoveryLocations;
 use Studiometa\Foehn\Discovery\DiscoveryRunner;
 use Studiometa\Foehn\Jobs\ActionSchedulerJobDispatcher;
 use Studiometa\Foehn\Jobs\JobRegistry;
 use Studiometa\Foehn\Rest\RenderApi;
 use Studiometa\Foehn\Views\ContextProviderRegistry;
 use Studiometa\Foehn\Views\TimberViewEngine;
+use Symfony\Component\Cache\Adapter\PhpFilesAdapter;
 use Tempest\Container\Container;
 use Tempest\Container\GenericContainer;
+use Tempest\Discovery\DiscoveryCache;
 use Timber\Timber;
 
 /**
@@ -33,6 +37,14 @@ use Timber\Timber;
  */
 final class Kernel
 {
+    /**
+     * Shape version of the cached discovery items.
+     *
+     * Bump this whenever an attribute's promoted constructor changes: a cache
+     * written against the old signature is then ignored instead of restored.
+     */
+    private const DISCOVERY_CACHE_VERSION = 'foehn.discovery.v1';
+
     private static ?self $instance = null;
 
     private Container $container;
@@ -188,6 +200,11 @@ final class Kernel
         // Register the kernel itself
         $this->container->singleton(self::class, fn() => $this);
 
+        // Where classes and config files are looked for. Registered before the
+        // configs because reading a config file needs the locations, and choosing
+        // how discovery caches needs the config.
+        $this->container->singleton(DiscoveryLocations::class, fn() => new DiscoveryLocations($this->appPath));
+
         // Resolve and register configurations
         $this->registerConfigs();
 
@@ -200,16 +217,20 @@ final class Kernel
      */
     private function registerConfigs(): void
     {
-        // Resolve FoehnConfig from boot() array or use defaults
-        $this->foehnConfig = $this->config !== [] ? FoehnConfig::fromArray($this->config) : new FoehnConfig();
+        // Defaults first, so that a project only writes the config files it cares
+        // about. Kernel::boot()'s array is one of those defaults: a foehn.config.php
+        // replaces it wholesale, which is why the array is the legacy way in.
+        $this->container->config(new TimberConfig());
+        $this->container->config(new AcfConfig());
+        $this->container->config(new RestConfig());
+        $this->container->config(new RenderApiConfig());
+        $this->container->config($this->config !== [] ? FoehnConfig::fromArray($this->config) : new FoehnConfig());
 
-        $this->container->singleton(FoehnConfig::class, fn() => $this->foehnConfig);
+        new ConfigLoader($this->container)->load($this->container->get(DiscoveryLocations::class)->all());
 
-        // Register default configs (can be overridden by user via container singletons)
-        $this->container->singleton(TimberConfig::class, static fn() => new TimberConfig());
-        $this->container->singleton(AcfConfig::class, static fn() => new AcfConfig());
-        $this->container->singleton(RestConfig::class, static fn() => new RestConfig());
-        $this->container->singleton(RenderApiConfig::class, static fn() => new RenderApiConfig());
+        /** @var FoehnConfig $foehnConfig */
+        $foehnConfig = $this->container->get(FoehnConfig::class);
+        $this->foehnConfig = $foehnConfig;
     }
 
     /**
@@ -218,13 +239,39 @@ final class Kernel
     private function registerInfrastructureServices(): void
     {
         $this->container->singleton(CacheInterface::class, static fn() => new TransientCache());
-        $this->container->singleton(DiscoveryCache::class, fn() => new DiscoveryCache($this->foehnConfig));
+
+        // The discovery cache stores attribute instances, which var_export()s back
+        // through a constructor-less hydration. An attribute whose promoted
+        // constructor changed would come back with properties the new code does not
+        // expect, so the pool namespace carries a shape version: bump it and every
+        // cache written by an older Foehn is ignored rather than half-restored.
+        $this->container->singleton(
+            CacheItemPoolInterface::class,
+            fn() => new PhpFilesAdapter(
+                namespace: self::DISCOVERY_CACHE_VERSION,
+                directory: $this->foehnConfig->getDiscoveryCachePath(),
+            ),
+        );
+
+        $this->container->singleton(
+            DiscoveryCache::class,
+            fn() => new DiscoveryCache(
+                $this->foehnConfig->discoveryCacheStrategy,
+                $this->container->get(CacheItemPoolInterface::class),
+            ),
+        );
 
         $this->container->singleton(ClassFileGenerator::class, fn() => new ClassFileGenerator($this->appPath));
 
         $this->container->singleton(
             DiscoveryRunner::class,
-            fn() => new DiscoveryRunner($this->container, $this->container->get(DiscoveryCache::class), $this->appPath),
+            fn() => new DiscoveryRunner(
+                $this->container,
+                $this->container->get(DiscoveryCache::class),
+                $this->container->get(CacheItemPoolInterface::class),
+                $this->container->get(DiscoveryLocations::class),
+                $this->foehnConfig,
+            ),
         );
 
         $this->container->singleton(

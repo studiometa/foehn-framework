@@ -2,12 +2,11 @@
 
 declare(strict_types=1);
 
-use Studiometa\Foehn\Discovery\DiscoveryLocation;
 use Studiometa\Foehn\Discovery\ShortcodeDiscovery;
 use Tests\Fixtures\ShortcodeFixture;
 
 beforeEach(function () {
-    $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
+    $this->location = testDiscoveryLocation();
     wp_stub_reset();
     bootTestContainer();
     $this->discovery = new ShortcodeDiscovery();
@@ -17,7 +16,7 @@ afterEach(fn() => tearDownTestContainer());
 
 describe('ShortcodeDiscovery apply', function () {
     it('registers discovered shortcodes with WordPress', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(ShortcodeFixture::class));
+        $this->discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(ShortcodeFixture::class));
         $this->discovery->apply();
 
         $calls = wp_stub_get_calls('add_shortcode');

@@ -31,16 +31,16 @@ use function Tempest\Support\str;
     ## EXAMPLES
 
         # Create a SEO hooks class
-        wp tempest make:hooks seo
+        wp foehn make:hooks seo
 
         # Create admin hooks
-        wp tempest make:hooks admin --class=AdminHooks
+        wp foehn make:hooks admin --class=AdminHooks
 
         # Create security-related hooks
-        wp tempest make:hooks security
+        wp foehn make:hooks security
 
         # Preview what would be created
-        wp tempest make:hooks seo --dry-run
+        wp foehn make:hooks seo --dry-run
     DOC)]
 final class MakeHooksCommand implements CliCommandInterface
 {

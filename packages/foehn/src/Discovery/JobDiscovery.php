@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Discovery;
 
-use ReflectionClass;
 use ReflectionNamedType;
 use Studiometa\Foehn\Attributes\AsJob;
-use Studiometa\Foehn\Discovery\Concerns\CacheableDiscovery;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
 use Studiometa\Foehn\Jobs\HookNameResolver;
 use Studiometa\Foehn\Jobs\JobRegistry;
 use Studiometa\Foehn\Jobs\JobSerializer;
+use Tempest\Discovery\Discovery;
+use Tempest\Discovery\DiscoveryLocation;
+use Tempest\Reflection\ClassReflector;
 
 use function Tempest\Container\get;
 
@@ -19,10 +20,9 @@ use function Tempest\Container\get;
  * Discovers classes marked with #[AsJob] attribute
  * and registers them as Action Scheduler action handlers.
  */
-final class JobDiscovery implements WpDiscovery
+final class JobDiscovery implements Discovery
 {
     use IsWpDiscovery;
-    use CacheableDiscovery;
 
     public function __construct(
         private readonly JobRegistry $jobRegistry,
@@ -35,22 +35,29 @@ final class JobDiscovery implements WpDiscovery
      * with exactly one typed parameter (the job DTO).
      *
      * @param DiscoveryLocation $location
-     * @param ReflectionClass<object> $class
+     * @param ClassReflector $class
      */
-    public function discover(DiscoveryLocation $location, ReflectionClass $class): void
+    public function discover(DiscoveryLocation $location, ClassReflector $class): void
     {
-        $attributes = $class->getAttributes(AsJob::class);
+        if (!$this->isConcrete($class)) {
+            return;
+        }
 
-        if ($attributes === []) {
+        $attribute = $class->getAttribute(AsJob::class);
+
+        if ($attribute === null) {
             return;
         }
 
         // Validate __invoke exists and is public
-        if (!$class->hasMethod('__invoke') || !$class->getMethod('__invoke')->isPublic()) {
+        if (
+            !$class->getReflection()->hasMethod('__invoke')
+            || !$class->getReflection()->getMethod('__invoke')->isPublic()
+        ) {
             return;
         }
 
-        $invoke = $class->getMethod('__invoke');
+        $invoke = $class->getReflection()->getMethod('__invoke');
         $params = $invoke->getParameters();
 
         // Must have exactly one typed parameter (the DTO)
@@ -63,8 +70,6 @@ final class JobDiscovery implements WpDiscovery
         if (!$paramType instanceof ReflectionNamedType || $paramType->isBuiltin()) {
             return;
         }
-
-        $attribute = $attributes[0]->newInstance();
 
         // The DTO class comes from the handler's __invoke() signature, not the
         // attribute, so it travels beside it as its own item field.

@@ -4,22 +4,22 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Discovery;
 
-use ReflectionClass;
 use ReflectionMethod;
 use Studiometa\Foehn\Attributes\AsAction;
 use Studiometa\Foehn\Attributes\AsFilter;
-use Studiometa\Foehn\Discovery\Concerns\CacheableDiscovery;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
 use Tempest\Container\Container;
+use Tempest\Discovery\Discovery;
+use Tempest\Discovery\DiscoveryLocation;
+use Tempest\Reflection\ClassReflector;
 
 /**
  * Discovers methods marked with #[AsAction] or #[AsFilter] attributes
  * and registers them as WordPress hooks.
  */
-final class HookDiscovery implements WpDiscovery
+final class HookDiscovery implements Discovery
 {
     use IsWpDiscovery;
-    use CacheableDiscovery;
 
     public function __construct(
         private readonly Container $container,
@@ -29,11 +29,19 @@ final class HookDiscovery implements WpDiscovery
      * Discover hook attributes on class methods.
      *
      * @param DiscoveryLocation $location
-     * @param ReflectionClass<object> $class
+     * @param ClassReflector $class
      */
-    public function discover(DiscoveryLocation $location, ReflectionClass $class): void
+    public function discover(DiscoveryLocation $location, ClassReflector $class): void
     {
-        foreach ($class->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
+        if (!$this->isConcrete($class)) {
+            return;
+        }
+
+        if ($this->isPackageLocation($location)) {
+            return;
+        }
+
+        foreach ($class->getReflection()->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
             // Skip methods inherited from parent classes outside the scanned namespace
             if ($method->getDeclaringClass()->getName() !== $class->getName()) {
                 continue;
@@ -42,6 +50,23 @@ final class HookDiscovery implements WpDiscovery
             $this->discoverHooks($location, $method, AsAction::class);
             $this->discoverHooks($location, $method, AsFilter::class);
         }
+    }
+
+    /**
+     * Whether a location belongs to an installed package rather than to the project.
+     *
+     * The framework ships hook classes of its own — DisableXmlRpc, CleanHeadTags and
+     * the rest. Registering them because they happen to sit in a scanned package
+     * would change what a site does on a `composer update`, so they stay opt-in:
+     * DiscoveryRunner hands the classes named in FoehnConfig::hooks back to this
+     * discovery against the app location.
+     *
+     * The namespace is checked as well as the path, because a package installed
+     * from a path repository with symlinks resolves to a path outside vendor/.
+     */
+    private function isPackageLocation(DiscoveryLocation $location): bool
+    {
+        return $location->isVendor() || str_starts_with($location->namespace, 'Studiometa\\Foehn\\');
     }
 
     /**

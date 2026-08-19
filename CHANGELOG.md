@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **The framework's own discoverables never registered.** Discovery scanned the theme's app directory alone, so the five bundled `#[AsTwigExtension]` classes never reached Timber and the `#[AsCliCommand]` classes never reached WP-CLI. The starter's templates call `html_attributes()`, so a stock install answered every front-end request with `Twig\Error\SyntaxError: Unknown "html_attributes" function`
+- **`*.config.php` files were never read.** `Kernel::registerConfigs()` used its defaults and the `boot()` array and stopped there, so `app/foehn.config.php`, `app/timber.config.php`, `app/acf.config.php`, `app/rest.config.php` and `app/render-api.config.php` did nothing. The starter shipped a `foehn.config.php` opting into seven cleanup and security hook classes, and none of them were applied
+- `#[SkipDiscovery]` was ignored by the scanner. It matters now that packages are scanned: the fourteen `make:` command stubs carry real `#[AsPostType]` and `#[AsBlock]` attributes
+
+### Changed
+
+- Discovery is built on `tempest/discovery` — already a direct dependency — instead of Foehn's own scanner. Locations come from Composer's `installed.json`, which is what makes an installed package discoverable at all. `ClassScanner`, `DiscoveryLocation`, `DiscoveryCache`, `WpDiscoveryItems`, `AttributeCodec`, the `CacheableDiscovery` trait and the `WpDiscovery` interface are gone; discoveries implement `Tempest\Discovery\Discovery` and receive a `ClassReflector`
+- Discovery items are cached as attribute instances through `symfony/cache`, so no discovery describes a cache format. The cache is written per location, and `discovery:status` reports how many locations are warm
+- WP-CLI commands are registered under `wp foehn` rather than `wp tempest`
+- `discovery:warm` is removed: it and `discovery:generate` did the same thing, and the deployment documentation already used `generate`
+- The framework's `Models\Post` and `Models\Page` now register as Timber's class map entries for `post` and `page`, as their `#[AsTimberModel]` attributes ask. A model of your own for the same type still wins
+- `Kernel::boot()`'s configuration array is a default that a `foehn.config.php` overrides wholesale
+
+### Added
+
+- Config files may be named for an environment — `foehn.production.config.php` — and are then read only in that one, as reported by `wp_get_environment_type()`. The environment's file wins over the plain file beside it
+- An integration smoke test for the starter (`packages/starter/tests/smoke/run.sh`), run in CI against a real WordPress in ddev, on a cold cache and again on a warm one
+- Tests for `studiometa/foehn-installer`, which had none, and CI now runs the starter's PHP and browser suites and the installer's alongside the framework's
+
 ### Changed
 
 - Upgrade PHP dependencies: Tempest `^3.4` → `^3.18`, Timber `^2.0` → `^2.5`, Pest `^3.0` → `^5.1` (PHPUnit 13), Mago `^1.8` → `^1.46`, `composer/composer` `^2.0` → `^2.10`, ACF Pro stubs `^6.5` → `^6.8`, `studiometa/webpack-config` `^6.3` → `^6.4`

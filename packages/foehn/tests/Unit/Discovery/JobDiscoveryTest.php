@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Studiometa\Foehn\Discovery\DiscoveryLocation;
 use Studiometa\Foehn\Discovery\JobDiscovery;
 use Studiometa\Foehn\Jobs\JobRegistry;
 use Tests\Fixtures\InvalidJobHandlerFixture;
@@ -13,16 +12,16 @@ use Tests\Fixtures\JobHandlerNoInvokeFixture;
 use Tests\Fixtures\NoAttributeFixture;
 
 beforeEach(function () {
-    $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
+    $this->location = testDiscoveryLocation();
     $this->registry = new JobRegistry();
     $this->discovery = new JobDiscovery($this->registry);
 });
 
 describe('JobDiscovery', function () {
     it('discovers job handler attributes on classes', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(JobHandlerFixture::class));
+        $this->discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(JobHandlerFixture::class));
 
-        $items = $this->discovery->getItems()->all();
+        $items = iterator_to_array($this->discovery->getItems());
 
         expect($items)->toHaveCount(1);
         expect($items[0]['handlerClass'])->toBe(JobHandlerFixture::class);
@@ -32,9 +31,12 @@ describe('JobDiscovery', function () {
     });
 
     it('uses custom hook name when provided', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(JobHandlerCustomHookFixture::class));
+        $this->discovery->discover(
+            $this->location,
+            new \Tempest\Reflection\ClassReflector(JobHandlerCustomHookFixture::class),
+        );
 
-        $items = $this->discovery->getItems()->all();
+        $items = iterator_to_array($this->discovery->getItems());
 
         expect($items)->toHaveCount(1);
         expect($items[0]['attribute']->hook)->toBe('my_plugin/process_import');
@@ -42,39 +44,48 @@ describe('JobDiscovery', function () {
     });
 
     it('ignores classes without job attributes', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(NoAttributeFixture::class));
+        $this->discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(NoAttributeFixture::class));
 
-        expect($this->discovery->getItems()->isEmpty())->toBeTrue();
+        expect($this->discovery->getItems())->toHaveCount(0);
     });
 
     it('ignores handlers without a DTO parameter', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(InvalidJobHandlerFixture::class));
+        $this->discovery->discover(
+            $this->location,
+            new \Tempest\Reflection\ClassReflector(InvalidJobHandlerFixture::class),
+        );
 
-        expect($this->discovery->getItems()->isEmpty())->toBeTrue();
+        expect($this->discovery->getItems())->toHaveCount(0);
     });
 
     it('ignores handlers without __invoke method', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(JobHandlerNoInvokeFixture::class));
+        $this->discovery->discover(
+            $this->location,
+            new \Tempest\Reflection\ClassReflector(JobHandlerNoInvokeFixture::class),
+        );
 
-        expect($this->discovery->getItems()->isEmpty())->toBeTrue();
+        expect($this->discovery->getItems())->toHaveCount(0);
     });
 
     it('ignores handlers with builtin parameter type', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(JobHandlerBuiltinParamFixture::class));
+        $this->discovery->discover(
+            $this->location,
+            new \Tempest\Reflection\ClassReflector(JobHandlerBuiltinParamFixture::class),
+        );
 
-        expect($this->discovery->getItems()->isEmpty())->toBeTrue();
+        expect($this->discovery->getItems())->toHaveCount(0);
     });
 
     it('reports hasItems correctly', function () {
-        expect($this->discovery->hasItems())->toBeFalse();
+        expect($this->discovery->getItems())->toHaveCount(0);
 
-        $this->discovery->discover($this->location, new ReflectionClass(JobHandlerFixture::class));
+        $this->discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(JobHandlerFixture::class));
 
-        expect($this->discovery->hasItems())->toBeTrue();
+        expect($this->discovery->getItems())->not->toHaveCount(0);
     });
 
     it('registers handlers in the registry on apply', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(JobHandlerFixture::class));
+        $this->discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(JobHandlerFixture::class));
 
         wp_stub_reset();
         $this->discovery->apply();
@@ -105,18 +116,12 @@ describe('JobDiscovery', function () {
     });
 
     it('supports caching', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(JobHandlerFixture::class));
+        $this->discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(JobHandlerFixture::class));
 
-        $cacheData = $this->discovery->getCacheableData();
+        expect($this->discovery->getItems()->getForLocation($this->location))->not->toBeEmpty();
 
-        expect($cacheData)->not->toBeEmpty();
+        $restored = restoreThroughCacheFile($this->discovery, new JobDiscovery(new JobRegistry()), $this->location);
 
-        // Restore from cache
-        $restoredRegistry = new JobRegistry();
-        $restored = new JobDiscovery($restoredRegistry);
-        $restored->restoreFromCache($cacheData);
-
-        expect($restored->getItems()->all())->toEqual($this->discovery->getItems()->all());
-        expect($restored->wasRestoredFromCache())->toBeTrue();
+        expect(iterator_to_array($restored->getItems()))->toEqual(iterator_to_array($this->discovery->getItems()));
     });
 });

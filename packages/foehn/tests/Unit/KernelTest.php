@@ -56,7 +56,7 @@ describe('Kernel configuration', function () {
         expect($kernel->getConfig('missing', 'default'))->toBe('default');
     });
 
-    it('returns wp tempest config', function () {
+    it('returns the Foehn config', function () {
         $reflection = new ReflectionClass(Kernel::class);
         $kernel = $reflection->newInstanceWithoutConstructor();
 
@@ -91,14 +91,12 @@ describe('Kernel Timber initialization', function () {
     it('calls initializeTimber during bootstrap', function () {
         $kernel = Kernel::boot(dirname(__DIR__, 2) . '/src');
 
-
         // Timber::$dirname should be set to the default config value
         expect(Timber::$dirname)->toBe(['templates']);
     });
 
     it('registers TimberConfig in container with defaults', function () {
         $kernel = Kernel::boot(dirname(__DIR__, 2) . '/src', []);
-
 
         $config = Kernel::get(\Studiometa\Foehn\Config\TimberConfig::class);
         expect($config)->toBeInstanceOf(\Studiometa\Foehn\Config\TimberConfig::class);
@@ -107,7 +105,6 @@ describe('Kernel Timber initialization', function () {
 
     it('registers timber/context filter', function () {
         $kernel = Kernel::boot(dirname(__DIR__, 2) . '/src');
-
 
         $contextFilters = wp_stub_get_calls('add_filter');
         $timberContextFilter = array_filter(
@@ -121,7 +118,6 @@ describe('Kernel Timber initialization', function () {
     it('registers AcfConfig in container with defaults', function () {
         $kernel = Kernel::boot(dirname(__DIR__, 2) . '/src', []);
 
-
         $config = Kernel::get(\Studiometa\Foehn\Config\AcfConfig::class);
         expect($config)->toBeInstanceOf(\Studiometa\Foehn\Config\AcfConfig::class);
         expect($config->transformFields)->toBeTrue();
@@ -129,7 +125,6 @@ describe('Kernel Timber initialization', function () {
 
     it('registers RestConfig in container with defaults', function () {
         $kernel = Kernel::boot(dirname(__DIR__, 2) . '/src', []);
-
 
         $config = Kernel::get(\Studiometa\Foehn\Config\RestConfig::class);
         expect($config)->toBeInstanceOf(\Studiometa\Foehn\Config\RestConfig::class);
@@ -139,7 +134,6 @@ describe('Kernel Timber initialization', function () {
     it('registers RenderApi in container', function () {
         $kernel = Kernel::boot(dirname(__DIR__, 2) . '/src', []);
 
-
         // RenderApi should be available in container
         $renderApi = Kernel::get(\Studiometa\Foehn\Rest\RenderApi::class);
         expect($renderApi)->toBeInstanceOf(\Studiometa\Foehn\Rest\RenderApi::class);
@@ -147,7 +141,6 @@ describe('Kernel Timber initialization', function () {
 
     it('registers RenderApiConfig in container with defaults', function () {
         $kernel = Kernel::boot(dirname(__DIR__, 2) . '/src', []);
-
 
         // RenderApiConfig should be available with empty templates by default
         $config = Kernel::get(\Studiometa\Foehn\Config\RenderApiConfig::class);
@@ -191,7 +184,7 @@ describe('Kernel block editor assets', function () {
         wp_stub_reset();
 
         // No block is discovered here, so the callback is a no-op — but it must not fatal.
-        ($actions[0]['args']['callback'])();
+        $actions[0]['args']['callback']();
 
         expect(wp_stub_get_calls('wp_enqueue_script'))->toBeEmpty();
     });
@@ -206,7 +199,6 @@ describe('Kernel respects user config files', function () {
     it('does not overwrite user-defined configs already in container', function () {
         // Boot kernel
         $kernel = Kernel::boot(dirname(__DIR__, 2) . '/src', []);
-
 
         // Get the container
         $container = Kernel::container();
@@ -223,13 +215,18 @@ describe('Kernel respects user config files', function () {
     });
 
     it('registers all default config classes', function () {
-        $reflection = new ReflectionClass(Kernel::class);
-        $source = file_get_contents($reflection->getFileName());
+        Kernel::boot(dirname(__DIR__, 2) . '/src', []);
 
-        // Verify the code registers all default configs as singletons
-        expect($source)->toContain('TimberConfig::class');
-        expect($source)->toContain('AcfConfig::class');
-        expect($source)->toContain('RestConfig::class');
-        expect($source)->toContain('RenderApiConfig::class');
+        $container = Kernel::container();
+
+        foreach ([
+            \Studiometa\Foehn\Config\FoehnConfig::class,
+            \Studiometa\Foehn\Config\TimberConfig::class,
+            \Studiometa\Foehn\Config\AcfConfig::class,
+            \Studiometa\Foehn\Config\RestConfig::class,
+            \Studiometa\Foehn\Config\RenderApiConfig::class,
+        ] as $class) {
+            expect($container->get($class))->toBeInstanceOf($class);
+        }
     });
 });

@@ -4,14 +4,13 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Console\Commands;
 
+use Psr\Cache\CacheItemPoolInterface;
 use Studiometa\Foehn\Attributes\AsCliCommand;
 use Studiometa\Foehn\Config\FoehnConfig;
 use Studiometa\Foehn\Console\CliCommandInterface;
 use Studiometa\Foehn\Console\WpCli;
-use Studiometa\Foehn\Discovery\DiscoveryCache;
 use Studiometa\Foehn\Discovery\DiscoveryRunner;
-use Studiometa\Foehn\Discovery\WpDiscovery;
-use Tempest\Container\Container;
+use Tempest\Discovery\DiscoveryCache;
 use Tempest\Discovery\DiscoveryCacheStrategy;
 
 #[AsCliCommand(name: 'discovery:generate', description: 'Generate and cache all discoveries', longDescription: <<<'DOC'
@@ -37,21 +36,22 @@ use Tempest\Discovery\DiscoveryCacheStrategy;
     ## EXAMPLES
 
         # Generate discovery cache
-        wp tempest discovery:generate
+        wp foehn discovery:generate
 
         # Generate with full caching strategy
-        wp tempest discovery:generate --strategy=full
+        wp foehn discovery:generate --strategy=full
 
         # Clear and regenerate
-        wp tempest discovery:generate --clear
+        wp foehn discovery:generate --clear
     DOC)]
 final class DiscoveryGenerateCommand implements CliCommandInterface
 {
     public function __construct(
         private readonly WpCli $cli,
         private readonly DiscoveryCache $discoveryCache,
+        private readonly CacheItemPoolInterface $pool,
+        private readonly DiscoveryRunner $runner,
         private readonly FoehnConfig $config,
-        private readonly Container $container,
     ) {}
 
     /**
@@ -60,7 +60,6 @@ final class DiscoveryGenerateCommand implements CliCommandInterface
      */
     public function __invoke(array $args, array $assocArgs): void
     {
-        // Determine strategy
         $strategy = $this->determineStrategy($assocArgs);
 
         if ($strategy === DiscoveryCacheStrategy::NONE) {
@@ -69,29 +68,21 @@ final class DiscoveryGenerateCommand implements CliCommandInterface
             return;
         }
 
-        // Clear if requested
         if (($assocArgs['clear'] ?? null) !== null) {
             $this->cli->log('Clearing existing cache...');
-            $this->discoveryCache->clear();
+            $this->pool->clear();
         }
 
         $this->cli->log("Generating discovery cache using '{$strategy->value}' strategy...");
 
-        // Run all discoveries and collect their data
-        $cacheData = $this->collectDiscoveryData();
+        $counts = $this->runner->warmCache($this->discoveryCache->withStrategy($strategy));
 
-        // Store the cache
-        $this->discoveryCache->store($cacheData);
-        $this->discoveryCache->storeStrategy($strategy);
-
-        $discoveryCount = count($cacheData);
-        $this->cli->success("Discovery cache generated successfully ({$discoveryCount} discoveries cached).");
+        $this->cli->success(sprintf('Discovery cache generated successfully (%d discoveries cached).', count($counts)));
         $this->cli->line('');
         $this->cli->log('Cached discoveries:');
 
-        foreach (array_keys($cacheData) as $discoveryClass) {
+        foreach ($counts as $discoveryClass => $itemCount) {
             $shortName = $this->getShortClassName($discoveryClass);
-            $itemCount = array_sum(array_map('count', $cacheData[$discoveryClass]));
             $this->cli->log("  - {$shortName}: {$itemCount} items");
         }
     }
@@ -116,30 +107,6 @@ final class DiscoveryGenerateCommand implements CliCommandInterface
         }
 
         return $configuredStrategy;
-    }
-
-    /**
-     * Collect data from all discoveries.
-     *
-     * @return array<string, array<string, list<array<string, mixed>>>>
-     */
-    private function collectDiscoveryData(): array
-    {
-        /** @var array<string, array<string, list<array<string, mixed>>>> $cacheData */
-        $cacheData = [];
-
-        foreach (DiscoveryRunner::getAllDiscoveryClasses() as $discoveryClass) {
-            /** @var WpDiscovery $discovery */
-            $discovery = $this->container->get($discoveryClass);
-
-            $data = $discovery->getCacheableData();
-
-            if (!empty($data)) {
-                $cacheData[$discoveryClass] = $data;
-            }
-        }
-
-        return $cacheData;
     }
 
     /**

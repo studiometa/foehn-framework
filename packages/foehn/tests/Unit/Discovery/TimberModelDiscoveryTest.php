@@ -7,18 +7,20 @@ use Tests\Fixtures\InvalidTimberModelFixture;
 use Tests\Fixtures\NoAttributeFixture;
 use Tests\Fixtures\TimberModelPostFixture;
 use Tests\Fixtures\TimberModelTermFixture;
-use Studiometa\Foehn\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
-    $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
+    $this->location = testDiscoveryLocation();
     $this->discovery = new TimberModelDiscovery();
 });
 
 describe('TimberModelDiscovery', function () {
     it('discovers post timber model attributes on classes', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(TimberModelPostFixture::class));
+        $this->discovery->discover(
+            $this->location,
+            new \Tempest\Reflection\ClassReflector(TimberModelPostFixture::class),
+        );
 
-        $items = $this->discovery->getItems()->all();
+        $items = iterator_to_array($this->discovery->getItems());
 
         expect($items)->toHaveCount(1);
         expect($items[0]['className'])->toBe(TimberModelPostFixture::class);
@@ -27,9 +29,12 @@ describe('TimberModelDiscovery', function () {
     });
 
     it('discovers term timber model attributes on classes', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(TimberModelTermFixture::class));
+        $this->discovery->discover(
+            $this->location,
+            new \Tempest\Reflection\ClassReflector(TimberModelTermFixture::class),
+        );
 
-        $items = $this->discovery->getItems()->all();
+        $items = iterator_to_array($this->discovery->getItems());
 
         expect($items)->toHaveCount(1);
         expect($items[0]['className'])->toBe(TimberModelTermFixture::class);
@@ -38,21 +43,27 @@ describe('TimberModelDiscovery', function () {
     });
 
     it('ignores classes without timber model attribute', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(NoAttributeFixture::class));
+        $this->discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(NoAttributeFixture::class));
 
-        expect($this->discovery->getItems()->isEmpty())->toBeTrue();
+        expect($this->discovery->getItems())->toHaveCount(0);
     });
 
     it('throws when class does not extend Timber Post or Term', function () {
-        expect(fn() => $this->discovery->discover($this->location, new ReflectionClass(InvalidTimberModelFixture::class)))
+        expect(fn() => $this->discovery->discover(
+            $this->location,
+            new \Tempest\Reflection\ClassReflector(InvalidTimberModelFixture::class),
+        ))
             ->toThrow(InvalidArgumentException::class, 'must extend');
     });
 
     it('reports hasItems correctly', function () {
-        expect($this->discovery->hasItems())->toBeFalse();
+        expect($this->discovery->getItems())->toHaveCount(0);
 
-        $this->discovery->discover($this->location, new ReflectionClass(TimberModelPostFixture::class));
+        $this->discovery->discover(
+            $this->location,
+            new \Tempest\Reflection\ClassReflector(TimberModelPostFixture::class),
+        );
 
-        expect($this->discovery->hasItems())->toBeTrue();
+        expect($this->discovery->getItems())->not->toHaveCount(0);
     });
 });

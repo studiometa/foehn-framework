@@ -4,35 +4,37 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Discovery;
 
-use ReflectionClass;
 use Studiometa\Foehn\Attributes\AsImageSize;
-use Studiometa\Foehn\Discovery\Concerns\CacheableDiscovery;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
+use Tempest\Discovery\Discovery;
+use Tempest\Discovery\DiscoveryLocation;
+use Tempest\Reflection\ClassReflector;
 
 /**
  * Discovers classes marked with #[AsImageSize] attribute
  * and registers them as WordPress custom image sizes.
  */
-final class ImageSizeDiscovery implements WpDiscovery
+final class ImageSizeDiscovery implements Discovery
 {
     use IsWpDiscovery;
-    use CacheableDiscovery;
 
     /**
      * Discover image size attributes on classes.
      *
      * @param DiscoveryLocation $location
-     * @param ReflectionClass<object> $class
+     * @param ClassReflector $class
      */
-    public function discover(DiscoveryLocation $location, ReflectionClass $class): void
+    public function discover(DiscoveryLocation $location, ClassReflector $class): void
     {
-        $attributes = $class->getAttributes(AsImageSize::class);
-
-        if ($attributes === []) {
+        if (!$this->isConcrete($class)) {
             return;
         }
 
-        $attribute = $attributes[0]->newInstance();
+        $attribute = $class->getAttribute(AsImageSize::class);
+
+        if ($attribute === null) {
+            return;
+        }
 
         $this->addItem($location, [
             'attribute' => $attribute,

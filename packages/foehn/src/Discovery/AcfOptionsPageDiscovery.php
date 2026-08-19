@@ -4,41 +4,43 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Discovery;
 
-use ReflectionClass;
 use Studiometa\Foehn\Attributes\AsAcfOptionsPage;
 use Studiometa\Foehn\Contracts\AcfOptionsPageInterface;
-use Studiometa\Foehn\Discovery\Concerns\CacheableDiscovery;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
+use Tempest\Discovery\Discovery;
+use Tempest\Discovery\DiscoveryLocation;
+use Tempest\Reflection\ClassReflector;
 
 /**
  * Discovers classes marked with #[AsAcfOptionsPage] attribute
  * and registers them as ACF Options Pages.
  */
-final class AcfOptionsPageDiscovery implements WpDiscovery
+final class AcfOptionsPageDiscovery implements Discovery
 {
     use IsWpDiscovery;
-    use CacheableDiscovery;
 
     /**
      * Discover ACF options page attributes on classes.
      *
      * @param DiscoveryLocation $location
-     * @param ReflectionClass<object> $class
+     * @param ClassReflector $class
      */
-    public function discover(DiscoveryLocation $location, ReflectionClass $class): void
+    public function discover(DiscoveryLocation $location, ClassReflector $class): void
     {
-        $attributes = $class->getAttributes(AsAcfOptionsPage::class);
-
-        if ($attributes === []) {
+        if (!$this->isConcrete($class)) {
             return;
         }
 
-        $attribute = $attributes[0]->newInstance();
+        $attribute = $class->getAttribute(AsAcfOptionsPage::class);
+
+        if ($attribute === null) {
+            return;
+        }
 
         $this->addItem($location, [
             'attribute' => $attribute,
             'className' => $class->getName(),
-            'hasFields' => $class->implementsInterface(AcfOptionsPageInterface::class),
+            'hasFields' => $class->implements(AcfOptionsPageInterface::class),
         ]);
     }
 

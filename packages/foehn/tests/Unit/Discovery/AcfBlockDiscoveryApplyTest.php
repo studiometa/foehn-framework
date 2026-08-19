@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 use Studiometa\Foehn\Discovery\AcfBlockDiscovery;
 use Tests\Fixtures\AcfBlockFixture;
-use Studiometa\Foehn\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
-    $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
+    $this->location = testDiscoveryLocation();
     wp_stub_reset();
     bootTestContainer();
     $this->discovery = new AcfBlockDiscovery();
@@ -17,7 +16,7 @@ afterEach(fn() => tearDownTestContainer());
 
 describe('AcfBlockDiscovery apply', function () {
     it('registers acf/init action for block registration', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(AcfBlockFixture::class));
+        $this->discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(AcfBlockFixture::class));
         $this->discovery->apply();
 
         $actions = wp_stub_get_calls('add_action');
@@ -27,7 +26,7 @@ describe('AcfBlockDiscovery apply', function () {
     });
 
     it('registers ACF blocks when acf/init callback is invoked', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(AcfBlockFixture::class));
+        $this->discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(AcfBlockFixture::class));
         $this->discovery->apply();
 
         // Simulate WordPress calling the acf/init callback
@@ -50,7 +49,7 @@ describe('AcfBlockDiscovery apply', function () {
     });
 
     it('registers ACF field groups', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(AcfBlockFixture::class));
+        $this->discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(AcfBlockFixture::class));
         $this->discovery->apply();
 
         // Trigger callback

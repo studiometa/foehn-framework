@@ -43,16 +43,16 @@ use function Tempest\Support\str;
     ## EXAMPLES
 
         # Create a simple taxonomy
-        wp tempest make:taxonomy genre
+        wp foehn make:taxonomy genre
 
         # Create taxonomy for custom post type
-        wp tempest make:taxonomy project-type --post-types=project
+        wp foehn make:taxonomy project-type --post-types=project
 
         # Create hierarchical taxonomy
-        wp tempest make:taxonomy location --hierarchical --singular="Location" --plural="Locations"
+        wp foehn make:taxonomy location --hierarchical --singular="Location" --plural="Locations"
 
         # Preview what would be created
-        wp tempest make:taxonomy genre --dry-run
+        wp foehn make:taxonomy genre --dry-run
     DOC)]
 final class MakeTaxonomyCommand implements CliCommandInterface
 {

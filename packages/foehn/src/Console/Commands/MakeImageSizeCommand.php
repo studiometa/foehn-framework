@@ -40,16 +40,16 @@ use function Tempest\Support\str;
     ## EXAMPLES
 
         # Create a card image size (proportional width)
-        wp tempest make:image-size CardImage --width=400
+        wp foehn make:image-size CardImage --width=400
 
         # Create a hero image with exact dimensions
-        wp tempest make:image-size HeroImage --width=1920 --height=1080 --crop
+        wp foehn make:image-size HeroImage --width=1920 --height=1080 --crop
 
         # Create a thumbnail with custom size name
-        wp tempest make:image-size ProductThumb --width=300 --height=300 --crop --size-name=product-thumb
+        wp foehn make:image-size ProductThumb --width=300 --height=300 --crop --size-name=product-thumb
 
         # Preview what would be created
-        wp tempest make:image-size CardImage --width=400 --dry-run
+        wp foehn make:image-size CardImage --width=400 --dry-run
     DOC)]
 final class MakeImageSizeCommand implements CliCommandInterface
 {

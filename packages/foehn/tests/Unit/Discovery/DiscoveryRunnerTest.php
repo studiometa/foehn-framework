@@ -74,12 +74,12 @@ describe('DiscoveryRunner', function () {
         expect(count($all))->toBe($phaseTotal);
     });
 
-    it('all discovery classes implement WpDiscovery', function () {
+    it('all discovery classes implement the Tempest discovery interface', function () {
         $classes = DiscoveryRunner::getAllDiscoveryClasses();
 
         foreach ($classes as $class) {
-            expect(is_subclass_of($class, \Studiometa\Foehn\Discovery\WpDiscovery::class))
-                ->toBeTrue("Expected {$class} to implement WpDiscovery");
+            expect(is_subclass_of($class, \Tempest\Discovery\Discovery::class))
+                ->toBeTrue("Expected {$class} to implement Discovery");
         }
     });
 
@@ -106,7 +106,7 @@ describe('DiscoveryRunner phase execution', function () {
             fn() => new \Studiometa\Foehn\Jobs\JobRegistry(),
         );
 
-        $runner = new DiscoveryRunner(container: $this->container, cache: null, appPath: null, config: null);
+        $runner = testDiscoveryRunner($this->container);
 
         expect($runner->hasRun('early'))->toBeFalse();
         expect($runner->hasRun('main'))->toBeFalse();
@@ -130,7 +130,7 @@ describe('DiscoveryRunner phase execution', function () {
             fn() => new \Studiometa\Foehn\Jobs\JobRegistry(),
         );
 
-        $runner = new DiscoveryRunner(container: $this->container, cache: null, appPath: null, config: null);
+        $runner = testDiscoveryRunner($this->container);
 
         $runner->runEarlyDiscoveries();
 
@@ -145,7 +145,7 @@ describe('DiscoveryRunner phase execution', function () {
     });
 
     it('returns default false for unknown phase', function () {
-        $runner = new DiscoveryRunner(container: $this->container, cache: null, appPath: null, config: null);
+        $runner = testDiscoveryRunner($this->container);
 
         expect($runner->hasRun('unknown'))->toBeFalse();
     });
@@ -156,7 +156,7 @@ describe('DiscoveryRunner debug logging', function () {
         $container = new GenericContainer();
         $config = new FoehnConfig(debug: true);
 
-        $runner = new DiscoveryRunner(container: $container, cache: null, appPath: null, config: $config);
+        $runner = testDiscoveryRunner($container, config: $config);
 
         // Use reflection to access the private logDiscoveryFailure method
         $method = new ReflectionMethod($runner, 'logDiscoveryFailure');
@@ -181,7 +181,7 @@ describe('DiscoveryRunner debug logging', function () {
         }
 
         expect($warningTriggered)->toBeTrue();
-        expect($warningMessage)->toContain('[Foehn] Discovery failed for class "App\\NonExistentClass"');
+        expect($warningMessage)->toContain('[Foehn] Discovery failed for "App\\NonExistentClass"');
         expect($warningMessage)->toContain('Class not found');
     });
 
@@ -189,7 +189,7 @@ describe('DiscoveryRunner debug logging', function () {
         $container = new GenericContainer();
         $config = new FoehnConfig(debug: false);
 
-        $runner = new DiscoveryRunner(container: $container, cache: null, appPath: null, config: $config);
+        $runner = testDiscoveryRunner($container, config: $config);
 
         // Use reflection to access the private logDiscoveryFailure method
         $method = new ReflectionMethod($runner, 'logDiscoveryFailure');
@@ -217,7 +217,7 @@ describe('DiscoveryRunner debug logging', function () {
     it('does not log reflection failures when config is null', function () {
         $container = new GenericContainer();
 
-        $runner = new DiscoveryRunner(container: $container, cache: null, appPath: null, config: null);
+        $runner = testDiscoveryRunner($container);
 
         // Use reflection to access the private logDiscoveryFailure method
         $method = new ReflectionMethod($runner, 'logDiscoveryFailure');

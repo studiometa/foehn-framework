@@ -40,16 +40,16 @@ use function Tempest\Support\str;
     ## EXAMPLES
 
         # Create a field group for a post type
-        wp tempest make:field-group ProductFields --post-type=product
+        wp foehn make:field-group ProductFields --post-type=product
 
         # Create a field group for a page template
-        wp tempest make:field-group FrontPageFields --page-template=front-page
+        wp foehn make:field-group FrontPageFields --page-template=front-page
 
         # Create a field group for a taxonomy
-        wp tempest make:field-group CategoryFields --taxonomy=category
+        wp foehn make:field-group CategoryFields --taxonomy=category
 
         # Preview what would be created
-        wp tempest make:field-group ProductFields --post-type=product --dry-run
+        wp foehn make:field-group ProductFields --post-type=product --dry-run
     DOC)]
 final class MakeFieldGroupCommand implements CliCommandInterface
 {

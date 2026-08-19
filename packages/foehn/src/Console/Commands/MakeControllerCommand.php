@@ -35,16 +35,16 @@ use function Tempest\Support\str;
     ## EXAMPLES
 
         # Create a single post controller
-        wp tempest make:controller single
+        wp foehn make:controller single
 
         # Create a controller for multiple templates
-        wp tempest make:controller posts --templates=single-post,archive-post
+        wp foehn make:controller posts --templates=single-post,archive-post
 
         # Create a custom page controller
-        wp tempest make:controller page-contact --class=ContactController
+        wp foehn make:controller page-contact --class=ContactController
 
         # Preview what would be created
-        wp tempest make:controller single --dry-run
+        wp foehn make:controller single --dry-run
     DOC)]
 final class MakeControllerCommand implements CliCommandInterface
 {

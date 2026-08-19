@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace Studiometa\Foehn\Discovery;
 
 use InvalidArgumentException;
-use ReflectionClass;
 use Studiometa\Foehn\Attributes\AsTemplateController;
 use Studiometa\Foehn\Contracts\TemplateControllerInterface;
-use Studiometa\Foehn\Discovery\Concerns\CacheableDiscovery;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
 use Studiometa\Foehn\Views\TemplateContext;
+use Tempest\Discovery\Discovery;
+use Tempest\Discovery\DiscoveryLocation;
+use Tempest\Reflection\ClassReflector;
 use Timber\Timber;
 
 use function Tempest\Container\get;
@@ -19,10 +20,9 @@ use function Tempest\Container\get;
  * Discovers classes marked with #[AsTemplateController] attribute
  * and registers them to intercept WordPress template rendering.
  */
-final class TemplateControllerDiscovery implements WpDiscovery
+final class TemplateControllerDiscovery implements Discovery
 {
     use IsWpDiscovery;
-    use CacheableDiscovery;
 
     /**
      * @var array<string, array{className: class-string, priority: int}>
@@ -38,26 +38,28 @@ final class TemplateControllerDiscovery implements WpDiscovery
      * Discover template controller attributes on classes.
      *
      * @param DiscoveryLocation $location
-     * @param ReflectionClass<object> $class
+     * @param ClassReflector $class
      */
-    public function discover(DiscoveryLocation $location, ReflectionClass $class): void
+    public function discover(DiscoveryLocation $location, ClassReflector $class): void
     {
-        $attributes = $class->getAttributes(AsTemplateController::class);
+        if (!$this->isConcrete($class)) {
+            return;
+        }
 
-        if ($attributes === []) {
+        $attribute = $class->getAttribute(AsTemplateController::class);
+
+        if ($attribute === null) {
             return;
         }
 
         // Verify the class implements TemplateControllerInterface
-        if (!$class->implementsInterface(TemplateControllerInterface::class)) {
+        if (!$class->implements(TemplateControllerInterface::class)) {
             throw new InvalidArgumentException(sprintf(
                 'Class %s must implement %s to use #[AsTemplateController]',
                 $class->getName(),
                 TemplateControllerInterface::class,
             ));
         }
-
-        $attribute = $attributes[0]->newInstance();
 
         $this->addItem($location, [
             'attribute' => $attribute,

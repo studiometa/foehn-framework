@@ -135,7 +135,7 @@ By default, debug mode follows the `WP_DEBUG` constant value.
 For production deployments, enable the discovery cache and generate it after deployment:
 
 ```bash
-wp tempest discovery:generate
+wp foehn discovery:generate
 ```
 
 See [Discovery Cache](/guide/discovery-cache) for more details.

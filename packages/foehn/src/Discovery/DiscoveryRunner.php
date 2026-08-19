@@ -4,32 +4,31 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Discovery;
 
-use ReflectionClass;
+use Psr\Cache\CacheItemPoolInterface;
 use Studiometa\Foehn\Config\FoehnConfig;
 use Tempest\Container\Container;
+use Tempest\Discovery\BootDiscovery;
+use Tempest\Discovery\Discovery;
+use Tempest\Discovery\DiscoveryCache;
+use Tempest\Discovery\DiscoveryCacheStrategy;
+use Tempest\Discovery\DiscoveryConfig;
+use Tempest\Reflection\ClassReflector;
+use Throwable;
 
 /**
  * Orchestrates the discovery process across WordPress lifecycle phases.
  *
- * This runner fully owns the discovery lifecycle:
- * 1. Scans classes using Composer's PSR-4 autoload map
- * 2. Calls discover() on each WpDiscovery for every class found
- * 3. Calls apply() at the correct WordPress hook timing
- *
- * Tempest is used only for the DI container, not for discovery.
+ * Scanning, location building and caching come from tempest/discovery. What Foehn
+ * adds is timing: WordPress will not accept a post type before `init`, so this
+ * runner discovers once and then calls apply() on each discovery at the phase it
+ * belongs to. Tempest's own BootDiscovery::__invoke() applies everything at once,
+ * which is why only its build() step is used here.
  */
 final class DiscoveryRunner
 {
-    /** @var array<class-string<WpDiscovery>, WpDiscovery> */
+    /** @var array<class-string<Discovery>, Discovery> */
     private array $discoveries = [];
 
-    /** @var array<string, array<string, list<array<string, mixed>>>>|null */
-    private ?array $cachedData = null;
-
-    /** @var DiscoveryLocation|null */
-    private ?DiscoveryLocation $appLocation = null;
-
-    private bool $cacheLoaded = false;
     private bool $discovered = false;
     private bool $earlyRan = false;
     private bool $mainRan = false;
@@ -37,8 +36,9 @@ final class DiscoveryRunner
 
     public function __construct(
         private readonly Container $container,
-        private readonly ?DiscoveryCache $cache = null,
-        private readonly ?string $appPath = null,
+        private readonly DiscoveryCache $cache,
+        private readonly CacheItemPoolInterface $pool,
+        private readonly DiscoveryLocations $locations,
         private readonly ?FoehnConfig $config = null,
     ) {}
 
@@ -94,7 +94,7 @@ final class DiscoveryRunner
     }
 
     /**
-     * Ensure all classes have been scanned and discoveries populated.
+     * Ensure all locations have been scanned and discoveries populated.
      */
     private function ensureDiscovered(): void
     {
@@ -103,90 +103,104 @@ final class DiscoveryRunner
         }
 
         $this->discovered = true;
-        $this->loadCache();
 
-        // Initialize all discovery instances
-        foreach (self::getAllDiscoveryClasses() as $discoveryClass) {
-            if (($this->discoveries[$discoveryClass] ?? null) !== null) {
+        foreach ($this->build($this->cache) as $discovery) {
+            $this->discoveries[$discovery::class] = $discovery;
+        }
+    }
+
+    /**
+     * Scan every location with the given cache and return the populated discoveries.
+     *
+     * @return array<array-key, Discovery>
+     */
+    private function build(DiscoveryCache $cache): array
+    {
+        $locations = $this->locations->all();
+
+        $discoveries = new BootDiscovery($this->container, new DiscoveryConfig(locations: $locations), $cache)->build(
+            self::getAllDiscoveryClasses(),
+            $locations,
+        );
+
+        $this->discoverOptInHooks($discoveries, $cache);
+
+        return $discoveries;
+    }
+
+    /**
+     * Scan every location and write the result to the cache.
+     *
+     * Nothing is applied: warming is a build step, and a booted request that
+     * applied a second time would register every hook twice.
+     *
+     * @return array<class-string<Discovery>, int> Item count per discovery class
+     */
+    public function warmCache(DiscoveryCache $cache): array
+    {
+        // Build against a disabled cache — otherwise a stale entry would be
+        // restored and written straight back out.
+        $discoveries = $this->build($cache->withStrategy(DiscoveryCacheStrategy::NONE));
+
+        foreach ($this->locations->all() as $location) {
+            $cache->store($location, $discoveries);
+        }
+
+        $counts = [];
+
+        foreach ($discoveries as $discovery) {
+            $count = count($discovery->getItems());
+
+            if ($count === 0) {
                 continue;
             }
 
-            $this->discoveries[$discoveryClass] = $this->container->get($discoveryClass);
+            $counts[$discovery::class] = $count;
         }
 
-        // If we have cached data, restore discoveries from cache
-        if ($this->cachedData !== null) {
-            foreach ($this->discoveries as $className => $discovery) {
-                if (($this->cachedData[$className] ?? null) === null) {
-                    continue;
-                }
-
-                /** @var array<string, list<array<string, mixed>>> $discoveryData */
-                $discoveryData = $this->cachedData[$className];
-                $discovery->restoreFromCache($discoveryData);
-            }
-
-            return;
-        }
-
-        // Build app location
-        $this->appLocation = $this->buildAppLocation();
-
-        // No cache — scan classes and run discover()
-        $appLocation = $this->appLocation;
-
-        if ($appLocation !== null) {
-            $classes = $this->scanClasses();
-
-            foreach ($classes as $class) {
-                foreach ($this->discoveries as $discovery) {
-                    $discovery->discover($appLocation, $class);
-                }
-            }
-        }
-
-        // Also discover opt-in hook classes from config
-        $this->discoverOptInHooks();
+        return $counts;
     }
 
     /**
-     * Build the DiscoveryLocation for the app directory.
+     * Discover the opt-in hook classes listed in FoehnConfig.
+     *
+     * Those classes ship with the framework, so HookDiscovery ignores them where it
+     * finds them — in a vendor location. They are handed to the discoveries again
+     * here, against the app location, which is both what makes them opt-in and what
+     * puts them in the app's slice of the discovery cache.
+     *
+     * @param array<array-key, Discovery> $discoveries
      */
-    private function buildAppLocation(): ?DiscoveryLocation
+    private function discoverOptInHooks(array $discoveries, DiscoveryCache $cache): void
     {
-        if ($this->appPath === null) {
-            return null;
-        }
-
-        return ClassScanner::buildLocation($this->appPath);
-    }
-
-    /**
-     * Discover opt-in hook classes from FoehnConfig.
-     */
-    private function discoverOptInHooks(): void
-    {
-        try {
-            $config = $this->container->get(\Studiometa\Foehn\Config\FoehnConfig::class);
-        } catch (\Throwable) {
+        if ($this->config === null || $this->config->hooks === []) {
             return;
         }
 
-        // Use the app location for opt-in hooks, or create a fallback
-        $location = $this->appLocation ?? DiscoveryLocation::app('App\\', '');
+        $location = $this->locations->app();
 
-        foreach ($config->hooks as $hookClass) {
+        if ($location === null) {
+            return;
+        }
+
+        // A warm cache already holds these items for the app location; discovering
+        // them again would register every hook twice.
+        if ($cache->enabled && $this->pool->getItem($location->key)->isHit()) {
+            return;
+        }
+
+        foreach ($this->config->hooks as $hookClass) {
             if (!class_exists($hookClass)) {
                 continue;
             }
 
             try {
-                $reflection = new ReflectionClass($hookClass);
+                $reflector = new ClassReflector($hookClass);
 
-                foreach ($this->discoveries as $discovery) {
-                    $discovery->discover($location, $reflection);
+                foreach ($discoveries as $discovery) {
+                    $discovery->discover($location, $reflector);
                 }
-            } catch (\ReflectionException $e) {
+            } catch (Throwable $e) {
                 $this->logDiscoveryFailure($hookClass, $e);
 
                 continue;
@@ -197,7 +211,7 @@ final class DiscoveryRunner
     /**
      * Apply a specific discovery.
      *
-     * @param class-string<WpDiscovery> $discoveryClass
+     * @param class-string<Discovery> $discoveryClass
      */
     private function applyDiscovery(string $discoveryClass): void
     {
@@ -209,49 +223,17 @@ final class DiscoveryRunner
     }
 
     /**
-     * Scan classes from the app directory using Composer's PSR-4 autoload map.
-     *
-     * @return array<ReflectionClass<object>>
-     */
-    private function scanClasses(): array
-    {
-        if ($this->appLocation === null) {
-            return [];
-        }
-
-        return ClassScanner::scan($this->appLocation);
-    }
-
-    /**
      * Log a discovery failure when debug mode is enabled.
      */
-    private function logDiscoveryFailure(string $className, \ReflectionException $exception): void
+    private function logDiscoveryFailure(string $subject, Throwable $exception): void
     {
         if ($this->config === null || !$this->config->isDebugEnabled()) {
             return;
         }
 
-        $message = sprintf('[Foehn] Discovery failed for class "%s": %s', $className, $exception->getMessage());
+        $message = sprintf('[Foehn] Discovery failed for "%s": %s', $subject, $exception->getMessage());
 
         trigger_error($message, E_USER_WARNING);
-    }
-
-    /**
-     * Load cache if available and not already loaded.
-     */
-    private function loadCache(): void
-    {
-        if ($this->cacheLoaded) {
-            return;
-        }
-
-        $this->cacheLoaded = true;
-
-        if ($this->cache === null || !$this->cache->isEnabled()) {
-            return;
-        }
-
-        $this->cachedData = $this->cache->restore();
     }
 
     /**
@@ -268,19 +250,21 @@ final class DiscoveryRunner
     }
 
     /**
-     * Get all registered discoveries.
+     * Get all registered discoveries, running discovery first if needed.
      *
-     * @return array<class-string<WpDiscovery>, WpDiscovery>
+     * @return array<class-string<Discovery>, Discovery>
      */
     public function getDiscoveries(): array
     {
+        $this->ensureDiscovered();
+
         return $this->discoveries;
     }
 
     /**
      * Get discovery classes for each phase.
      *
-     * @return array<string, array<class-string<WpDiscovery>>>
+     * @return array<string, array<class-string<Discovery>>>
      */
     public static function getDiscoveryPhases(): array
     {
@@ -316,11 +300,11 @@ final class DiscoveryRunner
     /**
      * Get all discovery classes.
      *
-     * @return array<class-string<WpDiscovery>>
+     * @return array<class-string<Discovery>>
      */
     public static function getAllDiscoveryClasses(): array
     {
-        /** @var array<class-string<WpDiscovery>> */
+        /** @var array<class-string<Discovery>> */
         return array_merge(
             self::getDiscoveryPhases()['early'],
             self::getDiscoveryPhases()['main'],

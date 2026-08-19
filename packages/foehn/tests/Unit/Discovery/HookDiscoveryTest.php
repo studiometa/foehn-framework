@@ -4,22 +4,21 @@ declare(strict_types=1);
 
 use Studiometa\Foehn\Attributes\AsAction;
 use Studiometa\Foehn\Attributes\AsFilter;
-use Studiometa\Foehn\Discovery\DiscoveryLocation;
 use Studiometa\Foehn\Discovery\HookDiscovery;
 use Tempest\Container\GenericContainer;
 use Tests\Fixtures\HookFixture;
 use Tests\Fixtures\NoAttributeFixture;
 
 beforeEach(function () {
-    $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
+    $this->location = testDiscoveryLocation();
     $this->discovery = new HookDiscovery(new GenericContainer());
 });
 
 describe('HookDiscovery', function () {
     it('discovers action attributes on methods', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(HookFixture::class));
+        $this->discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(HookFixture::class));
 
-        $items = $this->discovery->getItems()->all();
+        $items = iterator_to_array($this->discovery->getItems());
         $actions = array_values(array_filter($items, fn($item) => $item['attribute'] instanceof AsAction));
 
         expect($actions)->toHaveCount(2);
@@ -38,9 +37,9 @@ describe('HookDiscovery', function () {
     });
 
     it('discovers filter attributes on methods', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(HookFixture::class));
+        $this->discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(HookFixture::class));
 
-        $items = $this->discovery->getItems()->all();
+        $items = iterator_to_array($this->discovery->getItems());
         $filters = array_values(array_filter($items, fn($item) => $item['attribute'] instanceof AsFilter));
 
         expect($filters)->toHaveCount(2);
@@ -59,17 +58,17 @@ describe('HookDiscovery', function () {
     });
 
     it('ignores classes without hook attributes', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(NoAttributeFixture::class));
+        $this->discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(NoAttributeFixture::class));
 
-        expect($this->discovery->getItems()->isEmpty())->toBeTrue();
-        expect($this->discovery->hasItems())->toBeFalse();
+        expect($this->discovery->getItems())->toHaveCount(0);
+        expect($this->discovery->getItems())->toHaveCount(0);
     });
 
     it('reports hasItems correctly', function () {
-        expect($this->discovery->hasItems())->toBeFalse();
+        expect($this->discovery->getItems())->toHaveCount(0);
 
-        $this->discovery->discover($this->location, new ReflectionClass(HookFixture::class));
+        $this->discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(HookFixture::class));
 
-        expect($this->discovery->hasItems())->toBeTrue();
+        expect($this->discovery->getItems())->not->toHaveCount(0);
     });
 });

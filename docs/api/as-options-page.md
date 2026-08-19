@@ -171,16 +171,16 @@ Generate an options page with the CLI:
 
 ```bash
 # Top-level options page
-wp tempest make:options-page ThemeSettings
+wp foehn make:options-page ThemeSettings
 
 # Submenu options page
-wp tempest make:options-page FooterSettings --parent=theme-settings
+wp foehn make:options-page FooterSettings --parent=theme-settings
 
 # With custom icon
-wp tempest make:options-page SocialSettings --icon=dashicons-share
+wp foehn make:options-page SocialSettings --icon=dashicons-share
 
 # Preview without creating
-wp tempest make:options-page ThemeSettings --dry-run
+wp foehn make:options-page ThemeSettings --dry-run
 ```
 
 ## Related

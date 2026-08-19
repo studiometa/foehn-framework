@@ -3,12 +3,11 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Discovery\BlockDiscovery;
-use Studiometa\Foehn\Discovery\DiscoveryLocation;
 use Tests\Fixtures\BlockFixture;
 use Tests\Fixtures\ContainerBlockFixture;
 
 beforeEach(function () {
-    $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
+    $this->location = testDiscoveryLocation();
     wp_stub_reset();
     bootTestContainer();
     $this->discovery = new BlockDiscovery();
@@ -18,7 +17,7 @@ afterEach(fn() => tearDownTestContainer());
 
 describe('BlockDiscovery apply', function () {
     it('registers init action for block registration', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(BlockFixture::class));
+        $this->discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(BlockFixture::class));
         $this->discovery->apply();
 
         $actions = wp_stub_get_calls('add_action');
@@ -28,7 +27,7 @@ describe('BlockDiscovery apply', function () {
     });
 
     it('registers blocks when init callback is invoked', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(BlockFixture::class));
+        $this->discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(BlockFixture::class));
         $this->discovery->apply();
 
         // Simulate WordPress calling the init callback
@@ -48,7 +47,7 @@ describe('BlockDiscovery apply', function () {
     });
 
     it('disables the html support so "Edit as HTML" cannot invalidate a dynamic block', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(BlockFixture::class));
+        $this->discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(BlockFixture::class));
         $this->discovery->apply();
 
         $callback = wp_stub_get_calls('add_action')[0]['args']['callback'];
@@ -59,7 +58,7 @@ describe('BlockDiscovery apply', function () {
     });
 
     it('registers blocks with the block API version 3', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(BlockFixture::class));
+        $this->discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(BlockFixture::class));
         $this->discovery->apply();
 
         $callback = wp_stub_get_calls('add_action')[0]['args']['callback'];
@@ -71,7 +70,10 @@ describe('BlockDiscovery apply', function () {
     });
 
     it('passes allowed_blocks for a container block', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(ContainerBlockFixture::class));
+        $this->discovery->discover(
+            $this->location,
+            new \Tempest\Reflection\ClassReflector(ContainerBlockFixture::class),
+        );
         $this->discovery->apply();
 
         $callback = wp_stub_get_calls('add_action')[0]['args']['callback'];
@@ -88,7 +90,7 @@ describe('BlockDiscovery apply', function () {
     it('attaches the per-block assets found by convention', function () {
         $GLOBALS['wp_stub_template_directory'] = dirname(__DIR__, 2) . '/Fixtures/theme';
 
-        $this->discovery->discover($this->location, new ReflectionClass(BlockFixture::class));
+        $this->discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(BlockFixture::class));
         $this->discovery->apply();
 
         $callback = wp_stub_get_calls('add_action')[0]['args']['callback'];
@@ -103,7 +105,7 @@ describe('BlockDiscovery apply', function () {
 
     it('omits the asset arguments when the theme has no files for the block', function () {
         // The default stub theme directory does not exist, so nothing can be found.
-        $this->discovery->discover($this->location, new ReflectionClass(BlockFixture::class));
+        $this->discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(BlockFixture::class));
         $this->discovery->apply();
 
         $callback = wp_stub_get_calls('add_action')[0]['args']['callback'];
@@ -116,7 +118,7 @@ describe('BlockDiscovery apply', function () {
     });
 
     it('omits allowed_blocks for a non container block', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(BlockFixture::class));
+        $this->discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(BlockFixture::class));
         $this->discovery->apply();
 
         $callback = wp_stub_get_calls('add_action')[0]['args']['callback'];
@@ -126,7 +128,10 @@ describe('BlockDiscovery apply', function () {
     });
 
     it('registers attributes without the editor only keys', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(ContainerBlockFixture::class));
+        $this->discovery->discover(
+            $this->location,
+            new \Tempest\Reflection\ClassReflector(ContainerBlockFixture::class),
+        );
         $this->discovery->apply();
 
         $callback = wp_stub_get_calls('add_action')[0]['args']['callback'];

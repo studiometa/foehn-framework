@@ -3,22 +3,21 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Discovery\BlockDiscovery;
-use Studiometa\Foehn\Discovery\DiscoveryLocation;
 use Tests\Fixtures\BlockFixture;
 use Tests\Fixtures\ContainerBlockFixture;
 use Tests\Fixtures\InvalidBlockFixture;
 use Tests\Fixtures\NoAttributeFixture;
 
 beforeEach(function () {
-    $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
+    $this->location = testDiscoveryLocation();
     $this->discovery = new BlockDiscovery();
 });
 
 describe('BlockDiscovery', function () {
     it('discovers block attributes on classes', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(BlockFixture::class));
+        $this->discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(BlockFixture::class));
 
-        $items = $this->discovery->getItems()->all();
+        $items = iterator_to_array($this->discovery->getItems());
 
         expect($items)->toHaveCount(1);
         expect($items[0]['className'])->toBe(BlockFixture::class);
@@ -31,28 +30,34 @@ describe('BlockDiscovery', function () {
     });
 
     it('ignores classes without block attribute', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(NoAttributeFixture::class));
+        $this->discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(NoAttributeFixture::class));
 
-        expect($this->discovery->getItems()->isEmpty())->toBeTrue();
+        expect($this->discovery->getItems())->toHaveCount(0);
     });
 
     it('throws when class does not implement BlockInterface', function () {
-        expect(fn() => $this->discovery->discover($this->location, new ReflectionClass(InvalidBlockFixture::class)))
+        expect(fn() => $this->discovery->discover(
+            $this->location,
+            new \Tempest\Reflection\ClassReflector(InvalidBlockFixture::class),
+        ))
             ->toThrow(InvalidArgumentException::class, 'must implement');
     });
 
     it('reports hasItems correctly', function () {
-        expect($this->discovery->hasItems())->toBeFalse();
+        expect($this->discovery->getItems())->toHaveCount(0);
 
-        $this->discovery->discover($this->location, new ReflectionClass(BlockFixture::class));
+        $this->discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(BlockFixture::class));
 
-        expect($this->discovery->hasItems())->toBeTrue();
+        expect($this->discovery->getItems())->not->toHaveCount(0);
     });
 
     it('discovers the inner blocks configuration of a container block', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(ContainerBlockFixture::class));
+        $this->discovery->discover(
+            $this->location,
+            new \Tempest\Reflection\ClassReflector(ContainerBlockFixture::class),
+        );
 
-        $items = $this->discovery->getItems()->all();
+        $items = iterator_to_array($this->discovery->getItems());
 
         expect($items[0]['attribute']->allowedBlocks)->toBe(['core/heading', 'core/paragraph']);
         expect($items[0]['attribute']->innerBlocksTemplate)->toBe([['core/heading', ['level' => 2]]]);
@@ -66,7 +71,7 @@ describe('BlockDiscovery::getEditorDefinitions', function () {
     });
 
     it('describes a non container block', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(BlockFixture::class));
+        $this->discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(BlockFixture::class));
 
         $definitions = $this->discovery->getEditorDefinitions();
 
@@ -83,7 +88,10 @@ describe('BlockDiscovery::getEditorDefinitions', function () {
     });
 
     it('describes a container block', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(ContainerBlockFixture::class));
+        $this->discovery->discover(
+            $this->location,
+            new \Tempest\Reflection\ClassReflector(ContainerBlockFixture::class),
+        );
 
         $definitions = $this->discovery->getEditorDefinitions();
 
@@ -112,13 +120,15 @@ describe('BlockDiscovery::getEditorDefinitions', function () {
     });
 
     it('returns the same payload for a discovery restored from cache', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(ContainerBlockFixture::class));
-        $this->discovery->discover($this->location, new ReflectionClass(BlockFixture::class));
+        $this->discovery->discover(
+            $this->location,
+            new \Tempest\Reflection\ClassReflector(ContainerBlockFixture::class),
+        );
+        $this->discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(BlockFixture::class));
 
         $live = $this->discovery->getEditorDefinitions();
 
-        $restored = new BlockDiscovery();
-        $restored->restoreFromCache($this->discovery->getCacheableData());
+        $restored = restoreThroughCacheFile($this->discovery, new BlockDiscovery(), $this->location);
 
         expect($restored->getEditorDefinitions())->toBe($live);
     });

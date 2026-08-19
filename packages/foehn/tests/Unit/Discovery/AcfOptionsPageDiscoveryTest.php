@@ -6,18 +6,20 @@ use Studiometa\Foehn\Discovery\AcfOptionsPageDiscovery;
 use Tests\Fixtures\AcfOptionsPageFixture;
 use Tests\Fixtures\AcfOptionsSubPageFixture;
 use Tests\Fixtures\NoAttributeFixture;
-use Studiometa\Foehn\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
-    $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
+    $this->location = testDiscoveryLocation();
     $this->discovery = new AcfOptionsPageDiscovery();
 });
 
 describe('AcfOptionsPageDiscovery', function () {
     it('discovers ACF options page attributes on classes', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(AcfOptionsPageFixture::class));
+        $this->discovery->discover(
+            $this->location,
+            new \Tempest\Reflection\ClassReflector(AcfOptionsPageFixture::class),
+        );
 
-        $items = $this->discovery->getItems()->all();
+        $items = iterator_to_array($this->discovery->getItems());
 
         expect($items)->toHaveCount(1);
         expect($items[0]['className'])->toBe(AcfOptionsPageFixture::class);
@@ -33,9 +35,12 @@ describe('AcfOptionsPageDiscovery', function () {
     });
 
     it('discovers sub-page options pages', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(AcfOptionsSubPageFixture::class));
+        $this->discovery->discover(
+            $this->location,
+            new \Tempest\Reflection\ClassReflector(AcfOptionsSubPageFixture::class),
+        );
 
-        $items = $this->discovery->getItems()->all();
+        $items = iterator_to_array($this->discovery->getItems());
 
         expect($items)->toHaveCount(1);
         expect($items[0]['attribute']->pageTitle)->toBe('Social Media');
@@ -45,16 +50,19 @@ describe('AcfOptionsPageDiscovery', function () {
     });
 
     it('ignores classes without ACF options page attribute', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(NoAttributeFixture::class));
+        $this->discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(NoAttributeFixture::class));
 
-        expect($this->discovery->getItems()->isEmpty())->toBeTrue();
+        expect($this->discovery->getItems())->toHaveCount(0);
     });
 
     it('reports hasItems correctly', function () {
-        expect($this->discovery->hasItems())->toBeFalse();
+        expect($this->discovery->getItems())->toHaveCount(0);
 
-        $this->discovery->discover($this->location, new ReflectionClass(AcfOptionsPageFixture::class));
+        $this->discovery->discover(
+            $this->location,
+            new \Tempest\Reflection\ClassReflector(AcfOptionsPageFixture::class),
+        );
 
-        expect($this->discovery->hasItems())->toBeTrue();
+        expect($this->discovery->getItems())->not->toHaveCount(0);
     });
 });

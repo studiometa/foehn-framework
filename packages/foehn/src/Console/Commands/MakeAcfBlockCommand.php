@@ -45,19 +45,19 @@ use function Tempest\Support\str;
     ## EXAMPLES
 
         # Create a simple ACF block
-        wp tempest make:acf-block hero
+        wp foehn make:acf-block hero
 
         # Create with custom title
-        wp tempest make:acf-block testimonial --title="Customer Testimonial"
+        wp foehn make:acf-block testimonial --title="Customer Testimonial"
 
         # Create with pre-generated fields
-        wp tempest make:acf-block hero --fields=wysiwyg,image,cta
+        wp foehn make:acf-block hero --fields=wysiwyg,image,cta
 
         # Create with edit mode
-        wp tempest make:acf-block contact-form --mode=edit
+        wp foehn make:acf-block contact-form --mode=edit
 
         # Preview what would be created
-        wp tempest make:acf-block hero --dry-run
+        wp foehn make:acf-block hero --dry-run
     DOC)]
 final class MakeAcfBlockCommand implements CliCommandInterface
 {

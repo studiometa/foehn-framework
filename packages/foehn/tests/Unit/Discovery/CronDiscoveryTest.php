@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Discovery\CronDiscovery;
-use Studiometa\Foehn\Discovery\DiscoveryLocation;
 use Tests\Fixtures\CronCustomHookFixture;
 use Tests\Fixtures\CronFixture;
 use Tests\Fixtures\InvalidCronFixture;
@@ -11,15 +10,15 @@ use Tests\Fixtures\NoAttributeFixture;
 
 beforeEach(function () {
     wp_stub_reset();
-    $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
+    $this->location = testDiscoveryLocation();
     $this->discovery = new CronDiscovery();
 });
 
 describe('CronDiscovery', function () {
     it('discovers cron attributes on classes', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(CronFixture::class));
+        $this->discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(CronFixture::class));
 
-        $items = $this->discovery->getItems()->all();
+        $items = iterator_to_array($this->discovery->getItems());
 
         expect($items)->toHaveCount(1);
         expect($items[0]['className'])->toBe(CronFixture::class);
@@ -29,9 +28,12 @@ describe('CronDiscovery', function () {
     });
 
     it('uses custom hook name when provided', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(CronCustomHookFixture::class));
+        $this->discovery->discover(
+            $this->location,
+            new \Tempest\Reflection\ClassReflector(CronCustomHookFixture::class),
+        );
 
-        $items = $this->discovery->getItems()->all();
+        $items = iterator_to_array($this->discovery->getItems());
 
         expect($items)->toHaveCount(1);
         expect($items[0]['attribute']->hook)->toBe('my_plugin/sync_data');
@@ -40,27 +42,27 @@ describe('CronDiscovery', function () {
     });
 
     it('ignores classes without cron attributes', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(NoAttributeFixture::class));
+        $this->discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(NoAttributeFixture::class));
 
-        expect($this->discovery->getItems()->isEmpty())->toBeTrue();
+        expect($this->discovery->getItems())->toHaveCount(0);
     });
 
     it('ignores classes without __invoke method', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(InvalidCronFixture::class));
+        $this->discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(InvalidCronFixture::class));
 
-        expect($this->discovery->getItems()->isEmpty())->toBeTrue();
+        expect($this->discovery->getItems())->toHaveCount(0);
     });
 
     it('reports hasItems correctly', function () {
-        expect($this->discovery->hasItems())->toBeFalse();
+        expect($this->discovery->getItems())->toHaveCount(0);
 
-        $this->discovery->discover($this->location, new ReflectionClass(CronFixture::class));
+        $this->discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(CronFixture::class));
 
-        expect($this->discovery->hasItems())->toBeTrue();
+        expect($this->discovery->getItems())->not->toHaveCount(0);
     });
 
     it('registers action and schedules recurring action on apply', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(CronFixture::class));
+        $this->discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(CronFixture::class));
         $this->discovery->apply();
 
         // Check add_action was called for the hook
@@ -85,7 +87,7 @@ describe('CronDiscovery', function () {
             'foehn/tests/fixtures/cron_fixture' => true,
         ];
 
-        $this->discovery->discover($this->location, new ReflectionClass(CronFixture::class));
+        $this->discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(CronFixture::class));
         $this->discovery->apply();
 
         // add_action should still be called (callback registration)
@@ -117,7 +119,7 @@ describe('CronDiscovery', function () {
             }
         };
 
-        $unavailableDiscovery->discover($this->location, new ReflectionClass(CronFixture::class));
+        $unavailableDiscovery->discover($this->location, new \Tempest\Reflection\ClassReflector(CronFixture::class));
         $unavailableDiscovery->apply();
 
         // No actions should have been registered
@@ -126,17 +128,12 @@ describe('CronDiscovery', function () {
     });
 
     it('supports caching', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(CronFixture::class));
+        $this->discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(CronFixture::class));
 
-        $cacheData = $this->discovery->getCacheableData();
+        expect($this->discovery->getItems()->getForLocation($this->location))->not->toBeEmpty();
 
-        expect($cacheData)->not->toBeEmpty();
+        $restored = restoreThroughCacheFile($this->discovery, new CronDiscovery(), $this->location);
 
-        // Restore from cache
-        $restored = new CronDiscovery();
-        $restored->restoreFromCache($cacheData);
-
-        expect($restored->getItems()->all())->toEqual($this->discovery->getItems()->all());
-        expect($restored->wasRestoredFromCache())->toBeTrue();
+        expect(iterator_to_array($restored->getItems()))->toEqual(iterator_to_array($this->discovery->getItems()));
     });
 });

@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Studiometa\Foehn\Discovery\DiscoveryLocation;
 use Studiometa\Foehn\Discovery\TwigExtensionDiscovery;
 use Tests\Fixtures\TwigExtensionFixture;
 use Tests\Fixtures\TwigExtensionWithPriorityFixture;
@@ -10,7 +9,7 @@ use Twig\Environment;
 use Twig\Loader\ArrayLoader;
 
 beforeEach(function () {
-    $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
+    $this->location = testDiscoveryLocation();
     wp_stub_reset();
     $this->container = bootTestContainer();
     $this->discovery = new TwigExtensionDiscovery($this->container);
@@ -20,7 +19,10 @@ afterEach(fn() => tearDownTestContainer());
 
 describe('TwigExtensionDiscovery::apply', function () {
     it('registers timber/twig filter when extensions are discovered', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(TwigExtensionFixture::class));
+        $this->discovery->discover(
+            $this->location,
+            new \Tempest\Reflection\ClassReflector(TwigExtensionFixture::class),
+        );
         $this->discovery->apply();
 
         $calls = wp_stub_get_calls('add_filter');
@@ -38,8 +40,11 @@ describe('TwigExtensionDiscovery::apply', function () {
 
     it('sorts extensions by priority before registering', function () {
         // Discover in reverse priority order
-        $this->discovery->discover($this->location, new ReflectionClass(TwigExtensionFixture::class)); // priority 10
-        $this->discovery->discover($this->location, new ReflectionClass(TwigExtensionWithPriorityFixture::class)); // priority 5
+        $this->discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(TwigExtensionFixture::class)); // priority 10
+        $this->discovery->discover(
+            $this->location,
+            new \Tempest\Reflection\ClassReflector(TwigExtensionWithPriorityFixture::class),
+        ); // priority 5
         $this->discovery->apply();
 
         $calls = wp_stub_get_calls('add_filter');
@@ -50,8 +55,14 @@ describe('TwigExtensionDiscovery::apply', function () {
     });
 
     it('callback registers extensions with Twig environment', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(TwigExtensionFixture::class));
-        $this->discovery->discover($this->location, new ReflectionClass(TwigExtensionWithPriorityFixture::class));
+        $this->discovery->discover(
+            $this->location,
+            new \Tempest\Reflection\ClassReflector(TwigExtensionFixture::class),
+        );
+        $this->discovery->discover(
+            $this->location,
+            new \Tempest\Reflection\ClassReflector(TwigExtensionWithPriorityFixture::class),
+        );
         $this->discovery->apply();
 
         $calls = wp_stub_get_calls('add_filter');

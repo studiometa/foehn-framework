@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace Studiometa\Foehn\Discovery;
 
 use InvalidArgumentException;
-use ReflectionClass;
 use Studiometa\Foehn\Attributes\AsAcfBlock;
 use Studiometa\Foehn\Blocks\AcfBlockRenderer;
 use Studiometa\Foehn\Contracts\AcfBlockInterface;
-use Studiometa\Foehn\Discovery\Concerns\CacheableDiscovery;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
+use Tempest\Discovery\Discovery;
+use Tempest\Discovery\DiscoveryLocation;
+use Tempest\Reflection\ClassReflector;
 
 use function Tempest\Container\get;
 
@@ -18,35 +19,36 @@ use function Tempest\Container\get;
  * Discovers classes marked with #[AsAcfBlock] attribute
  * and registers them as ACF blocks.
  */
-final class AcfBlockDiscovery implements WpDiscovery
+final class AcfBlockDiscovery implements Discovery
 {
     use IsWpDiscovery;
-    use CacheableDiscovery;
 
     /**
      * Discover ACF block attributes on classes.
      *
      * @param DiscoveryLocation $location
-     * @param ReflectionClass<object> $class
+     * @param ClassReflector $class
      */
-    public function discover(DiscoveryLocation $location, ReflectionClass $class): void
+    public function discover(DiscoveryLocation $location, ClassReflector $class): void
     {
-        $attributes = $class->getAttributes(AsAcfBlock::class);
+        if (!$this->isConcrete($class)) {
+            return;
+        }
 
-        if ($attributes === []) {
+        $attribute = $class->getAttribute(AsAcfBlock::class);
+
+        if ($attribute === null) {
             return;
         }
 
         // Verify the class implements AcfBlockInterface
-        if (!$class->implementsInterface(AcfBlockInterface::class)) {
+        if (!$class->implements(AcfBlockInterface::class)) {
             throw new InvalidArgumentException(sprintf(
                 'Class %s must implement %s to use #[AsAcfBlock]',
                 $class->getName(),
                 AcfBlockInterface::class,
             ));
         }
-
-        $attribute = $attributes[0]->newInstance();
 
         $this->addItem($location, [
             'attribute' => $attribute,

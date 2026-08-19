@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Studiometa\Foehn\Discovery\DiscoveryLocation;
 use Studiometa\Foehn\Discovery\JobDiscovery;
 use Studiometa\Foehn\Jobs\JobRegistry;
 use Studiometa\Foehn\Jobs\JobSerializer;
@@ -12,7 +11,7 @@ use Tests\Fixtures\JobHandlerFixture;
 beforeEach(function () {
     wp_stub_reset();
     $this->container = bootTestContainer();
-    $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
+    $this->location = testDiscoveryLocation();
     $this->registry = new JobRegistry();
     $this->discovery = new JobDiscovery($this->registry);
 });
@@ -39,7 +38,7 @@ describe('JobDiscovery apply callback', function () {
 
         $this->container->singleton(JobHandlerFixture::class, fn() => $handler);
 
-        $this->discovery->discover($this->location, new ReflectionClass(JobHandlerFixture::class));
+        $this->discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(JobHandlerFixture::class));
         $this->discovery->apply();
 
         // Capture the add_action callback

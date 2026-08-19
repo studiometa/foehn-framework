@@ -1,10 +1,10 @@
 # Configuration
 
-Føhn uses Tempest's auto-discovery for configuration. Each config class can be customized by creating a `*.config.php` file in your app directory.
+Each config class is customized by creating a `*.config.php` file in your app directory.
 
 ## How Config Files Work
 
-Tempest automatically discovers files matching the `*.config.php` pattern in your app directory. Each file must return a config class instance:
+Føhn reads every file matching the `*.config.php` pattern in the directories it discovers. Each file must return a config class instance:
 
 ```php
 <?php
@@ -17,7 +17,47 @@ return new TimberConfig(
 );
 ```
 
-Føhn registers the returned instance in the DI container. If no config file is found, sensible defaults are used.
+Føhn registers the returned instance in the container, under its own class and any interface it implements, so anything asking for a `TimberConfig` receives yours. If no config file is found, sensible defaults are used.
+
+Installed packages are read before your own files, so a package can ship defaults that your project overrides.
+
+### Per-environment files
+
+A file can be named for an environment, and is then read only in that one, as reported by [`wp_get_environment_type()`](https://developer.wordpress.org/reference/functions/wp_get_environment_type/):
+
+| File                          | Read when the environment is |
+| ----------------------------- | ---------------------------- |
+| `foehn.config.php`            | always                       |
+| `foehn.local.config.php`      | `local`                      |
+| `foehn.dev.config.php`        | `development`                |
+| `foehn.staging.config.php`    | `staging`                    |
+| `foehn.production.config.php` | `production`                 |
+
+The environment's own file wins over the plain file beside it, so the plain one holds what every environment shares:
+
+```php
+<?php
+// app/foehn.config.php — the default everywhere
+
+use Studiometa\Foehn\Config\FoehnConfig;
+use Tempest\Discovery\DiscoveryCacheStrategy;
+
+return new FoehnConfig(discoveryCacheStrategy: DiscoveryCacheStrategy::NONE);
+```
+
+```php
+<?php
+// app/foehn.production.config.php — production caches discovery
+
+use Studiometa\Foehn\Config\FoehnConfig;
+use Tempest\Discovery\DiscoveryCacheStrategy;
+
+return new FoehnConfig(discoveryCacheStrategy: DiscoveryCacheStrategy::FULL);
+```
+
+::: warning
+A config file replaces the object, it does not merge into it. `Kernel::boot()`'s configuration array is a default that a `foehn.config.php` overrides wholesale — prefer the file.
+:::
 
 ## Available Config Classes
 
@@ -40,12 +80,12 @@ return new FoehnConfig(
 );
 ```
 
-| Property                  | Type                     | Default  | Description                     |
-| ------------------------- | ------------------------ | -------- | ------------------------------- |
-| `discoveryCacheStrategy`  | `DiscoveryCacheStrategy` | `NONE`   | Discovery cache strategy        |
-| `discoveryCachePath`      | `?string`                | `null`   | Custom cache path               |
-| `hooks`                   | `class-string[]`         | `[]`     | Opt-in hook classes             |
-| `debug`                   | `bool`                   | `false`  | Enable discovery debug logging  |
+| Property                 | Type                     | Default | Description                    |
+| ------------------------ | ------------------------ | ------- | ------------------------------ |
+| `discoveryCacheStrategy` | `DiscoveryCacheStrategy` | `NONE`  | Discovery cache strategy       |
+| `discoveryCachePath`     | `?string`                | `null`  | Custom cache path              |
+| `hooks`                  | `class-string[]`         | `[]`    | Opt-in hook classes            |
+| `debug`                  | `bool`                   | `false` | Enable discovery debug logging |
 
 See [FoehnConfig API](/api/foehn-config) for details.
 
@@ -64,9 +104,9 @@ return new TimberConfig(
 );
 ```
 
-| Property       | Type       | Default          | Description                  |
-| -------------- | ---------- | ---------------- | ---------------------------- |
-| `templatesDir` | `string[]` | `['templates']`  | Template directory names     |
+| Property       | Type       | Default         | Description              |
+| -------------- | ---------- | --------------- | ------------------------ |
+| `templatesDir` | `string[]` | `['templates']` | Template directory names |
 
 See [TimberConfig API](/api/timber-config) for details.
 
@@ -85,8 +125,8 @@ return new AcfConfig(
 );
 ```
 
-| Property          | Type   | Default | Description                              |
-| ----------------- | ------ | ------- | ---------------------------------------- |
+| Property          | Type   | Default | Description                               |
+| ----------------- | ------ | ------- | ----------------------------------------- |
 | `transformFields` | `bool` | `true`  | Auto-convert ACF values to Timber objects |
 
 See [AcfConfig API](/api/acf-config) for details.
@@ -106,9 +146,9 @@ return new RestConfig(
 );
 ```
 
-| Property            | Type      | Default        | Description                     |
-| ------------------- | --------- | -------------- | ------------------------------- |
-| `defaultCapability` | `?string` | `'edit_posts'` | Default capability for routes   |
+| Property            | Type      | Default        | Description                   |
+| ------------------- | --------- | -------------- | ----------------------------- |
+| `defaultCapability` | `?string` | `'edit_posts'` | Default capability for routes |
 
 See [RestConfig API](/api/rest-config) for details.
 
@@ -128,11 +168,11 @@ return new RenderApiConfig(
 );
 ```
 
-| Property      | Type       | Default | Description                          |
-| ------------- | ---------- | ------- | ------------------------------------ |
-| `templates`   | `string[]` | `[]`    | Allowed template patterns            |
-| `cacheMaxAge` | `int`      | `0`     | Cache-Control max-age in seconds     |
-| `debug`       | `bool`     | `false` | Include exception details in errors  |
+| Property      | Type       | Default | Description                         |
+| ------------- | ---------- | ------- | ----------------------------------- |
+| `templates`   | `string[]` | `[]`    | Allowed template patterns           |
+| `cacheMaxAge` | `int`      | `0`     | Cache-Control max-age in seconds    |
+| `debug`       | `bool`     | `false` | Include exception details in errors |
 
 See [RenderApiConfig API](/api/render-api-config) for details.
 
@@ -163,9 +203,11 @@ See [Guide: Query Filters](/guide/query-filters) for details.
 
 When multiple sources provide the same config:
 
-1. **Config file** (`app/*.config.php`) — highest priority, auto-discovered by Tempest
-2. **Kernel::boot() array** — legacy fallback (only for `FoehnConfig`)
-3. **Defaults** — built-in defaults from the config class constructor
+1. **Environment config file** (`app/*.{environment}.config.php`) — highest priority
+2. **Config file** (`app/*.config.php`)
+3. **Package config file** — defaults an installed package ships
+4. **Kernel::boot() array** — legacy fallback (only for `FoehnConfig`)
+5. **Defaults** — built-in defaults from the config class constructor
 
 ## Environment-Specific Configuration
 
@@ -199,6 +241,7 @@ theme/
 │   ├── rest.config.php          # REST API defaults
 │   ├── render-api.config.php    # Render API allowlist
 │   ├── query-filters.config.php # Query filter rules
+│   ├── foehn.production.config.php # Read in production only
 │   ├── Hooks/
 │   ├── Models/
 │   └── ...

@@ -24,17 +24,17 @@ final readonly class AsFieldGroup
 
 ## Parameters
 
-| Parameter              | Type                        | Default   | Description                                            |
-| ---------------------- | --------------------------- | --------- | ------------------------------------------------------ |
-| `key`                  | `string`                    | —         | Unique field group key (e.g., `product_fields`)        |
-| `title`                | `string`                    | —         | Field group title displayed in admin                   |
-| `location`             | `array<array<string,mixed>>`| `[]`      | Location rules for where to show the field group       |
-| `menuOrder`            | `int`                       | `0`       | Order in the admin meta box list                       |
-| `position`             | `string`                    | `normal`  | Position: `acf_after_title`, `normal`, `side`          |
-| `style`                | `string`                    | `default` | Style: `default`, `seamless`                           |
-| `labelPlacement`       | `string`                    | `top`     | Label placement: `top`, `left`                         |
-| `instructionPlacement` | `string`                    | `label`   | Instruction placement: `label`, `field`                |
-| `active`               | `bool`                      | `true`    | Whether the field group is active                      |
+| Parameter              | Type                         | Default   | Description                                      |
+| ---------------------- | ---------------------------- | --------- | ------------------------------------------------ |
+| `key`                  | `string`                     | —         | Unique field group key (e.g., `product_fields`)  |
+| `title`                | `string`                     | —         | Field group title displayed in admin             |
+| `location`             | `array<array<string,mixed>>` | `[]`      | Location rules for where to show the field group |
+| `menuOrder`            | `int`                        | `0`       | Order in the admin meta box list                 |
+| `position`             | `string`                     | `normal`  | Position: `acf_after_title`, `normal`, `side`    |
+| `style`                | `string`                     | `default` | Style: `default`, `seamless`                     |
+| `labelPlacement`       | `string`                     | `top`     | Label placement: `top`, `left`                   |
+| `instructionPlacement` | `string`                     | `label`   | Instruction placement: `label`, `field`          |
+| `active`               | `bool`                       | `true`    | Whether the field group is active                |
 
 ## Usage
 
@@ -160,16 +160,16 @@ Generate a field group with the CLI:
 
 ```bash
 # For a post type
-wp tempest make:field-group ProductFields --post-type=product
+wp foehn make:field-group ProductFields --post-type=product
 
 # For a page template
-wp tempest make:field-group FrontPageFields --page-template=front-page
+wp foehn make:field-group FrontPageFields --page-template=front-page
 
 # For a taxonomy
-wp tempest make:field-group CategoryFields --taxonomy=category
+wp foehn make:field-group CategoryFields --taxonomy=category
 
 # Preview without creating
-wp tempest make:field-group ProductFields --post-type=product --dry-run
+wp foehn make:field-group ProductFields --post-type=product --dry-run
 ```
 
 ## Related

@@ -2,16 +2,47 @@
 
 declare(strict_types=1);
 
+use Studiometa\Foehn\Attributes\AsAction;
 use Studiometa\Foehn\Config\FoehnConfig;
-use Studiometa\Foehn\Discovery\BlockDiscovery;
-use Studiometa\Foehn\Discovery\DiscoveryCache;
+use Studiometa\Foehn\Discovery\DiscoveryLocations;
 use Studiometa\Foehn\Discovery\DiscoveryRunner;
 use Studiometa\Foehn\Discovery\HookDiscovery;
-use Studiometa\Foehn\Discovery\WpDiscovery;
 use Studiometa\Foehn\Hooks\Cleanup\CleanHeadTags;
+use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use Tempest\Container\Container;
 use Tempest\Container\GenericContainer;
+use Tempest\Discovery\Discovery;
+use Tempest\Discovery\DiscoveryCache;
 use Tempest\Discovery\DiscoveryCacheStrategy;
+use Tempest\Discovery\DiscoveryItems;
+use Tests\Fixtures\HookFixture;
+
+/**
+ * Write a cache entry holding one discovered hook.
+ *
+ * Every discovery has to be in the entry: Tempest treats a location whose cache is
+ * missing any of them as unusable and scans it instead.
+ */
+function seedDiscoveryCache(DiscoveryCache $cache, ArrayAdapter $pool): void
+{
+    $location = testDiscoveryLocation();
+    $discoveries = new DiscoveryRunner(
+        createTestContainer(),
+        new DiscoveryCache(DiscoveryCacheStrategy::NONE, $pool),
+        $pool,
+        new DiscoveryLocations(testAppPath()),
+    )->getDiscoveries();
+
+    $discoveries[HookDiscovery::class]->setItems(new DiscoveryItems()->addForLocation($location, [
+        [
+            'attribute' => new AsAction('init'),
+            'className' => HookFixture::class,
+            'methodName' => 'onInit',
+        ],
+    ]));
+
+    $cache->store($location, array_values($discoveries));
+}
 
 function createTestContainer(): GenericContainer
 {
@@ -22,9 +53,10 @@ function createTestContainer(): GenericContainer
 }
 
 describe('DiscoveryRunner integration', function () {
+    beforeEach(fn() => wp_stub_reset());
+
     it('hasRun returns false by default for all phases', function () {
-        $container = createTestContainer();
-        $runner = new DiscoveryRunner($container);
+        $runner = testDiscoveryRunner(createTestContainer());
 
         expect($runner->hasRun('early'))->toBeFalse();
         expect($runner->hasRun('main'))->toBeFalse();
@@ -32,216 +64,102 @@ describe('DiscoveryRunner integration', function () {
     });
 
     it('returns false for unknown phase', function () {
-        $container = createTestContainer();
-        $runner = new DiscoveryRunner($container);
-
-        expect($runner->hasRun('unknown'))->toBeFalse();
+        expect(testDiscoveryRunner(createTestContainer())->hasRun('unknown'))->toBeFalse();
     });
 
-    it('starts with empty discoveries', function () {
-        $container = createTestContainer();
-        $runner = new DiscoveryRunner($container);
-
-        expect($runner->getDiscoveries())->toBeEmpty();
-    });
-
-    it('initializes all discoveries during ensureDiscovered via early phase', function () {
-        $container = createTestContainer();
-        $runner = new DiscoveryRunner($container);
-
-        // Early phase triggers ensureDiscovered which initializes all discovery instances
-        $runner->runEarlyDiscoveries();
-
-        $discoveries = $runner->getDiscoveries();
+    it('resolves every discovery class', function () {
+        $discoveries = testDiscoveryRunner(createTestContainer())->getDiscoveries();
 
         expect($discoveries)->toHaveCount(count(DiscoveryRunner::getAllDiscoveryClasses()));
 
         foreach (DiscoveryRunner::getAllDiscoveryClasses() as $class) {
             expect($discoveries)->toHaveKey($class);
-            expect($discoveries[$class])->toBeInstanceOf(WpDiscovery::class);
+            expect($discoveries[$class])->toBeInstanceOf(Discovery::class);
         }
     });
 
     it('does not scan classes when no app path is given', function () {
-        $container = createTestContainer();
-        $runner = new DiscoveryRunner($container);
+        $runner = testDiscoveryRunner(createTestContainer());
 
         $runner->runEarlyDiscoveries();
 
-        // All discoveries should exist but have no items (no classes to scan)
         foreach ($runner->getDiscoveries() as $discovery) {
-            expect($discovery->hasItems())->toBeFalse();
+            expect($discovery->getItems())->toHaveCount(0);
         }
     });
 
     it('early phase is idempotent', function () {
-        $container = createTestContainer();
-        $runner = new DiscoveryRunner($container);
+        $runner = testDiscoveryRunner(createTestContainer());
 
         $runner->runEarlyDiscoveries();
-        $runner->runEarlyDiscoveries(); // should not throw
+        $runner->runEarlyDiscoveries();
 
         expect($runner->hasRun('early'))->toBeTrue();
     });
 
-    it('does not restore from cache when cache is disabled', function () {
-        $tmpDir = sys_get_temp_dir() . '/foehn-test-nocache-' . uniqid();
-        mkdir($tmpDir, 0o755, true);
+    it('restores items from a warm cache instead of scanning', function () {
+        $pool = new ArrayAdapter();
+        $cache = new DiscoveryCache(DiscoveryCacheStrategy::FULL, $pool);
 
-        $config = new FoehnConfig(discoveryCacheStrategy: DiscoveryCacheStrategy::NONE, discoveryCachePath: $tmpDir);
-        $cache = new DiscoveryCache($config);
+        seedDiscoveryCache($cache, $pool);
 
-        $container = createTestContainer();
-        $runner = new DiscoveryRunner($container, $cache);
+        $runner = new DiscoveryRunner(createTestContainer(), $cache, $pool, new DiscoveryLocations(testAppPath()));
         $runner->runEarlyDiscoveries();
 
-        $discoveries = $runner->getDiscoveries();
+        /** @var HookDiscovery $hooks */
+        $hooks = $runner->getDiscoveries()[HookDiscovery::class];
 
-        /** @var HookDiscovery $hookDiscovery */
-        $hookDiscovery = $discoveries[HookDiscovery::class];
-        expect($hookDiscovery->wasRestoredFromCache())->toBeFalse();
-
-        // Clean up
-        rmdir($tmpDir);
+        // Nothing lives in the app directory, so an item can only have come from
+        // the cache — and it was applied like any scanned one.
+        expect($hooks->getItems())->toHaveCount(1);
+        expect(wp_stub_get_calls('add_action'))->toHaveCount(1);
     });
 
-    it('restores discoveries from cache via ensureDiscovered', function () {
-        // Use reflection to call ensureDiscovered directly (without apply)
-        $tmpDir = sys_get_temp_dir() . '/foehn-test-cache-' . uniqid();
-        mkdir($tmpDir, 0o755, true);
+    it('ignores what the cache holds when caching is disabled', function () {
+        $pool = new ArrayAdapter();
 
-        $config = new FoehnConfig(discoveryCacheStrategy: DiscoveryCacheStrategy::FULL, discoveryCachePath: $tmpDir);
-        $cache = new DiscoveryCache($config);
+        seedDiscoveryCache(new DiscoveryCache(DiscoveryCacheStrategy::FULL, $pool), $pool);
 
-        $cache->store([
-            HookDiscovery::class => [
-                'App\\' => [
-                    [
-                        'type' => 'action',
-                        'hook' => 'init',
-                        'className' => 'App\\Hooks\\Test',
-                        'methodName' => 'onInit',
-                        'priority' => 10,
-                        'acceptedArgs' => 1,
-                    ],
-                ],
-            ],
-        ]);
-        $cache->storeStrategy(DiscoveryCacheStrategy::FULL);
+        $runner = new DiscoveryRunner(
+            createTestContainer(),
+            new DiscoveryCache(DiscoveryCacheStrategy::NONE, $pool),
+            $pool,
+            new DiscoveryLocations(testAppPath()),
+        );
 
-        $container = createTestContainer();
-        $runner = new DiscoveryRunner($container, $cache);
+        $runner->runEarlyDiscoveries();
 
-        // Call ensureDiscovered via reflection to test cache restoration
-        // without triggering apply() which needs WordPress functions
-        $method = new ReflectionMethod($runner, 'ensureDiscovered');
-        $method->invoke($runner);
-
-        $discoveries = $runner->getDiscoveries();
-
-        /** @var HookDiscovery $hookDiscovery */
-        $hookDiscovery = $discoveries[HookDiscovery::class];
-        expect($hookDiscovery->wasRestoredFromCache())->toBeTrue();
-
-        // Clean up
-        array_map('unlink', glob($tmpDir . '/*'));
-        rmdir($tmpDir);
-    });
-
-    it('ignores a cache written by another Foehn version instead of half-loading it', function () {
-        $tmpDir = sys_get_temp_dir() . '/foehn-test-stale-cache-' . uniqid();
-        mkdir($tmpDir, 0o755, true);
-
-        $config = new FoehnConfig(discoveryCacheStrategy: DiscoveryCacheStrategy::FULL, discoveryCachePath: $tmpDir);
-        $cache = new DiscoveryCache($config);
-
-        // A BlockDiscovery item as an earlier Foehn version wrote it: no allowedBlocks,
-        // no innerBlocksTemplate, no innerBlocksTemplateLock. Restoring it would read
-        // those keys undefined and hand null to a non-nullable array parameter, which is
-        // an uncatchable TypeError inside enqueue_block_editor_assets.
-        $cache->store([
-            BlockDiscovery::class => [
-                'App\\' => [
-                    [
-                        'className' => 'App\\Blocks\\HeroBlock',
-                        'blockName' => 'theme/hero',
-                        'title' => 'Hero',
-                        'category' => 'theme',
-                        'icon' => null,
-                        'description' => null,
-                        'keywords' => [],
-                        'supports' => [],
-                        'parent' => null,
-                        'ancestor' => [],
-                        'interactivity' => false,
-                        'interactivityNamespace' => null,
-                    ],
-                ],
-            ],
-        ]);
-        $cache->storeStrategy(DiscoveryCacheStrategy::FULL);
-        unlink($tmpDir . '/version');
-
-        $container = createTestContainer();
-        $runner = new DiscoveryRunner($container, $cache);
-
-        $method = new ReflectionMethod($runner, 'ensureDiscovered');
-        $method->invoke($runner);
-
-        /** @var BlockDiscovery $blockDiscovery */
-        $blockDiscovery = $runner->getDiscoveries()[BlockDiscovery::class];
-
-        expect($blockDiscovery->wasRestoredFromCache())->toBeFalse();
-        expect($blockDiscovery->getEditorDefinitions())->toBe([]);
-
-        // Clean up
-        array_map('unlink', glob($tmpDir . '/*'));
-        rmdir($tmpDir);
+        expect($runner->getDiscoveries()[HookDiscovery::class]->getItems())->toHaveCount(0);
+        expect(wp_stub_get_calls('add_action'))->toBeEmpty();
     });
 
     it('discovers opt-in hook classes from config', function () {
         $config = new FoehnConfig(hooks: [CleanHeadTags::class]);
 
-        $container = bootTestContainer();
-        $container->singleton(FoehnConfig::class, fn() => $config);
+        $runner = testDiscoveryRunner(createTestContainer(), testAppPath(), $config);
 
-        $runner = new DiscoveryRunner($container);
-
-        // Trigger discovery via early phase
         $runner->runEarlyDiscoveries();
 
-        $discoveries = $runner->getDiscoveries();
-
-        /** @var HookDiscovery $hookDiscovery */
-        $hookDiscovery = $discoveries[HookDiscovery::class];
-
-        // CleanHeadTags has one #[AsAction('init')] method
-        expect($hookDiscovery->hasItems())->toBeTrue();
-
-        tearDownTestContainer();
+        // CleanHeadTags has #[AsAction] methods, and lives in the framework: it is
+        // reached only because the config named it.
+        expect($runner->getDiscoveries()[HookDiscovery::class]->getItems())->not->toHaveCount(0);
     });
 
     it('skips non-existent hook classes in config', function () {
-        $config = new FoehnConfig(hooks: ['NonExistent\\HookClass']);
+        $runner = testDiscoveryRunner(
+            createTestContainer(),
+            testAppPath(),
+            new FoehnConfig(hooks: ['NonExistent\\HookClass']),
+        );
 
-        $container = createTestContainer();
-        $container->singleton(FoehnConfig::class, fn() => $config);
-
-        $runner = new DiscoveryRunner($container);
-
-        // Should not throw
         $runner->runEarlyDiscoveries();
 
         expect($runner->hasRun('early'))->toBeTrue();
     });
 
-    it('handles missing FoehnConfig gracefully', function () {
-        $container = createTestContainer();
-        // Don't register FoehnConfig — discoverOptInHooks should catch the exception
+    it('handles a missing config gracefully', function () {
+        $runner = testDiscoveryRunner(createTestContainer(), testAppPath());
 
-        $runner = new DiscoveryRunner($container);
-
-        // Should not throw
         $runner->runEarlyDiscoveries();
 
         expect($runner->hasRun('early'))->toBeTrue();

@@ -5,39 +5,43 @@ declare(strict_types=1);
 namespace Studiometa\Foehn\Discovery;
 
 use InvalidArgumentException;
-use ReflectionClass;
 use Studiometa\Foehn\Attributes\AsTaxonomy;
 use Studiometa\Foehn\Contracts\ConfiguresTaxonomy;
-use Studiometa\Foehn\Discovery\Concerns\CacheableDiscovery;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
 use Studiometa\Foehn\PostTypes\TaxonomyBuilder;
+use Tempest\Discovery\Discovery;
+use Tempest\Discovery\DiscoveryLocation;
+use Tempest\Reflection\ClassReflector;
 use Timber\Term;
 
 /**
  * Discovers classes marked with #[AsTaxonomy] attribute
  * and registers them as WordPress custom taxonomies.
  */
-final class TaxonomyDiscovery implements WpDiscovery
+final class TaxonomyDiscovery implements Discovery
 {
     use IsWpDiscovery;
-    use CacheableDiscovery;
 
     /**
      * Discover taxonomy attributes on classes.
      *
      * @param DiscoveryLocation $location
-     * @param ReflectionClass<object> $class
+     * @param ClassReflector $class
      */
-    public function discover(DiscoveryLocation $location, ReflectionClass $class): void
+    public function discover(DiscoveryLocation $location, ClassReflector $class): void
     {
-        $attributes = $class->getAttributes(AsTaxonomy::class);
+        if (!$this->isConcrete($class)) {
+            return;
+        }
 
-        if ($attributes === []) {
+        $attribute = $class->getAttribute(AsTaxonomy::class);
+
+        if ($attribute === null) {
             return;
         }
 
         // Verify the class extends Timber\Term
-        if (!$class->isSubclassOf(Term::class)) {
+        if (!$class->getReflection()->isSubclassOf(Term::class)) {
             throw new InvalidArgumentException(sprintf(
                 'Class %s must extend %s to use #[AsTaxonomy]',
                 $class->getName(),
@@ -45,12 +49,10 @@ final class TaxonomyDiscovery implements WpDiscovery
             ));
         }
 
-        $attribute = $attributes[0]->newInstance();
-
         $this->addItem($location, [
             'attribute' => $attribute,
             'className' => $class->getName(),
-            'implementsConfig' => $class->implementsInterface(ConfiguresTaxonomy::class),
+            'implementsConfig' => $class->implements(ConfiguresTaxonomy::class),
         ]);
     }
 

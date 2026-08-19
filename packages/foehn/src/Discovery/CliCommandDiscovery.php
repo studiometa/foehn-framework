@@ -4,22 +4,22 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Discovery;
 
-use ReflectionClass;
 use Studiometa\Foehn\Attributes\AsCliCommand;
 use Studiometa\Foehn\Console\CliCommandInterface;
 use Studiometa\Foehn\Console\WpCli;
-use Studiometa\Foehn\Discovery\Concerns\CacheableDiscovery;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
 use Tempest\Container\Container;
+use Tempest\Discovery\Discovery;
+use Tempest\Discovery\DiscoveryLocation;
+use Tempest\Reflection\ClassReflector;
 use WP_CLI;
 
 /**
  * Discovers CLI commands and registers them with WP-CLI.
  */
-final class CliCommandDiscovery implements WpDiscovery
+final class CliCommandDiscovery implements Discovery
 {
     use IsWpDiscovery;
-    use CacheableDiscovery;
 
     public function __construct(
         private readonly Container $container,
@@ -29,24 +29,27 @@ final class CliCommandDiscovery implements WpDiscovery
      * Discover CLI command attributes on classes.
      *
      * @param DiscoveryLocation $location
-     * @param ReflectionClass<object> $class
+     * @param ClassReflector $class
      */
-    public function discover(DiscoveryLocation $location, ReflectionClass $class): void
+    public function discover(DiscoveryLocation $location, ClassReflector $class): void
     {
-        $attributes = $class->getAttributes(AsCliCommand::class);
-
-        if ($attributes === []) {
+        if (!$this->isConcrete($class)) {
             return;
         }
 
-        if (!$class->implementsInterface(CliCommandInterface::class)) {
+        if (!$class->hasAttribute(AsCliCommand::class)) {
             return;
         }
 
-        $attribute = $attributes[0]->newInstance();
+        // Checked before the attribute is built: a class carrying #[AsCliCommand]
+        // without the interface is a mistake, and building its attribute first
+        // would report that mistake as an argument error from somewhere else.
+        if (!$class->implements(CliCommandInterface::class)) {
+            return;
+        }
 
         $this->addItem($location, [
-            'attribute' => $attribute,
+            'attribute' => $class->getAttribute(AsCliCommand::class),
             'className' => $class->getName(),
         ]);
     }
@@ -85,8 +88,8 @@ final class CliCommandDiscovery implements WpDiscovery
             $command($args, $assocArgs);
         };
 
-        // Build WP-CLI command name with 'tempest' namespace
-        $commandName = 'tempest ' . $attribute->name;
+        // Every Foehn command lives under one WP-CLI namespace, so `wp foehn` lists them
+        $commandName = 'foehn ' . $attribute->name;
 
         // Register with WP-CLI
         WP_CLI::add_command($commandName, $callback, [

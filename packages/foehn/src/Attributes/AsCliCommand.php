@@ -9,8 +9,8 @@ use Attribute;
 /**
  * Register a class as a WP-CLI command.
  *
- * Commands are registered under the 'tempest' namespace:
- * `wp tempest <name>`
+ * Commands are registered under the 'foehn' namespace:
+ * `wp foehn <name>`
  */
 #[Attribute(Attribute::TARGET_CLASS)]
 final readonly class AsCliCommand

@@ -22,6 +22,13 @@ function wp_stub_reset(): void
     $GLOBALS['wp_stub_options'] = [];
     $GLOBALS['wp_stub_attachments'] = [];
     $GLOBALS['wp_stub_post_meta'] = [];
+    if (!function_exists('wp_get_environment_type')) {
+        function wp_get_environment_type(): string
+        {
+            return $GLOBALS['wp_stub_environment_type'] ?? 'production';
+        }
+    }
+
     $GLOBALS['wp_stub_as_has_scheduled'] = [];
 
     // Theme paths fall back to their stub defaults, so a test that points them at
@@ -1318,6 +1325,13 @@ if (!function_exists('as_unschedule_all_actions')) {
     }
 }
 
+if (!function_exists('wp_get_environment_type')) {
+    function wp_get_environment_type(): string
+    {
+        return $GLOBALS['wp_stub_environment_type'] ?? 'production';
+    }
+}
+
 $GLOBALS['wp_stub_as_has_scheduled'] = [];
 
 // Default template state
@@ -1330,3 +1344,4 @@ $GLOBALS['wp_stub_is_admin'] = false;
 $GLOBALS['wp_stub_user_can'] = [];
 $GLOBALS['wp_stub_nav_menus'] = [];
 $GLOBALS['wp_stub_locale'] = 'en_US';
+$GLOBALS['wp_stub_environment_type'] = 'production';

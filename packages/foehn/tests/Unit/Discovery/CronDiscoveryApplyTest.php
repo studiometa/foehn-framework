@@ -3,13 +3,12 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Discovery\CronDiscovery;
-use Studiometa\Foehn\Discovery\DiscoveryLocation;
 use Tests\Fixtures\CronFixture;
 
 beforeEach(function () {
     wp_stub_reset();
     $this->container = bootTestContainer();
-    $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
+    $this->location = testDiscoveryLocation();
     $this->discovery = new CronDiscovery();
 });
 
@@ -35,7 +34,7 @@ describe('CronDiscovery apply callback', function () {
 
         $this->container->singleton(CronFixture::class, fn() => $fixture);
 
-        $this->discovery->discover($this->location, new ReflectionClass(CronFixture::class));
+        $this->discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(CronFixture::class));
         $this->discovery->apply();
 
         // Capture the add_action callback and invoke it
