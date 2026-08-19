@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace Studiometa\Foehn\Console\Commands;
 
 use Studiometa\Foehn\Attributes\AsCliCommand;
+use Studiometa\Foehn\Console\ClassFileGenerator;
 use Studiometa\Foehn\Console\CliCommandInterface;
-use Studiometa\Foehn\Console\GeneratesFiles;
+use Studiometa\Foehn\Console\GenerationRequest;
 use Studiometa\Foehn\Console\Stubs\ImageSizeStub;
 use Studiometa\Foehn\Console\WpCli;
 
@@ -52,10 +53,9 @@ use function Tempest\Support\str;
     DOC)]
 final class MakeImageSizeCommand implements CliCommandInterface
 {
-    use GeneratesFiles;
-
     public function __construct(
         private readonly WpCli $cli,
+        private readonly ClassFileGenerator $generator,
     ) {}
 
     public function __invoke(array $args, array $assocArgs): void
@@ -76,32 +76,36 @@ final class MakeImageSizeCommand implements CliCommandInterface
         $force = ($assocArgs['force'] ?? null) !== null;
         $dryRun = ($assocArgs['dry-run'] ?? null) !== null;
 
-        $targetPath = $this->getTargetPath('ImageSizes', $className);
-
-        if (!$dryRun && !$this->shouldGenerate($targetPath, $force)) {
-            return;
-        }
-
-        $content = $this->generateClassFile(
-            stubClass: ImageSizeStub::class,
-            targetPath: $targetPath,
+        $file = $this->generator->generate(new GenerationRequest(
+            stub: ImageSizeStub::class,
+            subdirectory: 'ImageSizes',
+            className: $className,
+            attributeArguments: [
+                'name' => $sizeName,
+                'width' => $width,
+                'height' => $height,
+                'crop' => $crop,
+            ],
+            // The NAME constant and the docblock are outside the attribute.
             replacements: [
                 "'dummy-size'" => "'{$sizeName}'",
-                'width: 800' => "width: {$width}",
-                'height: 600' => "height: {$height}",
-                'crop: true' => 'crop: ' . ($crop ? 'true' : 'false'),
                 'DummyImageSize' => $className,
             ],
-            dryRun: $dryRun,
-        );
+        ));
 
         if ($dryRun) {
-            $this->displayDryRun($targetPath, (string) $content);
+            $this->cli->previewGeneratedFile($file);
 
             return;
         }
 
-        $this->cli->success("Image size created: {$this->cli->getRelativePath($targetPath)}");
+        if (!$this->generator->write($file, $force)) {
+            $this->cli->reportFileExists($file);
+
+            return;
+        }
+
+        $this->cli->success("Image size created: {$this->cli->getRelativePath($file->path)}");
         $this->cli->line('');
         $this->cli->log('Image size registered:');
         $this->cli->log("  Name: {$sizeName}");

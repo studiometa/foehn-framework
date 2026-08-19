@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace Studiometa\Foehn\Console\Commands;
 
 use Studiometa\Foehn\Attributes\AsCliCommand;
+use Studiometa\Foehn\Console\ClassFileGenerator;
 use Studiometa\Foehn\Console\CliCommandInterface;
-use Studiometa\Foehn\Console\GeneratesFiles;
+use Studiometa\Foehn\Console\GenerationRequest;
 use Studiometa\Foehn\Console\Stubs\BlockStub;
 use Studiometa\Foehn\Console\Stubs\InteractiveBlockStub;
 use Studiometa\Foehn\Console\WpCli;
@@ -59,10 +60,9 @@ use function Tempest\Support\str;
     DOC)]
 final class MakeBlockCommand implements CliCommandInterface
 {
-    use GeneratesFiles;
-
     public function __construct(
         private readonly WpCli $cli,
+        private readonly ClassFileGenerator $generator,
     ) {}
 
     public function __invoke(array $args, array $assocArgs): void
@@ -84,34 +84,30 @@ final class MakeBlockCommand implements CliCommandInterface
         $dryRun = ($assocArgs['dry-run'] ?? null) !== null;
 
         $fullBlockName = $namespace . '/' . $name;
-        $targetPath = $this->getTargetPath('Blocks', $className);
-
-        if (!$dryRun && !$this->shouldGenerate($targetPath, $force)) {
-            return;
-        }
-
-        $stubClass = $interactive ? InteractiveBlockStub::class : BlockStub::class;
-        $stubBlockName = $interactive ? 'theme/dummy-interactive-block' : 'theme/dummy-block';
-        $stubTitle = $interactive ? 'Dummy Interactive Block' : 'Dummy Block';
-
-        $content = $this->generateClassFile(
-            stubClass: $stubClass,
-            targetPath: $targetPath,
-            replacements: [
-                $stubBlockName => $fullBlockName,
-                $stubTitle => $title,
-                "category: 'theme'" => "category: '{$category}'",
+        $file = $this->generator->generate(new GenerationRequest(
+            stub: $interactive ? InteractiveBlockStub::class : BlockStub::class,
+            subdirectory: 'Blocks',
+            className: $className,
+            attributeArguments: [
+                'name' => $fullBlockName,
+                'title' => $title,
+                'category' => $category,
             ],
-            dryRun: $dryRun,
-        );
+        ));
 
         if ($dryRun) {
-            $this->displayDryRun($targetPath, (string) $content);
+            $this->cli->previewGeneratedFile($file);
 
             return;
         }
 
-        $this->cli->success("Block created: {$this->cli->getRelativePath($targetPath)}");
+        if (!$this->generator->write($file, $force)) {
+            $this->cli->reportFileExists($file);
+
+            return;
+        }
+
+        $this->cli->success("Block created: {$this->cli->getRelativePath($file->path)}");
         $this->cli->line('');
         $this->cli->log("Don't forget to create your Twig template at:");
         $this->cli->log("  templates/blocks/{$name}.twig");

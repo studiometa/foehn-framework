@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace Studiometa\Foehn\Console\Commands;
 
 use Studiometa\Foehn\Attributes\AsCliCommand;
+use Studiometa\Foehn\Console\ClassFileGenerator;
 use Studiometa\Foehn\Console\CliCommandInterface;
-use Studiometa\Foehn\Console\GeneratesFiles;
+use Studiometa\Foehn\Console\GenerationRequest;
 use Studiometa\Foehn\Console\Stubs\HooksStub;
 use Studiometa\Foehn\Console\WpCli;
 
@@ -43,10 +44,9 @@ use function Tempest\Support\str;
     DOC)]
 final class MakeHooksCommand implements CliCommandInterface
 {
-    use GeneratesFiles;
-
     public function __construct(
         private readonly WpCli $cli,
+        private readonly ClassFileGenerator $generator,
     ) {}
 
     public function __invoke(array $args, array $assocArgs): void
@@ -63,28 +63,26 @@ final class MakeHooksCommand implements CliCommandInterface
         $force = ($assocArgs['force'] ?? null) !== null;
         $dryRun = ($assocArgs['dry-run'] ?? null) !== null;
 
-        $targetPath = $this->getTargetPath('Hooks', $className);
-
-        if (!$dryRun && !$this->shouldGenerate($targetPath, $force)) {
-            return;
-        }
-
-        $content = $this->generateClassFile(
-            stubClass: HooksStub::class,
-            targetPath: $targetPath,
-            replacements: [
-                'DummyHooks' => $className,
-            ],
-            dryRun: $dryRun,
-        );
+        $file = $this->generator->generate(new GenerationRequest(
+            stub: HooksStub::class,
+            subdirectory: 'Hooks',
+            className: $className,
+            replacements: ['DummyHooks' => $className],
+        ));
 
         if ($dryRun) {
-            $this->displayDryRun($targetPath, (string) $content);
+            $this->cli->previewGeneratedFile($file);
 
             return;
         }
 
-        $this->cli->success("Hooks class created: {$this->cli->getRelativePath($targetPath)}");
+        if (!$this->generator->write($file, $force)) {
+            $this->cli->reportFileExists($file);
+
+            return;
+        }
+
+        $this->cli->success("Hooks class created: {$this->cli->getRelativePath($file->path)}");
         $this->cli->line('');
         $this->cli->log('Add your hooks using:');
         $this->cli->log('  #[AsAction(\'hook_name\')] for actions');

@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace Studiometa\Foehn\Console\Commands;
 
 use Studiometa\Foehn\Attributes\AsCliCommand;
+use Studiometa\Foehn\Console\ClassFileGenerator;
 use Studiometa\Foehn\Console\CliCommandInterface;
-use Studiometa\Foehn\Console\GeneratesFiles;
+use Studiometa\Foehn\Console\GenerationRequest;
 use Studiometa\Foehn\Console\Stubs\BlockPatternStub;
 use Studiometa\Foehn\Console\WpCli;
 
@@ -55,10 +56,9 @@ use function Tempest\Support\str;
     DOC)]
 final class MakePatternCommand implements CliCommandInterface
 {
-    use GeneratesFiles;
-
     public function __construct(
         private readonly WpCli $cli,
+        private readonly ClassFileGenerator $generator,
     ) {}
 
     public function __invoke(array $args, array $assocArgs): void
@@ -82,34 +82,31 @@ final class MakePatternCommand implements CliCommandInterface
         $dryRun = ($assocArgs['dry-run'] ?? null) !== null;
 
         $fullPatternName = $namespace . '/' . $name;
-        $targetPath = $this->getTargetPath('Patterns', $className);
-
-        if (!$dryRun && !$this->shouldGenerate($targetPath, $force)) {
-            return;
-        }
-
-        // Format categories array for replacement
-        $categoriesCode = "['" . implode("', '", $categories) . "']";
-
-        $content = $this->generateClassFile(
-            stubClass: BlockPatternStub::class,
-            targetPath: $targetPath,
-            replacements: [
-                'theme/dummy-pattern' => $fullPatternName,
-                'Dummy Pattern' => $title,
-                'A custom block pattern.' => $description,
-                "['featured']" => $categoriesCode,
+        $file = $this->generator->generate(new GenerationRequest(
+            stub: BlockPatternStub::class,
+            subdirectory: 'Patterns',
+            className: $className,
+            attributeArguments: [
+                'name' => $fullPatternName,
+                'title' => $title,
+                'description' => $description,
+                'categories' => $categories,
             ],
-            dryRun: $dryRun,
-        );
+        ));
 
         if ($dryRun) {
-            $this->displayDryRun($targetPath, (string) $content);
+            $this->cli->previewGeneratedFile($file);
 
             return;
         }
 
-        $this->cli->success("Block pattern created: {$this->cli->getRelativePath($targetPath)}");
+        if (!$this->generator->write($file, $force)) {
+            $this->cli->reportFileExists($file);
+
+            return;
+        }
+
+        $this->cli->success("Block pattern created: {$this->cli->getRelativePath($file->path)}");
         $this->cli->line('');
         $this->cli->log("Don't forget to create your Twig template at:");
         $this->cli->log("  templates/patterns/{$name}.twig");

@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace Studiometa\Foehn\Console\Commands;
 
 use Studiometa\Foehn\Attributes\AsCliCommand;
+use Studiometa\Foehn\Console\ClassFileGenerator;
 use Studiometa\Foehn\Console\CliCommandInterface;
-use Studiometa\Foehn\Console\GeneratesFiles;
+use Studiometa\Foehn\Console\GenerationRequest;
 use Studiometa\Foehn\Console\Stubs\FieldGroupStub;
 use Studiometa\Foehn\Console\WpCli;
 
@@ -52,10 +53,9 @@ use function Tempest\Support\str;
     DOC)]
 final class MakeFieldGroupCommand implements CliCommandInterface
 {
-    use GeneratesFiles;
-
     public function __construct(
         private readonly WpCli $cli,
+        private readonly ClassFileGenerator $generator,
     ) {}
 
     public function __invoke(array $args, array $assocArgs): void
@@ -77,35 +77,34 @@ final class MakeFieldGroupCommand implements CliCommandInterface
         $force = ($assocArgs['force'] ?? null) !== null;
         $dryRun = ($assocArgs['dry-run'] ?? null) !== null;
 
-        // Determine subdirectory based on location type
-        $subdirectory = $this->getSubdirectory($postType, $pageTemplate, $taxonomy);
-        $targetPath = $this->getTargetPath($subdirectory, $className);
-
-        if (!$dryRun && !$this->shouldGenerate($targetPath, $force)) {
-            return;
-        }
-
-        // Build location rules
-        $locationCode = $this->buildLocationCode($postType, $pageTemplate, $taxonomy);
-
-        $content = $this->generateClassFile(
-            stubClass: FieldGroupStub::class,
-            targetPath: $targetPath,
-            replacements: [
-                'dummy_field_group' => $key,
-                'Dummy Field Group' => $title,
-                "['post_type', '==', 'post']" => $locationCode,
+        $file = $this->generator->generate(new GenerationRequest(
+            stub: FieldGroupStub::class,
+            subdirectory: $this->getSubdirectory($postType, $pageTemplate, $taxonomy),
+            className: $className,
+            attributeArguments: [
+                'name' => $key,
+                'title' => $title,
+                'location' => $this->buildLocation($postType, $pageTemplate, $taxonomy),
             ],
-            dryRun: $dryRun,
-        );
+            // The builder is seeded with the group key inside fields()
+            bodyReplacements: [
+                'fields' => ["'dummy_field_group'" => "'{$key}'"],
+            ],
+        ));
 
         if ($dryRun) {
-            $this->displayDryRun($targetPath, (string) $content);
+            $this->cli->previewGeneratedFile($file);
 
             return;
         }
 
-        $this->cli->success("Field group created: {$this->cli->getRelativePath($targetPath)}");
+        if (!$this->generator->write($file, $force)) {
+            $this->cli->reportFileExists($file);
+
+            return;
+        }
+
+        $this->cli->success("Field group created: {$this->cli->getRelativePath($file->path)}");
         $this->cli->line('');
         $this->cli->log('Edit the fields() method to define your ACF fields using FieldsBuilder.');
     }
@@ -133,20 +132,24 @@ final class MakeFieldGroupCommand implements CliCommandInterface
     /**
      * Build location rules code.
      */
-    private function buildLocationCode(?string $postType, ?string $pageTemplate, ?string $taxonomy): string
+    /**
+     * Build the location rule the #[AsAcfFieldGroup] attribute expects.
+     *
+     * The attribute takes the simplified `param => value` map that
+     * AcfFieldGroupDiscovery expands into full ACF location groups.
+     *
+     * @return array<string, string>
+     */
+    private function buildLocation(?string $postType, ?string $pageTemplate, ?string $taxonomy): array
     {
         if ($pageTemplate !== null) {
-            return "['page_template', '==', '{$pageTemplate}.php']";
+            return ['page_template' => $pageTemplate . '.php'];
         }
 
         if ($taxonomy !== null) {
-            return "['taxonomy', '==', '{$taxonomy}']";
+            return ['taxonomy' => $taxonomy];
         }
 
-        if ($postType !== null) {
-            return "['post_type', '==', '{$postType}']";
-        }
-
-        return "['post_type', '==', 'post']";
+        return ['post_type' => $postType ?? 'post'];
     }
 }

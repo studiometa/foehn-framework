@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace Studiometa\Foehn\Console\Commands;
 
 use Studiometa\Foehn\Attributes\AsCliCommand;
+use Studiometa\Foehn\Console\ClassFileGenerator;
 use Studiometa\Foehn\Console\CliCommandInterface;
-use Studiometa\Foehn\Console\GeneratesFiles;
+use Studiometa\Foehn\Console\GenerationRequest;
 use Studiometa\Foehn\Console\Stubs\AcfBlockStub;
 use Studiometa\Foehn\Console\WpCli;
 
@@ -60,8 +61,6 @@ use function Tempest\Support\str;
     DOC)]
 final class MakeAcfBlockCommand implements CliCommandInterface
 {
-    use GeneratesFiles;
-
     /**
      * Field type definitions for --fields flag.
      *
@@ -100,6 +99,7 @@ final class MakeAcfBlockCommand implements CliCommandInterface
 
     public function __construct(
         private readonly WpCli $cli,
+        private readonly ClassFileGenerator $generator,
     ) {}
 
     public function __invoke(array $args, array $assocArgs): void
@@ -140,41 +140,45 @@ final class MakeAcfBlockCommand implements CliCommandInterface
             return;
         }
 
-        $targetPath = $this->getTargetPath('Blocks', $className);
-
-        if (!$dryRun && !$this->shouldGenerate($targetPath, $force)) {
-            return;
-        }
-
         // Generate field key from name
         $fieldKey = str($name)->snake()->toString();
 
-        // Generate fields code and compose data
-        $fieldsCode = $this->generateFieldsCode($fields);
-        $composeCode = $this->generateComposeCode($fields);
-
-        $content = $this->generateClassFile(
-            stubClass: AcfBlockStub::class,
-            targetPath: $targetPath,
-            replacements: [
-                'dummy-acf-block' => $name,
-                'Dummy ACF Block' => $title,
-                "category: 'common'" => "category: '{$category}'",
-                "mode: 'preview'" => "mode: '{$mode}'",
-                'dummy_acf_block' => $fieldKey,
-                $this->getDefaultFieldsCode() => $fieldsCode,
-                $this->getDefaultComposeCode() => $composeCode,
+        $file = $this->generator->generate(new GenerationRequest(
+            stub: AcfBlockStub::class,
+            subdirectory: 'Blocks',
+            className: $className,
+            attributeArguments: [
+                'name' => $name,
+                'title' => $title,
+                'category' => $category,
+                'mode' => $mode,
             ],
-            dryRun: $dryRun,
-        );
+            // The field builder chain and the composed data are code, not values,
+            // so they are substituted inside the method that holds each of them.
+            bodyReplacements: [
+                'fields' => [
+                    "'dummy_acf_block'" => "'{$fieldKey}'",
+                    $this->getDefaultFieldsCode() => $this->generateFieldsCode($fields),
+                ],
+                'compose' => [
+                    $this->getDefaultComposeCode() => $this->generateComposeCode($fields),
+                ],
+            ],
+        ));
 
         if ($dryRun) {
-            $this->displayDryRun($targetPath, (string) $content);
+            $this->cli->previewGeneratedFile($file);
 
             return;
         }
 
-        $this->cli->success("ACF block created: {$this->cli->getRelativePath($targetPath)}");
+        if (!$this->generator->write($file, $force)) {
+            $this->cli->reportFileExists($file);
+
+            return;
+        }
+
+        $this->cli->success("ACF block created: {$this->cli->getRelativePath($file->path)}");
         $this->cli->line('');
         $this->cli->log("Don't forget to create your Twig template at:");
         $this->cli->log("  templates/blocks/{$name}.twig");
