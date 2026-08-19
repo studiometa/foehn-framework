@@ -61,25 +61,27 @@ Attributes are PHP 8 annotations that enable auto-discovery and registration of 
 
 ### API & CLI
 
-| Attribute                             | Description                  |
-| ------------------------------------- | ---------------------------- |
-| [`#[AsRestRoute]`](./as-rest-route)   | Register a REST API endpoint |
-| [`#[AsCliCommand]`](./as-cli-command) | Register a WP-CLI command    |
+| Attribute                               | Description                            |
+| --------------------------------------- | -------------------------------------- |
+| [`#[AsRestRoute]`](./as-rest-route)     | Register a REST API endpoint           |
+| [`#[AsRewriteRule]`](./as-rewrite-rule) | Register a rewrite rule, and answer it |
+| [`#[AsCliCommand]`](./as-cli-command)   | Register a WP-CLI command              |
 
 ## Interfaces
 
 Interfaces define contracts for classes used with specific attributes.
 
-| Interface                                                        | Used with                        |
-| ---------------------------------------------------------------- | -------------------------------- |
-| [`BlockInterface`](./block-interface)                            | `#[AsBlock]`                     |
-| [`InteractiveBlockInterface`](./interactive-block-interface)     | `#[AsBlock]` with interactivity  |
-| [`AcfBlockInterface`](./acf-block-interface)                     | `#[AsAcfBlock]`                  |
-| [`AcfFieldGroupInterface`](./acf-field-group-interface)          | `#[AsAcfFieldGroup]`             |
-| [`AcfOptionsPageInterface`](./acf-options-page-interface)        | `#[AsAcfOptionsPage]` (optional) |
-| [`ContextProviderInterface`](./context-provider-interface)       | `#[AsContextProvider]`           |
-| [`TemplateControllerInterface`](./template-controller-interface) | `#[AsTemplateController]`        |
-| [`BlockPatternInterface`](./block-pattern-interface)             | `#[AsBlockPattern]` (optional)   |
+| Interface                                                              | Used with                        |
+| ---------------------------------------------------------------------- | -------------------------------- |
+| [`BlockInterface`](./block-interface)                                  | `#[AsBlock]`                     |
+| [`InteractiveBlockInterface`](./interactive-block-interface)           | `#[AsBlock]` with interactivity  |
+| [`AcfBlockInterface`](./acf-block-interface)                           | `#[AsAcfBlock]`                  |
+| [`AcfFieldGroupInterface`](./acf-field-group-interface)                | `#[AsAcfFieldGroup]`             |
+| [`AcfOptionsPageInterface`](./acf-options-page-interface)              | `#[AsAcfOptionsPage]` (optional) |
+| [`ContextProviderInterface`](./context-provider-interface)             | `#[AsContextProvider]`           |
+| [`TemplateControllerInterface`](./template-controller-interface)       | `#[AsTemplateController]`        |
+| [`RewriteHandlerInterface`](./as-rewrite-rule#rewritehandlerinterface) | `#[AsRewriteRule]` (optional)    |
+| [`BlockPatternInterface`](./block-pattern-interface)                   | `#[AsBlockPattern]` (optional)   |
 
 ## Configuration
 
