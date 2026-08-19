@@ -104,34 +104,45 @@ describe('Bypass: the request', function () {
 });
 
 describe('Bypass: the query string', function () {
-    it('strips every ignored arg, in any order they arrive in', function () {
+    it('keys every ignored arg as no query at all, in any order they arrive in', function () {
         $bypass = pageCacheBypass();
 
         // Order-independence is not a nicety: the generated nginx and Apache snippets
         // test the same set with the same order-independence, and a reader that
         // disagreed would read a different file than the writer wrote.
-        expect($bypass->significantQuery('/?utm_source=a&utm_medium=b&gclid=c'))->toBe('');
-        expect($bypass->significantQuery('/?gclid=c&utm_medium=b&utm_source=a'))->toBe('');
+        expect($bypass->canonicalQuery('/?utm_source=a&utm_medium=b&gclid=c'))->toBe('');
+        expect($bypass->canonicalQuery('/?gclid=c&utm_medium=b&utm_source=a'))->toBe('');
     });
 
-    it('keeps what it was not told to ignore', function () {
-        expect(pageCacheBypass()->significantQuery('/?utm_source=a&s=hello'))->toBe('s=hello');
+    it('bypasses on what it was not told about', function () {
+        expect(pageCacheBypass()->canonicalQuery('/?utm_source=a&s=hello'))->toBeNull();
     });
 
     it('does not mistake a longer name for one it ignores', function () {
         // `utm_sourcex` is not `utm_source`, and treating it as one would serve the
         // no-query page for a URL that meant something else.
-        expect(pageCacheBypass()->significantQuery('/?utm_sourcex=a'))->toBe('utm_sourcex=a');
+        expect(pageCacheBypass()->canonicalQuery('/?utm_sourcex=a'))->toBeNull();
     });
 
     it('treats a bare flag as the arg it names', function () {
-        expect(pageCacheBypass()->significantQuery('/?utm_source'))->toBe('');
-        expect(pageCacheBypass()->significantQuery('/?preview'))->toBe('preview');
+        expect(pageCacheBypass()->canonicalQuery('/?utm_source'))->toBe('');
+        expect(pageCacheBypass()->canonicalQuery('/?preview'))->toBeNull();
     });
 
     it('has no query to speak of when there is none', function () {
-        expect(pageCacheBypass()->significantQuery('/blog/'))->toBe('');
-        expect(pageCacheBypass()->significantQuery('/blog/?'))->toBe('');
+        expect(pageCacheBypass()->canonicalQuery('/blog/'))->toBe('');
+        expect(pageCacheBypass()->canonicalQuery('/blog/?'))->toBe('');
+    });
+
+    it('keys a configured arg into the filename rather than bypassing on it', function () {
+        // See QueryKeyTest for the canonical-order rules themselves; this is the seam
+        // between them and the key the writer and the drop-in both use.
+        $bypass = pageCacheBypass(new PageCacheConfig(enabled: true, cacheQueryArgs: ['page' => '^[0-9]{1,6}$']));
+
+        $server = pageCacheServer(['REQUEST_URI' => '/blog/?page=2']);
+
+        expect($bypass->key($server)?->relativePath())->toBe('example.com/blog/index__page=2&.html');
+        expect($bypass->forRequest($server))->toBeNull();
     });
 });
 

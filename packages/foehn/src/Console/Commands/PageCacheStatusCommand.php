@@ -117,19 +117,31 @@ final class PageCacheStatusCommand implements CliCommandInterface
                 ],
         );
 
-        $this->reportSnippet(
+        $apache = $this->reportSnippet(
             'apache',
             new ApacheSnippet($this->config)->hash(),
             $root === null ? [] : [$root . '/.htaccess'],
         );
+
+        // A keyed arg is served by nginx and by the drop-in, but not by mod_rewrite, which
+        // cannot assemble the filename. Requests carrying one still get the right page —
+        // they reach the drop-in — so this is slower rather than wrong, and worth saying
+        // out loud before somebody reads it as a cache that stopped working.
+        if ($apache && $this->config->getCacheQueryArgs() !== []) {
+            $this->cli->log(sprintf('    note: %s served from PHP, not Apache — mod_rewrite cannot key a query arg', implode(
+                ', ',
+                array_keys($this->config->getCacheQueryArgs()),
+            )));
+        }
     }
 
     /**
      * Report one generated snippet, and whether it still matches the loaded config.
      *
      * @param list<string> $candidates
+     * @return bool Whether one of the candidates is installed.
      */
-    private function reportSnippet(string $label, string $hash, array $candidates): void
+    private function reportSnippet(string $label, string $hash, array $candidates): bool
     {
         foreach ($candidates as $path) {
             if (!is_file($path)) {
@@ -152,10 +164,12 @@ final class PageCacheStatusCommand implements CliCommandInterface
                 $current ? '' : ' — generated from a different config, re-run cache:config',
             ));
 
-            return;
+            return true;
         }
 
         $this->cli->log("  · {$label}");
+
+        return false;
     }
 
     private function bytes(int $bytes): string

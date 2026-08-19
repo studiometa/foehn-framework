@@ -86,7 +86,7 @@ describe('cache:config', function () {
 
         $printed = implode("\n", array_column(array_column(wp_stub_get_calls('wp_cli_line'), 'args'), 'message'));
 
-        expect($printed)->toContain('location @foehn_miss {');
+        expect($printed)->toContain('rewrite ^ "$foehn_url" last;');
         expect(wp_stub_get_calls('wp_cli_success'))->toBe([]);
     });
 

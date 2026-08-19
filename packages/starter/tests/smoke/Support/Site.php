@@ -26,6 +26,9 @@ final readonly class Site
     /** The generated nginx include ddev picks up from `.ddev/nginx/*.conf`. */
     public const NGINX_INCLUDE = '.ddev/nginx/foehn-page-cache.conf';
 
+    /** Where `wp foehn cache:config --server=nginx --write` puts the snippet. */
+    public const GENERATED_NGINX = 'config/nginx/foehn-page-cache.conf';
+
     private const CACHE_ROOT = 'web/wp-content/cache/foehn/pages';
 
     /**
@@ -221,14 +224,58 @@ final readonly class Site
 
     /**
      * The absolute path of the file a URL path is cached at.
+     *
+     * The filename is a parameter because keyed query args change it: `?page=2` stores as
+     * `index__page=2&.html` beside the plain `index.html`.
      */
-    public static function cacheFile(string $path): string
+    public static function cacheFile(string $path, string $filename = 'index.html'): string
     {
         $trimmed = trim($path, '/');
 
         return (
-            self::path(self::CACHE_ROOT) . '/' . self::host() . ($trimmed === '' ? '' : '/' . $trimmed) . '/index.html'
+            self::path(self::CACHE_ROOT)
+            . '/'
+            . self::host()
+            . ($trimmed === '' ? '' : '/' . $trimmed)
+            . '/'
+            . $filename
         );
+    }
+
+    /**
+     * Regenerate the nginx include from the configuration that is loaded right now.
+     *
+     * The committed include is generated from the starter's own config, which keys no
+     * query args. A test that changes the policy has to regenerate the snippet as a deploy
+     * would, or it is asserting against rules nginx was never given.
+     *
+     * @return string The previous contents, for {@see Site::restoreNginxInclude()}.
+     */
+    public static function generateNginxInclude(): string
+    {
+        $include = self::path(self::NGINX_INCLUDE);
+        $previous = (string) file_get_contents($include);
+
+        self::wp('wp foehn cache:config --server=nginx --write');
+        copy(self::path(self::GENERATED_NGINX), $include);
+        self::reloadNginx();
+        self::awaitVia('nginx');
+
+        return $previous;
+    }
+
+    /**
+     * Put the committed include back, and remove what `--write` left behind.
+     */
+    public static function restoreNginxInclude(string $previous): void
+    {
+        file_put_contents(self::path(self::NGINX_INCLUDE), $previous);
+
+        if (is_file(self::path(self::GENERATED_NGINX))) {
+            unlink(self::path(self::GENERATED_NGINX));
+        }
+
+        self::reloadNginx();
     }
 
     /**

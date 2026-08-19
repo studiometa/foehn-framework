@@ -8,7 +8,8 @@ namespace Studiometa\Foehn\PageCache;
  * A request turned into the one filename that every reader can compute.
  *
  * ```
- * {cache root}/{host}/{path}/index.html
+ * {cache root}/{host}/{path}/index.html                 # no query, or ignored args only
+ * {cache root}/{host}/{path}/index__lang=fr&page=2&.html # keyed args, in canonical order
  * ```
  *
  * Two properties make this class load-bearing rather than string concatenation.
@@ -29,12 +30,19 @@ namespace Studiometa\Foehn\PageCache;
 final readonly class CacheKey
 {
     /**
-     * The stored filename.
-     *
-     * The `index-{variant}.html` shape is reserved for device or consent variants. No
-     * variant ships in v1.
+     * The stored filename for a request whose query string does not change the page.
      */
     public const FILENAME = 'index.html';
+
+    /**
+     * What separates the keyed query args from `index` in a filename.
+     *
+     * Doubled so it cannot be confused with a `-` inside a value, and the trailing `&`
+     * of {@see QueryKey::canonical()} is kept rather than trimmed: nginx cannot strip a
+     * character from a variable, so the format keeps the separator instead of asking PHP
+     * and nginx to agree about removing it.
+     */
+    private const VARIANT_SEPARATOR = '__';
 
     /** Longest single path segment, in bytes. */
     private const MAX_SEGMENT_BYTES = 200;
@@ -71,6 +79,8 @@ final readonly class CacheKey
         public string $host,
         /** Decoded path, leading slash, no trailing slash. The site root is `/`. */
         public string $path,
+        /** Canonical keyed query args, or an empty string. See {@see QueryKey}. */
+        public string $variant,
     ) {}
 
     /**
@@ -78,8 +88,10 @@ final readonly class CacheKey
      *
      * Null is never an error to report to a visitor — it is a bypass. Every rejection
      * here is a request whose filename this cache would rather not compute.
+     *
+     * @param string $variant The canonical query suffix from {@see QueryKey::canonical()}.
      */
-    public static function create(string $host, string $requestUri): ?self
+    public static function create(string $host, string $requestUri, string $variant = ''): ?self
     {
         $normalizedHost = self::normalizeHost($host);
 
@@ -93,7 +105,22 @@ final readonly class CacheKey
             return null;
         }
 
-        return new self($normalizedHost, $path);
+        // The variant arrives validated argument by argument, and is checked again here as
+        // one assembled string. The name that reaches a filename has passed through more
+        // hands than the values that were validated, and this is the last of them.
+        if (!self::isWritableFilename(self::filenameFor($variant))) {
+            return null;
+        }
+
+        return new self($normalizedHost, $path, $variant);
+    }
+
+    /**
+     * The stored filename for this key.
+     */
+    public function filename(): string
+    {
+        return self::filenameFor($this->variant);
     }
 
     /**
@@ -101,7 +128,19 @@ final readonly class CacheKey
      */
     public function relativePath(): string
     {
-        return rtrim($this->host . $this->path, '/') . '/' . self::FILENAME;
+        return rtrim($this->host . $this->path, '/') . '/' . $this->filename();
+    }
+
+    /**
+     * The filename a canonical query suffix stores under.
+     */
+    private static function filenameFor(string $variant): string
+    {
+        if ($variant === '') {
+            return self::FILENAME;
+        }
+
+        return 'index' . self::VARIANT_SEPARATOR . $variant . '.html';
     }
 
     /**

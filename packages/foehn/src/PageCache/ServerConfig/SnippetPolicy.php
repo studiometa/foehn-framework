@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Studiometa\Foehn\PageCache\ServerConfig;
 
 use Studiometa\Foehn\Config\PageCacheConfig;
+use Studiometa\Foehn\PageCache\QueryKey;
 
 /**
  * The parts of a page-cache policy a web server can express.
@@ -74,14 +75,118 @@ final readonly class SnippetPolicy
      */
     public function ignorableQueryPattern(): string
     {
-        if ($this->config->ignoredQueryArgs === []) {
+        $ignored = $this->config->getIgnoredQueryArgs();
+
+        if ($ignored === []) {
             // Only an absent query string is ignorable, so every one of them is a bypass.
             return '^$';
         }
 
-        $names = implode('|', array_map(self::quote(...), $this->config->ignoredQueryArgs));
+        $names = implode('|', array_map(self::quote(...), $ignored));
 
         return '^(?:(?:' . $names . ')(?:=[^&]*)?(?:&|$))*$';
+    }
+
+    /**
+     * One `if`/`set` pair per keyed query arg, in the configuration's canonical order.
+     *
+     * This is the unrolled form of {@see \Studiometa\Foehn\PageCache\QueryKey::canonical()}:
+     * the loop PHP runs over the sorted arg list becomes a fixed sequence of statements,
+     * and `$arg_name` is independent of where the arg appeared in the query string. That
+     * is the whole trick behind `?page=2&lang=fr` and `?lang=fr&page=2` reaching one file
+     * without nginx being able to sort anything.
+     */
+    public function canonicalQueryStatements(): string
+    {
+        $floor = sprintf('[^%s]|^.{%d,}$', QueryKey::VALUE_CHARACTER_CLASS, QueryKey::VALUE_MAX_LENGTH + 1);
+
+        $lines = [];
+
+        foreach ($this->config->getCacheQueryArgs() as $name => $pattern) {
+            // Six statements where PHP needs two, because nginx has no `and` and therefore
+            // no way to say "present *and* invalid" in one condition. A sentinel says it
+            // instead, and the order is the logic: empty unless present, valid if the
+            // pattern matches, invalid again if the value is not one a filename may hold.
+            //
+            // The alternative — falling back to the unkeyed file when a value does not
+            // validate — is what this replaced, and it served the unpaginated page to
+            // anyone who asked for `?page=abc`.
+            $lines[] = sprintf('set $foehn_arg_%s "empty";', $name);
+            $lines[] = sprintf('if ($arg_%s != "") { set $foehn_arg_%s "invalid"; }', $name, $name);
+            $lines[] = sprintf('if ($arg_%s ~ "%s") { set $foehn_arg_%s "valid"; }', $name, $pattern, $name);
+            $lines[] = sprintf('if ($arg_%s ~ "%s") { set $foehn_arg_%s "invalid"; }', $name, $floor, $name);
+            $lines[] = sprintf(
+                'if ($foehn_arg_%s = "valid") { set $foehn_q "${foehn_q}%s=$arg_%s&"; }',
+                $name,
+                $name,
+                $name,
+            );
+            $lines[] = sprintf('if ($foehn_arg_%s = "invalid") { set $foehn_bypass 0; }', $name);
+        }
+
+        return implode("\n", $lines);
+    }
+
+    /**
+     * One bypass per keyed query arg that appears twice.
+     *
+     * nginx's `$arg_page` is the first `page=` in the query string, PHP's `$_GET['page']`
+     * the last. `?page=1&page=2` has no answer both readers would give, so it gets none.
+     */
+    public function repeatedQueryStatements(): string
+    {
+        $lines = [];
+
+        foreach (array_keys($this->config->getCacheQueryArgs()) as $name) {
+            $quoted = self::quote($name);
+
+            $lines[] = sprintf('if ($args ~ "(?:^|&)%s=[^&]*&(?:.*&)?%s=") { set $foehn_bypass 0; }', $quoted, $quoted);
+        }
+
+        return implode("\n", $lines);
+    }
+
+    /**
+     * A regex matching a query string made only of args this cache has been told about.
+     *
+     * Ignored **and** keyed: an ignored arg leaves the key alone and a keyed one changes
+     * the filename, but both are args nginx knows how to serve. Anything else is a
+     * bypass. Apache gets {@see SnippetPolicy::ignorableQueryPattern()} instead, because
+     * it cannot build a keyed filename and must not serve the unkeyed one in its place.
+     */
+    public function knownQueryPattern(): string
+    {
+        $names = [...$this->config->getIgnoredQueryArgs(), ...array_keys($this->config->getCacheQueryArgs())];
+
+        if ($names === []) {
+            return '^$';
+        }
+
+        return '^(?:(?:' . implode('|', array_map(self::quote(...), $names)) . ')(?:=[^&]*)?(?:&|$))*$';
+    }
+
+    /**
+     * The `.maintenance` file, as a path under the document root.
+     *
+     * WordPress writes it to `ABSPATH`, which in this layout is `web/wp/` rather than the
+     * document root — so a snippet testing `$document_root/.maintenance` would keep
+     * serving cached pages all through a core update, while PHP correctly refused to.
+     */
+    public function maintenanceUrlPath(): string
+    {
+        $root = self::documentRoot();
+
+        if ($root === null || !defined('ABSPATH')) {
+            return '/.maintenance';
+        }
+
+        $abspath = rtrim((string) constant('ABSPATH'), '/');
+
+        if (!str_starts_with($abspath, $root)) {
+            return '/.maintenance';
+        }
+
+        return substr($abspath, strlen($root)) . '/.maintenance';
     }
 
     /**
@@ -93,7 +198,8 @@ final readonly class SnippetPolicy
             sha1((string) json_encode([
                 $this->cacheUrlPath(),
                 $this->config->bypassCookies,
-                $this->config->ignoredQueryArgs,
+                $this->config->getIgnoredQueryArgs(),
+                $this->config->getCacheQueryArgs(),
                 $this->config->cacheNotFound,
                 $this->config->browserMaxAge,
             ])),

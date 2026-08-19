@@ -46,8 +46,8 @@ describe('SnippetPolicy', function () {
     });
 
     it('matches an absent query string, so one condition can cover both', function () {
-        // nginx has no `and`, and a conjunction would have to be built with `set` —
-        // which is the thing that silently breaks try_files.
+        // nginx has no `and`, so a pattern that also matches the empty string is one
+        // condition instead of a conjunction.
         expect(preg_match('/' . new SnippetPolicy($this->config)->ignorableQueryPattern() . '/', ''))->toBe(1);
     });
 
@@ -69,8 +69,8 @@ describe('SnippetPolicy', function () {
 
     it('agrees with the PHP writer about which query strings are ignorable', function (string $query) {
         // The whole design turns on the readers keying the same request the same way, so
-        // the generated pattern and Bypass::significantQuery() are compared directly.
-        $ignorableByPhp = pageCacheBypass($this->config)->significantQuery('/?' . $query) === '';
+        // the generated pattern and Bypass::canonicalQuery() are compared directly.
+        $ignorableByPhp = pageCacheBypass($this->config)->canonicalQuery('/?' . $query) === '';
         $ignorableByServer =
             preg_match('/' . new SnippetPolicy($this->config)->ignorableQueryPattern() . '/', $query) === 1;
 
@@ -87,6 +87,84 @@ describe('SnippetPolicy', function () {
         ['utm_sourcex=a'],
         ['s=hello&utm_source=a'],
     ]);
+
+    it('agrees with the PHP writer about which query strings nginx may serve at all', function (string $query) {
+        // The keyed args widen what nginx will serve beyond what Apache will, so the
+        // pattern nginx gets is compared against the writer's own answer as well. A
+        // disagreement here is nginx serving a file PHP never wrote, or refusing one it did.
+        $config = new PageCacheConfig(enabled: true, path: $this->config->path, cacheQueryArgs: [
+            'page' => '^[0-9]{1,6}$',
+            'lang' => '^[a-z]{2}$',
+        ]);
+
+        $servableByPhp = pageCacheBypass($config)->canonicalQuery('/?' . $query) !== null;
+        $servableByServer = preg_match('/' . new SnippetPolicy($config)->knownQueryPattern() . '/', $query) === 1;
+
+        expect($servableByServer)->toBe($servableByPhp);
+    })->with([
+        [''],
+        ['page=2'],
+        ['lang=fr'],
+        ['page=2&lang=fr'],
+        ['lang=fr&page=2'],
+        ['page=2&utm_source=a'],
+        ['utm_source=a'],
+        ['foo=bar'],
+        ['page=2&foo=bar'],
+        ['pagex=2'],
+    ]);
+
+    it('unrolls the keyed args in the configuration order, not the request order', function () {
+        // The one property that makes ?page=2&lang=fr and ?lang=fr&page=2 one file: every
+        // reader walks this list, and nginx's $arg_name does not care where the arg was.
+        $statements = new SnippetPolicy(
+            new PageCacheConfig(cacheQueryArgs: ['page', 'lang']),
+        )->canonicalQueryStatements();
+
+        expect(strpos($statements, 'lang=$arg_lang&'))->toBeLessThan((int) strpos($statements, 'page=$arg_page&'));
+    });
+
+    it('bypasses a keyed value its pattern rejects, rather than serving the unkeyed page', function () {
+        // The bug the end-to-end suite caught: with only a positive match, `?page=abc`
+        // built no variant, fell back to index.html and served page one. nginx has no
+        // `and`, so "present and invalid" is spelled with a sentinel.
+        $statements = new SnippetPolicy(new PageCacheConfig(cacheQueryArgs: [
+            'page' => '^[0-9]+$',
+        ]))->canonicalQueryStatements();
+
+        expect($statements)
+            ->toContain('set $foehn_arg_page "empty";')
+            ->toContain('if ($arg_page != "") { set $foehn_arg_page "invalid"; }')
+            ->toContain('if ($arg_page ~ "^[0-9]+$") { set $foehn_arg_page "valid"; }')
+            ->toContain('if ($foehn_arg_page = "invalid") { set $foehn_bypass 0; }');
+
+        // And the order is the logic: a valid value has to be able to overwrite the
+        // "invalid" that being present set, and the charset floor to overwrite that.
+        expect(strpos($statements, '"invalid"; }'))
+            ->toBeLessThan((int) strpos($statements, '"valid"; }'))
+            ->and(strpos($statements, '"valid"; }'))
+            ->toBeLessThan((int) strrpos($statements, '"invalid"; }'));
+    });
+
+    it('holds a keyed value to the charset a filename may use, whatever the project wrote', function () {
+        // A project pattern can narrow the charset, never widen it — the value becomes
+        // part of a filename.
+        expect(new SnippetPolicy(new PageCacheConfig(cacheQueryArgs: [
+            'lang' => '^.+$',
+        ]))->canonicalQueryStatements())->toContain('if ($arg_lang ~ "[^A-Za-z0-9_.\-]|^.{65,}$") { set $foehn_arg_lang "invalid"; }');
+    });
+
+    it('bypasses a keyed arg that appears twice, which the readers read differently', function () {
+        $policy = new SnippetPolicy(new PageCacheConfig(cacheQueryArgs: ['page']));
+
+        expect($policy->repeatedQueryStatements())->toContain('if ($args ~ "(?:^|&)page=[^&]*&(?:.*&)?page=")');
+    });
+
+    it('points the maintenance test at ABSPATH rather than at the document root', function () {
+        // WordPress writes .maintenance to ABSPATH, which is web/wp/ here. A snippet
+        // testing the document root keeps serving cached pages through a core update.
+        expect(new SnippetPolicy($this->config)->maintenanceUrlPath())->toBe('/wp/.maintenance');
+    });
 
     it('escapes a config value so it cannot rewrite the generated rules', function () {
         $policy = new SnippetPolicy(new PageCacheConfig(bypassCookies: ['a.b|c']));
@@ -120,20 +198,39 @@ describe('NginxSnippet', function () {
             ->toContain('if ($request_method != GET)')
             ->toContain('if ($args !~ "^(?:(?:utm_source|')
             ->toContain('if ($http_cookie ~* "(wordpress_logged_in_|comment_author_|wp\-postpass_)")')
-            ->toContain('if (-f "$document_root/.maintenance")');
+            ->toContain('if (-f "$document_root/wp/.maintenance")');
     });
 
-    it('puts nothing but `return` inside an `if`', function () {
-        // The rule that keeps this snippet working. A `set` inside a matching `if` sends
-        // the request into an implicit location that does not inherit try_files, so every
-        // request carrying ?utm_source= falls through to PHP while appearing to work.
-        preg_match_all('/if \([^)]*\) \{(.*?)\}/s', $this->snippet, $matches);
+    it('decides a flag at server level and acts on it once', function () {
+        // The shape of prod-wp-rocket.conf, which studiometa/wordpress-project has run in
+        // ddev and in production for years. Server level is what allows `set` inside `if`:
+        // inside a location, a matched `if` continues in an implicit location that
+        // inherits no content handler, and building a filename needs `set`.
+        expect($this->snippet)
+            ->toContain('set $foehn_bypass 1;')
+            ->toContain('if ($foehn_bypass = 1) {')
+            ->toContain('rewrite ^ "$foehn_url" last;');
+    });
 
-        expect($matches[1])->not->toBeEmpty();
+    it('interpolates $uri whole, never through a regex capture', function () {
+        // $uri is decoded, which is what makes an accented permalink find the file PHP
+        // wrote. But $1 from `if ($uri ~ …)` comes back percent-encoded — the end-to-end
+        // suite caught that as a permanent miss on every non-ASCII URL — so the path is
+        // never derived from a capture, and two candidates cover the trailing slash.
+        expect($this->snippet)
+            ->toContain('set $foehn_url "/wp-content/cache/foehn/pages/$host${uri}index$foehn_variant.html";')
+            ->toContain('set $foehn_url "/wp-content/cache/foehn/pages/$host${uri}/index$foehn_variant.html";')
+            ->not->toContain('$foehn_path')
+            ->not->toContain('if ($request_uri');
+    });
 
-        foreach ($matches[1] as $body) {
-            expect(trim($body))->toMatch('/^return \d+;$/');
-        }
+    it('declares no location of its own for the site, so it is an include', function () {
+        // Nothing has to be removed from the site's configuration, and a miss falls
+        // through to whatever front controller block is already there.
+        expect($this->snippet)
+            ->not->toContain('location / {')
+            ->not->toContain('location ~ "^(?!')
+            ->not->toContain('@foehn_miss');
     });
 
     it('names every cookie prefix the config bypasses on', function () {
@@ -142,31 +239,19 @@ describe('NginxSnippet', function () {
         }
     });
 
-    it('branches through error_page 418, because nginx has no else', function () {
-        expect($this->snippet)
-            ->toContain('error_page 418 = @foehn_miss;')
-            ->toContain('recursive_error_pages on;')
-            ->toContain('location @foehn_miss {')
-            ->toContain('try_files $uri $uri/ /index.php$is_args$args;');
+    it('builds the filename from the keyed args when a project has any', function () {
+        $config = new PageCacheConfig(enabled: true, path: $this->config->path, cacheQueryArgs: [
+            'page' => '^[0-9]{1,6}$',
+        ]);
+
+        expect((string) new NginxSnippet($config)->render())
+            ->toContain('if ($arg_page ~ "^[0-9]{1,6}$") { set $foehn_arg_page "valid"; }')
+            ->toContain('if ($foehn_arg_page = "valid") { set $foehn_q "${foehn_q}page=$arg_page&"; }')
+            ->toContain('set $foehn_variant "__$foehn_q";');
     });
 
-    it('tries both permalink shapes, which nginx cannot normalise itself', function () {
-        expect($this->snippet)
-            ->toContain('try_files "/wp-content/cache/foehn/pages/$host${uri}index.html"')
-            ->toContain('"/wp-content/cache/foehn/pages/$host${uri}/index.html"');
-    });
-
-    it('composes with a stock location / instead of replacing it', function () {
-        // A regex location wins over a prefix match without colliding with it, which is
-        // what lets this be an include rather than a takeover of the site's config.
-        expect($this->snippet)->toContain('location ~ "^(?!.*\.php$)"');
-        expect($this->snippet)->not->toContain('location / {');
-    });
-
-    it('keeps the FastCGI location reachable whatever order the include lands in', function () {
-        // The .php guard is in the pattern, so an include placed too early cannot
-        // swallow /index.php and take the site down.
-        expect($this->snippet)->toContain('(?!.*\.php$)');
+    it('says so rather than emitting nothing when no arg is keyed', function () {
+        expect($this->snippet)->toContain('# No keyed query args are configured');
     });
 
     it('makes the cache directory unreachable from outside', function () {
@@ -212,7 +297,22 @@ describe('ApacheSnippet', function () {
             ->toContain('RewriteCond %{REQUEST_METHOD} =GET')
             ->toContain('RewriteCond %{QUERY_STRING} ^(?:(?:utm_source|')
             ->toContain('RewriteCond %{HTTP:Cookie} !(wordpress_logged_in_|comment_author_|wp\-postpass_) [NC]')
-            ->toContain('RewriteCond %{DOCUMENT_ROOT}/.maintenance !-f');
+            ->toContain('RewriteCond %{DOCUMENT_ROOT}/wp/.maintenance !-f');
+    });
+
+    it('never widens its query guard to the keyed args', function () {
+        // mod_rewrite cannot assemble a canonical filename, so serving `index.html` for
+        // `?page=2` would hand a visitor page one. Apache covers the unkeyed cases and
+        // lets the rest reach the drop-in.
+        $config = new PageCacheConfig(enabled: true, path: $this->config->path, cacheQueryArgs: [
+            'page' => '^[0-9]{1,6}$',
+        ]);
+
+        // The cache path itself contains "pages", so the guard is read out of the rule
+        // rather than searched for across the whole block.
+        preg_match('/RewriteCond %\{QUERY_STRING\} (.+)/', (string) new ApacheSnippet($config)->render(), $matches);
+
+        expect($matches[1] ?? '')->not->toBe('')->not->toContain('page');
     });
 
     it('matches on the decoded path rather than on REQUEST_URI', function () {

@@ -48,7 +48,13 @@ final readonly class ApacheSnippet
         }
 
         $cookies = $this->policy->cookiePattern();
+        // Ignorable args only, never the keyed ones. mod_rewrite cannot assemble a
+        // canonical filename from %{QUERY_STRING} — that would take a rule per
+        // permutation — and serving the unkeyed `index.html` for `?page=2` would hand a
+        // visitor page one. So a request carrying a keyed arg falls through to PHP, where
+        // the drop-in serves the right file a few milliseconds later.
         $args = $this->policy->ignorableQueryPattern();
+        $maintenance = $this->policy->maintenanceUrlPath();
         $hash = $this->policy->hash();
         $cacheRoot = ltrim(dirname($cache), '/');
         $begin = self::BEGIN;
@@ -67,7 +73,10 @@ final readonly class ApacheSnippet
                 # query string too, so this is one condition rather than a conjunction.
                 RewriteCond %{QUERY_STRING} {$args}
                 RewriteCond %{HTTP:Cookie} !({$cookies}) [NC]
-                RewriteCond %{DOCUMENT_ROOT}/.maintenance !-f
+                # WordPress writes .maintenance to ABSPATH, which is not the document root
+                # in this layout — testing the wrong one keeps the cache serving all
+                # through a core update.
+                RewriteCond %{DOCUMENT_ROOT}{$maintenance} !-f
                 # \$1 rather than %{REQUEST_URI}: \$1 is the decoded path, which is the
                 # string nginx and PHP both key on.
                 RewriteCond %{DOCUMENT_ROOT}{$cache}/%{HTTP_HOST}/\$1/index.html -f

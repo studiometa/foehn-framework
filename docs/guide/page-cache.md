@@ -106,11 +106,37 @@ A request has to pass all of these. When one fails, the response carries the rea
 
 ### Query strings
 
-Args in `ignoredQueryArgs` — the `utm_*` family, `gclid`, `fbclid`, `mc_cid` and friends — are stripped before the filename is computed, so a link out of a newsletter still hits the cache. **Anything left over is a bypass.**
+Every argument in a request falls into exactly one of three classes.
 
-That includes `?page=2`, and it has to: `?page=2` is a different page from `?page=1`, and treating a query arg as ignorable when it changes the content would serve the wrong screen. Pagination is unaffected in practice, because WordPress paginates on `/page/2/` paths.
+**Ignored** — `ignoredQueryArgs`, the `utm_*` family, `gclid`, `fbclid`, `mc_cid` and friends. Dropped before the filename is computed, so a link out of a newsletter hits the same file as a bare URL.
 
-Keyed query args — a cache entry per distinct query string — are deliberately out of scope. nginx cannot compute a hash, so supporting them would mean the drop-in and the server snippet reading different files for one URL, which is exactly the class of bug this design refuses.
+**Keyed** — `cacheQueryArgs`, empty by default. These change which page is being asked for, so they go **into** the filename rather than being dropped:
+
+```php
+// app/page-cache.config.php
+return new PageCacheConfig(
+    enabled: true,
+    cacheQueryArgs: ['page' => '^[0-9]{1,6}$', 'lang' => '^[a-z]{2}$'],
+);
+```
+
+```
+?page=2&lang=fr   ─┐
+                   ├─→  …/index__lang=fr&page=2&.html
+?lang=fr&page=2   ─┘
+```
+
+Order does not matter, and that is the interesting part: no reader sorts the query string. Each of them walks your `cacheQueryArgs` in one fixed order and asks for each name's value in turn, which nginx can do because `$arg_page` does not care where `page` appeared. Rename or reorder nothing and both spellings of a URL land on one file.
+
+Each name carries the pattern its value must match, because the value becomes part of a filename — a list without patterns gets `^[A-Za-z0-9_.\-]{1,64}$`. A value your pattern rejects is a bypass, never a guess: `?page=abc` goes to PHP rather than quietly serving page one. Your pattern can only narrow the characters a filename may hold, never widen them.
+
+Two more rules keep the readers honest. `?page=` counts as no query at all, and a **repeated** keyed arg bypasses — nginx reads the first `page=` and PHP the last, so `?page=1&page=2` has no answer both would give.
+
+**Anything else** is a bypass. Add a name to `cacheQueryArgs` only when it changes the page, and to `ignoredQueryArgs` only when it does not.
+
+Run `wp foehn cache:config --server=nginx --write` after changing either list: the snippet has the argument names compiled into it, and `wp foehn cache:status` will tell you when an installed snippet was generated from a different policy.
+
+One asymmetry to know about: **Apache does not serve keyed args.** mod_rewrite cannot assemble the filename, so a request carrying one falls through to PHP, where the drop-in serves the right file a few milliseconds later. Correct, just not the fast path — `cache:status` says so when it applies.
 
 ### Nonces
 

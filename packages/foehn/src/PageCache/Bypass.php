@@ -112,14 +112,16 @@ final readonly class Bypass
             return BypassReason::Host;
         }
 
+        // Before the key, so a query string this cache will not key reports itself as one
+        // rather than as an unusable path: `key()` cannot tell the two apart afterwards.
+        if (QueryKey::canonical($this->queryString($server), $this->config) === null) {
+            return BypassReason::QueryString;
+        }
+
         $key = $this->key($server);
 
         if ($key === null) {
             return BypassReason::Path;
-        }
-
-        if ($this->significantQuery((string) ($server['REQUEST_URI'] ?? '')) !== '') {
-            return BypassReason::QueryString;
         }
 
         foreach ($cookies as $name => $_value) {
@@ -237,49 +239,43 @@ final readonly class Bypass
             return null;
         }
 
-        return CacheKey::create($this->requestHost($server), (string) ($server['REQUEST_URI'] ?? ''));
+        $variant = QueryKey::canonical($this->queryString($server), $this->config);
+
+        if ($variant === null) {
+            return null;
+        }
+
+        return CacheKey::create($this->requestHost($server), (string) ($server['REQUEST_URI'] ?? ''), $variant);
     }
 
     /**
-     * The query string that is left once the ignored args are dropped.
+     * The canonical query suffix for a request URI, or null when it is a bypass.
      *
-     * Empty means "cacheable": `?utm_source=newsletter` is the same page as no query
-     * at all. Anything left is a bypass, in any order the args arrive in — the
-     * generated nginx and Apache snippets test the same set with the same
-     * order-independence, which is what keeps the readers agreeing.
-     *
-     * Keyed query args stay out of scope on purpose: nginx cannot compute a hash, so
-     * supporting them would mean the drop-in and the server snippet reading different
-     * files for one URL.
+     * A thin wrapper over {@see QueryKey::canonical()} for callers that hold a URI rather
+     * than a `$_SERVER` array — the generated snippets are compared against this in
+     * `ServerConfigTest`, which is what keeps the readers from drifting apart.
      */
-    public function significantQuery(string $requestUri): string
+    public function canonicalQuery(string $requestUri): ?string
     {
         $position = strpos($requestUri, '?');
 
-        if ($position === false) {
-            return '';
-        }
+        return QueryKey::canonical($position === false ? '' : substr($requestUri, $position + 1), $this->config);
+    }
 
-        $query = explode('#', substr($requestUri, $position + 1), 2)[0];
-        $remaining = [];
+    /**
+     * The raw query string of a request, from the same string the path comes from.
+     *
+     * `QUERY_STRING` would do as well and would usually agree, but taking both halves of
+     * the key from one value means they cannot disagree.
+     *
+     * @param array<string, mixed> $server
+     */
+    private function queryString(array $server): string
+    {
+        $requestUri = (string) ($server['REQUEST_URI'] ?? '');
+        $position = strpos($requestUri, '?');
 
-        foreach (explode('&', $query) as $pair) {
-            if ($pair === '') {
-                continue;
-            }
-
-            // Not decoded, because nginx does not decode `$args` either. Two readers
-            // that disagree about `%75tm_source` is worse than both ignoring it.
-            $name = explode('=', $pair, 2)[0];
-
-            if (in_array($name, $this->config->ignoredQueryArgs, true)) {
-                continue;
-            }
-
-            $remaining[] = $pair;
-        }
-
-        return implode('&', $remaining);
+        return $position === false ? '' : substr($requestUri, $position + 1);
     }
 
     /**

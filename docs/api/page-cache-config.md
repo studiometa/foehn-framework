@@ -24,6 +24,7 @@ final readonly class PageCacheConfig
             'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'utm_id',
             'gclid', 'fbclid', 'msclkid', 'mc_cid', 'mc_eid', '_ga', 'ref',
         ],
+        public array $cacheQueryArgs = [],
         public array $excludedPaths = [],
         public array $excludeWhenBodyContains = [],
         public bool $cacheNotFound = false,
@@ -34,19 +35,20 @@ final readonly class PageCacheConfig
 
 ## Properties
 
-| Property                  | Type           | Default                  | Description                                                                 |
-| ------------------------- | -------------- | ------------------------ | --------------------------------------------------------------------------- |
-| `enabled`                 | `bool`         | `false`                  | Master switch. Nothing is written or served while this is false.            |
-| `path`                    | `string\|null` | `null`                   | Cache root. Defaults to `WP_CONTENT_DIR . '/cache/foehn/pages'`.            |
-| `ttl`                     | `int`          | `0`                      | Seconds a stored page stays servable. `0` = until something purges it.      |
-| `browserMaxAge`           | `int`          | `0`                      | `max-age` sent to the browser for cached HTML.                              |
-| `environments`            | `list<string>` | `['production']`         | Environments where caching is allowed at all.                               |
-| `bypassCookies`           | `list<string>` | three WordPress prefixes | A request carrying one of these cookie prefixes is never served or written. |
-| `ignoredQueryArgs`        | `list<string>` | thirteen tracking args   | Stripped before the filename is computed, so tracking links still hit.      |
-| `excludedPaths`           | `list<string>` | `[]`                     | URL path prefixes never cached.                                             |
-| `excludeWhenBodyContains` | `list<string>` | `[]`                     | Response bodies containing one of these substrings are not stored.          |
-| `cacheNotFound`           | `bool`         | `false`                  | Store 404s as well as 200s.                                                 |
-| `debugHeaders`            | `bool\|null`   | `null`                   | Emit the `X-Foehn-Cache` headers. `null` follows `WP_DEBUG`.                |
+| Property                  | Type                                  | Default                  | Description                                                                 |
+| ------------------------- | ------------------------------------- | ------------------------ | --------------------------------------------------------------------------- |
+| `enabled`                 | `bool`                                | `false`                  | Master switch. Nothing is written or served while this is false.            |
+| `path`                    | `string\|null`                        | `null`                   | Cache root. Defaults to `WP_CONTENT_DIR . '/cache/foehn/pages'`.            |
+| `ttl`                     | `int`                                 | `0`                      | Seconds a stored page stays servable. `0` = until something purges it.      |
+| `browserMaxAge`           | `int`                                 | `0`                      | `max-age` sent to the browser for cached HTML.                              |
+| `environments`            | `list<string>`                        | `['production']`         | Environments where caching is allowed at all.                               |
+| `bypassCookies`           | `list<string>`                        | three WordPress prefixes | A request carrying one of these cookie prefixes is never served or written. |
+| `ignoredQueryArgs`        | `list<string>`                        | thirteen tracking args   | Stripped before the filename is computed, so tracking links still hit.      |
+| `cacheQueryArgs`          | `array<string, string>\|list<string>` | `[]`                     | Args that go into the filename, each with the pattern its value must match. |
+| `excludedPaths`           | `list<string>`                        | `[]`                     | URL path prefixes never cached.                                             |
+| `excludeWhenBodyContains` | `list<string>`                        | `[]`                     | Response bodies containing one of these substrings are not stored.          |
+| `cacheNotFound`           | `bool`                                | `false`                  | Store 404s as well as 200s.                                                 |
+| `debugHeaders`            | `bool\|null`                          | `null`                   | Emit the `X-Foehn-Cache` headers. `null` follows `WP_DEBUG`.                |
 
 ## Usage
 
@@ -104,7 +106,24 @@ Prefixes, matched against cookie **names**. The three defaults are how WordPress
 
 Arg **names**, matched exactly — `utm_source` does not match `utm_sourcex`. Order does not matter: `?utm_source=a&utm_medium=b` and `?utm_medium=b&utm_source=a` read the same file, in all three readers.
 
-Only add an arg here when it genuinely does not change the page. `page` and `lang` must never be in this list.
+Only add an arg here when it genuinely does not change the page. An arg that does change it belongs in `cacheQueryArgs` instead — where it is kept rather than dropped. A name in both lists is a contradiction, and the keyed meaning wins.
+
+### `cacheQueryArgs`
+
+Args that change which page is being asked for, so they belong in the key rather than in the bin:
+
+```php
+cacheQueryArgs: ['page' => '^[0-9]{1,6}$', 'lang' => '^[a-z]{2}$'],
+cacheQueryArgs: ['page', 'lang'],   // shorthand: ^[A-Za-z0-9_.\-]{1,64}$
+```
+
+`?page=2&lang=fr` and `?lang=fr&page=2` both store as `index__lang=fr&page=2&.html`. The order in the filename is this array's order sorted by name, not the request's: every reader walks the list and asks for each name's value, which is how two spellings of one URL reach one file without nginx — which cannot sort — having to.
+
+Each value is checked against its pattern **and** against the characters a filename may hold; your pattern can narrow that floor, never widen it. A present-but-invalid value bypasses to PHP rather than falling back to the unkeyed page. `?page=` counts as absent, and a repeated name bypasses, because nginx keeps the first occurrence and PHP the last.
+
+An entry this cache cannot honour — a name with a space in it, a pattern that does not compile — is dropped, which leaves it an argument nobody configured, which is a bypass.
+
+Keep the list short. Each name is one the generated snippets unroll into six nginx statements, and WordPress paginates on `/page/2/` paths rather than `?page=2`, so this is for filtered archives, `lang`, print views. Re-run `wp foehn cache:config --write` after changing it, and note that Apache cannot serve keyed args at all — those requests fall through to the drop-in.
 
 ### `excludedPaths`
 
