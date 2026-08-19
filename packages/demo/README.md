@@ -43,7 +43,9 @@ ddev launch /wp/wp-admin # the admin
 | `#[AsAction]` / `#[AsFilter]` | `Hooks/ThemeHooks.php`                                         |
 | Arrayable DTOs                | `Data/HeroContext.php`                                         |
 
-The framework's own cleanup and security hooks are opted into from `theme/app/foehn.config.php`.
+The framework's own cleanup and security hooks are opted into from `theme/app/foehn.config.php`, `S3UploadsEndpoint` among them.
+
+Uploads are offloaded to object storage, because `web/wp-content/uploads/` is the one directory a generated web root does not make disposable. `humanmade/s3-uploads` does the offloading and MinIO stands in for the bucket, as a ddev service in `.ddev/docker-compose.minio.yaml` — so the whole path runs with no credentials, no network and no bill. See [the guide](../../docs/guide/uploads.md).
 
 ACF is **not** demonstrated here. It needs ACF Pro, a paid plugin CI cannot install, so anything relying on it would be a path nothing ever runs — which is the reason the demo has no ACF block. [`studiometa/foehn-acf`](../acf) carries its own examples.
 

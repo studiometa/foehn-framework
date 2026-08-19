@@ -68,9 +68,9 @@ $results = new class {
 
 $config = Kernel::get(FoehnConfig::class);
 
-// theme/app/foehn.config.php opts into 7 hook classes. Before config files were
+// theme/app/foehn.config.php opts into 8 hook classes. Before config files were
 // loaded this was 0, and every security hook in the theme was silently inert.
-$results->same('foehn.config.php is loaded (opt-in hooks)', 7, count($config->hooks));
+$results->same('foehn.config.php is loaded (opt-in hooks)', 8, count($config->hooks));
 
 $results->true('opt-in security hooks are applied', has_filter('xmlrpc_enabled') !== false);
 
@@ -316,6 +316,81 @@ $results->true(
     'core/post-meta is there for declared meta, with no source of our own',
     WP_Block_Bindings_Registry::get_instance()->is_registered('core/post-meta'),
 );
+
+// ──────────────────────────────────────────────
+// Object storage for uploads
+// ──────────────────────────────────────────────
+
+// Passed by run.sh, which imports the fixture. Nothing here is provable against the
+// WordPress stubs: the unit suite has no bucket, and a filter that rewrites no URL
+// at all still passes it.
+$attachmentId = isset($args[0]) ? (int) $args[0] : 0;
+
+$results->true('run.sh imported the uploads fixture', $attachmentId > 0);
+
+if ($attachmentId > 0) {
+    $results->true('the attachment URL points at the bucket', str_starts_with(
+        wp_get_attachment_url($attachmentId),
+        S3_UPLOADS_BUCKET_URL,
+    ));
+
+    // srcset builds its own URLs from the uploads base rather than from the filter
+    // above, which is why it gets asked separately: a half-rewritten srcset is the
+    // likely first bug, and it looks fine until a wide viewport asks for the 1024.
+    $srcset = wp_get_attachment_image_srcset($attachmentId, 'medium');
+    $sources = $srcset === false ? [] : explode(', ', $srcset);
+
+    $results->same('the srcset offers every size', 4, count($sources));
+
+    $results->true(
+        'every srcset candidate points at the bucket',
+        $sources !== []
+        && array_all($sources, fn(string $source): bool => str_starts_with($source, S3_UPLOADS_BUCKET_URL)),
+    );
+
+    // #[AsImageSize] on CardImageSize registers `card` at 400x300, so its presence
+    // beside a core size is what proves a Føhn-declared size offloads like any other
+    // — the sub-sizes are written through the stream wrapper as they are generated.
+    $metadata = wp_get_attachment_metadata($attachmentId);
+    $keys = array_keys($metadata['sizes'] ?? []);
+
+    $results->containsAll('the declared image sizes were generated', ['medium', 'card'], $keys);
+
+    $s3 = S3_Uploads\Plugin::get_instance()->s3();
+    $listing = $s3->listObjectsV2(['Bucket' => S3_UPLOADS_BUCKET, 'Prefix' => 'uploads/']);
+
+    $objects = [];
+
+    foreach ($listing['Contents'] ?? [] as $object) {
+        $objects[] = basename((string) $object['Key']);
+    }
+
+    $expected = [basename((string) get_post_meta($attachmentId, '_wp_attached_file', true))];
+
+    foreach ($metadata['sizes'] ?? [] as $size) {
+        $expected[] = $size['file'];
+    }
+
+    $results->containsAll('the original and every sub-size are in the bucket', $expected, $objects);
+
+    // The reason the feature exists. A deploy replaces the container; anything still
+    // on its disk goes with it.
+    //
+    // Asked of this attachment's own files rather than of the whole uploads
+    // directory, which would also fail on anything left there by an earlier run with
+    // the plugin off — a true statement about the directory and a confusing one
+    // about the feature.
+    $directory = dirname((string) get_post_meta($attachmentId, '_wp_attached_file', true));
+    $stillLocal = [];
+
+    foreach ($expected as $file) {
+        if (file_exists(WP_CONTENT_DIR . '/uploads/' . $directory . '/' . $file)) {
+            $stillLocal[] = $file;
+        }
+    }
+
+    $results->same('none of its files were left on local disk', [], $stillLocal);
+}
 
 // ──────────────────────────────────────────────
 // Report

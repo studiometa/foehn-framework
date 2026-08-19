@@ -56,7 +56,28 @@ esac
 
 printf '✓ the request warmed the discovery cache\n'
 
-ddev exec 'cd /var/www/html && wp eval-file tests/smoke/assertions.php' ||
+# Uploads go to the MinIO service, so the assertions need something uploaded. The
+# fixture is committed rather than fetched: a smoke test that needs the network to
+# reach a stock photo site fails for reasons that have nothing to do with Føhn.
+#
+# WP-CLI prints PHP deprecations from its own phar on stdout, so --porcelain is only
+# the last line. Stripping non-digits from the whole output instead splices the line
+# number out of "on line 369" onto the front of the ID.
+# `|| true` because a failed import matches nothing, grep exits 1, and `set -o
+# pipefail` would end the run right here — with no message, since the fail below
+# is what has something to say about it.
+attachment="$(ddev exec 'cd /var/www/html && wp media import tests/smoke/fixtures/uploads-probe.jpg --title="Uploads probe" --porcelain' 2>/dev/null | tr -d '\r' | grep -xE '[0-9]+' | tail -n1 || true)"
+
+[ -n "$attachment" ] || fail "could not import the uploads fixture
+
+An upload that reaches no bucket fails here rather than landing on local disk,
+because the plugin's stream wrapper is the uploads directory.
+
+$(ddev exec 'cd /var/www/html && wp media import tests/smoke/fixtures/uploads-probe.jpg --porcelain' 2>&1 | grep -v 'Deprecated' | tail -12)"
+
+printf '✓ an image imported into the media library (attachment %s)\n' "$attachment"
+
+ddev exec "cd /var/www/html && wp eval-file tests/smoke/assertions.php $attachment" ||
 	fail 'integration assertions failed'
 
 # The framework's own WP-CLI commands come from the vendor package, and WP-CLI only
@@ -114,3 +135,26 @@ esac
 
 printf '✓ a rewrite rule answers its URL\n'
 
+# A bucket that accepts writes and serves nothing is the expensive failure: the
+# uploads look fine in the media library and every image on the site 404s. The
+# assertions above prove the URL was written; only a request proves it resolves,
+# and it has to come from out here rather than from the container, because a
+# browser is not on the project network either.
+image="$(ddev exec "cd /var/www/html && wp eval 'echo wp_get_attachment_url($attachment);'" 2>/dev/null | tr -d '\r' | tail -n1)"
+
+served="$(curl -sk -o /dev/null -w '%{http_code} %{content_type}' "$image")"
+
+case "$served" in
+"200 image/jpeg") ;;
+*) fail "the uploads bucket URL does not serve what was written to it
+
+    url:      $image
+    response: $served
+
+MinIO ignores the public-read ACL the plugin sets unless the bucket policy allows
+anonymous reads — see tests/smoke/provision-bucket.php.
+
+$(curl -sk "$image" | head -c 400)" ;;
+esac
+
+printf '✓ uploads are offloaded, and the bucket URL serves them\n'

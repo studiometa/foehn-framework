@@ -206,6 +206,31 @@ final class WebRootGenerator
             define('WP_CONTENT_DIR', __DIR__ . '/wp-content');
             define('WP_CONTENT_URL', WP_HOME . '/wp-content');
 
+            // Object storage for uploads — the constants humanmade/s3-uploads reads.
+            //
+            // Uploads are the one directory a generated web root does not make
+            // disposable, so a deploy target with no persistent disk needs them
+            // elsewhere. With no bucket configured nothing is defined here and the
+            // plugin, installed or not, leaves uploads on local disk.
+            //
+            // A value already defined by config/*.config.php wins, and a value absent
+            // from the environment is left undefined rather than defined as null —
+            // which is what lets S3_UPLOADS_USE_INSTANCE_PROFILE supply the
+            // credentials, and the plugin derive its own bucket URL.
+            if (\$env('S3_UPLOADS_BUCKET')) {
+                foreach ([
+                    'S3_UPLOADS_BUCKET' => \$env('S3_UPLOADS_BUCKET'),
+                    'S3_UPLOADS_REGION' => \$env('S3_UPLOADS_REGION', 'auto'),
+                    'S3_UPLOADS_KEY' => \$env('AWS_ACCESS_KEY_ID'),
+                    'S3_UPLOADS_SECRET' => \$env('AWS_SECRET_ACCESS_KEY'),
+                    'S3_UPLOADS_BUCKET_URL' => \$env('S3_UPLOADS_BUCKET_URL'),
+                ] as \$constant => \$value) {
+                    if (\$value !== null && !defined(\$constant)) {
+                        define(\$constant, \$value);
+                    }
+                }
+            }
+
             // Security keys — from config/wordpress-salts.config.php, or the environment
             \$saltsFile = dirname(__DIR__) . '/{$configDir}/wordpress-salts.config.php';
 
