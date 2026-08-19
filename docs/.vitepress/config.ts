@@ -113,6 +113,7 @@ export default defineConfig({
             { text: "#[AsAction]", link: "/api/as-action" },
             { text: "#[AsFilter]", link: "/api/as-filter" },
             { text: "#[AsPostType]", link: "/api/as-post-type" },
+            { text: "#[AsPostMeta]", link: "/api/as-post-meta" },
             { text: "#[AsTaxonomy]", link: "/api/as-taxonomy" },
             { text: "#[AsMenu]", link: "/api/as-menu" },
             { text: "#[AsTimberModel]", link: "/api/as-timber-model" },

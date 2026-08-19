@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Studiometa\Foehn\Attributes\AsPostMeta;
 use Studiometa\Foehn\Attributes\AsPostType;
 use Studiometa\Foehn\Contracts\ConfiguresPostType;
 use Studiometa\Foehn\Models\Post;
@@ -20,6 +21,11 @@ use Studiometa\Foehn\PostTypes\PostTypeBuilder;
     supports: ['title', 'editor', 'thumbnail', 'excerpt', 'revisions'],
     taxonomies: ['product_category', 'product_tag'],
 )]
+// The accessors below read these keys. Declaring them gives each a REST schema,
+// which is what puts it in the block editor and makes it bindable through core's
+// `core/post-meta` source — no custom binding required.
+#[AsPostMeta(key: 'price', type: 'number', description: 'Prix TTC en euros')]
+#[AsPostMeta(key: 'sale_price', type: 'number', description: 'Prix promotionnel en euros')]
 final class Product extends Post implements ConfiguresPostType
 {
     public static function configurePostType(PostTypeBuilder $builder): PostTypeBuilder

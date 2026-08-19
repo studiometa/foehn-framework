@@ -388,6 +388,18 @@ if (!function_exists('register_taxonomy')) {
     }
 }
 
+if (!function_exists('register_meta')) {
+    /**
+     * @param array<string, mixed> $args
+     */
+    function register_meta(string $objectType, string $metaKey, array $args = []): bool
+    {
+        wp_stub_record('register_meta', compact('objectType', 'metaKey', 'args'));
+
+        return true;
+    }
+}
+
 // ──────────────────────────────────────────────
 // Menus
 // ──────────────────────────────────────────────

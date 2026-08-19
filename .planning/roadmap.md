@@ -11,7 +11,7 @@ Every planned evolution of Føhn, in one place. Detail lives in the linked specs
 | 1   | Static page cache              | In flight     | [page_cache_spec.md](page_cache_spec.md)                              | 8–11 d |
 | 2   | `#[AsDiscovery]`               | **Done**      | [post_meta_and_acf_split_spec.md](post_meta_and_acf_split_spec.md) §1 | 1–2 d  |
 | 3   | `wp foehn discovery:list`      | **Done**      | [framework_additions_spec.md](framework_additions_spec.md) §1         | 1 d    |
-| 4   | `#[AsPostMeta]`                | Approved      | [post_meta_and_acf_split_spec.md](post_meta_and_acf_split_spec.md) §2 | 2 d    |
+| 4   | `#[AsPostMeta]`                | **Done**      | [post_meta_and_acf_split_spec.md](post_meta_and_acf_split_spec.md) §2 | 2 d    |
 | 5   | `studiometa/foehn-acf` split   | Approved      | [post_meta_and_acf_split_spec.md](post_meta_and_acf_split_spec.md) §3 | 2–3 d  |
 | 6   | Starter off ACF                | Approved      | [post_meta_and_acf_split_spec.md](post_meta_and_acf_split_spec.md) §4 | 1 d    |
 | 7   | `#[AsRewriteRule]`             | Approved      | [framework_additions_spec.md](framework_additions_spec.md) §3         | 2 d    |

@@ -19,6 +19,7 @@ Attributes are PHP 8 annotations that enable auto-discovery and registration of 
 | Attribute                               | Description                                |
 | --------------------------------------- | ------------------------------------------ |
 | [`#[AsPostType]`](./as-post-type)       | Register a custom post type                |
+| [`#[AsPostMeta]`](./as-post-meta)       | Register a meta key, with a REST schema    |
 | [`#[AsTaxonomy]`](./as-taxonomy)        | Register a custom taxonomy                 |
 | [`#[AsMenu]`](./as-menu)                | Register a navigation menu location        |
 | [`#[AsTimberModel]`](./as-timber-model) | Map Timber class without type registration |
