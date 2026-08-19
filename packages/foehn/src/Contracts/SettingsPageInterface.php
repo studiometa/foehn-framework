@@ -7,9 +7,11 @@ namespace Studiometa\Foehn\Contracts;
 use Studiometa\Foehn\Settings\Setting;
 
 /**
- * A settings page: what it stores, and what its form looks like.
+ * What a settings page stores.
  *
- * Implemented alongside #[AsSettingsPage].
+ * Implemented alongside #[AsSettingsPage]. How the form looks is a separate
+ * question, answered either by a Twig template named on the attribute or by
+ * SettingsFormInterface.
  */
 interface SettingsPageInterface
 {
@@ -22,13 +24,4 @@ interface SettingsPageInterface
      * @return array<string, Setting>
      */
     public static function settings(): array;
-
-    /**
-     * The body of the form.
-     *
-     * Called inside the page shell, between `do_settings_sections()` and the
-     * submit button, so it prints fields and nothing else. Read the current
-     * values with `Settings::get()`.
-     */
-    public function render(): void;
 }

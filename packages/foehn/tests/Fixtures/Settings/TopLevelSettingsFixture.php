@@ -16,6 +16,7 @@ use Studiometa\Foehn\Settings\Setting;
     capability: 'edit_posts',
     icon: 'dashicons-cart',
     position: 58,
+    template: 'settings/shop',
 )]
 final class TopLevelSettingsFixture implements SettingsPageInterface
 {
@@ -26,6 +27,4 @@ final class TopLevelSettingsFixture implements SettingsPageInterface
     {
         return ['foehn_currency' => Setting::string(default: 'EUR')];
     }
-
-    public function render(): void {}
 }

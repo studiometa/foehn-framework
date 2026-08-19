@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace Tests\Fixtures\Settings;
 
 use Studiometa\Foehn\Attributes\AsSettingsPage;
+use Studiometa\Foehn\Contracts\SettingsFormInterface;
 use Studiometa\Foehn\Contracts\SettingsPageInterface;
 use Studiometa\Foehn\Settings\Setting;
 
 #[AsSettingsPage(slug: 'theme-settings', title: 'Theme settings', parent: 'themes.php')]
-final class ThemeSettingsFixture implements SettingsPageInterface
+final class ThemeSettingsFixture implements SettingsPageInterface, SettingsFormInterface
 {
     public static int $rendered = 0;
 
@@ -31,10 +32,10 @@ final class ThemeSettingsFixture implements SettingsPageInterface
         return min(2.0, max(0.5, (float) $value));
     }
 
-    public function render(): void
+    public function form(): string
     {
         self::$rendered++;
 
-        echo '<p class="fields">the form fields</p>';
+        return '<p class="fields">the form fields</p>';
     }
 }

@@ -7,6 +7,7 @@ use Studiometa\Foehn\Discovery\SettingsPageDiscovery;
 use Studiometa\Foehn\Settings\Setting;
 use Tempest\Container\GenericContainer;
 use Tests\Fixtures\PostTypeFixture;
+use Tests\Fixtures\Settings\FormlessSettingsFixture;
 use Tests\Fixtures\Settings\InterfacelessSettingsFixture;
 use Tests\Fixtures\Settings\ThemeSettingsFixture;
 use Tests\Fixtures\Settings\TopLevelSettingsFixture;
@@ -56,11 +57,24 @@ describe('SettingsPageDiscovery', function () {
             ->toThrow(InvalidArgumentException::class, 'must implement');
     });
 
+    it('rejects a page that declares no form at all', function () {
+        // Without a template or a form() there is nothing between the heading
+        // and the submit button, and the page renders as an empty form.
+        expect(fn() => discoveredPages(FormlessSettingsFixture::class))
+            ->toThrow(InvalidArgumentException::class, 'declares no form');
+    });
+
+    it('records which of the two ways a page builds its form', function () {
+        expect(discoveredPages(ThemeSettingsFixture::class)[0]['buildsItsOwnForm'])->toBeTrue();
+        expect(discoveredPages(TopLevelSettingsFixture::class)[0]['buildsItsOwnForm'])->toBeFalse();
+    });
+
     it('discovers a top-level page', function () {
         $attribute = discoveredPages(TopLevelSettingsFixture::class)[0]['attribute'];
 
         expect($attribute->parent)->toBeNull();
         expect($attribute->menuTitle())->toBe('Shop settings');
         expect($attribute->icon)->toBe('dashicons-cart');
+        expect($attribute->template)->toBe('settings/shop');
     });
 });

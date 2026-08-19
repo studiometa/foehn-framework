@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Studiometa\Foehn\Contracts\ViewEngineInterface;
 use Studiometa\Foehn\Discovery\SettingsPageDiscovery;
 use Studiometa\Foehn\Settings\Settings;
 use Tempest\Container\GenericContainer;
@@ -35,13 +36,54 @@ function runAdminMenu(): void
     }
 }
 
+/**
+ * A view engine that records what it was asked to render.
+ */
+function recordingViewEngine(): ViewEngineInterface
+{
+    return new class implements ViewEngineInterface {
+        /** @var list<array{template: string, context: array<string, mixed>|object}> */
+        public static array $rendered = [];
+
+        public function render(string $template, array|object $context = []): string
+        {
+            self::$rendered[] = ['template' => $template, 'context' => $context];
+
+            return '<p class="twig">rendered ' . $template . '</p>';
+        }
+
+        public function renderFirst(array $templates, array|object $context = []): string
+        {
+            return $this->render($templates[0] ?? '', $context);
+        }
+
+        public function exists(string $template): bool
+        {
+            return true;
+        }
+
+        public function share(string $key, mixed $value): void {}
+
+        public function getShared(): array
+        {
+            return [];
+        }
+    };
+}
+
 beforeEach(function () {
     wp_stub_reset();
     Settings::clear();
 
     ThemeSettingsFixture::$rendered = 0;
 
-    $this->discovery = new SettingsPageDiscovery(new GenericContainer());
+    $this->view = recordingViewEngine();
+    $this->view::$rendered = [];
+
+    $this->container = new GenericContainer();
+    $this->container->singleton(ViewEngineInterface::class, fn() => $this->view);
+
+    $this->discovery = new SettingsPageDiscovery($this->container);
 });
 
 describe('SettingsPageDiscovery::apply', function () {
@@ -147,6 +189,64 @@ describe('SettingsPageDiscovery::apply', function () {
         expect($page['icon'])->toBe('dashicons-cart');
         expect($page['position'])->toBe(58);
         expect(wp_stub_get_calls('add_submenu_page'))->toBeEmpty();
+    });
+});
+
+describe('SettingsPageDiscovery form body', function () {
+    it('renders a declared template through the view engine', function () {
+        discoverFixture($this->discovery, TopLevelSettingsFixture::class);
+        $this->discovery->apply();
+        runAdminMenu();
+
+        ob_start();
+        wp_stub_get_calls('add_menu_page')[0]['args']['callback']();
+        $html = (string) ob_get_clean();
+
+        expect($this->view::$rendered[0]['template'])->toBe('settings/shop');
+        expect($html)->toContain('rendered settings/shop');
+    });
+
+    it('gives the template the current values, typed as the page declared them', function () {
+        update_option('foehn_currency', 'GBP');
+
+        discoverFixture($this->discovery, TopLevelSettingsFixture::class);
+        $this->discovery->apply();
+        runAdminMenu();
+
+        ob_start();
+        wp_stub_get_calls('add_menu_page')[0]['args']['callback']();
+        ob_end_clean();
+
+        $context = $this->view::$rendered[0]['context'];
+
+        expect($context['settings'])->toBe(['foehn_currency' => 'GBP']);
+        expect($context['page'])->toBe(['slug' => 'shop-settings', 'title' => 'Shop']);
+    });
+
+    it('gives the template the declared default before anything is saved', function () {
+        discoverFixture($this->discovery, TopLevelSettingsFixture::class);
+        $this->discovery->apply();
+        runAdminMenu();
+
+        ob_start();
+        wp_stub_get_calls('add_menu_page')[0]['args']['callback']();
+        ob_end_clean();
+
+        expect($this->view::$rendered[0]['context']['settings'])->toBe(['foehn_currency' => 'EUR']);
+    });
+
+    it('asks the page rather than the view engine when it builds its own form', function () {
+        discoverFixture($this->discovery, ThemeSettingsFixture::class);
+        $this->discovery->apply();
+        runAdminMenu();
+
+        ob_start();
+        wp_stub_get_calls('add_submenu_page')[0]['args']['callback']();
+        $html = (string) ob_get_clean();
+
+        expect($html)->toContain('the form fields');
+        expect(ThemeSettingsFixture::$rendered)->toBe(1);
+        expect($this->view::$rendered)->toBe([]);
     });
 });
 
