@@ -20,6 +20,7 @@ use Studiometa\Foehn\Console\Commands\MakeFieldGroupCommand;
 use Studiometa\Foehn\Console\Commands\MakeHooksCommand;
 use Studiometa\Foehn\Console\Commands\MakeImageSizeCommand;
 use Studiometa\Foehn\Console\Commands\MakeMenuCommand;
+use Studiometa\Foehn\Console\Commands\MakeModelCommand;
 use Studiometa\Foehn\Console\Commands\MakeOptionsPageCommand;
 use Studiometa\Foehn\Console\Commands\MakePostTypeCommand;
 use Studiometa\Foehn\Console\Commands\MakeShortcodeCommand;
@@ -339,6 +340,46 @@ describe('make:options-page', function () {
             ->toBe('dashicons-menu')
             ->and($attribute->isSubPage())
             ->toBeTrue();
+    });
+});
+
+describe('make:model', function () {
+    it('generates a plain Timber model by default', function () {
+        (new MakeModelCommand($this->cli, $this->generator))(['MakeWidget'], []);
+
+        $path = ($this->path)('Models', 'MakeWidget');
+        $contents = file_get_contents($path);
+
+        expect($contents)->toContain('class MakeWidget');
+        expect($contents)->not->toContain('#[AsPostType');
+        expect($contents)->not->toContain('DummyModel');
+    });
+
+    it('registers a post type when asked for one', function () {
+        (new MakeModelCommand($this->cli, $this->generator))(['MakeDoohickey'], [
+            'post-type' => true,
+            'singular' => 'Doohickey',
+            'plural' => 'Doohickeys',
+        ]);
+
+        /** @var AsPostType $attribute */
+        $attribute = ($this->generatedAttribute)(($this->path)('Models', 'MakeDoohickey'), AsPostType::class);
+
+        expect($attribute->name)->toBe('make-doohickey');
+        expect($attribute->singular)->toBe('Doohickey');
+        expect($attribute->plural)->toBe('Doohickeys');
+    });
+
+    it('honours an explicit post type slug', function () {
+        (new MakeModelCommand($this->cli, $this->generator))(['MakeThingamajig'], [
+            'post-type' => true,
+            'slug' => 'thingy',
+        ]);
+
+        /** @var AsPostType $attribute */
+        $attribute = ($this->generatedAttribute)(($this->path)('Models', 'MakeThingamajig'), AsPostType::class);
+
+        expect($attribute->name)->toBe('thingy');
     });
 });
 
