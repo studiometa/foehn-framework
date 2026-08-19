@@ -13,6 +13,7 @@ declare(strict_types=1);
  */
 
 use Studiometa\Foehn\Config\FoehnConfig;
+use Studiometa\Foehn\Discovery;
 use Studiometa\Foehn\Discovery\CliCommandDiscovery;
 use Studiometa\Foehn\Discovery\DiscoveryRunner;
 use Studiometa\Foehn\Kernel;
@@ -83,6 +84,36 @@ $results->containsAll(
     'framework Twig functions are registered',
     ['html_attributes', 'html_classes', 'html_styles'],
     array_map(static fn(Twig\TwigFunction $function): string => $function->getName(), $twig->getFunctions()),
+);
+
+// Nothing lists the discovery classes any more: each is found because it
+// implements Discovery inside a scanned location. A location that stops being
+// scanned — or a cache entry restored without them — leaves the framework
+// registering nothing at all, and every unit test still passes.
+$results->containsAll(
+    'every framework discovery is found by scanning',
+    [
+        Discovery\AcfBlockDiscovery::class,
+        Discovery\AcfFieldGroupDiscovery::class,
+        Discovery\AcfOptionsPageDiscovery::class,
+        Discovery\BlockDiscovery::class,
+        Discovery\BlockPatternDiscovery::class,
+        Discovery\CliCommandDiscovery::class,
+        Discovery\ContextProviderDiscovery::class,
+        Discovery\CronDiscovery::class,
+        Discovery\HookDiscovery::class,
+        Discovery\ImageSizeDiscovery::class,
+        Discovery\JobDiscovery::class,
+        Discovery\MenuDiscovery::class,
+        Discovery\PostTypeDiscovery::class,
+        Discovery\RestRouteDiscovery::class,
+        Discovery\ShortcodeDiscovery::class,
+        Discovery\TaxonomyDiscovery::class,
+        Discovery\TemplateControllerDiscovery::class,
+        Discovery\TimberModelDiscovery::class,
+        Discovery\TwigExtensionDiscovery::class,
+    ],
+    array_keys(Kernel::get(DiscoveryRunner::class)->getDiscoveries()),
 );
 
 // The framework's #[AsCliCommand] classes live in the same vendor package. WP-CLI
