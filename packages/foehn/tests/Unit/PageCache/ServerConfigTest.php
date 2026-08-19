@@ -38,15 +38,21 @@ describe('SnippetPolicy', function () {
     });
 
     it('matches a query string of ignored args in any order', function () {
-        $pattern = new SnippetPolicy($this->config)->ignoredArgsPattern();
+        $pattern = new SnippetPolicy($this->config)->ignorableQueryPattern();
 
         expect(preg_match('/' . $pattern . '/', 'utm_source=a&utm_medium=b'))->toBe(1);
         expect(preg_match('/' . $pattern . '/', 'utm_medium=b&utm_source=a'))->toBe(1);
         expect(preg_match('/' . $pattern . '/', 'utm_source'))->toBe(1);
     });
 
+    it('matches an absent query string, so one condition can cover both', function () {
+        // nginx has no `and`, and a conjunction would have to be built with `set` —
+        // which is the thing that silently breaks try_files.
+        expect(preg_match('/' . new SnippetPolicy($this->config)->ignorableQueryPattern() . '/', ''))->toBe(1);
+    });
+
     it('does not match a query string carrying anything else', function () {
-        $pattern = new SnippetPolicy($this->config)->ignoredArgsPattern();
+        $pattern = new SnippetPolicy($this->config)->ignorableQueryPattern();
 
         expect(preg_match('/' . $pattern . '/', 'foo=bar'))->toBe(0);
         expect(preg_match('/' . $pattern . '/', 'utm_source=a&s=hello'))->toBe(0);
@@ -54,12 +60,33 @@ describe('SnippetPolicy', function () {
         expect(preg_match('/' . $pattern . '/', 'utm_sourcex=a'))->toBe(0);
     });
 
-    it('blanks nothing when the project ignores no args', function () {
-        $pattern = new SnippetPolicy(new PageCacheConfig(ignoredQueryArgs: []))->ignoredArgsPattern();
+    it('ignores nothing but an absent query string when the project ignores no args', function () {
+        $pattern = new SnippetPolicy(new PageCacheConfig(ignoredQueryArgs: []))->ignorableQueryPattern();
 
         expect(preg_match('/' . $pattern . '/', 'utm_source=a'))->toBe(0);
-        expect(preg_match('/' . $pattern . '/', ''))->toBe(0);
+        expect(preg_match('/' . $pattern . '/', ''))->toBe(1);
     });
+
+    it('agrees with the PHP writer about which query strings are ignorable', function (string $query) {
+        // The whole design turns on the readers keying the same request the same way, so
+        // the generated pattern and Bypass::significantQuery() are compared directly.
+        $ignorableByPhp = pageCacheBypass($this->config)->significantQuery('/?' . $query) === '';
+        $ignorableByServer =
+            preg_match('/' . new SnippetPolicy($this->config)->ignorableQueryPattern() . '/', $query) === 1;
+
+        expect($ignorableByServer)->toBe($ignorableByPhp);
+    })->with([
+        [''],
+        ['utm_source=a'],
+        ['utm_source=a&utm_medium=b'],
+        ['utm_medium=b&utm_source=a'],
+        ['gclid=x'],
+        ['utm_source'],
+        ['foo=bar'],
+        ['utm_source=a&s=hello'],
+        ['utm_sourcex=a'],
+        ['s=hello&utm_source=a'],
+    ]);
 
     it('escapes a config value so it cannot rewrite the generated rules', function () {
         $policy = new SnippetPolicy(new PageCacheConfig(bypassCookies: ['a.b|c']));
@@ -91,9 +118,22 @@ describe('NginxSnippet', function () {
     it('guards on the method, the query string, the cookies and the maintenance file', function () {
         expect($this->snippet)
             ->toContain('if ($request_method != GET)')
-            ->toContain('if ($foehn_args != "")')
+            ->toContain('if ($args !~ "^(?:(?:utm_source|')
             ->toContain('if ($http_cookie ~* "(wordpress_logged_in_|comment_author_|wp\-postpass_)")')
             ->toContain('if (-f "$document_root/.maintenance")');
+    });
+
+    it('puts nothing but `return` inside an `if`', function () {
+        // The rule that keeps this snippet working. A `set` inside a matching `if` sends
+        // the request into an implicit location that does not inherit try_files, so every
+        // request carrying ?utm_source= falls through to PHP while appearing to work.
+        preg_match_all('/if \([^)]*\) \{(.*?)\}/s', $this->snippet, $matches);
+
+        expect($matches[1])->not->toBeEmpty();
+
+        foreach ($matches[1] as $body) {
+            expect(trim($body))->toMatch('/^return \d+;$/');
+        }
     });
 
     it('names every cookie prefix the config bypasses on', function () {
@@ -170,7 +210,7 @@ describe('ApacheSnippet', function () {
     it('guards on the method, the query string, the cookies and the maintenance file', function () {
         expect($this->snippet)
             ->toContain('RewriteCond %{REQUEST_METHOD} =GET')
-            ->toContain('RewriteCond %{ENV:FOEHN_SKIP} !=1')
+            ->toContain('RewriteCond %{QUERY_STRING} ^(?:(?:utm_source|')
             ->toContain('RewriteCond %{HTTP:Cookie} !(wordpress_logged_in_|comment_author_|wp\-postpass_) [NC]')
             ->toContain('RewriteCond %{DOCUMENT_ROOT}/.maintenance !-f');
     });

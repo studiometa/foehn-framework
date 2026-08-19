@@ -27,3 +27,7 @@ coverage/
 .php-cs-fixer.cache
 .phpstan.cache/
 pi-task.md
+
+# Local-only Composer override that points the starter at the monorepo's own
+# packages while developing: COMPOSER=composer.local.json composer update.
+packages/starter/composer.local.*

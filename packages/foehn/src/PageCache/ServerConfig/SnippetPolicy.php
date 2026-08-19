@@ -60,24 +60,28 @@ final readonly class SnippetPolicy
     }
 
     /**
-     * A regex matching a query string built only of args the cache ignores.
+     * A regex matching a query string the cache may ignore in its entirety.
+     *
+     * Matches the empty query string too, which is what makes it usable as a single
+     * positive condition: "this request's query string does not change which page it
+     * is". Both generators then need one test rather than a conjunction, and nginx has
+     * no `and`.
      *
      * Order-independent, because a query string's args arrive in whatever order a link
      * was written in and PHP's own check does not care either. The trailing `(?:&|$)` is
-     * what stops `utm_source` matching the start of `utm_sourcex`, which would serve the
+     * what stops `utm_source` matching the front of `utm_sourcex`, which would serve the
      * no-query page for a URL that meant something else.
      */
-    public function ignoredArgsPattern(): string
+    public function ignorableQueryPattern(): string
     {
         if ($this->config->ignoredQueryArgs === []) {
-            // A negative lookahead on nothing never matches, so no query string is ever
-            // blanked and every one of them is a bypass.
-            return '(?!)';
+            // Only an absent query string is ignorable, so every one of them is a bypass.
+            return '^$';
         }
 
         $names = implode('|', array_map(self::quote(...), $this->config->ignoredQueryArgs));
 
-        return '^(?:(?:' . $names . ')(?:=[^&]*)?(?:&|$))+$';
+        return '^(?:(?:' . $names . ')(?:=[^&]*)?(?:&|$))*$';
     }
 
     /**

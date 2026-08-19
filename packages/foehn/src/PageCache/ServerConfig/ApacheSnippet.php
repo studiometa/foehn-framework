@@ -48,7 +48,7 @@ final readonly class ApacheSnippet
         }
 
         $cookies = $this->policy->cookiePattern();
-        $args = $this->policy->ignoredArgsPattern();
+        $args = $this->policy->ignorableQueryPattern();
         $hash = $this->policy->hash();
         $cacheRoot = ltrim(dirname($cache), '/');
         $begin = self::BEGIN;
@@ -61,14 +61,11 @@ final readonly class ApacheSnippet
                 RewriteEngine On
                 RewriteBase /
 
-                # A query string made only of ignored args is the same page as no query at
-                # all, in whatever order the args arrive.
-                RewriteCond %{QUERY_STRING} !^\$
-                RewriteCond %{QUERY_STRING} !{$args}
-                RewriteRule ^ - [E=FOEHN_SKIP:1]
-
                 RewriteCond %{REQUEST_METHOD} =GET
-                RewriteCond %{ENV:FOEHN_SKIP} !=1
+                # A query string made only of ignored args is the same page as no query at
+                # all, in whatever order the args arrive. The pattern matches an absent
+                # query string too, so this is one condition rather than a conjunction.
+                RewriteCond %{QUERY_STRING} {$args}
                 RewriteCond %{HTTP:Cookie} !({$cookies}) [NC]
                 RewriteCond %{DOCUMENT_ROOT}/.maintenance !-f
                 # \$1 rather than %{REQUEST_URI}: \$1 is the decoded path, which is the

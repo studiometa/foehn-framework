@@ -52,7 +52,7 @@ final readonly class NginxSnippet
         }
 
         $cookies = $this->policy->cookiePattern();
-        $args = $this->policy->ignoredArgsPattern();
+        $args = $this->policy->ignorableQueryPattern();
         $maxAge = max(0, $this->policy->config->browserMaxAge);
         $hash = $this->policy->hash();
         $cacheRoot = dirname($cache);
@@ -79,17 +79,18 @@ final readonly class NginxSnippet
                 recursive_error_pages on;
                 absolute_redirect off;
 
-                # A query string made only of ignored args is the same page as no query at
-                # all, in whatever order the args arrive.
-                set \$foehn_args \$args;
-                if (\$foehn_args ~ "{$args}") {
-                    set \$foehn_args "";
-                }
-
+                # Every `if` here contains nothing but `return`, which is the only form
+                # nginx documents as safe inside a location. A `set` would look tidier and
+                # would silently break the `try_files` below: when an `if` matches, the
+                # request continues in an implicit location that does not inherit it, so
+                # every cacheable request carrying `?utm_source=` would fall through to
+                # PHP while still looking like it worked.
                 if (\$request_method != GET) {
                     return 418;
                 }
-                if (\$foehn_args != "") {
+                # A query string made only of ignored args is the same page as no query at
+                # all, in whatever order the args arrive. Anything else is a bypass.
+                if (\$args !~ "{$args}") {
                     return 418;
                 }
                 if (\$http_cookie ~* "({$cookies})") {
