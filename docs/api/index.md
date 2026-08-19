@@ -92,11 +92,11 @@ Interfaces define contracts for classes used with specific attributes.
 
 ## Discovery
 
-| Class                                            | Description                        |
-| ------------------------------------------------ | ---------------------------------- |
-| [`DiscoveryRunner`](./discovery-runner)          | Orchestrates discovery lifecycle   |
-| [`WpDiscovery`](./wp-discovery)                  | Discovery interface + items/traits |
-| [`ViewEngineInterface`](./view-engine-interface) | View rendering abstraction         |
+| Class                                            | Description                      |
+| ------------------------------------------------ | -------------------------------- |
+| [`DiscoveryRunner`](./discovery-runner)          | Orchestrates discovery lifecycle |
+| [`#[AsDiscovery]`](./as-discovery)               | Declares a discovery's phase     |
+| [`ViewEngineInterface`](./view-engine-interface) | View rendering abstraction       |
 
 ## Core
 
