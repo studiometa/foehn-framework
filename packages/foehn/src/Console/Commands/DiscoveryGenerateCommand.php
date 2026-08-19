@@ -132,14 +132,10 @@ final class DiscoveryGenerateCommand implements CliCommandInterface
             /** @var WpDiscovery $discovery */
             $discovery = $this->container->get($discoveryClass);
 
-            // Get cacheable data from the discovery
-            if (method_exists($discovery, 'getCacheableData')) {
-                /** @var array<string, list<array<string, mixed>>> $data */
-                $data = $discovery->getCacheableData();
+            $data = $discovery->getCacheableData();
 
-                if (!empty($data)) {
-                    $cacheData[$discoveryClass] = $data;
-                }
+            if (!empty($data)) {
+                $cacheData[$discoveryClass] = $data;
             }
         }
 

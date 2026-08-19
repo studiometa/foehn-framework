@@ -29,7 +29,7 @@ final class BlockJsonGenerator
             'category' => $attribute->category,
             'textdomain' => $this->getTextDomain($attribute->name),
             // Every Foehn block is dynamic, so "Edit as HTML" can only ever invalidate it.
-            // Mirrors the seed in BlockDiscovery::doRegisterBlock(): an author who sets
+            // Mirrors the seed in BlockDiscovery::registerBlock(): an author who sets
             // `html` explicitly still wins.
             'supports' => $attribute->supports + ['html' => false],
         ];

@@ -62,7 +62,8 @@ final class AcfOptionsPageDiscovery implements WpDiscovery
      */
     private function registerOptionsPage(array $item): void
     {
-        $attribute = $this->resolveAttribute($item);
+        /** @var AsAcfOptionsPage $attribute */
+        $attribute = $item['attribute'];
         $className = $item['className'];
         $hasFields = $item['hasFields'];
 
@@ -113,34 +114,6 @@ final class AcfOptionsPageDiscovery implements WpDiscovery
     }
 
     /**
-     * Resolve the AsAcfOptionsPage attribute from a discovered or cached item.
-     *
-     * @param array<string, mixed> $item
-     */
-    private function resolveAttribute(array $item): AsAcfOptionsPage
-    {
-        if (($item['attribute'] ?? null) !== null) {
-            return $item['attribute'];
-        }
-
-        // Cached format - rebuild attribute
-        return new AsAcfOptionsPage(
-            pageTitle: $item['pageTitle'],
-            menuTitle: $item['menuTitle'],
-            menuSlug: $item['menuSlug'],
-            capability: $item['capability'],
-            position: $item['position'],
-            parentSlug: $item['parentSlug'],
-            iconUrl: $item['iconUrl'],
-            redirect: $item['redirect'],
-            postId: $item['postId'],
-            autoload: $item['autoload'],
-            updateButton: $item['updateButton'],
-            updatedMessage: $item['updatedMessage'],
-        );
-    }
-
-    /**
      * Register ACF fields for the options page.
      *
      * @param string $menuSlug
@@ -160,34 +133,5 @@ final class AcfOptionsPageDiscovery implements WpDiscovery
 
         // Register the field group
         acf_add_local_field_group($fields->build());
-    }
-
-    /**
-     * Convert a discovered item to a cacheable format.
-     *
-     * @param array<string, mixed> $item
-     * @return array<string, mixed>
-     */
-    protected function itemToCacheable(array $item): array
-    {
-        /** @var AsAcfOptionsPage $attribute */
-        $attribute = $item['attribute'];
-
-        return [
-            'className' => $item['className'],
-            'hasFields' => $item['hasFields'],
-            'pageTitle' => $attribute->pageTitle,
-            'menuTitle' => $attribute->menuTitle,
-            'menuSlug' => $attribute->menuSlug,
-            'capability' => $attribute->capability,
-            'position' => $attribute->position,
-            'parentSlug' => $attribute->parentSlug,
-            'iconUrl' => $attribute->iconUrl,
-            'redirect' => $attribute->redirect,
-            'postId' => $attribute->postId,
-            'autoload' => $attribute->autoload,
-            'updateButton' => $attribute->updateButton,
-            'updatedMessage' => $attribute->updatedMessage,
-        ];
     }
 }

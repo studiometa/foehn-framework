@@ -33,13 +33,9 @@ final class ImageSizeDiscovery implements WpDiscovery
         }
 
         $attribute = $attributes[0]->newInstance();
-        $name = $attribute->name ?? $this->deriveNameFromClass($class->getShortName());
 
         $this->addItem($location, [
-            'name' => $name,
-            'width' => $attribute->width,
-            'height' => $attribute->height,
-            'crop' => $attribute->crop,
+            'attribute' => $attribute,
             'className' => $class->getName(),
         ]);
     }
@@ -70,37 +66,31 @@ final class ImageSizeDiscovery implements WpDiscovery
      */
     private function registerImageSize(array $item): void
     {
-        add_image_size($item['name'], $item['width'], $item['height'], $item['crop']);
+        /** @var AsImageSize $attribute */
+        $attribute = $item['attribute'];
+        /** @var class-string $className */
+        $className = $item['className'];
+
+        $name = $attribute->name ?? self::deriveNameFromClass($className);
+
+        add_image_size($name, $attribute->width, $attribute->height, $attribute->crop);
     }
 
     /**
      * Derive image size name from class name (PascalCase to snake_case).
+     *
+     * @param class-string $className Fully qualified class name
      */
-    private function deriveNameFromClass(string $className): string
+    private static function deriveNameFromClass(string $className): string
     {
+        $shortName = substr((string) strrchr('\\' . $className, '\\'), 1);
+
         // Remove common suffixes
-        $name = preg_replace('/(?:Image|Size|ImageSize)$/', '', $className) ?? $className;
+        $name = preg_replace('/(?:Image|Size|ImageSize)$/', '', $shortName) ?? $shortName;
 
         // Convert PascalCase to snake_case
         $name = preg_replace('/([a-z])([A-Z])/', '$1_$2', $name) ?? $name;
 
         return strtolower($name);
-    }
-
-    /**
-     * Convert a discovered item to a cacheable format.
-     *
-     * @param array<string, mixed> $item
-     * @return array<string, mixed>
-     */
-    protected function itemToCacheable(array $item): array
-    {
-        return [
-            'name' => $item['name'],
-            'width' => $item['width'],
-            'height' => $item['height'],
-            'crop' => $item['crop'],
-            'className' => $item['className'],
-        ];
     }
 }

@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
+use Studiometa\Foehn\Attributes\AsMenu;
+use Studiometa\Foehn\Discovery\DiscoveryLocation;
 use Studiometa\Foehn\Discovery\MenuDiscovery;
 use Tests\Fixtures\MenuFixture;
-use Studiometa\Foehn\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
     $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
@@ -12,56 +13,43 @@ beforeEach(function () {
 });
 
 describe('MenuDiscovery caching', function () {
-    it('converts items to cacheable format', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(MenuFixture::class));
+    it('keeps the item under its location namespace', function () {
+        discoverFixture($this->discovery, MenuFixture::class, $this->location);
 
         $cacheData = $this->discovery->getCacheableData();
 
-        expect($cacheData)->toHaveKey('App\\');
-        expect($cacheData['App\\'])->toHaveCount(1);
-        expect($cacheData['App\\'][0]['location'])->toBe('primary');
-        expect($cacheData['App\\'][0]['description'])->toBe('Primary Navigation');
-        expect($cacheData['App\\'][0]['className'])->toBe(MenuFixture::class);
+        expect($cacheData)->toHaveKey('App\\')->and($cacheData['App\\'])->toHaveCount(1);
     });
 
-    it('handles multiple menus', function () {
-        // Manually add items to simulate multiple discovered menus
-        $this->discovery->restoreFromCache(['App\\' => [
-            [
-                'location' => 'primary',
-                'description' => 'Primary Navigation',
-                'className' => MenuFixture::class,
-            ],
-            [
-                'location' => 'footer',
-                'description' => 'Footer Navigation',
-                'className' => MenuFixture::class,
-            ],
-        ]]);
+    it('restores the same attribute through a cache file', function () {
+        discoverFixture($this->discovery, MenuFixture::class, $this->location);
 
-        expect($this->discovery->wasRestoredFromCache())->toBeTrue();
+        $restored = restoreThroughCacheFile($this->discovery, new MenuDiscovery());
+
+        expect($restored->wasRestoredFromCache())
+            ->toBeTrue()
+            ->and($restored->getItems()->all())
+            ->toEqual($this->discovery->getItems()->all());
     });
 
-    it('can restore from cache', function () {
-        $cacheData = [
-            [
-                'location' => 'sidebar',
-                'description' => 'Sidebar Menu',
-                'className' => MenuFixture::class,
-            ],
-        ];
+    it('restores the attribute as an instance, not an array', function () {
+        discoverFixture($this->discovery, MenuFixture::class, $this->location);
 
-        $this->discovery->restoreFromCache(['App\\' => $cacheData]);
+        $item = restoreThroughCacheFile($this->discovery, new MenuDiscovery())->getItems()->all()[0];
 
-        expect($this->discovery->wasRestoredFromCache())->toBeTrue();
+        expect($item['attribute'])
+            ->toBeInstanceOf(AsMenu::class)
+            ->and($item['attribute']->location)
+            ->toBe('primary')
+            ->and($item['attribute']->description)
+            ->toBe('Primary Navigation')
+            ->and($item['className'])
+            ->toBe(MenuFixture::class);
     });
 
-    it('handles minimal configuration', function () {
-        $this->discovery->discover($this->location, new ReflectionClass(MenuFixture::class));
+    it('reports it was not restored when it scanned', function () {
+        discoverFixture($this->discovery, MenuFixture::class, $this->location);
 
-        $cacheData = $this->discovery->getCacheableData();
-
-        // All required fields should be present
-        expect($cacheData['App\\'][0])->toHaveKeys(['location', 'description', 'className']);
+        expect($this->discovery->wasRestoredFromCache())->toBeFalse();
     });
 });

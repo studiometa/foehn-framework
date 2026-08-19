@@ -65,14 +65,13 @@ final class JobDiscovery implements WpDiscovery
         }
 
         $attribute = $attributes[0]->newInstance();
-        $dtoClass = $paramType->getName();
-        $hook = HookNameResolver::forJob($dtoClass, $attribute->hook);
 
+        // The DTO class comes from the handler's __invoke() signature, not the
+        // attribute, so it travels beside it as its own item field.
         $this->addItem($location, [
+            'attribute' => $attribute,
             'handlerClass' => $class->getName(),
-            'dtoClass' => $dtoClass,
-            'hook' => $hook,
-            'group' => $attribute->group,
+            'dtoClass' => $paramType->getName(),
         ]);
     }
 
@@ -93,14 +92,15 @@ final class JobDiscovery implements WpDiscovery
      */
     private function registerJob(array $item): void
     {
-        /** @var string $hook */
-        $hook = $item['hook'];
+        /** @var AsJob $attribute */
+        $attribute = $item['attribute'];
         /** @var class-string $handlerClass */
         $handlerClass = $item['handlerClass'];
         /** @var class-string $dtoClass */
         $dtoClass = $item['dtoClass'];
-        /** @var string $group */
-        $group = $item['group'];
+
+        $hook = HookNameResolver::forJob($dtoClass, $attribute->hook);
+        $group = $attribute->group;
 
         // Register the DTO→handler mapping in the registry
         $this->jobRegistry->register($dtoClass, $handlerClass, $hook, $group);
@@ -112,21 +112,5 @@ final class JobDiscovery implements WpDiscovery
             $handler = get($handlerClass);
             $handler($job);
         });
-    }
-
-    /**
-     * Convert a discovered item to a cacheable format.
-     *
-     * @param array<string, mixed> $item
-     * @return array<string, mixed>
-     */
-    protected function itemToCacheable(array $item): array
-    {
-        return [
-            'handlerClass' => $item['handlerClass'],
-            'dtoClass' => $item['dtoClass'],
-            'hook' => $item['hook'],
-            'group' => $item['group'],
-        ];
     }
 }

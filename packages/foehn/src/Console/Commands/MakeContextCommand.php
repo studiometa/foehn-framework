@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace Studiometa\Foehn\Console\Commands;
 
 use Studiometa\Foehn\Attributes\AsCliCommand;
+use Studiometa\Foehn\Console\ClassFileGenerator;
 use Studiometa\Foehn\Console\CliCommandInterface;
-use Studiometa\Foehn\Console\GeneratesFiles;
+use Studiometa\Foehn\Console\GenerationRequest;
 use Studiometa\Foehn\Console\Stubs\ContextProviderStub;
 use Studiometa\Foehn\Console\WpCli;
 
@@ -51,10 +52,9 @@ use function Tempest\Support\str;
 )]
 final class MakeContextCommand implements CliCommandInterface
 {
-    use GeneratesFiles;
-
     public function __construct(
         private readonly WpCli $cli,
+        private readonly ClassFileGenerator $generator,
     ) {}
 
     public function __invoke(array $args, array $assocArgs): void
@@ -73,33 +73,26 @@ final class MakeContextCommand implements CliCommandInterface
         $force = ($assocArgs['force'] ?? null) !== null;
         $dryRun = ($assocArgs['dry-run'] ?? null) !== null;
 
-        $targetPath = $this->getTargetPath('Context', $className);
-
-        if (!$dryRun && !$this->shouldGenerate($targetPath, $force)) {
-            return;
-        }
-
-        // Format templates array for replacement
-        $templatesCode = "['" . implode("', '", $templates) . "']";
-
-        $content = $this->generateClassFile(
-            stubClass: ContextProviderStub::class,
-            targetPath: $targetPath,
-            replacements: [
-                // The class name comes from the target path, so only the templates
-                // still have to be substituted in the stub source.
-                "['dummy-template', 'dummy-template-*']" => $templatesCode,
-            ],
-            dryRun: $dryRun,
-        );
+        $file = $this->generator->generate(new GenerationRequest(
+            stub: ContextProviderStub::class,
+            subdirectory: 'Context',
+            className: $className,
+            attributeArguments: ['templates' => $templates],
+        ));
 
         if ($dryRun) {
-            $this->displayDryRun($targetPath, (string) $content);
+            $this->cli->previewGeneratedFile($file);
 
             return;
         }
 
-        $this->cli->success("Context provider created: {$this->cli->getRelativePath($targetPath)}");
+        if (!$this->generator->write($file, $force)) {
+            $this->cli->reportFileExists($file);
+
+            return;
+        }
+
+        $this->cli->success("Context provider created: {$this->cli->getRelativePath($file->path)}");
         $this->cli->line('');
         $this->cli->log('Edit the provide() method to add data to the view context.');
         $this->cli->line('');

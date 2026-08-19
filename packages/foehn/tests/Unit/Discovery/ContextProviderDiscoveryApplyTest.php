@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Discovery\ContextProviderDiscovery;
+use Studiometa\Foehn\Discovery\DiscoveryLocation;
 use Studiometa\Foehn\Views\ContextProviderRegistry;
 use Tests\Fixtures\ContextProviderFixture;
-use Studiometa\Foehn\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
     $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
@@ -35,17 +35,12 @@ describe('ContextProviderDiscovery apply', function () {
         expect($this->registry->count())->toBe(0);
     });
 
-    it('registers from cached data', function () {
-        $this->discovery->restoreFromCache(['App\\' => [
-            [
-                'templates' => ['archive', 'home'],
-                'className' => ContextProviderFixture::class,
-                'priority' => 5,
-            ],
-        ]]);
+    it('registers the same providers whether scanned or restored from cache', function () {
+        $scanned = new ContextProviderDiscovery();
+        discoverFixture($scanned, ContextProviderFixture::class, $this->location);
 
-        $this->discovery->apply();
+        restoreThroughCacheFile($scanned, $this->discovery)->apply();
 
-        expect($this->registry->count())->toBe(2); // 'archive' and 'home'
+        expect($this->registry->count())->toBe(2); // 'single' and 'page'
     });
 });

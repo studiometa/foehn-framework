@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Studiometa\Foehn\Attributes\AsAction;
+use Studiometa\Foehn\Attributes\AsFilter;
 use Studiometa\Foehn\Discovery\DiscoveryLocation;
 use Studiometa\Foehn\Discovery\HookDiscovery;
 use Tempest\Container\GenericContainer;
@@ -18,42 +20,42 @@ describe('HookDiscovery', function () {
         $this->discovery->discover($this->location, new ReflectionClass(HookFixture::class));
 
         $items = $this->discovery->getItems()->all();
-        $actions = array_values(array_filter($items, fn($item) => $item['type'] === 'action'));
+        $actions = array_values(array_filter($items, fn($item) => $item['attribute'] instanceof AsAction));
 
         expect($actions)->toHaveCount(2);
 
         // init action
-        expect($actions[0]['hook'])->toBe('init');
+        expect($actions[0]['attribute']->hook)->toBe('init');
         expect($actions[0]['className'])->toBe(HookFixture::class);
         expect($actions[0]['methodName'])->toBe('onInit');
-        expect($actions[0]['priority'])->toBe(10);
-        expect($actions[0]['acceptedArgs'])->toBe(1);
+        expect($actions[0]['attribute']->priority)->toBe(10);
+        expect($actions[0]['attribute']->acceptedArgs)->toBe(1);
 
         // wp_head action with custom priority
-        expect($actions[1]['hook'])->toBe('wp_head');
-        expect($actions[1]['priority'])->toBe(5);
-        expect($actions[1]['acceptedArgs'])->toBe(0);
+        expect($actions[1]['attribute']->hook)->toBe('wp_head');
+        expect($actions[1]['attribute']->priority)->toBe(5);
+        expect($actions[1]['attribute']->acceptedArgs)->toBe(0);
     });
 
     it('discovers filter attributes on methods', function () {
         $this->discovery->discover($this->location, new ReflectionClass(HookFixture::class));
 
         $items = $this->discovery->getItems()->all();
-        $filters = array_values(array_filter($items, fn($item) => $item['type'] === 'filter'));
+        $filters = array_values(array_filter($items, fn($item) => $item['attribute'] instanceof AsFilter));
 
         expect($filters)->toHaveCount(2);
 
         // the_content filter
-        expect($filters[0]['hook'])->toBe('the_content');
+        expect($filters[0]['attribute']->hook)->toBe('the_content');
         expect($filters[0]['className'])->toBe(HookFixture::class);
         expect($filters[0]['methodName'])->toBe('filterContent');
-        expect($filters[0]['priority'])->toBe(10);
-        expect($filters[0]['acceptedArgs'])->toBe(1);
+        expect($filters[0]['attribute']->priority)->toBe(10);
+        expect($filters[0]['attribute']->acceptedArgs)->toBe(1);
 
         // the_title filter with custom priority
-        expect($filters[1]['hook'])->toBe('the_title');
-        expect($filters[1]['priority'])->toBe(20);
-        expect($filters[1]['acceptedArgs'])->toBe(2);
+        expect($filters[1]['attribute']->hook)->toBe('the_title');
+        expect($filters[1]['attribute']->priority)->toBe(20);
+        expect($filters[1]['attribute']->acceptedArgs)->toBe(2);
     });
 
     it('ignores classes without hook attributes', function () {

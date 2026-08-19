@@ -47,8 +47,8 @@ final class TwigExtensionDiscovery implements WpDiscovery
         $attribute = $attributes[0]->newInstance();
 
         $this->addItem($location, [
+            'attribute' => $attribute,
             'className' => $class->getName(),
-            'priority' => $attribute->priority,
         ]);
     }
 
@@ -64,7 +64,7 @@ final class TwigExtensionDiscovery implements WpDiscovery
             return;
         }
 
-        usort($items, static fn(array $a, array $b): int => $a['priority'] <=> $b['priority']);
+        usort($items, static fn(array $a, array $b): int => $a['attribute']->priority <=> $b['attribute']->priority);
 
         $container = $this->container;
 
@@ -77,19 +77,5 @@ final class TwigExtensionDiscovery implements WpDiscovery
 
             return $twig;
         });
-    }
-
-    /**
-     * Convert a discovered item to a cacheable format.
-     *
-     * @param array<string, mixed> $item
-     * @return array<string, mixed>
-     */
-    protected function itemToCacheable(array $item): array
-    {
-        return [
-            'className' => $item['className'],
-            'priority' => $item['priority'],
-        ];
     }
 }

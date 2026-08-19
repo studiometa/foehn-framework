@@ -2,8 +2,10 @@
 
 declare(strict_types=1);
 
+use Studiometa\Foehn\Attributes\AsContextProvider;
 use Studiometa\Foehn\Discovery\ContextProviderDiscovery;
 use Studiometa\Foehn\Discovery\DiscoveryLocation;
+use Tests\Fixtures\ContextProviderFixture;
 
 beforeEach(function () {
     $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
@@ -11,74 +13,37 @@ beforeEach(function () {
 });
 
 describe('ContextProviderDiscovery caching', function () {
-    it('converts items to cacheable format with single template', function () {
-        $ref = new ReflectionMethod($this->discovery, 'addItem');
-        $ref->invoke($this->discovery, $this->location, [
-            'templates' => ['single.twig'],
-            'className' => 'App\\View\\SingleContextProvider',
-            'priority' => 20,
-        ]);
+    it('keeps every item under its location namespace', function () {
+        discoverFixture($this->discovery, ContextProviderFixture::class, $this->location);
 
-        $cacheableData = $this->discovery->getCacheableData();
+        $cacheData = $this->discovery->getCacheableData();
 
-        expect($cacheableData['App\\'])->toHaveCount(1);
-        expect($cacheableData['App\\'][0])->toBe([
-            'templates' => ['single.twig'],
-            'className' => 'App\\View\\SingleContextProvider',
-            'priority' => 20,
-        ]);
+        expect($cacheData)->toHaveKey('App\\')->and($cacheData['App\\'])->toHaveCount(1);
     });
 
-    it('converts items to cacheable format with multiple templates', function () {
-        $ref = new ReflectionMethod($this->discovery, 'addItem');
-        $ref->invoke($this->discovery, $this->location, [
-            'templates' => ['single.twig', 'page.twig', 'archive.twig'],
-            'className' => 'App\\View\\CommonContextProvider',
-            'priority' => 10,
-        ]);
+    it('restores every item unchanged through a cache file', function () {
+        discoverFixture($this->discovery, ContextProviderFixture::class, $this->location);
 
-        $cacheableData = $this->discovery->getCacheableData();
+        $restored = restoreThroughCacheFile($this->discovery, new ContextProviderDiscovery());
 
-        expect($cacheableData['App\\'][0]['templates'])->toBe(['single.twig', 'page.twig', 'archive.twig']);
+        expect($restored->wasRestoredFromCache())
+            ->toBeTrue()
+            ->and($restored->getItems()->all())
+            ->toEqual($this->discovery->getItems()->all());
     });
 
-    it('handles wildcard templates', function () {
-        $ref = new ReflectionMethod($this->discovery, 'addItem');
-        $ref->invoke($this->discovery, $this->location, [
-            'templates' => ['components/*.twig'],
-            'className' => 'App\\View\\ComponentContextProvider',
-            'priority' => 10,
-        ]);
+    it('restores the attribute as an instance, not an array', function () {
+        discoverFixture($this->discovery, ContextProviderFixture::class, $this->location);
 
-        $cacheableData = $this->discovery->getCacheableData();
+        $item = restoreThroughCacheFile($this->discovery, new ContextProviderDiscovery())->getItems()->all()[0];
 
-        expect($cacheableData['App\\'][0]['templates'])->toBe(['components/*.twig']);
-    });
-
-    it('uses default priority', function () {
-        $ref = new ReflectionMethod($this->discovery, 'addItem');
-        $ref->invoke($this->discovery, $this->location, [
-            'templates' => ['header.twig'],
-            'className' => 'App\\View\\HeaderContextProvider',
-            'priority' => 10,
-        ]);
-
-        $cacheableData = $this->discovery->getCacheableData();
-
-        expect($cacheableData['App\\'][0]['priority'])->toBe(10);
-    });
-
-    it('can restore from cache', function () {
-        $cachedData = [
-            [
-                'templates' => ['single.twig', 'page.twig'],
-                'className' => 'App\\View\\CommonContextProvider',
-                'priority' => 10,
-            ],
-        ];
-
-        $this->discovery->restoreFromCache(['App\\' => $cachedData]);
-
-        expect($this->discovery->wasRestoredFromCache())->toBeTrue();
+        expect($item['attribute'])
+            ->toBeInstanceOf(AsContextProvider::class)
+            ->and($item['attribute']->getTemplates())
+            ->toBe(['single', 'page'])
+            ->and($item['attribute']->priority)
+            ->toBe(5)
+            ->and($item['className'])
+            ->toBe(ContextProviderFixture::class);
     });
 });

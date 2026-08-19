@@ -49,9 +49,8 @@ final class ContextProviderDiscovery implements WpDiscovery
         $attribute = $attributes[0]->newInstance();
 
         $this->addItem($location, [
-            'templates' => $attribute->getTemplates(),
+            'attribute' => $attribute,
             'className' => $class->getName(),
-            'priority' => $attribute->priority,
         ]);
     }
 
@@ -64,25 +63,12 @@ final class ContextProviderDiscovery implements WpDiscovery
         $registry = get(ContextProviderRegistry::class);
 
         foreach ($this->getItems() as $item) {
+            /** @var AsContextProvider $attribute */
+            $attribute = $item['attribute'];
             /** @var ContextProviderInterface $provider */
             $provider = get($item['className']);
 
-            $registry->register($item['templates'], $provider, $item['priority']);
+            $registry->register($attribute->getTemplates(), $provider, $attribute->priority);
         }
-    }
-
-    /**
-     * Convert a discovered item to a cacheable format.
-     *
-     * @param array<string, mixed> $item
-     * @return array<string, mixed>
-     */
-    protected function itemToCacheable(array $item): array
-    {
-        return [
-            'templates' => $item['templates'],
-            'className' => $item['className'],
-            'priority' => $item['priority'],
-        ];
     }
 }

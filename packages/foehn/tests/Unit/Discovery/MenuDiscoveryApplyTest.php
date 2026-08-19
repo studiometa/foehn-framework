@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-use Studiometa\Foehn\Discovery\MenuDiscovery;
-use Tests\Fixtures\MenuFixture;
 use Studiometa\Foehn\Discovery\DiscoveryLocation;
+use Studiometa\Foehn\Discovery\MenuDiscovery;
+use Tests\Fixtures\FooterMenuFixture;
+use Tests\Fixtures\MenuFixture;
 
 beforeEach(function () {
     $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
@@ -43,36 +44,21 @@ describe('MenuDiscovery apply', function () {
         expect(wp_stub_get_calls('add_filter'))->toBeEmpty();
     });
 
-    it('registers menus from cached data', function () {
-        $this->discovery->restoreFromCache(['App\\' => [
-            [
-                'location' => 'footer',
-                'description' => 'Footer Navigation',
-                'className' => MenuFixture::class,
-            ],
-        ]]);
+    it('registers the same menus whether scanned or restored from cache', function () {
+        $scanned = new MenuDiscovery();
+        discoverFixture($scanned, MenuFixture::class, $this->location);
 
-        $this->discovery->apply();
+        restoreThroughCacheFile($scanned, $this->discovery)->apply();
 
         $calls = wp_stub_get_calls('register_nav_menus');
 
         expect($calls)->toHaveCount(1);
-        expect($calls[0]['args']['locations'])->toBe(['footer' => 'Footer Navigation']);
+        expect($calls[0]['args']['locations'])->toBe(['primary' => 'Primary Navigation']);
     });
 
     it('registers multiple menus', function () {
-        $this->discovery->restoreFromCache(['App\\' => [
-            [
-                'location' => 'primary',
-                'description' => 'Primary Navigation',
-                'className' => MenuFixture::class,
-            ],
-            [
-                'location' => 'footer',
-                'description' => 'Footer Navigation',
-                'className' => MenuFixture::class,
-            ],
-        ]]);
+        $this->discovery->discover($this->location, new ReflectionClass(MenuFixture::class));
+        $this->discovery->discover($this->location, new ReflectionClass(FooterMenuFixture::class));
 
         $this->discovery->apply();
 

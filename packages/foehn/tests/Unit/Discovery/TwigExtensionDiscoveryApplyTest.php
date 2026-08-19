@@ -12,8 +12,8 @@ use Twig\Loader\ArrayLoader;
 beforeEach(function () {
     $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
     wp_stub_reset();
-    $container = bootTestContainer();
-    $this->discovery = new TwigExtensionDiscovery($container);
+    $this->container = bootTestContainer();
+    $this->discovery = new TwigExtensionDiscovery($this->container);
 });
 
 afterEach(fn() => tearDownTestContainer());
@@ -71,13 +71,11 @@ describe('TwigExtensionDiscovery::apply', function () {
     });
 
     it('works with cache restoration', function () {
-        $cachedData = [
-            ['className' => TwigExtensionWithPriorityFixture::class, 'priority' => 5],
-            ['className' => TwigExtensionFixture::class, 'priority' => 10],
-        ];
+        $scanned = new TwigExtensionDiscovery($this->container);
+        discoverFixture($scanned, TwigExtensionWithPriorityFixture::class, $this->location);
+        discoverFixture($scanned, TwigExtensionFixture::class, $this->location);
 
-        $this->discovery->restoreFromCache(['App\\' => $cachedData]);
-        $this->discovery->apply();
+        restoreThroughCacheFile($scanned, $this->discovery)->apply();
 
         $calls = wp_stub_get_calls('add_filter');
 

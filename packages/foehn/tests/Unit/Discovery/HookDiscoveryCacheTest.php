@@ -2,18 +2,12 @@
 
 declare(strict_types=1);
 
+use Studiometa\Foehn\Attributes\AsAction;
+use Studiometa\Foehn\Attributes\AsFilter;
 use Studiometa\Foehn\Discovery\DiscoveryLocation;
 use Studiometa\Foehn\Discovery\HookDiscovery;
 use Tempest\Container\GenericContainer;
-
-/**
- * Helper to add items to a discovery via reflection.
- */
-function addDiscoveryItem(object $discovery, DiscoveryLocation $location, array $item): void
-{
-    $ref = new ReflectionMethod($discovery, 'addItem');
-    $ref->invoke($discovery, $location, $item);
-}
+use Tests\Fixtures\HookFixture;
 
 beforeEach(function () {
     $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
@@ -21,116 +15,72 @@ beforeEach(function () {
 });
 
 describe('HookDiscovery caching', function () {
-    it('converts action items to cacheable format', function () {
-        addDiscoveryItem($this->discovery, $this->location, [
-            'type' => 'action',
-            'hook' => 'init',
-            'className' => 'App\\Hooks\\MyHooks',
-            'methodName' => 'onInit',
-            'priority' => 10,
-            'acceptedArgs' => 1,
-        ]);
+    it('keeps one item per hook attribute found', function () {
+        discoverFixture($this->discovery, HookFixture::class, $this->location);
 
-        $cacheableData = $this->discovery->getCacheableData();
+        $cacheData = $this->discovery->getCacheableData();
 
-        expect($cacheableData['App\\'])->toHaveCount(1);
-        expect($cacheableData['App\\'][0])->toBe([
-            'type' => 'action',
-            'hook' => 'init',
-            'className' => 'App\\Hooks\\MyHooks',
-            'methodName' => 'onInit',
-            'priority' => 10,
-            'acceptedArgs' => 1,
-        ]);
+        // HookFixture declares two actions and two filters.
+        expect($cacheData)->toHaveKey('App\\')->and($cacheData['App\\'])->toHaveCount(4);
     });
 
-    it('converts filter items to cacheable format', function () {
-        addDiscoveryItem($this->discovery, $this->location, [
-            'type' => 'filter',
-            'hook' => 'the_content',
-            'className' => 'App\\Hooks\\ContentFilter',
-            'methodName' => 'filterContent',
-            'priority' => 20,
-            'acceptedArgs' => 2,
-        ]);
+    it('restores every item unchanged through a cache file', function () {
+        discoverFixture($this->discovery, HookFixture::class, $this->location);
 
-        $cacheableData = $this->discovery->getCacheableData();
+        $restored = restoreThroughCacheFile($this->discovery, new HookDiscovery(new GenericContainer()));
 
-        expect($cacheableData['App\\'])->toHaveCount(1);
-        expect($cacheableData['App\\'][0])->toBe([
-            'type' => 'filter',
-            'hook' => 'the_content',
-            'className' => 'App\\Hooks\\ContentFilter',
-            'methodName' => 'filterContent',
-            'priority' => 20,
-            'acceptedArgs' => 2,
-        ]);
+        expect($restored->wasRestoredFromCache())
+            ->toBeTrue()
+            ->and($restored->getItems()->all())
+            ->toEqual($this->discovery->getItems()->all());
     });
 
-    it('handles multiple hooks', function () {
-        addDiscoveryItem($this->discovery, $this->location, [
-            'type' => 'action',
-            'hook' => 'init',
-            'className' => 'App\\Hooks\\MultiHooks',
-            'methodName' => 'onInit',
-            'priority' => 5,
-            'acceptedArgs' => 0,
-        ]);
+    it('keeps actions and filters apart by attribute class', function () {
+        discoverFixture($this->discovery, HookFixture::class, $this->location);
 
-        addDiscoveryItem($this->discovery, $this->location, [
-            'type' => 'filter',
-            'hook' => 'the_title',
-            'className' => 'App\\Hooks\\MultiHooks',
-            'methodName' => 'filterTitle',
-            'priority' => 15,
-            'acceptedArgs' => 3,
-        ]);
+        $items = restoreThroughCacheFile(
+            $this->discovery,
+            new HookDiscovery(new GenericContainer()),
+        )->getItems()->all();
 
-        $cacheableData = $this->discovery->getCacheableData();
+        $actions = array_values(array_filter($items, static fn(array $i) => $i['attribute'] instanceof AsAction));
+        $filters = array_values(array_filter($items, static fn(array $i) => $i['attribute'] instanceof AsFilter));
 
-        expect($cacheableData['App\\'])->toHaveCount(2);
-        expect($cacheableData['App\\'][0]['type'])->toBe('action');
-        expect($cacheableData['App\\'][1]['type'])->toBe('filter');
+        expect($actions)->toHaveCount(2)->and($filters)->toHaveCount(2);
+        expect($actions[0]['attribute']->hook)->toBe('init');
+        expect($filters[0]['attribute']->hook)->toBe('the_content');
     });
 
-    it('can restore from cache', function () {
-        $cachedData = [
-            [
-                'type' => 'action',
-                'hook' => 'wp_head',
-                'className' => 'App\\Hooks\\HeadHooks',
-                'methodName' => 'addMeta',
-                'priority' => 1,
-                'acceptedArgs' => 0,
-            ],
-            [
-                'type' => 'filter',
-                'hook' => 'body_class',
-                'className' => 'App\\Hooks\\BodyHooks',
-                'methodName' => 'addBodyClass',
-                'priority' => 10,
-                'acceptedArgs' => 1,
-            ],
-        ];
+    it('restores the priority and accepted args of each hook', function () {
+        discoverFixture($this->discovery, HookFixture::class, $this->location);
 
-        $this->discovery->restoreFromCache(['App\\' => $cachedData]);
+        $items = restoreThroughCacheFile(
+            $this->discovery,
+            new HookDiscovery(new GenericContainer()),
+        )->getItems()->all();
 
-        expect($this->discovery->wasRestoredFromCache())->toBeTrue();
+        $byMethod = array_column(
+            array_map(static fn(array $i): array => [
+                $i['methodName'],
+                [$i['attribute']->priority, $i['attribute']->acceptedArgs],
+            ], $items),
+            1,
+            0,
+        );
+
+        expect($byMethod['onInit'])->toBe([10, 1])->and($byMethod['filterTitle'])->toBe([20, 2]);
     });
 
-    it('handles default priority and accepted args', function () {
-        addDiscoveryItem($this->discovery, $this->location, [
-            'type' => 'action',
-            'hook' => 'save_post',
-            'className' => 'App\\Hooks\\PostHooks',
-            'methodName' => 'onSavePost',
-            'priority' => 10,
-            'acceptedArgs' => 1,
-        ]);
+    it('keeps the method binding of every item', function () {
+        discoverFixture($this->discovery, HookFixture::class, $this->location);
 
-        $cacheableData = $this->discovery->getCacheableData();
+        $items = restoreThroughCacheFile(
+            $this->discovery,
+            new HookDiscovery(new GenericContainer()),
+        )->getItems()->all();
 
-        expect($cacheableData['App\\'][0]['priority'])->toBe(10);
-        expect($cacheableData['App\\'][0]['acceptedArgs'])->toBe(1);
+        foreach ($items as $item) {
+            expect($item['className'])->toBe(HookFixture::class)->and($item['methodName'])->toBeString();
+        }
     });
 });

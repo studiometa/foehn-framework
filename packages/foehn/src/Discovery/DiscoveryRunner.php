@@ -117,10 +117,7 @@ final class DiscoveryRunner
         // If we have cached data, restore discoveries from cache
         if ($this->cachedData !== null) {
             foreach ($this->discoveries as $className => $discovery) {
-                if (
-                    ($this->cachedData[$className] ?? null) === null
-                    || !method_exists($discovery, 'restoreFromCache')
-                ) {
+                if (($this->cachedData[$className] ?? null) === null) {
                     continue;
                 }
 

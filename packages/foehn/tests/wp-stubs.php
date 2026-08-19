@@ -70,6 +70,53 @@ if (!class_exists('WP_Post_Type')) {
     }
 }
 
+/**
+ * WP-CLI output recorder.
+ *
+ * WpCli is final, so a command under test cannot be handed a double: it writes
+ * through the real WpCli into this stub, and tests read the recorded calls.
+ * error() records instead of exiting, so a failing command can be asserted on.
+ */
+if (!class_exists('WP_CLI')) {
+    class WP_CLI
+    {
+        public static function log(string $message): void
+        {
+            wp_stub_record('wp_cli_log', compact('message'));
+        }
+
+        public static function success(string $message): void
+        {
+            wp_stub_record('wp_cli_success', compact('message'));
+        }
+
+        public static function error(string $message, bool $exit = true): void
+        {
+            wp_stub_record('wp_cli_error', compact('message', 'exit'));
+        }
+
+        public static function warning(string $message): void
+        {
+            wp_stub_record('wp_cli_warning', compact('message'));
+        }
+
+        public static function line(string $message = ''): void
+        {
+            wp_stub_record('wp_cli_line', compact('message'));
+        }
+
+        public static function colorize(string $string): string
+        {
+            return $string;
+        }
+
+        public static function add_command(string $name, mixed $callback, array $args = []): void
+        {
+            wp_stub_record('wp_cli_add_command', compact('name', 'callback', 'args'));
+        }
+    }
+}
+
 if (!class_exists('WP_Taxonomy')) {
     class WP_Taxonomy
     {

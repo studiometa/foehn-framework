@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace Studiometa\Foehn\Console\Commands;
 
 use Studiometa\Foehn\Attributes\AsCliCommand;
+use Studiometa\Foehn\Console\ClassFileGenerator;
 use Studiometa\Foehn\Console\CliCommandInterface;
-use Studiometa\Foehn\Console\GeneratesFiles;
+use Studiometa\Foehn\Console\GenerationRequest;
 use Studiometa\Foehn\Console\Stubs\OptionsPageStub;
 use Studiometa\Foehn\Console\WpCli;
 
@@ -52,10 +53,9 @@ use function Tempest\Support\str;
     DOC)]
 final class MakeOptionsPageCommand implements CliCommandInterface
 {
-    use GeneratesFiles;
-
     public function __construct(
         private readonly WpCli $cli,
+        private readonly ClassFileGenerator $generator,
     ) {}
 
     public function __invoke(array $args, array $assocArgs): void
@@ -77,33 +77,37 @@ final class MakeOptionsPageCommand implements CliCommandInterface
         $force = ($assocArgs['force'] ?? null) !== null;
         $dryRun = ($assocArgs['dry-run'] ?? null) !== null;
 
-        $targetPath = $this->getTargetPath('Fields/Options', $className);
-
-        if (!$dryRun && !$this->shouldGenerate($targetPath, $force)) {
-            return;
-        }
-
-        $content = $this->generateClassFile(
-            stubClass: OptionsPageStub::class,
-            targetPath: $targetPath,
-            replacements: [
-                'dummy_options' => str($name)->snake()->toString(),
-                "pageTitle: 'Dummy Options'" => "pageTitle: '{$title}'",
-                "menuTitle: 'Dummy Options'" => "menuTitle: '{$menuTitle}'",
-                "menuSlug: 'dummy-options'" => "menuSlug: '{$slug}'",
-                "parentSlug: ''" => "parentSlug: '{$parent}'",
-                "iconUrl: 'dashicons-admin-generic'" => "iconUrl: '{$icon}'",
+        $file = $this->generator->generate(new GenerationRequest(
+            stub: OptionsPageStub::class,
+            subdirectory: 'Fields/Options',
+            className: $className,
+            attributeArguments: [
+                'pageTitle' => $title,
+                'menuTitle' => $menuTitle,
+                'menuSlug' => $slug,
+                // An empty parent means a top level page, which ACF expects as null
+                'parentSlug' => $parent === '' ? null : $parent,
+                'iconUrl' => $icon,
             ],
-            dryRun: $dryRun,
-        );
+            // The builder is seeded with the option group name inside fields()
+            bodyReplacements: [
+                'fields' => ["'dummy_options'" => "'" . str($name)->snake()->toString() . "'"],
+            ],
+        ));
 
         if ($dryRun) {
-            $this->displayDryRun($targetPath, (string) $content);
+            $this->cli->previewGeneratedFile($file);
 
             return;
         }
 
-        $this->cli->success("Options page created: {$this->cli->getRelativePath($targetPath)}");
+        if (!$this->generator->write($file, $force)) {
+            $this->cli->reportFileExists($file);
+
+            return;
+        }
+
+        $this->cli->success("Options page created: {$this->cli->getRelativePath($file->path)}");
         $this->cli->line('');
         $this->cli->log('Edit the fields() method to define your ACF fields using FieldsBuilder.');
         $this->cli->line('');

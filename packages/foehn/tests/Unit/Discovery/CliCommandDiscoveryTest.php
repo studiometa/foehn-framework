@@ -3,11 +3,11 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Discovery\CliCommandDiscovery;
+use Studiometa\Foehn\Discovery\DiscoveryLocation;
 use Tempest\Container\GenericContainer;
 use Tests\Fixtures\CliCommandFixture;
 use Tests\Fixtures\InvalidCliCommandFixture;
 use Tests\Fixtures\NoAttributeFixture;
-use Studiometa\Foehn\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
     $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
@@ -22,9 +22,9 @@ describe('CliCommandDiscovery', function () {
 
         expect($items)->toHaveCount(1);
         expect($items[0]['className'])->toBe(CliCommandFixture::class);
-        expect($items[0]['name'])->toBe('test:run');
-        expect($items[0]['description'])->toBe('Run a test command');
-        expect($items[0]['longDescription'])->toBe('This is a long description for the test command.');
+        expect($items[0]['attribute']->name)->toBe('test:run');
+        expect($items[0]['attribute']->description)->toBe('Run a test command');
+        expect($items[0]['attribute']->longDescription)->toBe('This is a long description for the test command.');
     });
 
     it('ignores classes without CLI command attribute', function () {

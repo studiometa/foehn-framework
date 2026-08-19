@@ -43,10 +43,8 @@ class CronDiscovery implements WpDiscovery
         $attribute = $attributes[0]->newInstance();
 
         $this->addItem($location, [
+            'attribute' => $attribute,
             'className' => $class->getName(),
-            'hook' => HookNameResolver::forCron($class->getName(), $attribute->hook),
-            'intervalSeconds' => $attribute->intervalSeconds,
-            'group' => $attribute->group,
         ]);
     }
 
@@ -80,14 +78,14 @@ class CronDiscovery implements WpDiscovery
      */
     private function registerCron(array $item): void
     {
-        /** @var string $hook */
-        $hook = $item['hook'];
+        /** @var AsCron $attribute */
+        $attribute = $item['attribute'];
         /** @var string $className */
         $className = $item['className'];
-        /** @var int $intervalSeconds */
-        $intervalSeconds = $item['intervalSeconds'];
-        /** @var string $group */
-        $group = $item['group'];
+
+        $hook = HookNameResolver::forCron($className, $attribute->hook);
+        $intervalSeconds = $attribute->intervalSeconds;
+        $group = $attribute->group;
 
         // Register the callback
         add_action($hook, static function () use ($className): void {
@@ -100,21 +98,5 @@ class CronDiscovery implements WpDiscovery
         if (!\as_has_scheduled_action($hook, [], $group)) {
             \as_schedule_recurring_action(time(), $intervalSeconds, $hook, [], $group);
         }
-    }
-
-    /**
-     * Convert a discovered item to a cacheable format.
-     *
-     * @param array<string, mixed> $item
-     * @return array<string, mixed>
-     */
-    protected function itemToCacheable(array $item): array
-    {
-        return [
-            'className' => $item['className'],
-            'hook' => $item['hook'],
-            'intervalSeconds' => $item['intervalSeconds'],
-            'group' => $item['group'],
-        ];
     }
 }

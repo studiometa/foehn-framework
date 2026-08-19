@@ -46,10 +46,8 @@ final class CliCommandDiscovery implements WpDiscovery
         $attribute = $attributes[0]->newInstance();
 
         $this->addItem($location, [
+            'attribute' => $attribute,
             'className' => $class->getName(),
-            'name' => $attribute->name,
-            'description' => $attribute->description,
-            'longDescription' => $attribute->longDescription,
         ]);
     }
 
@@ -64,21 +62,20 @@ final class CliCommandDiscovery implements WpDiscovery
         }
 
         foreach ($this->getItems() as $item) {
-            $this->doRegisterCommand($item['className'], $item['name'], $item['description'], $item['longDescription']);
+            /** @var AsCliCommand $attribute */
+            $attribute = $item['attribute'];
+
+            $this->registerCommand($attribute, $item['className']);
         }
     }
 
     /**
-     * Actually register the command with WP-CLI.
+     * Register a single command with WP-CLI.
      *
      * @param class-string<CliCommandInterface> $className
      */
-    private function doRegisterCommand(
-        string $className,
-        string $name,
-        string $description,
-        ?string $longDescription,
-    ): void {
+    private function registerCommand(AsCliCommand $attribute, string $className): void
+    {
         $container = $this->container;
 
         // Create wrapper callback for WP-CLI
@@ -89,28 +86,12 @@ final class CliCommandDiscovery implements WpDiscovery
         };
 
         // Build WP-CLI command name with 'tempest' namespace
-        $commandName = 'tempest ' . $name;
+        $commandName = 'tempest ' . $attribute->name;
 
         // Register with WP-CLI
         WP_CLI::add_command($commandName, $callback, [
-            'shortdesc' => $description,
-            'longdesc' => $longDescription,
+            'shortdesc' => $attribute->description,
+            'longdesc' => $attribute->longDescription,
         ]);
-    }
-
-    /**
-     * Convert a discovered item to a cacheable format.
-     *
-     * @param array<string, mixed> $item
-     * @return array<string, mixed>
-     */
-    protected function itemToCacheable(array $item): array
-    {
-        return [
-            'className' => $item['className'],
-            'name' => $item['name'],
-            'description' => $item['description'],
-            'longDescription' => $item['longDescription'],
-        ];
     }
 }

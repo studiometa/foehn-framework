@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace Studiometa\Foehn\Console\Commands;
 
 use Studiometa\Foehn\Attributes\AsCliCommand;
+use Studiometa\Foehn\Console\ClassFileGenerator;
 use Studiometa\Foehn\Console\CliCommandInterface;
-use Studiometa\Foehn\Console\GeneratesFiles;
+use Studiometa\Foehn\Console\GenerationRequest;
 use Studiometa\Foehn\Console\Stubs\ModelStub;
 use Studiometa\Foehn\Console\Stubs\PostTypeStub;
 use Studiometa\Foehn\Console\WpCli;
@@ -53,10 +54,9 @@ use function Tempest\Support\str;
     DOC)]
 final class MakeModelCommand implements CliCommandInterface
 {
-    use GeneratesFiles;
-
     public function __construct(
         private readonly WpCli $cli,
+        private readonly ClassFileGenerator $generator,
     ) {}
 
     public function __invoke(array $args, array $assocArgs): void
@@ -77,39 +77,40 @@ final class MakeModelCommand implements CliCommandInterface
         $force = ($assocArgs['force'] ?? null) !== null;
         $dryRun = ($assocArgs['dry-run'] ?? null) !== null;
 
-        $targetPath = $this->getTargetPath('Models', $className);
+        // A model that registers its own post type starts from the post type stub
+        $request = $withPostType
+            ? new GenerationRequest(
+                stub: PostTypeStub::class,
+                subdirectory: 'Models',
+                className: $className,
+                attributeArguments: [
+                    'name' => $slug,
+                    'singular' => $singular,
+                    'plural' => $plural,
+                ],
+            )
+            : new GenerationRequest(
+                stub: ModelStub::class,
+                subdirectory: 'Models',
+                className: $className,
+                replacements: ['DummyModel' => $className],
+            );
 
-        if (!$dryRun && !$this->shouldGenerate($targetPath, $force)) {
-            return;
-        }
-
-        // Choose stub based on whether post type is included
-        $stubClass = $withPostType ? PostTypeStub::class : ModelStub::class;
-
-        $replacements = $withPostType
-            ? [
-                'dummy-post-type' => $slug,
-                'Dummy Singular' => $singular,
-                'Dummy Plural' => $plural,
-            ]
-            : [
-                'DummyModel' => $className,
-            ];
-
-        $content = $this->generateClassFile(
-            stubClass: $stubClass,
-            targetPath: $targetPath,
-            replacements: $replacements,
-            dryRun: $dryRun,
-        );
+        $file = $this->generator->generate($request);
 
         if ($dryRun) {
-            $this->displayDryRun($targetPath, (string) $content);
+            $this->cli->previewGeneratedFile($file);
 
             return;
         }
 
-        $this->cli->success("Model created: {$this->cli->getRelativePath($targetPath)}");
+        if (!$this->generator->write($file, $force)) {
+            $this->cli->reportFileExists($file);
+
+            return;
+        }
+
+        $this->cli->success("Model created: {$this->cli->getRelativePath($file->path)}");
 
         if ($withPostType) {
             $this->cli->line('');

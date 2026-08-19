@@ -23,12 +23,13 @@ final class DiscoveryCache
     /**
      * Shape version of the cached discovery items.
      *
-     * A cache file is only readable by the code that wrote it: every discovery reads
-     * its item keys without defaults, so a file written by another Foehn version would
-     * half-load and fail. Bump this whenever the shape of any cached item changes, and
-     * a cache from another version is rejected instead of being restored.
+     * An item is the attribute instance that produced it plus the reflection facts
+     * that are not in the attribute, so the shape follows the attribute constructors:
+     * a file written against a different signature would rebuild the wrong instance.
+     * Bump this whenever an attribute's constructor or an item's sibling fields
+     * change, and a cache from another version is rejected instead of restored.
      */
-    private const SCHEMA_VERSION = '1';
+    private const SCHEMA_VERSION = '2';
 
     public function __construct(
         private readonly FoehnConfig $config,

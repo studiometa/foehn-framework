@@ -43,7 +43,7 @@ final class ShortcodeDiscovery implements WpDiscovery
             $attribute = $attributes[0]->newInstance();
 
             $this->addItem($location, [
-                'tag' => $attribute->tag,
+                'attribute' => $attribute,
                 'className' => $method->getDeclaringClass()->getName(),
                 'methodName' => $method->getName(),
             ]);
@@ -56,37 +56,27 @@ final class ShortcodeDiscovery implements WpDiscovery
     public function apply(): void
     {
         foreach ($this->getItems() as $item) {
-            $this->doRegisterShortcode($item['tag'], $item['className'], $item['methodName']);
+            /** @var AsShortcode $attribute */
+            $attribute = $item['attribute'];
+
+            $this->registerShortcode($attribute, $item['className'], $item['methodName']);
         }
     }
 
     /**
-     * Actually register the shortcode with WordPress.
+     * Register the shortcode with WordPress.
      */
-    private function doRegisterShortcode(string $tag, string $className, string $methodName): void
+    private function registerShortcode(AsShortcode $attribute, string $className, string $methodName): void
     {
-        add_shortcode($tag, static function ($atts, $content = null, $shortcodeTag = '') use ($className, $methodName) {
+        $callback = static function ($atts, $content = null, $shortcodeTag = '') use ($className, $methodName) {
             $instance = get($className);
 
             // Normalize attributes - WP passes '' when no attributes despite stubs saying array
             $atts = is_array($atts) ? $atts : [];
 
             return $instance->{$methodName}($atts, $content, $shortcodeTag);
-        });
-    }
+        };
 
-    /**
-     * Convert a discovered item to a cacheable format.
-     *
-     * @param array<string, mixed> $item
-     * @return array<string, mixed>
-     */
-    protected function itemToCacheable(array $item): array
-    {
-        return [
-            'tag' => $item['tag'],
-            'className' => $item['className'],
-            'methodName' => $item['methodName'],
-        ];
+        add_shortcode($attribute->tag, $callback);
     }
 }

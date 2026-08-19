@@ -2,90 +2,54 @@
 
 declare(strict_types=1);
 
+use Studiometa\Foehn\Attributes\AsCliCommand;
 use Studiometa\Foehn\Discovery\CliCommandDiscovery;
-use Tempest\Container\GenericContainer;
 use Studiometa\Foehn\Discovery\DiscoveryLocation;
+use Tempest\Container\GenericContainer;
+use Tests\Fixtures\CliCommandFixture;
 
 beforeEach(function () {
     $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
-    $container = new GenericContainer();
-
-    $this->discovery = new CliCommandDiscovery($container);
+    $this->discovery = new CliCommandDiscovery(new GenericContainer());
 });
 
 describe('CliCommandDiscovery caching', function () {
-    it('converts items to cacheable format', function () {
-        $ref = new ReflectionMethod($this->discovery, 'addItem');
-        $ref->invoke($this->discovery, $this->location, [
-            'className' => 'App\\Console\\MakeBlockCommand',
-            'name' => 'make:block',
-            'description' => 'Create a new block',
-            'longDescription' => 'Creates a new Gutenberg block with all necessary files.',
-        ]);
+    it('keeps every item under its location namespace', function () {
+        discoverFixture($this->discovery, CliCommandFixture::class, $this->location);
 
-        $cacheableData = $this->discovery->getCacheableData();
+        $cacheData = $this->discovery->getCacheableData();
 
-        expect($cacheableData['App\\'])->toHaveCount(1);
-        expect($cacheableData['App\\'][0])->toBe([
-            'className' => 'App\\Console\\MakeBlockCommand',
-            'name' => 'make:block',
-            'description' => 'Create a new block',
-            'longDescription' => 'Creates a new Gutenberg block with all necessary files.',
-        ]);
+        expect($cacheData)->toHaveKey('App\\')->and($cacheData['App\\'])->toHaveCount(1);
     });
 
-    it('handles minimal configuration', function () {
-        $ref = new ReflectionMethod($this->discovery, 'addItem');
-        $ref->invoke($this->discovery, $this->location, [
-            'className' => 'App\\Console\\CacheClearCommand',
-            'name' => 'cache:clear',
-            'description' => 'Clear the cache',
-            'longDescription' => null,
-        ]);
+    it('restores every item unchanged through a cache file', function () {
+        discoverFixture($this->discovery, CliCommandFixture::class, $this->location);
 
-        $cacheableData = $this->discovery->getCacheableData();
+        $restored = restoreThroughCacheFile($this->discovery, new CliCommandDiscovery(new GenericContainer()));
 
-        expect($cacheableData['App\\'])->toHaveCount(1);
-        expect($cacheableData['App\\'][0]['name'])->toBe('cache:clear');
-        expect($cacheableData['App\\'][0]['description'])->toBe('Clear the cache');
-        expect($cacheableData['App\\'][0]['longDescription'])->toBeNull();
+        expect($restored->wasRestoredFromCache())
+            ->toBeTrue()
+            ->and($restored->getItems()->all())
+            ->toEqual($this->discovery->getItems()->all());
     });
 
-    it('handles multiple commands', function () {
-        $ref = new ReflectionMethod($this->discovery, 'addItem');
+    it('restores the attribute as an instance, not an array', function () {
+        discoverFixture($this->discovery, CliCommandFixture::class, $this->location);
 
-        $ref->invoke($this->discovery, $this->location, [
-            'className' => 'App\\Console\\MakePostTypeCommand',
-            'name' => 'make:post-type',
-            'description' => 'Create a post type',
-            'longDescription' => null,
-        ]);
-        $ref->invoke($this->discovery, $this->location, [
-            'className' => 'App\\Console\\MakeTaxonomyCommand',
-            'name' => 'make:taxonomy',
-            'description' => 'Create a taxonomy',
-            'longDescription' => null,
-        ]);
+        $item = restoreThroughCacheFile(
+            $this->discovery,
+            new CliCommandDiscovery(new GenericContainer()),
+        )->getItems()->all()[0];
 
-        $cacheableData = $this->discovery->getCacheableData();
-
-        expect($cacheableData['App\\'])->toHaveCount(2);
-        expect($cacheableData['App\\'][0]['name'])->toBe('make:post-type');
-        expect($cacheableData['App\\'][1]['name'])->toBe('make:taxonomy');
-    });
-
-    it('can restore from cache', function () {
-        $cachedData = [
-            [
-                'className' => 'App\\Console\\TestCommand',
-                'name' => 'test:run',
-                'description' => 'Run tests',
-                'longDescription' => 'Runs all test suites.',
-            ],
-        ];
-
-        $this->discovery->restoreFromCache(['App\\' => $cachedData]);
-
-        expect($this->discovery->wasRestoredFromCache())->toBeTrue();
+        expect($item['attribute'])
+            ->toBeInstanceOf(AsCliCommand::class)
+            ->and($item['attribute']->name)
+            ->toBe('test:run')
+            ->and($item['attribute']->description)
+            ->toBe('Run a test command')
+            ->and($item['attribute']->longDescription)
+            ->toBe('This is a long description for the test command.')
+            ->and($item['className'])
+            ->toBe(CliCommandFixture::class);
     });
 });

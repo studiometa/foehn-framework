@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace Studiometa\Foehn\Console\Commands;
 
 use Studiometa\Foehn\Attributes\AsCliCommand;
+use Studiometa\Foehn\Console\ClassFileGenerator;
 use Studiometa\Foehn\Console\CliCommandInterface;
-use Studiometa\Foehn\Console\GeneratesFiles;
+use Studiometa\Foehn\Console\GenerationRequest;
 use Studiometa\Foehn\Console\Stubs\MenuStub;
 use Studiometa\Foehn\Console\WpCli;
 
@@ -46,10 +47,9 @@ use function Tempest\Support\str;
     DOC)]
 final class MakeMenuCommand implements CliCommandInterface
 {
-    use GeneratesFiles;
-
     public function __construct(
         private readonly WpCli $cli,
+        private readonly ClassFileGenerator $generator,
     ) {}
 
     public function __invoke(array $args, array $assocArgs): void
@@ -68,30 +68,33 @@ final class MakeMenuCommand implements CliCommandInterface
         $force = ($assocArgs['force'] ?? null) !== null;
         $dryRun = ($assocArgs['dry-run'] ?? null) !== null;
 
-        $targetPath = $this->getTargetPath('Menus', $className);
-
-        if (!$dryRun && !$this->shouldGenerate($targetPath, $force)) {
-            return;
-        }
-
-        $content = $this->generateClassFile(
-            stubClass: MenuStub::class,
-            targetPath: $targetPath,
-            replacements: [
-                "'dummy-menu'" => "'{$location}'",
-                "description: 'Dummy Menu'" => "description: '{$description}'",
-                'DummyMenu' => $className,
+        $file = $this->generator->generate(new GenerationRequest(
+            stub: MenuStub::class,
+            subdirectory: 'Menus',
+            className: $className,
+            attributeArguments: [
+                'location' => $location,
+                'description' => $description,
             ],
-            dryRun: $dryRun,
-        );
+            bodyReplacements: [
+                'get' => ["'dummy-menu'" => "'{$location}'"],
+            ],
+            replacements: ['DummyMenu' => $className],
+        ));
 
         if ($dryRun) {
-            $this->displayDryRun($targetPath, (string) $content);
+            $this->cli->previewGeneratedFile($file);
 
             return;
         }
 
-        $this->cli->success("Menu created: {$this->cli->getRelativePath($targetPath)}");
+        if (!$this->generator->write($file, $force)) {
+            $this->cli->reportFileExists($file);
+
+            return;
+        }
+
+        $this->cli->success("Menu created: {$this->cli->getRelativePath($file->path)}");
         $this->cli->line('');
         $this->cli->log('Menu location registered:');
         $this->cli->log("  Location: {$location}");

@@ -39,47 +39,27 @@ final class HookDiscovery implements WpDiscovery
                 continue;
             }
 
-            $this->discoverActions($location, $method);
-            $this->discoverFilters($location, $method);
+            $this->discoverHooks($location, $method, AsAction::class);
+            $this->discoverHooks($location, $method, AsFilter::class);
         }
     }
 
     /**
-     * Discover #[AsAction] attributes on a method.
+     * Discover every #[AsAction] or #[AsFilter] attribute on a method.
+     *
+     * Both attributes carry the same three values and differ only in which
+     * WordPress function registers them, so the attribute class is the item's
+     * own discriminator — apply() reads it back rather than a stored flag.
+     *
+     * @param class-string<AsAction|AsFilter> $attributeClass
      */
-    private function discoverActions(DiscoveryLocation $location, ReflectionMethod $method): void
+    private function discoverHooks(DiscoveryLocation $location, ReflectionMethod $method, string $attributeClass): void
     {
-        $attributes = $method->getAttributes(AsAction::class);
-
-        foreach ($attributes as $attribute) {
-            $instance = $attribute->newInstance();
+        foreach ($method->getAttributes($attributeClass) as $attribute) {
             $this->addItem($location, [
-                'type' => 'action',
-                'hook' => $instance->hook,
+                'attribute' => $attribute->newInstance(),
                 'className' => $method->getDeclaringClass()->getName(),
                 'methodName' => $method->getName(),
-                'priority' => $instance->priority,
-                'acceptedArgs' => $instance->acceptedArgs,
-            ]);
-        }
-    }
-
-    /**
-     * Discover #[AsFilter] attributes on a method.
-     */
-    private function discoverFilters(DiscoveryLocation $location, ReflectionMethod $method): void
-    {
-        $attributes = $method->getAttributes(AsFilter::class);
-
-        foreach ($attributes as $attribute) {
-            $instance = $attribute->newInstance();
-            $this->addItem($location, [
-                'type' => 'filter',
-                'hook' => $instance->hook,
-                'className' => $method->getDeclaringClass()->getName(),
-                'methodName' => $method->getName(),
-                'priority' => $instance->priority,
-                'acceptedArgs' => $instance->acceptedArgs,
             ]);
         }
     }
@@ -101,36 +81,21 @@ final class HookDiscovery implements WpDiscovery
      */
     private function registerHook(array $item): void
     {
+        /** @var AsAction|AsFilter $attribute */
+        $attribute = $item['attribute'];
+
         $instance = $this->container->get($item['className']);
 
         // Create the callback
         $callback = [$instance, $item['methodName']];
 
         // Register with WordPress
-        if ($item['type'] === 'action') {
-            add_action($item['hook'], $callback, $item['priority'], $item['acceptedArgs']);
+        if ($attribute instanceof AsAction) {
+            add_action($attribute->hook, $callback, $attribute->priority, $attribute->acceptedArgs);
 
             return;
         }
 
-        add_filter($item['hook'], $callback, $item['priority'], $item['acceptedArgs']);
-    }
-
-    /**
-     * Convert a discovered item to a cacheable format.
-     *
-     * @param array<string, mixed> $item
-     * @return array<string, mixed>
-     */
-    protected function itemToCacheable(array $item): array
-    {
-        return [
-            'type' => $item['type'],
-            'hook' => $item['hook'],
-            'className' => $item['className'],
-            'methodName' => $item['methodName'],
-            'priority' => $item['priority'],
-            'acceptedArgs' => $item['acceptedArgs'],
-        ];
+        add_filter($attribute->hook, $callback, $attribute->priority, $attribute->acceptedArgs);
     }
 }

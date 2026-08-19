@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
+use Studiometa\Foehn\Discovery\DiscoveryLocation;
 use Studiometa\Foehn\Discovery\MenuDiscovery;
 use Tests\Fixtures\MenuFixture;
 use Tests\Fixtures\NoAttributeFixture;
-use Studiometa\Foehn\Discovery\DiscoveryLocation;
 
 beforeEach(function () {
     $this->location = DiscoveryLocation::app('App\\', '/tmp/test-app');
@@ -41,18 +41,11 @@ describe('MenuDiscovery', function () {
     it('can be cached and restored', function () {
         $this->discovery->discover($this->location, new ReflectionClass(MenuFixture::class));
 
-        $cacheData = $this->discovery->getCacheableData();
+        $restored = restoreThroughCacheFile($this->discovery, new MenuDiscovery());
 
-        expect($cacheData)->toHaveKey('App\\');
-        expect($cacheData['App\\'])->toHaveCount(1);
-        expect($cacheData['App\\'][0]['location'])->toBe('primary');
-        expect($cacheData['App\\'][0]['description'])->toBe('Primary Navigation');
-        expect($cacheData['App\\'][0]['className'])->toBe(MenuFixture::class);
-
-        // Restore from cache
-        $newDiscovery = new MenuDiscovery();
-        $newDiscovery->restoreFromCache($cacheData);
-
-        expect($newDiscovery->wasRestoredFromCache())->toBeTrue();
+        expect($restored->wasRestoredFromCache())
+            ->toBeTrue()
+            ->and($restored->getItems()->all())
+            ->toEqual($this->discovery->getItems()->all());
     });
 });

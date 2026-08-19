@@ -13,6 +13,7 @@ use Studiometa\Foehn\Config\FoehnConfig;
 use Studiometa\Foehn\Config\RenderApiConfig;
 use Studiometa\Foehn\Config\RestConfig;
 use Studiometa\Foehn\Config\TimberConfig;
+use Studiometa\Foehn\Console\ClassFileGenerator;
 use Studiometa\Foehn\Contracts\CacheInterface;
 use Studiometa\Foehn\Contracts\JobDispatcher;
 use Studiometa\Foehn\Contracts\ViewEngineInterface;
@@ -218,6 +219,8 @@ final class Kernel
     {
         $this->container->singleton(CacheInterface::class, static fn() => new TransientCache());
         $this->container->singleton(DiscoveryCache::class, fn() => new DiscoveryCache($this->foehnConfig));
+
+        $this->container->singleton(ClassFileGenerator::class, fn() => new ClassFileGenerator($this->appPath));
 
         $this->container->singleton(
             DiscoveryRunner::class,

@@ -2,11 +2,12 @@
 
 declare(strict_types=1);
 
+use Studiometa\Foehn\Attributes\AsMenu;
+use Studiometa\Foehn\Attributes\AsShortcode;
 use Studiometa\Foehn\Discovery\Concerns\CacheableDiscovery;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
 use Studiometa\Foehn\Discovery\DiscoveryLocation;
 use Studiometa\Foehn\Discovery\WpDiscovery;
-use Studiometa\Foehn\Discovery\WpDiscoveryItems;
 
 // Test implementation of a cacheable discovery
 final class TestCacheableDiscovery implements WpDiscovery
@@ -28,14 +29,6 @@ final class TestCacheableDiscovery implements WpDiscovery
     {
         $this->addItem($location, $item);
     }
-
-    protected function itemToCacheable(array $item): array
-    {
-        return [
-            'name' => $item['name'],
-            'value' => $item['value'],
-        ];
-    }
 }
 
 describe('CacheableDiscovery', function () {
@@ -44,65 +37,80 @@ describe('CacheableDiscovery', function () {
         $this->discovery = new TestCacheableDiscovery();
     });
 
-    it('can get cacheable data from discovered items', function () {
+    it('passes plain item values through untouched', function () {
         $this->discovery->addTestItem($this->location, [
-            'name' => 'test-item',
-            'value' => 'test-value',
-            'extra' => 'not-cached',
+            'className' => 'App\\Thing',
+            'methodName' => 'handle',
+            'nested' => ['a' => 1, 'b' => [true, null]],
         ]);
 
-        $cacheableData = $this->discovery->getCacheableData();
-
-        expect($cacheableData['App\\'])->toHaveCount(1);
-        expect($cacheableData['App\\'][0])->toBe([
-            'name' => 'test-item',
-            'value' => 'test-value',
+        expect($this->discovery->getCacheableData()['App\\'])->toBe([
+            [
+                'className' => 'App\\Thing',
+                'methodName' => 'handle',
+                'nested' => ['a' => 1, 'b' => [true, null]],
+            ],
         ]);
     });
 
-    it('can restore from cache', function () {
-        $cachedData = [
-            ['name' => 'cached-item', 'value' => 'cached-value'],
-        ];
-
-        $this->discovery->restoreFromCache(['App\\' => $cachedData]);
-
-        expect($this->discovery->wasRestoredFromCache())->toBeTrue();
-
-        $items = $this->discovery->getItems()->all();
-        expect($items)->toHaveCount(1);
-        expect($items[0]['name'])->toBe('cached-item');
-    });
-
-    it('returns discovered items when not restored from cache', function () {
+    it('encodes an attribute value and leaves its siblings alone', function () {
         $this->discovery->addTestItem($this->location, [
-            'name' => 'discovered-item',
-            'value' => 'discovered-value',
+            'attribute' => new AsMenu(location: 'primary', description: 'Primary'),
+            'className' => 'App\\Menus\\Primary',
         ]);
 
-        expect($this->discovery->wasRestoredFromCache())->toBeFalse();
+        $cached = $this->discovery->getCacheableData()['App\\'][0];
 
-        $items = $this->discovery->getItems()->all();
-        expect($items)->toHaveCount(1);
-        expect($items[0]['name'])->toBe('discovered-item');
+        expect($cached['className'])
+            ->toBe('App\\Menus\\Primary')
+            ->and($cached['attribute'])
+            ->toBe([
+                '__attribute' => AsMenu::class,
+                'args' => ['location' => 'primary', 'description' => 'Primary'],
+            ]);
     });
 
-    it('handles multiple items', function () {
-        $this->discovery->addTestItem($this->location, ['name' => 'item1', 'value' => 'v1']);
-        $this->discovery->addTestItem($this->location, ['name' => 'item2', 'value' => 'v2']);
-        $this->discovery->addTestItem($this->location, ['name' => 'item3', 'value' => 'v3']);
+    it('rebuilds every attribute in an item on restore', function () {
+        $this->discovery->addTestItem($this->location, [
+            'attribute' => new AsShortcode(tag: 'gallery'),
+            'className' => 'App\\Shortcodes\\Gallery',
+            'methodName' => 'render',
+        ]);
 
-        $cacheableData = $this->discovery->getCacheableData();
+        $item = restoreThroughCacheFile($this->discovery, new TestCacheableDiscovery())->getItems()->all()[0];
 
-        expect($cacheableData['App\\'])->toHaveCount(3);
-        expect($cacheableData['App\\'][0]['name'])->toBe('item1');
-        expect($cacheableData['App\\'][1]['name'])->toBe('item2');
-        expect($cacheableData['App\\'][2]['name'])->toBe('item3');
+        expect($item['attribute'])
+            ->toBeInstanceOf(AsShortcode::class)
+            ->and($item['attribute']->tag)
+            ->toBe('gallery')
+            ->and($item['className'])
+            ->toBe('App\\Shortcodes\\Gallery')
+            ->and($item['methodName'])
+            ->toBe('render');
+    });
+
+    it('reports whether the items came from the cache', function () {
+        $this->discovery->addTestItem($this->location, ['className' => 'App\\Thing']);
+
+        expect($this->discovery->wasRestoredFromCache())
+            ->toBeFalse()
+            ->and(restoreThroughCacheFile($this->discovery, new TestCacheableDiscovery())->wasRestoredFromCache())
+            ->toBeTrue();
+    });
+
+    it('keeps items grouped by location namespace', function () {
+        $vendor = DiscoveryLocation::app('Vendor\\', '/tmp/vendor-app');
+
+        $this->discovery->addTestItem($this->location, ['className' => 'App\\One']);
+        $this->discovery->addTestItem($this->location, ['className' => 'App\\Two']);
+        $this->discovery->addTestItem($vendor, ['className' => 'Vendor\\Three']);
+
+        $cached = $this->discovery->getCacheableData();
+
+        expect($cached['App\\'])->toHaveCount(2)->and($cached['Vendor\\'])->toHaveCount(1);
     });
 
     it('returns empty array when no items', function () {
-        $cacheableData = $this->discovery->getCacheableData();
-
-        expect($cacheableData)->toBeEmpty();
+        expect($this->discovery->getCacheableData())->toBeEmpty();
     });
 });
