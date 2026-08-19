@@ -102,9 +102,13 @@ final readonly class HeroBlock implements BlockInterface
      */
     public function compose(array $attributes, string $content, WP_Block $block): HeroContext
     {
+        // Spelled out rather than written as a chain of ?? and ?:, whose
+        // precedence is not what it reads like.
+        $subtitle = (string) ($attributes['subtitle'] ?? '');
+
         return new HeroContext(
             title: (string) ($attributes['title'] ?? ''),
-            subtitle: $attributes['subtitle'] ?? '' ?: null,
+            subtitle: $subtitle === '' ? null : $subtitle,
             background: ImageData::fromAttachmentId($attributes['backgroundId'] ?? null),
             cta: self::cta($attributes),
             height: (string) ($attributes['height'] ?? 'medium'),

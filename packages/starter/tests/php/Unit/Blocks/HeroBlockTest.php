@@ -84,6 +84,14 @@ describe('HeroBlock', function () {
         expect($result->height)->toBe('medium');
     });
 
+    it('treats an empty subtitle as no subtitle', function () {
+        // The DTO's type says the subtitle is optional, so an empty string is
+        // not a subtitle. The template checks the value, not its length.
+        $result = new HeroBlock(createFakeViewEngine())->compose(['subtitle' => ''], '', new WP_Block());
+
+        expect($result->subtitle)->toBeNull();
+    });
+
     it('render() delegates to ViewEngine', function () {
         $rendered = '';
         $view = createFakeViewEngine(renderCallback: function (string $template) use (&$rendered) {
