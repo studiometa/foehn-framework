@@ -25,6 +25,13 @@ describe('ThemeSettings', function () {
         expect($attr->capability)->toBe('manage_options');
     });
 
+    it('renders its form as a Twig template, like every other view', function () {
+        $attr = new ReflectionClass(ThemeSettings::class)->getAttributes(AsSettingsPage::class)[0]->newInstance();
+
+        expect($attr->template)->toBe('settings/theme-settings');
+        expect(dirname(__DIR__, 4) . '/theme/templates/settings/theme-settings.twig')->toBeFile();
+    });
+
     it('declares what it stores', function () {
         $settings = ThemeSettings::settings();
 

@@ -13,6 +13,7 @@ declare(strict_types=1);
  */
 
 use Studiometa\Foehn\Config\FoehnConfig;
+use Studiometa\Foehn\Contracts\ViewEngineInterface;
 use Studiometa\Foehn\Discovery;
 use Studiometa\Foehn\Discovery\CliCommandDiscovery;
 use Studiometa\Foehn\Discovery\DiscoveryRunner;
@@ -260,6 +261,16 @@ $results->true('the settings page is added under Appearance', in_array(
     'theme-settings',
     array_column($GLOBALS['submenu']['themes.php'] ?? [], 2),
     true,
+));
+
+// The form is a Twig template, like every other view in the theme. Rendering it
+// through the real view engine is the only way to know the template resolves
+// and its context reaches it — the unit suite renders through a fake.
+$results->true('the settings form renders from its Twig template', str_contains(
+    Kernel::get(ViewEngineInterface::class)->render('settings/theme-settings', [
+        'settings' => ['starter_contact_email' => 'hello@example.com'],
+    ]),
+    'hello@example.com',
 ));
 
 // ──────────────────────────────────────────────
