@@ -10,6 +10,7 @@ use Studiometa\Foehn\Blocks\AcfBlockRenderer;
 use Studiometa\Foehn\Blocks\BlockEditorAssets;
 use Studiometa\Foehn\Cache\TransientCache;
 use Studiometa\Foehn\Config\AcfConfig;
+use Studiometa\Foehn\Config\ConfigLoader;
 use Studiometa\Foehn\Config\FoehnConfig;
 use Studiometa\Foehn\Config\RenderApiConfig;
 use Studiometa\Foehn\Config\RestConfig;
@@ -216,13 +217,16 @@ final class Kernel
      */
     private function registerConfigs(): void
     {
-        // Registered through Tempest's container API, which binds a config object
-        // under its own class and its interfaces.
+        // Defaults first, so that a project only writes the config files it cares
+        // about. Kernel::boot()'s array is one of those defaults: a foehn.config.php
+        // replaces it wholesale, which is why the array is the legacy way in.
         $this->container->config(new TimberConfig());
         $this->container->config(new AcfConfig());
         $this->container->config(new RestConfig());
         $this->container->config(new RenderApiConfig());
         $this->container->config($this->config !== [] ? FoehnConfig::fromArray($this->config) : new FoehnConfig());
+
+        new ConfigLoader($this->container)->load($this->container->get(DiscoveryLocations::class)->all());
 
         /** @var FoehnConfig $foehnConfig */
         $foehnConfig = $this->container->get(FoehnConfig::class);
