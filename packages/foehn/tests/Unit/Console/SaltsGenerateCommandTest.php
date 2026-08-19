@@ -96,6 +96,45 @@ describe('salts:generate', function () {
         expect(decoct(fileperms($this->php) & 0o777))->toBe('600');
     });
 
+    it('replaces a PHP file when forced', function () {
+        ($this->command)([], ['path' => 'config/wordpress-salts.config.php']);
+        $first = file_get_contents($this->php);
+
+        ($this->command)([], ['path' => 'config/wordpress-salts.config.php', 'force' => true, 'yes' => true]);
+
+        expect(file_get_contents($this->php))->not->toBe($first);
+    });
+
+    it('refuses to replace a PHP file without being told twice', function () {
+        ($this->command)([], ['path' => 'config/wordpress-salts.config.php']);
+        $first = file_get_contents($this->php);
+
+        ($this->command)([], ['path' => 'config/wordpress-salts.config.php']);
+
+        expect(file_get_contents($this->php))->toBe($first);
+        expect(wp_stub_get_calls('wp_cli_error'))->toHaveCount(1);
+    });
+
+    it('says nothing about permissions on a file only its owner can read', function () {
+        ($this->command)([], []);
+        chmod($this->env, 0o600);
+
+        wp_stub_reset();
+        ($this->command)([], ['force' => true, 'yes' => true]);
+
+        expect(($this->logged)())->not->toContain('readable by other users');
+    });
+
+    it('says so when the keys landed in a file others can read', function () {
+        ($this->command)([], []);
+        chmod($this->env, 0o644);
+
+        wp_stub_reset();
+        ($this->command)([], ['force' => true, 'yes' => true]);
+
+        expect(($this->logged)())->toContain('readable by other users');
+    });
+
     it('takes a relative path as relative to the project', function () {
         ($this->command)([], ['path' => 'my.env']);
 

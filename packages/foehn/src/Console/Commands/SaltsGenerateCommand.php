@@ -108,11 +108,10 @@ final readonly class SaltsGenerateCommand implements CliCommandInterface
             return;
         }
 
-        if (
-            $present !== []
-            && !$this->cli->confirm('Replace the existing keys? Every user will be logged out.', $assocArgs)
-        ) {
-            return;
+        if ($present !== []) {
+            // WP-CLI ends the process when the answer is no, so there is no branch to
+            // take here: reaching the next line means it was yes.
+            $this->cli->confirm('Replace the existing keys? Every user will be logged out.', $assocArgs);
         }
 
         foreach ($salts->values as $name => $value) {
@@ -167,11 +166,8 @@ final readonly class SaltsGenerateCommand implements CliCommandInterface
             return;
         }
 
-        if (
-            is_file($path)
-            && !$this->cli->confirm('Replace the existing keys? Every user will be logged out.', $assocArgs)
-        ) {
-            return;
+        if (is_file($path)) {
+            $this->cli->confirm('Replace the existing keys? Every user will be logged out.', $assocArgs);
         }
 
         $directory = dirname($path);
