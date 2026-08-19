@@ -54,7 +54,7 @@ The goal — _a Føhn site is deployable where local disk does not persist, and 
 
 The generated `wp-config.php` already loads `config/wordpress.config.php` and `config/wordpress.{env}.config.php`, which looks like the natural home for these constants and is not. **Those files are loaded before `.env`**, so a `define()` there reading `$_ENV` sees only real environment variables. That happens to work in a container and silently fails in ddev, which is the worst possible split. The constants belong in the installer's own block, after dotenv, where every other constant already is.
 
-This is worth fixing on its own merits — project config that cannot read the project's `.env` is a trap regardless of S3 — but it is a separate change and it is not a prerequisite for this one.
+**Fixed on 2026-08-20**, separately from this spec, since project config that cannot read the project's `.env` is a trap regardless of S3: `.env` and the `$env()` helper now load before the config files. Either home works now, and §3.1 keeps the constants in the installer's block anyway — a project should not have to write a config file to get a documented deployment mode.
 
 ## 3. The work
 

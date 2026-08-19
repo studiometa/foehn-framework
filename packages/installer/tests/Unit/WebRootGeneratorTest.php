@@ -325,6 +325,66 @@ describe('WebRootGenerator', function () {
         expect(implode("\n", $output))->not->toContain('wp foehn salts:generate');
     });
 
+    it('loads .env before the project configuration', function () {
+        linkRealAutoloader($this->root);
+
+        mkdir($this->root . '/config', 0o777, true);
+        file_put_contents(
+            $this->root . '/config/wordpress.config.php',
+            "<?php echo 'BASE:' . \$env('FOEHN_PROBE', 'nothing') . PHP_EOL;\n",
+        );
+
+        ($this->generate)();
+
+        file_put_contents($this->root . '/.env', "FOEHN_PROBE=from-dotenv\n", FILE_APPEND);
+
+        // The config files used to run before .env was loaded, so a project could not
+        // read its own environment from them.
+        expect(runWpConfig($this->root))->toContain('BASE:from-dotenv');
+    });
+
+    it('selects the environment-specific config from .env', function () {
+        linkRealAutoloader($this->root);
+
+        mkdir($this->root . '/config', 0o777, true);
+        file_put_contents(
+            $this->root . '/config/wordpress.development.config.php',
+            "<?php echo 'DEVELOPMENT' . PHP_EOL;\n",
+        );
+        file_put_contents(
+            $this->root . '/config/wordpress.production.config.php',
+            "<?php echo 'PRODUCTION' . PHP_EOL;\n",
+        );
+
+        ($this->generate)();
+
+        file_put_contents($this->root . '/.env', "WP_ENVIRONMENT_TYPE=development\n", FILE_APPEND);
+
+        // This used to read getenv(), which .env does not populate, so a project that
+        // set WP_ENVIRONMENT_TYPE there silently got the production config while the
+        // security-keys guard below read the same variable and saw development.
+        $output = runWpConfig($this->root);
+
+        expect($output)->toContain('DEVELOPMENT');
+        expect($output)->not->toContain('PRODUCTION');
+    });
+
+    it('still defines the constants after the project configuration has run', function () {
+        linkRealAutoloader($this->root);
+
+        mkdir($this->root . '/config', 0o777, true);
+        file_put_contents($this->root . '/config/wordpress.config.php', "<?php // nothing\n");
+
+        ($this->generate)();
+
+        // $env is a closure the defines below depend on. The config block used to
+        // reuse the name for the environment string, which would now overwrite it.
+        $output = runWpConfig($this->root, ['WP_ENVIRONMENT_TYPE' => 'development']);
+
+        expect($output)->not->toContain('not callable');
+        expect($output)->toContain('wp-settings.php');
+    });
+
     it('clears a discovery cache left by the previous release', function () {
         $cache = $this->root . '/web/wp-content/cache/foehn/discovery';
         mkdir($cache, 0o777, true);

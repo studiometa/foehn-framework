@@ -147,6 +147,20 @@ final class WebRootGenerator
             // Load Composer autoloader
             require_once dirname(__DIR__) . '/vendor/autoload.php';
 
+            // Load .env file (vlucas/phpdotenv is a dependency of studiometa/foehn).
+            // This runs before the project configuration below, so config/*.config.php
+            // can read the project's own environment through $env().
+            if (file_exists(dirname(__DIR__) . '/.env')) {
+                $dotenv = Dotenv\Dotenv::createImmutable(dirname(__DIR__));
+                $dotenv->safeLoad();
+            }
+
+            // Environment helper
+            $env = function (string $key, mixed $default = null): mixed {
+                $value = $_ENV[$key] ?? $_SERVER[$key] ?? getenv($key);
+                return $value !== false ? $value : $default;
+            };
+
             PHP;
 
         // Add config loading if config directory exists
@@ -163,8 +177,8 @@ final class WebRootGenerator
                 }
 
                 // Load environment-specific overrides
-                \$env = getenv('WP_ENVIRONMENT_TYPE') ?: 'production';
-                \$envConfig = \$configDir . "/wordpress.{\$env}.config.php";
+                \$environment = \$env('WP_ENVIRONMENT_TYPE', 'production');
+                \$envConfig = \$configDir . "/wordpress.{\$environment}.config.php";
                 if (file_exists(\$envConfig)) {
                     require_once \$envConfig;
                 }
@@ -173,18 +187,6 @@ final class WebRootGenerator
         }
 
         $content .= <<<PHP
-
-            // Load .env file (vlucas/phpdotenv is a dependency of studiometa/foehn)
-            if (file_exists(dirname(__DIR__) . '/.env')) {
-                \$dotenv = Dotenv\\Dotenv::createImmutable(dirname(__DIR__));
-                \$dotenv->safeLoad();
-            }
-
-            // Environment helpers
-            \$env = function (string \$key, mixed \$default = null): mixed {
-                \$value = \$_ENV[\$key] ?? \$_SERVER[\$key] ?? getenv(\$key);
-                return \$value !== false ? \$value : \$default;
-            };
 
             // Database
             define('DB_NAME', \$env('DB_NAME', 'wordpress'));
