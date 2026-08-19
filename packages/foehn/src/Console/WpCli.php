@@ -136,4 +136,39 @@ final class WpCli
 
         return $absolutePath;
     }
+
+    /**
+     * Show what a generated file would contain, without writing it.
+     */
+    public function previewGeneratedFile(GeneratedFile $file, int $maxLines = 50): void
+    {
+        $this->line('');
+        $this->log($this->colorize('%YWould create:%n'));
+        $this->log("  → {$this->getRelativePath($file->path)}");
+        $this->line('');
+        $this->log($this->colorize('%YWith content:%n'));
+        $this->line('');
+
+        $lines = explode("\n", $file->contents);
+
+        foreach (array_slice($lines, 0, $maxLines) as $line) {
+            $this->line('  ' . $line);
+        }
+
+        if (count($lines) > $maxLines) {
+            $this->line('');
+            $this->log($this->colorize('%C  ... (' . (count($lines) - $maxLines) . ' more lines)%n'));
+        }
+    }
+
+    /**
+     * Report that a generated file already exists and was left alone.
+     */
+    public function reportFileExists(GeneratedFile $file): void
+    {
+        $this->error(
+            "File already exists: {$this->getRelativePath($file->path)}\n" . 'Use --force to overwrite.',
+            exit: false,
+        );
+    }
 }
