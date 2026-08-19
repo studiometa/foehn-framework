@@ -1,0 +1,55 @@
+{#
+  The body of a settings page, and nothing around it: the heading, the form
+  tag, the nonce and the submit button come from the framework.
+
+  `settings` holds the current value of each declared setting, typed as the page
+  declared it — so `settings.demo_show_banner` is a boolean, not the empty
+  string WordPress stores an unchecked box as.
+
+  The `name` of each input is the option name. There is no namespacing in the
+  Settings API, which is why they are prefixed.
+#}
+<table class="form-table" role="presentation">
+  <tr>
+    <th scope="row">
+      <label for="demo_contact_email">{{ __('Contact email', 'demo-theme') }}</label>
+    </th>
+    <td>
+      <input
+        type="email"
+        id="demo_contact_email"
+        name="demo_contact_email"
+        class="regular-text"
+        value="{{ settings.demo_contact_email }}" />
+    </td>
+  </tr>
+
+  <tr>
+    <th scope="row">{{ __('Banner', 'demo-theme') }}</th>
+    <td>
+      <label for="demo_show_banner">
+        <input
+          type="checkbox"
+          id="demo_show_banner"
+          name="demo_show_banner"
+          value="1"
+          {{ settings.demo_show_banner ? 'checked' : '' }} />
+        {{ __('Show the announcement banner', 'demo-theme') }}
+      </label>
+    </td>
+  </tr>
+
+  <tr>
+    <th scope="row">
+      <label for="demo_posts_per_archive">{{ __('Posts per archive', 'demo-theme') }}</label>
+    </th>
+    <td>
+      <input
+        type="number"
+        id="demo_posts_per_archive"
+        name="demo_posts_per_archive"
+        min="1"
+        value="{{ settings.demo_posts_per_archive }}" />
+    </td>
+  </tr>
+</table>

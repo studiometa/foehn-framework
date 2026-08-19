@@ -100,9 +100,13 @@ jobs:
       - name: Run the ACF test suite with coverage
         run: composer test:coverage:acf
 
-      # The starter's own suite covers the example theme and has to stay green too.
+      # The starter's own suite covers the theme skeleton, and the demo's covers
+      # the features. Both have to stay green.
       - name: Run the starter test suite
         run: composer test:starter
+
+      - name: Run the demo test suite
+        run: composer test:demo
 
       # The installer writes wp-config.php and the web root into every project
       # created from the starter, so it gets its own suite.
@@ -201,8 +205,8 @@ jobs:
       - name: Build
         run: npm run -w @studiometa/foehn-vite-plugin build
 
-  starter-scripts:
-    name: Starter - Browser Tests
+  demo-scripts:
+    name: Demo - Browser Tests
     runs-on: ubuntu-latest
     # The browser install is the only step here that reaches the network for
     # anything substantial; without a bound, a stall on it hangs the run for hours.
@@ -226,9 +230,57 @@ jobs:
         run: npx playwright install chromium
 
       - name: Run tests
-        run: npm run -w @studiometa/foehn-starter test:run
+        run: npm run -w @studiometa/foehn-demo test:run
 
-  integration:
+  integration-demo:
+    name: Integration - Demo in WordPress
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.5"
+          tools: composer:v2
+
+      # ddev mounts packages/demo alone, so Composer inside the container cannot
+      # read path repositories pointing outside it. The install runs here instead,
+      # and the container picks up the vendor directory that comes out of it.
+      - name: Point the demo at this checkout of the packages
+        working-directory: packages/demo
+        run: |
+          composer config repositories.foehn '{"type":"path","url":"../foehn","options":{"symlink":false}}'
+          composer config repositories.foehn-installer '{"type":"path","url":"../installer","options":{"symlink":false}}'
+          composer require --no-update studiometa/foehn:@dev studiometa/foehn-installer:@dev
+
+      - name: Install demo dependencies
+        working-directory: packages/demo
+        run: |
+          cp .env.example .env
+          composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Start ddev
+        uses: ddev/github-action-setup-ddev@v1
+        with:
+          ddevDir: packages/demo
+
+      - name: Run the smoke test
+        working-directory: packages/demo
+        run: ./tests/smoke/run.sh
+
+      # The cache is a deployment step, and a warm cache is a different code path:
+      # items are restored rather than scanned. The site has to serve either way.
+      - name: Generate the discovery cache and test again
+        working-directory: packages/demo
+        run: |
+          ddev exec 'cd /var/www/html && wp foehn discovery:generate'
+          ./tests/smoke/run.sh
+
+  # The starter has almost nothing in it, which is the point — and exactly why it
+  # needs its own run. What breaks a starting point is the boot, not a feature, and
+  # a project created from it has no demo theme to fall back on.
+  integration-starter:
     name: Integration - Starter in WordPress
     runs-on: ubuntu-latest
     steps:
@@ -240,9 +292,6 @@ jobs:
           php-version: "8.5"
           tools: composer:v2
 
-      # ddev mounts packages/starter alone, so Composer inside the container cannot
-      # read path repositories pointing outside it. The install runs here instead,
-      # and the container picks up the vendor directory that comes out of it.
       - name: Point the starter at this checkout of the packages
         working-directory: packages/starter
         run: |
@@ -265,8 +314,6 @@ jobs:
         working-directory: packages/starter
         run: ./tests/smoke/run.sh
 
-      # The cache is a deployment step, and a warm cache is a different code path:
-      # items are restored rather than scanned. The site has to serve either way.
       - name: Generate the discovery cache and test again
         working-directory: packages/starter
         run: |

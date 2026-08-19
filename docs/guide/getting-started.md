@@ -77,7 +77,8 @@ final class ThemeHooks
 
 ## Next Steps
 
-1. **New project?** Start with the [Starter Theme](./starter-theme) — get a full working setup in minutes
-2. **Existing theme?** Follow the [Manual Installation](./installation) guide
-3. Learn about [Hooks](./hooks), [Post Types](./post-types), and [Query Posts](./querying-posts)
-4. Build [ACF Blocks](./acf-blocks) with [Arrayable DTOs](./arrayable-dtos)
+1. **New project?** Start with the [Starter Theme](./starter-theme) — a working WordPress theme in minutes, with nothing in it you have to delete
+1. **Want to see everything first?** Read the [Demo Project](./demo) — one worked example of every attribute, and the theme the end-to-end tests run against
+1. **Existing theme?** Follow the [Manual Installation](./installation) guide
+1. Learn about [Hooks](./hooks), [Post Types](./post-types), and [Query Posts](./querying-posts)
+1. Build [ACF Blocks](./acf-blocks) with [Arrayable DTOs](./arrayable-dtos)

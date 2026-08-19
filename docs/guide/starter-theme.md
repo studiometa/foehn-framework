@@ -1,6 +1,8 @@
 # Starter Theme
 
-The Føhn Starter Theme is a complete WordPress theme demonstrating all framework features. It's the fastest way to start a new Føhn project.
+`studiometa/foehn-starter` is the minimum a new project needs: the boot, the configuration, the templates a theme cannot render without, and the front-end build. Nothing else.
+
+That is deliberate. A starting point you delete half of is worse than one you add to, so the demonstrations live in [the demo project](/guide/demo) — every attribute the framework ships, in a theme you can read and run.
 
 ## Quick Start
 
@@ -45,21 +47,18 @@ Then point your web server's document root to the `web/` directory.
 my-project/
 ├── theme/                      # WordPress theme (versioned)
 │   ├── app/
-│   │   ├── Blocks/             # ACF & native blocks
-│   │   ├── ContextProviders/   # Global context providers
-│   │   ├── Controllers/        # Template controllers
-│   │   ├── Data/               # DTOs for typed context
-│   │   ├── Hooks/              # WordPress hooks
-│   │   ├── ImageSizes/         # Custom image sizes
-│   │   ├── Menus/              # Navigation menus
-│   │   ├── Models/             # Custom post types
-│   │   ├── Taxonomies/         # Custom taxonomies
+│   │   ├── ContextProviders/   # GlobalContextProvider — data every template gets
+│   │   ├── Controllers/        # single, archive, search, 404
+│   │   ├── Hooks/              # theme supports, excerpt length
+│   │   ├── Menus/              # header, footer, legal
 │   │   └── foehn.config.php    # Framework configuration
+│   ├── assets/
+│   │   ├── css/app.css         # Tailwind entry point
+│   │   └── js/app.js           # js-toolkit entry point
 │   ├── templates/              # Twig templates
-│   │   ├── blocks/             # Block templates
-│   │   ├── components/         # Reusable components
-│   │   ├── layouts/            # Base layouts
-│   │   └── pages/              # Page templates
+│   │   ├── layouts/base.twig
+│   │   ├── pages/              # single, archive, search, 404
+│   │   └── components/         # header, footer, card, pagination
 │   ├── functions.php           # Single boot line
 │   └── style.css               # Theme header
 │
@@ -69,125 +68,40 @@ my-project/
 │   └── wp-config.php           # Generated config
 │
 ├── .ddev/                      # DDEV configuration
+├── vite.config.js              # Vite, with @studiometa/foehn-vite-plugin
 ├── .env                        # Environment variables
 └── composer.json               # Dependencies
 ```
 
 ## What's Included
 
-### Custom Post Types
+Every class in `theme/app/` is one a theme needs before it renders anything:
 
-**Product** (`app/Models/Product.php`)
+| Class               | Why it is here                                                       |
+| ------------------- | -------------------------------------------------------------------- |
+| `Controllers/`      | Answer WordPress's template hierarchy — single, archive, search, 404 |
+| `Menus/`            | The three locations `header.twig` and `footer.twig` read             |
+| `ContextProviders/` | Puts `current_year` and `is_home` in every template                  |
+| `Hooks/ThemeHooks`  | Theme supports, excerpt length and more                              |
+| `foehn.config.php`  | The discovery cache, and the framework's cleanup and security hooks  |
 
-```php
-#[AsPostType(
-    name: 'product',
-    singular: 'Produit',
-    plural: 'Produits',
-    public: true,
-    hasArchive: true,
-    menuIcon: 'dashicons-cart',
-)]
-final class Product extends TimberPost implements ConfiguresPostType
-{
-    public function price(): ?float { /* ... */ }
-    public function formattedPrice(): string { /* ... */ }
-    public function isOnSale(): bool { /* ... */ }
-}
-```
-
-**Testimonial** (`app/Models/Testimonial.php`) — Customer reviews with ratings.
-
-### Custom Taxonomies
-
-- **ProductCategory** — Hierarchical product categories
-- **ProductTag** — Flat tags for products
-
-### Template Controllers
-
-Controllers handle WordPress template hierarchy with dependency injection. The `handle()` method receives a typed `TemplateContext` object:
-
-```php
-use Studiometa\Foehn\Views\TemplateContext;
-
-#[AsTemplateController(['single', 'single-*'])]
-final readonly class SingleController implements TemplateControllerInterface
-{
-    public function __construct(
-        private ViewEngineInterface $view,
-    ) {}
-
-    public function handle(TemplateContext $context): string
-    {
-        $post = $context->post; // Typed ?Post with IDE support
-
-        return $this->view->renderFirst([
-            "pages/single-{$post?->post_type}-{$post?->slug}",
-            "pages/single-{$post?->post_type}",
-            'pages/single',
-        ], $context);
-    }
-}
-```
-
-Included controllers:
-
-- **SingleController** — Single posts/pages
-- **ArchiveController** — Archives, categories, tags, front page
-- **SearchController** — Search results
-- **Error404Controller** — 404 errors
-
-### Context Providers
-
-Global context available on all templates:
-
-```php
-use Studiometa\Foehn\Views\TemplateContext;
-
-#[AsContextProvider('*')]
-final class GlobalContextProvider implements ContextProviderInterface
-{
-    public function provide(TemplateContext $context): TemplateContext
-    {
-        // Note: site, user, post, posts are already in TemplateContext
-        // Menus are auto-injected by MenuDiscovery
-        return $context
-            ->with('current_year', date('Y'))
-            ->with('is_home', is_front_page());
-    }
-}
-```
-
-### Blocks
-
-**Hero Block** (`app/Blocks/HeroBlock.php`) — Full-width banner demonstrating:
-
-- A native block with no editor JavaScript: the sidebar controls come from the attribute schema alone
-- Typed DTO context (`HeroContext`), returned from `compose()` instead of a plain array
-- `ImageData` and `LinkData` DTOs
-
-The starter needs no plugin to run. Custom fields are declared with [`#[AsPostMeta]`](/api/as-post-meta) — see `app/Models/Product.php` — which gives a key a REST schema and makes it bindable. [ACF](./acf-blocks.md) is a separate package a project adds when it wants the editing UI.
-
-### Menus & Image Sizes
-
-- **Menus**: Header, Footer, Legal
-- **Image Sizes**: Card (400×300), Hero (1920×800)
+There are no post types, blocks, taxonomies, settings pages or bindings. Add your own with the [`make:` commands](/guide/cli-commands), or copy one from [the demo](/guide/demo).
 
 ### Security & Cleanup Hooks
 
-Pre-configured in `foehn.config.php`:
+`theme/app/foehn.config.php` opts into the framework's own:
 
 ```php
 return new FoehnConfig(
     discoveryCacheStrategy: DiscoveryCacheStrategy::FULL,
     hooks: [
-        CleanHeadTags::class,      // Remove unnecessary <head> tags
-        DisableEmoji::class,       // Remove emoji scripts/styles
-        DisableOembed::class,      // Remove oEmbed discovery
-        DisableVersionDisclosure::class, // Hide WP version
-        DisableXmlRpc::class,      // Disable XML-RPC
-        GenericLoginErrors::class, // Prevent username enumeration
-        YouTubeNoCookieHooks::class, // YouTube no-cookie embeds
+        CleanHeadTags::class,             // Remove unnecessary <head> tags
+        DisableEmoji::class,              // Remove emoji scripts and styles
+        DisableOembed::class,             // Remove oEmbed discovery
+        DisableVersionDisclosure::class,  // Hide the WordPress version
+        DisableXmlRpc::class,             // Disable XML-RPC and pingbacks
+        GenericLoginErrors::class,        // Hide username enumeration on login
+        YouTubeNoCookieHooks::class,      // Use the no-cookie YouTube domain
     ],
 );
 ```
@@ -256,7 +170,8 @@ For production:
 
 ## Next Steps
 
-- Learn about [Post Types](./post-types.md) to customize Product/Testimonial
+- Read [the demo](/guide/demo) for one worked example of every attribute
+- Learn about [Post Types](./post-types.md) to add your first one
 - Declare custom fields with [#[AsPostMeta]](/api/as-post-meta), or add [ACF](./acf-blocks.md) when you want its editing UI
 - Configure [Template Controllers](./template-controllers.md) for complex layouts
 - Review [Theme Conventions](./theme-conventions.md) for best practices
