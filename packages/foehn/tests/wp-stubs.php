@@ -22,6 +22,7 @@ function wp_stub_reset(): void
     $GLOBALS['wp_stub_options'] = [];
     $GLOBALS['wp_stub_attachments'] = [];
     $GLOBALS['wp_stub_post_meta'] = [];
+    $GLOBALS['wp_stub_post_fields'] = [];
     if (!function_exists('wp_get_environment_type')) {
         function wp_get_environment_type(): string
         {
@@ -165,10 +166,15 @@ if (!class_exists('WP_Block')) {
          * @param array<string, mixed> $attributes
          * @param array<int, mixed> $inner_blocks
          */
+        /**
+         * @param array<string, mixed> $context Block context, which is what a
+         *   binding source asked for through `uses_context`
+         */
         public function __construct(
             public array $attributes = [],
             public string $name = '',
             public array $inner_blocks = [],
+            public array $context = [],
         ) {}
     }
 }
@@ -990,6 +996,39 @@ if (!function_exists('absint')) {
 }
 
 // ──────────────────────────────────────────────
+// Block bindings
+// ──────────────────────────────────────────────
+
+if (!function_exists('get_post_field')) {
+    function get_post_field(string $field, int|WP_Post $post = 0, string $context = 'display'): string
+    {
+        $id = $post instanceof WP_Post ? $post->ID : $post;
+
+        return (string) ($GLOBALS['wp_stub_post_fields'][$id][$field] ?? '');
+    }
+}
+
+if (!function_exists('wp_strip_all_tags')) {
+    function wp_strip_all_tags(string $text, bool $removeBreaks = false): string
+    {
+        $text = (string) preg_replace('@<(script|style)[^>]*?>.*?</\\1>@si', '', $text);
+        $text = strip_tags($text);
+
+        return trim($text);
+    }
+}
+
+if (!function_exists('register_block_bindings_source')) {
+    /**
+     * @param array<string, mixed> $sourceProperties
+     */
+    function register_block_bindings_source(string $sourceName, array $sourceProperties): void
+    {
+        wp_stub_record('register_block_bindings_source', compact('sourceName', 'sourceProperties'));
+    }
+}
+
+// ──────────────────────────────────────────────
 // Settings API
 // ──────────────────────────────────────────────
 
@@ -1498,3 +1537,4 @@ $GLOBALS['wp_stub_user_can'] = [];
 $GLOBALS['wp_stub_nav_menus'] = [];
 $GLOBALS['wp_stub_locale'] = 'en_US';
 $GLOBALS['wp_stub_environment_type'] = 'production';
+$GLOBALS['wp_stub_post_fields'] = [];
