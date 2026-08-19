@@ -1,6 +1,10 @@
 # Discovery Cache
 
-Føhn uses PHP reflection to discover attributes at runtime. While this provides a great developer experience, it can add overhead in production. The discovery cache stores discovery results to avoid runtime reflection.
+Føhn uses PHP reflection to discover attributes at runtime. While this provides a great developer experience, it can add overhead in production: the scan covers your theme's app directory _and_ the framework package, which is where its Twig extensions and CLI commands come from. The discovery cache stores discovery results to avoid that reflection.
+
+::: tip
+`wp foehn discovery:generate` is a deployment step. With caching enabled but no cache written, every request scans from scratch.
+:::
 
 ## Configuration
 
@@ -203,15 +207,15 @@ Kernel::boot(__DIR__ . '/app', [
 
 ## How It Works
 
-1. **Without cache**: On each request, Føhn scans all PHP files in your app directory, reflecting on classes to find attributes.
+1. **Without cache**: on each request, Føhn reflects over the classes of every discovery location — your app directory and every installed package that opts into discovery.
 
-2. **With cache**: Discovery results are stored as a PHP array file. On subsequent requests, this file is loaded directly (benefiting from PHP's opcode cache).
+2. **With cache**: each location's results are stored, and a location that is cached is not scanned at all. This is why `discovery:status` reports how many of them are warm rather than a single yes or no.
 
-3. **Cache invalidation**: The cache stores the configured strategy. If you change strategies, the cache is automatically invalidated.
+3. **Cache invalidation**: nothing invalidates itself. Regenerate the cache whenever the code changes — that is what makes it a deployment step. A cache written by a version of Føhn whose attributes have a different shape is ignored rather than half-restored.
 
 ### What's Cached
 
-The cache stores serialized discovery data for:
+Everything a discovery found, as the attribute instance that produced it plus the reflection facts that are not in the attribute — the class name, a method name, whether the class implements an interface. Values derived from an attribute are computed when the item is applied, not stored:
 
 - Hook registrations (actions/filters)
 - Post types and taxonomies
@@ -222,34 +226,11 @@ The cache stores serialized discovery data for:
 - REST routes
 - Shortcodes
 - CLI commands
+- Twig extensions
 
 ### Cache Format
 
-Cache files are stored as executable PHP for opcode caching:
-
-```php
-<?php
-
-declare(strict_types=1);
-
-// Auto-generated discovery cache - do not edit
-// Generated: 2024-01-15 10:30:00
-
-return [
-    'Studiometa\\Foehn\\Discovery\\HookDiscovery' => [
-        [
-            'type' => 'action',
-            'hook' => 'init',
-            'className' => 'App\\Hooks\\ThemeHooks',
-            'methodName' => 'onInit',
-            'priority' => 10,
-            'acceptedArgs' => 1,
-        ],
-        // ...
-    ],
-    // ...
-];
-```
+Entries are written by `symfony/cache` as executable PHP, one per discovery location, so the opcode cache holds them. The files are an implementation detail: read them with `discovery:status`, and rewrite them with `discovery:generate`, rather than editing them.
 
 ## Troubleshooting
 
