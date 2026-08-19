@@ -53,6 +53,44 @@ function removeDirectory(string $directory): void
 }
 
 /**
+ * Give a generated project a `vendor/autoload.php` that loads this monorepo's.
+ *
+ * The generated `wp-config.php` is only worth executing when the classes it
+ * requires are loadable — `Dotenv\Dotenv` above all, since the order in which
+ * it runs is the thing under test.
+ */
+function linkRealAutoloader(string $root): void
+{
+    $loader = dirname(new ReflectionClass(Composer\Autoload\ClassLoader::class)->getFileName(), 2) . '/autoload.php';
+
+    if (!is_dir($root . '/vendor')) {
+        mkdir($root . '/vendor', 0o777, true);
+    }
+
+    file_put_contents($root . '/vendor/autoload.php', '<?php require ' . var_export($loader, true) . ';');
+}
+
+/**
+ * Run a generated `wp-config.php` and return everything it printed.
+ *
+ * It always ends by failing on WordPress being absent; what comes before that is
+ * the interesting part.
+ */
+function runWpConfig(string $root, array $environment = []): string
+{
+    $prefix = '';
+
+    foreach ($environment as $key => $value) {
+        $prefix .= $key . '=' . escapeshellarg((string) $value) . ' ';
+    }
+
+    $output = [];
+    exec($prefix . 'php ' . escapeshellarg($root . '/web/wp-config.php') . ' 2>&1', $output);
+
+    return implode("\n", $output);
+}
+
+/**
  * An IO that records what the installer reported, so tests can assert on the
  * warnings a silent skip would otherwise hide.
  */
