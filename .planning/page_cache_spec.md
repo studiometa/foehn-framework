@@ -21,6 +21,9 @@ Three properties define the feature:
 | Invalidation         | Targeted purge, full-flush triggers, configurable TTL, cron sweep, and a manual flush command — all four. |
 | Default state        | Disabled. Enabled per environment through `page-cache.production.config.php`.                             |
 | Where the code lives | `studiometa/foehn` core (`src/PageCache/`), plus installer changes for the drop-in.                       |
+| Query args           | Marketing args ignored; an allowlist keyed in canonical order; anything else bypasses.                    |
+
+**Prior art we are copying rather than reinventing:** `.ddev/nginx/prod-wp-rocket.conf` in `packages/wordpress/wordpress-project` (rocket-nginx 3.0.2, adapted for the `web/wp/` layout). It is a server-level include that works unchanged in ddev and in production, and its structure — bypass flag, reason variable, single `rewrite … last` — is what §5.1 reproduces. Its ignored-args list is adopted wholesale in §3.
 
 ## 2. Directory layout and cache key
 
@@ -38,13 +41,44 @@ Three properties define the feature:
 - reject a segment longer than 200 bytes, or a total longer than 512
 - after building the absolute path, require `realpath()` of its parent to sit inside the cache root
 
-On write, `/foo` and `/foo/` both map to `…/foo/index.html`. On read, two candidates are tried (`${uri}index.html` and `${uri}/index.html`) so both permalink styles hit without a redirect round-trip.
+The trailing slash is dropped by every reader before the path is built, so `/foo` and `/foo/` map to one file (`…/foo/index.html`) and both permalink styles hit without depending on a canonical redirect. `/` maps to `…/{host}/index.html`.
 
-The `index.html` filename reserves a variant slot (`index-{variant}.html`) for device or consent variants. **No variants ship in v1.**
+nginx derives this from `$uri`, not `$request_uri`: `$uri` is already decoded and already stripped of the query string, which is exactly the string §2 defines. Using `$request_uri` — as a stock rocket-nginx config does — would key accented URLs under their percent-encoded name and never match what PHP wrote.
 
 ### Query strings
 
-Args listed in `ignoredQueryArgs` are stripped before keying, so `?utm_source=…` still hits the cache. **Any remaining query string is a bypass.** Keyed query args are deliberately out of scope: nginx cannot compute a hash, so supporting them would mean the drop-in and the server snippet disagreeing about which file to read — the exact failure this design refuses. Pagination is unaffected, because WordPress paginates on `/page/2/` paths.
+Three classes of argument, and every argument in a request falls into exactly one:
+
+| Class         | Config             | Effect                                                                        |
+| ------------- | ------------------ | ----------------------------------------------------------------------------- |
+| **Ignored**   | `ignoredQueryArgs` | Dropped from the key. `?utm_source=newsletter` hits the same file as no args. |
+| **Cacheable** | `cacheQueryArgs`   | Part of the key, in canonical order.                                          |
+| Anything else | —                  | Bypass. PHP decides.                                                          |
+
+Cacheable args land in the filename, which is where **order stops mattering**:
+
+```
+{path}/index.html                        # no args, or only ignored args
+{path}/index__lang=fr&page=2&.html       # ?page=2&lang=fr — and ?lang=fr&page=2
+```
+
+The key is not built by reading the query string left to right. Each reader walks `cacheQueryArgs` **in a fixed sorted order** and appends the value it finds for that name, which nginx can do because `$arg_page` is positional-independent. `?foo=1&bar=2` and `?bar=2&foo=1` therefore produce one filename in all three readers, with no sorting primitive needed. The trailing `&` is kept on the last pair as well — nginx cannot trim a variable, so the format keeps the separator rather than making PHP and nginx disagree about it.
+
+Two rules exist because the readers must agree exactly, and are the same in all three:
+
+- **An empty value counts as absent.** `?page=` keys as no args.
+- **A repeated cacheable arg is a bypass.** nginx's `$arg_page` returns the first occurrence, PHP's `$_GET` the last. Rather than pick a winner, `?page=1&page=2` goes to PHP.
+
+Each cacheable arg carries a validation pattern, because its value becomes part of a filesystem path:
+
+```php
+cacheQueryArgs: ['page' => '^[0-9]{1,6}$', 'lang' => '^[a-z]{2}$'],
+cacheQueryArgs: ['page', 'lang'],   // shorthand: ^[A-Za-z0-9_.-]{1,64}$
+```
+
+A present-but-invalid value is a bypass. `cache:config` refuses to generate a snippet whose worst-case filename could exceed 255 bytes, so no reader needs a runtime length check.
+
+Pagination mostly does not need this at all — WordPress paginates on `/page/2/` paths — but filtered archives, `lang`, and print views do.
 
 ## 3. Configuration
 
@@ -74,12 +108,27 @@ final readonly class PageCacheConfig
         /** Environments where caching is allowed at all. */
         public array $environments = ['production'],
         /** A request carrying one of these cookie prefixes is never served or written. */
-        public array $bypassCookies = ['wordpress_logged_in_', 'comment_author_', 'wp-postpass_'],
-        /** Stripped before keying, so tracking parameters still hit. */
+        public array $bypassCookies = [
+            'wordpress_logged_in_', 'wp-postpass_', 'comment_author_', 'comment_author_email_',
+            'woocommerce_items_in_cart', 'woocommerce_cart_hash',
+        ],
+        /** Dropped from the key, so a campaign link still hits. */
         public array $ignoredQueryArgs = [
             'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'utm_id',
-            'gclid', 'fbclid', 'msclkid', 'mc_cid', 'mc_eid', '_ga', 'ref',
+            'utm_source_platform', 'utm_creative_format', 'utm_marketing_tactic', 'utm_expid',
+            'mtm_source', 'mtm_medium', 'mtm_campaign', 'mtm_keyword', 'mtm_cid', 'mtm_content',
+            'gclid', 'gclsrc', 'gbraid', 'wbraid', 'campaignid', 'adgroupid', 'adid', 'ef_id',
+            'fbclid', 'fb_action_ids', 'fb_action_types', 'fb_source',
+            'msclkid', 'sscid', 'mc_cid', 'mc_eid', '_ga', '_ke', 'usqp', 'ref',
         ],
+        /**
+         * Args that change the page and are therefore part of the key, each with
+         * the pattern its value must match. A list without patterns falls back to
+         * ^[A-Za-z0-9_.-]{1,64}$.
+         *
+         * @var array<string, string>|list<string>
+         */
+        public array $cacheQueryArgs = [],
         /** URL path prefixes never cached. */
         public array $excludedPaths = [],
         /** Response bodies containing one of these substrings are not cached. */
@@ -100,12 +149,12 @@ Registration is a single switch: `Kernel::bootstrap()` wires the recorder and th
 
 `onFlush(string $body): string` returns the body untouched and, when the response is eligible, writes it. Eligibility — **all** must hold:
 
-| Class    | Condition                                                                                                                                                                                                                                                                                                         |
-| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Request  | method is `GET`; `$_POST` empty; host matches `WP_HOME`; path validates; no query string after stripping; no `bypassCookies` prefix present; path not in `excludedPaths`                                                                                                                                          |
-| Context  | not `is_admin()`, `wp_doing_ajax()`, `wp_doing_cron()`, `REST_REQUEST`, `WP_CLI`; not `is_feed()`, `is_trackback()`, `is_robots()`, `is_embed()`, `is_preview()`, `is_customize_preview()`, `is_search()`; not `is_user_logged_in()`; not `post_password_required()`; no `.maintenance` file; environment allowed |
-| Response | status 200 (or 404 with `cacheNotFound`); `Content-Type` is `text/html`; no `Location` header; `DONOTCACHEPAGE` undefined                                                                                                                                                                                         |
-| Body     | length ≥ 255; ends with `</html>` (a fatal mid-render never gets stored); contains none of `excludeWhenBodyContains`                                                                                                                                                                                              |
+| Class    | Condition                                                                                                                                                                                                                                                                                                                     |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Request  | method is `GET`; `$_POST` empty; host matches `WP_HOME`; path validates; no query string after stripping; no `bypassCookies` prefix present; path not in `excludedPaths`                                                                                                                                                      |
+| Context  | not `is_admin()`, `wp_doing_ajax()`, `wp_doing_cron()`, `REST_REQUEST`, `WP_CLI`; not `is_feed()`, `is_trackback()`, `is_robots()`, `is_embed()`, `is_preview()`, `is_customize_preview()`, `is_search()`; not `is_user_logged_in()`; not `post_password_required()`; no `ABSPATH . '.maintenance'` file; environment allowed |
+| Response | status 200 (or 404 with `cacheNotFound`); `Content-Type` is `text/html`; no `Location` header; `DONOTCACHEPAGE` undefined                                                                                                                                                                                                     |
+| Body     | length ≥ 255; ends with `</html>` (a fatal mid-render never gets stored); contains none of `excludeWhenBodyContains`                                                                                                                                                                                                          |
 
 Writing is atomic: a sibling `index.html.{uniqid}.tmp`, `chmod 0644`, then `rename()`. A reader never sees a partial page. Directories are created `0755`.
 
@@ -129,46 +178,85 @@ Three readers, same layout, ordered by cost. All three emit `X-Foehn-Cache: HIT|
 
 ### 5.1 nginx
 
-`wp foehn cache:config --server=nginx [--write]` renders a `location /` block from the live config. Branching uses the `error_page 418` idiom, because nginx has no `else`:
+`wp foehn cache:config --server=nginx [--write]` renders **server-level statements plus two regex locations** — it declares no `location /`, so it composes with whatever front controller block the site already has. This is the shape of `.ddev/nginx/prod-wp-rocket.conf` in `packages/wordpress/wordpress-project`, which is generated by rocket-nginx and is proven to work unchanged in ddev and in production. Same file, both environments, nothing taken over.
+
+The mechanism is a bypass flag decided by a sequence of `set`/`if`, then one `rewrite … last`. That is what earns the reason header: unlike `try_files`, every rejection knows why it rejected.
 
 ```nginx
 # Generated by `wp foehn cache:config --server=nginx`. Do not edit.
-location / {
-    error_page 418 = @foehn_miss;
-    recursive_error_pages on;
+# Include inside server{} — e.g. .ddev/nginx/foehn-page-cache.conf, or an
+# include in the production vhost.
 
-    if ($request_method != GET)                        { return 418; }
-    if ($args != "")                                   { return 418; }   # after the ignore map
-    if ($http_cookie ~* "(wordpress_logged_in_|comment_author_|wp-postpass_)") { return 418; }
-    if (-f "$document_root/.maintenance")              { return 418; }
+set $foehn_bypass 1;
+set $foehn_state  "MISS";
+set $foehn_reason "not cached";
+set $foehn_debug  0;
+if ($http_x_foehn_cache_debug) { set $foehn_debug 1; }
 
-    try_files "/wp-content/cache/foehn/pages/$host${uri}index.html"
-              "/wp-content/cache/foehn/pages/$host${uri}/index.html"
-              $uri $uri/ /index.php$is_args$args;
+# $uri is decoded and query-free already; drop the trailing slash.
+set $foehn_path "";
+if ($uri ~ "^(.*?)/?$") { set $foehn_path $1; }
+
+# Canonical query key: cacheable args in a fixed order, values validated.
+# $arg_* is position-independent, which is what makes ?b=2&a=1 and ?a=1&b=2
+# resolve to the same file with no sorting primitive.
+set $foehn_q "";
+if ($arg_lang ~ "^[a-z]{2}$")   { set $foehn_q "${foehn_q}lang=$arg_lang&"; }
+if ($arg_page ~ "^[0-9]{1,6}$") { set $foehn_q "${foehn_q}page=$arg_page&"; }
+set $foehn_variant "";
+if ($foehn_q != "") { set $foehn_variant "__$foehn_q"; }
+
+set $foehn_url  "/wp-content/cache/foehn/pages/$host$foehn_path/index$foehn_variant.html";
+set $foehn_file "$document_root$foehn_url";
+
+if (!-f "$foehn_file")      { set $foehn_bypass 0; }
+if ($request_method != GET) { set $foehn_bypass 0; set $foehn_state "BYPASS"; set $foehn_reason "method"; }
+
+# Every arg must be known — ignored or cacheable. One regex, generated.
+if ($args !~ "^(?:(?:utm_source|utm_medium|utm_campaign|gclid|fbclid|mc_cid|page|lang)=[^&]*(?:&(?:utm_source|utm_medium|utm_campaign|gclid|fbclid|mc_cid|page|lang)=[^&]*)*)?$") {
+    set $foehn_bypass 0; set $foehn_state "BYPASS"; set $foehn_reason "unknown arg";
 }
 
-location @foehn_miss {
-    try_files $uri $uri/ /index.php$is_args$args;
-}
+# A repeated cacheable arg: nginx keeps the first, PHP the last. Never guess.
+if ($args ~ "(?:^|&)page=[^&]*&(?:.*&)?page=") { set $foehn_bypass 0; set $foehn_state "BYPASS"; set $foehn_reason "repeated arg"; }
+if ($args ~ "(?:^|&)lang=[^&]*&(?:.*&)?lang=") { set $foehn_bypass 0; set $foehn_state "BYPASS"; set $foehn_reason "repeated arg"; }
 
-location ~ ^/wp-content/cache/foehn/.*\.html$ {
+if ($http_cookie ~* "(wordpress_logged_in_|wp-postpass_|comment_author_|comment_author_email_|woocommerce_items_in_cart|woocommerce_cart_hash)") {
+    set $foehn_bypass 0; set $foehn_state "BYPASS"; set $foehn_reason "cookie";
+}
+if (-f "$document_root/wp/.maintenance") { set $foehn_bypass 0; set $foehn_state "BYPASS"; set $foehn_reason "maintenance"; }
+
+if ($foehn_bypass = 1) { set $foehn_state "HIT"; set $foehn_reason "$foehn_url"; }
+if ($foehn_debug = 0)  { set $foehn_reason ""; set $foehn_file ""; }
+if ($foehn_bypass = 1) { rewrite .* "$foehn_url" last; }
+
+# Reached only through the rewrite above. `internal` keeps the cache files
+# unreachable from outside, so they cannot be requested or indexed directly.
+location ~ ^/wp-content/cache/foehn/pages/.*\.html$ {
     internal;
-    add_header X-Foehn-Cache HIT;
-    add_header X-Foehn-Cache-Via nginx;
+    etag on;
     add_header Cache-Control "public, max-age=0, must-revalidate";
     add_header Vary "Cookie, Accept-Encoding";
+    add_header X-Foehn-Cache $foehn_state;
+    add_header X-Foehn-Cache-Via nginx;
+    add_header X-Foehn-Cache-Reason $foehn_reason;
 }
 
 # Nothing under the cache directory is ever executable.
 location ~ ^/wp-content/cache/.*\.php$ { deny all; }
+
+add_header X-Foehn-Cache $foehn_state;
+add_header X-Foehn-Cache-Reason $foehn_reason;
 ```
 
-Two consequences to document rather than hide:
+Four details that are load-bearing rather than stylistic:
 
-- The block **replaces** the site's `location /`. Two `location /` blocks is an nginx startup error, so this is an include inside `server{}` and the stock WordPress one must go. For the starter that means taking over `.ddev/nginx_full/nginx-site.conf` (removing the `#ddev-generated` marker and losing ddev's future edits to it). That is the price of having the nginx path be the one that runs locally and in the smoke test, and it is worth paying.
-- nginx `try_files` cannot check a file's age, so **TTL is not enforced on this path**. Expiry belongs to the sweep (§7). With `ttl` set, the sweep interval is the real staleness bound.
+- The debug headers are repeated inside the location. `add_header` in a nested block **replaces** the inherited set rather than adding to it, so a location that sets `Cache-Control` loses the server-level headers unless it restates them.
+- `X-Foehn-Cache-Debug` on the request turns the reason on for one request, so production can stay quiet by default. Lifted from rocket-nginx's `X-Rocket-Debug`.
+- `.maintenance` lives at `$document_root/wp/.maintenance`, because WordPress writes it to `ABSPATH` and this layout puts core in `web/wp/`. The prod-wp-rocket.conf gets this right and a stock rocket-nginx config does not.
+- nginx cannot check a file's age, so **TTL is not enforced on this path**. Expiry belongs to the sweep (§7); with `ttl` set, the sweep interval is the real staleness bound.
 
-`ignoredQueryArgs` is rendered as a `map $args $foehn_args` block that blanks a query string made only of ignored args, in the manner of rocket-nginx.
+Regex locations are matched in order of appearance, and neither ddev's media/js/css blocks nor its `\.php$` block matches `.html`, so the cache location wins wherever the include sits inside `server{}`.
 
 ### 5.2 Apache
 
@@ -180,14 +268,17 @@ Two consequences to document rather than hide:
     RewriteEngine On
     RewriteBase /
     RewriteCond %{REQUEST_METHOD} =GET
-    RewriteCond %{QUERY_STRING} ^$
-    RewriteCond %{HTTP:Cookie} !(wordpress_logged_in_|comment_author_|wp-postpass_) [NC]
-    RewriteCond %{DOCUMENT_ROOT}/.maintenance !-f
+    # Empty, or made only of ignored args. One generated alternation.
+    RewriteCond %{QUERY_STRING} ^(?:(?:utm_source|utm_medium|utm_campaign|gclid|fbclid|mc_cid)=[^&]*(?:&(?:utm_source|utm_medium|utm_campaign|gclid|fbclid|mc_cid)=[^&]*)*)?$
+    RewriteCond %{HTTP:Cookie} !(wordpress_logged_in_|wp-postpass_|comment_author_|woocommerce_cart_hash) [NC]
+    RewriteCond %{DOCUMENT_ROOT}/wp/.maintenance !-f
     RewriteCond %{DOCUMENT_ROOT}/wp-content/cache/foehn/pages/%{HTTP_HOST}/$1/index.html -f
     RewriteRule ^(.*?)/?$ /wp-content/cache/foehn/pages/%{HTTP_HOST}/$1/index.html [L]
 </IfModule>
 # END Foehn Page Cache
 ```
+
+**Cacheable query args are not served on this path.** Assembling a canonical key from `%{QUERY_STRING}` in mod_rewrite means one `RewriteCond`/`RewriteRule` pair per argument permutation, and a rules file nobody can read is a worse outcome than a slower request. Apache serves the no-args and ignored-args cases — the overwhelming majority — and a request carrying a cacheable arg falls through to PHP, where the drop-in serves the same file a few milliseconds later. Documented, not silent: `cache:status` reports it whenever `cacheQueryArgs` is non-empty and the Apache block is installed.
 
 The generated file also carries WordPress's own permalink block (the starter ships no `.htaccess` today and `DISALLOW_FILE_MODS` stops WordPress writing one), `Options -Indexes`, and a `<FilesMatch>` denying `.php` under the cache directory.
 
@@ -260,7 +351,7 @@ packages/foehn/src/
 
 packages/installer/src/WebRootGenerator.php   # + drop-in, + WP_CACHE, + clearPageCache()
 packages/starter/theme/app/page-cache.config.php
-packages/starter/.ddev/nginx_full/nginx-site.conf   # taken over
+packages/starter/.ddev/nginx/foehn-page-cache.conf   # generated; ddev includes it in server{}
 docs/guide/page-cache.md
 docs/api/page-cache-config.md
 ```
@@ -278,24 +369,27 @@ Smoke, extending `packages/starter/tests/smoke/run.sh` — this is what keeps th
 3. request with a `wordpress_logged_in_` cookie → `BYPASS`, no file written
 4. request an accented permalink → `HIT` on the second call
 5. `wp post update` → the file is gone, next request is a `MISS`
-6. `?utm_source=x` → `HIT`; `?foo=bar` → `BYPASS`
+6. `?utm_source=x` → `HIT` on the no-args file; `?foo=bar` → `BYPASS`
+7. with `cacheQueryArgs: ['page', 'lang']`: `?page=2&lang=fr` and `?lang=fr&page=2` both `HIT` **the same file** — the assertion that proves canonical ordering holds across nginx and PHP, and the one this whole section exists for
+8. `?page=1&page=2` → `BYPASS`; `?page=` → `HIT` on the no-args file; `?page=../x` → `BYPASS`
 
 ## 11. Out of scope for v1
 
-Named here so nobody assumes otherwise: keyed query args; device, scheme and consent variants; pre-compressed `.gz`/`.br`; cached feeds, sitemaps and REST responses; multisite; WooCommerce and other cart-bearing pages; client-side nonce hydration; CDN purge integration (the `foehn/page_cache/*` actions are the seam for it).
+Named here so nobody assumes otherwise: cacheable query args on the Apache path (§5.2); device, scheme and consent variants; pre-compressed `.gz`/`.br` (the `_gzip` handling in prod-wp-rocket.conf is the model when we want it); cached feeds, sitemaps and REST responses; multisite; WooCommerce and other cart-bearing pages; client-side nonce hydration; CDN purge integration (the `foehn/page_cache/*` actions are the seam for it).
 
 ## 12. Risks
 
 - **A purge rule nobody wrote.** Any page whose content depends on a post in a way §6 does not model goes stale. The TTL and sweep are the safety net; that is precisely why they are in v1 rather than deferred.
-- **nginx `if` semantics.** `if` inside `location` is famously sharp-edged. The snippet stays within the documented-safe forms (`return`, `try_files`) and is generated, never hand-edited, so a project cannot half-modify it.
-- **Config drift between the four readers.** Mitigated by generation from one config object plus the smoke test asserting `Via: nginx`. It remains the thing most likely to bite, so `cache:status` reports which readers are installed and whether their snippets match the current config hash.
-- **Taking over `nginx-site.conf`** costs ddev's future updates to that file. Accepted deliberately, in exchange for testing the fast path locally.
+- **nginx `if` semantics.** `if` is sharp-edged inside `location`; at server level with only `set` and one `rewrite` it is the idiom rocket-nginx has shipped for years, and prod-wp-rocket.conf is the local proof. The file is generated and never hand-edited, so a project cannot half-modify it.
+- **Config drift between the readers.** The single biggest risk, and the reason canonical ordering is specified as an algorithm ("walk `cacheQueryArgs` in sorted order") rather than as a string format: PHP and nginx must derive the same filename from different primitives. Mitigated by generation from one config object, by smoke assertion 7, and by `cache:status` comparing the installed snippets against a hash of the current config.
+- **Query values in filenames.** Every cacheable value is pattern-validated in all three readers before it reaches a path, and `cache:config` bounds the worst-case filename at generation time. A value that fails is a bypass, never a sanitised guess.
+- **Apache's reduced coverage** with `cacheQueryArgs` set. Correct but slower, and reported by `cache:status` so it cannot be mistaken for a cache miss bug.
 
 ## 13. Phases
 
 1. `PageCacheConfig`, `Bypass`, `CacheKey`, `Store`, `Recorder`, `Purger`, debug headers, `cache:clear` / `cache:status`, unit tests. The cache fills and invalidates correctly; nothing serves it yet, so a bug here cannot reach a visitor.
 2. `Server`, the installer drop-in and `WP_CACHE`, with per-request TTL. End to end on any host, no server config needed.
-3. `Sweeper`, `NginxSnippet`, `ApacheSnippet`, `cache:config`, the starter's `nginx-site.conf` takeover, the smoke test, `docs/guide/page-cache.md`. The fast path, shipped together with the sweep that bounds its staleness.
+3. `Sweeper`, `NginxSnippet`, `ApacheSnippet`, `cache:config`, the starter's `.ddev/nginx/foehn-page-cache.conf`, the smoke test, `docs/guide/page-cache.md`. The fast path, shipped together with the sweep that bounds its staleness.
 4. `cache:warm`, and the API doc page.
 
 Invalidation lands in phase 1 on purpose: a cache that serves stale pages is worse than no cache, so the purge rules exist before anything reads a file. Estimate: 4–5 days, 1–2 days, 2–3 days, 1 day.
