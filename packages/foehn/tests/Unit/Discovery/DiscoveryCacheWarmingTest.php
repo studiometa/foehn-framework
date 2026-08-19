@@ -114,6 +114,24 @@ describe('discovery cache warming', function () {
         expect($entry[HookDiscovery::class])->toHaveCount(1);
     });
 
+    it('remembers whether it scanned a location or read it back', function () {
+        // Nothing can work this out afterwards: the scan writes the entry, so a
+        // location that was scanned is cached a moment later. Only the runner that
+        // did it knows which happened.
+        $first = ($this->runner)(DiscoveryCacheStrategy::FULL);
+        $first->getDiscoveries();
+
+        expect($first->wasRestoredFromCache($this->location))->toBeFalse();
+
+        $second = ($this->runner)(DiscoveryCacheStrategy::FULL);
+
+        expect($second->wasRestoredFromCache($this->location))->toBeTrue();
+    });
+
+    it('reports a location as scanned when caching is off', function () {
+        expect(($this->runner)(DiscoveryCacheStrategy::NONE)->wasRestoredFromCache($this->location))->toBeFalse();
+    });
+
     it('serves the request when the cache cannot be written', function () {
         $pool = new class extends ArrayAdapter {
             public function save(Psr\Cache\CacheItemInterface $item): bool
