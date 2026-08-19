@@ -48,7 +48,7 @@ Validation, in order:
 
 **Case is not folded.** `$uri` preserves case and no nginx `map` can lowercase it, so lowercasing in PHP would be a permanent miss on the fast path. `/Blog/` and `/blog/` are two entries, which is wasteful and correct. The one place this bites is a case-insensitive filesystem — a macOS host running ddev — where the two do collide on one file; a development-environment caveat for the guide, not something to code around.
 
-The trailing slash is dropped by every reader before the path is built, so `/foo` and `/foo/` map to one file and both permalink styles hit without depending on a canonical redirect. nginx does it with a lazy capture on `$uri` rather than by trying two candidate filenames.
+The trailing slash is dropped before the path is built, so `/foo` and `/foo/` map to one file and both permalink styles hit without depending on a canonical redirect. PHP trims it; nginx tries two candidate filenames instead, because it cannot trim `$uri` — see §5.1 for why a regex capture is not an option.
 
 The `index__{variant}.html` slot holds the keyed query args (see below). Device and consent variants would use the same slot; neither ships in v1.
 
@@ -177,10 +177,7 @@ Three readers, same layout, ordered by cost. All three emit `X-Foehn-Cache: HIT|
 set $foehn_bypass 1;
 
 # $uri, not $request_uri: decoded and already free of the query string, which is the
-# string PHP keys on. The lazy group drops a trailing slash, so /foo and /foo/ are one file.
-set $foehn_path "";
-if ($uri ~ "^(.*?)/?$") { set $foehn_path $1; }
-
+# string PHP keys on. Interpolated whole, never through a regex capture — see below.
 # The keyed args, in the configuration's canonical order. Six statements per arg where
 # PHP needs two: nginx has no `and`, so "present *and* invalid" is spelled with a
 # sentinel, and the statement order is the logic.
@@ -194,7 +191,10 @@ if ($foehn_arg_page = "invalid") { set $foehn_bypass 0; }
 
 set $foehn_variant "";
 if ($foehn_q != "") { set $foehn_variant "__$foehn_q"; }
-set $foehn_url "/wp-content/cache/foehn/pages/$host$foehn_path/index$foehn_variant.html";
+set $foehn_url "/wp-content/cache/foehn/pages/$host${uri}index$foehn_variant.html";
+if (!-f "$document_root$foehn_url") {
+    set $foehn_url "/wp-content/cache/foehn/pages/$host${uri}/index$foehn_variant.html";
+}
 
 if (!-f "$document_root$foehn_url")  { set $foehn_bypass 0; }
 if ($request_method != GET)          { set $foehn_bypass 0; }
@@ -220,6 +220,7 @@ location ^~ /wp-content/cache/foehn/ {
 
 Five details that are load-bearing rather than stylistic:
 
+- **A regex capture on `$uri` comes back percent-encoded**, even though `$uri` itself is decoded. Deriving the path with `if ($uri ~ "^(.*?)/?$")` reads as the obvious way to drop a trailing slash, and it silently misses every non-ASCII URL: the page is stored under its decoded name and looked up under its encoded one, so nginx never serves an accented permalink and the drop-in quietly covers for it. `$uri` is interpolated whole, and the trailing slash costs a second `-f` test instead.
 - **`set` inside `if` is why this is server-level.** Building a filename needs `set`, and inside a `location` a matched `if` continues in an implicit location that inherits no content handler — a `try_files` there is silently skipped, so every request carrying `?utm_source=` falls through to PHP while still answering `HIT`. That was the first version of this file, and the end-to-end suite is what caught it. At server level, `set` under `if` is ordinary rewrite-module behaviour.
 - **The headers live in the cache location, not at server level.** PHP emits its own `MISS`/`BYPASS` with a reason; two writers of one header name produce a response carrying both.
 - **`.maintenance` is at `$document_root/wp/.maintenance`**, because WordPress writes it to `ABSPATH` and core lives in `web/wp/`. The path is derived from `ABSPATH`, not hard-coded. A stock rocket-nginx config gets this wrong; `prod-wp-rocket.conf` does not.
@@ -324,7 +325,7 @@ packages/foehn/src/
 
 packages/installer/src/WebRootGenerator.php   # + drop-in, + WP_CACHE, + clearPageCache()
 packages/starter/theme/app/page-cache.config.php
-packages/starter/.ddev/nginx_full/nginx-site.conf   # taken over
+packages/starter/tests/smoke/                       # Pest suite; generates its own nginx include
 docs/guide/page-cache.md
 docs/api/page-cache-config.md
 ```

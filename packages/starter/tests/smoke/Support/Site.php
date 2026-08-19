@@ -196,11 +196,22 @@ final readonly class Site
      * `nginx -s reload` returns as soon as the signal is sent: the old workers keep
      * serving until they drain, so the next request can still be answered by the config
      * that was just replaced. This polls until the reader actually changes.
+     *
+     * The include is generated rather than checked out. Nothing under `.ddev/` except
+     * `config.yaml` is tracked — everything else there is generated and machine-specific —
+     * so a fresh clone has no include to install, and CI would otherwise run every nginx
+     * assertion against the drop-in while reporting green.
      */
     public static function useNginx(bool $enabled): void
     {
         $include = self::path(self::NGINX_INCLUDE);
         $parked = $include . '.off';
+
+        if ($enabled && !is_file($include) && !is_file($parked)) {
+            self::generateNginxInclude();
+
+            return;
+        }
 
         if ($enabled && is_file($parked)) {
             rename($parked, $include);
@@ -254,10 +265,20 @@ final readonly class Site
     public static function generateNginxInclude(): string
     {
         $include = self::path(self::NGINX_INCLUDE);
-        $previous = (string) file_get_contents($include);
+        $previous = is_file($include) ? (string) file_get_contents($include) : '';
 
-        self::wp('wp foehn cache:config --server=nginx --write');
-        copy(self::path(self::GENERATED_NGINX), $include);
+        if (self::wp('wp foehn cache:config --server=nginx --write') === null) {
+            throw new RuntimeException('Could not generate the nginx include — is the cache enabled?');
+        }
+
+        if (!is_dir(dirname($include))) {
+            mkdir(dirname($include), 0o755, true);
+        }
+
+        if (!copy(self::path(self::GENERATED_NGINX), $include)) {
+            throw new RuntimeException('cache:config --write reported success but wrote nothing to copy.');
+        }
+
         self::reloadNginx();
         self::awaitVia('nginx');
 
@@ -269,7 +290,19 @@ final readonly class Site
      */
     public static function restoreNginxInclude(string $previous): void
     {
-        file_put_contents(self::path(self::NGINX_INCLUDE), $previous);
+        $include = self::path(self::NGINX_INCLUDE);
+
+        // An empty string means there was nothing there to begin with — the usual case now
+        // that the include is generated rather than tracked. Writing it back empty would
+        // leave nginx loading a file that says nothing, which is harder to explain than an
+        // absent one.
+        if ($previous === '') {
+            if (is_file($include)) {
+                unlink($include);
+            }
+        } else {
+            file_put_contents($include, $previous);
+        }
 
         if (is_file(self::path(self::GENERATED_NGINX))) {
             unlink(self::path(self::GENERATED_NGINX));
