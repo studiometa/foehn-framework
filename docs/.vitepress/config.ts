@@ -88,6 +88,7 @@ export default defineConfig({
             { text: "Settings Pages", link: "/guide/settings-pages" },
             { text: "Render API", link: "/guide/render-api" },
             { text: "Caching", link: "/guide/caching" },
+            { text: "Page Cache", link: "/guide/page-cache" },
             { text: "Shortcodes", link: "/guide/shortcodes" },
             { text: "CLI Commands", link: "/guide/cli-commands" },
             { text: "Discovery Cache", link: "/guide/discovery-cache" },
@@ -163,9 +164,7 @@ export default defineConfig({
         },
         {
           text: "Query",
-          items: [
-            { text: "PostQueryBuilder", link: "/api/post-query-builder" },
-          ],
+          items: [{ text: "PostQueryBuilder", link: "/api/post-query-builder" }],
         },
         {
           text: "Core",
@@ -174,6 +173,7 @@ export default defineConfig({
             { text: "DiscoveryRunner", link: "/api/discovery-runner" },
             { text: "Helpers", link: "/api/helpers" },
             { text: "WebpackManifest", link: "/api/webpack-manifest" },
+            { text: "PageCacheConfig", link: "/api/page-cache-config" },
           ],
         },
       ],
