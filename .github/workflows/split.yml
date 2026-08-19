@@ -16,6 +16,7 @@ jobs:
       matrix:
         package:
           - { name: "foehn", local: "packages/foehn", remote: "foehn" }
+          - { name: "acf", local: "packages/acf", remote: "foehn-acf" }
           - { name: "installer", local: "packages/installer", remote: "foehn-installer" }
           - { name: "starter", local: "packages/starter", remote: "foehn-starter" }
 
