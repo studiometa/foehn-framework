@@ -4,7 +4,8 @@
   "type": "module",
   "workspaces": [
     "packages/vite-plugin",
-    "packages/starter"
+    "packages/starter",
+    "packages/demo"
   ],
   "scripts": {
     "lint:editor": "node --check packages/foehn/resources/js/editor.js",
