@@ -7,7 +7,6 @@ use App\Data\HeroContext;
 use Studiometa\Foehn\Attributes\AsBlock;
 use Studiometa\Foehn\Contracts\BlockInterface;
 use Studiometa\Foehn\Data\LinkData;
-use WP_Block;
 
 describe('HeroBlock', function () {
     it('implements BlockInterface', function () {
