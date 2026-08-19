@@ -142,10 +142,12 @@ Without one of those, `DiscoveryLocations` never lists the package, its discover
 ## Seeing what was found
 
 ```bash
-wp foehn discovery:status
+wp foehn discovery:list --discovery=Widget
 ```
 
-reports how many locations are warm in the cache. If a discovery of yours finds nothing, the cache is the first suspect: an entry written before the class existed does not contain it. Clear it with `wp foehn discovery:clear`.
+Your discovery appears there with no work on your part: the renderer reflects whatever attribute the item holds, so a third-party one prints like a built-in. If it reports zero items, the output also says whether each location was scanned or restored from the cache — an entry written before your class existed does not contain it, and that is the usual answer. Clear it with `wp foehn discovery:clear`.
+
+See [Listing what was found](/guide/discovery-cache#listing-what-was-found).
 
 ## Related
 

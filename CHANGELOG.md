@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `wp foehn discovery:list` reports what discovery found: every discovery, its phase, the items it holds and the attribute arguments each was built with. Nothing could say this before — `discovery:status` answers how warm the cache is, not what registered, and on 2026-08-19 that turned a one-line bug into an hour. A discovery that found nothing is listed rather than hidden, and each location says whether it was scanned or restored from the cache, which is what makes a stale entry diagnosable. `--discovery=`, `--location=` and `--format=table|json|count` narrow the output; a third-party discovery renders with no work, because the renderer reflects whatever attribute the item holds
 - `#[AsDiscovery]` declares the WordPress phase a discovery class applies in, and discovery classes are now themselves discovered: any class implementing `Tempest\Discovery\Discovery` inside a scanned location is found, resolved and run. A Composer package or a theme's `app/` directory can add one. `docs/guide/custom-discovery.md` documented this and it had never worked — `DiscoveryRunner::getDiscoveryPhases()` was a hardcoded list of nineteen classes that nothing outside that file could add to
 
 ### Fixed
