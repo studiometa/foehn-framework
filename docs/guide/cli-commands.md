@@ -77,9 +77,12 @@ Example with dry-run:
 wp foehn make:model Product --post-type --dry-run
 ```
 
-### Discovery Cache Commands
+### Discovery Commands
 
 ```bash
+# List what discovery found, and where it came from
+wp foehn discovery:list
+
 # Scan every location and write the cache
 wp foehn discovery:generate
 
@@ -90,7 +93,7 @@ wp foehn discovery:clear
 wp foehn discovery:status
 ```
 
-The cache also fills itself on the first request that finds it missing, and `composer install` clears it. See [Discovery Cache](/guide/discovery-cache) for more details on caching.
+The cache also fills itself on the first request that finds it missing, and `composer install` clears it. See [Discovery Cache](/guide/discovery-cache) for more details on caching, and [Listing what was found](/guide/discovery-cache#listing-what-was-found) for `discovery:list`.
 
 ### Security Keys
 

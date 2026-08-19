@@ -119,6 +119,50 @@ Locations cached: 2/2
 Discovery cache is active and valid.
 ```
 
+## Listing what was found
+
+`discovery:status` answers how warm the cache is. It does not answer what registered, which is the question behind almost every "my post type is missing".
+
+```bash
+wp foehn discovery:list
+```
+
+```
+PostTypeDiscovery (main) — 2 items
+  location  className               implementsConfig  attribute
+  App\      App\Models\Testimonial  false             AsPostType(name: testimonial, singular: Témoignage, plural: Témoignages)
+  App\      App\Models\Product      false             AsPostType(name: product, singular: Produit, plural: Produits, hasArchive: true)
+
+1 discovery with items, 0 empty.
+Locations: Studiometa\Foehn\ (cached), App\ (scanned)
+```
+
+Three things in that output are the point of the command:
+
+- **A discovery that found nothing is listed, not hidden.** `PostTypeDiscovery (main) — 0 items` is an answer; an absent line is not.
+- **Each location says whether it was scanned or restored from the cache.** A cache written before your class existed reports zero items and no error, and this is the one line that makes that visible. Clear it with `wp foehn discovery:clear`.
+- **Arguments are read back off the attribute instance**, so what you see is what was cached rather than what the source says. Arguments still holding their default are left out.
+
+Listing registers nothing — discovery runs, `apply()` does not.
+
+### Options
+
+| Option                        | Effect                                                                          |
+| ----------------------------- | ------------------------------------------------------------------------------- |
+| `--discovery=<name>`          | One discovery. `Hook`, `HookDiscovery` and the fully qualified name all match.  |
+| `--location=<namespace>`      | Only items found under this namespace, e.g. `--location=App`.                   |
+| `--format=table\|json\|count` | `count` is one line per discovery; `json` is the same report, machine-readable. |
+
+```bash
+# Why is my hook not firing?
+wp foehn discovery:list --discovery=Hook --location=App
+
+# A project with thousands of items
+wp foehn discovery:list --format=count
+```
+
+A discovery of your own appears here with no work: the renderer reflects whatever attribute the item holds. See [Custom Discovery](/guide/custom-discovery).
+
 ## Deployment Workflow
 
 ### Basic Deployment

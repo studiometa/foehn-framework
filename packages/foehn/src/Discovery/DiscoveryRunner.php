@@ -44,6 +44,9 @@ final class DiscoveryRunner
     /** @var array<value-of<DiscoveryPhase>, bool> */
     private array $ran = [];
 
+    /** @var array<string, bool> Location path => restored from the cache rather than scanned */
+    private array $restored = [];
+
     private bool $discovered = false;
 
     public function __construct(
@@ -108,7 +111,7 @@ final class DiscoveryRunner
      *
      * @param class-string<Discovery> $discoveryClass
      */
-    private static function phaseOf(string $discoveryClass): DiscoveryPhase
+    public static function phaseOf(string $discoveryClass): DiscoveryPhase
     {
         $attributes = new ReflectionClass($discoveryClass)->getAttributes(AsDiscovery::class);
 
@@ -174,7 +177,12 @@ final class DiscoveryRunner
         // Which locations were scanned rather than restored. Answerable only now:
         // the discovery classes an entry has to hold are not known until the first
         // pass has run. The build itself only reads the cache, so what the pool
-        // holds here is still what it held before it started.
+        // holds here is still what it held before it started — and what it holds
+        // after store() would answer "cached" for a location just scanned.
+        foreach ($locations as $location) {
+            $this->restored[$location->path] = $this->wasRestored($cache, $location, $discoveries);
+        }
+
         $scanned = array_values(array_filter($locations, fn(DiscoveryLocation $location): bool => $this->shouldStore(
             $cache,
             $location,
@@ -210,6 +218,45 @@ final class DiscoveryRunner
                 $this->logDiscoveryFailure($location->namespace, $e);
             }
         }
+    }
+
+    /**
+     * Whether this location's items came out of the cache rather than off disk.
+     *
+     * The same three conditions Tempest restores under, asked from outside: the
+     * cache is on, the strategy reads this kind of location back, and the entry
+     * holds every discovery. Nothing else can tell them apart afterwards — a
+     * location that was scanned is cached a moment later, by the scan.
+     *
+     * @param array<array-key, Discovery> $discoveries
+     */
+    private function wasRestored(DiscoveryCache $cache, DiscoveryLocation $location, array $discoveries): bool
+    {
+        if (!$cache->enabled) {
+            return false;
+        }
+
+        $readsBack = match ($cache->strategy) {
+            DiscoveryCacheStrategy::FULL => true,
+            DiscoveryCacheStrategy::PARTIAL => $location->isVendor(),
+            default => false,
+        };
+
+        return $readsBack && $this->isCached($location, $discoveries);
+    }
+
+    /**
+     * Whether a location's items were restored from the cache rather than scanned.
+     *
+     * What makes a stale cache diagnosable: `discovery:list` cannot ask the pool,
+     * because by the time anything asks, the scan it is asking about has already
+     * written its own entry.
+     */
+    public function wasRestoredFromCache(DiscoveryLocation $location): bool
+    {
+        $this->ensureDiscovered();
+
+        return $this->restored[$location->path] ?? false;
     }
 
     /**
