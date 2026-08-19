@@ -198,6 +198,9 @@ jobs:
   starter-scripts:
     name: Starter - Browser Tests
     runs-on: ubuntu-latest
+    # The browser install is the only step here that reaches the network for
+    # anything substantial; without a bound, a stall on it hangs the run for hours.
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -210,8 +213,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Without --with-deps: that flag apt-installs Chromium's system libraries,
+      # which the ubuntu-latest image already ships, and it hung for 15 minutes on
+      # the first run of this job.
       - name: Install Playwright
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install chromium
 
       - name: Run tests
         run: npm run -w @studiometa/foehn-starter test:run
