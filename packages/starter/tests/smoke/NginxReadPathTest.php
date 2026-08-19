@@ -118,8 +118,10 @@ describe('nginx read path: query strings', function () {
         'an arg nobody ignores' => ['?foo=bar', 'BYPASS'],
         'a search' => ['?s=hello', 'BYPASS'],
         'a tracking arg alongside a real one' => ['?utm_source=x&foo=bar', 'BYPASS'],
-        // `page` is not ignorable and must never be: ?page=2 is a different page from
-        // ?page=1, and treating them as one would serve the wrong screen.
+        // `page` is not ignorable and must never be — ?page=2 is a different page from
+        // ?page=1 — and this configuration does not key it either, so it is simply an arg
+        // nobody configured. Configure it and both orders hit one file instead: see
+        // NginxKeyedQueryTest.
         'pagination and a language' => ['?page=2&lang=fr', 'BYPASS'],
         'the same two, reversed' => ['?lang=fr&page=2', 'BYPASS'],
         'a repeated arg' => ['?page=1&page=2', 'BYPASS'],
@@ -180,8 +182,18 @@ describe('nginx read path: invalidation', function () {
         expect($created)->toBeNumeric('could not create the non-ASCII post');
 
         $this->postId = (int) $created;
-        $this->path = '/ұlytau-oblysy/';
-        $this->requested = '/%D2%B1lytau-oblysy/';
+
+        // Derived, not hard-coded: a leftover post from an interrupted run holds the slug
+        // and WordPress hands this one `…-2`, at which point every assertion here is about
+        // a URL that belongs to a different post. That failure looks exactly like the bug
+        // these tests are for, which is the worst way to waste an afternoon.
+        $permalink = (string) Site::wp(sprintf('wp post url %d', $this->postId));
+        $this->requested = (string) parse_url($permalink, PHP_URL_PATH);
+        $this->path = rawurldecode($this->requested);
+
+        // No message argument: toContain() is variadic, so a second string is read as
+        // another needle rather than as an explanation.
+        expect($this->path)->toContain('ұlytau-oblysy');
     });
 
     afterEach(function () {
