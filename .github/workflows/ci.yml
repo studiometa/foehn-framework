@@ -100,6 +100,11 @@ jobs:
       - name: Run the starter test suite
         run: composer test:starter
 
+      # The installer writes wp-config.php and the web root into every project
+      # created from the starter, so it gets its own suite.
+      - name: Run the installer test suite
+        run: composer test:installer
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
@@ -189,6 +194,27 @@ jobs:
 
       - name: Build
         run: npm run -w @studiometa/foehn-vite-plugin build
+
+  starter-scripts:
+    name: Starter - Browser Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Run tests
+        run: npm run -w @studiometa/foehn-starter test:run
 
   integration:
     name: Integration - Starter in WordPress

@@ -1,12 +1,21 @@
 {
     "name": "studiometa/foehn-monorepo",
-    "description": "Foehn monorepo — development workspace",
+    "description": "Foehn monorepo \u2014 development workspace",
     "type": "project",
     "license": "MIT",
     "repositories": [
-        { "type": "path", "url": "packages/foehn" },
-        { "type": "path", "url": "packages/installer" },
-        { "type": "path", "url": "packages/starter" }
+        {
+            "type": "path",
+            "url": "packages/foehn"
+        },
+        {
+            "type": "path",
+            "url": "packages/installer"
+        },
+        {
+            "type": "path",
+            "url": "packages/starter"
+        }
     ],
     "require": {
         "studiometa/foehn": "@dev",
@@ -26,13 +35,19 @@
         "psr-4": {
             "App\\": "packages/starter/theme/app/",
             "Studiometa\\Foehn\\Tests\\": "packages/foehn/tests/",
-            "Tests\\": "packages/foehn/tests/"
+            "Tests\\": "packages/foehn/tests/",
+            "Studiometa\\FoehnInstaller\\Tests\\": "packages/installer/tests/"
         }
     },
     "scripts": {
-        "test": ["@test:foehn", "@test:starter"],
+        "test": [
+            "@test:foehn",
+            "@test:starter",
+            "@test:installer"
+        ],
         "test:foehn": "pest --configuration=packages/foehn/phpunit.xml --test-directory=packages/foehn/tests",
         "test:starter": "pest --configuration=packages/starter/phpunit.xml --test-directory=packages/starter/tests/php",
+        "test:installer": "pest --configuration=packages/installer/phpunit.xml --test-directory=packages/installer/tests",
         "test:coverage": "pest --configuration=packages/foehn/phpunit.xml --test-directory=packages/foehn/tests --coverage --coverage-clover=coverage/clover.xml",
         "analyse": "mago analyse",
         "lint": "mago lint && mago fmt --check",
