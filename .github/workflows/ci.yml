@@ -270,6 +270,10 @@ jobs:
       - name: Build the demo front-end
         run: |
           npm ci
+          # The demo's vite.config.js imports @studiometa/foehn-vite-plugin, which is
+          # a workspace package whose entry point is its own build output. Unbuilt, it
+          # has no dist/ and vite cannot resolve the config at all.
+          npm run build --workspace packages/vite-plugin
           npm run build --workspace packages/demo
 
       - name: Start ddev
