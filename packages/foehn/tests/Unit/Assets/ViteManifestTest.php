@@ -111,6 +111,11 @@ describe('ViteManifest', function () {
         expect(($this->calls)('wp_enqueue_style'))->toHaveCount(0);
     });
 
+    it('reports that a build was found', function () {
+        expect(($this->manifest)()->exists())->toBeTrue();
+        expect(($this->manifest)()->isDevServer())->toBeFalse();
+    });
+
     it('does nothing at all without a build', function () {
         $manifest = new ViteManifest($this->dist . '/absent', $this->uri);
 
@@ -118,6 +123,49 @@ describe('ViteManifest', function () {
 
         expect($manifest->exists())->toBeFalse();
         expect(($this->calls)('wp_enqueue_script'))->toHaveCount(0);
+    });
+
+    describe('factories', function () {
+        it('reads dist/ inside the active theme', function () {
+            // The build has to live inside the theme: only the theme is served, so a
+            // dist/ beside it is never reachable from a browser.
+            $theme = dirname($this->dist) . '/theme-' . uniqid();
+            mkdir($theme, 0o777, true);
+            rename($this->dist, $theme . '/dist');
+
+            $GLOBALS['wp_stub_template_directory'] = $theme;
+            $GLOBALS['wp_stub_template_directory_uri'] = 'https://example.test/theme';
+
+            ViteManifest::fromTheme()->enqueue('assets/css/app.css', handle: 'theme-styles');
+
+            $styles = ($this->calls)('wp_enqueue_style');
+
+            expect($styles)->toHaveCount(1);
+            expect($styles[0]['args']['src'])->toBe('https://example.test/theme/dist/assets/app-abc123.css');
+
+            // Put it back where afterEach expects to find it.
+            rename($theme . '/dist', $this->dist);
+            @rmdir($theme);
+        });
+
+        it('reads the child theme when asked', function () {
+            $theme = dirname($this->dist) . '/child-' . uniqid();
+            mkdir($theme, 0o777, true);
+            rename($this->dist, $theme . '/dist');
+
+            $GLOBALS['wp_stub_stylesheet_directory'] = $theme;
+            $GLOBALS['wp_stub_stylesheet_directory_uri'] = 'https://example.test/child';
+
+            ViteManifest::fromChildTheme()->enqueue('assets/css/app.css', handle: 'child-styles');
+
+            $styles = ($this->calls)('wp_enqueue_style');
+
+            expect($styles)->toHaveCount(1);
+            expect($styles[0]['args']['src'])->toBe('https://example.test/child/dist/assets/app-abc123.css');
+
+            rename($theme . '/dist', $this->dist);
+            @rmdir($theme);
+        });
     });
 
     describe('with the dev server running', function () {
