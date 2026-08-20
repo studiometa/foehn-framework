@@ -3,12 +3,13 @@
   <head>
     <meta charset="{{ site.charset }}" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#ffffff" />
     {{ function('wp_head') }}
   </head>
   <body class="{{ body_class }}">
     {{ function('wp_body_open') }}
 
-    <a class="skip-link screen-reader-text" href="#main">Aller au contenu</a>
+    <a class="skip-link screen-reader-text" href="#main">Skip to content</a>
 
     {% block header %}
       {% include 'components/header.twig' %}

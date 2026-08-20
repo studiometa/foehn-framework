@@ -55,7 +55,12 @@ final class PostTypeDiscovery implements Discovery
         $this->addItem($location, [
             'attribute' => $attribute,
             'className' => $class->getName(),
-            'implementsConfig' => $class->implements(ConfiguresPostType::class),
+            // is_a() rather than $class->implements(): Tempest's helper is gated on
+            // isInstantiable(), and Timber\Post declares a protected constructor, so
+            // every model built on it reports false. That silently dropped
+            // configurePostType() — the rewrite slug a post type asked for was never
+            // applied and its archive answered 404.
+            'implementsConfig' => is_a($class->getName(), ConfiguresPostType::class, allow_string: true),
         ]);
     }
 

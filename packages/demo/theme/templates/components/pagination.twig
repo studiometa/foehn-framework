@@ -1,8 +1,8 @@
 {% if pagination %}
   <nav class="pagination" aria-label="Pagination">
     {% if pagination.prev %}
-      <a href="{{ pagination.prev.link }}" class="pagination__prev" aria-label="Page précédente">
-        &larr; Précédent
+      <a href="{{ pagination.prev.link }}" class="pagination__prev" aria-label="Previous page">
+        &larr; Previous
       </a>
     {% endif %}
 
@@ -21,8 +21,8 @@
     </ul>
 
     {% if pagination.next %}
-      <a href="{{ pagination.next.link }}" class="pagination__next" aria-label="Page suivante">
-        Suivant &rarr;
+      <a href="{{ pagination.next.link }}" class="pagination__next" aria-label="Next page">
+        Next &rarr;
       </a>
     {% endif %}
   </nav>

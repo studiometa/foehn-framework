@@ -1,30 +1,29 @@
 <header class="site-header">
-  <div class="container">
-    <a href="{{ site.url }}" class="site-header__logo" rel="home">{{ site.name }}</a>
+  <a href="{{ site.url }}" class="site-header__logo" rel="home">{{ site.name }}</a>
 
-    {% if menus.header %}
-      <nav class="site-header__nav" aria-label="Navigation principale">
-        <ul>
-          {% for item in menus.header.items %}
-            <li class="{{ item.classes|join(' ') }}">
-              <a
-                href="{{ item.link }}"
-                {{
-                html_attributes(
-                  item.is_external
-                    ? {
-                      target: '_blank',
-                      rel: 'noopener'
-                    }
-                    : {}
-                )
-                }}>
-                {{ item.title }}
-              </a>
-            </li>
-          {% endfor %}
-        </ul>
-      </nav>
-    {% endif %}
-  </div>
+  {% if menus.header %}
+    <nav class="site-header__nav" aria-label="Primary navigation">
+      <ul>
+        {% for item in menus.header.items %}
+          <li class="{{ item.classes|join(' ') }}">
+            <a
+              href="{{ item.link }}"
+              {% if item.current %}aria-current="page"{% endif %}
+              {{
+              html_attributes(
+                item.is_external
+                  ? {
+                    target: '_blank',
+                    rel: 'noopener'
+                  }
+                  : {}
+              )
+              }}>
+              {{ item.title }}
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    </nav>
+  {% endif %}
 </header>

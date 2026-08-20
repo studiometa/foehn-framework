@@ -22,8 +22,6 @@ describe('ArchiveController', function () {
 
         expect($templates)->toContain('archive');
         expect($templates)->toContain('archive-*');
-        expect($templates)->toContain('front-page');
-        expect($templates)->toContain('home');
         expect($templates)->toContain('category');
         expect($templates)->toContain('tag');
         expect($templates)->toContain('tax-*');

@@ -31,11 +31,29 @@ Nothing is written to `.env` for you. Credentials come from the environment, and
 
 Leave `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` out and neither constant is defined, which is what lets the AWS SDK fall back to an IAM instance profile. Add `S3_UPLOADS_USE_INSTANCE_PROFILE` to `config/wordpress.config.php` to make that explicit.
 
-### Serving from a CDN
+### Where the images are served from
 
-`S3_UPLOADS_BUCKET_URL` is what appears in the page — `<img src>`, every `srcset` candidate, every `wp_get_attachment_url()`. Point it at the CDN and the bucket never takes front-end traffic.
+Two modes, and the choice decides what hostname ends up in your HTML.
 
-Leave it out and the plugin derives an AWS bucket URL, which is right for AWS and wrong for everything else.
+**From the bucket or a CDN.** Set `S3_UPLOADS_BUCKET_URL` and it appears in the page — `<img src>`, every `srcset` candidate, every `wp_get_attachment_url()`. Point it at the CDN and the bucket never takes front-end traffic. Leave it out and the plugin derives an AWS bucket URL, which is right for AWS and wrong for everything else.
+
+**From your own domain.** Set `S3_UPLOADS_DISABLE_REPLACE_UPLOAD_URL=true` instead and the plugin stops rewriting URLs: WordPress keeps emitting `/wp-content/uploads/…` and a webserver or CDN rule maps that prefix to the bucket. The plugin's README names this setup and it is why the constant exists.
+
+```dotenv
+S3_UPLOADS_DISABLE_REPLACE_UPLOAD_URL=true
+```
+
+```nginx
+location ^~ /wp-content/uploads/ {
+    proxy_pass http://your-bucket-endpoint/your-bucket/uploads/;
+    proxy_set_header Authorization "";
+    expires 30d;
+}
+```
+
+The second mode costs a proxy hop and buys one origin. Every media URL is your own domain, so nothing breaks when the bucket is renamed, moved behind a CDN, or reached on a different port — and there is no second hostname whose TLS certificate has to be right before images appear. `packages/demo` uses it; see `.ddev/nginx/uploads-proxy.conf`.
+
+Set both and `S3_UPLOADS_DISABLE_REPLACE_UPLOAD_URL` wins — the plugin checks it first and never consults the bucket URL for serving.
 
 ## Anything that is not AWS
 
@@ -77,7 +95,7 @@ That checks the credentials and a round trip. It does **not** check that `S3_UPL
 curl -I "$(wp eval 'echo wp_get_attachment_url(ID);')"
 ```
 
-A `403` on a bucket that accepted the write usually means the bucket policy denies anonymous reads. Object ACLs are not enough on their own on most S3-compatible providers — see `packages/demo/tests/smoke/provision-bucket.php` for the policy the demo applies to MinIO.
+A `403` on a bucket that accepted the write usually means the bucket policy denies anonymous reads — which is also what a proxy hits, since it fetches anonymously. Object ACLs are not enough on their own on most S3-compatible providers — see `packages/demo/tests/smoke/provision-bucket.php` for the policy the demo applies to MinIO.
 
 ## Migrating an existing library
 

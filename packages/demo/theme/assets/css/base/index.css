@@ -1,3 +1,130 @@
+/*
+ * Swiss typographic foundation.
+ *
+ * Two colours and three greys, one grotesque, and a grid. Everything the pages do
+ * is done with type size, weight and position — there are no shadows, no radii, no
+ * gradients and no accent colour, because in this idiom the photographs are the
+ * only thing allowed to carry tone.
+ */
+
+@theme {
+  --color-ink: #222222;
+  --color-paper: #ffffff;
+  /* Three greys and no more: rules, secondary type, and the tint behind an image. */
+  --color-rule: #dcdcdc;
+  --color-mute: #767676;
+  --color-tint: #f4f4f4;
+
+  --font-sans:
+    'Helvetica Neue', Helvetica, Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+
+  /* A scale with a wide top and a narrow bottom, which is where the drama comes
+     from: display type is enormous, everything else is small and quiet. */
+  --text-display: clamp(3rem, 12vw, 11rem);
+  --text-title: clamp(2rem, 6vw, 4.5rem);
+  --text-lead: clamp(1.125rem, 2vw, 1.5rem);
+  --text-body: 1rem;
+  --text-small: 0.8125rem;
+  --text-label: 0.6875rem;
+
+  --tracking-label: 0.14em;
+
+  --gutter: clamp(1rem, 4vw, 3rem);
+  --rule-width: 1px;
+}
+
+:root {
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
-  font-family: system-ui, sans-serif;
+  margin: 0;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  line-height: 1.45;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3,
+h4,
+p,
+figure,
+blockquote,
+ul,
+ol {
+  margin: 0;
+}
+
+ul,
+ol {
+  padding: 0;
+  list-style: none;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Flush-left, ragged-right, and never justified: justification opens rivers at
+   these measures and the idiom does not use it. */
+h1,
+h2,
+h3 {
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 0.95;
+  text-wrap: balance;
+}
+
+::selection {
+  background: var(--color-ink);
+  color: var(--color-paper);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 3px;
+}
+
+.screen-reader-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.skip-link:focus {
+  position: fixed;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 100;
+  width: auto;
+  height: auto;
+  padding: 0.75rem 1rem;
+  background: var(--color-ink);
+  color: var(--color-paper);
+  clip-path: none;
 }

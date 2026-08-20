@@ -8,13 +8,10 @@
 #
 # Two URLs, and the difference between them is the whole configuration:
 #
-#   S3_UPLOADS_ENDPOINT    http://minio:9000 — the API, reachable inside the project
-#                          network only, which is what PHP talks to.
-#   S3_UPLOADS_BUCKET_URL  https://<host>:9443/media — the router, reachable from a
-#                          browser, which is what ends up in the page.
-#
-# Get that wrong and uploads succeed while every image 404s, which is the failure
-# people spend an afternoon on.
+# PHP talks to it at http://minio:9000, on the project network. Nothing else needs
+# to reach it: uploads are served from the site's own domain, proxied to the bucket
+# by .ddev/nginx/uploads-proxy.conf, so no port of this service is published and no
+# bucket hostname appears in any URL.
 services:
   minio:
     container_name: ddev-${DDEV_SITENAME}-minio
@@ -29,9 +26,6 @@ services:
       - MINIO_ROOT_PASSWORD=foehn-demo-secret
       # The demo's credentials are in the repository on purpose: this bucket exists
       # inside one ddev project and holds nothing but the demo's own test image.
-      - VIRTUAL_HOST=${DDEV_HOSTNAME}
-      - HTTP_EXPOSE=9000:9000
-      - HTTPS_EXPOSE=9443:9000
     volumes:
       - minio:/data
     healthcheck:

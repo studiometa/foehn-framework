@@ -1,0 +1,64 @@
+{% extends 'layouts/base.twig' %}
+
+{% block content %}
+  {#
+    The homepage is one enormous word and a list of facts. Everything below it is
+    the work; nothing above it competes with the work.
+  #}
+  <section class="shell masthead">
+    <h1 class="display">{{ site.name }}</h1>
+
+    <div class="grid" style="margin-top: clamp(1.5rem, 4vw, 3rem)">
+      <p class="lead col-6">{{ site.description }}</p>
+
+      <div class="at-7-3">
+        <p class="label label--ink">Based in</p>
+        <p style="margin-top: 0.5rem">Strasbourg, France</p>
+      </div>
+
+      <div class="at-10-3">
+        <p class="label label--ink">Available</p>
+        <p style="margin-top: 0.5rem">Commissions &amp; editions, {{ current_year }}</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="shell" aria-labelledby="selection">
+    <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 1rem">
+      <h2 class="label label--ink" id="selection">Selection</h2>
+      <a class="label label--ink" href="{{ site.url }}/projects/">All projects →</a>
+    </div>
+
+    <hr class="rule rule--ink" style="margin-top: 0.75rem" />
+
+    <div class="grid" style="margin-top: clamp(1.5rem, 4vw, 2.5rem)">
+      {% for project in projects %}
+        <div class="col-4">
+          {% include 'components/card-project.twig' with { project: project } %}
+        </div>
+      {% else %}
+        <p class="col-8">No projects published yet.</p>
+      {% endfor %}
+    </div>
+  </section>
+
+  {% if testimonials %}
+    <section class="shell" style="margin-top: clamp(4rem, 10vw, 8rem)" aria-labelledby="retours">
+      <h2 class="label label--ink" id="retours">Words</h2>
+      <hr class="rule rule--ink" style="margin-top: 0.75rem" />
+
+      <div class="grid" style="margin-top: clamp(1.5rem, 4vw, 2.5rem)">
+        {% for testimonial in testimonials %}
+          <div class="col-4">
+            <blockquote class="quote">
+              <p class="quote__text">{{ testimonial.content|striptags|trim }}</p>
+              <footer class="quote__source label">
+                {{ testimonial.authorName }}{% if testimonial.authorRole %}, {{ testimonial.authorRole }}{% endif %}
+              </footer>
+            </blockquote>
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+{% endblock %}

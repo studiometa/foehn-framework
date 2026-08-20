@@ -1,11 +1,16 @@
 {% extends 'layouts/base.twig' %}
 
 {% block content %}
-  <div class="error-404 container">
-    <h1>Page introuvable</h1>
-    <p>
-      La page que vous cherchez n'existe pas ou a été déplacée.
+  <section class="shell masthead">
+    <p class="label label--ink index-number">404</p>
+    <h1 class="display" style="margin-top: 0.75rem">Not found</h1>
+
+    <p class="lead" style="margin-top: clamp(1.5rem, 4vw, 3rem)">
+      This page does not exist, or no longer goes by that name.
     </p>
-    <a href="{{ site.url }}" class="btn btn--primary">Retour à l'accueil</a>
-  </div>
+
+    <p class="label label--ink" style="margin-top: 2rem">
+      <a href="{{ site.url }}">← Back home</a>
+    </p>
+  </section>
 {% endblock %}

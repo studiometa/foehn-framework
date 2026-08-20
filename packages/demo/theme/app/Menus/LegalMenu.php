@@ -6,5 +6,5 @@ namespace Demo\Menus;
 
 use Studiometa\Foehn\Attributes\AsMenu;
 
-#[AsMenu('legal', 'Mentions légales')]
+#[AsMenu('legal', 'Legal menu')]
 final class LegalMenu {}

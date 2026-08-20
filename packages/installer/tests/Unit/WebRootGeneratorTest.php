@@ -460,6 +460,29 @@ describe('WebRootGenerator', function () {
         expect($output)->toContain('S3_UPLOADS_BUCKET_URL=https://cdn.example.com');
     });
 
+    it('defines the switch that keeps uploads on the site\'s own URLs', function () {
+        linkRealAutoloader($this->root);
+
+        ($this->generate)();
+
+        stubWordPress(
+            $this->root,
+            "echo 'REPLACE=', defined('S3_UPLOADS_DISABLE_REPLACE_UPLOAD_URL') ? 'defined' : '<undefined>', PHP_EOL;",
+        );
+
+        file_put_contents(
+            $this->root . '/.env',
+            "S3_UPLOADS_BUCKET=media\nS3_UPLOADS_DISABLE_REPLACE_UPLOAD_URL=true\n",
+            FILE_APPEND,
+        );
+
+        // Without it the plugin rewrites every media URL to the bucket's hostname.
+        // With it WordPress keeps its own, and a webserver or CDN maps
+        // /wp-content/uploads/ to the bucket — which is what keeps a site on one
+        // origin.
+        expect(runWpConfig($this->root))->toContain('REPLACE=defined');
+    });
+
     it('defines no object storage constants without a bucket', function () {
         linkRealAutoloader($this->root);
 

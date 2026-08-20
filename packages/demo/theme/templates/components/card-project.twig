@@ -1,0 +1,27 @@
+{# A project as a card: cover, rule, title, year. Used on the homepage grid. #}
+<a class="card" href="{{ project.link }}">
+  <div class="card__frame">
+    {% if project.thumbnail %}
+      <img
+        src="{{ project.thumbnail.src('card') }}"
+        srcset="{{ project.thumbnail.srcset('card') }}"
+        sizes="(min-width: 48rem) 33vw, 100vw"
+        width="{{ project.thumbnail.width }}"
+        height="{{ project.thumbnail.height }}"
+        alt="{{ project.thumbnail.alt ?: project.title }}"
+        loading="lazy"
+        decoding="async" />
+    {% endif %}
+  </div>
+
+  <div class="card__head">
+    <h3 class="card__title">{{ project.title }}</h3>
+    {% if project.year %}
+      <span class="label index-number">{{ project.year }}</span>
+    {% endif %}
+  </div>
+
+  {% if project.location %}
+    <p class="label">{{ project.location }} — {{ project.photographCount }} images</p>
+  {% endif %}
+</a>

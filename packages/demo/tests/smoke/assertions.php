@@ -172,11 +172,11 @@ $results->same(
 // App discovery: the demo theme's own classes
 // ──────────────────────────────────────────────
 
-$results->containsAll('demo post types are registered', ['product', 'testimonial'], array_keys(get_post_types()));
+$results->containsAll('demo post types are registered', ['project', 'testimonial'], array_keys(get_post_types()));
 
 $results->containsAll(
     'demo taxonomies are registered',
-    ['product_category', 'product_tag'],
+    ['project_category', 'project_tag'],
     array_keys(get_taxonomies()),
 );
 
@@ -197,15 +197,15 @@ $results->containsAll(
 // than the key alone.
 $results->containsAll(
     'demo post meta is registered against its post type',
-    ['price', 'sale_price'],
-    array_keys(get_registered_meta_keys('post', 'product')),
+    ['client', 'year', 'location', 'camera'],
+    array_keys(get_registered_meta_keys('post', 'project')),
 );
 
 // The point of registering it: without show_in_rest the key is invisible to the
 // block editor and cannot be bound through core/post-meta.
 $results->true(
     'demo post meta is exposed to REST',
-    (get_registered_meta_keys('post', 'product')['price']['show_in_rest'] ?? false) !== false,
+    (get_registered_meta_keys('post', 'project')['client']['show_in_rest'] ?? false) !== false,
 );
 
 // ──────────────────────────────────────────────
@@ -329,9 +329,15 @@ $attachmentId = isset($args[0]) ? (int) $args[0] : 0;
 $results->true('run.sh imported the uploads fixture', $attachmentId > 0);
 
 if ($attachmentId > 0) {
-    $results->true('the attachment URL points at the bucket', str_starts_with(
+    // Same origin as the site, not the bucket's: S3_UPLOADS_DISABLE_REPLACE_UPLOAD_URL
+    // stops the plugin rewriting URLs, and .ddev/nginx/uploads-proxy.conf maps
+    // /wp-content/uploads/ to the bucket instead. A URL carrying a bucket hostname
+    // here means the constant stopped being defined.
+    $uploadsBase = home_url('/wp-content/uploads/');
+
+    $results->true('the attachment URL is served from the site itself', str_starts_with(
         wp_get_attachment_url($attachmentId),
-        S3_UPLOADS_BUCKET_URL,
+        $uploadsBase,
     ));
 
     // srcset builds its own URLs from the uploads base rather than from the filter
@@ -343,9 +349,8 @@ if ($attachmentId > 0) {
     $results->same('the srcset offers every size', 4, count($sources));
 
     $results->true(
-        'every srcset candidate points at the bucket',
-        $sources !== []
-        && array_all($sources, fn(string $source): bool => str_starts_with($source, S3_UPLOADS_BUCKET_URL)),
+        'every srcset candidate is served from the site itself',
+        $sources !== [] && array_all($sources, fn(string $source): bool => str_starts_with($source, $uploadsBase)),
     );
 
     // #[AsImageSize] on CardImageSize registers `card` at 400x300, so its presence

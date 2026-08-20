@@ -1,8 +1,23 @@
 <footer class="site-footer">
-  <div class="container">
+  <div class="site-footer__grid">
+    <div>
+      <p class="label label--ink">Studio</p>
+      <p style="margin-top: 0.75rem">{{ site.name }}<br />{{ site.description }}</p>
+    </div>
+
+    {% if contact_email %}
+      <div>
+        <p class="label label--ink">Contact</p>
+        <p style="margin-top: 0.75rem">
+          <a href="mailto:{{ contact_email }}">{{ contact_email }}</a>
+        </p>
+      </div>
+    {% endif %}
+
     {% if menus.footer %}
-      <nav class="site-footer__nav" aria-label="Navigation footer">
-        <ul>
+      <nav aria-label="Footer navigation">
+        <p class="label label--ink">Navigation</p>
+        <ul style="margin-top: 0.75rem">
           {% for item in menus.footer.items %}
             <li><a href="{{ item.link }}">{{ item.title }}</a></li>
           {% endfor %}
@@ -10,18 +25,33 @@
       </nav>
     {% endif %}
 
-    <p class="site-footer__copy">
-      &copy; {{ current_year }} {{ site.name }}. Tous droits réservés.
-    </p>
+    <div>
+      <p class="label label--ink">Credits</p>
+      {# Every photograph here comes from one Unsplash collection, and every one is
+         credited on the page it appears on. This says where the set came from. #}
+      <p style="margin-top: 0.75rem">
+        Photographs:
+        <a href="https://unsplash.com/collections/2393384/minimal-bw" rel="noopener" target="_blank">
+          the Minimal BW collection
+        </a>
+        on Unsplash. Every photograph is credited to its author.
+      </p>
+    </div>
+  </div>
+
+  <div class="site-footer__colophon">
+    <p class="label">&copy; {{ current_year }} {{ site.name }}</p>
 
     {% if menus.legal %}
-      <nav class="site-footer__legal" aria-label="Mentions légales">
-        <ul>
+      <nav aria-label="Legal">
+        <ul style="display: flex; gap: 1.5rem" class="label">
           {% for item in menus.legal.items %}
             <li><a href="{{ item.link }}">{{ item.title }}</a></li>
           {% endfor %}
         </ul>
       </nav>
     {% endif %}
+
+    <p class="label">Built with Føhn</p>
   </div>
 </footer>

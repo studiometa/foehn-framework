@@ -1,30 +1,30 @@
 {% extends 'layouts/base.twig' %}
 
 {% block content %}
-  <div class="search-results container">
-    <header class="search-results__header">
-      <h1>Recherche : « {{ search_query }} »</h1>
-      <p>
-        {{ found_posts }} résultat{{ found_posts > 1 ? 's' : '' }} trouvé{{ found_posts > 1
-          ? 's'
-          : '' }}.
-      </p>
-    </header>
+  <section class="shell masthead">
+    <p class="label label--ink">Search</p>
+    <h1 class="title" style="margin-top: 0.75rem">« {{ search_query }} »</h1>
+    <p class="label" style="margin-top: 1.5rem">
+      {{ found_posts }} result{{ found_posts > 1 ? 's' : '' }}
+    </p>
+  </section>
 
-    {% if posts %}
-      <div class="grid grid--2">
-        {% for post in posts %}
-          {% include 'components/card-post.twig' with {
-            post: post
-          } %}
-        {% endfor %}
-      </div>
-
-      {% include 'components/pagination.twig' %}
+  <section class="shell">
+    {% for post in posts %}
+      <a class="index-row" href="{{ post.link }}">
+        <span class="label index-number">{{ '%02d'|format(loop.index) }}</span>
+        <span>
+          <span class="index-row__title">{{ post.title }}</span>
+          <span class="label" style="display: block; margin-top: 0.5rem">{{ post.post_type }}</span>
+        </span>
+        <span class="index-row__aside label index-number">{{ post.date('Y') }}</span>
+      </a>
     {% else %}
-      <p>
-        Aucun résultat pour votre recherche.
-      </p>
+      <p>No results.</p>
+    {% endfor %}
+
+    {% if pagination %}
+      {% include 'components/pagination.twig' %}
     {% endif %}
-  </div>
+  </section>
 {% endblock %}

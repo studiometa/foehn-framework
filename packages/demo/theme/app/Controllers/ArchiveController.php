@@ -9,7 +9,7 @@ use Studiometa\Foehn\Contracts\TemplateControllerInterface;
 use Studiometa\Foehn\Contracts\ViewEngineInterface;
 use Studiometa\Foehn\Views\TemplateContext;
 
-#[AsTemplateController(['archive', 'archive-*', 'front-page', 'home', 'category', 'tag', 'tax-*'])]
+#[AsTemplateController(['archive', 'archive-*', 'category', 'tag', 'tax-*'])]
 final readonly class ArchiveController implements TemplateControllerInterface
 {
     public function __construct(
@@ -30,13 +30,16 @@ final readonly class ArchiveController implements TemplateControllerInterface
             get_the_archive_description(),
         );
 
-        $template = match (true) {
-            is_post_type_archive() => 'pages/archive-' . get_query_var('post_type'),
-            is_category() => 'pages/category',
-            is_tag() => 'pages/tag',
-            default => 'pages/archive',
+        // renderFirst rather than render: a post type archive with no template of
+        // its own falls back to the generic one instead of throwing.
+        $templates = match (true) {
+            is_post_type_archive() => ['pages/archive-' . get_query_var('post_type'), 'pages/archive'],
+            is_category() => ['pages/category', 'pages/archive'],
+            is_tag() => ['pages/tag', 'pages/archive'],
+            is_tax() => ['pages/taxonomy-' . get_queried_object()?->taxonomy, 'pages/archive'],
+            default => ['pages/archive'],
         };
 
-        return $this->view->render($template, $context);
+        return $this->view->renderFirst($templates, $context);
     }
 }

@@ -54,7 +54,9 @@ final class TaxonomyDiscovery implements Discovery
         $this->addItem($location, [
             'attribute' => $attribute,
             'className' => $class->getName(),
-            'implementsConfig' => $class->implements(ConfiguresTaxonomy::class),
+            // See PostTypeDiscovery: Timber\Term also declares a protected
+            // constructor, so $class->implements() answers false for every taxonomy.
+            'implementsConfig' => is_a($class->getName(), ConfiguresTaxonomy::class, allow_string: true),
         ]);
     }
 

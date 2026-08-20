@@ -6,8 +6,10 @@ composer.lock
 # Generated web root
 /web/
 
-# Build output
+# Build output — vite now writes into the theme, which is what gets symlinked
+# into the web root; only files under theme/ are ever served.
 /dist/
+/theme/dist/
 .stylelintcache
 
 # Environment
@@ -27,6 +29,8 @@ composer.lock
 /.ddev/*
 !/.ddev/config.yaml
 !/.ddev/docker-compose.minio.yaml
+!/.ddev/nginx/
+!/.ddev/nginx/*.conf
 
 # OS
 .DS_Store
