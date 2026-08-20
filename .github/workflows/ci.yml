@@ -329,6 +329,19 @@ jobs:
           cp .env.example .env
           composer install --prefer-dist --no-progress --no-interaction
 
+      # theme/dist is generated, so it is not in the repository — and a starter that
+      # serves no stylesheet is the bug this job exists to catch.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Build the starter front-end
+        run: |
+          npm ci
+          npm run build --workspace packages/vite-plugin
+          npm run build --workspace packages/starter
+
       - name: Start ddev
         uses: ddev/github-action-setup-ddev@v1
         with:

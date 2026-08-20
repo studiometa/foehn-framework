@@ -8,6 +8,7 @@ composer.lock
 
 # Build output
 /dist/
+/theme/dist/
 .stylelintcache
 
 # Environment

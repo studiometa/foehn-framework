@@ -18,8 +18,13 @@ fail() {
 	exit 1
 }
 
-url="$(ddev exec 'cd /var/www/html && wp option get home' 2>/dev/null | tail -n1 | tr -d '\r')"
-[ -n "$url" ] || fail 'could not read the site URL from WordPress'
+# `|| true` because a WordPress that cannot boot makes wp exit non-zero, and
+# `set -o pipefail` would then end the run here with status 255 and no message —
+# the fail below is what has something to say about it.
+url="$(ddev exec 'cd /var/www/html && wp option get home' 2>/dev/null | tail -n1 | tr -d '\r' || true)"
+[ -n "$url" ] || fail 'could not read the site URL — WordPress did not boot
+
+$(ddev exec "cd /var/www/html && wp option get home" 2>&1 | grep -v Deprecated | tail -12)'
 
 printf '→ %s\n' "$url"
 
