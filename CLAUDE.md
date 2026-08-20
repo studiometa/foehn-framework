@@ -113,3 +113,5 @@ Check `.planning/task_plan.md` for current implementation status.
 - Tags use semver without `v` prefix (e.g., `0.1.0`, not `v0.1.0`)
 - Update CHANGELOG.md before tagging
 - GitHub Actions workflow handles release creation automatically
+- Every package carries the same version, PHP and npm alike. The release commit sets `packages/vite-plugin/package.json` to the version being tagged and raises the `@studiometa/foehn-vite-plugin` range in `packages/starter/package.json` and `packages/demo/package.json` to match — the range is caret-pinned, so a minor release is outside it. The publish job compares the two and fails the release rather than publish a version nobody tagged
+- The Vite plugin publishes to npm through trusted publishing. There is no `NPM_TOKEN`: the job proves its identity with an OIDC token, against a trusted publisher configured on npmjs.com that names this repository and `release.yml`. A rename of the workflow file breaks publishing until the trusted publisher is updated
