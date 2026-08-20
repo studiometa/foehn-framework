@@ -6,5 +6,5 @@ namespace Demo\ImageSizes;
 
 use Studiometa\Foehn\Attributes\AsImageSize;
 
-#[AsImageSize(width: 400, height: 300, crop: true)]
+#[AsImageSize(width: 800, height: 600, crop: true)]
 final class CardImageSize {}

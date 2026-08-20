@@ -1,0 +1,29 @@
+{% extends 'layouts/base.twig' %}
+
+{% block content %}
+  <article>
+    <header class="shell masthead">
+      <h1 class="title">{{ post.title }}</h1>
+
+      {% if post.post_excerpt %}
+        <p class="lead" style="margin-top: clamp(1rem, 3vw, 2rem)">{{ post.post_excerpt }}</p>
+      {% endif %}
+    </header>
+
+    <div class="shell grid">
+      {% if post.thumbnail %}
+        <div class="col-5">
+          {% include 'components/photograph.twig' with {
+            image: post.thumbnail,
+            loading: 'eager',
+            sizes: '(min-width: 48rem) 40vw, 100vw'
+          } %}
+        </div>
+      {% endif %}
+
+      <div class="prose {{ post.thumbnail ? 'at-7-6' : 'col-8' }}">
+        {{ post.content }}
+      </div>
+    </div>
+  </article>
+{% endblock %}

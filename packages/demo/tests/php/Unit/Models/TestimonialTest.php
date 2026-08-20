@@ -20,8 +20,8 @@ describe('Testimonial', function () {
         $attr = $attrs[0]->newInstance();
 
         expect($attr->name)->toBe('testimonial');
-        expect($attr->singular)->toBe('Témoignage');
-        expect($attr->plural)->toBe('Témoignages');
+        expect($attr->singular)->toBe('Testimonial');
+        expect($attr->plural)->toBe('Testimonials');
         expect($attr->public)->toBeFalse();
         expect($attr->showInRest)->toBeTrue();
         expect($attr->menuIcon)->toBe('dashicons-format-quote');

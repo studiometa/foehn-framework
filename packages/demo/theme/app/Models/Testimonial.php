@@ -9,8 +9,8 @@ use Studiometa\Foehn\Models\Post;
 
 #[AsPostType(
     name: 'testimonial',
-    singular: 'Témoignage',
-    plural: 'Témoignages',
+    singular: 'Testimonial',
+    plural: 'Testimonials',
     public: false,
     showInRest: true,
     menuIcon: 'dashicons-format-quote',

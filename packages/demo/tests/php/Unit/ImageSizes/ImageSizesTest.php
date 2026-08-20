@@ -15,8 +15,8 @@ describe('ImageSizes', function () {
 
         $attr = $attrs[0]->newInstance();
 
-        expect($attr->width)->toBe(400);
-        expect($attr->height)->toBe(300);
+        expect($attr->width)->toBe(800);
+        expect($attr->height)->toBe(600);
         expect($attr->crop)->toBeTrue();
     });
 

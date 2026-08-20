@@ -1,8 +1,64 @@
 # Assets
 
-Føhn provides a helper class for enqueuing scripts and styles from [`@studiometa/webpack-config`](https://github.com/studiometa/webpack-config) manifests.
+Føhn provides two helpers for enqueuing scripts and styles, one per build tool.
 
-## Installation
+| Build tool                                                                   | Helper            | Reads                       |
+| ---------------------------------------------------------------------------- | ----------------- | --------------------------- |
+| [Vite](https://vite.dev), through `@studiometa/foehn-vite-plugin`            | `ViteManifest`    | `dist/.vite/manifest.json`  |
+| [`@studiometa/webpack-config`](https://github.com/studiometa/webpack-config) | `WebpackManifest` | `dist/assets-manifest.json` |
+
+They are not interchangeable: the two tools emit different formats. Reach for `ViteManifest` on a new project — it is what the starter and the demo use.
+
+## Vite
+
+```php
+<?php
+
+namespace App\Hooks;
+
+use Studiometa\Foehn\Assets\ViteManifest;
+use Studiometa\Foehn\Attributes\AsAction;
+
+final class AssetHooks
+{
+    #[AsAction('wp_enqueue_scripts')]
+    public function enqueue(): void
+    {
+        ViteManifest::fromTheme()
+            ->enqueue('theme/assets/css/app.css', handle: 'theme-styles')
+            ->enqueue('theme/assets/js/app.js', handle: 'theme-app', inFooter: true);
+    }
+}
+```
+
+Entry names are the paths given to the plugin's `input` in `vite.config.js`, because those are the keys Vite writes into the manifest. They are relative to the Vite project root, which is usually the package rather than the theme — so `theme/assets/js/app.js`, not `assets/js/app.js`.
+
+### What it handles for you
+
+**The dev server.** While `npm run dev` runs, the plugin writes a `hot` file holding the server's URL. `ViteManifest` then loads the Vite client and the entries from that server instead of from the build, so hot module replacement works and a stale `dist/` cannot shadow your edits. Nothing in the theme has to branch on it.
+
+**The CSS a script imported.** A Vite JavaScript chunk carries the stylesheets it imported in a `css` array, separate from its own `file`. Enqueue the script and miss that array and the page loads with no styles and no error anywhere — so `enqueue()` always registers both.
+
+**The module type.** Vite emits ES modules, and a classic `<script>` tag will not parse one. `wp_script_add_data($handle, 'type', 'module')` looks like the way to say so and is not: `WP_Scripts` reads `strategy`, `before`, `after` and `data`, never `type`. `ViteManifest` rewrites the tag through `script_loader_tag`, and only for the handles it enqueued.
+
+**A missing build.** No manifest and no hot file means nothing is enqueued, rather than a fatal error. `exists()` reports which case you are in, and `isDevServer()` whether the dev server is running.
+
+### Where the build has to go
+
+`dist/` must be **inside** the theme. Only the theme directory is served, so a build written beside it is never reachable from a browser:
+
+```js
+foehn({
+  input: ["theme/assets/js/app.js", "theme/assets/css/app.css"],
+  outDir: "theme/dist",
+});
+```
+
+`fromTheme()` looks in `dist/` under the active theme; pass a different relative path if yours differs. `fromChildTheme()` does the same against the child theme.
+
+## Webpack
+
+### Installation
 
 The WebpackManifest helper requires the PHP companion package:
 
@@ -10,7 +66,7 @@ The WebpackManifest helper requires the PHP companion package:
 composer require studiometa/webpack-config
 ```
 
-## Basic Usage
+### Basic Usage
 
 Use the `WebpackManifest` class with `#[AsAction]` to enqueue your theme assets:
 
@@ -41,9 +97,9 @@ This will:
 3. Enqueue all JS files from the `js/app` entry (in the footer)
 4. Add content-based version hashes for cache busting
 
-## Factory Methods
+### Factory Methods
 
-### fromTheme()
+#### fromTheme()
 
 Creates a manifest instance from the parent theme directory:
 
@@ -55,7 +111,7 @@ WebpackManifest::fromTheme();
 WebpackManifest::fromTheme('/build/manifest.json', 'build/');
 ```
 
-### fromChildTheme()
+#### fromChildTheme()
 
 Creates a manifest instance from the child theme directory:
 
@@ -63,7 +119,7 @@ Creates a manifest instance from the child theme directory:
 WebpackManifest::fromChildTheme();
 ```
 
-### Constructor
+#### Constructor
 
 For full control, use the constructor directly:
 
@@ -76,9 +132,9 @@ $manifest = new WebpackManifest(
 );
 ```
 
-## Enqueueing Assets
+### Enqueueing Assets
 
-### enqueueEntry()
+#### enqueueEntry()
 
 Enqueue all assets from a single entry:
 
@@ -92,7 +148,7 @@ $manifest->enqueueEntry(
 );
 ```
 
-### enqueueEntries()
+#### enqueueEntries()
 
 Enqueue multiple entries at once:
 
@@ -104,7 +160,7 @@ $manifest->enqueueEntries(
 );
 ```
 
-## Fluent Interface
+### Fluent Interface
 
 All methods return `$this` for chaining:
 
@@ -115,7 +171,7 @@ WebpackManifest::fromTheme()
     ->enqueueEntry('css/admin/editor-style', prefix: 'theme-editor');
 ```
 
-## Conditional Loading
+### Conditional Loading
 
 Since you control when to call `enqueueEntry()`, conditional loading is straightforward:
 
@@ -154,7 +210,7 @@ public function enqueueLoginAssets(): void
 }
 ```
 
-## Graceful Degradation
+### Graceful Degradation
 
 The helper fails gracefully when the manifest file is not found (e.g., during development before the first build):
 
@@ -171,7 +227,7 @@ if (!$manifest->exists()) {
 $manifest->enqueueEntry('css/app', prefix: 'theme');
 ```
 
-## Advanced: Accessing the Underlying Manifest
+### Advanced: Accessing the Underlying Manifest
 
 For advanced use cases, access the underlying `Studiometa\WebpackConfig\Manifest` instance:
 

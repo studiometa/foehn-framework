@@ -224,6 +224,10 @@ final class WebRootGenerator
                     'S3_UPLOADS_KEY' => \$env('AWS_ACCESS_KEY_ID'),
                     'S3_UPLOADS_SECRET' => \$env('AWS_SECRET_ACCESS_KEY'),
                     'S3_UPLOADS_BUCKET_URL' => \$env('S3_UPLOADS_BUCKET_URL'),
+                    // Set when a webserver or CDN maps /wp-content/uploads/ to the
+                    // bucket: WordPress then keeps writing its own URLs, and the
+                    // media library stays on the site's own domain.
+                    'S3_UPLOADS_DISABLE_REPLACE_UPLOAD_URL' => \$env('S3_UPLOADS_DISABLE_REPLACE_UPLOAD_URL'),
                 ] as \$constant => \$value) {
                     if (\$value !== null && !defined(\$constant)) {
                         define(\$constant, \$value);

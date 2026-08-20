@@ -1,0 +1,45 @@
+{#
+  One photograph, with its credit underneath.
+
+  The credit is not decoration and not optional: these are other people's
+  photographs, published under the Unsplash licence, which asks that the
+  photographer be named. It is stored on the attachment as post meta at import and
+  read back here, so a photograph can never appear on the site without it.
+#}
+{% set orientation = image.height > image.width ? 'portrait' : 'landscape' %}
+{% set photographer = image.meta('credit_photographer') %}
+{% set photographer_url = image.meta('credit_url') %}
+
+<figure>
+  <div class="plate plate--{{ orientation }}">
+    {% if image %}
+      <img
+        src="{{ image.src(size|default('large')) }}"
+        srcset="{{ image.srcset(size|default('large')) }}"
+        sizes="{{ sizes|default('(min-width: 48rem) 60vw, 100vw') }}"
+        width="{{ image.width }}"
+        height="{{ image.height }}"
+        alt="{{ image.alt ?: caption|default('') }}"
+        loading="{{ loading|default('lazy') }}"
+        decoding="async" />
+    {% endif %}
+  </div>
+
+  <figcaption class="credit">
+    {% if caption is defined and caption %}
+      <span>{{ caption }}</span>
+    {% endif %}
+
+    {% if photographer %}
+      <span>
+        Photo&nbsp;:
+        {% if photographer_url %}
+          <a href="{{ photographer_url }}" rel="noopener nofollow" target="_blank">{{ photographer }}</a>
+        {% else %}
+          {{ photographer }}
+        {% endif %}
+        / Unsplash
+      </span>
+    {% endif %}
+  </figcaption>
+</figure>

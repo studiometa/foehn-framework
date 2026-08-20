@@ -260,10 +260,34 @@ jobs:
           cp .env.example .env
           composer install --prefer-dist --no-progress --no-interaction
 
+      # theme/dist is generated, so it is not in the repository — and the site the
+      # smoke test drives should be the built one, stylesheet included.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Build the demo front-end
+        run: |
+          npm ci
+          # The demo's vite.config.js imports @studiometa/foehn-vite-plugin, which is
+          # a workspace package whose entry point is its own build output. Unbuilt, it
+          # has no dist/ and vite cannot resolve the config at all.
+          npm run build --workspace packages/vite-plugin
+          npm run build --workspace packages/demo
+
       - name: Start ddev
         uses: ddev/github-action-setup-ddev@v1
         with:
           ddevDir: packages/demo
+
+      # ddev's post-start hook installs WordPress and nothing else, so the demo would
+      # be an empty site with a theme on it. This is also the only test the restore
+      # path gets: if the dump, the photographs or the rewrite flush stop working,
+      # every page assertion below fails.
+      - name: Mount the demo site
+        working-directory: packages/demo
+        run: ./database/restore.sh
 
       - name: Run the smoke test
         working-directory: packages/demo
@@ -304,6 +328,19 @@ jobs:
         run: |
           cp .env.example .env
           composer install --prefer-dist --no-progress --no-interaction
+
+      # theme/dist is generated, so it is not in the repository — and a starter that
+      # serves no stylesheet is the bug this job exists to catch.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Build the starter front-end
+        run: |
+          npm ci
+          npm run build --workspace packages/vite-plugin
+          npm run build --workspace packages/starter
 
       - name: Start ddev
         uses: ddev/github-action-setup-ddev@v1

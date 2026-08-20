@@ -6,5 +6,5 @@ namespace Demo\Menus;
 
 use Studiometa\Foehn\Attributes\AsMenu;
 
-#[AsMenu('footer', 'Menu footer')]
+#[AsMenu('footer', 'Footer menu')]
 final class FooterMenu {}

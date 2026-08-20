@@ -24,8 +24,13 @@ fail() {
 	exit 1
 }
 
-url="$(ddev exec 'cd /var/www/html && wp option get home' 2>/dev/null | tail -n1 | tr -d '\r')"
-[ -n "$url" ] || fail 'could not read the site URL from WordPress'
+# `|| true` because a WordPress that cannot boot makes wp exit non-zero, and
+# `set -o pipefail` would then end the run here with status 255 and no message —
+# the fail below is what has something to say about it.
+url="$(ddev exec 'cd /var/www/html && wp option get home' 2>/dev/null | tail -n1 | tr -d '\r' || true)"
+[ -n "$url" ] || fail 'could not read the site URL — WordPress did not boot
+
+$(ddev exec "cd /var/www/html && wp option get home" 2>&1 | grep -v Deprecated | tail -12)'
 
 printf '→ %s\n' "$url"
 
@@ -72,3 +77,23 @@ ddev exec 'cd /var/www/html && wp foehn discovery:status' >/dev/null 2>&1 ||
 	fail '`wp foehn discovery:status` did not run'
 
 printf '✓ wp foehn commands are registered\n'
+
+# A theme that builds assets nobody enqueues serves pages with no stylesheet and
+# no error — which is how this starter shipped until ViteManifest existed. The tags
+# have to be on the page, and the files behind them have to resolve.
+page="$(curl -sk "$url/")"
+
+for asset in $(printf '%s' "$page" | grep -oE "https://[^\"']*/dist/[^\"']*\.(css|js)" | sort -u); do
+	code="$(curl -sk -o /dev/null -w '%{http_code}' "$asset")"
+	[ "$code" = "200" ] || fail "the built asset $asset returned HTTP $code"
+	found=1
+done
+
+[ -n "${found:-}" ] || fail "no built asset on the page — the theme enqueued nothing
+
+Vite writes theme/dist; AssetHooks enqueues from it through ViteManifest. An
+unbuilt theme (no theme/dist/.vite/manifest.json) looks exactly like this.
+
+$(printf '%s' "$page" | grep -iE 'stylesheet|<script' | head -5)"
+
+printf '✓ the built stylesheet and script are on the page\n'

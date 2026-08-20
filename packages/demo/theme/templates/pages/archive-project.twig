@@ -1,0 +1,48 @@
+{% extends 'layouts/base.twig' %}
+
+{% block content %}
+  {#
+    The index is a table that behaves like a poster: number flush left, title at
+    display size, year and place flush right. No thumbnails — the point of the page
+    is the shape of the body of work, not a preview of it.
+  #}
+  <section class="shell masthead">
+    <p class="label label--ink">Index</p>
+    <h1 class="title" style="margin-top: 0.75rem">Projects</h1>
+
+    <div class="masthead__meta">
+      <p class="label">{{ posts|length }} series</p>
+      {% if archive_description %}
+        <div class="label">{{ archive_description|striptags|trim }}</div>
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="shell">
+    {% for project in posts %}
+      <a class="index-row" href="{{ project.link }}">
+        <span class="label index-number">{{ '%02d'|format(loop.index) }}</span>
+
+        <span>
+          <span class="index-row__title">{{ project.title }}</span>
+          {% if project.categories %}
+            <span class="label" style="display: block; margin-top: 0.5rem">
+              {{ project.categories|map(term => term.title)|join(', ') }}
+            </span>
+          {% endif %}
+        </span>
+
+        <span class="index-row__aside label">
+          {% if project.location %}<span>{{ project.location }}</span>{% endif %}
+          {% if project.year %}<span class="index-number">{{ project.year }}</span>{% endif %}
+        </span>
+      </a>
+    {% else %}
+      <p>No projects published yet.</p>
+    {% endfor %}
+
+    {% if pagination %}
+      {% include 'components/pagination.twig' %}
+    {% endif %}
+  </section>
+{% endblock %}

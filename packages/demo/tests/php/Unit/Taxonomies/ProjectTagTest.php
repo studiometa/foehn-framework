@@ -2,27 +2,27 @@
 
 declare(strict_types=1);
 
-use Demo\Taxonomies\ProductTag;
+use Demo\Taxonomies\ProjectTag;
 use Studiometa\Foehn\Attributes\AsTaxonomy;
 use Timber\Term;
 
-describe('ProductTag', function () {
+describe('ProjectTag', function () {
     it('extends Timber Term', function () {
-        expect(is_subclass_of(ProductTag::class, Term::class))->toBeTrue();
+        expect(is_subclass_of(ProjectTag::class, Term::class))->toBeTrue();
     });
 
     it('has AsTaxonomy attribute with correct config', function () {
-        $ref = new ReflectionClass(ProductTag::class);
+        $ref = new ReflectionClass(ProjectTag::class);
         $attrs = $ref->getAttributes(AsTaxonomy::class);
 
         expect($attrs)->toHaveCount(1);
 
         $attr = $attrs[0]->newInstance();
 
-        expect($attr->name)->toBe('product_tag');
+        expect($attr->name)->toBe('project_tag');
         expect($attr->singular)->toBe('Étiquette');
         expect($attr->plural)->toBe('Étiquettes');
-        expect($attr->postTypes)->toBe(['product']);
+        expect($attr->postTypes)->toBe(['project']);
         expect($attr->hierarchical)->toBeFalse();
         expect($attr->showInRest)->toBeTrue();
     });

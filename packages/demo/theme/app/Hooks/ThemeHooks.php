@@ -28,6 +28,20 @@ final class ThemeHooks
         add_theme_support('editor-styles');
     }
 
+    /**
+     * The projects index is a curated sequence, so it follows menu_order rather than
+     * the date a series happened to be published.
+     */
+    #[AsAction('pre_get_posts')]
+    public function orderProjects(\WP_Query $query): void
+    {
+        if (is_admin() || !$query->is_main_query() || !$query->is_post_type_archive('project')) {
+            return;
+        }
+
+        $query->set('orderby', ['menu_order' => 'ASC', 'date' => 'DESC']);
+    }
+
     #[AsFilter('excerpt_length')]
     public function excerptLength(): int
     {

@@ -1,0 +1,63 @@
+{% extends 'layouts/base.twig' %}
+
+{% block content %}
+  <article>
+    <header class="shell masthead">
+      <p class="label label--ink">
+        <a href="{{ site.url }}/projects/">Projects</a>
+        {% if post.categories %}
+          / {{ post.categories|map(term => term.title)|join(', ') }}
+        {% endif %}
+      </p>
+
+      <h1 class="title" style="margin-top: 0.75rem">{{ post.title }}</h1>
+
+      <div class="grid" style="margin-top: clamp(1.5rem, 4vw, 3rem)">
+        {% if post.post_excerpt %}
+          <div class="lead col-6">{{ post.post_excerpt }}</div>
+        {% endif %}
+
+        {% if post.facts %}
+          <div class="facts at-7-5">
+            {% for label, value in post.facts %}
+              <div class="facts__row">
+                <span class="label">{{ label }}</span>
+                <span>{{ value }}</span>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      </div>
+    </header>
+
+    {# The series itself. The first plate is eager — it is the largest thing above
+       the fold and the one worth the request. #}
+    <div class="shell gallery" style="margin-top: clamp(2rem, 6vw, 4rem)">
+      {% for image in post.photographs %}
+        {% include 'components/photograph.twig' with {
+          image: image,
+          loading: loop.first ? 'eager' : 'lazy',
+          sizes: loop.index0 % 3 == 0 ? '100vw' : '(min-width: 48rem) 58vw, 100vw'
+        } %}
+      {% endfor %}
+    </div>
+
+    {% if post.content|striptags|trim %}
+      <div class="shell prose" style="margin-top: clamp(3rem, 8vw, 6rem)">
+        {{ post.content }}
+      </div>
+    {% endif %}
+
+    <nav class="shell" style="margin-top: clamp(3rem, 8vw, 6rem)" aria-label="Projects">
+      <hr class="rule rule--ink" />
+      <div style="display: flex; justify-content: space-between; gap: 1rem; padding-top: 1rem">
+        <span class="label">
+          {% if post.prev %}<a href="{{ post.prev.link }}">← {{ post.prev.title }}</a>{% endif %}
+        </span>
+        <span class="label" style="text-align: right">
+          {% if post.next %}<a href="{{ post.next.link }}">{{ post.next.title }} →</a>{% endif %}
+        </span>
+      </div>
+    </nav>
+  </article>
+{% endblock %}

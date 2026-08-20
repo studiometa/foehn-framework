@@ -18,8 +18,13 @@ fail() {
 	exit 1
 }
 
-url="$(ddev exec 'cd /var/www/html && wp option get home' 2>/dev/null | tail -n1 | tr -d '\r')"
-[ -n "$url" ] || fail 'could not read the site URL from WordPress'
+# `|| true` because a WordPress that cannot boot makes wp exit non-zero, and
+# `set -o pipefail` would then end the run here with status 255 and no message —
+# the fail below is what has something to say about it.
+url="$(ddev exec 'cd /var/www/html && wp option get home' 2>/dev/null | tail -n1 | tr -d '\r' || true)"
+[ -n "$url" ] || fail 'could not read the site URL — WordPress did not boot
+
+$(ddev exec "cd /var/www/html && wp option get home" 2>&1 | grep -v Deprecated | tail -12)'
 
 printf '→ %s\n' "$url"
 
@@ -95,7 +100,7 @@ printf '✓ wp foehn commands are registered\n'
 listing="$(ddev exec 'cd /var/www/html && wp foehn discovery:list --discovery=PostType' 2>/dev/null || true)"
 
 case "$listing" in
-*"AsPostType(name: product"*) ;;
+*"AsPostType(name: project"*) ;;
 *) fail "wp foehn discovery:list did not describe the starter's post types
 $listing" ;;
 esac
@@ -138,23 +143,71 @@ printf '✓ a rewrite rule answers its URL\n'
 # A bucket that accepts writes and serves nothing is the expensive failure: the
 # uploads look fine in the media library and every image on the site 404s. The
 # assertions above prove the URL was written; only a request proves it resolves,
-# and it has to come from out here rather than from the container, because a
-# browser is not on the project network either.
+# and it has to come from out here rather than from the container, because that is
+# where a browser stands. The whole path is exercised: nginx takes
+# /wp-content/uploads/, proxies it to MinIO, and hands back the bytes.
 image="$(ddev exec "cd /var/www/html && wp eval 'echo wp_get_attachment_url($attachment);'" 2>/dev/null | tr -d '\r' | tail -n1)"
 
 served="$(curl -sk -o /dev/null -w '%{http_code} %{content_type}' "$image")"
 
 case "$served" in
 "200 image/jpeg") ;;
-*) fail "the uploads bucket URL does not serve what was written to it
+*) fail "uploads are not being served
 
     url:      $image
     response: $served
 
-MinIO ignores the public-read ACL the plugin sets unless the bucket policy allows
-anonymous reads — see tests/smoke/provision-bucket.php.
+Either .ddev/nginx/uploads-proxy.conf is not mapping /wp-content/uploads/ to the
+bucket, or MinIO is refusing the read: it ignores the public-read ACL the plugin
+sets unless the bucket policy allows anonymous reads. See
+tests/smoke/provision-bucket.php.
 
 $(curl -sk "$image" | head -c 400)" ;;
 esac
 
-printf '✓ uploads are offloaded, and the bucket URL serves them\n'
+printf '✓ uploads are offloaded, and served from the site\x27s own domain\n'
+
+# The demo is a site before it is a fixture, so its four pages are checked as pages:
+# each must answer 200 and carry the thing that makes it that page. A template that
+# renders an empty shell still returns 200, which is why each grep is for content.
+check_page() {
+	local path="$1" needle="$2" label="$3"
+	local body status
+
+	body="$(mktemp)"
+	status="$(curl -sk -o "$body" -w '%{http_code}' "$url$path")"
+
+	[ "$status" = "200" ] || {
+		rm -f "$body"
+		fail "GET $path returned HTTP $status"
+	}
+
+	grep -q "$needle" "$body" || {
+		local head
+		head="$(head -c 400 "$body")"
+		rm -f "$body"
+		fail "$path rendered without $label
+
+$head"
+	}
+
+	rm -f "$body"
+	printf '✓ %s\n' "$label"
+}
+
+check_page "/" "card__title" "the homepage lists a selection of projects"
+check_page "/projects/" "index-row__title" "the projects index lists the series"
+check_page "/projects/corridors/" "plate--" "a project page shows its photographs"
+check_page "/about/" "prose" "the about page renders its copy"
+
+# Unsplash asks that photographers be credited. The credit is stored on the
+# attachment at import and printed under every plate, so its absence is a licensing
+# problem rather than a cosmetic one.
+credits="$(curl -sk "$url/projects/corridors/" | grep -c 'class="credit"')"
+plates="$(curl -sk "$url/projects/corridors/" | grep -c 'class="plate ')"
+
+[ "$credits" -ge 5 ] && [ "$credits" = "$plates" ] || fail "every photograph must carry a credit
+  plates:  $plates
+  credits: $credits"
+
+printf '✓ every photograph is credited\n'

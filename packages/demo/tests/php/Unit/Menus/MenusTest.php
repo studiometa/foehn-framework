@@ -17,7 +17,7 @@ describe('Menus', function () {
         $attr = $attrs[0]->newInstance();
 
         expect($attr->location)->toBe('header');
-        expect($attr->description)->toBe('Menu principal');
+        expect($attr->description)->toBe('Primary menu');
     });
 
     it('FooterMenu has correct attribute', function () {
@@ -29,7 +29,7 @@ describe('Menus', function () {
         $attr = $attrs[0]->newInstance();
 
         expect($attr->location)->toBe('footer');
-        expect($attr->description)->toBe('Menu footer');
+        expect($attr->description)->toBe('Footer menu');
     });
 
     it('LegalMenu has correct attribute', function () {
@@ -41,6 +41,6 @@ describe('Menus', function () {
         $attr = $attrs[0]->newInstance();
 
         expect($attr->location)->toBe('legal');
-        expect($attr->description)->toBe('Mentions légales');
+        expect($attr->description)->toBe('Legal menu');
     });
 });

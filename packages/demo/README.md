@@ -1,8 +1,12 @@
 # Foehn Demo
 
-Every feature [Føhn](https://github.com/studiometa/foehn-framework) ships, in one working WordPress theme.
+Every feature [Føhn](https://github.com/studiometa/foehn-framework) ships, in one working WordPress theme — and a site worth looking at rather than a gallery of switched-on options.
+
+It is a photographer's portfolio: a homepage, an index of six series, a page per series and an about page, set in a Swiss idiom of two colours, one grotesque and a twelve-column grid. Every attribute the framework ships is used because the site needed it, which is the only honest way to demonstrate a framework.
 
 This is the reference project, not the one to start from. It exists to be read, to be poked at, and to be tested: the framework's end-to-end and browser suites run against it, so every attribute here is exercised against a real WordPress rather than against function stubs.
+
+The database and the photographs are committed — see [`database/`](database/README.md) — so `./database/restore.sh` puts the whole site up in one step.
 
 **Starting a project?** Use [`studiometa/foehn-starter`](https://github.com/studiometa/foehn-starter), which is the same theme with the demonstrations taken out.
 
@@ -29,14 +33,15 @@ ddev launch /wp/wp-admin # the admin
 
 | Attribute                     | Here                                                           |
 | ----------------------------- | -------------------------------------------------------------- |
-| `#[AsPostType]`               | `Models/Product.php`, `Models/Testimonial.php`                 |
-| `#[AsPostMeta]`               | `Models/Product.php` — `price`, `sale_price`                   |
-| `#[AsTaxonomy]`               | `Taxonomies/ProductCategory.php`, `Taxonomies/ProductTag.php`  |
+| `#[AsPostType]`               | `Models/Project.php`, `Models/Testimonial.php`                 |
+| `#[AsPostMeta]`               | `Models/Project.php` — `client`, `year`, `location`, `camera`  |
+| `#[AsTaxonomy]`               | `Taxonomies/ProjectCategory.php`, `Taxonomies/ProjectTag.php`  |
 | `#[AsBlock]`                  | `Blocks/HeroBlock.php`, `CalloutBlock.php`, `SectionBlock.php` |
 | `#[AsBlockBinding]`           | `Bindings/ReadingTime.php`                                     |
 | `#[AsSettingsPage]`           | `Settings/ThemeSettings.php`, with a Twig form                 |
 | `#[AsRewriteRule]`            | `Routes/HealthCheckRoute.php` — `GET /_health`                 |
-| `#[AsTemplateController]`     | `Controllers/`                                                 |
+| `#[AsTemplateController]`     | `Controllers/` — front page, projects index, project, page     |
+| Page cache                    | `theme/app/page-cache.config.php`                              |
 | `#[AsContextProvider]`        | `ContextProviders/GlobalContextProvider.php`                   |
 | `#[AsImageSize]`              | `ImageSizes/`                                                  |
 | `#[AsMenu]`                   | `Menus/`                                                       |

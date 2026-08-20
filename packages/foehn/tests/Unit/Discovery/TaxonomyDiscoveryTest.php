@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Discovery\TaxonomyDiscovery;
+use Tests\Fixtures\ConfigurableTaxonomyFixture;
 use Tests\Fixtures\InvalidTaxonomyFixture;
 use Tests\Fixtures\NoAttributeFixture;
 use Tests\Fixtures\TaxonomyFixture;
@@ -26,6 +27,19 @@ describe('TaxonomyDiscovery', function () {
         expect($items[0]['attribute']->hierarchical)->toBeTrue();
         expect($items[0]['attribute']->postTypes)->toBe(['project']);
         expect($items[0]['implementsConfig'])->toBeFalse();
+    });
+
+    it('sees the configuration interface on a Timber term', function () {
+        $this->discovery->discover(
+            $this->location,
+            new \Tempest\Reflection\ClassReflector(ConfigurableTaxonomyFixture::class),
+        );
+
+        $items = iterator_to_array($this->discovery->getItems());
+
+        // Same trap as PostTypeDiscovery: Timber\Term is not instantiable either.
+        expect(new ReflectionClass(ConfigurableTaxonomyFixture::class)->isInstantiable())->toBeFalse();
+        expect($items[array_key_last($items)]['implementsConfig'])->toBeTrue();
     });
 
     it('ignores classes without taxonomy attribute', function () {
