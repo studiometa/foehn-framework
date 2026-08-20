@@ -56,7 +56,7 @@ describe('AsTaxonomy', function () {
     });
 
     it('is readonly', function () {
-        expect(AsTaxonomy::class)->toBeReadonly();
+        expect(AsTaxonomy::class)->toBeReadonlyClass();
     });
 
     it('is a class attribute', function () {

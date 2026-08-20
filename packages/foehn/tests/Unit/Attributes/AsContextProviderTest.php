@@ -33,7 +33,7 @@ describe('AsContextProvider', function () {
     });
 
     it('is readonly', function () {
-        expect(AsContextProvider::class)->toBeReadonly();
+        expect(AsContextProvider::class)->toBeReadonlyClass();
     });
 
     it('is a class attribute', function () {

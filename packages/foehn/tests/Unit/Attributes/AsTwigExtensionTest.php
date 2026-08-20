@@ -18,7 +18,7 @@ describe('AsTwigExtension', function () {
     });
 
     it('is readonly', function () {
-        expect(AsTwigExtension::class)->toBeReadonly();
+        expect(AsTwigExtension::class)->toBeReadonlyClass();
     });
 
     it('can be used as an attribute', function () {

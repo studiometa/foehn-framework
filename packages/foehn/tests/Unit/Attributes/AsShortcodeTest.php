@@ -12,7 +12,7 @@ describe('AsShortcode', function () {
     });
 
     it('is readonly', function () {
-        expect(AsShortcode::class)->toBeReadonly();
+        expect(AsShortcode::class)->toBeReadonlyClass();
     });
 
     it('is a method attribute', function () {

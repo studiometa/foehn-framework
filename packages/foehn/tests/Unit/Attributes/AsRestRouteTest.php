@@ -47,7 +47,7 @@ describe('AsRestRoute', function () {
     });
 
     it('is readonly', function () {
-        expect(AsRestRoute::class)->toBeReadonly();
+        expect(AsRestRoute::class)->toBeReadonlyClass();
     });
 
     it('is a repeatable method attribute', function () {

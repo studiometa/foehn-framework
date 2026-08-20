@@ -37,7 +37,8 @@
         "vlucas/phpdotenv": "^5.6"
     },
     "suggest": {
-        "studiometa/webpack-config": "Required for WebpackManifest asset helper"
+        "studiometa/webpack-config": "Required for WebpackManifest asset helper",
+        "studiometa/ui": "Twig UI components, auto-registered under the @ui and @svg namespaces"
     },
     "autoload": {
         "psr-4": {
@@ -53,9 +54,15 @@
             "Tests\\": "tests/"
         }
     },
+    "require-dev": {
+        "studiometa/ui": "^1.10"
+    },
     "config": {
         "sort-packages": true,
-        "optimize-autoloader": true
+        "optimize-autoloader": true,
+        "allow-plugins": {
+            "studiometa/ui": true
+        }
     },
     "minimum-stability": "stable",
     "prefer-stable": true

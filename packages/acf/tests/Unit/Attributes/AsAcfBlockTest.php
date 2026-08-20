@@ -56,7 +56,7 @@ describe('AsAcfBlock', function () {
     });
 
     it('is readonly', function () {
-        expect(AsAcfBlock::class)->toBeReadonly();
+        expect(AsAcfBlock::class)->toBeReadonlyClass();
     });
 
     it('is a class attribute', function () {

@@ -21,6 +21,7 @@
         "php": "^8.5",
         "composer/installers": "^2.0",
         "johnpbloch/wordpress": "^7.0",
+        "studiometa/ui": "^1.10",
         "studiometa/foehn": "^0.4",
         "studiometa/foehn-installer": "^0.4"
     },
@@ -52,7 +53,8 @@
         "allow-plugins": {
             "studiometa/foehn-installer": true,
             "johnpbloch/wordpress-core-installer": true,
-            "composer/installers": true
+            "composer/installers": true,
+            "studiometa/ui": true
         }
     },
     "minimum-stability": "stable",

@@ -18,7 +18,7 @@ describe('AsDiscovery', function () {
     });
 
     it('is readonly', function () {
-        expect(AsDiscovery::class)->toBeReadonly();
+        expect(AsDiscovery::class)->toBeReadonlyClass();
     });
 
     it('is a class attribute', function () {

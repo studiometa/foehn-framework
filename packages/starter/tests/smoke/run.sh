@@ -34,6 +34,12 @@ $(ddev exec "cd /var/www/html && wp option get home" 2>&1 | grep -v Deprecated |
 
 printf '→ %s\n' "$url"
 
+# A warm page cache would answer every request below with HTML rendered before the
+# change under test, so the run would pass on yesterday's page. The demo ships the
+# cache production-only and .env.example says local, but an .env that drifted is
+# exactly the sort of thing that makes a smoke suite lie.
+ddev exec 'cd /var/www/html && wp foehn cache:clear' >/dev/null 2>&1 || true
+
 body="$(mktemp)"
 trap 'rm -f "$body"' EXIT
 

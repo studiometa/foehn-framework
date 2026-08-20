@@ -2,7 +2,12 @@
 
 declare(strict_types=1);
 
-expect()->extend('toBeReadonly', function () {
+// Named toBeReadonlyClass rather than toBeReadonly: pest-plugin-arch v5 registers
+// an expectation under the latter, it wins the name, and its implementation throws
+// "Typed property ObjectDescriptionBase::$path must not be accessed before
+// initialization" against PHPUnit 13 — so every class asserted readonly failed for a
+// reason that had nothing to do with the class.
+expect()->extend('toBeReadonlyClass', function () {
     $reflection = new ReflectionClass($this->value);
 
     return $this->and($reflection->isReadonly())->toBeTrue();

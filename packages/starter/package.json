@@ -16,7 +16,6 @@
   },
   "devDependencies": {
     "@studiometa/foehn-vite-plugin": "*",
-    "@studiometa/js-toolkit": "^3.9.0",
     "@studiometa/oxlint-config": "^0.2.0",
     "@studiometa/prettier-config": "^4.4.0",
     "@studiometa/stylelint-config": "^4.1.0",
@@ -28,5 +27,9 @@
     "stylelint": "^16.26.0",
     "tailwindcss": "^4.3.0",
     "vite": "^8.0.0"
+  },
+  "dependencies": {
+    "@studiometa/js-toolkit": "^3.9.0",
+    "@studiometa/ui": "^1.10.0"
   }
 }
