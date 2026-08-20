@@ -7,13 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
-
-- **`packages/starter` splits in two.** It was doing two jobs that pull against each other — the minimal starting point `composer create-project` hands someone, and the demonstration of everything the framework ships — and every feature added made the second job heavier at the first one's expense. A new **`studiometa/foehn-demo`** takes the demonstration: every post type, taxonomy, block, binding, settings page, route, image size and DTO, plus the browser suite and the whole of `tests/smoke/`, which is where exhaustive coverage belongs. The starter keeps what a theme cannot render without — the boot, `foehn.config.php`, the four template controllers, the three menu locations its templates read, the global context provider, the theme supports, the templates and the front-end build with `@studiometa/foehn-vite-plugin` — and nothing else. Its own smoke test asks the one question it has to answer: does a project created from it boot and serve a page? The demo's theme namespace is `Demo\` rather than `App\`, which is the only thing in it a project would not copy
-- **Starter:** `HeroBlock` is a native block, `theme/hero`, and the starter requires no ACF at all. It was the one thing in there that needed a paid plugin to run, so that path was never exercised end to end — ACF Pro is not installed in CI, and `AcfBlockDiscovery` reported an item that could never register. Everything it did survives without one: the sidebar controls come from the attribute schema, and `compose()` still returns a typed `HeroContext` DTO. The starter now demonstrates the default path, and its integration test covers the whole of what it ships
+## [0.5.0] - 2026-08-20
 
 ### Added
 
+- **`ViteManifest`**, the helper `@studiometa/foehn-vite-plugin`'s README had been pointing at for a release without the framework shipping one. It reads whichever of the two things the plugin wrote: the `hot` file while `npm run dev` runs, so entries and the Vite client come from the dev server and hot module replacement works, or `dist/.vite/manifest.json` after a build. It is not `WebpackManifest` renamed — `@studiometa/webpack-config` emits an `assets-manifest.json` of entrypoints and Vite emits a flat map of chunks, which is why there are two classes rather than two branches. It covers the three things a theme gets wrong writing this itself: the stylesheets a JavaScript chunk lists in its `css` array, separate from its own `file`, and whose omission loads the page with no styles and no error; the module type, since `wp_script_add_data($handle, 'type', 'module')` looks like the way to say so and is not, because `WP_Scripts` reads `strategy`, `before`, `after` and `data` and never `type`; and a missing build, which enqueues nothing rather than fataling
+- **`studiometa/ui` integration.** `StudiometaUi` registers the `@ui` and `@svg` Twig namespaces the package ships its components under, on `timber/twig` — the namespaces exist only once its extension has been handed Twig's loader, which is why it cannot go through `#[AsTwigExtension]`: the container has no loader to autowire, and the loader only exists once Timber has built the environment. It is an opt-in hook class listed in `foehn.config.php`, because a framework hook class that registered itself for being in a scanned package would let a `composer update` change what a site does. The package stays a `suggest`, and the hook returns the environment untouched when it is absent, so the framework gains no dependency
+- The starter and the demo autoload their JavaScript components rather than wiring each one: `import.meta.glob` hands Vite a lazy importer per file, `fromMetaGlob` normalises it, `registerManifests` schedules the start, and the loader mounts whatever `[data-component]` it finds while fetching only those modules. Adding a component is dropping a file into `components/` — `app.js` never changes. `import '@studiometa/ui/autoload'` registers that package's manifest the same way, as a side effect of the import, so `data-component="Modal"` works with no import of `Modal` anywhere. `@studiometa/js-toolkit` and `@studiometa/ui` are runtime dependencies in both packages rather than dev ones, because they ship in the bundle a visitor runs
+- **The demo is a site rather than a gallery of switched-on options.** A photographer's portfolio — a homepage, an index of six series, a page per series and an about page — set in a Swiss idiom of two colours, one grotesque and a twelve-column grid. Every attribute is still exercised, but because a page needed it: `#[AsPostMeta]` carries the client and film stock a project page prints, `#[AsImageSize]` sizes the cards, `#[AsRewriteRule]` answers `/_health`, the settings page supplies the contact address in the footer, and an `@ui` accordion answers commission questions on the about page. Thirty photographs from one Unsplash collection travel with it, each carrying its photographer's name and profile link as attachment meta and printed under every plate — the smoke test fails when the count of credits stops matching the count of photographs. `database/` holds the whole site: a SQL dump, the photographs the dump cannot carry because uploads are offloaded, and `restore.sh`, which CI runs on every build so the restore path is tested rather than assumed
+- Uploads can be served from the site's own domain instead of the bucket's. `S3_UPLOADS_DISABLE_REPLACE_UPLOAD_URL` stops the plugin rewriting media URLs, and a webserver or CDN rule maps `/wp-content/uploads/` to the bucket — the setup `humanmade/s3-uploads` names in its own README. It removes the bucket hostname and port from every image URL, so a renamed project or a moved bucket no longer serves pages whose every image 404s with nothing in wp-admin to explain it. The installer defines the constant from the environment like the rest
 - **Uploads can go to object storage**, which is what makes a Føhn site deployable where local disk does not survive a release. `web/` is generated and `web/wp/` comes from Composer, so a deploy can throw the document root away and rebuild it — `web/wp-content/uploads/` was the exception, and the one directory holding something neither the repository nor Composer can reproduce. Føhn does **not** implement the offload: [`humanmade/s3-uploads`](https://github.com/humanmade/S3-Uploads) has done that for 2.5 million installs, and a first draft of the spec proposing a package of our own was withdrawn once checking showed the generated `wp-config.php` already requires the Composer autoloader — the plugin's one documented prerequisite — and already reads `.env` through an `$env()` helper. What is new is the wiring: `wp-config.php` defines the `S3_UPLOADS_*` constants from the environment, and only when `S3_UPLOADS_BUCKET` is set, so the same generated file serves a development machine with no bucket and a container with one. A value already defined by `config/*.config.php` wins, and a value absent from the environment is left undefined rather than defined as null — which is what lets an IAM instance profile supply the credentials and the plugin derive its own bucket URL. `S3UploadsEndpoint` is an opt-in hook class supplying the `s3_uploads_s3_client_params` filter that the plugin's documentation tells you to hand-write into an mu-plugin, so Cloudflare R2, Scaleway, DigitalOcean Spaces, Ceph and MinIO are `.env` rather than PHP; it also carries the AWS SDK 3.337 checksum switch, whose absence looks like uploads failing for no stated reason. `packages/demo` runs the whole path against MinIO in a ddev service — a real upload, the original and every sub-size in the bucket, none of its files left on local disk, and a request to the public URL returning the bytes, which is the check `wp s3-uploads verify` does not make and the one that catches a bucket that accepts writes and serves nothing. See `docs/guide/uploads.md`
 - `#[AsBlockBinding]` registers a block bindings source, so a block attribute — a paragraph's text, an image's `alt`, a button's `url` — shows a value computed at render time, with no custom block. What it is **not** for is the common case: WordPress ships `core/post-meta`, and a key declared with `#[AsPostMeta]` is bindable through it with no source at all, which the guide leads with. A source is for a value that is computed — a formatted price, a reading time, a figure from elsewhere. `usesContext` is what makes the block's context reach the value, since WordPress passes nothing a source did not ask for, and the `$attribute` argument is what lets one source answer for both an image's `url` and its `alt`. The class is resolved from the container when a bound block renders rather than when the source is registered, so a source nothing binds to costs nothing; the callback is built at apply time and never stored, because a callable cannot survive the discovery cache. A name without a namespace is refused during discovery — WordPress refuses it too, but through `_doing_it_wrong()`, which is to say only under `WP_DEBUG`
 - `#[AsSettingsPage]` puts an admin screen on the WordPress Settings API, where `register_setting` appeared in zero files — `#[AsAcfOptionsPage]` was the only settings screen Føhn offered, which does not work now that ACF is optional. The page declares what it stores through `settings()`, and its form is a Twig template named on the attribute — like every other view in a Føhn theme, and with no PHP on the page class beyond the declaration. The template receives the current values, typed as declared, so `settings.show_banner` is a boolean rather than the empty string WordPress stores an unchecked box as. A form that needs more than those values implements `SettingsFormInterface::form(): string` instead, returning its HTML the way `TemplateControllerInterface::handle()` does; a page that supplies neither is refused during discovery. the framework supplies the menu entry, `register_setting()` per setting with its type, default and sanitiser, and the page shell — `settings_errors()`, the form, `settings_fields()`, `do_settings_sections()` and the submit button. `settings_fields()` is why the shell exists: a page that forgets it looks like it simply does not save, with no error anywhere, and you cannot forget what you never write. There is **no field abstraction**, by decision: repeaters, conditional logic and media pickers are ACF's actual product, and a `Field::text(...)` builder is the first step towards maintaining a field library nobody asked Føhn for. `Setting::string()`, `bool()`, `int()` and `number()` declare a setting with a sanitiser its type implies, and `show_in_rest` off by default — unlike `#[AsPostMeta]`, because settings are configuration and sometimes credentials. `Settings::get()` reads one back with the declared default, which `get_option()` does not answer with until the option has been saved once, and with the declared type, because WordPress stores an unchecked checkbox as the empty string
@@ -22,27 +24,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `#[AsPostMeta]` registers a meta key through `register_meta()`, which Føhn touched in zero files — the reason every custom field went through ACF. The attribute is repeatable and goes on the model that owns the field, so the declaration sits next to the accessor that reads it, and the post type or taxonomy is inferred from the class's own `#[AsPostType]`, `#[AsTaxonomy]` or `#[AsTimberModel]`: `register_meta()` with no `object_subtype` registers a key for _every_ post type. `showInRest` defaults to on, because without REST the field is invisible to the block editor and cannot be bound through core's `core/post-meta`. `sanitize` names a public static method rather than taking a callable — an item reaches the cache through `var_export()`. It does not conflict with ACF, which stores its values in ordinary post meta: declaring a key ACF also manages leaves ACF the editing UI and adds the REST schema
 - `wp foehn discovery:list` reports what discovery found: every discovery, its phase, the items it holds and the attribute arguments each was built with. Nothing could say this before — `discovery:status` answers how warm the cache is, not what registered, and on 2026-08-19 that turned a one-line bug into an hour. A discovery that found nothing is listed rather than hidden, and each location says whether it was scanned or restored from the cache, which is what makes a stale entry diagnosable. `--discovery=`, `--location=` and `--format=table|json|count` narrow the output; a third-party discovery renders with no work, because the renderer reflects whatever attribute the item holds
 - `#[AsDiscovery]` declares the WordPress phase a discovery class applies in, and discovery classes are now themselves discovered: any class implementing `Tempest\Discovery\Discovery` inside a scanned location is found, resolved and run. A Composer package or a theme's `app/` directory can add one. `docs/guide/custom-discovery.md` documented this and it had never worked — `DiscoveryRunner::getDiscoveryPhases()` was a hardcoded list of nineteen classes that nothing outside that file could add to
-
-### Fixed
-
-- **Project configuration could not read the project's `.env`.** The generated `wp-config.php` loaded `config/wordpress.config.php` and `config/wordpress.{env}.config.php` before it loaded `.env`, so a `define()` in either saw only real environment variables. That works in a container, where the environment comes from the orchestrator, and fails silently in ddev, where it comes from `.env` — the worse way round, since the failure appears only in development and looks like the config file was never loaded at all. `.env` and the `$env()` helper now run before the config files, which is what makes `config/*.config.php` usable for anything environment-shaped. The environment selecting the second file was read with `getenv()`, which `.env` does not populate, so it went through the same hole: a project setting `WP_ENVIRONMENT_TYPE` in `.env` loaded `wordpress.production.config.php` while the security-keys guard, a few lines below and reading the same variable through `$env()`, correctly saw development. Both now read it the same way. The tests execute the generated file rather than matching strings in it, because the ordering is the thing under test and only running it proves the order
-- **Every install ran on guessable WordPress security keys.** With no `config/wordpress-salts.config.php` and no keys in the environment, the generated `wp-config.php` defined them as `'change-me-' . $salt . '-' . md5(__DIR__)` — derived from the web root path, which is predictable (`/var/www/html/web`, `/home/forge/example.com/web`). Authentication cookies and nonces signed with those keys can be forged. Nothing in the starter or the documentation said to replace them. The installer now generates real keys into `.env` on a first install, and `wp-config.php` refuses to serve a production request whose keys are missing or still placeholders
-- **The framework's own discoverables never registered.** Discovery scanned the theme's app directory alone, so the five bundled `#[AsTwigExtension]` classes never reached Timber and the `#[AsCliCommand]` classes never reached WP-CLI. The starter's templates call `html_attributes()`, so a stock install answered every front-end request with `Twig\Error\SyntaxError: Unknown "html_attributes" function`
-- **`*.config.php` files were never read.** `Kernel::registerConfigs()` used its defaults and the `boot()` array and stopped there, so `app/foehn.config.php`, `app/timber.config.php`, `app/acf.config.php`, `app/rest.config.php` and `app/render-api.config.php` did nothing. The starter shipped a `foehn.config.php` opting into seven cleanup and security hook classes, and none of them were applied
-- `#[SkipDiscovery]` was ignored by the scanner. It matters now that packages are scanned: the fourteen `make:` command stubs carry real `#[AsPostType]` and `#[AsBlock]` attributes
-
-### Changed
-
-- `DiscoveryRunner::getDiscoveryPhases()` and `DiscoveryRunner::getAllDiscoveryClasses()` are removed, and `DiscoveryRunner::hasRun()` takes a `DiscoveryPhase` rather than a string. A discovery's phase lives on the discovery, in `#[AsDiscovery]`. Within a phase they apply in class name order, so a cold request and a warm one register in the same sequence
-- Discovery is built on `tempest/discovery` — already a direct dependency — instead of Foehn's own scanner. Locations come from Composer's `installed.json`, which is what makes an installed package discoverable at all. `ClassScanner`, `DiscoveryLocation`, `DiscoveryCache`, `WpDiscoveryItems`, `AttributeCodec`, the `CacheableDiscovery` trait and the `WpDiscovery` interface are gone; discoveries implement `Tempest\Discovery\Discovery` and receive a `ClassReflector`
-- Discovery items are cached as attribute instances through `symfony/cache`, so no discovery describes a cache format. The cache is written per location, and `discovery:status` reports how many locations are warm
-- WP-CLI commands are registered under `wp foehn` rather than `wp tempest`
-- `discovery:warm` is removed: it and `discovery:generate` did the same thing, and the deployment documentation already used `generate`
-- The framework's `Models\Post` and `Models\Page` now register as Timber's class map entries for `post` and `page`, as their `#[AsTimberModel]` attributes ask. A model of your own for the same type still wins
-- `Kernel::boot()`'s configuration array is a default that a `foehn.config.php` overrides wholesale
-
-### Added
-
 - **Every anonymous page view paid for a full render.** Føhn had a discovery cache and could use an object cache, but nothing stopped a visitor's request going through WordPress, the database, the template hierarchy and Twig to produce HTML identical to what the last visitor got — around a hundred milliseconds of work per view, and the thing that falls over first under a traffic spike. There is now a static page cache: PHP writes the rendered HTML of an anonymous `GET` to `wp-content/cache/foehn/pages/{host}/{path}/index.html`, and the next request for that URL is answered from the file. Off by default, and allowed in `production` only, through `app/page-cache.config.php`. See [the guide](https://studiometa.github.io/foehn-framework/guide/page-cache) for what is never cached and for the nonce caveat, which is a decision a project has to make rather than one the framework makes for it
 - The cache is served by whichever reader the site can offer, and all of them compute the same filename by construction. `wp foehn cache:config --server=nginx|apache` generates a server snippet from the loaded configuration — so the cookies, the query-arg policy and the cache path in it cannot drift from the PHP that wrote the files — and the generated snippet composes with an existing `location /` rather than replacing it. Where there is no server access, an `advanced-cache.php` drop-in written by the installer serves the same files before WordPress loads, and is the only reader that can enforce a TTL per request or answer with a `304`
 - Invalidation is event-driven, because a cache that serves stale pages is worse than no cache. Editing a post purges its permalink, the front page, the posts page, its post type archive, its author and month archives, every term archive it appears in, its ancestors and both adjacent posts; a theme switch, a menu change, a plugin activation, a permalink change or an ACF options save flushes everything. Targets accumulate during a request and are acted on once on `shutdown`, so a bulk edit does not run the same recursive delete forty times. `foehn/page_cache/purge_urls`, `foehn/page_cache/purge_post` and `foehn/page_cache/flush` are the seams for a project's own rules and for a CDN integration
@@ -55,9 +36,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Config files may be named for an environment — `foehn.production.config.php` — and are then read only in that one, as reported by `wp_get_environment_type()`. The environment's file wins over the plain file beside it
 - An integration smoke test for the starter (`packages/starter/tests/smoke/run.sh`), run in CI against a real WordPress in ddev, on a cold cache and again on a warm one
 - Tests for `studiometa/foehn-installer`, which had none, and CI now runs the starter's PHP and browser suites and the installer's alongside the framework's
+- Add `#[AsCron]` attribute for recurring background jobs via Action Scheduler ([db208f7], [#111], [#110]):
+- Add `#[AsJob]` attribute for async job dispatch with typed DTO payloads ([db208f7], [#111], [#110]):
+- Add `HookNameResolver` for deterministic hook names derived from FQCN ([1a728f9], [#111])
+- Add `CacheInterface` contract and `TransientCache` implementation for dependency injection ([#96])
+- Add `TaggedCache` for tag-based cache invalidation via `CacheInterface::tags()` ([#96])
+- Add `Arrayable` interface and `HasToArray` trait for typed DTO context composition ([#97])
+- Add built-in DTOs for common ACF field patterns ([#97]):
+- Widen `compose()` return type to `array|Arrayable` on block interfaces ([#97])
+- **Starter:** Add Hero block example demonstrating DTO context composition ([#97])
+- **New package:** `@studiometa/foehn-vite-plugin` — Vite plugin for front-end bundling ([#89]):
+- Add fluent `PostQueryBuilder` for null-safe query building ([#91], [#100]):
+- Add `QueriesPostType` trait with `query()`, `all()`, `find()`, `first()`, `count()`, `exists()` ([#91], [#100])
+- Add `PostTypeRegistry` for class-to-post-type mapping ([#91], [#100])
+- Add `Foehn\Models\Post` and `Foehn\Models\Page` base classes with query support ([#91], [#100])
+- Add Starter Theme documentation with quick start guide and feature overview ([#101])
+- Add `TemplateContext` class for typed template controller context ([#107]):
 
 ### Changed
 
+- **`packages/starter` splits in two.** It was doing two jobs that pull against each other — the minimal starting point `composer create-project` hands someone, and the demonstration of everything the framework ships — and every feature added made the second job heavier at the first one's expense. A new **`studiometa/foehn-demo`** takes the demonstration: every post type, taxonomy, block, binding, settings page, route, image size and DTO, plus the browser suite and the whole of `tests/smoke/`, which is where exhaustive coverage belongs. The starter keeps what a theme cannot render without — the boot, `foehn.config.php`, the four template controllers, the three menu locations its templates read, the global context provider, the theme supports, the templates and the front-end build with `@studiometa/foehn-vite-plugin` — and nothing else. Its own smoke test asks the one question it has to answer: does a project created from it boot and serve a page? The demo's theme namespace is `Demo\` rather than `App\`, which is the only thing in it a project would not copy
+- **Starter:** `HeroBlock` is a native block, `theme/hero`, and the starter requires no ACF at all. It was the one thing in there that needed a paid plugin to run, so that path was never exercised end to end — ACF Pro is not installed in CI, and `AcfBlockDiscovery` reported an item that could never register. Everything it did survives without one: the sidebar controls come from the attribute schema, and `compose()` still returns a typed `HeroContext` DTO. The starter now demonstrates the default path, and its integration test covers the whole of what it ships
+- `DiscoveryRunner::getDiscoveryPhases()` and `DiscoveryRunner::getAllDiscoveryClasses()` are removed, and `DiscoveryRunner::hasRun()` takes a `DiscoveryPhase` rather than a string. A discovery's phase lives on the discovery, in `#[AsDiscovery]`. Within a phase they apply in class name order, so a cold request and a warm one register in the same sequence
+- Discovery is built on `tempest/discovery` — already a direct dependency — instead of Foehn's own scanner. Locations come from Composer's `installed.json`, which is what makes an installed package discoverable at all. `ClassScanner`, `DiscoveryLocation`, `DiscoveryCache`, `WpDiscoveryItems`, `AttributeCodec`, the `CacheableDiscovery` trait and the `WpDiscovery` interface are gone; discoveries implement `Tempest\Discovery\Discovery` and receive a `ClassReflector`
+- Discovery items are cached as attribute instances through `symfony/cache`, so no discovery describes a cache format. The cache is written per location, and `discovery:status` reports how many locations are warm
+- WP-CLI commands are registered under `wp foehn` rather than `wp tempest`
+- `discovery:warm` is removed: it and `discovery:generate` did the same thing, and the deployment documentation already used `generate`
+- The framework's `Models\Post` and `Models\Page` now register as Timber's class map entries for `post` and `page`, as their `#[AsTimberModel]` attributes ask. A model of your own for the same type still wins
+- `Kernel::boot()`'s configuration array is a default that a `foehn.config.php` overrides wholesale
 - Upgrade PHP dependencies: Tempest `^3.4` → `^3.18`, Timber `^2.0` → `^2.5`, Pest `^3.0` → `^5.1` (PHPUnit 13), Mago `^1.8` → `^1.46`, `composer/composer` `^2.0` → `^2.10`, ACF Pro stubs `^6.5` → `^6.8`, `studiometa/webpack-config` `^6.3` → `^6.4`
 - Declare `tempest/support` as a direct dependency of `studiometa/foehn` — `Filesystem` and `str()` were used across ~15 files but only resolved transitively
 - **Starter:** Upgrade WordPress `^6.7` → `^7.0`
@@ -70,9 +76,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bump the discovery cache schema to `2`. A cache written by an earlier version is rejected and rebuilt on the next request
 - Generated `make:` files are built by `ClassFileGenerator`, which takes the app path as a dependency instead of reaching `Kernel::getInstance()`, and sets attribute arguments structurally rather than by matching literals in the stub's printed source. A substitution that finds no target now fails instead of silently emitting the stub's placeholder
 - Generated class files now declare `strict_types=1`
+- Refactor `DiscoveryRunner` to use `runPhase()` loop, reducing code duplication ([aa22c38], [#111])
+- **BREAKING:** Require PHP 8.5+ and Tempest Framework v3.0 ([#98])
+- **BREAKING:** Remove static `Helpers\Log` helper — use Tempest Logger (`tempest/log`) instead ([#96])
+- **BREAKING:** Remove static `Helpers\Cache` helper — use injectable `CacheInterface` instead ([#96])
+- **BREAKING:** `TemplateControllerInterface::handle()` now receives typed `TemplateContext` parameter ([#107])
+- **BREAKING:** `ContextProviderInterface::provide()` now receives and returns `TemplateContext` ([#107])
+- **BREAKING:** `ViewEngineInterface::render()` and `renderFirst()` now accept `array|object` context ([#107])
+- Replace `\Tempest\get()` with injected `Container` in `HookDiscovery` and `TwigExtensionDiscovery` ([#96])
 
 ### Fixed
 
+- **`ConfiguresPostType` and `ConfiguresTaxonomy` had never applied.** Both discoveries asked Tempest's `$class->implements()`, which is gated on `isInstantiable()` — and `Timber\Post` and `Timber\Term` declare protected constructors, so it answered false for every model a real theme has. A post type's `configurePostType()` was silently dropped: the rewrite slug it asked for was never registered and its archive answered 404. Both now test the interface in a way that does not care whether the class can be constructed
+- **The starter and the demo never enqueued their built assets.** Both shipped a configured Vite build, a Tailwind entry point and a js-toolkit entry point, and served every page with no stylesheet and no script. The themes still rendered, so the omission read as a design choice rather than a hole. Vite also built to the package root, and only `theme/` is symlinked into the web root, so nothing it produced was reachable — it builds into `theme/dist` now, and `AssetHooks` enqueues from it through `ViteManifest`. CI builds the front-end before the integration run, and the starter's smoke test asserts the stylesheet and the script are on the page and that both resolve
+- `ArchiveController` rendered a post type archive with no template of its own by throwing. It uses `renderFirst` now, like `SingleController` always did, so a post type falls back to the generic index instead of fataling
+- **Project configuration could not read the project's `.env`.** The generated `wp-config.php` loaded `config/wordpress.config.php` and `config/wordpress.{env}.config.php` before it loaded `.env`, so a `define()` in either saw only real environment variables. That works in a container, where the environment comes from the orchestrator, and fails silently in ddev, where it comes from `.env` — the worse way round, since the failure appears only in development and looks like the config file was never loaded at all. `.env` and the `$env()` helper now run before the config files, which is what makes `config/*.config.php` usable for anything environment-shaped. The environment selecting the second file was read with `getenv()`, which `.env` does not populate, so it went through the same hole: a project setting `WP_ENVIRONMENT_TYPE` in `.env` loaded `wordpress.production.config.php` while the security-keys guard, a few lines below and reading the same variable through `$env()`, correctly saw development. Both now read it the same way. The tests execute the generated file rather than matching strings in it, because the ordering is the thing under test and only running it proves the order
+- **Every install ran on guessable WordPress security keys.** With no `config/wordpress-salts.config.php` and no keys in the environment, the generated `wp-config.php` defined them as `'change-me-' . $salt . '-' . md5(__DIR__)` — derived from the web root path, which is predictable (`/var/www/html/web`, `/home/forge/example.com/web`). Authentication cookies and nonces signed with those keys can be forged. Nothing in the starter or the documentation said to replace them. The installer now generates real keys into `.env` on a first install, and `wp-config.php` refuses to serve a production request whose keys are missing or still placeholders
+- **The framework's own discoverables never registered.** Discovery scanned the theme's app directory alone, so the five bundled `#[AsTwigExtension]` classes never reached Timber and the `#[AsCliCommand]` classes never reached WP-CLI. The starter's templates call `html_attributes()`, so a stock install answered every front-end request with `Twig\Error\SyntaxError: Unknown "html_attributes" function`
+- **`*.config.php` files were never read.** `Kernel::registerConfigs()` used its defaults and the `boot()` array and stopped there, so `app/foehn.config.php`, `app/timber.config.php`, `app/acf.config.php`, `app/rest.config.php` and `app/render-api.config.php` did nothing. The starter shipped a `foehn.config.php` opting into seven cleanup and security hook classes, and none of them were applied
+- `#[SkipDiscovery]` was ignored by the scanner. It matters now that packages are scanned: the fourteen `make:` command stubs carry real `#[AsPostType]` and `#[AsBlock]` attributes
 - **`make:field-group`:** `--post-type`, `--taxonomy` and `--page-template` were ignored. The command substituted `['post_type', '==', 'post']`, but `FieldGroupStub` declares the map `['post_type' => 'post']`, so the replacement never matched and every generated field group stayed located on `post`
 - **`make:controller`:** `--templates` with more than one template generated broken code. `'dummy-template'` was replaced everywhere, so the stub's `render('dummy-template', $context)` became `render(['a', 'b'], $context)`. The attribute now takes the list and the rendered template is set separately
 - Fix a fatal error in the starter config and in four doc pages: `DiscoveryCacheStrategy` was imported from `Tempest\Core`, which no longer exists — it lives in `Tempest\Discovery`
@@ -84,87 +106,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Starter:** Exclude `vendor/**` from Vitest — the framework's Node-only editor test was being collected into the browser suite
 - Remove unpaired `restore_error_handler()` / `restore_exception_handler()` calls in `DispatchHelperTest`; nothing installs handlers any more, so they popped PHPUnit's own and PHPUnit 13 fails the run as risky
 - Replace `->method()->with()` with `->expects($this->once())->method()->with()` in `RenderApiTest`, deprecated in PHPUnit 13 and removed in 14
-
-### Added
-
-- Add `#[AsCron]` attribute for recurring background jobs via Action Scheduler ([db208f7], [#111], [#110]):
-  - `CronInterval` backed enum with common intervals (Minute, FiveMinutes, Hourly, Daily, Weekly)
-  - Custom interval support via `CronInterval::custom(seconds)`
-  - Auto-discovery with idempotent scheduling (skips if already scheduled)
-- Add `#[AsJob]` attribute for async job dispatch with typed DTO payloads ([db208f7], [#111], [#110]):
-  - `JobSerializer` for DTO ↔ array serialization with type casting
-  - `JobRegistry` for DTO → handler mapping
-  - `ActionSchedulerJobDispatcher` with optional delay support
-  - `dispatch()` helper function for one-line job dispatch
-  - `JobDispatcher` contract for testability and future transport swaps
-- Add `HookNameResolver` for deterministic hook names derived from FQCN ([1a728f9], [#111])
-
-### Changed
-
-- Refactor `DiscoveryRunner` to use `runPhase()` loop, reducing code duplication ([aa22c38], [#111])
-
-### Fixed
-
 - Fix CI lint/analyse failures by removing obsolete `mago:install-binary` step ([3699f4d], [#111])
-
-[db208f7]: https://github.com/studiometa/foehn-framework/commit/db208f7
-[1a728f9]: https://github.com/studiometa/foehn-framework/commit/1a728f9
-[aa22c38]: https://github.com/studiometa/foehn-framework/commit/aa22c38
-[3699f4d]: https://github.com/studiometa/foehn-framework/commit/3699f4d
-[#111]: https://github.com/studiometa/foehn-framework/pull/111
-[#110]: https://github.com/studiometa/foehn-framework/issues/110
-
-### Changed
-
-- **BREAKING:** Require PHP 8.5+ and Tempest Framework v3.0 ([#98])
-- **BREAKING:** Remove static `Helpers\Log` helper — use Tempest Logger (`tempest/log`) instead ([#96])
-- **BREAKING:** Remove static `Helpers\Cache` helper — use injectable `CacheInterface` instead ([#96])
-- **BREAKING:** `TemplateControllerInterface::handle()` now receives typed `TemplateContext` parameter ([#107])
-- **BREAKING:** `ContextProviderInterface::provide()` now receives and returns `TemplateContext` ([#107])
-- **BREAKING:** `ViewEngineInterface::render()` and `renderFirst()` now accept `array|object` context ([#107])
-- Replace `\Tempest\get()` with injected `Container` in `HookDiscovery` and `TwigExtensionDiscovery` ([#96])
-
-### Added
-
-- Add `CacheInterface` contract and `TransientCache` implementation for dependency injection ([#96])
-- Add `TaggedCache` for tag-based cache invalidation via `CacheInterface::tags()` ([#96])
-- Add `Arrayable` interface and `HasToArray` trait for typed DTO context composition ([#97])
-- Add built-in DTOs for common ACF field patterns ([#97]):
-  - `LinkData` — matches `ButtonLinkBuilder` output
-  - `ImageData` — matches `ResponsiveImageBuilder` output
-  - `SpacingData` — matches `SpacingBuilder` output
-- Widen `compose()` return type to `array|Arrayable` on block interfaces ([#97])
-- **Starter:** Add Hero block example demonstrating DTO context composition ([#97])
-- **New package:** `@studiometa/foehn-vite-plugin` — Vite plugin for front-end bundling ([#89]):
-  - Glob input resolution for entry points
-  - Vite manifest generation for asset versioning
-  - Twig/PHP file watching with full reload
-  - Hot file generation for dev server detection
-  - Auto DDEV proxy configuration
-- Add fluent `PostQueryBuilder` for null-safe query building ([#91], [#100]):
-  - Accumulates `WP_Query` parameters with fluent API
-  - Null-safe methods: `exclude()`, `page()`, `whereTax()`, `search()` skip empty values
-  - Escape hatch: `set()` and `merge()` for any `WP_Query` parameter
-  - Execution: `get()`, `first()`, `count()`, `exists()`
-- Add `QueriesPostType` trait with `query()`, `all()`, `find()`, `first()`, `count()`, `exists()` ([#91], [#100])
-- Add `PostTypeRegistry` for class-to-post-type mapping ([#91], [#100])
-- Add `Foehn\Models\Post` and `Foehn\Models\Page` base classes with query support ([#91], [#100])
-- Add Starter Theme documentation with quick start guide and feature overview ([#101])
-- Add `TemplateContext` class for typed template controller context ([#107]):
-  - Typed properties: `post`, `posts`, `site`, `user`
-  - Safe post type casting via `post(Product::class)` and `posts(Product::class)`
-  - Immutable updates: `with()`, `merge()`, `withDto()`
-  - DTO support with `withDto()` / `dto()` for type-safe retrieval
-  - ArrayAccess for dynamic keys
-
-[#107]: https://github.com/studiometa/foehn-framework/pull/107
-[#101]: https://github.com/studiometa/foehn-framework/pull/101
-[#100]: https://github.com/studiometa/foehn-framework/pull/100
-[#98]: https://github.com/studiometa/foehn-framework/pull/98
-[#97]: https://github.com/studiometa/foehn-framework/pull/97
-[#96]: https://github.com/studiometa/foehn-framework/pull/96
-[#91]: https://github.com/studiometa/foehn-framework/issues/91
-[#89]: https://github.com/studiometa/foehn-framework/pull/89
 
 ## [0.4.1] - 2026-02-10
 
@@ -230,6 +172,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fix user config files being overwritten by framework defaults ([73d9443], [#74])
 
+[0.5.0]: https://github.com/studiometa/foehn-framework/releases/tag/0.5.0
 [0.4.1]: https://github.com/studiometa/foehn-framework/releases/tag/0.4.1
 [aabcca6]: https://github.com/studiometa/foehn-framework/commit/aabcca6
 [8525092]: https://github.com/studiometa/foehn-framework/commit/8525092
