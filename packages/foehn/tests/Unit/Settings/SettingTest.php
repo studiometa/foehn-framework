@@ -55,7 +55,7 @@ describe('Setting', function () {
     });
 
     it('is readonly', function () {
-        expect(Setting::class)->toBeReadonly();
+        expect(Setting::class)->toBeReadonlyClass();
     });
 
     it('carries a description, which only shows through REST', function () {

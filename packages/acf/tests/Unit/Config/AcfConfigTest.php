@@ -18,6 +18,6 @@ describe('AcfConfig', function () {
     });
 
     it('is readonly', function () {
-        expect(AcfConfig::class)->toBeReadonly();
+        expect(AcfConfig::class)->toBeReadonlyClass();
     });
 });

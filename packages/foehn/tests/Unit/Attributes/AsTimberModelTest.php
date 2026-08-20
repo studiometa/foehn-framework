@@ -12,7 +12,7 @@ describe('AsTimberModel', function () {
     });
 
     it('is readonly', function () {
-        expect(AsTimberModel::class)->toBeReadonly();
+        expect(AsTimberModel::class)->toBeReadonlyClass();
     });
 
     it('is a class attribute', function () {

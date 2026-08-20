@@ -38,7 +38,7 @@ describe('AsAction', function () {
     });
 
     it('is readonly', function () {
-        expect(AsAction::class)->toBeReadonly();
+        expect(AsAction::class)->toBeReadonlyClass();
     });
 
     it('can be used as an attribute', function () {

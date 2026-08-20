@@ -15,12 +15,7 @@ describe('AsImageSize', function () {
     });
 
     it('can be instantiated with all parameters', function () {
-        $attribute = new AsImageSize(
-            width: 1200,
-            height: 630,
-            crop: true,
-            name: 'social_image',
-        );
+        $attribute = new AsImageSize(width: 1200, height: 630, crop: true, name: 'social_image');
 
         expect($attribute->width)->toBe(1200);
         expect($attribute->height)->toBe(630);
@@ -38,7 +33,7 @@ describe('AsImageSize', function () {
     });
 
     it('is readonly', function () {
-        expect(AsImageSize::class)->toBeReadonly();
+        expect(AsImageSize::class)->toBeReadonlyClass();
     });
 
     it('is a class attribute', function () {

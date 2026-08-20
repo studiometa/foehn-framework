@@ -25,7 +25,7 @@ describe('AsJob', function () {
     });
 
     it('is readonly', function () {
-        expect(AsJob::class)->toBeReadonly();
+        expect(AsJob::class)->toBeReadonlyClass();
     });
 
     it('can be used as an attribute', function () {

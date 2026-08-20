@@ -18,6 +18,6 @@ describe('TimberConfig', function () {
     });
 
     it('is readonly', function () {
-        expect(TimberConfig::class)->toBeReadonly();
+        expect(TimberConfig::class)->toBeReadonlyClass();
     });
 });

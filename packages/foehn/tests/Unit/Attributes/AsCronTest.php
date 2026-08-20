@@ -53,7 +53,7 @@ describe('AsCron', function () {
     });
 
     it('is readonly', function () {
-        expect(AsCron::class)->toBeReadonly();
+        expect(AsCron::class)->toBeReadonlyClass();
     });
 
     it('can be used as an attribute', function () {

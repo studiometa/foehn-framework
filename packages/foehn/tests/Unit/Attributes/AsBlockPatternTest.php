@@ -56,7 +56,7 @@ describe('AsBlockPattern', function () {
     });
 
     it('is readonly', function () {
-        expect(AsBlockPattern::class)->toBeReadonly();
+        expect(AsBlockPattern::class)->toBeReadonlyClass();
     });
 
     it('is a class attribute', function () {

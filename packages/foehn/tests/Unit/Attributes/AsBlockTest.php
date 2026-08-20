@@ -97,7 +97,7 @@ describe('AsBlock', function () {
     });
 
     it('is readonly', function () {
-        expect(AsBlock::class)->toBeReadonly();
+        expect(AsBlock::class)->toBeReadonlyClass();
     });
 
     it('is a class attribute', function () {

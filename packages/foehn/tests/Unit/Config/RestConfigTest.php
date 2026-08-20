@@ -24,6 +24,6 @@ describe('RestConfig', function () {
     });
 
     it('is readonly', function () {
-        expect(RestConfig::class)->toBeReadonly();
+        expect(RestConfig::class)->toBeReadonlyClass();
     });
 });

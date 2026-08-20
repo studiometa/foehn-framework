@@ -70,7 +70,7 @@ describe('AsAcfFieldGroup', function () {
     });
 
     it('is readonly', function () {
-        expect(AsAcfFieldGroup::class)->toBeReadonly();
+        expect(AsAcfFieldGroup::class)->toBeReadonlyClass();
     });
 
     it('is a class attribute', function () {

@@ -6,17 +6,14 @@ use Studiometa\Foehn\Attributes\AsMenu;
 
 describe('AsMenu', function () {
     it('can be instantiated with required parameters', function () {
-        $attribute = new AsMenu(
-            location: 'primary',
-            description: 'Primary Navigation',
-        );
+        $attribute = new AsMenu(location: 'primary', description: 'Primary Navigation');
 
         expect($attribute->location)->toBe('primary');
         expect($attribute->description)->toBe('Primary Navigation');
     });
 
     it('is readonly', function () {
-        expect(AsMenu::class)->toBeReadonly();
+        expect(AsMenu::class)->toBeReadonlyClass();
     });
 
     it('is a class attribute', function () {

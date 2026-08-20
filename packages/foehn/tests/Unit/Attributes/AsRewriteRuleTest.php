@@ -32,7 +32,7 @@ describe('AsRewriteRule', function () {
     });
 
     it('is readonly', function () {
-        expect(AsRewriteRule::class)->toBeReadonly();
+        expect(AsRewriteRule::class)->toBeReadonlyClass();
     });
 
     it('is a class attribute', function () {

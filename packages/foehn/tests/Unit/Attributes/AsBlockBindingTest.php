@@ -23,7 +23,7 @@ describe('AsBlockBinding', function () {
     });
 
     it('is readonly', function () {
-        expect(AsBlockBinding::class)->toBeReadonly();
+        expect(AsBlockBinding::class)->toBeReadonlyClass();
     });
 
     it('is a class attribute', function () {

@@ -22,7 +22,7 @@ describe('RenderApiConfig', function () {
     });
 
     it('is readonly', function () {
-        expect(RenderApiConfig::class)->toBeReadonly();
+        expect(RenderApiConfig::class)->toBeReadonlyClass();
     });
 });
 

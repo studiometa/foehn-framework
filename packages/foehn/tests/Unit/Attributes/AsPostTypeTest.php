@@ -65,7 +65,7 @@ describe('AsPostType', function () {
     });
 
     it('is readonly', function () {
-        expect(AsPostType::class)->toBeReadonly();
+        expect(AsPostType::class)->toBeReadonlyClass();
     });
 
     it('is a class attribute', function () {

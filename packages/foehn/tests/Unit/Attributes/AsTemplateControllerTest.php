@@ -33,7 +33,7 @@ describe('AsTemplateController', function () {
     });
 
     it('is readonly', function () {
-        expect(AsTemplateController::class)->toBeReadonly();
+        expect(AsTemplateController::class)->toBeReadonlyClass();
     });
 
     it('is a class attribute', function () {

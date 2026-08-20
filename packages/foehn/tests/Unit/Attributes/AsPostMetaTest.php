@@ -52,7 +52,7 @@ describe('AsPostMeta', function () {
     });
 
     it('is readonly', function () {
-        expect(AsPostMeta::class)->toBeReadonly();
+        expect(AsPostMeta::class)->toBeReadonlyClass();
     });
 
     it('is a repeatable class attribute', function () {

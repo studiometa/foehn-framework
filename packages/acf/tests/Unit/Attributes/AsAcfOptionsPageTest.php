@@ -101,7 +101,7 @@ describe('AsAcfOptionsPage', function () {
     });
 
     it('is readonly', function () {
-        expect(AsAcfOptionsPage::class)->toBeReadonly();
+        expect(AsAcfOptionsPage::class)->toBeReadonlyClass();
     });
 
     it('is a class attribute', function () {
