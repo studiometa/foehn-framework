@@ -2,7 +2,11 @@
 
 Advanced Custom Fields integration for [Føhn](https://github.com/studiometa/foehn-framework): ACF blocks, field groups and options pages, discovered from attributes.
 
-Part of the Føhn monorepo. See the [documentation](https://studiometa.github.io/foehn-framework/).
+See the [documentation](https://studiometa.github.io/foehn-framework/).
+
+> **Note**
+> This package is part of the [Føhn Framework](https://github.com/studiometa/foehn-framework) monorepo.
+> Please report issues and submit pull requests in the [main repository](https://github.com/studiometa/foehn-framework).
 
 ## Installation
 

@@ -99,13 +99,13 @@ web/                            # GENERATED (100% gitignored)
 
 ## Documentation
 
-📖 **[Full Documentation](https://studiometa.github.io/foehn/)**
+📖 **[Full Documentation](https://studiometa.github.io/foehn-framework/)**
 
-- [Getting Started](https://studiometa.github.io/foehn/guide/getting-started)
-- [Installation](https://studiometa.github.io/foehn/guide/installation)
-- [Theme Conventions](https://studiometa.github.io/foehn/guide/theme-conventions)
-- [Security Guide](https://studiometa.github.io/foehn/guide/security)
-- [API Reference](https://studiometa.github.io/foehn/api/)
+- [Getting Started](https://studiometa.github.io/foehn-framework/guide/getting-started)
+- [Installation](https://studiometa.github.io/foehn-framework/guide/installation)
+- [Theme Conventions](https://studiometa.github.io/foehn-framework/guide/theme-conventions)
+- [Security Guide](https://studiometa.github.io/foehn-framework/guide/security)
+- [API Reference](https://studiometa.github.io/foehn-framework/api/)
 
 ### For AI Agents
 
