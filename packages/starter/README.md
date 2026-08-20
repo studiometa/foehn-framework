@@ -2,7 +2,7 @@
 
 A minimal WordPress theme powered by [Føhn](https://github.com/studiometa/foehn-framework): the boot, the configuration, the templates a theme cannot render without, and the front-end build. Nothing else.
 
-That is deliberate. A starting point you delete half of is worse than one you add to, so what is here is what every project needs, and the demonstrations live in [`studiometa/foehn-demo`](../demo) — every attribute the framework ships, in a working theme you can read.
+That is deliberate. A starting point you delete half of is worse than one you add to, so what is here is what every project needs, and the demonstrations live in [`studiometa/foehn-demo`](https://github.com/studiometa/foehn-demo) — every attribute the framework ships, in a working theme you can read.
 
 > **Note**
 > This package is part of the [Føhn Framework](https://github.com/studiometa/foehn-framework) monorepo.
@@ -77,7 +77,7 @@ ddev wp foehn make:controller Product --templates=single-product
 ddev wp foehn discovery:list          # what the framework found, and where
 ```
 
-Or read [the demo](../demo), which has one of everything already written.
+Or read [the demo](https://github.com/studiometa/foehn-demo), which has one of everything already written.
 
 ## Front-end
 
@@ -89,7 +89,7 @@ npm run lint            # JS, CSS and Twig
 npm run fix
 ```
 
-There is no JavaScript test setup here, because there is no JavaScript to test yet. [The demo](../demo) has one configured with Vitest and Playwright, ready to copy.
+There is no JavaScript test setup here, because there is no JavaScript to test yet. [The demo](https://github.com/studiometa/foehn-demo) has one configured with Vitest and Playwright, ready to copy.
 
 ## Tests
 
