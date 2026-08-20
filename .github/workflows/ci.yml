@@ -281,6 +281,14 @@ jobs:
         with:
           ddevDir: packages/demo
 
+      # ddev's post-start hook installs WordPress and nothing else, so the demo would
+      # be an empty site with a theme on it. This is also the only test the restore
+      # path gets: if the dump, the photographs or the rewrite flush stop working,
+      # every page assertion below fails.
+      - name: Mount the demo site
+        working-directory: packages/demo
+        run: ./database/restore.sh
+
       - name: Run the smoke test
         working-directory: packages/demo
         run: ./tests/smoke/run.sh

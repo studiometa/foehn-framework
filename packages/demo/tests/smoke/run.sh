@@ -190,7 +190,7 @@ $head"
 	printf '✓ %s\n' "$label"
 }
 
-check_page "/" "Selection" "the homepage lists a selection of projects"
+check_page "/" "card__title" "the homepage lists a selection of projects"
 check_page "/projects/" "index-row__title" "the projects index lists the series"
 check_page "/projects/corridors/" "plate--" "a project page shows its photographs"
 check_page "/about/" "prose" "the about page renders its copy"
