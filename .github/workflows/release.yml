@@ -32,6 +32,75 @@ jobs:
       - name: Run static analysis
         run: composer analyse
 
+  # The Vite plugin is the one package that ships through npm rather than Packagist,
+  # and for its first four releases it shipped nowhere at all: split.yml mirrors the
+  # PHP packages only, so `npm install` in a project created from the starter got a
+  # 404 on a dependency its own vite.config.js imports.
+  publish-npm:
+    name: Publish the Vite plugin
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      # Trusted publishing authenticates with this OIDC token, which is why no
+      # NPM_TOKEN appears below. Its other half is configured on npmjs.com: a trusted
+      # publisher that names this repository and this workflow file by name, so
+      # renaming this file revokes the job's ability to publish.
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+          registry-url: "https://registry.npmjs.org"
+
+      # Node 24 ships an npm older than 11.5.1, the first release that recognises an
+      # OIDC environment. On anything older the publish looks for a token instead,
+      # finds none, and fails as unauthenticated.
+      - name: Install an npm that speaks OIDC
+        run: npm install -g npm@latest
+
+      - name: Install dependencies
+        run: npm ci
+
+      # npm takes the published version from package.json, not from the tag, so the
+      # two drifting apart would put out a version nobody tagged. The release commit
+      # carries the bump; this step only refuses to publish when it was forgotten.
+      - name: Check the version matches the tag
+        run: |
+          TAG=${GITHUB_REF#refs/tags/}
+          VERSION=$(node -p "require('./packages/vite-plugin/package.json').version")
+          if [[ "$TAG" != "$VERSION" ]]; then
+            echo "::error::tag $TAG does not match packages/vite-plugin/package.json version $VERSION"
+            exit 1
+          fi
+
+      # ci.yml runs the plugin's own suite on branches and pull requests only. Without
+      # these two steps a tag would publish a build that nothing had tested, from a
+      # dist/ that does not exist - it is generated, and the `files` list is just dist.
+      - name: Run tests
+        run: npm run -w @studiometa/foehn-vite-plugin test
+
+      - name: Build
+        run: npm run -w @studiometa/foehn-vite-plugin build
+
+      # The tag filter on this workflow matches 0.6.0-rc.1 as readily as 0.6.0, and a
+      # prerelease published as `latest` is what every fresh install would then get.
+      - name: Resolve the dist-tag
+        run: |
+          NPM_TAG=latest
+          if [[ $GITHUB_REF_NAME =~ (alpha|beta|rc) ]]; then
+            NPM_TAG=next
+          fi
+          echo "NPM_TAG=$NPM_TAG" >> $GITHUB_ENV
+
+      - name: Publish
+        run: npm publish -w @studiometa/foehn-vite-plugin --tag "$NPM_TAG"
+
   release:
     needs: test
     runs-on: ubuntu-latest
