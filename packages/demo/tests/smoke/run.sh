@@ -28,6 +28,12 @@ $(ddev exec "cd /var/www/html && wp option get home" 2>&1 | grep -v Deprecated |
 
 printf '→ %s\n' "$url"
 
+# A warm page cache would answer every request below with HTML rendered before the
+# change under test, so the run would pass on yesterday's page. The demo ships the
+# cache production-only and .env.example says local, but an .env that drifted is
+# exactly the sort of thing that makes a smoke suite lie.
+ddev exec 'cd /var/www/html && wp foehn cache:clear' >/dev/null 2>&1 || true
+
 body="$(mktemp)"
 trap 'rm -f "$body"' EXIT
 
@@ -199,6 +205,12 @@ check_page "/" "card__title" "the homepage lists a selection of projects"
 check_page "/projects/" "index-row__title" "the projects index lists the series"
 check_page "/projects/corridors/" "plate--" "a project page shows its photographs"
 check_page "/about/" "prose" "the about page renders its copy"
+
+# studiometa/ui, both halves. The markup can only exist if the @ui Twig namespace
+# resolved, which only happens when StudiometaUi is opted in and the package is
+# installed — the framework's own unit test for that path is skipped, because there
+# the package is a `suggest` and absent.
+check_page "/about/" 'data-component="Accordion"' "an @ui component renders through the Twig namespace"
 
 # Unsplash asks that photographers be credited. The credit is stored on the
 # attachment at import and printed under every plate, so its absence is a licensing

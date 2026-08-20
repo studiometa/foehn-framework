@@ -243,6 +243,27 @@ if ($studio !== []) {
     set_post_thumbnail($about, $studio[0]);
 }
 
+// Rendered with @ui/Accordion, which is the studiometa/ui component the demo uses
+// to show the Twig namespace and the JS autoloader working together.
+update_post_meta($about, 'faq', [
+    [
+        'title' => 'What does a commission cost?',
+        'content' => 'A day rate for architecture and editorial work, a per-image rate for still life and reproduction. Both include a first selection and one round of edits; usage rights are quoted separately because they depend on where the images run.',
+    ],
+    [
+        'title' => 'Do you shoot in colour?',
+        'content' => 'Yes, when the brief asks for it. The personal work is black and white because removing colour removes a variable, not because colour is worse — a commission that needs it gets it.',
+    ],
+    [
+        'title' => 'How long until I see the images?',
+        'content' => 'A contact sheet within a week of the shoot, final files two weeks after selection. Film adds a few days for processing, which is worth saying out loud before a deadline is agreed rather than after.',
+    ],
+    [
+        'title' => 'Are prints available?',
+        'content' => 'From any series, in numbered editions of fifteen, printed on baryta paper at 40x50 cm. Larger formats on request.',
+    ],
+]);
+
 // No "Projets" page: the post type archive at /projets/ is the listing, and a page
 // with that title would take the URL from it through WordPress's canonical redirect.
 

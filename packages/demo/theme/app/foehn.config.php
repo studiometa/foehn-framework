@@ -10,6 +10,7 @@ use Studiometa\Foehn\Hooks\S3UploadsEndpoint;
 use Studiometa\Foehn\Hooks\Security\DisableVersionDisclosure;
 use Studiometa\Foehn\Hooks\Security\DisableXmlRpc;
 use Studiometa\Foehn\Hooks\Security\GenericLoginErrors;
+use Studiometa\Foehn\Hooks\StudiometaUi;
 use Studiometa\Foehn\Hooks\YouTubeNoCookieHooks;
 use Tempest\Discovery\DiscoveryCacheStrategy;
 
@@ -20,6 +21,9 @@ return new FoehnConfig(discoveryCacheStrategy: DiscoveryCacheStrategy::FULL, hoo
     DisableVersionDisclosure::class,
     DisableXmlRpc::class,
     GenericLoginErrors::class,
+    // Registers the @ui and @svg Twig namespaces studiometa/ui ships its
+    // components under. Inert when the package is not installed.
+    StudiometaUi::class,
     // Points humanmade/s3-uploads at MinIO. Without it the plugin talks to AWS, whose
     // endpoint is the only one its constants can describe.
     S3UploadsEndpoint::class,

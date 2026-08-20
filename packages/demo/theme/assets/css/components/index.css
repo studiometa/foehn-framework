@@ -405,3 +405,64 @@
     grid-column: 1 / -1;
   }
 }
+
+/* ── FAQ, built on @ui/Accordion ────────────────────────── */
+
+/* The component ships behaviour and no styling, which is the point of it: the
+   markup arrives with data-component and data-ref hooks and nothing to unpick. */
+.faq__item {
+  border-top: var(--rule-width) solid var(--color-rule);
+}
+
+.faq__item:last-child {
+  border-bottom: var(--rule-width) solid var(--color-rule);
+}
+
+.faq__item button {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-block: 1rem;
+  text-align: left;
+  background: none;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.faq__question {
+  font-size: clamp(1rem, 2vw, 1.25rem);
+  letter-spacing: -0.01em;
+}
+
+/* A plus that becomes a minus: one glyph, rotated, rather than two icons. */
+.faq__marker {
+  position: relative;
+  flex: none;
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+.faq__marker::before,
+.faq__marker::after {
+  content: '';
+  position: absolute;
+  inset: 50% 0 auto 0;
+  height: var(--rule-width);
+  background: var(--color-ink);
+}
+
+.faq__marker::after {
+  transform: rotate(90deg);
+  transition: transform 300ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.faq__item [aria-expanded='true'] .faq__marker::after {
+  transform: rotate(0deg);
+}
+
+.faq__answer {
+  padding-bottom: 1.25rem;
+}

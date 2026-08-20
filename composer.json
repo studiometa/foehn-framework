@@ -43,6 +43,7 @@
         "php-stubs/wordpress-stubs": "*",
         "php-stubs/wp-cli-stubs": "^2.12",
         "stoutlogic/acf-builder": "^1.12",
+        "studiometa/ui": "^1.10",
         "studiometa/webpack-config": "^6.4"
     },
     "autoload-dev": {
@@ -82,7 +83,8 @@
         "allow-plugins": {
             "pestphp/pest-plugin": true,
             "studiometa/foehn-installer": true,
-            "carthage-software/mago": true
+            "carthage-software/mago": true,
+            "studiometa/ui": true
         }
     },
     "minimum-stability": "dev",

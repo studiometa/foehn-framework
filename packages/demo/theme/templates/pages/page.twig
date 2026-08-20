@@ -25,5 +25,36 @@
         {{ post.content }}
       </div>
     </div>
+
+    {% set faq = post.meta('faq') %}
+
+    {#
+      studiometa/ui's Accordion, reached through the @ui namespace the framework
+      registers when the package is installed. The template emits
+      data-component="Accordion", and `import '@studiometa/ui/autoload'` in app.js
+      is what makes the browser fetch and mount the class behind that name — no
+      import of the component here, and no import of it in the JavaScript either.
+    #}
+    {% if faq %}
+      <section class="shell" style="margin-top: clamp(3rem, 8vw, 6rem)" aria-labelledby="faq">
+        <h2 class="label label--ink" id="faq">Questions</h2>
+        <hr class="rule rule--ink" style="margin-top: 0.75rem" />
+
+        {% embed '@ui/Accordion/Accordion.twig' with {
+          items: faq,
+          attr: { class: 'faq' },
+          item_attr: { class: 'faq__item' }
+        } %}
+          {% block title %}
+            <span class="faq__question">{{ item.title }}</span>
+            <span class="faq__marker" aria-hidden="true"></span>
+          {% endblock %}
+
+          {% block content %}
+            <div class="faq__answer prose">{{ item.content }}</div>
+          {% endblock %}
+        {% endembed %}
+      </section>
+    {% endif %}
   </article>
 {% endblock %}

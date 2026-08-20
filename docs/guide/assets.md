@@ -56,6 +56,59 @@ foehn({
 
 `fromTheme()` looks in `dist/` under the active theme; pass a different relative path if yours differs. `fromChildTheme()` does the same against the child theme.
 
+### Autoloading components
+
+`@studiometa/js-toolkit` can discover components from the markup instead of being told about each one, which is what both themes do:
+
+```js
+import { defineManifest, fromMetaGlob, registerManifests } from "@studiometa/js-toolkit";
+import "@studiometa/ui/autoload";
+
+const manifest = defineManifest({
+  packageName: "my-theme",
+  modules: fromMetaGlob(import.meta.glob("./components/*.js")),
+});
+
+registerManifests(manifest);
+```
+
+`import.meta.glob` hands Vite a lazy importer per file, `fromMetaGlob` normalises that into the shape the loader wants, and `registerManifests` schedules the start. The loader mounts whatever `[data-component]` it finds and fetches only those modules, so a component nobody uses on a page costs nothing but a manifest entry.
+
+Adding a component is dropping a file into `components/` — nothing in `app.js` changes.
+
+`@studiometa/ui/autoload` registers that package's own manifest as a side effect of the import, which is why it takes no arguments. `data-component="Modal"` then works with no import of `Modal` anywhere.
+
+## Twig components
+
+`studiometa/ui` also ships its components as Twig templates. Install it and opt the hook in:
+
+```bash
+composer require studiometa/ui
+```
+
+```php
+// app/foehn.config.php
+use Studiometa\Foehn\Config\FoehnConfig;
+use Studiometa\Foehn\Hooks\StudiometaUi;
+
+return new FoehnConfig(hooks: [StudiometaUi::class]);
+```
+
+That registers the `@ui` and `@svg` Twig namespaces on Timber's loader, which is the only way the components can be reached:
+
+```twig
+{% embed '@ui/Accordion/Accordion.twig' with { items: faq } %}
+  {% block title %}{{ item.title }}{% endblock %}
+  {% block content %}{{ item.content }}{% endblock %}
+{% endembed %}
+```
+
+The markup arrives carrying `data-component="Accordion"`, so the Twig half and the JavaScript half meet without either importing the other.
+
+It is a hook class rather than automatic registration because framework hook classes are opt-in by design — one registering itself because it happens to sit in a scanned package would let a `composer update` change what a site does.
+
+Nothing breaks when the package is absent: the hook checks for it and returns the environment untouched. `studiometa/ui` is a `suggest`, so the framework itself gains no dependency.
+
 ## Webpack
 
 ### Installation
