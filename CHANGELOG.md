@@ -7,13 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-08-20
+
 ### Added
 
-- Publish `@studiometa/foehn-vite-plugin` to npm from the release workflow, through npm trusted publishing: the job authenticates with an OIDC token and no `NPM_TOKEN` exists anywhere. The plugin now carries the same version as every other package, `0.5.1`, and the job refuses to publish when that version does not match the tag
+- Publish `@studiometa/foehn-vite-plugin` to npm from the release workflow, through npm trusted publishing: the job authenticates with an OIDC token and no `NPM_TOKEN` exists anywhere. The plugin now carries the same version as every other package, `0.5.1`, and the job refuses to publish when that version does not match the tag ([#140])
 
 ### Fixed
 
-- **Starter, demo:** Require `@studiometa/foehn-vite-plugin` at `^0.5.1` rather than `*`. `*` resolved only through the monorepo's own workspaces, so `npm install` in a project created from the starter ended on a 404 for a package that had never been published once — and `npm run build` could not have worked either, `vite.config.js` importing it
+- **Starter, demo:** Require `@studiometa/foehn-vite-plugin` at `^0.5.1` rather than `*`. `*` resolved only through the monorepo's own workspaces, so `npm install` in a project created from the starter ended on a 404 for a package that had never been published once — and `npm run build` could not have worked either, `vite.config.js` importing it ([#140])
+
+[#140]: https://github.com/studiometa/foehn-framework/pull/140
+[0.5.1]: https://github.com/studiometa/foehn-framework/releases/tag/0.5.1
 
 ## [0.5.0] - 2026-08-20
 

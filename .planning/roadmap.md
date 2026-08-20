@@ -21,6 +21,7 @@ Every planned evolution of Føhn, in one place. Detail lives in the linked specs
 | 11  | `#[AsAbility]` + AI guardrails | **Undecided** | [abilities_spec.md](abilities_spec.md)                                | 4–7 d  |
 | 12  | Object storage for uploads     | **Done**      | [uploads_object_storage_spec.md](uploads_object_storage_spec.md)      | ~1 d   |
 | 13  | Release `0.5.0`                | **Done**      | —                                                                     | —      |
+| 14  | Release `0.5.1`                | **Ready**     | —                                                                     | —      |
 
 Done and shipped: the block editor layer ([editor_layer_spec.md](editor_layer_spec.md)), and on 2026-08-19 the discovery rewrite onto `tempest/discovery`, `*.config.php` loading, the self-warming discovery cache, and generated WordPress security keys.
 
