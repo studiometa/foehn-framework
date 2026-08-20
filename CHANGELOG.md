@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-08-20
+
+### Added
+
+- Add the `gallery` block attribute control: several attachments in one field, ordered, with thumbnails in the sidebar. `image` could not serve — `MediaUpload`'s `multiple` changes what `onSelect` receives and the value stops being a scalar
+- Add the `file` block attribute control, for an attachment of any kind. `image` hard-codes `allowedTypes: ['image']`, which left audio, video and documents unreachable from a block; `file` reads the types from the schema and restricts nothing by default
+- Add the `posts` block attribute control, a searchable picker for related content. It stores post ids **in the order the author arranged them** and offers move-up, move-down and remove, because a relation list is authored rather than queried. `postTypes` narrows the search; without it every viewable post type is searched. This is the one control with no core equivalent, and the main thing a theme needed ACF for
+- Add the `allowedTypes` and `postTypes` editor-only schema keys, feeding the three controls above and stripped before the schema reaches WordPress
+
+### Fixed
+
+- Warn in debug mode when `gallery` or `posts` is declared on an attribute that is not an array. WordPress validates a block attribute against its schema and replaces a mismatch with the default, so a list control on a scalar type kept every selection on screen until the next reload and then lost all but the first — a data loss that reads as an editor bug
+
+[0.5.2]: https://github.com/studiometa/foehn-framework/releases/tag/0.5.2
+
 ## [0.5.1] - 2026-08-20
 
 ### Added

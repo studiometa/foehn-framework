@@ -84,6 +84,8 @@ describe('BlockDiscovery::getEditorDefinitions', function () {
             'label' => 'Title',
             'help' => null,
             'options' => null,
+            'allowedTypes' => null,
+            'postTypes' => null,
         ]);
     });
 
@@ -107,6 +109,8 @@ describe('BlockDiscovery::getEditorDefinitions', function () {
             'label' => 'Button text',
             'help' => 'Keep it short',
             'options' => null,
+            'allowedTypes' => null,
+            'postTypes' => null,
         ]);
         expect($definitions[0]['attributes']['variant']['control'])->toBe('select');
         expect($definitions[0]['attributes']['variant']['label'])->toBe('Variant');

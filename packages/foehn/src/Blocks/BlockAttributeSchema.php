@@ -21,12 +21,31 @@ final class BlockAttributeSchema
     /**
      * UI-only keys, stripped before the schema reaches WordPress.
      */
-    private const array UI_KEYS = ['control', 'label', 'help', 'options'];
+    private const array UI_KEYS = ['control', 'label', 'help', 'options', 'allowedTypes', 'postTypes'];
 
     /**
      * Controls the editor knows how to render.
      */
-    private const array SUPPORTED_CONTROLS = ['text', 'textarea', 'toggle', 'number', 'select', 'image'];
+    private const array SUPPORTED_CONTROLS = [
+        'text',
+        'textarea',
+        'toggle',
+        'number',
+        'select',
+        'image',
+        'gallery',
+        'file',
+        'posts',
+    ];
+
+    /**
+     * Controls whose value is a list, and which therefore need an array schema.
+     *
+     * Named here rather than checked inline because the editor and WordPress have
+     * to agree: a `gallery` attribute typed `integer` stores one id, and the
+     * editor's second selection is dropped by WordPress without a word.
+     */
+    private const array LIST_CONTROLS = ['gallery', 'posts'];
 
     /**
      * Get the schema as WordPress expects it, without the UI-only keys.
@@ -53,7 +72,7 @@ final class BlockAttributeSchema
      * to round an integer attribute rather than store a float WordPress would reject.
      *
      * @param array<string, array<string, mixed>> $attributes
-     * @return array<string, array{control: string|null, type: string|null, label: string, help: string|null, options: list<array{label: string, value: string|int|float|bool}>|null}>
+     * @return array<string, array{control: string|null, type: string|null, label: string, help: string|null, options: list<array{label: string, value: string|int|float|bool}>|null, allowedTypes: list<string>|null, postTypes: list<string>|null}>
      */
     public static function toEditorFields(array $attributes): array
     {
@@ -62,12 +81,21 @@ final class BlockAttributeSchema
         foreach ($attributes as $name => $schema) {
             $control = self::resolveControl($schema, $name);
 
+            self::warnMistypedListControl($name, $control, $schema);
+
             $fields[$name] = [
                 'control' => $control,
                 'type' => is_string($schema['type'] ?? null) ? $schema['type'] : null,
                 'label' => is_string($schema['label'] ?? null) ? $schema['label'] : self::humanize($name),
                 'help' => is_string($schema['help'] ?? null) ? $schema['help'] : null,
                 'options' => $control === 'select' ? self::resolveOptions($schema) : null,
+                // Which media the picker offers, for `file` and `gallery`. Null lets
+                // the editor apply its own default — images for a gallery, anything
+                // for a file.
+                'allowedTypes' => self::resolveStringList($schema, 'allowedTypes'),
+                // Which post types the `posts` picker searches. Null means every
+                // public one, which is what an unqualified "related content" means.
+                'postTypes' => self::resolveStringList($schema, 'postTypes'),
             ];
         }
 
@@ -104,6 +132,66 @@ final class BlockAttributeSchema
             'number', 'integer' => 'number',
             default => null,
         };
+    }
+
+    /**
+     * A UI-only key whose value should be a list of strings, or null.
+     *
+     * @param array<string, mixed> $schema
+     * @return list<string>|null
+     */
+    private static function resolveStringList(array $schema, string $key): ?array
+    {
+        if (!is_array($schema[$key] ?? null)) {
+            return null;
+        }
+
+        $values = [];
+
+        /** @var mixed $value */
+        foreach ($schema[$key] as $value) {
+            if (!is_string($value) || $value === '') {
+                continue;
+            }
+
+            $values[] = $value;
+        }
+
+        return $values === [] ? null : $values;
+    }
+
+    /**
+     * Report a list control declared on a schema that cannot hold a list.
+     *
+     * `gallery` and `posts` store several ids. WordPress validates a block
+     * attribute against its schema and replaces a mismatch with the default, so a
+     * gallery typed `integer` loses every selection but the editor still shows
+     * them until the post is reloaded — a bug that looks like the editor and reads
+     * like data loss.
+     *
+     * @param array<string, mixed> $schema
+     */
+    private static function warnMistypedListControl(string $name, ?string $control, array $schema): void
+    {
+        if (!Env::isDebug() || !in_array($control, self::LIST_CONTROLS, true)) {
+            return;
+        }
+
+        if (($schema['type'] ?? null) === 'array') {
+            return;
+        }
+
+        trigger_error(
+            sprintf(
+                '[Foehn] Block attribute "%s" uses the "%s" control, which stores a list, '
+                . 'but its type is "%s". Declare it as an array, for example '
+                . "['type' => 'array', 'items' => ['type' => 'integer'], 'default' => []].",
+                $name,
+                $control,
+                is_string($schema['type'] ?? null) ? $schema['type'] : get_debug_type($schema['type'] ?? null),
+            ),
+            E_USER_WARNING,
+        );
     }
 
     /**

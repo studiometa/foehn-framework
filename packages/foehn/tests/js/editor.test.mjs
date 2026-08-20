@@ -29,11 +29,33 @@ function createElement(type, props, ...children) {
  * @param {Array} definitions Payload the PHP side would print as `window.foehnBlocks`.
  * @return {Object} Registered block settings, keyed by block name.
  */
-function register(definitions) {
+function register(definitions, entities = {}) {
     const registered = {};
 
     const InnerBlocks = function InnerBlocks() {};
     InnerBlocks.Content = function Content() {};
+
+    // `records` is keyed by post type, `postTypes` lists what the site exposes.
+    // Enough for the controls that read entity records; the selector shapes match
+    // what @wordpress/core-data returns.
+    const records = entities.records || {};
+    const store = {
+        getEntityRecords(kind, type, query) {
+            const all = records[type] || [];
+
+            if (query && Array.isArray(query.include)) {
+                return all.filter((record) => query.include.includes(record.id));
+            }
+
+            return all;
+        },
+        getEntityRecord(kind, type, id) {
+            return (records[type] || []).find((record) => record.id === id) || null;
+        },
+        getPostTypes() {
+            return entities.postTypes || [];
+        },
+    };
 
     const wp = {
         blocks: {
@@ -47,6 +69,16 @@ function register(definitions) {
                 return { ...element, props: { ...element.props, ...props } };
             },
             Fragment: 'Fragment',
+            // One render per call, so the setter only has to exist: nothing in these
+            // tests depends on a state change surviving to a second render.
+            useState(initial) {
+                return [initial, () => {}];
+            },
+        },
+        data: {
+            useSelect(callback) {
+                return callback(() => store);
+            },
         },
         blockEditor: {
             InspectorControls: 'InspectorControls',
@@ -60,6 +92,7 @@ function register(definitions) {
             Button: 'Button',
             Disabled: 'Disabled',
             PanelBody: 'PanelBody',
+            ComboboxControl: 'ComboboxControl',
             SelectControl: 'SelectControl',
             TextControl: 'TextControl',
             TextareaControl: 'TextareaControl',
@@ -113,6 +146,26 @@ function edit(settings, attributes) {
     });
 
     return { elements: flatten(tree), changes };
+}
+
+/**
+ * Render the component a control returned, and flatten what it produced.
+ *
+ * `createElement` above only records the call, so a control that returns
+ * `el(GalleryControl, props)` yields an element whose type is the function and
+ * whose body never ran. Calling it here is what the real renderer would do.
+ */
+function renderComponent(element) {
+    assert.equal(typeof element.type, 'function', 'expected a component element');
+
+    return flatten(element.type(element.props));
+}
+
+/**
+ * The first element of a given type in a tree.
+ */
+function find(elements, type) {
+    return elements.find((element) => element.type === type);
 }
 
 const field = (control, type, extra) => ({
@@ -273,4 +326,129 @@ test('a missing payload registers nothing at all', () => {
     const { registered } = register(undefined);
 
     assert.deepEqual(Object.keys(registered), []);
+});
+
+test('a gallery stores several ids and asks the picker for a multiple selection', () => {
+    const { registered } = register([
+        {
+            name: 'test/gallery',
+            attributes: { images: field('gallery', 'array') },
+            innerBlocks: null,
+        },
+    ]);
+
+    const { elements, changes } = edit(registered['test/gallery'], { images: [] });
+    const control = elements.find((element) => typeof element.type === 'function');
+    const media = find(renderComponent(control), 'MediaUpload');
+
+    assert.equal(media.props.multiple, true);
+    // Unqualified, a gallery is a gallery of images.
+    assert.deepEqual(media.props.allowedTypes, ['image']);
+
+    media.props.onSelect([{ id: 7 }, { id: 9 }, { nope: true }]);
+
+    assert.deepEqual(changes, [{ images: [7, 9] }]);
+});
+
+test('a gallery names its selection while the records are still loading', () => {
+    const { registered } = register([
+        { name: 'test/gallery', attributes: { images: field('gallery', 'array') }, innerBlocks: null },
+    ]);
+
+    const { elements } = edit(registered['test/gallery'], { images: [4, 5] });
+    const control = elements.find((element) => typeof element.type === 'function');
+    const rendered = renderComponent(control);
+    const paragraph = find(rendered, 'p');
+
+    assert.equal(paragraph.children[0], '2 items selected');
+});
+
+test('a file control offers the media types the schema asked for, not just images', () => {
+    const { registered } = register(
+        [
+            {
+                name: 'test/audio',
+                attributes: { son: field('file', 'integer', { allowedTypes: ['audio'] }) },
+                innerBlocks: null,
+            },
+        ],
+        { records: { attachment: [{ id: 12, title: { rendered: 'Repet-fanfare.mp3' }, slug: 'repet' }] } },
+    );
+
+    const { elements, changes } = edit(registered['test/audio'], { son: 12 });
+    const control = elements.find((element) => typeof element.type === 'function');
+    const rendered = renderComponent(control);
+    const media = find(rendered, 'MediaUpload');
+
+    assert.deepEqual(media.props.allowedTypes, ['audio']);
+    assert.equal(media.props.value, 12);
+    // The point of the control: the author reads a filename, not an id.
+    assert.equal(find(rendered, 'p').children[0], 'Repet-fanfare.mp3');
+
+    media.props.onSelect({ id: 30 });
+
+    assert.deepEqual(changes, [{ son: 30 }]);
+});
+
+test('a posts control keeps the author order and appends rather than replaces', () => {
+    const { registered } = register(
+        [
+            {
+                name: 'test/relations',
+                attributes: { relations: field('posts', 'array', { postTypes: ['termes'] }) },
+                innerBlocks: null,
+            },
+        ],
+        {
+            records: {
+                termes: [
+                    { id: 3, title: { rendered: 'Zinneke' }, type: 'termes' },
+                    { id: 8, title: { rendered: 'Rara' }, type: 'termes' },
+                    { id: 9, title: { rendered: 'Kompa' }, type: 'termes' },
+                ],
+            },
+        },
+    );
+
+    const { elements, changes } = edit(registered['test/relations'], { relations: [8, 3] });
+    const control = elements.find((element) => typeof element.type === 'function');
+    const rendered = renderComponent(control);
+
+    // Author order, not the order the store returned them in.
+    const labels = rendered.filter((element) => element.type === 'span').map((element) => element.children[0]);
+
+    assert.deepEqual(labels, ['Rara', 'Zinneke']);
+
+    const combobox = find(rendered, 'ComboboxControl');
+
+    // Already chosen posts are not offered twice.
+    assert.deepEqual(
+        combobox.props.options.map((option) => option.value),
+        [9],
+    );
+
+    combobox.props.onChange(9);
+
+    assert.deepEqual(changes, [{ relations: [8, 3, 9] }]);
+});
+
+test('a posts control ignores a selection it already holds', () => {
+    const { registered } = register(
+        [
+            {
+                name: 'test/relations',
+                attributes: { relations: field('posts', 'array', { postTypes: ['termes'] }) },
+                innerBlocks: null,
+            },
+        ],
+        { records: { termes: [{ id: 3, title: { rendered: 'Zinneke' }, type: 'termes' }] } },
+    );
+
+    const { elements, changes } = edit(registered['test/relations'], { relations: [3] });
+    const control = elements.find((element) => typeof element.type === 'function');
+    const combobox = find(renderComponent(control), 'ComboboxControl');
+
+    combobox.props.onChange(3);
+
+    assert.deepEqual(changes, []);
 });

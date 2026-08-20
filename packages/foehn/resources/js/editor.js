@@ -38,12 +38,20 @@
     const useBlockProps = wp.blockEditor.useBlockProps;
     const BaseControl = wp.components.BaseControl;
     const Button = wp.components.Button;
+    const ComboboxControl = wp.components.ComboboxControl;
     const Disabled = wp.components.Disabled;
     const PanelBody = wp.components.PanelBody;
     const SelectControl = wp.components.SelectControl;
     const TextControl = wp.components.TextControl;
     const TextareaControl = wp.components.TextareaControl;
     const ToggleControl = wp.components.ToggleControl;
+
+    // The `file` and `posts` controls name what they hold — a filename, a post
+    // title — which means reading entity records the editor has already loaded.
+    // `wp.data` ships with the editor; guarding anyway keeps this file harmless
+    // wherever it is loaded.
+    const useSelect = wp.data && wp.data.useSelect;
+    const useState = wp.element.useState;
 
     // The global is the module exports object, so the component sits under a named or a
     // default export depending on the WordPress version. The bare namespace is the last
@@ -207,6 +215,23 @@
                 ),
             );
         },
+
+        // The three controls below hold what core's own components do not offer as a
+        // single control: several images, one non image attachment, and a list of
+        // related posts. Each is a component rather than an inline element tree
+        // because each reads entity records, and a hook has to live in a component
+        // whose identity does not change with the shape of a block's attributes.
+        gallery(field, value, setValue) {
+            return el(GalleryControl, { field: field, value: value, setValue: setValue });
+        },
+
+        file(field, value, setValue) {
+            return el(FileControl, { field: field, value: value, setValue: setValue });
+        },
+
+        posts(field, value, setValue) {
+            return el(PostsControl, { field: field, value: value, setValue: setValue });
+        },
     };
 
     /**
@@ -245,6 +270,461 @@
         );
 
         return el(Fragment, null, select, remove);
+    }
+
+    /**
+     * Coerce an attribute value to a list of numeric ids.
+     *
+     * Both list controls store ids, and both can be handed a stale or hand written
+     * attribute. Anything that is not a usable id is dropped rather than rendered
+     * as an empty slot the editor cannot explain.
+     *
+     * @param {*} value Current attribute value.
+     * @return {Array} Numeric ids, possibly empty.
+     */
+    function toIds(value) {
+        if (!Array.isArray(value)) {
+            return [];
+        }
+
+        return value.map(Number).filter(function (id) {
+            return Number.isInteger(id) && id > 0;
+        });
+    }
+
+    /**
+     * Several attachments, in the order the author arranged them.
+     *
+     * `image` cannot serve here: MediaUpload's `multiple` changes both what
+     * `onSelect` receives and what the modal allows, and the value stops being a
+     * scalar. Ordering is the reason this stores ids rather than a gallery shortcode
+     * — a gallery whose order does not survive a reload is a gallery nobody trusts.
+     *
+     * @param {Object} props Field descriptor, current value and setter.
+     * @return {Object} Control element.
+     */
+    function GalleryControl(props) {
+        const ids = toIds(props.value);
+        const setValue = props.setValue;
+
+        // One request for the whole selection. `getMedia` per id would mean a hook
+        // count that changes with the selection, which React forbids.
+        const items = useSelect
+            ? useSelect(
+                  function (select) {
+                      if (!ids.length) {
+                          return [];
+                      }
+
+                      return (
+                          select('core').getEntityRecords('postType', 'attachment', {
+                              include: ids,
+                              per_page: ids.length,
+                              orderby: 'include',
+                          }) || []
+                      );
+                  },
+                  [ids.join(',')],
+              )
+            : [];
+
+        if (!MediaUpload || !MediaUploadCheck) {
+            return null;
+        }
+
+        return el(
+            BaseControl,
+            {
+                __nextHasNoMarginBottom: true,
+                label: props.field.label,
+                help: props.field.help || undefined,
+            },
+            el('div', { className: 'foehn-gallery-control' }, renderGalleryThumbnails(items, ids)),
+            el(
+                MediaUploadCheck,
+                null,
+                el(MediaUpload, {
+                    multiple: true,
+                    gallery: true,
+                    allowedTypes: props.field.allowedTypes || ['image'],
+                    value: ids,
+                    onSelect: function (media) {
+                        setValue(
+                            (Array.isArray(media) ? media : [media])
+                                .map(function (item) {
+                                    return item && item.id;
+                                })
+                                .filter(Boolean),
+                        );
+                    },
+                    render: function (picker) {
+                        return renderGalleryButtons(ids, setValue, picker);
+                    },
+                }),
+            ),
+        );
+    }
+
+    /**
+     * The selection as thumbnails, so the sidebar shows images rather than a count.
+     *
+     * @param {Array} items Attachment records, once loaded.
+     * @param {Array} ids   Selected ids.
+     * @return {Object|null} Element, or null while nothing is selected.
+     */
+    function renderGalleryThumbnails(items, ids) {
+        if (!ids.length) {
+            return null;
+        }
+
+        // Records arrive after the ids do. Showing the count meanwhile beats an empty
+        // box that looks like the selection was lost.
+        if (!items || !items.length) {
+            return el('p', null, ids.length + (ids.length > 1 ? ' items selected' : ' item selected'));
+        }
+
+        return el(
+            'div',
+            {
+                style: { display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '8px' },
+            },
+            items.map(function (item) {
+                const source =
+                    (item.media_details &&
+                        item.media_details.sizes &&
+                        item.media_details.sizes.thumbnail &&
+                        item.media_details.sizes.thumbnail.source_url) ||
+                    item.source_url;
+
+                return el('img', {
+                    key: item.id,
+                    src: source,
+                    alt: item.alt_text || '',
+                    width: 48,
+                    height: 48,
+                    style: { objectFit: 'cover', borderRadius: '2px' },
+                });
+            }),
+        );
+    }
+
+    /**
+     * Build the buttons of the gallery control.
+     *
+     * @param {Array}    ids      Selected ids.
+     * @param {Function} setValue Setter for the attribute.
+     * @param {Object}   picker   Media picker handed over by MediaUpload.
+     * @return {Object} Button elements.
+     */
+    function renderGalleryButtons(ids, setValue, picker) {
+        const select = el(
+            Button,
+            { __next40pxDefaultSize: true, variant: 'secondary', onClick: picker.open },
+            ids.length ? 'Edit gallery' : 'Select images',
+        );
+
+        if (!ids.length) {
+            return select;
+        }
+
+        const clear = el(
+            Button,
+            {
+                __next40pxDefaultSize: true,
+                variant: 'tertiary',
+                isDestructive: true,
+                onClick: function () {
+                    setValue([]);
+                },
+            },
+            'Clear',
+        );
+
+        return el(Fragment, null, select, clear);
+    }
+
+    /**
+     * One attachment of any kind — an audio file, a PDF, a video.
+     *
+     * The `image` control hard codes `allowedTypes: ['image']`, which is right for
+     * an image and leaves every other attachment unreachable. Here the type comes
+     * from the schema, and defaults to no restriction.
+     *
+     * @param {Object} props Field descriptor, current value and setter.
+     * @return {Object} Control element.
+     */
+    function FileControl(props) {
+        const id = Number(props.value) || 0;
+        const setValue = props.setValue;
+
+        const attachment = useSelect
+            ? useSelect(
+                  function (select) {
+                      return id ? select('core').getEntityRecord('postType', 'attachment', id) : null;
+                  },
+                  [id],
+              )
+            : null;
+
+        if (!MediaUpload || !MediaUploadCheck) {
+            return null;
+        }
+
+        // The rendered title, or the bare id while the record loads. Naming the file
+        // is the whole point of the control: an id tells an author nothing.
+        const name = attachment
+            ? (attachment.title && attachment.title.rendered) || attachment.slug || String(id)
+            : id
+              ? 'Attachment ' + id
+              : null;
+
+        return el(
+            BaseControl,
+            {
+                __nextHasNoMarginBottom: true,
+                label: props.field.label,
+                help: props.field.help || undefined,
+            },
+            name ? el('p', { style: { margin: '0 0 8px' } }, name) : null,
+            el(
+                MediaUploadCheck,
+                null,
+                el(MediaUpload, {
+                    allowedTypes: props.field.allowedTypes || undefined,
+                    value: id || undefined,
+                    onSelect: function (media) {
+                        setValue(media && media.id ? media.id : undefined);
+                    },
+                    render: function (picker) {
+                        return renderFileButtons(id, setValue, picker);
+                    },
+                }),
+            ),
+        );
+    }
+
+    /**
+     * Build the buttons of the file control.
+     *
+     * @param {number}   id       Current attachment id, or 0.
+     * @param {Function} setValue Setter for the attribute.
+     * @param {Object}   picker   Media picker handed over by MediaUpload.
+     * @return {Object} Button elements.
+     */
+    function renderFileButtons(id, setValue, picker) {
+        const select = el(
+            Button,
+            { __next40pxDefaultSize: true, variant: 'secondary', onClick: picker.open },
+            id ? 'Replace file' : 'Select file',
+        );
+
+        if (!id) {
+            return select;
+        }
+
+        const remove = el(
+            Button,
+            {
+                __next40pxDefaultSize: true,
+                variant: 'tertiary',
+                isDestructive: true,
+                onClick: function () {
+                    setValue(undefined);
+                },
+            },
+            'Remove',
+        );
+
+        return el(Fragment, null, select, remove);
+    }
+
+    /**
+     * A list of related posts, searchable across the post types the schema names.
+     *
+     * This is the control with no core equivalent, and the reason is ordering: a
+     * relation list is authored, not queried, so it stores ids in the order they
+     * were added and offers a way to move them. A token field would lose that order
+     * and could not tell two posts sharing a title apart.
+     *
+     * @param {Object} props Field descriptor, current value and setter.
+     * @return {Object} Control element.
+     */
+    function PostsControl(props) {
+        const ids = toIds(props.value);
+        const setValue = props.setValue;
+        const search = useState('');
+        const term = search[0];
+        const setTerm = search[1];
+        const postTypes = props.field.postTypes;
+
+        const data = useSelect
+            ? useSelect(
+                  function (select) {
+                      const core = select('core');
+                      // Without an explicit list, every post type the REST API exposes
+                      // and that is not built in — which is what "related content"
+                      // means when a block does not narrow it.
+                      const types =
+                          postTypes ||
+                          (core.getPostTypes({ per_page: -1 }) || [])
+                              .filter(function (type) {
+                                  return type.viewable && type.slug !== 'attachment';
+                              })
+                              .map(function (type) {
+                                  return type.slug;
+                              });
+
+                      return {
+                          // Candidates for the search box.
+                          results: types.reduce(function (all, type) {
+                              return all.concat(
+                                  core.getEntityRecords('postType', type, {
+                                      per_page: 20,
+                                      search: term || undefined,
+                                      _fields: 'id,title,type',
+                                  }) || [],
+                              );
+                          }, []),
+                          // The current selection, resolved separately: a chosen post
+                          // is usually not in the search results, and it still has to
+                          // show its title.
+                          chosen: types.reduce(function (all, type) {
+                              if (!ids.length) {
+                                  return all;
+                              }
+
+                              return all.concat(
+                                  core.getEntityRecords('postType', type, {
+                                      include: ids,
+                                      per_page: ids.length,
+                                      _fields: 'id,title,type',
+                                  }) || [],
+                              );
+                          }, []),
+                      };
+                  },
+                  [term, ids.join(','), (postTypes || []).join(',')],
+              )
+            : { results: [], chosen: [] };
+
+        const titles = {};
+
+        data.chosen.concat(data.results).forEach(function (post) {
+            titles[post.id] = (post.title && post.title.rendered) || '(untitled)';
+        });
+
+        return el(
+            BaseControl,
+            {
+                __nextHasNoMarginBottom: true,
+                label: props.field.label,
+                help: props.field.help || undefined,
+            },
+            renderChosenPosts(ids, titles, setValue),
+            ComboboxControl
+                ? el(ComboboxControl, {
+                      __nextHasNoMarginBottom: true,
+                      __next40pxDefaultSize: true,
+                      label: '',
+                      placeholder: 'Search content…',
+                      value: null,
+                      options: data.results
+                          .filter(function (post) {
+                              return ids.indexOf(post.id) === -1;
+                          })
+                          .map(function (post) {
+                              return {
+                                  label: (post.title && post.title.rendered) || '(untitled)',
+                                  value: post.id,
+                              };
+                          }),
+                      onFilterValueChange: function (next) {
+                          setTerm(next);
+                      },
+                      onChange: function (next) {
+                          const id = Number(next);
+
+                          if (Number.isInteger(id) && id > 0 && ids.indexOf(id) === -1) {
+                              setValue(ids.concat([id]));
+                          }
+                      },
+                  })
+                : null,
+        );
+    }
+
+    /**
+     * The chosen posts, in order, each removable and movable.
+     *
+     * @param {Array}    ids      Selected ids, in author order.
+     * @param {Object}   titles   Id to title map, as far as it is resolved.
+     * @param {Function} setValue Setter for the attribute.
+     * @return {Object|null} Element, or null while nothing is selected.
+     */
+    function renderChosenPosts(ids, titles, setValue) {
+        if (!ids.length) {
+            return null;
+        }
+
+        function move(index, offset) {
+            const next = ids.slice();
+            const target = index + offset;
+
+            if (target < 0 || target >= next.length) {
+                return;
+            }
+
+            const moved = next.splice(index, 1)[0];
+
+            next.splice(target, 0, moved);
+            setValue(next);
+        }
+
+        return el(
+            'ul',
+            { style: { margin: '0 0 8px', padding: 0, listStyle: 'none' } },
+            ids.map(function (id, index) {
+                return el(
+                    'li',
+                    {
+                        key: id,
+                        style: { display: 'flex', alignItems: 'center', gap: '4px' },
+                    },
+                    el('span', { style: { flex: '1 1 auto', fontSize: '12px' } }, titles[id] || 'ID ' + id),
+                    el(Button, {
+                        size: 'small',
+                        icon: 'arrow-up-alt2',
+                        label: 'Move up',
+                        disabled: index === 0,
+                        onClick: function () {
+                            move(index, -1);
+                        },
+                    }),
+                    el(Button, {
+                        size: 'small',
+                        icon: 'arrow-down-alt2',
+                        label: 'Move down',
+                        disabled: index === ids.length - 1,
+                        onClick: function () {
+                            move(index, 1);
+                        },
+                    }),
+                    el(Button, {
+                        size: 'small',
+                        icon: 'no-alt',
+                        label: 'Remove',
+                        isDestructive: true,
+                        onClick: function () {
+                            setValue(
+                                ids.filter(function (current) {
+                                    return current !== id;
+                                }),
+                            );
+                        },
+                    }),
+                );
+            }),
+        );
     }
 
     /**

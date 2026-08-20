@@ -260,10 +260,85 @@ describe('BlockAttributeSchema::toEditorFields', function () {
         ]);
 
         expect(array_keys($fields))->toBe(['zeta', 'alpha']);
-        expect(array_keys($fields['zeta']))->toBe(['control', 'type', 'label', 'help', 'options']);
+        expect(array_keys($fields['zeta']))->toBe([
+            'control',
+            'type',
+            'label',
+            'help',
+            'options',
+            'allowedTypes',
+            'postTypes',
+        ]);
     });
 
     it('returns an empty array for an empty schema', function () {
         expect(BlockAttributeSchema::toEditorFields([]))->toBe([]);
+    });
+});
+
+describe('BlockAttributeSchema media and relation controls', function () {
+    it('honours the gallery, file and posts controls', function () {
+        $fields = BlockAttributeSchema::toEditorFields([
+            'images' => ['type' => 'array', 'control' => 'gallery'],
+            'son' => ['type' => 'integer', 'control' => 'file'],
+            'relations' => ['type' => 'array', 'control' => 'posts'],
+        ]);
+
+        expect($fields['images']['control'])->toBe('gallery');
+        expect($fields['son']['control'])->toBe('file');
+        expect($fields['relations']['control'])->toBe('posts');
+    });
+
+    it('passes the allowed media types and the searched post types to the editor', function () {
+        $fields = BlockAttributeSchema::toEditorFields([
+            'son' => ['type' => 'integer', 'control' => 'file', 'allowedTypes' => ['audio']],
+            'relations' => [
+                'type' => 'array',
+                'control' => 'posts',
+                'postTypes' => ['termes', 'liens'],
+            ],
+        ]);
+
+        expect($fields['son']['allowedTypes'])->toBe(['audio']);
+        expect($fields['relations']['postTypes'])->toBe(['termes', 'liens']);
+    });
+
+    it('leaves both lists null when absent, so the editor applies its own default', function () {
+        $fields = BlockAttributeSchema::toEditorFields([
+            'images' => ['type' => 'array', 'control' => 'gallery'],
+        ]);
+
+        expect($fields['images']['allowedTypes'])->toBeNull();
+        expect($fields['images']['postTypes'])->toBeNull();
+    });
+
+    it('drops non string entries rather than passing them to the editor', function () {
+        $fields = BlockAttributeSchema::toEditorFields([
+            'son' => ['type' => 'integer', 'control' => 'file', 'allowedTypes' => ['audio', 42, '']],
+            'other' => ['type' => 'integer', 'control' => 'file', 'allowedTypes' => [42]],
+        ]);
+
+        expect($fields['son']['allowedTypes'])->toBe(['audio']);
+        // Nothing usable left is the same as nothing given.
+        expect($fields['other']['allowedTypes'])->toBeNull();
+    });
+
+    it('keeps the new editor only keys away from WordPress', function () {
+        $registration = BlockAttributeSchema::toRegistration([
+            'relations' => [
+                'type' => 'array',
+                'items' => ['type' => 'integer'],
+                'default' => [],
+                'control' => 'posts',
+                'postTypes' => ['termes'],
+                'allowedTypes' => ['audio'],
+            ],
+        ]);
+
+        expect($registration['relations'])->toBe([
+            'type' => 'array',
+            'items' => ['type' => 'integer'],
+            'default' => [],
+        ]);
     });
 });

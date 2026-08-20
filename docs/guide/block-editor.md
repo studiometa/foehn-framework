@@ -43,19 +43,30 @@ The control for an attribute is derived from its `type`, with an optional `contr
 | `'type' => 'number'` or `'type' => 'integer'`                 | `number`   | `TextControl` (`type="number"`) |
 | `'type' => 'string', 'control' => 'textarea'`                 | `textarea` | `TextareaControl`               |
 | `'type' => 'integer', 'control' => 'image'`                   | `image`    | `MediaUpload`                   |
+| `'type' => 'array', 'control' => 'gallery'`                   | `gallery`  | `MediaUpload` (`multiple`)      |
+| `'type' => 'integer', 'control' => 'file'`                    | `file`     | `MediaUpload` (any type)        |
+| `'type' => 'array', 'control' => 'posts'`                     | `posts`    | `ComboboxControl` + core-data   |
 
 A string or number attribute gets a control from `type` alone; nothing else is required. `number` and `integer` share the same component, but the declared type still matters: an `integer` field rounds its value before calling `setAttributes`, because WordPress rejects a float against an `integer` schema and silently falls back to the default.
 
 An attribute of a type with no derived control — `array`, `object`, or no `type` at all — gets no sidebar field. It still exists in the schema and reaches the template; it is simply not editable from the sidebar, which is the right outcome for data a block computes or receives from elsewhere rather than data an author sets.
 
-Four keys beyond the WordPress ones (`type`, `default`, `enum`, ...) describe how the attribute shows up in the sidebar:
+`gallery`, `file` and `posts` are never derived from a type: an `array` says nothing about whether it holds attachment ids or post ids, so each has to be asked for by name.
 
-| Key       | Description                                                                                                                                                                                                                                                 |
-| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `control` | Explicit control name: `text`, `textarea`, `toggle`, `number`, `select`, `image`. Overrides the type-derived choice. An unsupported value falls back to the type-derived control and logs a warning in debug mode, rather than silently dropping the field. |
-| `label`   | Field label in the sidebar. Defaults to a humanized version of the attribute key — `ctaLabel` becomes "Cta label".                                                                                                                                          |
-| `help`    | Help text shown under the field.                                                                                                                                                                                                                            |
-| `options` | Choices for a `select` control: a list of raw values, a `value => label` map, or an already normalized list of `{label, value}` pairs.                                                                                                                      |
+`gallery` and `posts` store a list, so declare them as arrays — `['type' => 'array', 'items' => ['type' => 'integer'], 'default' => []]`. Declared as a scalar, WordPress validates every selection but the first away, and debug mode warns about it.
+
+`posts` is the one control with no core equivalent. It stores post ids **in the order the author arranged them**, offers move-up and move-down, and searches across the post types `postTypes` names — or every viewable type when it names none.
+
+Six keys beyond the WordPress ones (`type`, `default`, `enum`, ...) describe how the attribute shows up in the sidebar:
+
+| Key            | Description                                                                                                                                                                                                                                                                             |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `control`      | Explicit control name: `text`, `textarea`, `toggle`, `number`, `select`, `image`, `gallery`, `file`, `posts`. Overrides the type-derived choice. An unsupported value falls back to the type-derived control and logs a warning in debug mode, rather than silently dropping the field. |
+| `label`        | Field label in the sidebar. Defaults to a humanized version of the attribute key — `ctaLabel` becomes "Cta label".                                                                                                                                                                      |
+| `help`         | Help text shown under the field.                                                                                                                                                                                                                                                        |
+| `options`      | Choices for a `select` control: a list of raw values, a `value => label` map, or an already normalized list of `{label, value}` pairs.                                                                                                                                                  |
+| `allowedTypes` | Media types the `file` or `gallery` picker offers, as MIME types or top-level types — `['audio']`, `['image']`. Omit it and a `gallery` offers images while a `file` offers anything.                                                                                                   |
+| `postTypes`    | Post types the `posts` control searches — `['termes', 'liens']`. Omit it and every viewable post type is searched.                                                                                                                                                                      |
 
 ```php
 public static function attributes(): array
