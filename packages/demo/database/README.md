@@ -16,7 +16,8 @@ ddev start
 | `media/`            | The 30 photographs as originals, plus `credits.json`               |
 | `seed.php`          | Builds the same site from nothing. Idempotent                      |
 | `restore-media.php` | Puts the photographs back where the database says they are         |
-| `restore.sh`        | The three steps, in order                                          |
+| `fix-urls.php`      | Moves the site onto the URL this ddev project serves. Idempotent   |
+| `restore.sh`        | The steps, in order                                                |
 | `fetch-media.py`    | How `media/` was produced, so the set is reproducible              |
 
 ## Why three steps and not one
@@ -39,6 +40,34 @@ the original, which is also what proves the original arrived.
 registers, and registered rules do nothing until WordPress flushes them once. A
 freshly imported database carries whatever the dump's site had, so `restore.sh`
 flushes.
+
+## The URL is not the dump's
+
+A dump remembers the host it was taken on — `foehn-demo.ddev.site` for the one here.
+A project renamed, or a ddev with a router domain of its own, is served somewhere
+else entirely, and every guid, menu item and serialized option still names the old
+host. `restore.sh` moves both halves onto `DDEV_PRIMARY_URL`, which is the only
+answer the container itself can give:
+
+`.env` first, because wp-config defines `WP_HOME` from it and a constant beats the
+stored `home` option — so no amount of rewriting the database moves a site whose
+`.env` still points elsewhere. `WP_SITEURL` is written as `${WP_HOME}/wp` and
+follows on its own.
+
+The database second, with `fix-urls.php`. It reads the old host out of the `siteurl`
+row rather than through `get_option()`, which would hand back the constant, and
+replaces the origin — scheme, host, port — across all tables. `--precise` keeps
+serialized values intact. Then it clears the page cache, since pages cached under the
+old host would keep serving its URLs.
+
+To move a site without restoring it again:
+
+```bash
+ddev exec 'cd /var/www/html && wp eval-file database/fix-urls.php'
+```
+
+It changes nothing when there is nothing to move, and takes an explicit URL as an
+argument for the cases where `DDEV_PRIMARY_URL` is not the answer.
 
 ## Rebuilding rather than restoring
 
