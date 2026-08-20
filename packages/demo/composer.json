@@ -24,8 +24,8 @@
         "humanmade/s3-uploads": "^3.0",
         "johnpbloch/wordpress": "^7.0",
         "studiometa/ui": "^1.10",
-        "studiometa/foehn": "^0.4",
-        "studiometa/foehn-installer": "^0.4"
+        "studiometa/foehn": "^0.5",
+        "studiometa/foehn-installer": "^0.5"
     },
     "repositories": [
         {

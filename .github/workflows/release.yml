@@ -18,7 +18,9 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: "8.4"
+          # Every package requires ^8.5; on 8.4 composer install fails the platform
+          # check, the test job never passes, and the tag produces no release at all.
+          php-version: "8.5"
           coverage: pcov
 
       - name: Install dependencies
