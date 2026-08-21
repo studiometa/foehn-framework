@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add an `ImageTransformer` abstraction so a template asks for a size without naming who produces it, and a project swaps provider in `foehn.config.php` rather than in every template. `NullTransformer` is the default and returns the URL it was given, so nothing changes until a project asks ([#151])
+- Add `GlideTransformer`, a self-hosted driver over `league/glide` — a `suggest`, so nothing pulls `intervention/image` into a project that does not transform images. It follows the uploads: directories on local disk, prefixes of the same bucket under `humanmade/s3-uploads`, reading where the plugin writes and caching beside it. Its S3 client is built from the `S3_UPLOADS_*` constants `wp-config.php` already defines, so one place configures the bucket ([#151])
+- Add `image_url()` to Twig, and `ImageCacheHooks` to forget an image's transforms when the image itself changes — a cache key is built from the path and the transform, never from the content, so a cropped image would otherwise serve its old pixels indefinitely ([#151])
+
+  URLs are signed with `NONCE_SALT`, and unsigned requests are refused before anything is read or written: at a few hundred milliseconds per cold transform, `?w=9999` is otherwise an instruction to spend CPU and disk on demand. GD is the default driver because, measured on a 2777x1973 photograph, it is about twice as fast as Imagick _and_ produces smaller files — and it is the extension that is always present. See `docs/guide/images.md` for the webserver rule that serves cache hits without booting WordPress.
+
+[#151]: https://github.com/studiometa/foehn-framework/issues/151
+
 ## [0.5.3] - 2026-08-21
 
 Nine fixes to what a project actually receives from the starter. Three of them made a freshly scaffolded project unusable in ways a monorepo checkout never shows, because CI lints and tests the Vite plugin only — never the starter as a consumer sees it.

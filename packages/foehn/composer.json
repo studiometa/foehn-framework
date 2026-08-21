@@ -37,8 +37,10 @@
         "vlucas/phpdotenv": "^5.6"
     },
     "suggest": {
-        "studiometa/webpack-config": "Required for WebpackManifest asset helper",
-        "studiometa/ui": "Twig UI components, auto-registered under the @ui and @svg namespaces"
+        "league/flysystem-aws-s3-v3": "Lets GlideTransformer read and cache in the same bucket as humanmade/s3-uploads",
+        "league/glide": "Self-hosted image transforms for GlideTransformer (with league/flysystem-aws-s3-v3 when uploads live in a bucket)",
+        "studiometa/ui": "Twig UI components, auto-registered under the @ui and @svg namespaces",
+        "studiometa/webpack-config": "Required for WebpackManifest asset helper"
     },
     "autoload": {
         "psr-4": {
@@ -55,6 +57,8 @@
         }
     },
     "require-dev": {
+        "league/flysystem-aws-s3-v3": "^3.0",
+        "league/glide": "^4.1",
         "studiometa/ui": "^1.10"
     },
     "config": {

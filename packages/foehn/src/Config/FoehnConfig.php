@@ -55,6 +55,17 @@ final readonly class FoehnConfig
         public array $hooks = [],
 
         /**
+         * Image transformer to use, as a class implementing `ImageTransformer`.
+         *
+         * Null means `NullTransformer`: `image_url()` gives back the URL it was
+         * given, so a template written against the interface renders correctly on
+         * a project that transforms nothing.
+         *
+         * @var class-string|null
+         */
+        public ?string $imageTransformer = null,
+
+        /**
          * Enable debug mode for discovery.
          * When enabled, reflection failures are logged via trigger_error().
          * Defaults to WP_DEBUG constant value.
@@ -78,6 +89,9 @@ final readonly class FoehnConfig
         /** @var list<class-string> $hooks */
         $hooks = $config['hooks'] ?? [];
 
+        /** @var class-string|null $transformer */
+        $transformer = $config['image_transformer'] ?? null;
+
         // Default debug to WP_DEBUG constant if not explicitly set
         $debug = $config['debug'] ?? defined('WP_DEBUG') && constant('WP_DEBUG');
 
@@ -85,6 +99,7 @@ final readonly class FoehnConfig
             discoveryCacheStrategy: $strategy,
             discoveryCachePath: $config['discovery_cache_path'] ?? null,
             hooks: $hooks,
+            imageTransformer: $transformer,
             debug: (bool) $debug,
         );
     }

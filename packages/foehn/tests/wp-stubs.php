@@ -1857,3 +1857,16 @@ $GLOBALS['wp_stub_nav_menus'] = [];
 $GLOBALS['wp_stub_locale'] = 'en_US';
 $GLOBALS['wp_stub_environment_type'] = 'production';
 $GLOBALS['wp_stub_post_fields'] = [];
+
+if (!function_exists('wp_get_upload_dir')) {
+    /**
+     * @return array{basedir: string, baseurl: string}
+     */
+    function wp_get_upload_dir(): array
+    {
+        return [
+            'basedir' => $GLOBALS['wp_stub_upload_basedir'] ?? '/tmp/uploads',
+            'baseurl' => $GLOBALS['wp_stub_upload_baseurl'] ?? 'http://example.com/wp-content/uploads',
+        ];
+    }
+}

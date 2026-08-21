@@ -16,10 +16,12 @@ use Studiometa\Foehn\Config\RestConfig;
 use Studiometa\Foehn\Config\TimberConfig;
 use Studiometa\Foehn\Console\ClassFileGenerator;
 use Studiometa\Foehn\Contracts\CacheInterface;
+use Studiometa\Foehn\Contracts\ImageTransformer;
 use Studiometa\Foehn\Contracts\JobDispatcher;
 use Studiometa\Foehn\Contracts\ViewEngineInterface;
 use Studiometa\Foehn\Discovery\DiscoveryLocations;
 use Studiometa\Foehn\Discovery\DiscoveryRunner;
+use Studiometa\Foehn\Images\NullTransformer;
 use Studiometa\Foehn\Jobs\ActionSchedulerJobDispatcher;
 use Studiometa\Foehn\Jobs\JobRegistry;
 use Studiometa\Foehn\PageCache\Bypass;
@@ -265,6 +267,19 @@ final class Kernel
         );
 
         $this->container->singleton(ClassFileGenerator::class, fn() => new ClassFileGenerator($this->appPath));
+
+        // The image transformer a project asked for, or none. Bound to the
+        // interface so a template, a Twig function and the invalidation hooks all
+        // receive the same one without naming a driver.
+        $this->container->singleton(ImageTransformer::class, function (): ImageTransformer {
+            $pilote = $this->foehnConfig->imageTransformer;
+
+            if ($pilote === null || !is_a($pilote, ImageTransformer::class, true)) {
+                return new NullTransformer();
+            }
+
+            return $this->container->get($pilote);
+        });
 
         $this->container->singleton(
             DiscoveryRunner::class,
