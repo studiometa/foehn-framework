@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-// Load WordPress function stubs from the framework package
-require_once dirname(__DIR__, 3) . '/foehn/tests/wp-stubs.php';
-
-// Load Composer autoloader (monorepo root)
-require_once dirname(__DIR__, 4) . '/vendor/autoload.php';
+// Résolus depuis la racine du projet, pas depuis une position dans le monorepo :
+// un projet créé depuis ce starter n'a ni `../../foehn` ni un `vendor/` deux
+// niveaux plus haut. Les stubs WordPress sont livrés avec `studiometa/foehn`.
+require_once dirname(__DIR__, 2) . '/vendor/autoload.php';
+require_once dirname(__DIR__, 2) . '/vendor/studiometa/foehn/tests/wp-stubs.php';
