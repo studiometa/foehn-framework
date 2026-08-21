@@ -21,7 +21,6 @@
         "php": "^8.5",
         "composer/installers": "^2.0",
         "humanmade/s3-uploads": "^3.0",
-        "humanmade/s3-uploads": "^3.0",
         "johnpbloch/wordpress": "^7.0",
         "studiometa/ui": "^1.10",
         "studiometa/foehn": "^0.5",
