@@ -31,6 +31,14 @@ final readonly class AlertBlock implements BlockInterface
 
 This class alone is enough to get a working sidebar with two fields, `type` and `message`, and a preview that shows the real Twig output. Nothing else needs to change.
 
+## Core's default styles win on load order
+
+WordPress prints the styles it derives from `theme.json` **inline, and after** the theme's enqueued stylesheet. Later and equal specificity means core wins.
+
+With no `theme.json`, those are core's own defaults — including `body { padding: 0 }`, which silently flattens a gutter the theme's stylesheet sets. The symptom is a theme rule struck through in the inspector by an inline sheet the theme never enqueued, which reads as a broken stylesheet rather than a cascade conflict.
+
+`Hooks\Cleanup\DisableGlobalStyles` removes them. The starter enables it, because it ships no `theme.json`; drop it from `foehn.config.php` if you adopt `theme.json` presets for colours, typography, spacing or duotone filters.
+
 ## Controls
 
 The control for an attribute is derived from its `type`, with an optional `control` override for cases the type alone cannot express:
