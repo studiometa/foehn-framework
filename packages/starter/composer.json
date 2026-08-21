@@ -58,10 +58,5 @@
         }
     },
     "minimum-stability": "stable",
-    "prefer-stable": true,
-    "scripts": {
-        "post-create-project-cmd": [
-            "@php -r \"copy('.env.example', '.env');\""
-        ]
-    }
+    "prefer-stable": true
 }
