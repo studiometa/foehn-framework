@@ -25,17 +25,29 @@ final readonly class ArchiveController implements TemplateControllerInterface
             ]));
         }
 
-        $context = $context
-            ->with('archive_title', get_the_archive_title())
-            ->with('archive_description', get_the_archive_description());
+        $context = $context->with('archive_title', get_the_archive_title())->with(
+            'archive_description',
+            get_the_archive_description(),
+        );
 
-        $template = match (true) {
-            is_post_type_archive() => 'pages/archive-' . get_query_var('post_type'),
-            is_category() => 'pages/category',
-            is_tag() => 'pages/tag',
-            default => 'pages/archive',
+        // Une liste, pas un nom. Un type de contenu sans gabarit dédié doit
+        // retomber sur `pages/archive` : rendre un nom unique faisait lever une
+        // exception, donc un 500, sur l'archive de tout type fraîchement
+        // déclaré. `SingleController` procède déjà ainsi.
+        //
+        // `get_queried_object()->name` plutôt que `get_query_var('post_type')` :
+        // celui-ci peut rendre un tableau, qui s'interpole en « Array » et
+        // demande un gabarit `pages/archive-Array`.
+        $templates = match (true) {
+            is_post_type_archive() => [
+                'pages/archive-' . (get_queried_object()->name ?? ''),
+                'pages/archive',
+            ],
+            is_category() => ['pages/category', 'pages/archive'],
+            is_tag() => ['pages/tag', 'pages/archive'],
+            default => ['pages/archive'],
         };
 
-        return $this->view->render($template, $context);
+        return $this->view->renderFirst($templates, $context);
     }
 }
