@@ -350,6 +350,44 @@ final class WebRootGenerator
         }
 
         $this->createSymlink($themeSource, $themeTarget);
+        $this->removeStaleThemeSymlinks($themeTarget);
+    }
+
+    /**
+     * Remove theme symlinks left by a previous `theme-name`.
+     *
+     * Renaming `extra.foehn.theme-name` used to leave the old link in place, so
+     * `wp theme list` showed the same directory twice and `wp theme activate`
+     * could pick the name nobody uses any more.
+     *
+     * Only links pointing at the theme directory are removed: a symlink to
+     * anything else was put there by the project, not by this installer.
+     */
+    private function removeStaleThemeSymlinks(string $keep): void
+    {
+        $themesDir = $this->webPath('wp-content/themes');
+        $entries = is_dir($themesDir) ? scandir($themesDir) : false;
+
+        if ($entries === false) {
+            return;
+        }
+
+        $themeSource = realpath($this->projectRoot . '/' . $this->config->themeDir);
+
+        foreach ($entries as $entry) {
+            if ($entry === '.' || $entry === '..') {
+                continue;
+            }
+
+            $path = $themesDir . '/' . $entry;
+
+            if ($path === $keep || !is_link($path) || realpath($path) !== $themeSource) {
+                continue;
+            }
+
+            unlink($path);
+            $this->io->write("  <comment>Removed stale symlink:</comment> {$this->relativePath($path)}");
+        }
     }
 
     /**
@@ -520,6 +558,7 @@ final class WebRootGenerator
         $path = $this->projectRoot . '/.env';
         $contents = is_file($path) ? (string) file_get_contents($path) : '';
         $lines = [];
+        $remplacees = 0;
 
         foreach (self::SALT_NAMES as $name) {
             // A name may be listed but empty, which is how .env.example carries them.
@@ -532,11 +571,21 @@ final class WebRootGenerator
 
             if (preg_match($pattern, $contents) === 1) {
                 $contents = (string) preg_replace($pattern, $line, $contents, 1);
+                $remplacees++;
 
                 continue;
             }
 
             $lines[] = $line;
+        }
+
+        // Rien à écrire quand tout est déjà en place. Le message le disait
+        // pourtant à chaque exécution, ce qui rendait impossible de repérer celle
+        // qui avait réellement réécrit les clés.
+        if ($lines === [] && $remplacees === 0) {
+            $this->io->write('  <comment>Security keys:</comment> already set');
+
+            return;
         }
 
         if ($lines !== []) {
