@@ -1,0 +1,14 @@
+# Fichiers utiles au monorepo et à personne d'autre : ils ne partent pas dans
+# l'archive que Composer installe.
+#
+# `composer.local.*` déclare des dépôts `path` vers ../foehn et ../installer, et
+# `minimum-stability: dev`. Rien de tout cela n'existe dans un projet créé
+# depuis ce starter.
+#
+# `.ddev/config.monorepo.yaml` porte les hooks qui recopient les paquets locaux
+# dans vendor/ ; ddev fusionne tout `config.*.yaml` avec `config.yaml`, donc le
+# monorepo garde son amorçage sans l'imposer aux projets.
+/composer.local.json export-ignore
+/composer.local.lock export-ignore
+/.ddev/config.monorepo.yaml export-ignore
+/.gitattributes export-ignore

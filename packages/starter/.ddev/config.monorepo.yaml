@@ -1,0 +1,22 @@
+# Amorçage propre au monorepo. Exclu de l'archive Composer par .gitattributes :
+# les dépôts `path` que ces commandes supposent n'existent que dans le monorepo.
+#
+# ddev fusionne les fichiers `config.*.yaml` avec `config.yaml`, ce qui permet de
+# garder ici ce qui ne concerne pas un projet créé depuis ce starter.
+hooks:
+  post-start:
+    # Seulement si rien n'est installé. La CI installe sur le runner, où les
+    # dépôts `path` vers ../foehn et ../installer sont accessibles ; ddev ne
+    # monte que ce répertoire et ne les verrait pas.
+    - exec: '[ -d vendor ] || composer install --no-interaction'
+    - exec: |
+        if ! wp core is-installed 2>/dev/null; then
+          wp core install \
+            --url="https://${DDEV_HOSTNAME}" \
+            --title="Foehn Starter" \
+            --admin_user=admin \
+            --admin_password=admin \
+            --admin_email=admin@example.com \
+            --skip-email
+          wp theme activate starter-theme
+        fi

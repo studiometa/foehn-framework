@@ -27,6 +27,10 @@ composer.lock
 # debug from a CI log.
 /.ddev/*
 !/.ddev/config.yaml
+# Écrit à la main, et suivi pour survivre à un clone. Exclu de l'archive
+# Composer par .gitattributes : les hooks qu'il porte supposent les dépôts
+# `path` du monorepo.
+!/.ddev/config.monorepo.yaml
 
 # OS
 .DS_Store
