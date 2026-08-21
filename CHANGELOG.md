@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.3] - 2026-08-21
+
+Nine fixes to what a project actually receives from the starter. Three of them made a freshly scaffolded project unusable in ways a monorepo checkout never shows, because CI lints and tests the Vite plugin only — never the starter as a consumer sees it.
+
+### Fixed
+
+- **Starter:** Stop wiping the WordPress security keys on every `create-project`. The installer generated all eight into `.env` and reported doing so, then the starter's own `post-create-project-cmd` ran `copy('.env.example', '.env')` — after the installer, by definition — and put the empty template back. Every scaffold ended with no keys, silently, until the first production request, which `wp-config.php` refuses while any key is empty ([#142])
+- **Starter:** Resolve `tests/php/bootstrap.php` from wherever the autoloader is, rather than by counting directory levels. It used `dirname(__DIR__, 3)` and `dirname(__DIR__, 4)`, which land inside this monorepo and outside an installed project, so the Pest suite could not start at all. The WordPress stubs do ship with `studiometa/foehn`; only the paths were wrong ([#143])
+- **Starter:** Point `.oxlintrc.json` at the project's own `node_modules`. It extended `../../node_modules/@studiometa/oxlint-config`, this monorepo's hoisted install, so `oxlint` exited with a config error in any scaffolded project ([#144])
+- **Starter:** Keep monorepo-only files out of the published package. `composer.local.json`/`.lock` declare `path` repositories pointing at `../foehn` and `../installer` with `minimum-stability: dev`, and `.ddev/config.yaml` shipped `post-start` hooks whose own comment says they cannot work elsewhere. The Composer-local files are now `export-ignore`d, and the ddev hooks live in `.ddev/config.monorepo.yaml` — tracked, so a fresh clone still bootstraps, and export-ignored, so a project does not inherit it ([#145])
+- **Starter:** Fall back to `pages/archive` when a post type has no dedicated template. `ArchiveController` rendered one exact name, so any post type registered with `hasArchive: true` returned HTTP 500 on its archive URL until the theme also added `pages/archive-<type>.twig` — and the exception named the missing file rather than the missing fallback. `SingleController` already used `renderFirst()`. Also reads the post type from `get_queried_object()->name`, since `get_query_var('post_type')` can be an array that interpolates as `Array` ([#146])
+- **Installer:** Remove theme symlinks left behind by a previous `theme-name`. Renaming it created the new link and kept the old one, so `wp theme list` showed the same directory twice and `wp theme activate` could pick a name nobody uses. Only links pointing at the theme directory are removed ([#148])
+- **Installer:** Report the security keys accurately. `Generated: security keys in .env` printed on every install, including runs that correctly left existing keys alone — which made the output useless for spotting a run that did rewrite them. The no-op path now says `Security keys: already set` and writes nothing ([#148])
+- **Demo:** Drop the duplicate `humanmade/s3-uploads` key in `composer.json`. Legal JSON and harmless to resolution, but flagged by editors and schema validators ([#149])
+
+### Added
+
+- **Starter:** A `PageController` and `pages/page.twig`. Pages — the one content type every WordPress site has — had no controller, so they bypassed the view layer entirely: WordPress rendered them its own way and a `pages/page.twig` added to the theme was never read. Resolves by slug rather than by full path, which stops being right the moment a page moves in the tree ([#147])
+- **Starter:** Enable `Hooks\Cleanup\DisableGlobalStyles` by default, and document the cascade conflict it solves. WordPress prints the styles it derives from `theme.json` inline and _after_ the theme's stylesheet, so core wins on load order; with no `theme.json` those are core's defaults, and `body { padding: 0 }` flattens a gutter the theme sets. The symptom is a theme rule struck through by an inline sheet the theme never enqueued, which reads as a broken stylesheet rather than a load-order fight. Drop it from `foehn.config.php` if you adopt `theme.json` presets ([#150])
+- **Starter:** A packaging test asserting the archive contains no path reaching outside the project, and no `post-create-project-cmd` overwriting `.env`
+
+[#142]: https://github.com/studiometa/foehn-framework/issues/142
+[#143]: https://github.com/studiometa/foehn-framework/issues/143
+[#144]: https://github.com/studiometa/foehn-framework/issues/144
+[#145]: https://github.com/studiometa/foehn-framework/issues/145
+[#146]: https://github.com/studiometa/foehn-framework/issues/146
+[#147]: https://github.com/studiometa/foehn-framework/issues/147
+[#148]: https://github.com/studiometa/foehn-framework/issues/148
+[#149]: https://github.com/studiometa/foehn-framework/issues/149
+[#150]: https://github.com/studiometa/foehn-framework/issues/150
+[0.5.3]: https://github.com/studiometa/foehn-framework/releases/tag/0.5.3
+
 ## [0.5.2] - 2026-08-20
 
 ### Added
