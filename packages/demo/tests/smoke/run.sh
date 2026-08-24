@@ -223,10 +223,10 @@ league/glide is missing. See theme/app/foehn.config.php.
 
 $(curl -sk "$url/projects/corridors/" | grep -oE '<img[^>]*src=\"[^\"]*\"' | head -3)"
 
+base="${transform%%\?*}"
+
 case "$transform" in
-*"s="*) ;;
-*) fail "a transform URL carries no signature, so ?w=9999 is an instruction to
-spend CPU and disk on demand:
+*"s="*) fail "a transform URL carries a signature, which nothing produces any more:
 
     $transform" ;;
 esac
@@ -235,7 +235,7 @@ served="$(curl -sk -o /dev/null -w '%{http_code} %{content_type}' "$transform")"
 
 case "$served" in
 "200 image/webp") ;;
-*) fail "a signed transform was not produced
+*) fail "a transform was not produced
 
     url:      $transform
     response: $served
@@ -248,36 +248,62 @@ site without the plugin builds one from the S3_UPLOADS_* constants alone.
 $(curl -sk "$transform" | head -c 300)" ;;
 esac
 
-printf '✓ a signed image transform is produced and served\n'
+printf '✓ an image transform is produced and served\n'
 
 # The point of caching a transform is that the second request never reaches PHP:
 # booting WordPress costs more than the transform saves. That only works because
-# the cache is keyed on the URL's own signature, which nginx can read off the
-# query string — Glide's own xxh3 key is one it cannot compute, and a rule
-# pointed at that would miss every time while the pages looked perfectly correct.
+# the cache path spells the transform out — nginx assembles it from named
+# arguments. Glide's own xxh3 key is one nginx cannot compute, and a rule pointed
+# at that would miss every time while the pages looked perfectly correct.
 cached="$(curl -sk -D- -o /dev/null "$transform" | tr -d '\r' | grep -ci '^x-foehn-image-cache: HIT' || true)"
 
 [ "$cached" = "1" ] || fail "the second request for a transform still reached PHP
 
     url: $transform
 
-.ddev/nginx/image-cache.conf maps /_image/<path>?s=<sig> onto the cached object
-at cache/glide/<path>/<sig>. If PHP is answering every request, either the rule
-is not loaded or the object is not where the rule looks.
+.ddev/nginx/image-cache.conf maps /_image/<path>?w=&h=&fit=&fm= onto the cached
+object at cache/glide/<path>/<w>x<h>-<fit>-<fm>. If PHP is answering every
+request, either the rule is not loaded or the object is not where the rule looks.
 
 $(curl -sk -D- -o /dev/null "$transform" | head -12)"
 
 printf '✓ a cached transform is served without booting WordPress\n'
 
-# Unsigned, ?w=9999 is an instruction to spend a few hundred milliseconds of CPU
-# and a cache entry, on demand, as many times as anyone likes.
-unsigned="$(curl -sk -o /dev/null -w '%{http_code}' "${transform%%\?*}?w=9999")"
+# Nothing is signed, so what stands between the site and `?w=9999` is that the
+# route refuses to build it. Each of these is a different way of asking for a
+# transform outside the bounds, and each must be turned down rather than served.
+for bad in "w=9999" "w=600&fit=stretch" "w=600&fm=gif" "fit=crop"; do
+	refused="$(curl -sk -o /dev/null -w '%{http_code}' "$base?$bad")"
 
-[ "$unsigned" = "403" ] || fail "an unsigned transform was answered with HTTP $unsigned, not 403
+	[ "$refused" = "400" ] || fail "an out-of-bounds transform was answered with HTTP $refused, not 400
 
-    url: ${transform%%\?*}?w=9999"
+    url: $base?$bad
 
-printf '✓ an unsigned transform is refused\n'
+GlideConfig::normalise() bounds sizes to a grid and fit/fm to a short list. If
+this is a 200, the cache an image can have is no longer finite."
+done
+
+printf '✓ a transform outside the bounds is refused\n'
+
+# The one that matters most, and the least obvious. Glide's getAllParams() ends
+# with array_merge($all, $params), so any parameter that survives to it overrides
+# what the server configured — an unknown key is not ignored, it wins. Smuggling
+# `q=5` past the route would mean the cache key says one thing and the bytes are
+# another; `blur=90` would mean arbitrary CPU on demand.
+#
+# Byte-for-byte identical to the clean request is the proof: same file, so the
+# extra parameters reached nothing.
+clean_bytes="$(curl -sk -o /dev/null -w '%{size_download}' "$transform")"
+smuggled_bytes="$(curl -sk -o /dev/null -w '%{size_download}' "$transform&q=5&blur=90&p=x")"
+
+[ "$clean_bytes" = "$smuggled_bytes" ] && [ "$clean_bytes" != "0" ] || fail "a smuggled parameter changed the image
+
+    clean:    $clean_bytes bytes — $transform
+    smuggled: $smuggled_bytes bytes — with &q=5&blur=90 appended
+
+Only GlideConfig::PARAMS may reach Glide. Anything else overrides the server."
+
+printf '✓ a parameter outside the allowlist reaches nothing\n'
 
 # studiometa/ui, both halves. The markup can only exist if the @ui Twig namespace
 # resolved, which only happens when StudiometaUi is opted in and the package is

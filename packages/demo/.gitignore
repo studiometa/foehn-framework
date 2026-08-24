@@ -31,6 +31,11 @@ composer.lock
 !/.ddev/docker-compose.minio.yaml
 !/.ddev/nginx/
 !/.ddev/nginx/*.conf
+# nginx_full is mounted as sites-enabled, which is nginx's `http` context. The
+# rate limit's zone has to be declared there; the rule that uses it lives in
+# nginx/. Only our file is kept — nginx-site.conf beside it is ddev-generated.
+!/.ddev/nginx_full/
+!/.ddev/nginx_full/00-foehn-image-limit.conf
 
 # OS
 .DS_Store
