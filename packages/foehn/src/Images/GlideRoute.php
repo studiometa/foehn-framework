@@ -53,10 +53,11 @@ final readonly class GlideRoute implements RewriteHandlerInterface
             $this->fail(403, 'Signature invalide.');
         }
 
-        $params = array_diff_key($_GET, ['s' => null]);
-
         try {
-            $this->config->server()->outputImage($chemin, $params);
+            // The signature travels with the parameters rather than being stripped
+            // out: no manipulator reads it, and the cache path is keyed on it so a
+            // webserver can find a hit without asking PHP. See GlideConfig.
+            $this->config->server()->outputImage($chemin, $_GET);
         } catch (Throwable $erreur) {
             // A transform that cannot be produced — a missing original, an
             // unreadable format — is a 404 for that URL, not a 500 for the site.

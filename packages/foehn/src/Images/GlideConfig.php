@@ -63,7 +63,50 @@ final class GlideConfig
             // A response is built by the route, which needs the path rather than a
             // stream: it hands the file to the webserver and lets it do the rest.
             'base_url' => '/' . GlideTransformer::ROUTE,
+            // A closure literal, and not `$this->cachePath(...)`: Glide rebinds
+            // this callable onto the Server, and a closure made from a method
+            // cannot be rebound to another class — PHP warns and hands back null,
+            // which Glide turns into "Invalid cache path callable".
+            'cache_path_callable' => static function (string $path, array $params): string {
+                return GlideConfig::cachePath($path, $params);
+            },
         ]);
+    }
+
+    /**
+     * Where a result is cached: the source path, then the URL's own signature.
+     *
+     * Glide keys a result under `xxh3(path + params)` by default, which is
+     * deterministic but not *reproducible by a webserver* — nginx cannot hash. So
+     * every cache hit would still boot WordPress to work out which file to send,
+     * and the caching would save the transform while paying for the boot.
+     *
+     * The signature is already a keyed hash over exactly the path and the
+     * parameters, and it is already in the query string. Keying on it makes the
+     * cache path something a webserver can assemble from the request alone:
+     *
+     *     /_image/2016/06/photo.jpg?w=400&s=<sig>  →  <cache>/2016/06/photo.jpg/<sig>
+     *
+     * A forged `s` cannot reach a file: nothing is ever written under a signature
+     * the site did not produce, so a wrong one misses and falls through to PHP,
+     * where the signature is checked and refused.
+     *
+     * @param array<string, mixed> $params
+     */
+    public static function cachePath(string $path, array $params): string
+    {
+        $signature = (string) ($params['s'] ?? '');
+
+        if (preg_match('/^[a-f0-9]{32}$/', $signature) !== 1) {
+            // Nothing to key on. `GlideRoute` validates a signature before it ever
+            // gets here, so this is a direct call to the server — hash the
+            // parameters instead, the way Glide would have.
+            unset($params['s'], $params['p']);
+            ksort($params);
+            $signature = md5(http_build_query($params));
+        }
+
+        return $path . '/' . $signature;
     }
 
     /**

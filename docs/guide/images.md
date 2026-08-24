@@ -34,20 +34,37 @@ composer require league/flysystem-aws-s3-v3   # only if uploads live in a bucket
 
 It follows the uploads. On local disk both the originals and the cache are directories under the uploads root; with `humanmade/s3-uploads` both are prefixes of the same bucket, reading where the plugin writes and caching beside it. Caching into the bucket is deliberate — a container loses its disk on every release, which is why the uploads left it.
 
-The S3 client is built from the `S3_UPLOADS_*` constants `wp-config.php` already defines. One place configures the bucket.
+The S3 client is built from the `S3_UPLOADS_*` constants `wp-config.php` already defines. One place configures the bucket. Cached objects are written at the bucket's own visibility, not forced public: a bucket with Block Public Access on rejects a `public-read` write outright, and a private bucket behind a CDN is a setup that has to keep working.
 
 ### Serve the cache from the webserver
 
-This is the part worth doing. Glide keys a result under a deterministic path, so every cache hit can be answered without PHP. Booting WordPress costs more than the transform saves.
+This is the part worth doing. Booting WordPress costs more than the transform saves, so every cache hit should be answered without PHP.
+
+That requires the cache path to be something the webserver can assemble from the request. Glide's own key is `xxh3(path + params)`, which nginx cannot compute — so Føhn keys on the URL's signature instead, which is already a keyed hash of exactly the path and the parameters, and is already in the query string:
+
+```
+/_image/2016/06/photo.jpg?w=400&fm=webp&s=<sig>  →  <cache>/2016/06/photo.jpg/<sig>
+```
+
+Which makes the rule a rewrite:
 
 ```nginx
-# Cached transforms, straight from disk. PHP only sees a miss.
+# Cached transforms, straight from disk. PHP only ever sees a miss.
 location ^~ /_image/ {
-    try_files /wp-content/uploads/cache/glide/$uri @foehn;
+    rewrite ^/_image/(.+)$ /wp-content/uploads/cache/glide/$1/$arg_s? break;
+    try_files $uri @foehn;
+}
+
+location @foehn {
+    rewrite ^ /index.php last;
 }
 ```
 
-With uploads in a bucket, point the same rule at the bucket instead — the shape is the one an uploads proxy already has.
+With uploads in a bucket, point the same rewrite at the bucket — the shape is the one an uploads proxy already has; `packages/demo/.ddev/nginx/image-cache.conf` is a working example against MinIO.
+
+`^~` and not a regex location: a regex would lose to the `\.(jpg|png|webp)$` static-file rule most WordPress configurations already carry, and every transform would 404.
+
+A forged `s` cannot reach a file — nothing is ever written under a signature the site did not produce — so a wrong one misses and falls through to PHP, which refuses it.
 
 Without the rule the site still works. It just pays a WordPress boot per image.
 

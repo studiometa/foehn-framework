@@ -8,13 +8,13 @@ use Studiometa\Foehn\Images\GlideTransformer;
 use Studiometa\Foehn\Images\NullTransformer;
 
 describe('NullTransformer', function () {
-    // La valeur par défaut ne change rien : un gabarit écrit contre l'interface
-    // s'affiche correctement sur un projet qui ne transforme aucune image.
-    it('rend l\'URL telle quelle', function () {
+    // The default changes nothing: a template written against the interface renders
+    // correctly on a project that transforms no images at all.
+    it('returns the URL untouched', function () {
         expect(new NullTransformer()->url('http://example.com/a.jpg', ['w' => 400]))->toBe('http://example.com/a.jpg');
     });
 
-    it('implémente le contrat', function () {
+    it('implements the contract', function () {
         expect(new NullTransformer())->toBeInstanceOf(ImageTransformer::class);
     });
 });
@@ -22,40 +22,77 @@ describe('NullTransformer', function () {
 describe('GlideTransformer', function () {
     $media = 'http://example.com/wp-content/uploads/2016/06/photo.jpg';
 
-    it('signe l\'URL qu\'il produit', function () use ($media) {
+    it('signs the URL it produces', function () use ($media) {
         $url = new GlideTransformer(new GlideConfig())->url($media, ['w' => 400, 'h' => 267, 'fit' => 'crop']);
 
         expect($url)->toContain('/_image/2016/06/photo.jpg');
         expect($url)->toContain('w=400');
-        // Sans signature, `?w=9999` est une invitation à dépenser du CPU.
+        // Unsigned, `?w=9999` is an invitation to spend CPU.
         expect($url)->toContain('s=');
     });
 
-    // La signature couvre les paramètres : deux URLs qui demandent la même chose
-    // doivent produire la même chaîne, sinon la même vignette est mise en cache
-    // deux fois, sous deux signatures.
-    it('produit la même URL quel que soit l\'ordre des paramètres', function () use ($media) {
+    // The signature covers the parameters, so two URLs asking for the same thing
+    // have to produce the same string — otherwise the same crop is cached twice,
+    // under two signatures.
+    it('produces the same URL whatever the parameter order', function () use ($media) {
         $transformer = new GlideTransformer(new GlideConfig());
 
         expect($transformer->url($media, ['w' => 400, 'h' => 267]))
             ->toBe($transformer->url($media, ['h' => 267, 'w' => 400]));
     });
 
-    it('laisse passer une image extérieure aux médias du site', function () {
-        $externe = 'https://ailleurs.test/photo.jpg';
+    it('lets an image from outside this site\'s media through', function () {
+        $ailleurs = 'https://ailleurs.test/photo.jpg';
 
-        expect(new GlideTransformer(new GlideConfig())->url($externe, ['w' => 400]))->toBe($externe);
+        expect(new GlideTransformer(new GlideConfig())->url($ailleurs, ['w' => 400]))->toBe($ailleurs);
     });
 
-    it('laisse passer une URL sans transformation demandée', function () use ($media) {
+    it('lets a URL with no transform asked for through', function () use ($media) {
         expect(new GlideTransformer(new GlideConfig())->url($media, []))->toBe($media);
     });
 
-    // Un `..` dans un chemin qui atteint le système de fichiers est la façon dont
-    // un transformateur devient un moyen de lire ce qu'on ne lui a pas montré.
-    it('refuse un chemin qui remonte hors des médias', function () {
+    // A `..` in a path that reaches the filesystem is how a transformer becomes a
+    // way to read what it was never pointed at.
+    it('refuses a path that climbs out of the media', function () {
         $remonte = 'http://example.com/wp-content/uploads/../../wp-config.php';
 
         expect(new GlideTransformer(new GlideConfig())->url($remonte, ['w' => 10]))->toBe($remonte);
+    });
+});
+
+describe('GlideConfig::cachePath', function () {
+    $media = 'http://example.com/wp-content/uploads/2016/06/photo.jpg';
+
+    // This is the invariant the webserver rule stands on. nginx assembles the
+    // cache path out of the request — the path from the URL, the signature from
+    // `$arg_s` — so if PHP ever wrote it anywhere else, every hit would silently
+    // miss and boot WordPress, and the site would look fine while doing it.
+    it('keys a result under the same signature the URL carries', function () use ($media) {
+        $url = new GlideTransformer(new GlideConfig())->url($media, ['w' => 400, 'fm' => 'webp']);
+
+        parse_str((string) parse_url($url, PHP_URL_QUERY), $params);
+
+        expect(GlideConfig::cachePath('2016/06/photo.jpg', $params))->toBe('2016/06/photo.jpg/' . $params['s']);
+    });
+
+    // Called directly rather than through the route, there is no signature to key
+    // on — but the path still has to be stable, and still has to separate two
+    // different transforms of the same image.
+    it('falls back to hashing the parameters when there is no signature', function () {
+        $sans = GlideConfig::cachePath('a.jpg', ['w' => 400]);
+
+        expect($sans)
+            ->toBe(GlideConfig::cachePath('a.jpg', ['w' => 400]))
+            ->and($sans)
+            ->not
+            ->toBe(GlideConfig::cachePath('a.jpg', ['w' => 800]))
+            ->and($sans)
+            ->toStartWith('a.jpg/');
+    });
+
+    // A signature is a path component here, so anything that is not one is not
+    // treated as one. Otherwise `?s=../../..` picks the directory to write into.
+    it('refuses to key on anything that is not a signature', function () {
+        expect(GlideConfig::cachePath('a.jpg', ['s' => '../../etc/passwd', 'w' => 400]))->not->toContain('..');
     });
 });
