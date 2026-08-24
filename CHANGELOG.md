@@ -5,7 +5,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.5.4] - 2026-08-24
+
+Image transforms at an arbitrary size, for the crops `#[AsImageSize]` cannot register ahead of time.
 
 ### Added
 
@@ -23,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dispatch a `#[AsRewriteRule]` whose query variables all come from the URL. `matchableVars()` skipped any variable whose value was a `$matches[n]` capture, so a rule like `index.php?foehn_image=$matches[1]` — every variable captured, nothing constant — was left with nothing to match on and never reached its handler. The rewrite still matched, so the symptom was an ordinary WordPress 404 on a URL that `wp rewrite list` showed as correctly registered. A captured variable is now recorded as required-and-non-empty rather than dropped ([#151])
 
 [#151]: https://github.com/studiometa/foehn-framework/issues/151
+[0.5.4]: https://github.com/studiometa/foehn-framework/releases/tag/0.5.4
 
 ## [0.5.3] - 2026-08-21
 
