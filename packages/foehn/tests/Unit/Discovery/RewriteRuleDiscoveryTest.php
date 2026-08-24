@@ -49,10 +49,15 @@ describe('RewriteRuleDiscovery', function () {
         expect(discoveredRules(RewriteRuleFixture::class)[0]['match'])->toBe(['foehn_route' => 'stripe-webhook']);
     });
 
-    it('leaves out a variable whose value is a capture group', function () {
+    it('records a variable whose value is a capture group as required, not equal', function () {
         // `name=$matches[1]` carries whatever the pattern captured, so there is
-        // nothing to compare it against.
-        expect(discoveredRules(RewriteRuleWithoutHandlerFixture::class)[0]['match'])->toBe(['post_type' => 'brochure']);
+        // nothing to compare it against — but it still has to be there, and `true`
+        // says so. Dropping it instead leaves a rule that sets only captured
+        // variables with nothing at all to match on, and it never dispatches.
+        expect(discoveredRules(RewriteRuleWithoutHandlerFixture::class)[0]['match'])->toBe([
+            'post_type' => 'brochure',
+            'name' => true,
+        ]);
     });
 
     it('rejects a position add_rewrite_rule does not accept', function () {

@@ -34,7 +34,9 @@ composer require league/flysystem-aws-s3-v3   # only if uploads live in a bucket
 
 It follows the uploads. On local disk both the originals and the cache are directories under the uploads root; with `humanmade/s3-uploads` both are prefixes of the same bucket, reading where the plugin writes and caching beside it. Caching into the bucket is deliberate — a container loses its disk on every release, which is why the uploads left it.
 
-The S3 client is built from the `S3_UPLOADS_*` constants `wp-config.php` already defines. One place configures the bucket. Cached objects are written at the bucket's own visibility, not forced public: a bucket with Block Public Access on rejects a `public-read` write outright, and a private bucket behind a CDN is a setup that has to keep working.
+The S3 client is the plugin's own, not a second one built from constants. The bucket and the region are constants, but what makes a non-AWS bucket reachable is not: `humanmade/s3-uploads` takes its endpoint, its path-style addressing and its checksum settings from the `s3_uploads_s3_client_params` filter, which is where [`S3UploadsEndpoint`](/guide/uploads) supplies them. Reading only the constants gives you a client pointed at AWS while the uploads go to MinIO — every transform 404s with the originals plainly present in the media library.
+
+Cached objects are written at the bucket's own visibility, not forced public: a bucket with Block Public Access on rejects a `public-read` write outright, and a private bucket behind a CDN is a setup that has to keep working.
 
 ### Serve the cache from the webserver
 
@@ -66,7 +68,11 @@ With uploads in a bucket, point the same rewrite at the bucket — the shape is 
 
 A forged `s` cannot reach a file — nothing is ever written under a signature the site did not produce — so a wrong one misses and falls through to PHP, which refuses it.
 
+Keep the query string in the rewrite. Dropping it with a trailing `?` is tempting, since the object key does not need `w` and `h` — but it drops them on the miss path too, and PHP is then handed one of its own URLs with no signature on it and answers 403.
+
 Without the rule the site still works. It just pays a WordPress boot per image.
+
+One consequence worth knowing: on a **cached** image, editing the parameters while keeping the signature still returns the cached bytes, because the webserver matches on the signature alone. What comes back is the image the site itself signed for — no transform is produced and no CPU is spent. On an image that is not cached the same URL reaches PHP and is refused. The guarantee is that no attacker-chosen transform is ever produced, and that holds either way.
 
 ### URLs are signed, and that is not optional
 

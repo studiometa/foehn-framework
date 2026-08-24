@@ -158,7 +158,7 @@ final class RewriteRuleDiscovery implements Discovery
     /**
      * Whether this request is the one a rule rewrote to.
      *
-     * @param array<string, string> $match
+     * @param array<string, string|true> $match
      */
     private static function matches(WP $wp, array $match): bool
     {
@@ -167,7 +167,20 @@ final class RewriteRuleDiscovery implements Discovery
         }
 
         foreach ($match as $name => $value) {
-            if (($wp->query_vars[$name] ?? null) !== $value) {
+            $actual = $wp->query_vars[$name] ?? null;
+
+            // `true` is a variable the rule fills from the URL: any value will do,
+            // but there has to be one. WordPress leaves an unmatched variable out
+            // of the query entirely, so presence is the whole test.
+            if ($value === true) {
+                if (!is_string($actual) || $actual === '') {
+                    return false;
+                }
+
+                continue;
+            }
+
+            if ($actual !== $value) {
                 return false;
             }
         }
@@ -176,13 +189,20 @@ final class RewriteRuleDiscovery implements Discovery
     }
 
     /**
-     * The query variables a rule's target sets to a value known in advance.
+     * The query variables that identify a request as this rule's.
      *
-     * `index.php?foehn_route=stripe-webhook&id=$matches[1]` identifies the route
-     * by `foehn_route`; `id` carries whatever the pattern captured, and cannot
-     * be compared against anything.
+     * `index.php?foehn_route=stripe-webhook&id=$matches[1]` is identified by
+     * `foehn_route`, whose value is known here. `id` carries whatever the pattern
+     * captured and cannot be compared against anything — but it can still be
+     * required to be there, which is recorded as `true`.
      *
-     * @return array<string, string>
+     * That distinction is what a rule like `index.php?foehn_image=$matches[1]`
+     * needs: every variable it sets comes from the URL, so demanding a known value
+     * would leave it with nothing to match on and it would never dispatch at all —
+     * silently, since a rewrite rule that matches and reaches no handler is an
+     * ordinary WordPress 404.
+     *
+     * @return array<string, string|true>
      */
     private static function matchableVars(string $query): array
     {
@@ -199,11 +219,11 @@ final class RewriteRuleDiscovery implements Discovery
         $match = [];
 
         foreach ($parsed as $name => $value) {
-            if (!is_string($value) || str_contains($value, '$matches[')) {
+            if (!is_string($value)) {
                 continue;
             }
 
-            $match[$name] = $value;
+            $match[$name] = str_contains($value, '$matches[') ? true : $value;
         }
 
         return $match;

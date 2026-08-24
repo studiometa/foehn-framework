@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Studiometa\Foehn\Discovery\RewriteRuleDiscovery;
 use Tempest\Container\GenericContainer;
+use Tests\Fixtures\RewriteRuleCaptureFixture;
 use Tests\Fixtures\RewriteRuleFixture;
 use Tests\Fixtures\RewriteRuleWithoutHandlerFixture;
 
@@ -25,6 +26,7 @@ beforeEach(function () {
     wp_stub_reset();
 
     RewriteRuleFixture::$handled = 0;
+    RewriteRuleCaptureFixture::$handled = 0;
 
     $this->container = new GenericContainer();
     $this->discovery = new RewriteRuleDiscovery($this->container);
@@ -103,6 +105,44 @@ describe('RewriteRuleDiscovery::apply', function () {
         firstCallbackFor('add_action', 'parse_request')(new WP());
 
         expect(RewriteRuleFixture::$handled)->toBe(0);
+    });
+
+    // The case that decides whether a rule like `index.php?foehn_image=$matches[1]`
+    // works at all. Every variable it sets comes from the URL, so there is nothing
+    // to compare against a known value — and a rule that dispatches on nothing
+    // fails in the quietest way there is: the rewrite matches, no handler runs, and
+    // WordPress serves an ordinary 404 for a URL that looks correctly registered.
+    it('dispatches a rule whose variables all come from the URL', function () {
+        discoverFixture($this->discovery, RewriteRuleCaptureFixture::class);
+        $this->discovery->apply();
+
+        $wp = new WP();
+        $wp->query_vars = ['foehn_image' => '2016/06/photo.jpg'];
+
+        firstCallbackFor('add_action', 'parse_request')($wp);
+
+        expect(RewriteRuleCaptureFixture::$handled)->toBe(1);
+    });
+
+    it('does not dispatch a captured variable that is empty', function () {
+        discoverFixture($this->discovery, RewriteRuleCaptureFixture::class);
+        $this->discovery->apply();
+
+        $wp = new WP();
+        $wp->query_vars = ['foehn_image' => ''];
+
+        firstCallbackFor('add_action', 'parse_request')($wp);
+
+        expect(RewriteRuleCaptureFixture::$handled)->toBe(0);
+    });
+
+    it('does not dispatch a captured rule to an ordinary request', function () {
+        discoverFixture($this->discovery, RewriteRuleCaptureFixture::class);
+        $this->discovery->apply();
+
+        firstCallbackFor('add_action', 'parse_request')(new WP());
+
+        expect(RewriteRuleCaptureFixture::$handled)->toBe(0);
     });
 
     it('hooks nothing on parse_request when no rule handles', function () {

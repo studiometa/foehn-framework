@@ -208,12 +208,26 @@ final class GlideConfig
     /**
      * A client for the same bucket `s3-uploads` writes to.
      *
-     * Flysystem needs an S3 client; the plugin uses a stream wrapper. Both sit on
-     * `aws/aws-sdk-php`, so this adds configuration rather than a second SDK — and
-     * it reads the configuration the installer already wrote.
+     * Its own, rather than a second one built from constants. The bucket and the
+     * region are constants, but everything that makes a non-AWS bucket reachable
+     * is not: the plugin takes its endpoint, its path-style addressing and its
+     * checksum settings from the `s3_uploads_s3_client_params` filter, which is
+     * where Føhn's own `S3UploadsEndpoint` supplies them, and where a site adds
+     * whatever R2 or Scaleway needs.
+     *
+     * Reading only the constants produced a client pointed at AWS while the
+     * uploads went to MinIO — and the symptom was every transform 404ing with the
+     * originals plainly present in the media library.
      */
     private function s3(): S3Client
     {
+        // `class_exists` and not a `use`: the plugin is a dependency of the site,
+        // never of the framework.
+        if (class_exists('S3_Uploads\Plugin')) {
+            /** @var S3Client */
+            return call_user_func(['S3_Uploads\Plugin', 'get_instance'])->s3();
+        }
+
         $config = [
             'version' => 'latest',
             'region' => defined('S3_UPLOADS_REGION') ? (string) constant('S3_UPLOADS_REGION') : 'us-east-1',
@@ -231,6 +245,13 @@ final class GlideConfig
         if (defined('S3_UPLOADS_ENDPOINT') && (string) constant('S3_UPLOADS_ENDPOINT') !== '') {
             $config['endpoint'] = (string) constant('S3_UPLOADS_ENDPOINT');
             $config['use_path_style_endpoint'] = true;
+        }
+
+        // The plugin's own extension point, applied to the client Glide will use,
+        // so one filter configures both.
+        if (function_exists('apply_filters')) {
+            /** @var array<string, mixed> $config */
+            $config = apply_filters('s3_uploads_s3_client_params', $config);
         }
 
         return new S3Client($config);
