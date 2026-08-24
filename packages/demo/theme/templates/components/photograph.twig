@@ -5,20 +5,38 @@
   photographs, published under the Unsplash licence, which asks that the
   photographer be named. It is stored on the attachment as post meta at import and
   read back here, so a photograph can never appear on the site without it.
+
+  The plate crops to a ratio — 3:4 standing, 3:2 lying down — and that is where
+  `#[AsImageSize]` runs out. Two ratios cannot come from one registered size, and
+  a size registered now would apply to nothing already uploaded. So the crop is
+  asked for here through `image_url()` and the transformer produces it. With no
+  transformer configured the source URL comes back and the page still renders.
+
+  It is also the difference between cropping and appearing to crop: `object-fit`
+  gives the right shape by downloading the whole photograph and discarding
+  whatever falls outside the ratio.
 #}
 {% set orientation = image.height > image.width ? 'portrait' : 'landscape' %}
 {% set photographer = image.meta('credit_photographer') %}
 {% set photographer_url = image.meta('credit_url') %}
 
+{# The height of the plate per unit of width: 3:4 standing, 3:2 lying down. #}
+{% set ratio = orientation == 'portrait' ? 4 / 3 : 2 / 3 %}
+
+{# Two widths rather than 1x/2x: 1200 is the widest crop every original here can
+   fill without being upscaled, which a density descriptor would hide. #}
+{% set src = image_url(image, { w: 600, h: (600 * ratio)|round, fit: 'crop', fm: 'webp' }) %}
+{% set src_wide = image_url(image, { w: 1200, h: (1200 * ratio)|round, fit: 'crop', fm: 'webp' }) %}
+
 <figure>
   <div class="plate plate--{{ orientation }}">
     {% if image %}
       <img
-        src="{{ image.src(size|default('large')) }}"
-        srcset="{{ image.srcset(size|default('large')) }}"
+        src="{{ src }}"
+        srcset="{{ src }} 600w, {{ src_wide }} 1200w"
         sizes="{{ sizes|default('(min-width: 48rem) 60vw, 100vw') }}"
-        width="{{ image.width }}"
-        height="{{ image.height }}"
+        width="600"
+        height="{{ (600 * ratio)|round }}"
         alt="{{ image.alt ?: caption|default('') }}"
         loading="{{ loading|default('lazy') }}"
         decoding="async" />

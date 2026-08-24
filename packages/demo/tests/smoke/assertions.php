@@ -13,10 +13,12 @@ declare(strict_types=1);
  */
 
 use Studiometa\Foehn\Config\FoehnConfig;
+use Studiometa\Foehn\Contracts\ImageTransformer;
 use Studiometa\Foehn\Contracts\ViewEngineInterface;
 use Studiometa\Foehn\Discovery;
 use Studiometa\Foehn\Discovery\CliCommandDiscovery;
 use Studiometa\Foehn\Discovery\DiscoveryRunner;
+use Studiometa\Foehn\Images\GlideTransformer;
 use Studiometa\Foehn\Kernel;
 use Studiometa\Foehn\Security\Salts;
 use Studiometa\Foehn\Settings\Settings;
@@ -68,11 +70,17 @@ $results = new class {
 
 $config = Kernel::get(FoehnConfig::class);
 
-// theme/app/foehn.config.php opts into 9 hook classes. Before config files were
+// theme/app/foehn.config.php opts into 10 hook classes. Before config files were
 // loaded this was 0, and every security hook in the theme was silently inert.
-$results->same('foehn.config.php is loaded (opt-in hooks)', 9, count($config->hooks));
+$results->same('foehn.config.php is loaded (opt-in hooks)', 10, count($config->hooks));
 
 $results->true('opt-in security hooks are applied', has_filter('xmlrpc_enabled') !== false);
+
+// The config also names a driver, and naming one is the whole of the opt-in: with
+// none, image_url() hands back the source URL and every page still renders — so
+// nothing on the front end would look wrong if this silently reverted.
+$results->same('an image transformer is configured', GlideTransformer::class, $config->imageTransformer);
+$results->true('the container resolves it', Kernel::get(ImageTransformer::class) instanceof GlideTransformer);
 
 // ──────────────────────────────────────────────
 // Vendor discovery: the framework's own classes

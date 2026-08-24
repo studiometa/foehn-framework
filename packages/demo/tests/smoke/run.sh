@@ -206,6 +206,79 @@ check_page "/projects/" "index-row__title" "the projects index lists the series"
 check_page "/projects/corridors/" "plate--" "a project page shows its photographs"
 check_page "/about/" "prose" "the about page renders its copy"
 
+# Image transforms, end to end. The plate crops to two ratios, which is where
+# #[AsImageSize] stops being the answer: a registered size is one shape, and one
+# registered today applies to nothing already uploaded. So photograph.twig asks
+# for the crop and GlideTransformer produces it.
+#
+# `sed` because the URL arrives HTML-escaped, and `&amp;` in a request is four
+# parameters named wrongly rather than one named `fm`.
+transform="$(curl -sk "$url/projects/corridors/" | grep -oE 'https?://[^" ]+/_image/[^" ]+' | head -n1 | sed 's/&amp;/\&/g')"
+
+[ -n "$transform" ] || fail "the project page emitted no image transforms
+
+Either no ImageTransformer is configured — in which case image_url() correctly
+returned the source URL and this assertion is the only thing that noticed — or
+league/glide is missing. See theme/app/foehn.config.php.
+
+$(curl -sk "$url/projects/corridors/" | grep -oE '<img[^>]*src=\"[^\"]*\"' | head -3)"
+
+case "$transform" in
+*"s="*) ;;
+*) fail "a transform URL carries no signature, so ?w=9999 is an instruction to
+spend CPU and disk on demand:
+
+    $transform" ;;
+esac
+
+served="$(curl -sk -o /dev/null -w '%{http_code} %{content_type}' "$transform")"
+
+case "$served" in
+"200 image/webp") ;;
+*) fail "a signed transform was not produced
+
+    url:      $transform
+    response: $served
+
+The route runs on a cache miss and reads the original out of the bucket. A 404
+here is usually GlideConfig reaching a different bucket than the uploads went
+to — its client comes from the s3-uploads plugin so that cannot drift, but a
+site without the plugin builds one from the S3_UPLOADS_* constants alone.
+
+$(curl -sk "$transform" | head -c 300)" ;;
+esac
+
+printf '✓ a signed image transform is produced and served\n'
+
+# The point of caching a transform is that the second request never reaches PHP:
+# booting WordPress costs more than the transform saves. That only works because
+# the cache is keyed on the URL's own signature, which nginx can read off the
+# query string — Glide's own xxh3 key is one it cannot compute, and a rule
+# pointed at that would miss every time while the pages looked perfectly correct.
+cached="$(curl -sk -D- -o /dev/null "$transform" | tr -d '\r' | grep -ci '^x-foehn-image-cache: HIT' || true)"
+
+[ "$cached" = "1" ] || fail "the second request for a transform still reached PHP
+
+    url: $transform
+
+.ddev/nginx/image-cache.conf maps /_image/<path>?s=<sig> onto the cached object
+at cache/glide/<path>/<sig>. If PHP is answering every request, either the rule
+is not loaded or the object is not where the rule looks.
+
+$(curl -sk -D- -o /dev/null "$transform" | head -12)"
+
+printf '✓ a cached transform is served without booting WordPress\n'
+
+# Unsigned, ?w=9999 is an instruction to spend a few hundred milliseconds of CPU
+# and a cache entry, on demand, as many times as anyone likes.
+unsigned="$(curl -sk -o /dev/null -w '%{http_code}' "${transform%%\?*}?w=9999")"
+
+[ "$unsigned" = "403" ] || fail "an unsigned transform was answered with HTTP $unsigned, not 403
+
+    url: ${transform%%\?*}?w=9999"
+
+printf '✓ an unsigned transform is refused\n'
+
 # studiometa/ui, both halves. The markup can only exist if the @ui Twig namespace
 # resolved, which only happens when StudiometaUi is opted in and the package is
 # installed — the framework's own unit test for that path is skipped, because there

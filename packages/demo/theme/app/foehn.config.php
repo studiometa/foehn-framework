@@ -12,20 +12,30 @@ use Studiometa\Foehn\Hooks\Security\DisableXmlRpc;
 use Studiometa\Foehn\Hooks\Security\GenericLoginErrors;
 use Studiometa\Foehn\Hooks\StudiometaUi;
 use Studiometa\Foehn\Hooks\YouTubeNoCookieHooks;
+use Studiometa\Foehn\Images\GlideTransformer;
+use Studiometa\Foehn\Images\ImageCacheHooks;
 use Tempest\Discovery\DiscoveryCacheStrategy;
 
-return new FoehnConfig(discoveryCacheStrategy: DiscoveryCacheStrategy::FULL, hooks: [
-    CleanHeadTags::class,
-    DisableEmoji::class,
-    DisableOembed::class,
-    DisableVersionDisclosure::class,
-    DisableXmlRpc::class,
-    GenericLoginErrors::class,
-    // Registers the @ui and @svg Twig namespaces studiometa/ui ships its
-    // components under. Inert when the package is not installed.
-    StudiometaUi::class,
-    // Points humanmade/s3-uploads at MinIO. Without it the plugin talks to AWS, whose
-    // endpoint is the only one its constants can describe.
-    S3UploadsEndpoint::class,
-    YouTubeNoCookieHooks::class,
-]);
+return new FoehnConfig(
+    discoveryCacheStrategy: DiscoveryCacheStrategy::FULL,
+    imageTransformer: GlideTransformer::class,
+    hooks: [
+        CleanHeadTags::class,
+        DisableEmoji::class,
+        DisableOembed::class,
+        DisableVersionDisclosure::class,
+        DisableXmlRpc::class,
+        GenericLoginErrors::class,
+        // A transform is keyed on the path and the parameters, never on the pixels, so
+        // a crop in the media library would go on serving the old ones forever. This
+        // forgets an image's transforms when the image itself changes.
+        ImageCacheHooks::class,
+        // Registers the @ui and @svg Twig namespaces studiometa/ui ships its
+        // components under. Inert when the package is not installed.
+        StudiometaUi::class,
+        // Points humanmade/s3-uploads at MinIO. Without it the plugin talks to AWS, whose
+        // endpoint is the only one its constants can describe.
+        S3UploadsEndpoint::class,
+        YouTubeNoCookieHooks::class,
+    ],
+);
