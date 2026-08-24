@@ -25,8 +25,28 @@
 
 {# Two widths rather than 1x/2x: 1200 is the widest crop every original here can
    fill without being upscaled, which a density descriptor would hide. #}
-{% set src = image_url(image, { w: 600, h: (600 * ratio)|round, fit: 'crop', fm: 'webp' }) %}
-{% set src_wide = image_url(image, { w: 1200, h: (1200 * ratio)|round, fit: 'crop', fm: 'webp' }) %}
+{% set src =
+  image_url(
+    image,
+    {
+      w: 600,
+      h: (600 * ratio)|round,
+      fit: 'crop',
+      fm: 'webp'
+    }
+  )
+%}
+{% set src_wide =
+  image_url(
+    image,
+    {
+      w: 1200,
+      h: (1200 * ratio)|round,
+      fit: 'crop',
+      fm: 'webp'
+    }
+  )
+%}
 
 <figure>
   <div class="plate plate--{{ orientation }}">
@@ -37,7 +57,7 @@
         sizes="{{ sizes|default('(min-width: 48rem) 60vw, 100vw') }}"
         width="600"
         height="{{ (600 * ratio)|round }}"
-        alt="{{ image.alt ?: caption|default('') }}"
+        alt="{{ image.alt ? : caption|default('') }}"
         loading="{{ loading|default('lazy') }}"
         decoding="async" />
     {% endif %}
@@ -50,13 +70,13 @@
 
     {% if photographer %}
       <span>
-        Photo&nbsp;:
-        {% if photographer_url %}
-          <a href="{{ photographer_url }}" rel="noopener nofollow" target="_blank">{{ photographer }}</a>
+        Photo&nbsp;:{% if photographer_url %}
+          <a href="{{ photographer_url }}" rel="noopener nofollow" target="_blank">
+            {{ photographer }}
+          </a>
         {% else %}
           {{ photographer }}
-        {% endif %}
-        / Unsplash
+        {% endif %}/ Unsplash
       </span>
     {% endif %}
   </figcaption>

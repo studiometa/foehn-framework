@@ -37,6 +37,25 @@ final class GlideConfig
 
     private ?FilesystemOperator $cache = null;
 
+    /**
+     * The only parameters a request may carry, and the only ones in a cache key.
+     *
+     * A list rather than a filter of known-bad keys, because Glide merges request
+     * parameters *over* everything configured server-side — `getAllParams()` ends
+     * with `array_merge($all, $params)`. Any key that reaches it is an override,
+     * so an unknown one is not ignored, it wins.
+     *
+     * `q` is deliberately absent: quality is a decision about the site, not about
+     * one image, and every value it could take multiplies the cache.
+     */
+    public const array PARAMS = ['w', 'h', 'fit', 'fm'];
+
+    /** What `fit` may be. Glide accepts more; these are the ones worth caching. */
+    public const array FITS = ['crop', 'contain', 'max', 'fill'];
+
+    /** What `fm` may be. */
+    public const array FORMATS = ['webp', 'avif', 'jpg', 'png'];
+
     public function __construct(
         /**
          * `gd` or `imagick`.
@@ -46,9 +65,120 @@ final class GlideConfig
          * files. It is also the extension that is always present.
          */
         private readonly string $driver = 'gd',
-        /** Quality for lossy formats, when a transform does not say. */
+        /** Quality for lossy formats. Not accepted from a URL — see PARAMS. */
         private readonly int $quality = 82,
+        /**
+         * The grid widths and heights snap to.
+         *
+         * This is what keeps the cache finite. Without it `?w=601` is a distinct
+         * transform from `?w=600`, and the number of them an image can have is the
+         * number of integers — so the parameters are quantised on the way out and
+         * refused on the way in if they are off the grid.
+         *
+         * 100 to match what a client is likely to send: `normalizeSize()` in
+         * studiometa/ui rounds a measured element up to a step, so both ends land
+         * on the same grid without being told about each other.
+         */
+        private readonly int $step = 100,
+        /** The largest dimension worth producing. A multiple of `step`. */
+        private readonly int $maxSize = 2600,
     ) {}
+
+    public function step(): int
+    {
+        return $this->step;
+    }
+
+    public function maxSize(): int
+    {
+        return $this->maxSize;
+    }
+
+    /**
+     * A transform as it will be asked for, or null when it cannot be.
+     *
+     * Used on both sides and that is the point: `GlideTransformer` runs a
+     * template's request through it to build a URL that is valid by construction,
+     * and `GlideRoute` runs an incoming request through the same code to decide
+     * whether to honour it. One definition of what a transform may be.
+     *
+     * @param array<string, mixed> $params
+     * @return array<string, string>|null
+     */
+    public function normalise(array $params): ?array
+    {
+        $clean = [];
+
+        foreach (self::PARAMS as $key) {
+            $value = $params[$key] ?? null;
+
+            if ($value === null || $value === '') {
+                continue;
+            }
+
+            if ($key === 'w' || $key === 'h') {
+                // Numeric rather than int: `{{ image_url(image, { h: (600 * ratio)|round }) }}`
+                // hands over a float, because that is what Twig's `round` returns.
+                // Refusing it made the transformer fall back to the source URL on
+                // every image in the demo — correct behaviour for an impossible
+                // transform, and silent, which is how it survived a page that
+                // rendered perfectly with no transforms in it at all.
+                $size = is_numeric($value) ? $this->snap((float) $value) : null;
+
+                if ($size === null) {
+                    return null;
+                }
+
+                $clean[$key] = (string) $size;
+
+                continue;
+            }
+
+            if (!is_string($value)) {
+                return null;
+            }
+
+            if ($key === 'fit' && !in_array($value, self::FITS, true)) {
+                return null;
+            }
+
+            if ($key === 'fm' && !in_array($value, self::FORMATS, true)) {
+                return null;
+            }
+
+            $clean[$key] = $value;
+        }
+
+        // A request that asks for no dimension is a request for the original, which
+        // is a URL the site already has.
+        $sansTaille = ($clean['w'] ?? null) === null && ($clean['h'] ?? null) === null;
+
+        return $sansTaille ? null : $clean;
+    }
+
+    /**
+     * A dimension on the grid, or null when it is not a dimension.
+     *
+     * Rounds up rather than rejecting, so a template may write `w: 601` and get a
+     * URL that works. An incoming request is checked against the same function, so
+     * `?w=601` and `?w=700` name the same cached file rather than two.
+     */
+    private function snap(float $value): ?int
+    {
+        // NAN and INF are numeric, and `(int)` on either is meaningless rather
+        // than large.
+        if (!is_finite($value) || $value < 1 || $value > 100_000) {
+            return null;
+        }
+
+        $size = (int) $value;
+
+        // Snapped before the ceiling is applied, so `maxSize` bounds what is
+        // actually produced rather than what was asked for.
+        $size = (int) (ceil($size / $this->step) * $this->step);
+
+        return $size > $this->maxSize ? null : $size;
+    }
 
     /**
      * The Glide server, built once.
@@ -79,39 +209,38 @@ final class GlideConfig
     }
 
     /**
-     * Where a result is cached: the source path, then the URL's own signature.
+     * Where a result is cached: the source path, then the transform, spelled out.
      *
      * Glide keys a result under `xxh3(path + params)` by default, which is
      * deterministic but not *reproducible by a webserver* — nginx cannot hash. So
      * every cache hit would still boot WordPress to work out which file to send,
      * and the caching would save the transform while paying for the boot.
      *
-     * The signature is already a keyed hash over exactly the path and the
-     * parameters, and it is already in the query string. Keying on it makes the
-     * cache path something a webserver can assemble from the request alone:
+     * Spelling the parameters into the name makes the path something nginx can
+     * assemble out of the request, from named arguments:
      *
-     *     /_image/2016/06/photo.jpg?w=400&s=<sig>  →  <cache>/2016/06/photo.jpg/<sig>
+     *     /_image/2016/06/photo.jpg?w=600&h=400&fit=crop&fm=webp
+     *       →  <cache>/2016/06/photo.jpg/600x400-crop-webp
      *
-     * A forged `s` cannot reach a file: nothing is ever written under a signature
-     * the site did not produce, so a wrong one misses and falls through to PHP,
-     * where the signature is checked and refused.
+     * Named arguments and not the raw query string, so the same transform written
+     * in a different order is the same file rather than a second copy of it.
+     *
+     * An absent parameter leaves its slot empty, so a width-only resize reads as
+     * 600x-max- and the shape stays fixed however few parameters are given. Which
+     * is what keeps the two ends agreeing.
      *
      * @param array<string, mixed> $params
      */
     public static function cachePath(string $path, array $params): string
     {
-        $signature = (string) ($params['s'] ?? '');
+        $slot = static function (string $key) use ($params): string {
+            $value = $params[$key] ?? '';
 
-        if (preg_match('/^[a-f0-9]{32}$/', $signature) !== 1) {
-            // Nothing to key on. `GlideRoute` validates a signature before it ever
-            // gets here, so this is a direct call to the server — hash the
-            // parameters instead, the way Glide would have.
-            unset($params['s'], $params['p']);
-            ksort($params);
-            $signature = md5(http_build_query($params));
-        }
+            // Never a separator, and never a way out of the directory.
+            return preg_replace('/[^a-z0-9]/i', '', is_scalar($value) ? (string) $value : '') ?? '';
+        };
 
-        return $path . '/' . $signature;
+        return sprintf('%s/%sx%s-%s-%s', $path, $slot('w'), $slot('h'), $slot('fit'), $slot('fm'));
     }
 
     /**
@@ -171,17 +300,6 @@ final class GlideConfig
         }
 
         return $chemin;
-    }
-
-    /**
-     * The key URLs are signed with.
-     *
-     * `NONCE_SALT` is already required, already secret, and already specific to
-     * the install, so a signature does not survive being copied elsewhere.
-     */
-    public function signingKey(): string
-    {
-        return defined('NONCE_SALT') ? (string) constant('NONCE_SALT') : 'foehn-glide';
     }
 
     /**

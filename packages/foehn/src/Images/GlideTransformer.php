@@ -4,28 +4,33 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Images;
 
-use League\Glide\Signatures\SignatureFactory;
 use Studiometa\Foehn\Contracts\ImageTransformer;
 use Throwable;
 
 /**
  * Transforms served by this site, through `league/glide`.
  *
- * Only the URL is built here. The transform itself happens in
- * `GlideRoute`, once per (image, transform), and the result is written to a
- * cache a webserver can serve without PHP.
+ * Only the URL is built here. The transform itself happens in `GlideRoute`, once
+ * per (image, transform), and the result is written to a cache a webserver can
+ * serve without PHP.
  *
- * ## Why the URLs are signed
+ * ## Why these URLs carry no signature
  *
- * Every URL carries an HMAC of its path and parameters. Without one, `?w=9999`
- * is an instruction to spend CPU and disk on demand: a cold transform costs a few
- * hundred milliseconds, so an ordinary crawler is enough to hurt, and a
- * deliberate one fills the cache. The signature means the only transforms that
- * exist are the ones the site asked for.
+ * A cold transform costs real CPU, so `?w=9999` must not be an instruction the
+ * site will follow. Two ways to stop that: sign the URL so only transforms the
+ * site asked for exist, or bound what may be asked for at all. This does the
+ * second.
  *
- * The key is the site's `NONCE_SALT`. It is already required, already secret, and
- * already specific to the install, so signatures do not survive being copied to
- * another site — which is the behaviour you want.
+ * Bounding it is what lets a browser build these URLs. A signature would have to
+ * be computed with a secret, so a client could only ever replay sizes the server
+ * chose in advance — which is the thing a responsive image is trying not to do.
+ * `GlideConfig::normalise()` is the bound, and it runs on both ends: here to
+ * produce a URL that is valid by construction, and in the route to refuse one
+ * that is not.
+ *
+ * What it does not do is cap the *rate*. Walking the bounded space is still work,
+ * and the control that fits is a rate limit on the miss path — cache hits never
+ * reach PHP, so only transforms are throttled. See docs/guide/images.md.
  */
 final readonly class GlideTransformer implements ImageTransformer
 {
@@ -50,15 +55,18 @@ final readonly class GlideTransformer implements ImageTransformer
         }
 
         try {
-            $params = SignatureFactory::create($this->config->signingKey())->addSignature(
-                '/' . self::ROUTE . '/' . $chemin,
-                $this->normalise($transform),
-            );
+            $params = $this->config->normalise($transform);
         } catch (Throwable) {
             return $src;
         }
 
-        return home_url('/' . self::ROUTE . '/' . $chemin) . '?' . http_build_query($params);
+        // A transform this site would refuse to serve is one it should not link
+        // to. The source URL is a slower page; a URL that 400s is a broken image.
+        if ($params === null) {
+            return $src;
+        }
+
+        return home_url('/' . self::ROUTE . '/' . $chemin) . '?' . $this->query($params);
     }
 
     public function forget(string $src): void
@@ -84,25 +92,29 @@ final readonly class GlideTransformer implements ImageTransformer
     }
 
     /**
-     * The parameters, as strings, in a stable order.
+     * The query string, with the parameters always in the same order.
      *
-     * The signature covers the parameters, so two URLs meaning the same thing have
-     * to produce the same string — otherwise the same crop is cached twice and
-     * signed differently.
+     * The order does not change which file is cached — the cache key is built from
+     * named parameters, so any order finds the same one. It is fixed so that two
+     * templates asking for the same crop emit the same URL, character for
+     * character, and a CDN or a browser cache sees one image rather than several.
      *
-     * @param array<string, string|int> $transform
-     * @return array<string, string>
+     * @param array<string, string> $params
      */
-    private function normalise(array $transform): array
+    private function query(array $params): string
     {
-        $params = [];
+        $ordered = [];
 
-        foreach ($transform as $cle => $valeur) {
-            $params[$cle] = (string) $valeur;
+        foreach (GlideConfig::PARAMS as $cle) {
+            $valeur = $params[$cle] ?? null;
+
+            if ($valeur === null) {
+                continue;
+            }
+
+            $ordered[$cle] = $valeur;
         }
 
-        ksort($params);
-
-        return $params;
+        return http_build_query($ordered);
     }
 }

@@ -9,7 +9,7 @@ An `ImageTransformer` covers that second case. A template asks for a size and ne
 <img src="{{ image_url(post.thumbnail, { w: 800, fm: 'webp' }) }}" alt="" />
 ```
 
-Keys drivers agree on: `w`, `h`, `fit` (`crop`, `contain`, `stretch`), `fm` (`webp`, `avif`, `jpg`, `png`), `q`.
+Keys drivers agree on: `w`, `h`, `fit` (`crop`, `contain`, `max`, `fill`) and `fm` (`webp`, `avif`, `jpg`, `png`). Quality is not one of them — it is a decision about the site rather than about one image, and every value it could take multiplies the cache.
 
 ## Choosing a driver
 
@@ -42,18 +42,20 @@ Cached objects are written at the bucket's own visibility, not forced public: a 
 
 This is the part worth doing. Booting WordPress costs more than the transform saves, so every cache hit should be answered without PHP.
 
-That requires the cache path to be something the webserver can assemble from the request. Glide's own key is `xxh3(path + params)`, which nginx cannot compute — so Føhn keys on the URL's signature instead, which is already a keyed hash of exactly the path and the parameters, and is already in the query string:
+That requires the cache path to be something the webserver can assemble from the request. Glide's own key is `xxh3(path + params)`, which nginx cannot compute — so Føhn spells the transform into the path instead:
 
 ```
-/_image/2016/06/photo.jpg?w=400&fm=webp&s=<sig>  →  <cache>/2016/06/photo.jpg/<sig>
+/_image/2016/06/photo.jpg?w=600&h=400&fit=crop&fm=webp
+  →  <cache>/2016/06/photo.jpg/600x400-crop-webp
 ```
 
-Which makes the rule a rewrite:
+Which makes the rule a rewrite over named arguments:
 
 ```nginx
 # Cached transforms, straight from disk. PHP only ever sees a miss.
 location ^~ /_image/ {
-    rewrite ^/_image/(.+)$ /wp-content/uploads/cache/glide/$1/$arg_s? break;
+    limit_req zone=foehn_image burst=100 nodelay;
+    rewrite ^/_image/(.+)$ /wp-content/uploads/cache/glide/$1/${arg_w}x${arg_h}-${arg_fit}-${arg_fm} break;
     try_files $uri @foehn;
 }
 
@@ -62,23 +64,55 @@ location @foehn {
 }
 ```
 
+Named arguments and not `$args`, so the same transform written in another order finds the same file instead of building a second copy of it. An absent parameter leaves its slot empty, so a width-only resize is `600x-max-` and the shape stays fixed.
+
 With uploads in a bucket, point the same rewrite at the bucket — the shape is the one an uploads proxy already has; `packages/demo/.ddev/nginx/image-cache.conf` is a working example against MinIO.
 
 `^~` and not a regex location: a regex would lose to the `\.(jpg|png|webp)$` static-file rule most WordPress configurations already carry, and every transform would 404.
 
-A forged `s` cannot reach a file — nothing is ever written under a signature the site did not produce — so a wrong one misses and falls through to PHP, which refuses it.
-
-Keep the query string in the rewrite. Dropping it with a trailing `?` is tempting, since the object key does not need `w` and `h` — but it drops them on the miss path too, and PHP is then handed one of its own URLs with no signature on it and answers 403.
+Keep the query string in the rewrite, and use a **named** location for the fallback. A URI internal redirect drops `$args`, and PHP is then handed one of its own URLs with no parameters on it.
 
 Without the rule the site still works. It just pays a WordPress boot per image.
 
-One consequence worth knowing: on a **cached** image, editing the parameters while keeping the signature still returns the cached bytes, because the webserver matches on the signature alone. What comes back is the image the site itself signed for — no transform is produced and no CPU is spent. On an image that is not cached the same URL reaches PHP and is refused. The guarantee is that no attacker-chosen transform is ever produced, and that holds either way.
+### There is no signature. There is a bound
 
-### URLs are signed, and that is not optional
+A cold transform costs real CPU, so `?w=9999` must not be an instruction the site will follow. There are two ways to stop that: sign the URL so only transforms the site asked for can exist, or bound what may be asked for at all. Føhn does the second, and that is what lets a browser build these URLs — a signature needs a secret, so a client could only ever replay sizes the server chose in advance, which is the thing a responsive image is trying not to do.
 
-Every URL carries an HMAC of its path and parameters, keyed on `NONCE_SALT`. Without one, `?w=9999` is an instruction to spend CPU and disk on demand: a cold transform costs a few hundred milliseconds, so an ordinary crawler is enough to hurt and a deliberate one fills the cache. Unsigned requests are answered with 403 before anything is read or written.
+`GlideConfig::normalise()` is the bound, and the same code runs on both ends: `image_url()` uses it to produce a URL that is valid by construction, and the route uses it to refuse one that is not.
 
-Because the key is `NONCE_SALT`, signatures do not survive being copied to another install — which is the behaviour you want.
+| Parameter     | Rule                                                                 |
+| ------------- | -------------------------------------------------------------------- |
+| `w`, `h`      | a multiple of `step` (default 100), at most `maxSize` (default 2600) |
+| `fit`         | `crop`, `contain`, `max`, `fill`                                     |
+| `fm`          | `webp`, `avif`, `jpg`, `png`                                         |
+| anything else | dropped                                                              |
+
+Sizes are rounded **up** onto the grid rather than refused, so a template may write `w: 601` and get a URL that works — and `?w=601` and `?w=700` name the same cached file rather than two.
+
+The allowlist is on the parameter **keys**, not only their values, and that is not fussiness. `Server::getAllParams()` finishes with `array_merge($all, $params)`, so any key that reaches Glide overrides what the server configured. An unknown parameter is not ignored; it wins.
+
+### Rate limiting, and where it can actually go
+
+The bound makes the number of transforms an image can have finite. It does not bound how fast someone walks that space — measured on the demo, a cold transform is ~55ms and eight FPM workers manage about 18 per second.
+
+The obvious answer is to throttle only cache misses, since a hit costs nginx a couple of milliseconds. **That is not expressible in nginx.** `limit_req` runs in the preaccess phase, and a request arriving at the miss handler by internal redirect — `@named` or URI, it makes no difference — never has that phase applied again. Measured on the demo, the same limit allowed 15 of 15 on the miss location and 3 of 15 on the outer one.
+
+So the limit covers hits as well, and a large burst is what makes that harmless:
+
+```nginx
+# http context — sites-enabled, not a server-level include
+limit_req_zone $binary_remote_addr zone=foehn_image:10m rate=5r/s;
+```
+
+Real traffic is bursty and short — a gallery asks for thirty images at once and then stops. A walk is sustained. On the demo, `burst=100` lets a full page through untouched while a 260-request walk is cut to 136 served and 124 refused.
+
+It is a throttle, not a shield: it is per-IP, so a distributed effort routes around it.
+
+### What is left exposed
+
+Without a signature, `/_image/<any path under uploads>` is an unauthenticated read path. On a default WordPress that is no new exposure — `/wp-content/uploads/` is already public. It matters for a site that puts access rules on its uploads directory, where `/_image/` bypasses them and serves a resized copy. `maxSize` caps what comes back, so the original bytes are never reachable, but the content is.
+
+If that describes your site, do not enable the transformer.
 
 ### GD or Imagick
 

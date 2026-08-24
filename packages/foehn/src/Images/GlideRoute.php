@@ -4,23 +4,21 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Images;
 
-use League\Glide\Signatures\SignatureException;
-use League\Glide\Signatures\SignatureFactory;
 use Studiometa\Foehn\Attributes\AsRewriteRule;
 use Studiometa\Foehn\Contracts\RewriteHandlerInterface;
 use Throwable;
 use WP;
 
 /**
- * Answers `/_image/<path>?w=…&s=…` with the transformed image.
+ * Answers `/_image/<path>?w=…&h=…&fit=…&fm=…` with the transformed image.
  *
- * This runs on a **cache miss only**, and that is the whole design. Glide keys a
- * result under a deterministic path, so a webserver rule can serve every hit
- * straight from the cache and never reach PHP. Booting WordPress costs more than
- * the transform saves.
+ * This runs on a **cache miss only**, and that is the whole design. The cache
+ * path is spelled out from the parameters, so a webserver rule serves every hit
+ * without reaching PHP. Booting WordPress costs more than the transform saves.
  *
- * See docs/guide/images.md for the nginx rule; without it the site still works,
- * it just pays a WordPress boot per image.
+ * Which also decides where a rate limit belongs: on the miss path, where the CPU
+ * is actually spent, and not on the route as a whole. See docs/guide/images.md
+ * for both rules; without them the site still works and pays a boot per image.
  */
 #[AsRewriteRule(
     regex: '^' . GlideTransformer::ROUTE . '/(.+)$',
@@ -41,23 +39,20 @@ final readonly class GlideRoute implements RewriteHandlerInterface
             return;
         }
 
-        // The signature is checked before anything is read or written. An
-        // unsigned request is not a 404 to be logged and forgotten: it is someone
-        // asking this site to spend CPU on their behalf.
-        try {
-            SignatureFactory::create($this->config->signingKey())->validateRequest(
-                '/' . GlideTransformer::ROUTE . '/' . $chemin,
-                $_GET,
-            );
-        } catch (SignatureException) {
-            $this->fail(403, 'Signature invalide.');
+        // Everything the request asked for is thrown away except the four
+        // parameters a transform is made of, and those must be on the grid. This
+        // is what stands in for a signature, and it has to be an allowlist of
+        // *keys* rather than of values: `Server::getAllParams()` finishes with
+        // `array_merge($all, $params)`, so any key that survives to Glide beats
+        // whatever this side configured. An unknown key is not ignored, it wins.
+        $params = $this->config->normalise($_GET);
+
+        if ($params === null) {
+            $this->fail(400, 'Transformation hors limites : ' . http_build_query($_GET));
         }
 
         try {
-            // The signature travels with the parameters rather than being stripped
-            // out: no manipulator reads it, and the cache path is keyed on it so a
-            // webserver can find a hit without asking PHP. See GlideConfig.
-            $this->config->server()->outputImage($chemin, $_GET);
+            $this->config->server()->outputImage($chemin, $params);
         } catch (Throwable $erreur) {
             // A transform that cannot be produced — a missing original, an
             // unreadable format — is a 404 for that URL, not a 500 for the site.
@@ -81,7 +76,7 @@ final readonly class GlideRoute implements RewriteHandlerInterface
             error_log(sprintf('[foehn] image %d : %s', $status, $raison));
         }
 
-        echo $status === 403 ? "Forbidden\n" : "Not Found\n";
+        echo $status === 400 ? "Bad Request\n" : "Not Found\n";
 
         exit();
     }
