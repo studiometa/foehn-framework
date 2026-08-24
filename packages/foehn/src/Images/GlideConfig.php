@@ -63,11 +63,16 @@ final class GlideConfig
             // A response is built by the route, which needs the path rather than a
             // stream: it hands the file to the webserver and lets it do the rest.
             'base_url' => '/' . GlideTransformer::ROUTE,
-            // A closure literal, and not `$this->cachePath(...)`: Glide rebinds
-            // this callable onto the Server, and a closure made from a method
-            // cannot be rebound to another class — PHP warns and hands back null,
-            // which Glide turns into "Invalid cache path callable".
-            'cache_path_callable' => static function (string $path, array $params): string {
+            // A closure literal, and neither `$this->cachePath(...)` nor a static
+            // closure. Glide rebinds this callable onto the Server, and
+            // `Closure::bind()` hands back null for both of those — a closure made
+            // from a method cannot move to another class, and a static one cannot
+            // be given a `$this` at all. Glide turns the null into "Invalid cache
+            // path callable", so every image 404s while the unit suite stays green.
+            //
+            // @mago-expect lint:prefer-static-closure
+            // @mago-expect lint:prefer-arrow-function
+            'cache_path_callable' => function (string $path, array $params): string {
                 return GlideConfig::cachePath($path, $params);
             },
         ]);

@@ -95,4 +95,35 @@ describe('GlideConfig::cachePath', function () {
     it('refuses to key on anything that is not a signature', function () {
         expect(GlideConfig::cachePath('a.jpg', ['s' => '../../etc/passwd', 'w' => 400]))->not->toContain('..');
     });
+
+    // Asking the Server rather than the static method, because the wiring between
+    // them is the fragile part: Glide rebinds the callable onto itself, and
+    // `Closure::bind()` returns null for a static closure or one made from a
+    // method. Glide reads that as "Invalid cache path callable" and every image
+    // 404s — with nothing else in this file noticing, since none of it builds a
+    // Server. A linter that adds `static` here is enough to cause it.
+    it('is the path the Glide server actually uses', function () {
+        $uploads = sys_get_temp_dir() . '/foehn-glide-' . getmypid();
+        @mkdir($uploads . '/2016/06', 0o777, true);
+        file_put_contents($uploads . '/2016/06/photo.jpg', 'not really a jpeg');
+
+        $GLOBALS['wp_stub_upload_basedir'] = $uploads;
+
+        try {
+            $params = ['w' => '400', 's' => str_repeat('a', 32)];
+
+            expect(
+                new GlideConfig()
+                    ->server()
+                    ->getCachePath('2016/06/photo.jpg', $params),
+            )
+                ->toBe(GlideConfig::cachePath('2016/06/photo.jpg', $params));
+        } finally {
+            unset($GLOBALS['wp_stub_upload_basedir']);
+            // Recursively, because building the Server creates the cache directory
+            // as a side effect — and `rmdir` on a directory that is not empty is a
+            // warning, which this suite fails on.
+            exec('rm -rf ' . escapeshellarg($uploads));
+        }
+    });
 });
