@@ -68,12 +68,34 @@ again.
 for every visitor, which turns a `limit_req` zone into a site-wide ceiling rather
 than a per-client limit.
 
+## The page cache
+
+Nothing to install and nothing to commit: the rules are generated at boot from
+the site's own `page-cache.config.php`, by the same
+`wp foehn cache:config --server=nginx` a person would run.
+
+Generated rather than shipped, because they are not fixed — the cache path, the
+query arguments that are keyed and the ones ignored all come from that
+configuration, and the file carries a hash of it. A static copy baked into the
+image would be right for the default and quietly wrong for anything else, and
+serving one visitor's page to another is the failure a page cache has.
+
+If generating fails — a database that is not up yet, most likely — the site
+falls back to the drop-in Føhn installs at `wp-content/advanced-cache.php`, which
+serves the same stored files a few milliseconds slower and needs no webserver
+configuration at all. Measured on one site: 0.9 ms through NGINX against 2.8 ms
+through the drop-in, both against ~100 ms of network. The fast path is worth
+having and worth nobody's afternoon.
+
+Set `FOEHN_PAGE_CACHE_CONFIG=false` to leave it to the drop-in. A project that
+generates the rules itself into `config/nginx/` keeps them: this generates none
+when it finds one, because two copies of the same `location` is a configuration
+NGINX refuses to start with.
+
 ## Project configuration
 
 Anything in the project's `config/nginx/*.conf` is included in the `server`
-block, after this image's own rules. That is where
-`wp foehn cache:config --server=nginx --write` writes the page cache, so enabling
-it is generating a file — there is nothing to declare.
+block, after this image's own rules.
 
 ## Environment
 
