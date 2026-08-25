@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `ContentImageHooks`, so the images pasted into the editor are sized by the configured transformer instead of by the intermediate files WordPress cut at upload time. Opt-in in `foehn.config.php`, and inert with no transformer configured ([#155])
+
+  The sizes an editor's image is offered at are decided the day it is uploaded, from whatever was registered then — a new size does nothing for a library that already exists. Worse, the metadata that lists them is a claim rather than a fact: it outlives the files it names, so a library that has lost its intermediate files goes on advertising widths that 404, in `srcset`, where no page reports it and no editor can see it. Every candidate is now derived from the original, so nothing is claimed that cannot be produced.
+
+  It hooks `wp_content_img_tag` and not `wp_calculate_image_srcset`, which looks like the right one and is not: that filter returns early when the metadata lists no sizes, which is exactly the case this repairs.
+
 ### Fixed
 
 - Serve a transform on the request that builds it, against a bucket whose reads cannot be streamed. `GlideRoute` used `Server::outputImage()`, which reads the freshly written image back with `readStream()` — that asks the S3 adapter for `@http.stream`, and the body it returns is not seekable on every provider. Against Tigris the SDK's own rewind throws `Stream is not seekable`, so the miss could never be answered, while the transform itself sat in the bucket perfectly intact. The route now reads the image rather than streaming it, which is bounded work: `maxSize` caps both sides of a transform ([#154])
@@ -14,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   The symptom was worse than a failed image, and worth recognising: `outputImage()` sends `Content-Length` _before_ it reads, so the failure left the length of an image promised and a short error body delivered. nginx waited for bytes that never came and logged `upstream prematurely closed FastCGI request`; the reader got no response at all, not a 404. Every error this route could raise arrived that way. The image is now built and read before a single header goes out, so the failure path can still answer.
 
 [#154]: https://github.com/studiometa/foehn-framework/issues/154
+[#155]: https://github.com/studiometa/foehn-framework/issues/155
 
 ## [0.5.4] - 2026-08-24
 

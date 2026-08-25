@@ -1382,6 +1382,15 @@ if (!function_exists('wp_get_attachment_image_url')) {
     }
 }
 
+if (!function_exists('wp_get_attachment_url')) {
+    function wp_get_attachment_url(int $attachmentId): string|false
+    {
+        wp_stub_record('wp_get_attachment_url', compact('attachmentId'));
+
+        return $GLOBALS['wp_stub_attachments'][$attachmentId]['url'] ?? false;
+    }
+}
+
 if (!function_exists('wp_get_attachment_metadata')) {
     /**
      * @return array<string, mixed>|false
