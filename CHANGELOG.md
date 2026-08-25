@@ -9,11 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Add a WordPress runtime image, published to `ghcr.io/studiometa/foehn-wordpress` with one tag per PHP version — `8.3`, `8.4`, `8.5`, and `<php>-<release>` to pin one. A project inherits it in a `FROM` line, copies its own code, and configures nothing ([#156])
+- Add a WordPress runtime image, published to `ghcr.io/studiometa/foehn-wordpress` as `latest`, with a release number to pin one. A project inherits it in a `FROM` line, copies its own code, and configures nothing ([#156])
 
   Føhn generates webserver rules and spells its image cache into a path a webserver can assemble, but neither is worth anything until something installs them — and until now that was every project, by hand, once each. The image carries the media proxy and the `/_image/` cache, both rendered at boot from the `S3_UPLOADS_*` variables WordPress already reads; the scheme and the client's address recovered from the proxy in front; WP-CLI; and a health endpoint that fails when PHP is down rather than only when nginx is. Anything a project leaves in `config/nginx/*.conf` is picked up, which is where `wp foehn cache:config --server=nginx --write` writes the page cache.
-
-  Føhn itself requires PHP 8.5, so `composer install` fails on the lower tags. They are there for WordPress projects that use the image without Føhn, or that are on their way to it.
 
 [#156]: https://github.com/studiometa/foehn-framework/issues/156
 

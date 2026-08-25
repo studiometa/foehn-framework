@@ -9,23 +9,22 @@ and until now that was every project, by hand, once each. This is that something
 a project inherits it in one `FROM` line, copies its own code, and configures
 nothing.
 
-|              |                                                                           |
-| ------------ | ------------------------------------------------------------------------- |
-| **Image**    | `ghcr.io/studiometa/foehn-wordpress`                                      |
-| **Tags**     | one per PHP version: `8.3`, `8.4`, `8.5`, plus `<php>-<release>`          |
-| **Base**     | [`webdevops/php-nginx`](https://github.com/webdevops/Dockerfile) (alpine) |
-| **Web root** | `/app/web`                                                                |
-| **Health**   | `GET /healthcheck`, answered by PHP-FPM                                   |
+|              |                                                                                    |
+| ------------ | ---------------------------------------------------------------------------------- |
+| **Image**    | `ghcr.io/studiometa/foehn-wordpress`                                               |
+| **Tags**     | `latest`, and a release number to pin one                                          |
+| **Base**     | [`webdevops/php-nginx`](https://github.com/webdevops/Dockerfile) (alpine), PHP 8.5 |
+| **Web root** | `/app/web`                                                                         |
+| **Health**   | `GET /healthcheck`, answered by PHP-FPM                                            |
 
-> **Føhn itself needs PHP 8.5.** Its Composer constraint is `^8.5`, so
-> `composer install` fails on the lower tags. `8.3` and `8.4` are there for
-> WordPress projects that use this image without Føhn, or that are on their way
-> to it.
+One PHP version, because Føhn has one: its Composer constraint is `^8.5`, so an
+image below that could not install the framework it exists to run. `PHP_VERSION`
+is still a build argument — when the floor moves, the move is one line.
 
 ## Using it
 
 ```dockerfile
-FROM ghcr.io/studiometa/foehn-wordpress:8.5
+FROM ghcr.io/studiometa/foehn-wordpress:latest
 
 WORKDIR /app
 
@@ -93,7 +92,7 @@ Read from the same variables WordPress and `humanmade/s3-uploads` already read.
 ## Building it locally
 
 ```sh
-docker build -t foehn-wordpress:8.5 --build-arg PHP_VERSION=8.5 docker/wordpress/
+docker build -t foehn-wordpress docker/wordpress/
 ```
 
 ## A note for anyone editing the entrypoints
