@@ -1,0 +1,81 @@
+# syntax=docker/dockerfile:1
+
+# A WordPress runtime with Føhn's serving conventions already in it.
+#
+# Føhn generates webserver rules — `wp foehn cache:config --server=nginx` — and
+# spells its image-transform cache into a path a webserver can assemble. Both are
+# only worth anything if something installs them, and until now that was every
+# project, by hand, once each. This is that something.
+#
+# A project inherits it in a `FROM` line and copies its own code. It configures
+# nothing: what the rules need, they read from the same environment WordPress
+# already reads.
+#
+# @see README.md
+
+ARG PHP_VERSION=8.5
+
+# `webdevops/php-nginx` runs NGINX and PHP-FPM under a supervisord that does not
+# need to be PID 1 — which is what makes it work on Fly, where init always is. It
+# also ships `mysqli`, `gd`, `exif`, `intl` and `bcmath`, and its default
+# `try_files` is already the one WordPress wants.
+FROM webdevops/php-nginx:${PHP_VERSION}-alpine
+
+# WP-CLI. Clearing a cache, rewriting a URL, flushing rewrite rules: none of it
+# has a URL, all of it is done over a shell, and it is the same binary on every
+# site.
+RUN curl -fsSL -o /usr/local/bin/wp \
+        https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar \
+    && chmod +x /usr/local/bin/wp
+
+# PHP settings that belong to running in a container (see the file).
+COPY php/zz-container.ini /usr/local/etc/php/conf.d/zz-container.ini
+
+# Outside the web root, so it is not served as a page, and passed to PHP-FPM so
+# the check fails when PHP is down and not only when NGINX is.
+COPY php/healthcheck.php /opt/healthcheck.php
+
+# The upstream `fastcgi_params`, one line apart: `HTTPS` is derived from
+# `X-Forwarded-Proto` rather than from `$https` alone, which is empty behind a
+# TLS terminator. This file is included inside the upstream's own PHP location,
+# which a project cannot reopen — replacing it is the only place to intervene.
+COPY nginx/fastcgi_params /etc/nginx/fastcgi_params
+
+# `http` context: cache zones, rate-limit zones and `map` cannot live in a
+# `server` block.
+COPY nginx/conf.d/ /etc/nginx/conf.d/
+
+# `server` context. The numeric prefixes place these after the upstream's `10-*`
+# blocks (`location /`, PHP, logs).
+COPY nginx/vhost.common.d/ /opt/docker/etc/nginx/vhost.common.d/
+
+# Rendered at boot: a bucket's hostname is per-site, and one image serves them
+# all.
+COPY nginx/templates/ /opt/docker/etc/nginx/templates/
+COPY entrypoint.d/ /opt/docker/provision/entrypoint.d/
+
+RUN chmod +x /opt/docker/provision/entrypoint.d/*.sh
+
+# The web root is `web/`, not the repository root: `index.php` and
+# `wp-config.php` live there, while `vendor/` and `config/` stay out of reach.
+#
+# `COMPOSER_ALLOW_SUPERUSER=1` is not optional: builds run as root, and without
+# it Composer silently disables every plugin — `composer/installers` and
+# `johnpbloch/wordpress-core-installer` stop running, `web/` is never created,
+# and the command still exits successfully.
+ENV WEB_DOCUMENT_ROOT=/app/web \
+    PHP_OPCACHE_ENABLE=1 \
+    COMPOSER_ALLOW_SUPERUSER=1
+
+# NGINX creates only the last level of a `proxy_cache_path`, so its parent has to
+# exist — without it the media cache is a boot-time `emerg` and nothing serves.
+RUN mkdir -p /var/cache/nginx \
+    && chown -R application:application /var/cache/nginx
+
+WORKDIR /app
+
+# Hardening the file ownership belongs to the project image, which is the only
+# one that knows where its code is: the code should belong to `root` and stay
+# unwritable by `application`, the user PHP runs as. Only the paths actually
+# written at runtime belong to it.
+# @see README.md
