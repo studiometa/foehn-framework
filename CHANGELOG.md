@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- Serve a transform on the request that builds it, against a bucket whose reads cannot be streamed. `GlideRoute` used `Server::outputImage()`, which reads the freshly written image back with `readStream()` — that asks the S3 adapter for `@http.stream`, and the body it returns is not seekable on every provider. Against Tigris the SDK's own rewind throws `Stream is not seekable`, so the miss could never be answered, while the transform itself sat in the bucket perfectly intact. The route now reads the image rather than streaming it, which is bounded work: `maxSize` caps both sides of a transform ([#154])
+
+  The symptom was worse than a failed image, and worth recognising: `outputImage()` sends `Content-Length` _before_ it reads, so the failure left the length of an image promised and a short error body delivered. nginx waited for bytes that never came and logged `upstream prematurely closed FastCGI request`; the reader got no response at all, not a 404. Every error this route could raise arrived that way. The image is now built and read before a single header goes out, so the failure path can still answer.
+
+[#154]: https://github.com/studiometa/foehn-framework/issues/154
+
 ## [0.5.4] - 2026-08-24
 
 Image transforms at an arbitrary size, for the crops `#[AsImageSize]` cannot register ahead of time.
