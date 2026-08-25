@@ -2,9 +2,10 @@ name: Docker
 
 # The runtime image, published to GitHub's registry.
 #
-# One tag per PHP version, because a project's floor is its own: 8.5 is what
-# Føhn itself needs, and the lower tags serve WordPress projects on this image
-# that do not run it — or do not run it yet.
+# One PHP version, because Føhn has one: its Composer constraint is `^8.5`, so an
+# image below that could not install the framework it exists to run. `PHP_VERSION`
+# stays a build argument all the same — when the floor moves, the move is one
+# line and the tag that follows says which runtime it is.
 #
 # Built on a tag, so an image exists for every release; and on `main` when the
 # image itself changes, so a fix does not wait for one.
@@ -28,18 +29,13 @@ permissions:
 
 jobs:
   build:
-    name: PHP ${{ matrix.php }}
+    name: Build and publish
     runs-on: ubuntu-latest
 
     permissions:
       contents: read
       # The registry is authenticated with this token, so no secret is stored.
       packages: write
-
-    strategy:
-      fail-fast: false
-      matrix:
-        php: ["8.3", "8.4", "8.5"]
 
     steps:
       - name: Checkout
@@ -63,23 +59,23 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ghcr.io/${{ github.repository_owner }}/foehn-wordpress
-          # `8.5` always points at the newest build for that version, and
-          # `8.5-0.5.5` pins one release — the pair a project chooses between.
+          # `latest` tracks the newest build, a release number pins one. Which
+          # PHP the image runs follows from the release, since the framework only
+          # ever supports one — the README says which.
           tags: |
-            type=raw,value=${{ matrix.php }},enable={{is_default_branch}}
-            type=raw,value=${{ matrix.php }}-${{ github.ref_name }},enable=${{ startsWith(github.ref, 'refs/tags/') }}
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=${{ github.ref_name }},enable=${{ startsWith(github.ref, 'refs/tags/') }}
 
       - name: Build
         uses: docker/build-push-action@v6
         with:
           context: docker/wordpress
-          build-args: PHP_VERSION=${{ matrix.php }}
           # Loaded locally first so the checks below run against the image that
           # would be published, not one built again afterwards.
           load: true
           tags: foehn-wordpress:check
-          cache-from: type=gha,scope=${{ matrix.php }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.php }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Check what the image provides
         run: |
@@ -87,8 +83,8 @@ jobs:
 
           run() { docker run --rm --entrypoint sh foehn-wordpress:check -c "$1"; }
 
-          echo "PHP is the version that was asked for"
-          run 'php -v' | head -1 | grep -q 'PHP ${{ matrix.php }}\.'
+          echo "PHP is the version the framework requires"
+          run 'php -v' | head -1 | grep -q 'PHP 8\.5\.'
 
           echo "WP-CLI is installed"
           run 'wp --allow-root --version --skip-plugins --skip-themes 2>/dev/null' | grep -q 'WP-CLI'
@@ -132,8 +128,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: docker/wordpress
-          build-args: PHP_VERSION=${{ matrix.php }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=${{ matrix.php }}
+          cache-from: type=gha
