@@ -1,0 +1,75 @@
+# Serve wp-content/uploads from object storage, on the site's own origin.
+#
+# Rendered at boot by `60-nginx-uploads-proxy.sh`: a bucket's hostname is
+# per-site and one image serves them all.
+#
+# WordPress keeps emitting https://<site>/wp-content/uploads/… — that is what
+# `S3_UPLOADS_DISABLE_REPLACE_UPLOAD_URL` is for — and NGINX projects that path
+# onto the bucket. No media domain, no CNAME, no certificate for a third-level
+# subdomain, and no URL to rewrite in the database.
+
+location ^~ /wp-content/uploads/ {
+    # The bucket holds uploads/<year>/<month>/…, which is the WordPress path
+    # without the wp-content prefix. The bucket prefix belongs here rather than
+    # on `proxy_pass`: with a `rewrite … break` in the same block, a `proxy_pass`
+    # carrying a path is NGINX's ambiguous case.
+    # The upstream in a variable, not a literal. NGINX resolves a literal once, at
+    # startup, and refuses to start when it does not resolve — so a hiccup at the
+    # storage provider becomes a container that will not boot. A variable is
+    # resolved per request through the `resolver` below, which is what that
+    # directive was always for, and a hiccup becomes one failed request.
+    #
+    # It also settles the ambiguity: with a variable, NGINX passes the URI as the
+    # rewrite left it rather than replacing the matched location prefix.
+    #
+    # Declared before the rewrite, because `rewrite … break` stops the rewrite
+    # module for this location — and `set` is one of its directives. Below the
+    # rewrite it never runs, and NGINX fails the request with "using
+    # uninitialized variable" and "invalid URL prefix".
+    set $uploads_upstream "${UPLOADS_PROXY_SCHEME}://${UPLOADS_PROXY_HOST}";
+
+    rewrite ^/wp-content/uploads/(.*)$ ${UPLOADS_PROXY_PREFIX}/uploads/$1 break;
+
+    proxy_pass $uploads_upstream;
+
+    # Some providers read the bucket from the Host header: a value that does not
+    # match is a 400.
+    proxy_set_header Host ${UPLOADS_PROXY_HOST};
+    proxy_set_header Authorization "";
+    proxy_ssl_server_name on;
+
+    # The upstream is a hostname resolved per request, so NGINX needs a resolver.
+    resolver ${UPLOADS_PROXY_RESOLVER} valid=300s;
+    resolver_timeout 5s;
+
+    # Do not advertise the storage backend to browsers.
+    proxy_hide_header x-amz-id-2;
+    proxy_hide_header x-amz-request-id;
+    proxy_hide_header x-amz-version-id;
+    proxy_hide_header x-amz-server-side-encryption;
+    proxy_hide_header x-amz-storage-class;
+    proxy_hide_header Set-Cookie;
+
+    proxy_cache uploads_cache;
+    proxy_cache_valid 200 206 30d;
+    proxy_cache_valid 404 1m;
+    proxy_cache_revalidate on;
+    proxy_cache_use_stale error timeout updating http_500 http_502 http_503 http_504;
+    proxy_cache_lock on;
+    add_header X-Uploads-Cache $upstream_cache_status always;
+
+    # A bucket that refuses anonymous ListBucket answers a missing key with 403
+    # AccessDenied rather than 404. Translate it, so WordPress, browsers and
+    # crawlers are told the truth.
+    proxy_intercept_errors on;
+    error_page 403 = @uploads_not_found;
+
+    proxy_buffering on;
+
+    # No `expires` here, deliberately: the object carries its own Cache-Control
+    # and an NGINX `expires` would silently overwrite it.
+}
+
+location @uploads_not_found {
+    return 404;
+}

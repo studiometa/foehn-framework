@@ -1,0 +1,87 @@
+# Serve a built image transform straight from the bucket, and throttle the
+# stream so a walk of the parameter space cannot be a fast one.
+#
+# Rendered at boot by `70-nginx-image-cache.sh`, from the same `S3_UPLOADS_*`
+# variables the base image reads for `/wp-content/uploads/`: one image serves
+# every site, so the bucket's hostname cannot be baked in.
+#
+# `GlideTransformer` builds URLs like
+#
+#     /_image/2016/06/photo.jpg?w=600&h=400&fit=crop&fm=webp
+#
+# The first request for one is answered by PHP, which transforms the original
+# and writes the result to the bucket. Every request after that should never
+# reach PHP: booting WordPress costs more than the transform saves, and an image
+# URL is the most-requested kind a site has.
+#
+# That works because Føhn spells the transform into the cache path rather than
+# hashing it — `cache/glide/<path>/<w>x<h>-<fit>-<fm>`, which nginx can assemble
+# out of the request. Glide's own key is an xxh3 hash, which nginx cannot
+# compute; a rule pointed at that would miss every time and boot WordPress
+# anyway, while the pages looked perfectly correct.
+#
+# Named arguments and not `$args`, so the same transform written in another
+# order finds the same object instead of building a second copy of it.
+
+location ^~ /_image/ {
+    # Low sustained rate, very large burst — and that shape is the trick. The
+    # limit cannot be applied to misses alone: `limit_req` runs in the preaccess
+    # phase, and a request reaching the miss handler by internal redirect never
+    # has that phase applied again. So it covers hits too, and the burst is what
+    # makes that harmless. Real traffic is bursty and short — a gallery asks for
+    # thirty images at once and then stops — while a walk is sustained.
+    limit_req zone=foehn_image burst=100 nodelay;
+
+    # The upstream in a variable, not a literal. NGINX resolves a literal once, at
+    # startup, and refuses to start when it does not resolve — so a hiccup at the
+    # storage provider becomes a container that will not boot. A variable is
+    # resolved per request through the `resolver` below, which is what that
+    # directive was always for, and a hiccup becomes one failed request.
+    #
+    # It also settles the ambiguity: with a variable, NGINX passes the URI as the
+    # rewrite left it rather than replacing the matched location prefix.
+    #
+    # Declared before the rewrite, because `rewrite … break` stops the rewrite
+    # module for this location — and `set` is one of its directives. Below the
+    # rewrite it never runs, and NGINX fails the request with "using
+    # uninitialized variable" and "invalid URL prefix".
+    set $image_upstream "${IMAGE_CACHE_SCHEME}://${IMAGE_CACHE_HOST}";
+
+    rewrite ^/_image/(.+)$ ${IMAGE_CACHE_PREFIX}/cache/glide/$1/${arg_w}x${arg_h}-${arg_fit}-${arg_fm} break;
+
+    proxy_pass $image_upstream;
+    proxy_set_header Host ${IMAGE_CACHE_HOST};
+    proxy_set_header Authorization "";
+    proxy_ssl_server_name on;
+
+    resolver ${IMAGE_CACHE_RESOLVER} valid=300s;
+    resolver_timeout 5s;
+
+    proxy_hide_header x-amz-id-2;
+    proxy_hide_header x-amz-request-id;
+    proxy_hide_header x-amz-version-id;
+    proxy_hide_header x-amz-server-side-encryption;
+    proxy_hide_header x-amz-storage-class;
+    proxy_hide_header Set-Cookie;
+
+    # A cache hit is the whole point of this block, so it says so out loud.
+    # Without it, "did this reach PHP?" is a question you can only answer by
+    # reading logs, and a rule that silently never matches is the failure this
+    # design already had once.
+    add_header X-Foehn-Image-Cache HIT always;
+
+    # A transform that has not been built yet is not an error, it is a miss. The
+    # bucket refuses anonymous ListBucket, so a missing key comes back 403 and
+    # not 404 — both mean the same thing here.
+    proxy_intercept_errors on;
+    error_page 403 404 = @foehn_image_miss;
+
+    expires 30d;
+}
+
+# PHP builds it, once. The original request URI is what WordPress parses, so the
+# rewrite rule behind `/_image/` still matches — and `$args` survives a named
+# location, which a URI redirect would have dropped.
+location @foehn_image_miss {
+    rewrite ^ /index.php last;
+}

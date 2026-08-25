@@ -1,0 +1,139 @@
+name: Docker
+
+# The runtime image, published to GitHub's registry.
+#
+# One tag per PHP version, because a project's floor is its own: 8.5 is what
+# Føhn itself needs, and the lower tags serve WordPress projects on this image
+# that do not run it — or do not run it yet.
+#
+# Built on a tag, so an image exists for every release; and on `main` when the
+# image itself changes, so a fix does not wait for one.
+
+on:
+  push:
+    tags:
+      - "[0-9]+.*"
+    branches:
+      - main
+    paths:
+      - "docker/**"
+      - ".github/workflows/docker.yml"
+  pull_request:
+    paths:
+      - "docker/**"
+      - ".github/workflows/docker.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      # The registry is authenticated with this token, so no secret is stored.
+      packages: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ["8.3", "8.4", "8.5"]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # A pull request builds but does not publish: the image is verified by the
+      # step below, and nothing reaches the registry until it is merged.
+      - name: Log in to the registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Work out the tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/foehn-wordpress
+          # `8.5` always points at the newest build for that version, and
+          # `8.5-0.5.5` pins one release — the pair a project chooses between.
+          tags: |
+            type=raw,value=${{ matrix.php }},enable={{is_default_branch}}
+            type=raw,value=${{ matrix.php }}-${{ github.ref_name }},enable=${{ startsWith(github.ref, 'refs/tags/') }}
+
+      - name: Build
+        uses: docker/build-push-action@v6
+        with:
+          context: docker/wordpress
+          build-args: PHP_VERSION=${{ matrix.php }}
+          # Loaded locally first so the checks below run against the image that
+          # would be published, not one built again afterwards.
+          load: true
+          tags: foehn-wordpress:check
+          cache-from: type=gha,scope=${{ matrix.php }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.php }}
+
+      - name: Check what the image provides
+        run: |
+          set -euo pipefail
+
+          run() { docker run --rm --entrypoint sh foehn-wordpress:check -c "$1"; }
+
+          echo "PHP is the version that was asked for"
+          run 'php -v' | head -1 | grep -q 'PHP ${{ matrix.php }}\.'
+
+          echo "WP-CLI is installed"
+          run 'wp --allow-root --version --skip-plugins --skip-themes 2>/dev/null' | grep -q 'WP-CLI'
+
+          echo "The extensions a WordPress site needs are present"
+          for ext in mysqli gd exif intl; do
+            run "php -m" | grep -qx "$ext"
+          done
+
+          echo "HTTPS is derived from the forwarded scheme, not from \$https alone"
+          run 'cat /etc/nginx/fastcgi_params' | grep -q 'HTTPS .*\$fcgi_https'
+
+          echo "Every entrypoint is executable"
+          run 'ls -l /opt/docker/provision/entrypoint.d/' | grep -E '(50|60|70)-' | grep -qv -- '-rw-'
+
+          echo "The entrypoints are sourced, so none of them may exit or set shell options"
+          ! run 'grep -hE "^(set |exit )" /opt/docker/provision/entrypoint.d/[567]0-*.sh' | grep -q .
+
+      - name: Check it boots and serves
+        run: |
+          set -euo pipefail
+
+          docker run -d --name check -p 8080:80 foehn-wordpress:check
+          for _ in $(seq 1 30); do
+            if curl -fsS -o /dev/null http://localhost:8080/healthcheck; then
+              echo "healthcheck answered"
+              break
+            fi
+            sleep 2
+          done
+
+          curl -fsS -o /dev/null http://localhost:8080/healthcheck
+
+          echo "NGINX started without an emergency"
+          ! docker logs check 2>&1 | grep -q 'emerg'
+
+          docker rm -f check
+
+      - name: Push
+        if: github.event_name != 'pull_request'
+        uses: docker/build-push-action@v6
+        with:
+          context: docker/wordpress
+          build-args: PHP_VERSION=${{ matrix.php }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.php }}
