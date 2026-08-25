@@ -5,7 +5,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.5.7] - 2026-08-25
+
+The page cache installs itself.
 
 ### Added
 
@@ -16,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   If generating fails, most likely a database that is not up yet, the site falls back to the drop-in at `wp-content/advanced-cache.php`, which serves the same stored files and needs no webserver configuration. Measured on one site: 1.3ms through nginx, 2.8ms through the drop-in, 95ms rendering. `FOEHN_PAGE_CACHE_CONFIG=false` opts out, and a project that generates the rules itself keeps them.
 
 [#157]: https://github.com/studiometa/foehn-framework/issues/157
+[0.5.7]: https://github.com/studiometa/foehn-framework/releases/tag/0.5.7
 
 ## [0.5.6] - 2026-08-25
 
