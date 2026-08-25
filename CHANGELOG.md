@@ -5,7 +5,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.5.6] - 2026-08-25
+
+A runtime to deploy onto, so a project stops writing the webserver rules the framework already generates.
 
 ### Added
 
@@ -14,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Føhn generates webserver rules and spells its image cache into a path a webserver can assemble, but neither is worth anything until something installs them — and until now that was every project, by hand, once each. The image carries the media proxy and the `/_image/` cache, both rendered at boot from the `S3_UPLOADS_*` variables WordPress already reads; the scheme and the client's address recovered from the proxy in front; WP-CLI; and a health endpoint that fails when PHP is down rather than only when nginx is. Anything a project leaves in `config/nginx/*.conf` is picked up, which is where `wp foehn cache:config --server=nginx --write` writes the page cache.
 
 [#156]: https://github.com/studiometa/foehn-framework/issues/156
+[0.5.6]: https://github.com/studiometa/foehn-framework/releases/tag/0.5.6
 
 ## [0.5.5] - 2026-08-25
 
