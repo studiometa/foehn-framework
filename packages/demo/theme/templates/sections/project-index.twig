@@ -1,0 +1,27 @@
+<section class="shell">
+  {% for project in posts %}
+    <a class="index-row" href="{{ project.link }}">
+      <span class="label index-number">{{ '%02d'|format(loop.index) }}</span>
+
+      <span>
+        <span class="index-row__title">{{ project.title }}</span>
+        {% if project.categories %}
+          <span class="label" style="display: block; margin-top: 0.5rem">
+            {{ project.categories|map(term => term.title)|join(', ') }}
+          </span>
+        {% endif %}
+      </span>
+
+      <span class="index-row__aside label">
+        {% if project.location %}<span>{{ project.location }}</span>{% endif %}
+        {% if project.year %}<span class="index-number">{{ project.year }}</span>{% endif %}
+      </span>
+    </a>
+  {% else %}
+    <p>No projects published yet.</p>
+  {% endfor %}
+
+  {% if pagination %}
+    {% include 'components/pagination.twig' %}
+  {% endif %}
+</section>

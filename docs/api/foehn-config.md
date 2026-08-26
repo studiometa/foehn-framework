@@ -30,12 +30,12 @@ final readonly class FoehnConfig
 
 ## Properties
 
-| Property                  | Type                      | Default                | Description                            |
-| ------------------------- | ------------------------- | ---------------------- | -------------------------------------- |
-| `discoveryCacheStrategy`  | `DiscoveryCacheStrategy`  | `NONE`                 | Cache strategy for discoveries         |
-| `discoveryCachePath`      | `string\|null`            | `null`                 | Custom path for cache files            |
-| `hooks`                   | `class-string[]`          | `[]`                   | Opt-in hook classes to activate        |
-| `debug`                   | `bool`                    | `WP_DEBUG` value       | Enable debug logging for discovery     |
+| Property                 | Type                     | Default          | Description                        |
+| ------------------------ | ------------------------ | ---------------- | ---------------------------------- |
+| `discoveryCacheStrategy` | `DiscoveryCacheStrategy` | `NONE`           | Cache strategy for discoveries     |
+| `discoveryCachePath`     | `string\|null`           | `null`           | Custom path for cache files        |
+| `hooks`                  | `class-string[]`         | `[]`             | Opt-in hook classes to activate    |
+| `debug`                  | `bool`                   | `WP_DEBUG` value | Enable debug logging for discovery |
 
 ## Usage
 
@@ -91,11 +91,11 @@ Kernel::boot(__DIR__ . '/app', [
 
 ### Discovery Cache Strategies
 
-| Strategy   | Value       | Description                              |
-| ---------- | ----------- | ---------------------------------------- |
-| `NONE`     | `'none'`    | No caching (default, for development)    |
-| `FULL`     | `'full'`    | Cache all discoveries (production)       |
-| `PARTIAL`  | `'partial'` | Cache only vendor discoveries            |
+| Strategy  | Value       | Description                           |
+| --------- | ----------- | ------------------------------------- |
+| `NONE`    | `'none'`    | No caching (default, for development) |
+| `FULL`    | `'full'`    | Cache all discoveries (production)    |
+| `PARTIAL` | `'partial'` | Cache only vendor discoveries         |
 
 ### Opt-in Hooks
 
@@ -125,13 +125,12 @@ Defaults to the value of `WP_DEBUG` when not explicitly set.
 
 All Føhn config classes follow the same pattern — discoverable via `*.config.php` files:
 
-| Config Class      | Config file                   | Purpose                          |
-| ----------------- | ----------------------------- | -------------------------------- |
-| `FoehnConfig`     | `app/foehn.config.php`        | Core bootstrap settings          |
-| `TimberConfig`    | `app/timber.config.php`       | Template directories             |
-| `AcfConfig`       | `app/acf.config.php`          | ACF field transformation         |
-| `RestConfig`      | `app/rest.config.php`         | REST API permissions             |
-| `RenderApiConfig` | `app/render-api.config.php`   | Render API allowlisting          |
+| Config Class   | Config file             | Purpose                  |
+| -------------- | ----------------------- | ------------------------ |
+| `FoehnConfig`  | `app/foehn.config.php`  | Core bootstrap settings  |
+| `TimberConfig` | `app/timber.config.php` | Template directories     |
+| `AcfConfig`    | `app/acf.config.php`    | ACF field transformation |
+| `RestConfig`   | `app/rest.config.php`   | REST API permissions     |
 
 ## Related
 

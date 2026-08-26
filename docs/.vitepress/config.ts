@@ -87,7 +87,7 @@ export default defineConfig({
             { text: "REST API", link: "/guide/rest-api" },
             { text: "Rewrite Rules", link: "/guide/rewrite-rules" },
             { text: "Settings Pages", link: "/guide/settings-pages" },
-            { text: "Render API", link: "/guide/render-api" },
+            { text: "Section Rendering", link: "/guide/section-rendering" },
             { text: "Uploads", link: "/guide/uploads" },
             { text: "Caching", link: "/guide/caching" },
             { text: "Page Cache", link: "/guide/page-cache" },

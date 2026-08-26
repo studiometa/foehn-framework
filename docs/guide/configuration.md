@@ -152,30 +152,6 @@ return new RestConfig(
 
 See [RestConfig API](/api/rest-config) for details.
 
-### RenderApiConfig — Server-side Rendering
-
-Controls the REST endpoint for server-side template rendering.
-
-```php
-<?php
-// app/render-api.config.php
-
-use Studiometa\Foehn\Config\RenderApiConfig;
-
-return new RenderApiConfig(
-    templates: ['partials/*', 'components/*'],
-    cacheMaxAge: 3600,
-);
-```
-
-| Property      | Type       | Default | Description                         |
-| ------------- | ---------- | ------- | ----------------------------------- |
-| `templates`   | `string[]` | `[]`    | Allowed template patterns           |
-| `cacheMaxAge` | `int`      | `0`     | Cache-Control max-age in seconds    |
-| `debug`       | `bool`     | `false` | Include exception details in errors |
-
-See [RenderApiConfig API](/api/render-api-config) for details.
-
 ### QueryFiltersConfig — URL Query Filtering
 
 Controls which custom taxonomies and query vars are exposed via URL parameters.
@@ -239,7 +215,6 @@ theme/
 │   ├── timber.config.php        # Template directories
 │   ├── acf.config.php           # ACF settings
 │   ├── rest.config.php          # REST API defaults
-│   ├── render-api.config.php    # Render API allowlist
 │   ├── query-filters.config.php # Query filter rules
 │   ├── foehn.production.config.php # Read in production only
 │   ├── Hooks/
@@ -254,5 +229,5 @@ theme/
 - [API: TimberConfig](/api/timber-config)
 - [API: AcfConfig](/api/acf-config)
 - [API: RestConfig](/api/rest-config)
-- [API: RenderApiConfig](/api/render-api-config)
+- [Guide: Section Rendering](/guide/section-rendering)
 - [Guide: Theme Conventions](/guide/theme-conventions)
