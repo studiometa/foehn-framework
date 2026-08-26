@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.10] - 2026-08-26
+
+The first backup of a site's life finishes.
+
+### Fixed
+
+- Enabling backups on a site whose bucket did not exist yet produced a job that never finished ([#162])
+
+  The order was the intuitive one — ask `restic cat config` whether a repository is there, create one if not. But when the _bucket_ is missing that question is not answered "no": it returns an error Restic classes as worth retrying, and retries it with backoff, unbounded. Measured against a missing bucket, `cat config` had still not returned after ten minutes while `restic init` answered in two seconds.
+
+  `init` runs first now, and its refusal to touch an existing repository is read as the "yes, there is one" it actually is. Anything else — a bad key, an unreachable endpoint — still stops the run, because the alternative is backing up into nowhere and reporting success. `init` also creates the bucket, which is what makes a first run work where nothing has created one yet.
+
+### Changed
+
+- CI runs a backup end to end, against a real MinIO and a real MariaDB, instead of only checking that one was scheduled — the gap the above fell through. It asserts that the first run creates the bucket inside a time bound the old code could not meet, that the second run does not claim to create anything, that the restore drill recognises the snapshot, that a dump dying halfway stores no snapshot, and that unusable credentials fail loudly ([#162])
+
+[#162]: https://github.com/studiometa/foehn-framework/pull/162
+[0.5.10]: https://github.com/studiometa/foehn-framework/releases/tag/0.5.10
+
 ## [0.5.9] - 2026-08-26
 
 The embedded database survives its first restart.
