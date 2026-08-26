@@ -189,7 +189,10 @@ jobs:
         run: |
           set -euo pipefail
 
-          scheduled() { docker exec "$1" sh -c 'ls -1 /etc/periodic/*/ | grep -c foehn || true'; }
+          # `foehn-backup`, not `foehn`: the image also schedules `foehn-cron`,
+          # which is on by default, so a bare `foehn` counts a job this step is
+          # not about and reports backups as scheduled when they are not.
+          scheduled() { docker exec "$1" sh -c 'ls -1 /etc/periodic/*/ | grep -c foehn-backup || true'; }
 
           echo "Off by default: no job, and no credentials on disk"
           docker run -d --name backup-off foehn-wordpress:check >/dev/null
