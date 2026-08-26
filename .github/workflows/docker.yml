@@ -66,14 +66,48 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
             type=raw,value=${{ github.ref_name }},enable=${{ startsWith(github.ref, 'refs/tags/') }}
 
+      # The same tags with `-db` on the end. A suffix and not a second image
+      # name: one package in the registry, one permissions surface, and the
+      # version coupling visible in the string the way upstream images spell
+      # their variants (`node:24-alpine`). `foehn-wordpress-db` would also read
+      # as a database image rather than WordPress *with* one.
+      - name: Work out the variant's tags
+        id: meta-db
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/foehn-wordpress
+          flavor: |
+            latest=false
+          tags: |
+            type=raw,value=latest-db,enable={{is_default_branch}}
+            type=raw,value=${{ github.ref_name }}-db,enable=${{ startsWith(github.ref, 'refs/tags/') }}
+
       - name: Build
         uses: docker/build-push-action@v6
         with:
           context: docker/wordpress
+          # `base`, explicitly. Both images come out of one Dockerfile, and
+          # Docker builds the *last* stage when no target is named — which is the
+          # variant.
+          target: base
           # Loaded locally first so the checks below run against the image that
           # would be published, not one built again afterwards.
           load: true
           tags: foehn-wordpress:check
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Both images are built and checked before either is pushed. That is what
+      # keeps them from shipping independently: there is no arrangement of
+      # failures where the plain tag reaches the registry and its `-db` sibling,
+      # built from the same commit and the same Dockerfile, does not.
+      - name: Build the -db variant
+        uses: docker/build-push-action@v6
+        with:
+          context: docker/wordpress
+          target: db
+          load: true
+          tags: foehn-wordpress:check-db
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -98,10 +132,36 @@ jobs:
           run 'cat /etc/nginx/fastcgi_params' | grep -q 'HTTPS .*\$fcgi_https'
 
           echo "Every entrypoint is executable"
-          run 'ls -l /opt/docker/provision/entrypoint.d/' | grep -E '(50|60|70)-' | grep -qv -- '-rw-'
+          ! run 'ls -l /opt/docker/provision/entrypoint.d/*.sh' | grep -q -- '-rw-'
 
           echo "The entrypoints are sourced, so none of them may exit or set shell options"
-          ! run 'grep -hE "^(set |exit )" /opt/docker/provision/entrypoint.d/[567]0-*.sh' | grep -q .
+          # Every `*.sh` in the directory, not a list of prefixes: the previous
+          # form named `[567]0-` and so stopped covering `40-` the day it landed.
+          # A check that has to be edited to keep working is one that quietly
+          # stops working.
+          ! run 'grep -hE "^(set |exit )" /opt/docker/provision/entrypoint.d/*.sh' | grep -q .
+
+          echo "The backup jobs are executable, and the file they source is not"
+          for job in foehn-backup foehn-backup-maintenance foehn-backup-verify; do
+            run "test -x /opt/docker/bin/$job"
+          done
+          ! run 'test -x /opt/docker/bin/foehn-backup-common.sh'
+
+          echo "The backup jobs are run, not sourced, so they must fail loudly"
+          for job in foehn-backup foehn-backup-maintenance foehn-backup-verify; do
+            run "head -n 30 /opt/docker/bin/$job" | grep -q 'set -eu'
+          done
+
+          echo "What a backup needs is installed"
+          run 'restic version' | grep -q 'restic '
+          # `wp db` shells out to the legacy names, so those are the ones that
+          # have to exist — `mariadb-dump` being present is not the same thing.
+          for binary in mysql mysqldump mariadb-dump; do
+            run "command -v $binary" | grep -q "/$binary"
+          done
+          # util-linux's, not busybox's: the weekly jobs wait on the lock with
+          # `-w`, which the busybox applet does not have.
+          run 'flock -V' | grep -q 'util-linux'
 
       - name: Check it boots and serves
         run: |
@@ -123,12 +183,155 @@ jobs:
 
           docker rm -f check
 
+      # The backup is scheduled by the entrypoint, so what it does and does not
+      # do at boot is checkable without a database anywhere near it.
+      - name: Check the backup schedules itself, and only when asked
+        run: |
+          set -euo pipefail
+
+          scheduled() { docker exec "$1" sh -c 'ls -1 /etc/periodic/*/ | grep -c foehn || true'; }
+
+          echo "Off by default: no job, and no credentials on disk"
+          docker run -d --name backup-off foehn-wordpress:check >/dev/null
+          sleep 12
+          test "$(scheduled backup-off)" = "0"
+          docker exec backup-off sh -c '! test -e /run/foehn/backup.cnf'
+          docker exec backup-off curl -fsS -o /dev/null http://localhost/healthcheck
+          docker rm -f backup-off
+
+          echo "On: the dump is scheduled, and the weekly jobs with it"
+          docker run -d --name backup-on \
+            -e BACKUP_ENABLED=true -e BACKUP_SCHEDULE=daily \
+            -e DB_NAME=wordpress -e DB_USER=wp -e 'DB_PASSWORD=has"a#hash' \
+            -e RESTIC_REPOSITORY=s3:http://example.invalid/bucket -e RESTIC_PASSWORD=secret \
+            foehn-wordpress:check >/dev/null
+          sleep 12
+          docker exec backup-on test -L /etc/periodic/daily/foehn-backup
+          docker exec backup-on test -L /etc/periodic/weekly/foehn-backup-maintenance
+          docker exec backup-on test -L /etc/periodic/weekly/foehn-backup-verify
+
+          echo "The credentials are readable only by root, and the password is escaped"
+          test "$(docker exec backup-on stat -c '%a %U' /run/foehn/backup.cnf)" = "600 root"
+          docker exec backup-on grep -qx 'password="has\\"a#hash"' /run/foehn/backup.cnf
+
+          echo "The credentials are NOT in my.cnf.d, where they would become every client's identity"
+          docker exec backup-on sh -c '! ls /etc/my.cnf.d/ 2>/dev/null | grep -q foehn'
+
+          echo "cron is running, so a scheduled job has something to fire it"
+          # `pidof`, not `pgrep -x`: busybox matches `-x` against the whole
+          # command line, so it never matches `/usr/sbin/crond -f`.
+          docker exec backup-on pidof crond >/dev/null
+          docker rm -f backup-on
+
+          echo "An unusable configuration stops the container instead of shipping without backups"
+          ! docker run --name backup-broken \
+              -e BACKUP_ENABLED=true -e BACKUP_SCHEDULE=fortnightly \
+              foehn-wordpress:check >/dev/null 2>&1
+          docker logs backup-broken 2>&1 | grep -q 'BACKUP_SCHEDULE="fortnightly" is not one of'
+          docker rm -f backup-broken
+
+      # The plain image is the default and the one that must never regress, so
+      # what is checked here is mostly absence: a site that does not want a
+      # database must not get one.
+      - name: Check the plain image did not grow a database
+        run: |
+          set -euo pipefail
+
+          run() { docker run --rm --entrypoint sh foehn-wordpress:check -c "$1"; }
+
+          echo "No server binary, no service, no provisioning hook"
+          ! run 'command -v mariadbd'
+          ! run 'test -e /opt/docker/etc/supervisor.d/mariadb.conf'
+          ! run 'test -e /opt/docker/provision/entrypoint.d/30-mariadb.sh'
+
+          echo "And nothing starts one at boot"
+          docker run -d --name plain-nodb foehn-wordpress:check >/dev/null
+          sleep 12
+          docker exec plain-nodb curl -fsS -o /dev/null http://localhost/healthcheck
+          ! docker exec plain-nodb pidof mariadbd >/dev/null
+          docker rm -f plain-nodb
+
+      - name: Check the -db variant runs its own database
+        run: |
+          set -euo pipefail
+
+          echo "It boots on an empty volume, initialises, and serves"
+          docker volume create ci-dbdata >/dev/null
+          docker run -d --name variant -v ci-dbdata:/var/lib/mysql \
+            -e DB_NAME=wordpress -e DB_USER=wp -e DB_PASSWORD=secret \
+            foehn-wordpress:check-db >/dev/null
+
+          # Both, and not either: the database answers during provisioning
+          # before PHP-FPM exists, and PHP-FPM can answer before the supervised
+          # database has finished starting. Neither one alone says the container
+          # is up. supervisord orders starts but does not wait for readiness, so
+          # which of the two wins the race is not fixed — the README tells a site
+          # to cover the gap with `grace_period` in its fly.toml.
+          ready() {
+            docker exec variant curl -fsS -o /dev/null http://localhost/healthcheck 2>/dev/null \
+              && docker exec variant mariadb --no-defaults -u wp -psecret -e 'SELECT 1' wordpress >/dev/null 2>&1
+          }
+
+          for _ in $(seq 1 60); do
+            if ready; then break; fi
+            sleep 2
+          done
+
+          ready
+
+          echo "The provisioning database was handed over exactly once, before supervisord"
+          test "$(docker logs variant 2>&1 | grep -c 'provisioning database stopped')" = "1"
+          ! docker logs variant 2>&1 | grep -q 'already listening, stopping it first'
+
+          echo "It listens on a socket and on no port at all"
+          docker exec variant test -S /run/mysqld/mysqld.sock
+          ! docker exec variant mariadb --no-defaults --protocol=tcp -h 127.0.0.1 -u wp -psecret -e 'SELECT 1' >/dev/null 2>&1
+
+          echo "The legacy client name WP-CLI shells out to reaches it too"
+          docker exec variant mysql --no-defaults -u wp -psecret -N -B -e 'SELECT 1' wordpress | grep -qx 1
+
+          echo "Data survives a restart, and comes back without crash recovery"
+          docker exec variant mariadb --no-defaults -u wp -psecret wordpress \
+            -e 'CREATE TABLE persisted (id INT); INSERT INTO persisted VALUES (42);'
+          # A long stop grace period on purpose: it is the `kill_timeout` a site
+          # has to set. Cut it short and InnoDB is killed mid-flush, which the
+          # next boot spends recovering from — the assertion below would fail,
+          # which is exactly the point of making it.
+          docker restart -t 40 variant >/dev/null
+          for _ in $(seq 1 60); do
+            if ready; then break; fi
+            sleep 2
+          done
+
+          test "$(docker exec variant mariadb --no-defaults -u wp -psecret -N -B -e 'SELECT id FROM persisted' wordpress)" = "42"
+          ! docker logs --since 2m variant 2>&1 | grep -qi 'crash recovery'
+
+          echo "And it initialised once, on the first boot only"
+          test "$(docker logs variant 2>&1 | grep -c 'empty data directory, initialising')" = "1"
+
+          docker rm -f variant
+          docker volume rm ci-dbdata
+
+      # Both tags, back to back, after every check above has passed on both
+      # images. Same commit, same Dockerfile, same run.
       - name: Push
         if: github.event_name != 'pull_request'
         uses: docker/build-push-action@v6
         with:
           context: docker/wordpress
+          target: base
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+
+      - name: Push the -db variant
+        if: github.event_name != 'pull_request'
+        uses: docker/build-push-action@v6
+        with:
+          context: docker/wordpress
+          target: db
+          push: true
+          tags: ${{ steps.meta-db.outputs.tags }}
+          labels: ${{ steps.meta-db.outputs.labels }}
           cache-from: type=gha

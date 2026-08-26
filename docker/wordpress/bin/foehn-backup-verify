@@ -1,0 +1,150 @@
+#!/bin/sh
+###############################################################################
+# The weekly restore drill: take the newest snapshot, load it into a scratch
+# schema, ask it a question, and throw it away.
+#
+# Every failure mode in this feature is silent. A dump that captures an empty
+# database, credentials that lost a privilege, a repository nobody can decrypt
+# any more, a snapshot of the wrong database entirely — none of them raise
+# anything at backup time, and all of them look exactly like a working backup
+# until the day you need one. `restic check` does not catch them either: it
+# verifies that the repository holds what it says it holds, not that what it
+# holds is a usable database.
+#
+# A restore is the only test that answers the question actually being asked, so
+# this runs one every week, and pings its own heartbeat only when the restored
+# data is recognisable. If you switch anything in this feature off, switch this
+# off last.
+#
+# Needs `CREATE`/`DROP` on `<DB_NAME>_foehn_verify` — the one thing here that a
+# tightly scoped database user may not have. `BACKUP_VERIFY_ENABLED=false` for
+# those, knowing what it costs.
+#
+# @see foehn-backup-common.sh
+###############################################################################
+set -eu
+
+FOEHN_BACKUP_JOB=verify
+
+. /opt/docker/bin/foehn-backup-common.sh
+
+foehn_backup_is_enabled || exit 0
+
+if [ "${BACKUP_VERIFY_ENABLED:-true}" != "true" ]; then
+    exit 0
+fi
+
+foehn_backup_require_config
+
+# 64 characters is MySQL's limit for an identifier, so the name is built to fit
+# rather than truncated afterwards into something that collides with the live
+# schema.
+scratch_schema="$(printf '%s' "$DB_NAME" | cut -c1-50)_foehn_verify"
+work_dir=""
+
+# The scratch schema must not outlive this script, including when this script
+# dies halfway. Leaving one behind would double the site's disk on the next run
+# and put a stale copy of the whole database somewhere nobody is looking.
+foehn_backup_verify_cleanup() {
+    # `if` and not `[ … ] && …`: under `set -e` an and-or list that ends false
+    # ends the script, so the one-liner would skip the schema drop on every run
+    # where there is no directory to remove.
+    if [ -n "$work_dir" ]; then
+        rm -rf "$work_dir"
+    fi
+
+    mariadb --defaults-file="$FOEHN_BACKUP_CNF" \
+        -e "DROP DATABASE IF EXISTS \`$scratch_schema\`;" >/dev/null 2>&1 || true
+}
+
+trap foehn_backup_verify_cleanup EXIT INT TERM
+
+foehn_backup_query() {
+    mariadb --defaults-file="$FOEHN_BACKUP_CNF" --batch --skip-column-names -e "$1"
+}
+
+# Waits like the maintenance job: a restore drill skipped every week is no
+# restore drill.
+if ! foehn_backup_lock -w 3600; then
+    foehn_backup_say "⚠️ the lock was still held after an hour, skipping the restore check."
+    exit 0
+fi
+
+# To a file, not through a pipe into the client. A pipeline reports the exit
+# status of its last command, so a `restic dump` that fails partway would be
+# read as a successful restore of whatever arrived before it stopped — the same
+# trap `--stdin-from-command` exists to avoid on the way in, in the other
+# direction.
+work_dir="$(mktemp -d)"
+dump_file="$work_dir/restore.sql"
+
+foehn_backup_say "restoring the newest snapshot for $(foehn_backup_host)"
+
+# `latest` is resolved within this host's snapshots, so a repository shared with
+# another site cannot hand this one the wrong database to check.
+restic dump --host "$(foehn_backup_host)" latest "/${DB_NAME}.sql" > "$dump_file"
+
+if [ ! -s "$dump_file" ]; then
+    foehn_backup_die "the newest snapshot restored to an empty file."
+fi
+
+foehn_backup_query "DROP DATABASE IF EXISTS \`$scratch_schema\`; CREATE DATABASE \`$scratch_schema\`;"
+
+mariadb --defaults-file="$FOEHN_BACKUP_CNF" "$scratch_schema" < "$dump_file"
+
+# Two questions, because they fail differently. A schema that restored no tables
+# at all is a broken backup; a schema whose largest table came back empty is a
+# dump that ran but read nothing — the shape a permissions problem takes.
+live_tables="$(foehn_backup_query "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '$DB_NAME' AND table_type = 'BASE TABLE';")"
+restored_tables="$(foehn_backup_query "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '$scratch_schema' AND table_type = 'BASE TABLE';")"
+
+if [ "$restored_tables" -eq 0 ]; then
+    foehn_backup_die "the restored schema has no tables."
+fi
+
+if [ "$restored_tables" -ne "$live_tables" ]; then
+    foehn_backup_die "the restored schema has $restored_tables tables, the live one has $live_tables."
+fi
+
+# The largest table by data length, rather than a hardcoded `wp_posts`: the
+# table prefix is per-site and a site that changed it would otherwise fail this
+# check for ever. Whichever table it picks, an exact `COUNT(*)` on both sides is
+# the comparison — `information_schema.table_rows` is an estimate for InnoDB and
+# routinely wrong by tens of percent, which is useless against a tolerance.
+largest_table="$(foehn_backup_query "SELECT table_name FROM information_schema.tables WHERE table_schema = '$DB_NAME' AND table_type = 'BASE TABLE' ORDER BY data_length DESC, table_name ASC LIMIT 1;")"
+
+live_rows="$(foehn_backup_query "SELECT COUNT(*) FROM \`$DB_NAME\`.\`$largest_table\`;")"
+restored_rows="$(foehn_backup_query "SELECT COUNT(*) FROM \`$scratch_schema\`.\`$largest_table\`;")"
+
+# A tolerance, because the snapshot is up to a schedule old and the live table
+# has moved on since. It is a sanity check, not a consistency proof: what it
+# rules out is a restore that came back empty or came back as something else,
+# not a row that changed.
+tolerance="${BACKUP_VERIFY_TOLERANCE:-10}"
+
+if [ "$live_rows" -eq 0 ]; then
+    if [ "$restored_rows" -ne 0 ]; then
+        foehn_backup_die "\`$largest_table\` is empty live but has $restored_rows rows restored."
+    fi
+else
+    drift=$(((live_rows - restored_rows) * 100 / live_rows))
+
+    # An absolute value, since a snapshot can hold more rows than the live table
+    # as easily as fewer — anything deleted since the dump drifts the other way.
+    if [ "$drift" -lt 0 ]; then
+        drift=$((-drift))
+    fi
+
+    if [ "$drift" -gt "$tolerance" ]; then
+        foehn_backup_die "\`$largest_table\` restored $restored_rows rows against $live_rows live, a drift of ${drift}% over the ${tolerance}% tolerance."
+    fi
+
+    foehn_backup_say "\`$largest_table\`: $restored_rows rows restored against $live_rows live, ${drift}% drift."
+fi
+
+foehn_backup_say "the newest snapshot restores and is recognisable ($restored_tables tables)."
+
+# Its own URL, not the backup's. They answer different questions — "a backup ran
+# last night" against "a backup from last night can be restored" — and a monitor
+# that cannot tell them apart is one that goes green on the wrong evidence.
+foehn_backup_heartbeat "${BACKUP_VERIFY_HEARTBEAT_URL:-}"

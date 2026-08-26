@@ -1,0 +1,120 @@
+#!/bin/sh
+###############################################################################
+# The scheduled database backup: one dump, streamed straight into Restic.
+#
+# Run by cron, from a symlink `entrypoint.d/80-backup.sh` places in
+# `/etc/periodic/<BACKUP_SCHEDULE>/`. Nothing else invokes it, and it is a no-op
+# unless a site opted in.
+#
+# One dump stream, not one per tier. A snapshot taken at midnight on the first
+# of the month is the hourly, the daily, the weekly *and* the monthly backup at
+# once — Restic's retention decides which tiers each snapshot satisfies, after
+# the fact. Four cron jobs would write four identical dumps that night and would
+# still need expiry written by hand.
+#
+# No `gzip`. Compressing the dump would defeat the deduplication that makes this
+# cheap: gzip's output shifts entirely when an early byte changes, so two dumps
+# of a database that barely moved share nothing. Plain SQL, and Restic
+# compresses and deduplicates what it stores.
+#
+# @see foehn-backup-common.sh, foehn-backup-maintenance, foehn-backup-verify
+###############################################################################
+set -eu
+
+FOEHN_BACKUP_JOB=backup
+
+. /opt/docker/bin/foehn-backup-common.sh
+
+foehn_backup_is_enabled || exit 0
+foehn_backup_require_config
+
+# `-n`: a tick that finds the previous one still running gives up rather than
+# queueing a second dump behind it. On a database slow enough to overrun its own
+# schedule, waiting would pile dumps onto a server already struggling, and the
+# next tick is soon enough.
+if ! foehn_backup_lock -n; then
+    foehn_backup_say "another backup job holds the lock, skipping this tick."
+    exit 0
+fi
+
+# `restic init` fails on a repository that already exists, so the first run has
+# to be told from every run after it. `cat config` is the cheapest question that
+# separates them, and it doubles as a check that the credentials work at all.
+if ! restic cat config >/dev/null 2>&1; then
+    foehn_backup_say "no repository at $RESTIC_REPOSITORY yet, creating one."
+    restic init
+fi
+
+foehn_backup_say "dumping $DB_NAME"
+
+# `--stdin-from-command`, and never `mariadb-dump | restic backup --stdin`.
+#
+# A pipeline takes its exit status from the last command in it, so a dump that
+# dies halfway — the connection drops, the server is killed, a table cannot be
+# read — still ends as a snapshot Restic considers perfectly valid, and the
+# truncated SQL inside it is discovered during a restore, which is the worst
+# possible moment. Handing the command to Restic instead lets it see the
+# non-zero exit and throw the snapshot away.
+#
+# `--defaults-file` must be `mariadb-dump`'s first argument, and it is there
+# rather than on the command line because arguments are world-readable in `ps`
+# and one of them would be the password.
+restic backup \
+    --stdin-from-command \
+    --stdin-filename "${DB_NAME}.sql" \
+    --host "$(foehn_backup_host)" \
+    --tag foehn \
+    -- mariadb-dump \
+    --defaults-file="$FOEHN_BACKUP_CNF" \
+    --single-transaction \
+    --quick \
+    --no-tablespaces \
+    --routines \
+    --events \
+    --triggers \
+    --default-character-set=utf8mb4 \
+    "$DB_NAME"
+
+# Retention is `restic forget` and not code of ours: no object listing, no
+# timestamp arithmetic, and one snapshot counting for several tiers at once.
+#
+# A tier set to 0 is left out of the policy rather than passed as zero, because
+# the two are not the same request: `--keep-daily 0` tells Restic to keep no
+# daily snapshots, while leaving the flag off tells it not to reason about days
+# at all. Only the second is what "disable this tier" means.
+set --
+
+if [ "${BACKUP_KEEP_HOURLY:-12}" -gt 0 ]; then
+    set -- "$@" --keep-hourly "${BACKUP_KEEP_HOURLY:-12}"
+fi
+
+if [ "${BACKUP_KEEP_DAILY:-7}" -gt 0 ]; then
+    set -- "$@" --keep-daily "${BACKUP_KEEP_DAILY:-7}"
+fi
+
+if [ "${BACKUP_KEEP_WEEKLY:-8}" -gt 0 ]; then
+    set -- "$@" --keep-weekly "${BACKUP_KEEP_WEEKLY:-8}"
+fi
+
+if [ "${BACKUP_KEEP_MONTHLY:-12}" -gt 0 ]; then
+    set -- "$@" --keep-monthly "${BACKUP_KEEP_MONTHLY:-12}"
+fi
+
+if [ "$#" -eq 0 ]; then
+    # Every tier disabled means nothing may be expired. Saying so is better than
+    # a `restic forget` with an empty policy, which refuses to run and would
+    # report a healthy backup as a failure every tick.
+    foehn_backup_say "⚠️ every BACKUP_KEEP_* is 0, so no snapshot is ever expired."
+else
+    # Grouped the way Restic groups by default — host and paths — so a
+    # repository that ended up holding two sites expires each one against its
+    # own policy instead of letting the busier one evict the other.
+    #
+    # No `--prune` here. Rewriting pack files costs object-storage traffic on
+    # every tick; `foehn-backup-maintenance` does it once a week.
+    restic forget "$@"
+fi
+
+foehn_backup_say "done."
+
+foehn_backup_heartbeat "${BACKUP_HEARTBEAT_URL:-}"

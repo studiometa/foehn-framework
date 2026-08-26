@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.7] - 2026-08-25
+
+The page cache installs itself.
+
+### Added
+
+- The image installs Føhn's page cache rules itself, generated at boot from the site's own `page-cache.config.php` — so a project neither writes them nor commits them, and they cannot fall behind the configuration beside them ([#157])
+
+  Generated rather than shipped, because they are not fixed: the cache path, the query arguments that are keyed and the ones ignored all come from that configuration, and the file carries a hash of it. A copy baked into the image would be right for the default and quietly wrong for anything else — and serving one visitor's page to another is the failure a page cache has.
+
+  If generating fails, most likely a database that is not up yet, the site falls back to the drop-in at `wp-content/advanced-cache.php`, which serves the same stored files and needs no webserver configuration. Measured on one site: 1.3ms through nginx, 2.8ms through the drop-in, 95ms rendering. `FOEHN_PAGE_CACHE_CONFIG=false` opts out, and a project that generates the rules itself keeps them.
+
+[#157]: https://github.com/studiometa/foehn-framework/issues/157
+[0.5.7]: https://github.com/studiometa/foehn-framework/releases/tag/0.5.7
+
 ## [0.5.6] - 2026-08-25
 
 A runtime to deploy onto, so a project stops writing the webserver rules the framework already generates.

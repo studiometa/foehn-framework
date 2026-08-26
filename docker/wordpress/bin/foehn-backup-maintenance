@@ -1,0 +1,60 @@
+#!/bin/sh
+###############################################################################
+# The weekly repository maintenance: reclaim the space `forget` freed, and read
+# some of the data back to check it is still there.
+#
+# Separate from the backup, and weekly rather than every tick, because both
+# halves are expensive in the one currency object storage bills for. `prune`
+# rewrites pack files — downloading and re-uploading them — and `check
+# --read-data-subset` downloads data on purpose. Running either at the backup's
+# cadence would cost more in traffic than the backups themselves.
+#
+# `restic forget` only removes the snapshot; the data it referenced stays in the
+# repository until something prunes it. Without this job the bucket grows for
+# ever and the retention policy is a bookkeeping exercise.
+#
+# @see foehn-backup-common.sh
+###############################################################################
+set -eu
+
+FOEHN_BACKUP_JOB=maintenance
+
+. /opt/docker/bin/foehn-backup-common.sh
+
+foehn_backup_is_enabled || exit 0
+
+if [ "${BACKUP_MAINTENANCE_ENABLED:-true}" != "true" ]; then
+    exit 0
+fi
+
+foehn_backup_require_config
+
+# Waits, where the backup gives up. The two meet once a week by construction —
+# busybox fires the weekly run-parts at 03:00 on Saturday and the hourly one at
+# 03:00 as well — and a backup takes minutes at this scale. A maintenance run
+# skipped every week is a repository that is never pruned, so it waits an hour
+# for its turn rather than yielding.
+if ! foehn_backup_lock -w 3600; then
+    foehn_backup_say "⚠️ the lock was still held after an hour, skipping maintenance."
+    exit 0
+fi
+
+foehn_backup_say "pruning $RESTIC_REPOSITORY"
+
+# `--max-repack-size` bounds the work: a prune with nothing to bound it can
+# decide to rewrite most of the repository in one run, which on a metered
+# connection is a surprise. 1 GB a week converges on a repository this size
+# without ever being the largest thing that happened that night.
+restic prune --max-repack-size 1G
+
+foehn_backup_say "checking the repository"
+
+# Structure every week, and a sample of the data with it. `--read-data-subset`
+# is what makes this more than a metadata check: it downloads 5% of the pack
+# files and verifies them against their hashes, so bit rot in the bucket is
+# found by us, in a log, rather than during a restore. Five percent a week
+# covers the repository roughly once a year, at 5% of the egress of doing it
+# properly — which is the trade this size of site should make.
+restic check --read-data-subset=5%
+
+foehn_backup_say "done."
