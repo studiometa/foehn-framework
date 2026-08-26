@@ -28,6 +28,25 @@ RUN curl -fsSL -o /usr/local/bin/wp \
         https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar \
     && chmod +x /usr/local/bin/wp
 
+# The two halves of a database backup: something that reads the database and
+# something that stores what it read. Both belong in this image and not in a
+# variant, because a backup has to work against a database anywhere — the point
+# of the feature is that a site keeps its backups when its database moves.
+#
+# `mariadb-client` pays for itself a second time over. WP-CLI shells out to
+# `mysql` and `mysqldump` for every `wp db` subcommand, so without the package
+# each of them fails with `env: can't execute 'mysql'` — which is how the image
+# shipped until now. Alpine's package installs those two legacy names alongside
+# `mariadb` and `mariadb-dump`, so nothing else is needed to fix it.
+#
+# `flock` looks redundant — busybox provides one, and `/usr/bin/flock` already
+# resolves to it. But busybox's takes only `-sxun`: it can fail immediately on a
+# held lock and it can block for ever, and nothing in between. The weekly
+# maintenance and restore jobs need to *wait* for the backup they collide with
+# once a week, which is `-w`, which is util-linux's. The package is a 26 KB
+# binary that replaces the symlink.
+RUN apk add --no-cache mariadb-client restic flock
+
 # PHP settings that belong to running in a container (see the file).
 COPY php/zz-container.ini /usr/local/etc/php/conf.d/zz-container.ini
 
@@ -54,7 +73,15 @@ COPY nginx/vhost.common.d/ /opt/docker/etc/nginx/vhost.common.d/
 COPY nginx/templates/ /opt/docker/etc/nginx/templates/
 COPY entrypoint.d/ /opt/docker/provision/entrypoint.d/
 
-RUN chmod +x /opt/docker/provision/entrypoint.d/*.sh
+# Run by cron rather than sourced at boot, which is why they live beside the
+# other services' scripts and not in `entrypoint.d/`. `foehn-backup-common.sh`
+# is sourced by the three of them and is deliberately left non-executable.
+COPY bin/ /opt/docker/bin/
+
+RUN chmod +x /opt/docker/provision/entrypoint.d/*.sh \
+    && chmod +x /opt/docker/bin/foehn-backup \
+        /opt/docker/bin/foehn-backup-maintenance \
+        /opt/docker/bin/foehn-backup-verify
 
 # The web root is `web/`, not the repository root: `index.php` and
 # `wp-config.php` live there, while `vendor/` and `config/` stay out of reach.
@@ -79,3 +106,4 @@ WORKDIR /app
 # unwritable by `application`, the user PHP runs as. Only the paths actually
 # written at runtime belong to it.
 # @see README.md
+

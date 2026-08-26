@@ -98,10 +98,36 @@ jobs:
           run 'cat /etc/nginx/fastcgi_params' | grep -q 'HTTPS .*\$fcgi_https'
 
           echo "Every entrypoint is executable"
-          run 'ls -l /opt/docker/provision/entrypoint.d/' | grep -E '(50|60|70)-' | grep -qv -- '-rw-'
+          ! run 'ls -l /opt/docker/provision/entrypoint.d/*.sh' | grep -q -- '-rw-'
 
           echo "The entrypoints are sourced, so none of them may exit or set shell options"
-          ! run 'grep -hE "^(set |exit )" /opt/docker/provision/entrypoint.d/[567]0-*.sh' | grep -q .
+          # Every `*.sh` in the directory, not a list of prefixes: the previous
+          # form named `[567]0-` and so stopped covering `40-` the day it landed.
+          # A check that has to be edited to keep working is one that quietly
+          # stops working.
+          ! run 'grep -hE "^(set |exit )" /opt/docker/provision/entrypoint.d/*.sh' | grep -q .
+
+          echo "The backup jobs are executable, and the file they source is not"
+          for job in foehn-backup foehn-backup-maintenance foehn-backup-verify; do
+            run "test -x /opt/docker/bin/$job"
+          done
+          ! run 'test -x /opt/docker/bin/foehn-backup-common.sh'
+
+          echo "The backup jobs are run, not sourced, so they must fail loudly"
+          for job in foehn-backup foehn-backup-maintenance foehn-backup-verify; do
+            run "head -n 30 /opt/docker/bin/$job" | grep -q 'set -eu'
+          done
+
+          echo "What a backup needs is installed"
+          run 'restic version' | grep -q 'restic '
+          # `wp db` shells out to the legacy names, so those are the ones that
+          # have to exist — `mariadb-dump` being present is not the same thing.
+          for binary in mysql mysqldump mariadb-dump; do
+            run "command -v $binary" | grep -q "/$binary"
+          done
+          # util-linux's, not busybox's: the weekly jobs wait on the lock with
+          # `-w`, which the busybox applet does not have.
+          run 'flock -V' | grep -q 'util-linux'
 
       - name: Check it boots and serves
         run: |
@@ -122,6 +148,53 @@ jobs:
           ! docker logs check 2>&1 | grep -q 'emerg'
 
           docker rm -f check
+
+      # The backup is scheduled by the entrypoint, so what it does and does not
+      # do at boot is checkable without a database anywhere near it.
+      - name: Check the backup schedules itself, and only when asked
+        run: |
+          set -euo pipefail
+
+          scheduled() { docker exec "$1" sh -c 'ls -1 /etc/periodic/*/ | grep -c foehn || true'; }
+
+          echo "Off by default: no job, and no credentials on disk"
+          docker run -d --name backup-off foehn-wordpress:check >/dev/null
+          sleep 12
+          test "$(scheduled backup-off)" = "0"
+          docker exec backup-off sh -c '! test -e /run/foehn/backup.cnf'
+          docker exec backup-off curl -fsS -o /dev/null http://localhost/healthcheck
+          docker rm -f backup-off
+
+          echo "On: the dump is scheduled, and the weekly jobs with it"
+          docker run -d --name backup-on \
+            -e BACKUP_ENABLED=true -e BACKUP_SCHEDULE=daily \
+            -e DB_NAME=wordpress -e DB_USER=wp -e 'DB_PASSWORD=has"a#hash' \
+            -e RESTIC_REPOSITORY=s3:http://example.invalid/bucket -e RESTIC_PASSWORD=secret \
+            foehn-wordpress:check >/dev/null
+          sleep 12
+          docker exec backup-on test -L /etc/periodic/daily/foehn-backup
+          docker exec backup-on test -L /etc/periodic/weekly/foehn-backup-maintenance
+          docker exec backup-on test -L /etc/periodic/weekly/foehn-backup-verify
+
+          echo "The credentials are readable only by root, and the password is escaped"
+          test "$(docker exec backup-on stat -c '%a %U' /run/foehn/backup.cnf)" = "600 root"
+          docker exec backup-on grep -qx 'password="has\\"a#hash"' /run/foehn/backup.cnf
+
+          echo "The credentials are NOT in my.cnf.d, where they would become every client's identity"
+          docker exec backup-on sh -c '! ls /etc/my.cnf.d/ 2>/dev/null | grep -q foehn'
+
+          echo "cron is running, so a scheduled job has something to fire it"
+          # `pidof`, not `pgrep -x`: busybox matches `-x` against the whole
+          # command line, so it never matches `/usr/sbin/crond -f`.
+          docker exec backup-on pidof crond >/dev/null
+          docker rm -f backup-on
+
+          echo "An unusable configuration stops the container instead of shipping without backups"
+          ! docker run --name backup-broken \
+              -e BACKUP_ENABLED=true -e BACKUP_SCHEDULE=fortnightly \
+              foehn-wordpress:check >/dev/null 2>&1
+          docker logs backup-broken 2>&1 | grep -q 'BACKUP_SCHEDULE="fortnightly" is not one of'
+          docker rm -f backup-broken
 
       - name: Push
         if: github.event_name != 'pull_request'
