@@ -60,7 +60,16 @@ foehn_wp_cron() {
 
     ln -sf /opt/docker/bin/foehn-cron "/etc/periodic/$schedule/foehn-cron"
 
-    echo "ℹ️ NOTICE ($script_name): scheduled events run every $schedule."
+    # Exported, not merely defaulted. `wp-config.php` reads this to decide
+    # whether to set `DISABLE_WP_CRON`, and it is PHP-FPM that reads it — so the
+    # value has to reach PHP, not just this script. This shell goes on to exec
+    # supervisord, which is PHP-FPM's parent, so exporting here is what carries
+    # it. Without this the default is on in the image and off in wp-config, and
+    # both mechanisms run: the scheduled job doing the work and the pseudo-cron
+    # still spawning a loopback request on every uncached page load.
+    export FOEHN_CRON_ENABLED=true
+
+    echo "ℹ️ NOTICE ($script_name): scheduled events run every $schedule, and WordPress's own cron is off."
 }
 
 foehn_wp_cron

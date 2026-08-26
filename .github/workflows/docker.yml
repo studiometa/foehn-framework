@@ -301,6 +301,73 @@ jobs:
           docker rm -f backupsite backupdb minio
           docker network rm backupnet
 
+      # The backup check exists because CI once proved a job was scheduled and
+      # never that it ran. Same discipline here: a real WordPress, a real event,
+      # and proof it executed.
+      - name: Check WordPress cron actually runs, end to end
+        run: |
+          set -euo pipefail
+
+          docker network create cronnet
+          docker run -d --name crondb --network cronnet \
+            -e MARIADB_ROOT_PASSWORD=root -e MARIADB_DATABASE=wp \
+            -e MARIADB_USER=wp -e MARIADB_PASSWORD=secret mariadb:11.8
+          for _ in $(seq 1 60); do
+            if docker exec crondb mariadb -uwp -psecret -e 'SELECT 1' wp >/dev/null 2>&1; then break; fi
+            sleep 2
+          done
+
+          docker run -d --name cronsite --network cronnet \
+            -e DB_HOST=crondb -e DB_NAME=wp -e DB_USER=wp -e DB_PASSWORD=secret \
+            foehn-wordpress:check
+          for _ in $(seq 1 60); do
+            if docker exec cronsite curl -fsS -o /dev/null http://localhost/healthcheck 2>/dev/null; then break; fi
+            sleep 2
+          done
+
+          echo "It is on without being asked, and scheduled where busybox looks"
+          docker exec cronsite test -L /etc/periodic/15min/foehn-cron
+
+          echo "PHP-FPM sees the flag, which is what turns WordPress's own cron off"
+          docker exec cronsite sh -c 'mkdir -p /app/web && printf "<?php echo getenv(\"FOEHN_CRON_ENABLED\");" > /app/web/c.php'
+          test "$(docker exec cronsite curl -fsS http://localhost/c.php)" = "true"
+
+          echo "With no site in the container it is a silent no-op, not an error"
+          test -z "$(docker exec cronsite run-parts /etc/periodic/15min)"
+
+          echo "Against a real WordPress, a due event actually executes"
+          docker exec cronsite sh -c '
+            wp core download --path=/app/web/wp --allow-root --quiet
+            wp config create --path=/app/web/wp --dbname=wp --dbuser=wp --dbpass=secret --dbhost=crondb --allow-root --quiet
+            wp core install --path=/app/web/wp --url=http://localhost --title=CI \
+              --admin_user=a --admin_password=p --admin_email=a@b.test --allow-root --quiet
+            chown -R application:application /app/web'
+          docker exec cronsite wp cron event schedule foehn_ci_event now --path=/app/web/wp --allow-root
+          docker exec cronsite run-parts /etc/periodic/15min | grep -q 'Executed a total of'
+          ! docker exec cronsite wp cron event list --path=/app/web/wp --allow-root --fields=hook | grep -q foehn_ci_event
+
+          # The trap the page cache hook documents: WP-CLI as root leaves
+          # root-owned files under wp-content, after which PHP cannot write
+          # there and the cache silently stops working. Cron writes more than
+          # the cache does, so it runs as `application` or not at all.
+          echo "And it left nothing owned by root behind"
+          test -z "$(docker exec cronsite find /app/web/wp/wp-content ! -user application)"
+
+          echo "Opting out removes the job and leaves WordPress its own cron"
+          docker rm -f cronsite
+          docker run -d --name cronsite --network cronnet -e FOEHN_CRON_ENABLED=false \
+            -e DB_HOST=crondb -e DB_NAME=wp -e DB_USER=wp -e DB_PASSWORD=secret \
+            foehn-wordpress:check
+          sleep 12
+          test "$(docker exec cronsite sh -c 'ls -1 /etc/periodic/*/ | grep -c foehn-cron || true')" = "0"
+
+          echo "A cadence busybox never calls stops the boot rather than pretending"
+          ! docker run --name cronbad -e FOEHN_CRON_SCHEDULE=every-5-minutes foehn-wordpress:check >/dev/null 2>&1
+          docker logs cronbad 2>&1 | grep -q 'is not one of'
+
+          docker rm -f cronsite crondb cronbad
+          docker network rm cronnet
+
       # The plain image is the default and the one that must never regress, so
       # what is checked here is mostly absence: a site that does not want a
       # database must not get one.
