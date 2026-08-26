@@ -37,12 +37,34 @@ if ! foehn_backup_lock -n; then
     exit 0
 fi
 
-# `restic init` fails on a repository that already exists, so the first run has
-# to be told from every run after it. `cat config` is the cheapest question that
-# separates them, and it doubles as a check that the credentials work at all.
-if ! restic cat config >/dev/null 2>&1; then
-    foehn_backup_say "no repository at $RESTIC_REPOSITORY yet, creating one."
-    restic init
+# `restic init` first, and its refusal to touch an existing repository read as
+# the "yes, there is one" it actually is.
+#
+# The obvious order is the other way round — ask whether a repository is there,
+# create one if it is not — and it has a failure mode that looks like a hang.
+# When the *bucket* does not exist yet, `restic cat config` is not answered
+# "no": it gets an error restic classes as worth retrying, and retries it with
+# backoff, unbounded. Measured against a missing bucket: `cat config` had still
+# not returned after ten minutes, while `init` answered in two seconds. That is
+# the first backup of a site's life, so the feature's first impression was a
+# job that never finished.
+#
+# `init` also creates the bucket, which is what makes a first run work at all
+# where nothing has created one yet — and on a provider whose own tooling
+# allows only one bucket per app, that is the only thing that does.
+if init_output=$(restic init 2>&1); then
+    foehn_backup_say "no repository at ${RESTIC_REPOSITORY%%\?*} yet, created one."
+else
+    # Anything else — a bad key, an unreachable endpoint, a bucket someone else
+    # owns — is a real failure and has to stop the run. Silence here would mean
+    # backing up into nowhere and reporting success.
+    case "$init_output" in
+        *'already initialized'* | *'already exists'*) ;;
+        *)
+            printf '%s\n' "$init_output" >&2
+            foehn_backup_die "the repository could not be opened or created."
+            ;;
+    esac
 fi
 
 foehn_backup_say "dumping $DB_NAME"

@@ -230,6 +230,77 @@ jobs:
           docker logs backup-broken 2>&1 | grep -q 'BACKUP_SCHEDULE="fortnightly" is not one of'
           docker rm -f backup-broken
 
+      # Until this existed, CI proved the backup was *scheduled* and never that
+      # it ran. The gap let a first-run hang reach a real site: with no bucket
+      # yet, the old "is there a repository?" probe retried an error restic
+      # classes as transient, unbounded, and the first backup of a site's life
+      # simply never finished. A real object store and a real database, then.
+      - name: Check a backup actually runs, end to end
+        run: |
+          set -euo pipefail
+
+          docker network create backupnet
+          docker run -d --name minio --network backupnet \
+            -e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=minioadmin \
+            minio/minio server /data
+          docker run -d --name backupdb --network backupnet \
+            -e MARIADB_ROOT_PASSWORD=root -e MARIADB_DATABASE=wp \
+            -e MARIADB_USER=wp -e MARIADB_PASSWORD=secret mariadb:11.8
+
+          for _ in $(seq 1 60); do
+            if docker exec backupdb mariadb -uwp -psecret -e 'SELECT 1' wp >/dev/null 2>&1; then break; fi
+            sleep 2
+          done
+          docker exec backupdb mariadb -uwp -psecret wp -e 'CREATE TABLE t (id INT); INSERT INTO t VALUES (1);'
+          # The weekly restore drill restores into `<DB_NAME>_foehn_verify`, so
+          # it needs to be allowed to create it. The `-db` variant grants this
+          # when it creates the user; a site pointing at an external database
+          # has to grant it itself, which is what this stands in for.
+          docker exec backupdb mariadb -uroot -proot \
+            -e "GRANT ALL PRIVILEGES ON \`wp_foehn_verify\`.* TO 'wp'@'%'; FLUSH PRIVILEGES;"
+
+          site() {
+            docker rm -f backupsite >/dev/null 2>&1 || true
+            docker run -d --name backupsite --network backupnet \
+              -e BACKUP_ENABLED=true -e BACKUP_SCHEDULE=daily \
+              -e DB_HOST=backupdb -e DB_NAME=wp -e DB_USER=wp -e DB_PASSWORD=secret \
+              -e RESTIC_REPOSITORY=s3:http://minio:9000/backups -e RESTIC_PASSWORD=repopass \
+              -e AWS_ACCESS_KEY_ID="${1:-minioadmin}" -e AWS_SECRET_ACCESS_KEY="${2:-minioadmin}" \
+              -e FLY_APP_NAME=ci-site foehn-wordpress:check >/dev/null
+            sleep 12
+          }
+
+          echo "The bucket does not exist yet: the first run must create it, not hang"
+          site
+          # The bound is the regression test. Before the fix this did not finish
+          # at all; after it, it is a couple of seconds.
+          timeout 120 docker exec backupsite /opt/docker/bin/foehn-backup | tee /tmp/first.log
+          grep -q 'created one' /tmp/first.log
+          docker exec backupsite restic snapshots --json | grep -q short_id
+
+          echo "The second run finds the repository and does not claim to create it"
+          timeout 120 docker exec backupsite /opt/docker/bin/foehn-backup | tee /tmp/second.log
+          ! grep -q 'created one' /tmp/second.log
+
+          echo "The restore drill agrees the snapshot is a database"
+          docker exec backupsite /opt/docker/bin/foehn-backup-verify | grep -q 'restores and is recognisable'
+
+          echo "A broken dump stores no snapshot — the reason for --stdin-from-command"
+          before=$(docker exec backupsite restic snapshots --json | grep -o short_id | wc -l)
+          docker exec backupsite sh -c 'printf "#!/bin/sh\necho \"-- partial\"\nexit 1\n" > /usr/local/bin/mariadb-dump && chmod +x /usr/local/bin/mariadb-dump'
+          ! docker exec backupsite /opt/docker/bin/foehn-backup
+          after=$(docker exec backupsite restic snapshots --json | grep -o short_id | wc -l)
+          test "$before" = "$after"
+          docker exec backupsite rm -f /usr/local/bin/mariadb-dump
+
+          echo "Credentials that cannot open the repository fail fast and loudly"
+          site wrongkey wrongsecret
+          ! timeout 120 docker exec backupsite /opt/docker/bin/foehn-backup 2>/tmp/bad.log
+          grep -q 'could not be opened or created' /tmp/bad.log
+
+          docker rm -f backupsite backupdb minio
+          docker network rm backupnet
+
       # The plain image is the default and the one that must never regress, so
       # what is checked here is mostly absence: a site that does not want a
       # database must not get one.
