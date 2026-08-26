@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.9] - 2026-08-26
+
+The embedded database survives its first restart.
+
+### Fixed
+
+- The `-db` variant lost its data directory to the platform on every boot after the first. A mounted volume does not keep the ownership the image gave it — Fly applies `uid: 0, gid: 0` and `chmod 0755` to the mount point each time it mounts — so a directory `mariadb-install-db` had handed to `mysql` was root's again by the next start, and MariaDB died on the first file it had to create ([#161])
+
+  It failed in a way that hid the cause: the files inside kept their ownership, so the server read the whole dataset perfectly and aborted with `Can't create/write to file './ddl_recovery.log' (Errcode: 13 "Permission denied")`, which reads like corruption and is a directory mode. The first boot always worked, so the failure waited for the first restart — by which time the volume held data.
+
+  A docker volume inherits the image's ownership and never reproduces it, which is why this reached a real machine before it was caught. The data directory is now handed back to `mysql` on every boot, and CI re-owns the mount point to root between two boots on purpose and asserts the data comes back.
+
+[#161]: https://github.com/studiometa/foehn-framework/pull/161
+[0.5.9]: https://github.com/studiometa/foehn-framework/releases/tag/0.5.9
+
 ## [0.5.8] - 2026-08-26
 
 A site can back its database up, and can carry it.
