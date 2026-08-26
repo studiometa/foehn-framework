@@ -12,7 +12,7 @@ nothing.
 |              |                                                                                    |
 | ------------ | ---------------------------------------------------------------------------------- |
 | **Image**    | `ghcr.io/studiometa/foehn-wordpress`                                               |
-| **Tags**     | `latest`, and a release number to pin one                                          |
+| **Tags**     | `latest`, a release number to pin one, and `-db` on either for the variant         |
 | **Base**     | [`webdevops/php-nginx`](https://github.com/webdevops/Dockerfile) (alpine), PHP 8.5 |
 | **Web root** | `/app/web`                                                                         |
 | **Health**   | `GET /healthcheck`, answered by PHP-FPM                                            |
@@ -54,6 +54,7 @@ That is the whole of it. Nothing about NGINX, no entrypoint, no PHP settings.
 | `entrypoint.d/60`, `70`                               | Render the two templates at boot, from `S3_UPLOADS_*`                 |
 | `php/healthcheck.php`                                 | A health endpoint that fails when PHP is down, not only when NGINX is |
 | `entrypoint.d/80-backup.sh`, `bin/foehn-backup*`      | Scheduled database backups to object storage, off unless asked for    |
+| `db/` (the `-db` tag only)                            | MariaDB in the same container, supervised beside PHP                  |
 | WP-CLI                                                | `/usr/local/bin/wp`                                                   |
 | `mariadb-client`                                      | `mysql` and `mysqldump`, which every `wp db` subcommand shells out to |
 
@@ -219,6 +220,98 @@ last dump is gone.
 Physical backups are deliberately out of scope — volume snapshots cover that
 layer.
 
+## The `-db` variant: a database in the same container
+
+A second tag, `-db`, adds MariaDB to the image and starts it beside PHP. A site
+using it is one app instead of an `<app>`/`<app>-db` pair: one machine, one
+deploy, one thing to reason about.
+
+```dockerfile
+FROM ghcr.io/studiometa/foehn-wordpress:0.5.7-db    # its own database
+FROM ghcr.io/studiometa/foehn-wordpress:0.5.7       # an external one
+```
+
+That is the only difference in the project's Dockerfile. The variant reads the
+same `DB_NAME`, `DB_USER` and `DB_PASSWORD` a site already defines, creates the
+database and the user on first boot, and points `DB_HOST` at its own socket — so
+a site keeps its secrets, its `wp-config.php` and its backups exactly as they
+were.
+
+### Why a tag and not a flag
+
+The MariaDB server is 187 MB installed. In the base image that is charged to
+every site, including every site that will never start a database. A runtime
+`DB_EMBEDDED` flag would also put a topology decision somewhere it can be set
+wrong — a typo starts nothing, or starts a database nobody expected. A tag
+cannot be half-set, and the version coupling is visible in the string.
+
+### What a site has to change in `fly.toml`
+
+```toml
+[[mounts]]
+  source      = "data"
+  destination = "/var/lib/mysql"
+
+# InnoDB has to finish flushing. Cut short, the next boot spends its time on
+# crash recovery instead — measured: a 1 s grace period produced "Starting crash
+# recovery from checkpoint LSN=..." on the following start, a 30 s one did not.
+kill_timeout = "30s"
+
+[http_service.checks]
+  # supervisord orders its programs but does not wait for one to be ready before
+  # starting the next, so PHP-FPM can answer before MariaDB has finished
+  # starting — a few seconds in which the site would serve "Error establishing a
+  # database connection". A grace period covers it.
+  grace_period = "15s"
+```
+
+Create the volume with a retention worth having. Fly keeps volume snapshots for
+five days by default, and volume snapshots are the physical backup layer here:
+
+```sh
+fly volumes create data --size 1 --snapshot-retention 14
+```
+
+`min_machines_running = 1` if the site also runs scheduled backups — cron cannot
+fire on a stopped machine.
+
+### What it costs
+
+**The app gains a volume**, and a volume pins the machine to one host. On a site
+that had none, Fly could replace the machine freely; now it cannot. This is the
+real price of the change.
+
+**Deploys restart the database.** Today a site deploy leaves the `-db` app
+alone. Co-located, every deploy stops and starts MariaDB with the site.
+
+**MariaDB no longer follows its own image's patch cadence.** The version is
+whatever the Alpine base carries — 11.8 today. The variant can be rebuilt and
+republished without cutting a Føhn release, so the fix is cheap, but somebody
+has to notice the CVE.
+
+### Sizing
+
+| Variable                   | Default | Role                 |
+| -------------------------- | ------- | -------------------- |
+| `MARIADB_BUFFER_POOL_SIZE` | `192M`  | InnoDB's buffer pool |
+
+192 MB is several times the size of the databases this is meant for, and it
+leaves the rest of a 1 GB machine to PHP. Measured on a 1 GB container serving
+3562 requests at 20 concurrency against an uncached WordPress front page: **208
+MiB peak for the whole container**, MariaDB included.
+
+The server listens on a unix socket and on no TCP port at all — Alpine's package
+sets `skip-networking`, and nothing turns it back on. `DB_HOST=localhost` finds
+it because the client library already looks there and `php/zz-embedded-db.ini`
+points PHP at the same path.
+
+### Which sites this is for
+
+Small ones: tens of megabytes, read-dominated, one machine. Larger projects stay
+on the plain image and point `DB_HOST` at an external database. The plain image
+is the default and the one that must never regress — no site should have to opt
+out of anything to keep working.
+
 ## Project configuration
 
 Anything in the project's `config/nginx/*.conf` is included in the `server`
@@ -240,8 +333,12 @@ Read from the same variables WordPress and `humanmade/s3-uploads` already read.
 
 ## Building it locally
 
+Two stages in one Dockerfile, so name the one you want. Docker builds the
+**last** stage when no target is given, and that is the variant.
+
 ```sh
-docker build -t foehn-wordpress docker/wordpress/
+docker build --target base -t foehn-wordpress docker/wordpress/
+docker build --target db   -t foehn-wordpress-db docker/wordpress/
 ```
 
 ## A note for anyone editing the entrypoints
