@@ -45,7 +45,7 @@ final readonly class PageCacheConfig
      *
      * @var list<string>
      */
-    public const RESERVED_QUERY_ARGS = ['sections'];
+    public const RESERVED_QUERY_ARGS = ['foehn_sections'];
 
     public function __construct(
         /** Master switch. Off by default: a cache nobody asked for is a bug. */

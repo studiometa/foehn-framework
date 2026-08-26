@@ -61,11 +61,13 @@ describe('SnippetPolicy', function () {
     });
 
     it('never lets generated server rules serve a section request', function () {
-        $config = new PageCacheConfig(ignoredQueryArgs: ['sections', 'utm_source'], cacheQueryArgs: ['sections']);
+        $config = new PageCacheConfig(ignoredQueryArgs: ['foehn_sections', 'utm_source'], cacheQueryArgs: [
+            'foehn_sections',
+        ]);
         $policy = new SnippetPolicy($config);
 
-        expect(preg_match('/' . $policy->ignorableQueryPattern() . '/', 'sections=results'))->toBe(0);
-        expect(preg_match('/' . $policy->knownQueryPattern() . '/', 'sections=results'))->toBe(0);
+        expect(preg_match('/' . $policy->ignorableQueryPattern() . '/', 'foehn_sections=results'))->toBe(0);
+        expect(preg_match('/' . $policy->knownQueryPattern() . '/', 'foehn_sections=results'))->toBe(0);
         expect($policy->canonicalQueryStatements())->toBe('');
     });
 

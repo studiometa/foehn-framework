@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Page-local HTML section rendering through `?foehn_sections=...`, with `foehn_section()` and `foehn_section_url()` Twig helpers, active Twig context, atomic multi-section responses, and lazy loading through `@studiometa/ui` `LazyInclude` ([#164])
+
+### Removed
+
+- The REST/JSON Render API, its configuration, hook, and `/wp-json/foehn/v1/render` route. Section rendering now uses normal page URLs and permanently reserves the namespaced `foehn_sections` query parameter ([#164])
+
+[#164]: https://github.com/studiometa/foehn-framework/pull/164
+
 ## [0.5.10] - 2026-08-26
 
 The first backup of a site's life finishes.

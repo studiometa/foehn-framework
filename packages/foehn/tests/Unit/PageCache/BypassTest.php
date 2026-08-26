@@ -62,7 +62,7 @@ describe('Bypass: the request', function () {
 
     it('refuses section selection before a cached page can be served or recorded', function () {
         expect(pageCacheBypass()->forRequest(pageCacheServer([
-            'REQUEST_URI' => '/blog/?sections=results',
+            'REQUEST_URI' => '/blog/?foehn_sections=results',
         ])))
             ->toBe(BypassReason::QueryString);
     });

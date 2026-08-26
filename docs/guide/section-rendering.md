@@ -1,6 +1,6 @@
 # Section Rendering
 
-Føhn can render declared parts of a normal page as HTML. Add `?sections=name` to a page URL to run the same WordPress query, template controller, page Twig template, and section context as a full-page request.
+Føhn can render declared parts of a normal page as HTML. Add `?foehn_sections=name` to a page URL to run the same WordPress query, template controller, page Twig template, and section context as a full-page request.
 
 There is no REST endpoint and no section configuration. A page declares the sections it owns in Twig.
 
@@ -36,7 +36,7 @@ A normal page request returns this boundary:
 </div>
 ```
 
-Names use lowercase letters, numbers, and single hyphens. A name must start and end with a letter or number and can contain at most 64 characters. Each name can be declared once on a page. Sections cannot be nested because only declarations in the page shell can be selected directly.
+Names use lowercase letters, numbers, and single hyphens. A name must start and end with a letter or number and can contain at most 64 characters. Each name should be declared once on a page. A normal page logs and skips a duplicate; a selected request rejects it because the context would be ambiguous. Sections cannot be nested because only declarations in the page shell can be selected directly.
 
 ## Context
 
@@ -55,13 +55,13 @@ On a selected request, Føhn first runs the normal controller and page template 
 Request one section with the normal page URL:
 
 ```text
-GET /projects/?type=web&sections=archive-results
+GET /projects/?type=web&foehn_sections=archive-results
 ```
 
 Request up to five sections with one comma-separated parameter:
 
 ```text
-GET /projects/?type=web&sections=filters,archive-results
+GET /projects/?type=web&foehn_sections=filters,archive-results
 ```
 
 The response is `text/html; charset=UTF-8`. Sections are concatenated in request order. Føhn supports `GET` and `HEAD`; a `HEAD` response has no body.
@@ -72,7 +72,7 @@ The base `Fetch` component can keep a link or form destination as the no-JavaScr
 <a
   href="/projects/?page=2"
   data-component="Fetch"
-  data-option-src="/projects/?page=2&sections=archive-results"
+  data-option-src="/projects/?page=2&foehn_sections=archive-results"
 >
   Next page
 </a>
@@ -85,7 +85,7 @@ For a `GET` form, Fetch keeps the fixed section selection from `data-option-src`
   action="/projects/"
   method="get"
   data-component="Fetch"
-  data-option-src="/projects/?sections=filters,archive-results"
+  data-option-src="/projects/?foehn_sections=filters,archive-results"
 >
   <!-- filters -->
 </form>
@@ -114,7 +114,7 @@ registerComponent(Fetch);
 
 `Fetch` reads the returned HTML and replaces the element whose `id` matches the response wrapper. No JSON parsing and no Datastar integration are required.
 
-The current `Fetch` history option records the fetched URL as-is. If you enable Fetch history, the browser history entry includes `?sections=...`. Do not enable it when the address must stay a normal full-page URL, or update history in application code after the fetch.
+The current `Fetch` history option records the fetched URL as-is. If you enable Fetch history, the browser history entry includes `?foehn_sections=...`. Do not enable it when the address must stay a normal full-page URL, or update history in application code after the fetch.
 
 ## Lazy sections
 
@@ -139,9 +139,9 @@ On a selected request, `lazy` is ignored and Føhn returns the real wrapped sect
 
 ## Query helpers and page cache
 
-`sections` is a control parameter. `query_get()`, `query_has()`, `query_all()`, and `query_hidden_inputs()` hide it. Query URL helpers also remove it when they create normal page URLs.
+`foehn_sections` is a control parameter. `query_get()`, `query_has()`, `query_all()`, and `query_hidden_inputs()` hide it. Query URL helpers also remove it when they create normal page URLs.
 
-Section requests always return `Cache-Control: private, no-store` and bypass the Føhn full-page cache. This applies to the PHP writer, the early `advanced-cache.php` reader, and generated nginx and Apache rules. A project cannot add `sections` to ignored or cache-key query arguments.
+Section requests always return `Cache-Control: private, no-store` and bypass the Føhn full-page cache. This applies to the PHP writer, the early `advanced-cache.php` reader, and generated nginx and Apache rules. A project cannot add `foehn_sections` to ignored or cache-key query arguments.
 
 ## Limits and errors
 

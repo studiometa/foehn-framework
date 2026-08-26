@@ -68,23 +68,23 @@ final class SectionTestViewEngine implements ViewEngineInterface
 
 describe('SectionRequest', function () {
     it('does not select sections when the control parameter is absent', function () {
-        $request = new SectionRequest('GET', '/archive?type=news');
+        $request = new SectionRequest('GET', '/archive?type=news&sections=features');
 
         expect($request->isSelected())->toBeFalse()->and($request->names())->toBe([]);
     });
 
     it('accepts one or many safe names in requested order', function () {
-        expect(new SectionRequest('GET', '/archive?sections=results')->names())->toBe(['results']);
-        expect(new SectionRequest('GET', '/archive?sections=filters,results')->names())->toBe([
+        expect(new SectionRequest('GET', '/archive?foehn_sections=results')->names())->toBe(['results']);
+        expect(new SectionRequest('GET', '/archive?foehn_sections=filters,results')->names())->toBe([
             'filters',
             'results',
         ]);
     });
 
     it('accepts GET and HEAD only', function () {
-        expect(new SectionRequest('HEAD', '/?sections=results')->isValid())->toBeTrue();
+        expect(new SectionRequest('HEAD', '/?foehn_sections=results')->isValid())->toBeTrue();
 
-        $request = new SectionRequest('POST', '/?sections=results');
+        $request = new SectionRequest('POST', '/?foehn_sections=results');
 
         expect($request->isValid())->toBeFalse()->and($request->errorStatus())->toBe(405);
     });
@@ -99,12 +99,12 @@ describe('SectionRequest', function () {
             ->and($request->errorStatus())
             ->toBe(400);
     })->with([
-        ['/?sections='],
-        ['/?sections=../secret'],
-        ['/?sections=Hero'],
-        ['/?sections=one,one'],
-        ['/?sections=one&sections=two'],
-        ['/?sections=one,two,three,four,five,six'],
+        ['/?foehn_sections='],
+        ['/?foehn_sections=../secret'],
+        ['/?foehn_sections=Hero'],
+        ['/?foehn_sections=one,one'],
+        ['/?foehn_sections=one&foehn_sections=two'],
+        ['/?foehn_sections=one,two,three,four,five,six'],
     ]);
 });
 
@@ -144,17 +144,18 @@ describe('SectionRenderer', function () {
             ->toThrow(\Studiometa\Foehn\Views\Sections\SectionNotFoundException::class);
     });
 
-    it('rejects duplicate page declarations because their wrapper IDs would collide', function () {
+    it('reports duplicate page declarations without replacing their first context', function () {
         $collector = new SectionCollector();
-        $collector->declare('results', []);
 
-        expect(fn() => $collector->declare('results', []))->toThrow(LogicException::class);
+        expect($collector->declare('results', ['page' => 1]))->toBeTrue();
+        expect($collector->declare('results', ['page' => 2]))->toBeFalse();
+        expect($collector->context('results'))->toBe(['page' => 1]);
     });
 });
 
 describe('SectionExtension', function () {
     beforeEach(function () {
-        $_SERVER['REQUEST_URI'] = '/archive?type=project&sections=old&utm_source=test';
+        $_SERVER['REQUEST_URI'] = '/archive?type=project&foehn_sections=old&utm_source=test';
         $this->view = new SectionTestViewEngine();
         $this->collector = new SectionCollector();
     });
@@ -194,7 +195,7 @@ describe('SectionExtension', function () {
 
     it('collects selected declarations without rendering them', function () {
         $extension = new SectionExtension(
-            new SectionRequest('GET', '/archive?sections=results'),
+            new SectionRequest('GET', '/archive?foehn_sections=results'),
             $this->collector,
             new SectionRenderer($this->view),
         );
@@ -217,7 +218,7 @@ describe('SectionExtension', function () {
 
         expect($html)
             ->toContain('data-component="LazyInclude"')
-            ->toContain('data-option-src="/archive?type=project&amp;utm_source=test&amp;sections=results"')
+            ->toContain('data-option-src="/archive?type=project&amp;utm_source=test&amp;foehn_sections=results"')
             ->toContain('data-ref="loading"')
             ->toContain('data-ref="error" hidden')
             ->not->toContain('foehn-section-results');
@@ -231,7 +232,44 @@ describe('SectionExtension', function () {
             new SectionRenderer($this->view),
         );
 
-        expect($extension->url('results'))->toBe('/archive?type=project&utm_source=test&sections=results');
+        expect($extension->url('results'))->toBe('/archive?type=project&utm_source=test&foehn_sections=results');
+    });
+
+    it('keeps generated URLs on the current origin for protocol-relative request targets', function () {
+        $_SERVER['REQUEST_URI'] = '//evil.example/projects/?type=web';
+        $extension = new SectionExtension(
+            new SectionRequest('GET', '/archive'),
+            $this->collector,
+            new SectionRenderer($this->view),
+        );
+
+        expect($extension->url('results'))
+            ->toBe('/evil.example/projects/?type=web&foehn_sections=results')
+            ->not->toStartWith('//');
+    });
+
+    it('skips duplicate declarations on normal pages instead of failing the page', function () {
+        $extension = new SectionExtension(
+            new SectionRequest('GET', '/archive'),
+            $this->collector,
+            new SectionRenderer($this->view),
+        );
+
+        expect($extension->section([], 'results'))->toContain('foehn-section-results');
+        expect($extension->section([], 'results'))->toBe('');
+        expect($this->view->renders)->toHaveCount(1);
+    });
+
+    it('rejects duplicate declarations during a selected request', function () {
+        $extension = new SectionExtension(
+            new SectionRequest('GET', '/archive?foehn_sections=results'),
+            $this->collector,
+            new SectionRenderer($this->view),
+        );
+
+        expect($extension->section([], 'results'))->toBe('');
+        expect(fn() => $extension->section([], 'results'))
+            ->toThrow(LogicException::class, "Section 'results' is declared more than once on this page.");
     });
 
     it('rejects names that cannot map safely to a section template', function () {
@@ -264,7 +302,7 @@ describe('TemplateControllerDiscovery section responses', function () {
         wp_stub_reset();
         $GLOBALS['wp_stub_template'] = 'index';
         $container = bootTestContainer();
-        $request = new SectionRequest('GET', '/?sections=results');
+        $request = new SectionRequest('GET', '/?foehn_sections=results');
         $collector = new SectionCollector();
         $view = new SectionTestViewEngine();
         $renderer = new SectionRenderer($view);
@@ -300,7 +338,7 @@ describe('TemplateControllerDiscovery section responses', function () {
         wp_stub_reset();
         $GLOBALS['wp_stub_template'] = 'index';
         $container = bootTestContainer();
-        $request = new SectionRequest('GET', '/?sections=results,filters');
+        $request = new SectionRequest('GET', '/?foehn_sections=results,filters');
         $collector = new SectionCollector();
         $view = new SectionTestViewEngine();
         $view->results['sections/results'] = '<p>Partial result</p>';
@@ -336,7 +374,7 @@ describe('TemplateControllerDiscovery section responses', function () {
         wp_stub_reset();
         $GLOBALS['wp_stub_template'] = 'index';
         $container = bootTestContainer();
-        $request = new SectionRequest('GET', '/?sections=missing');
+        $request = new SectionRequest('GET', '/?foehn_sections=missing');
         $collector = new SectionCollector();
         $view = new SectionTestViewEngine();
         $renderer = new SectionRenderer($view);
@@ -366,7 +404,7 @@ describe('TemplateControllerDiscovery section responses', function () {
 
     it('returns an HTML error before controller lookup for an invalid request', function () {
         $discovery = new TemplateControllerDiscovery(
-            new SectionRequest('GET', '/?sections=../secret'),
+            new SectionRequest('GET', '/?foehn_sections=../secret'),
             new SectionCollector(),
         );
 
@@ -381,7 +419,7 @@ describe('TemplateControllerDiscovery section responses', function () {
 
     it('returns 404 when no normal page controller matches', function () {
         $discovery = new TemplateControllerDiscovery(
-            new SectionRequest('GET', '/?sections=results'),
+            new SectionRequest('GET', '/?foehn_sections=results'),
             new SectionCollector(),
         );
 
@@ -396,7 +434,7 @@ describe('TemplateControllerDiscovery section responses', function () {
 
     it('never emits a body for HEAD errors', function () {
         $discovery = new TemplateControllerDiscovery(
-            new SectionRequest('HEAD', '/?sections=results'),
+            new SectionRequest('HEAD', '/?foehn_sections=results'),
             new SectionCollector(),
         );
 

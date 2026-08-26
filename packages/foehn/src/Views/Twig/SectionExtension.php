@@ -56,15 +56,17 @@ final class SectionExtension extends AbstractExtension
         $context = array_merge($activeContext, $context);
 
         if ($this->request->isSelected() && !$this->renderer->isRenderingSelected()) {
-            if (in_array($name, $this->request->names(), true)) {
-                $this->collector->declare($name, $context);
+            if (in_array($name, $this->request->names(), true) && !$this->collector->declare($name, $context)) {
+                throw new \LogicException("Section '{$name}' is declared more than once on this page.");
             }
 
             return '';
         }
 
-        if (!$this->request->isSelected()) {
-            $this->collector->declare($name, $context);
+        if (!$this->request->isSelected() && !$this->collector->declare($name, $context)) {
+            error_log("[foehn] section '{$name}' is declared more than once; skipping the duplicate.");
+
+            return '';
         }
 
         if ($lazy && !$this->request->isSelected()) {
@@ -81,12 +83,14 @@ final class SectionExtension extends AbstractExtension
         $uri = $_SERVER['REQUEST_URI'] ?? '/';
         [$uri, $fragment] = array_pad(explode('#', $uri, 2), 2, '');
         [$path, $query] = array_pad(explode('?', $uri, 2), 2, '');
+        $path = preg_replace('/[\x00-\x1F\x7F]/', '', str_replace('\\', '/', $path)) ?? '';
+        $path = '/' . ltrim($path, '/');
         $pairs = array_values(array_filter(
             explode('&', $query),
             static fn(string $pair): bool => $pair !== '' && explode('=', $pair, 2)[0] !== SectionRequest::PARAMETER,
         ));
         $pairs[] = SectionRequest::PARAMETER . '=' . rawurlencode($name);
-        $url = ($path !== '' ? $path : '/') . '?' . implode('&', $pairs);
+        $url = $path . '?' . implode('&', $pairs);
 
         return $fragment !== '' ? $url . '#' . $fragment : $url;
     }

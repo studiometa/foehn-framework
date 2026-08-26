@@ -12,7 +12,7 @@ namespace Studiometa\Foehn\Views\Sections;
  */
 final readonly class SectionRequest
 {
-    public const PARAMETER = 'sections';
+    public const PARAMETER = 'foehn_sections';
 
     public const MAX_SECTIONS = 5;
 
@@ -102,7 +102,7 @@ final readonly class SectionRequest
     }
 
     /**
-     * Return every raw value of an exact `sections` parameter.
+     * Return every raw value of the exact section control parameter.
      *
      * @return list<string>
      */

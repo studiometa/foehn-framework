@@ -25,10 +25,10 @@ beforeEach(function () {
 
 describe('reserved controls', function () {
     it('always bypasses section requests, even when project config tries to cache them', function () {
-        $config = new PageCacheConfig(ignoredQueryArgs: ['sections'], cacheQueryArgs: ['sections']);
+        $config = new PageCacheConfig(ignoredQueryArgs: ['foehn_sections'], cacheQueryArgs: ['foehn_sections']);
 
-        expect(QueryKey::canonical('sections=results', $config))->toBeNull();
-        expect(QueryKey::canonical('utm_source=test&sections=results', $config))->toBeNull();
+        expect(QueryKey::canonical('foehn_sections=results', $config))->toBeNull();
+        expect(QueryKey::canonical('utm_source=test&foehn_sections=results', $config))->toBeNull();
     });
 });
 

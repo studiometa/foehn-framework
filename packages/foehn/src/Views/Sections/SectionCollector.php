@@ -13,13 +13,15 @@ final class SectionCollector
     private array $declarations = [];
 
     /** @param array<string, mixed> $context */
-    public function declare(string $name, array $context): void
+    public function declare(string $name, array $context): bool
     {
         if ($this->has($name)) {
-            throw new \LogicException("Section '{$name}' is declared more than once on this page.");
+            return false;
         }
 
         $this->declarations[$name] = $context;
+
+        return true;
     }
 
     public function has(string $name): bool

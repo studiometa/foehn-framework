@@ -40,13 +40,13 @@ describe('PageCacheConfig', function () {
     });
 
     it('reserves section selection from ignored and keyed query configuration', function () {
-        $config = new PageCacheConfig(ignoredQueryArgs: ['sections', 'utm_source'], cacheQueryArgs: [
-            'sections',
+        $config = new PageCacheConfig(ignoredQueryArgs: ['foehn_sections', 'utm_source'], cacheQueryArgs: [
+            'foehn_sections',
             'page',
         ]);
 
         expect($config->getIgnoredQueryArgs())->toBe(['utm_source']);
-        expect($config->getCacheQueryArgs())->toHaveKeys(['page'])->not->toHaveKey('sections');
+        expect($config->getCacheQueryArgs())->toHaveKeys(['page'])->not->toHaveKey('foehn_sections');
     });
 
     it('reads the environment off WordPress', function () {
