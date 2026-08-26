@@ -309,6 +309,32 @@ jobs:
           echo "And it initialised once, on the first boot only"
           test "$(docker logs variant 2>&1 | grep -c 'empty data directory, initialising')" = "1"
 
+          # A mounted volume does not keep the ownership the image gave it. Fly
+          # applies "uid: 0, gid: 0 and chmod 0755" to the mount point on every
+          # boot, so a data directory `mariadb-install-db` handed to `mysql` is
+          # root's again by the next start — and the server, whose files inside
+          # are still readable, dies on the first one it has to create:
+          #
+          #   [ERROR] mariadbd: Can't create/write to file './ddl_recovery.log'
+          #
+          # The first boot always works, so this only ever appears on a restart,
+          # once the volume holds data worth keeping. A docker volume inherits
+          # the image's ownership and never reproduces it, which is why this
+          # reached a real machine before it was caught. Reproduced here on
+          # purpose.
+          echo "It survives a volume whose mount point the platform re-owns to root"
+          docker stop -t 40 variant
+          docker run --rm -v ci-dbdata:/mnt alpine sh -c 'chown root:root /mnt && chmod 0755 /mnt'
+          docker start variant
+
+          for _ in $(seq 1 60); do
+            if ready; then break; fi
+            sleep 2
+          done
+
+          test "$(docker exec variant mariadb --no-defaults -u wp -psecret -N -B -e 'SELECT id FROM persisted' wordpress)" = "42"
+          test "$(docker exec variant stat -c '%U' /var/lib/mysql)" = "mysql"
+
           docker rm -f variant
           docker volume rm ci-dbdata
 
