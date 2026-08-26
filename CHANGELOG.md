@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.8] - 2026-08-26
+
+A site can back its database up, and can carry it.
+
+### Added
+
+- Scheduled database backups: a `mariadb-dump` streamed into a [Restic](https://restic.net) repository on S3-compatible storage, with grandfather-father-son retention, a weekly prune and a weekly restore drill. Off unless a site sets `BACKUP_ENABLED=true`, and reached through the `DB_*` secrets a site already defines, so it works against an external database and keeps working unchanged when the database moves into the container ([#158])
+
+  One dump stream, not one per tier: a snapshot at midnight on the first of the month is the hourly, daily, weekly and monthly backup at once, and `restic forget` decides which tiers each satisfies afterwards. Verified against a spread of 94 snapshots — the policy keeps exactly 12 hourly, 7 daily, 8 weekly and 12 monthly.
+
+  The dump is handed to Restic with `--stdin-from-command` and never piped into it. A pipeline takes its exit status from the last command, so a dump that dies halfway is stored as a valid snapshot and found during a restore; measured both ways, the pipeline stores the truncated file and exits 0 while this stores nothing and exits 1.
+
+  A weekly restore drill comes with it, because every failure mode here is silent and `restic check` cannot see any of them — it verifies the repository holds what it claims, not that what it holds is a database. `BACKUP_VERIFY_ENABLED=false` opts out; switch it off last.
+
+- A `-db` image variant, `ghcr.io/studiometa/foehn-wordpress:<version>-db`, that runs MariaDB in the site container — so a small site is one app instead of an `<app>`/`<app>-db` pair ([#159])
+
+  A tag and not a runtime flag: the server is 187 MB installed, which in the base image would be charged to every site including the ones that will never start a database, and a flag puts a topology decision somewhere it can be set wrong. Both tags are built and checked by the same workflow run before either is pushed, so they cannot ship from different commits.
+
+  The variant creates the database and user from the same `DB_*` secrets and points `DB_HOST` at its own socket, so moving a site is one line in its Dockerfile. Rehearsed on a real site: 31 tables restored with production's row counts, the page cache still served by nginx, and 277 MB peak for the whole container under 6368 requests forced through PHP and MariaDB. It needs a volume, `kill_timeout = "30s"` so InnoDB shuts down cleanly, and a health-check `grace_period`.
+
+  Small sites only — tens of megabytes, read-dominated, one machine. Larger projects stay on the plain image, which is the default and unchanged: no `mariadbd` binary, no extra process, nothing to opt out of.
+
+### Fixed
+
+- `wp db` works. `mariadb-client` was missing from the runtime image, so every `wp db` subcommand failed with `env: can't execute 'mysql'` — WP-CLI shells out to the legacy `mysql` and `mysqldump` names. Confirmed against the published 0.5.7 and against this release ([#158])
+
+[#158]: https://github.com/studiometa/foehn-framework/pull/158
+[#159]: https://github.com/studiometa/foehn-framework/pull/159
+[0.5.8]: https://github.com/studiometa/foehn-framework/releases/tag/0.5.8
+
 ## [0.5.7] - 2026-08-25
 
 The page cache installs itself.
