@@ -77,6 +77,28 @@ foehn_mariadb() {
     mkdir -p "$(dirname "$socket")"
     chown mysql:mysql "$(dirname "$socket")"
 
+    # Every boot, not only the first. A mounted volume arrives owned by the
+    # platform's choice rather than the image's: Fly logs "Mounting /dev/vdc at
+    # /var/lib/mysql w/ uid: 0, gid: 0 and chmod 0755" and applies that on every
+    # single boot, so a directory `mariadb-install-db` handed to `mysql` is
+    # root's again by the next start.
+    #
+    # It fails in a way that hides the cause. The files inside keep their
+    # ownership, so the server reads the whole dataset perfectly and dies on the
+    # first file it has to *create*:
+    #
+    #     [ERROR] mariadbd: Can't create/write to file './ddl_recovery.log'
+    #             (Errcode: 13 "Permission denied")
+    #
+    # which reads like a corrupt database and is a directory mode. The first
+    # boot works — `mariadb-install-db` chowns as it goes — so this only appears
+    # on the first restart, once there is data to lose.
+    #
+    # The mount point only, not `-R`: the platform resets the directory, not its
+    # contents, and walking the whole data directory on every boot would cost
+    # real time on a large one for nothing.
+    chown mysql:mysql "$datadir"
+
     # `mysql/` inside the data directory, not the directory itself: a Fly volume
     # arrives mounted and empty but very much existing, and `lost+found` can be
     # in it. The system tables are the thing whose absence means "never
