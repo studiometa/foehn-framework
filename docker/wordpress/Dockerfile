@@ -81,7 +81,8 @@ COPY bin/ /opt/docker/bin/
 RUN chmod +x /opt/docker/provision/entrypoint.d/*.sh \
     && chmod +x /opt/docker/bin/foehn-backup \
         /opt/docker/bin/foehn-backup-maintenance \
-        /opt/docker/bin/foehn-backup-verify
+        /opt/docker/bin/foehn-backup-verify \
+        /opt/docker/bin/foehn-cron
 
 # The web root is `web/`, not the repository root: `index.php` and
 # `wp-config.php` live there, while `vendor/` and `config/` stay out of reach.
