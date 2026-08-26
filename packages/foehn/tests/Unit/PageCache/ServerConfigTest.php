@@ -60,6 +60,15 @@ describe('SnippetPolicy', function () {
         expect(preg_match('/' . $pattern . '/', 'utm_sourcex=a'))->toBe(0);
     });
 
+    it('never lets generated server rules serve a section request', function () {
+        $config = new PageCacheConfig(ignoredQueryArgs: ['sections', 'utm_source'], cacheQueryArgs: ['sections']);
+        $policy = new SnippetPolicy($config);
+
+        expect(preg_match('/' . $policy->ignorableQueryPattern() . '/', 'sections=results'))->toBe(0);
+        expect(preg_match('/' . $policy->knownQueryPattern() . '/', 'sections=results'))->toBe(0);
+        expect($policy->canonicalQueryStatements())->toBe('');
+    });
+
     it('ignores nothing but an absent query string when the project ignores no args', function () {
         $pattern = new SnippetPolicy(new PageCacheConfig(ignoredQueryArgs: []))->ignorableQueryPattern();
 

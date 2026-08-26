@@ -1,0 +1,110 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Studiometa\Foehn\Views\Twig;
+
+use InvalidArgumentException;
+use Studiometa\Foehn\Attributes\AsTwigExtension;
+use Studiometa\Foehn\Views\Sections\SectionCollector;
+use Studiometa\Foehn\Views\Sections\SectionRenderer;
+use Studiometa\Foehn\Views\Sections\SectionRequest;
+use Twig\Extension\AbstractExtension;
+use Twig\TwigFunction;
+
+/**
+ * Declares page-local HTML sections and creates URLs that select them.
+ */
+#[AsTwigExtension]
+final class SectionExtension extends AbstractExtension
+{
+    public function __construct(
+        private readonly SectionRequest $request,
+        private readonly SectionCollector $collector,
+        private readonly SectionRenderer $renderer,
+    ) {}
+
+    public function getName(): string
+    {
+        return 'foehn_section';
+    }
+
+    /** @return list<TwigFunction> */
+    public function getFunctions(): array
+    {
+        return [
+            new TwigFunction('foehn_section', $this->section(...), [
+                'needs_context' => true,
+                'is_safe' => ['html'],
+            ]),
+            new TwigFunction('foehn_section_url', $this->url(...)),
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $activeContext
+     * @param array<string, mixed> $context
+     */
+    public function section(array $activeContext, string $name, array $context = [], bool $lazy = false): string
+    {
+        $this->assertSafeName($name);
+
+        if ($this->renderer->isRendering()) {
+            throw new \LogicException('Sections cannot be nested.');
+        }
+
+        $context = array_merge($activeContext, $context);
+
+        if ($this->request->isSelected() && !$this->renderer->isRenderingSelected()) {
+            if (in_array($name, $this->request->names(), true)) {
+                $this->collector->declare($name, $context);
+            }
+
+            return '';
+        }
+
+        if (!$this->request->isSelected()) {
+            $this->collector->declare($name, $context);
+        }
+
+        if ($lazy && !$this->request->isSelected()) {
+            return $this->lazyPlaceholder($name);
+        }
+
+        return $this->renderer->render($name, $context);
+    }
+
+    public function url(string $name): string
+    {
+        $this->assertSafeName($name);
+
+        $uri = $_SERVER['REQUEST_URI'] ?? '/';
+        [$uri, $fragment] = array_pad(explode('#', $uri, 2), 2, '');
+        [$path, $query] = array_pad(explode('?', $uri, 2), 2, '');
+        $pairs = array_values(array_filter(
+            explode('&', $query),
+            static fn(string $pair): bool => $pair !== '' && explode('=', $pair, 2)[0] !== SectionRequest::PARAMETER,
+        ));
+        $pairs[] = SectionRequest::PARAMETER . '=' . rawurlencode($name);
+        $url = ($path !== '' ? $path : '/') . '?' . implode('&', $pairs);
+
+        return $fragment !== '' ? $url . '#' . $fragment : $url;
+    }
+
+    private function assertSafeName(string $name): void
+    {
+        if (!SectionRequest::isSafeName($name)) {
+            throw new InvalidArgumentException('Invalid section name.');
+        }
+    }
+
+    private function lazyPlaceholder(string $name): string
+    {
+        $url = htmlspecialchars($this->url($name), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+
+        return sprintf(
+            '<div data-component="LazyInclude" data-option-src="%s"><span data-ref="loading">Loading…</span><span data-ref="error" hidden>Unable to load this section.</span></div>',
+            $url,
+        );
+    }
+}

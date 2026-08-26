@@ -39,6 +39,16 @@ describe('PageCacheConfig', function () {
             ->toContain('mc_cid');
     });
 
+    it('reserves section selection from ignored and keyed query configuration', function () {
+        $config = new PageCacheConfig(ignoredQueryArgs: ['sections', 'utm_source'], cacheQueryArgs: [
+            'sections',
+            'page',
+        ]);
+
+        expect($config->getIgnoredQueryArgs())->toBe(['utm_source']);
+        expect($config->getCacheQueryArgs())->toHaveKeys(['page'])->not->toHaveKey('sections');
+    });
+
     it('reads the environment off WordPress', function () {
         $GLOBALS['wp_stub_environment_type'] = 'staging';
 

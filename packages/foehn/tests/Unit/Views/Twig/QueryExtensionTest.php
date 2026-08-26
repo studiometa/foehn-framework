@@ -142,6 +142,15 @@ describe('QueryExtension', function () {
         it('returns empty array when no parameters', function () {
             expect($this->extension->all())->toBe([]);
         });
+
+        it('hides the sections control parameter from every read helper', function () {
+            $_GET = ['sections' => 'results', 'category' => 'news'];
+
+            expect($this->extension->get('sections'))->toBeNull();
+            expect($this->extension->has('sections'))->toBeFalse();
+            expect($this->extension->all())->toBe(['category' => 'news']);
+            expect($this->extension->hiddenInputs())->not->toContain('sections');
+        });
     });
 
     describe('url', function () {
@@ -161,6 +170,17 @@ describe('QueryExtension', function () {
 
             expect($result)->toContain('category=news');
             expect($result)->toContain('page=2');
+        });
+
+        it('strips section selection from generated normal URLs', function () {
+            $_SERVER['REQUEST_URI'] = '/blog?sections=results&category=news';
+
+            expect($this->extension->url(['page' => 2]))
+                ->not
+                ->toContain('sections')
+                ->toContain('category=news')
+                ->toContain('page=2');
+            expect($this->extension->url(['sections' => 'filters']))->not->toContain('sections');
         });
     });
 

@@ -2,14 +2,13 @@
 
 declare(strict_types=1);
 
-use Studiometa\Foehn\Discovery\TemplateControllerDiscovery;
 use Tests\Fixtures\TemplateControllerFixture;
 
 beforeEach(function () {
     $this->location = testDiscoveryLocation();
     wp_stub_reset();
     bootTestContainer();
-    $this->discovery = new TemplateControllerDiscovery();
+    $this->discovery = testTemplateControllerDiscovery();
 });
 
 afterEach(fn() => tearDownTestContainer());

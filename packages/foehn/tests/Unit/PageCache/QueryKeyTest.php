@@ -23,6 +23,15 @@ beforeEach(function () {
     ], ignoredQueryArgs: ['utm_source', 'gclid']);
 });
 
+describe('reserved controls', function () {
+    it('always bypasses section requests, even when project config tries to cache them', function () {
+        $config = new PageCacheConfig(ignoredQueryArgs: ['sections'], cacheQueryArgs: ['sections']);
+
+        expect(QueryKey::canonical('sections=results', $config))->toBeNull();
+        expect(QueryKey::canonical('utm_source=test&sections=results', $config))->toBeNull();
+    });
+});
+
 describe('canonical order', function () {
     it('gives one answer whatever order the args arrive in', function (string $query) {
         // The property the whole feature was asked for. ?page=2&lang=fr and

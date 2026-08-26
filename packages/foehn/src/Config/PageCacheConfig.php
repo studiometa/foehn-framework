@@ -37,6 +37,16 @@ final readonly class PageCacheConfig
      */
     public const DEFAULT_QUERY_ARG_PATTERN = '^[A-Za-z0-9_.\-]{1,64}$';
 
+    /**
+     * Control parameters that always bypass full-page caching.
+     *
+     * Projects cannot ignore or key these names. The PHP readers and generated server
+     * rules all use the normalized getters below, so the reservation has one source.
+     *
+     * @var list<string>
+     */
+    public const RESERVED_QUERY_ARGS = ['sections'];
+
     public function __construct(
         /** Master switch. Off by default: a cache nobody asked for is a bug. */
         public bool $enabled = false,
@@ -158,6 +168,10 @@ final readonly class PageCacheConfig
             $name = is_int($key) ? $value : $key;
             $pattern = is_int($key) ? self::DEFAULT_QUERY_ARG_PATTERN : $value;
 
+            if (in_array($name, self::RESERVED_QUERY_ARGS, true)) {
+                continue;
+            }
+
             if (preg_match('/^[A-Za-z0-9_-]{1,32}$/', $name) !== 1) {
                 continue;
             }
@@ -213,7 +227,9 @@ final readonly class PageCacheConfig
 
         return array_values(array_filter(
             $this->ignoredQueryArgs,
-            static fn(string $name): bool => !array_key_exists($name, $keyed),
+            static fn(string $name): bool => (
+                !in_array($name, self::RESERVED_QUERY_ARGS, true) && !array_key_exists($name, $keyed)
+            ),
         ));
     }
 

@@ -89,10 +89,10 @@ $results->true('the container resolves it', Kernel::get(ImageTransformer::class)
 $twig = new Timber\Loader()->get_twig();
 
 // Registered by the framework's own #[AsTwigExtension] classes, which live in
-// vendor/ and were never scanned. Every template here uses html_attributes.
+// vendor/ and were never scanned. The templates use both toolkit and section helpers.
 $results->containsAll(
     'framework Twig functions are registered',
-    ['html_attributes', 'html_classes', 'html_styles'],
+    ['html_attributes', 'html_classes', 'html_styles', 'foehn_section', 'foehn_section_url'],
     array_map(static fn(Twig\TwigFunction $function): string => $function->getName(), $twig->getFunctions()),
 );
 

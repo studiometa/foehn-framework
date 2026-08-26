@@ -2,14 +2,13 @@
 
 declare(strict_types=1);
 
-use Studiometa\Foehn\Discovery\TemplateControllerDiscovery;
 use Tests\Fixtures\InvalidTemplateControllerFixture;
 use Tests\Fixtures\NoAttributeFixture;
 use Tests\Fixtures\TemplateControllerFixture;
 
 beforeEach(function () {
     $this->location = testDiscoveryLocation();
-    $this->discovery = new TemplateControllerDiscovery();
+    $this->discovery = testTemplateControllerDiscovery();
 });
 
 describe('TemplateControllerDiscovery', function () {

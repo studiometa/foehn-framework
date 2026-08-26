@@ -35,6 +35,17 @@ function tearDownTestContainer(): void
 }
 
 /**
+ * A template controller discovery with inert section services.
+ */
+function testTemplateControllerDiscovery(): \Studiometa\Foehn\Discovery\TemplateControllerDiscovery
+{
+    return new \Studiometa\Foehn\Discovery\TemplateControllerDiscovery(
+        new \Studiometa\Foehn\Views\Sections\SectionRequest('GET', '/'),
+        new \Studiometa\Foehn\Views\Sections\SectionCollector(),
+    );
+}
+
+/**
  * A discovery location pointing at a real directory.
  *
  * Tempest's DiscoveryLocation resolves its path with realpath(), so a made-up path

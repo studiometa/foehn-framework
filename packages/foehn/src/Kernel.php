@@ -11,7 +11,6 @@ use Studiometa\Foehn\Cache\TransientCache;
 use Studiometa\Foehn\Config\ConfigLoader;
 use Studiometa\Foehn\Config\FoehnConfig;
 use Studiometa\Foehn\Config\PageCacheConfig;
-use Studiometa\Foehn\Config\RenderApiConfig;
 use Studiometa\Foehn\Config\RestConfig;
 use Studiometa\Foehn\Config\TimberConfig;
 use Studiometa\Foehn\Console\ClassFileGenerator;
@@ -28,8 +27,10 @@ use Studiometa\Foehn\PageCache\Bypass;
 use Studiometa\Foehn\PageCache\Purger;
 use Studiometa\Foehn\PageCache\Recorder;
 use Studiometa\Foehn\PageCache\Store;
-use Studiometa\Foehn\Rest\RenderApi;
 use Studiometa\Foehn\Views\ContextProviderRegistry;
+use Studiometa\Foehn\Views\Sections\SectionCollector;
+use Studiometa\Foehn\Views\Sections\SectionRenderer;
+use Studiometa\Foehn\Views\Sections\SectionRequest;
 use Studiometa\Foehn\Views\TimberViewEngine;
 use Symfony\Component\Cache\Adapter\PhpFilesAdapter;
 use Tempest\Container\Container;
@@ -227,7 +228,6 @@ final class Kernel
         // replaces it wholesale, which is why the array is the legacy way in.
         $this->container->config(new TimberConfig());
         $this->container->config(new RestConfig());
-        $this->container->config(new RenderApiConfig());
         $this->container->config(new PageCacheConfig());
         $this->container->config($this->config !== [] ? FoehnConfig::fromArray($this->config) : new FoehnConfig());
 
@@ -311,12 +311,14 @@ final class Kernel
             fn() => new TimberViewEngine($this->container->get(ContextProviderRegistry::class)),
         );
 
+        // SectionRequest and SectionCollector are request-scoped by the PHP process.
+        // Explicit singleton bindings make the template controller and Twig extension
+        // share the same selection and declarations.
+        $this->container->singleton(SectionRequest::class, static fn() => new SectionRequest());
+        $this->container->singleton(SectionCollector::class, static fn() => new SectionCollector());
         $this->container->singleton(
-            RenderApi::class,
-            fn() => new RenderApi(
-                $this->container->get(ViewEngineInterface::class),
-                $this->container->get(RenderApiConfig::class),
-            ),
+            SectionRenderer::class,
+            fn() => new SectionRenderer($this->container->get(ViewEngineInterface::class)),
         );
 
         // Registered whether or not the cache is on, because `wp foehn cache:clear`

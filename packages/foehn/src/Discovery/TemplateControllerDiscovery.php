@@ -9,6 +9,10 @@ use Studiometa\Foehn\Attributes\AsDiscovery;
 use Studiometa\Foehn\Attributes\AsTemplateController;
 use Studiometa\Foehn\Contracts\TemplateControllerInterface;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
+use Studiometa\Foehn\Views\Sections\SectionCollector;
+use Studiometa\Foehn\Views\Sections\SectionNotFoundException;
+use Studiometa\Foehn\Views\Sections\SectionRenderer;
+use Studiometa\Foehn\Views\Sections\SectionRequest;
 use Studiometa\Foehn\Views\TemplateContext;
 use Tempest\Discovery\Discovery;
 use Tempest\Discovery\DiscoveryLocation;
@@ -35,6 +39,11 @@ final class TemplateControllerDiscovery implements Discovery
      * @var array<string, array{className: class-string, priority: int}>
      */
     private array $wildcardControllers = [];
+
+    public function __construct(
+        private readonly SectionRequest $sectionRequest,
+        private readonly SectionCollector $sectionCollector,
+    ) {}
 
     /**
      * Discover template controller attributes on classes.
@@ -115,20 +124,28 @@ final class TemplateControllerDiscovery implements Discovery
      */
     public function handleTemplateInclude(string $template): string
     {
+        if ($this->sectionRequest->isSelected() && !$this->sectionRequest->isValid()) {
+            return $this->emitSectionError($this->sectionRequest->errorStatus());
+        }
+
         $templateType = $this->getTemplateType();
 
         if ($templateType === null) {
-            return $template;
+            return $this->sectionRequest->isSelected() ? $this->emitSectionError(404) : $template;
         }
 
         $controller = $this->findController($templateType);
 
         if ($controller === null) {
-            return $template;
+            return $this->sectionRequest->isSelected() ? $this->emitSectionError(404) : $template;
         }
 
         /** @var TemplateControllerInterface $instance */
         $instance = get($controller['className']);
+
+        if ($this->sectionRequest->isSelected()) {
+            return $this->handleSectionRequest($instance);
+        }
 
         $context = TemplateContext::fromTimberContext(Timber::context());
         $result = $instance->handle($context);
@@ -142,6 +159,88 @@ final class TemplateControllerDiscovery implements Discovery
 
         // Return empty string to prevent WordPress from including the template
         return '';
+    }
+
+    /**
+     * Run the normal controller and page template, then emit only its selected sections.
+     */
+    private function handleSectionRequest(TemplateControllerInterface $controller): string
+    {
+        $bufferLevel = ob_get_level();
+        ob_start();
+
+        try {
+            $context = TemplateContext::fromTimberContext(Timber::context());
+            $page = $controller->handle($context);
+
+            if ($page === null) {
+                $this->discardBuffersSince($bufferLevel);
+
+                return $this->emitSectionError(404);
+            }
+
+            /** @var SectionRenderer $renderer */
+            $renderer = get(SectionRenderer::class);
+            $html = $renderer->renderSelected($this->sectionRequest->names(), $this->sectionCollector);
+        } catch (SectionNotFoundException) {
+            $this->discardBuffersSince($bufferLevel);
+
+            return $this->emitSectionError(404);
+        } catch (\Throwable $throwable) {
+            $this->discardBuffersSince($bufferLevel);
+            error_log('[foehn] section rendering: ' . $throwable->getMessage());
+
+            return $this->emitSectionError(500);
+        }
+
+        $this->discardBuffersSince($bufferLevel);
+        $this->emitSectionResponse($html, 200);
+
+        return '';
+    }
+
+    private function discardBuffersSince(int $level): void
+    {
+        while (ob_get_level() > $level) {
+            ob_end_clean();
+        }
+    }
+
+    private function emitSectionError(int $status): string
+    {
+        $title = match ($status) {
+            400 => 'Invalid section request',
+            405 => 'Method not allowed',
+            404 => 'Section not found',
+            default => 'Unable to render sections',
+        };
+        $body = sprintf(
+            '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>%1$s</title></head><body><h1>%1$s</h1></body></html>',
+            $title,
+        );
+
+        $this->emitSectionResponse($body, $status);
+
+        return '';
+    }
+
+    private function emitSectionResponse(string $body, int $status): void
+    {
+        http_response_code($status);
+
+        if (!headers_sent()) {
+            header('Content-Type: text/html; charset=UTF-8', true);
+            header('Cache-Control: private, no-store', true);
+            header('X-Robots-Tag: noindex, nofollow', true);
+
+            if ($status === 405) {
+                header('Allow: GET, HEAD', true);
+            }
+        }
+
+        if (!$this->sectionRequest->isHead()) {
+            echo $body;
+        }
     }
 
     /**
