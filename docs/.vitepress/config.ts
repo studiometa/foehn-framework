@@ -99,7 +99,10 @@ export default defineConfig({
         },
         {
           text: "Deployment",
-          items: [{ text: "Docker Image", link: "/guide/docker-image" }],
+          items: [
+            { text: "Docker Image", link: "/guide/docker-image" },
+            { text: "Deploying to Fly.io", link: "/guide/deployment-fly" },
+          ],
         },
         {
           text: "Best Practices",
