@@ -4,6 +4,39 @@ Føhn can render declared parts of a normal page as HTML. Add `?foehn_sections=n
 
 There is no REST endpoint and no section configuration. A page declares the sections it owns in Twig.
 
+## Migrate from the Render API
+
+The Render API, `RenderApiConfig`, `RenderApiHook`, and `/wp-json/foehn/v1/render` route were removed. Section rendering replaces browser-facing partial rendering, but it deliberately does not expose arbitrary Twig paths or client-supplied template context.
+
+| Render API                                                  | Section rendering                                                                                 |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| Allow template paths in `render-api.config.php`             | Declare fixed names with `foehn_section()` in the page that owns them                             |
+| Send `template` or a keyed `templates` object to a REST URL | Add one name or up to five comma-separated names to the normal page URL                           |
+| Send scalar context values in the query string              | Build context in the page controller, context providers, and explicit server-side section context |
+| Parse JSON and read `html` or keyed values                  | Read the HTML response directly; each section has a stable wrapper ID                             |
+| Set `cacheMaxAge` on the endpoint                           | Section responses are always `private, no-store`; cache the full page or underlying data instead  |
+| Enable debug details in the response                        | Read exception details from the server log; public error HTML does not expose them                |
+
+Move each public partial to `templates/sections/{name}.twig`, declare it in its normal page template, and update any context-provider target from the old template path, such as `partials/results`, to the conventional section path, `sections/results`. Replace REST requests such as `/wp-json/foehn/v1/render?template=partials/results` with the page URL, such as `/products/?foehn_sections=results`. A former multi-template request becomes one ordered selection such as `?foehn_sections=filters,results`.
+
+Do not copy old request parameters directly into Twig context. Make each supported value part of the normal page URL, validate it in the controller, and pass only the normalized value to the page template:
+
+```php
+$sort = match (filter_input(INPUT_GET, 'sort', FILTER_UNSAFE_RAW)) {
+    'price' => 'price',
+    'title' => 'title',
+    default => 'recent',
+};
+
+return $this->view->render('pages/products', $context->with('sort', $sort));
+```
+
+```twig
+{{ foehn_section('results', { posts, sort }) }}
+```
+
+Both `/products/?sort=price` and `/products/?sort=price&foehn_sections=results` then run the same controller validation and rebuild the same server-owned context.
+
 ## Declare a section
 
 Use `foehn_section()` in a page template:
@@ -137,7 +170,7 @@ Pass `lazy: true` to defer a section on a normal page request:
 {{ foehn_section('related-projects', { post }, lazy: true) }}
 ```
 
-Føhn does not render the section template or its context providers during the full-page render. It emits a neutral `LazyInclude` placeholder with `data-option-src`, a loading ref, and a hidden error ref. The placeholder does not use the final section ID, so the fetched wrapper cannot create nested duplicate IDs.
+Føhn does not render the section template or its context providers during the full-page render. The page controller still runs and Twig still evaluates the context passed to `foehn_section()`; lazy mode defers section rendering, not data loading or context creation. It emits a neutral `LazyInclude` placeholder with `data-option-src`, a loading ref, and a hidden error ref. The placeholder does not use the final section ID, so the fetched wrapper cannot create nested duplicate IDs.
 
 Register `LazyInclude` in the existing application entry:
 

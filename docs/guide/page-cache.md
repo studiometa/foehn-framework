@@ -97,12 +97,12 @@ Read paths:
 
 A request has to pass all of these. When one fails, the response carries the reason (see [debugging](#debugging)).
 
-| Class    | Rule                                                                                                                                                                                                                                         |
-| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Request  | method is `GET`; no `$_POST`; `Host` matches `WP_HOME`; the path validates; no query string left after the ignored args; none of `bypassCookies`; not under `excludedPaths`; no `.maintenance` file; not WP-CLI, REST, AJAX, cron or XML-RPC |
-| Context  | not admin, feed, trackback, robots, embed, preview, customizer preview or search; nobody logged in; no password-protected post; `DONOTCACHEPAGE` undefined                                                                                   |
-| Response | status 200 (or 404 with `cacheNotFound`); `Content-Type` is `text/html`; no `Location` header                                                                                                                                                |
-| Body     | at least 255 bytes; ends with `</html>`, so a render that died mid-template is never frozen; contains none of `excludeWhenBodyContains`                                                                                                      |
+| Class    | Rule                                                                                                                                                                                                                                                          |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Request  | method is `GET`; no `$_POST`; `Host` matches `WP_HOME`; the path validates; every query arg is ignored or a valid non-repeated keyed arg; none of `bypassCookies`; not under `excludedPaths`; no `.maintenance` file; not WP-CLI, REST, AJAX, cron or XML-RPC |
+| Context  | not admin, feed, trackback, robots, embed, preview, customizer preview or search; nobody logged in; no password-protected post; `DONOTCACHEPAGE` undefined                                                                                                    |
+| Response | status 200 (or 404 with `cacheNotFound`); `Content-Type` is `text/html`; no `Location` header                                                                                                                                                                 |
+| Body     | at least 255 bytes; ends with `</html>`, so a render that died mid-template is never frozen; contains none of `excludeWhenBodyContains`                                                                                                                       |
 
 ### Query strings
 
@@ -126,7 +126,7 @@ return new PageCacheConfig(
 ?lang=fr&page=2   ─┘
 ```
 
-Order does not matter, and that is the interesting part: no reader sorts the query string. Each of them walks your `cacheQueryArgs` in one fixed order and asks for each name's value in turn, which nginx can do because `$arg_page` does not care where `page` appeared. Rename or reorder nothing and both spellings of a URL land on one file.
+Request order does not matter, and that is the interesting part: no reader sorts the query string. The configuration sorts `cacheQueryArgs` by name, then every reader asks for each value in that normalized order. nginx can do this because `$arg_page` does not care where `page` appeared, so both spellings of a URL land on one file. The order used in the configuration file has no effect.
 
 Each name carries the pattern its value must match, because the value becomes part of a filename — a list without patterns gets `^[A-Za-z0-9_.\-]{1,64}$`. A value your pattern rejects is a bypass, never a guess: `?page=abc` goes to PHP rather than quietly serving page one. Your pattern can only narrow the characters a filename may hold, never widen them.
 
@@ -158,7 +158,7 @@ Hydrating nonces client-side is a later upgrade, to be taken up if real traffic 
 
 ### Not supported in v1
 
-Named here so nothing is assumed: keyed query args; device, scheme and consent variants; pre-compressed `.gz`/`.br`; cached feeds, sitemaps and REST responses; multisite; WooCommerce and any other cart-bearing page — exclude cart, checkout and account paths.
+Named here so nothing is assumed: device, scheme and consent variants; pre-compressed `.gz`/`.br`; cached feeds, sitemaps and REST responses; multisite; WooCommerce and any other cart-bearing page — exclude cart, checkout and account paths.
 
 ## Invalidation
 

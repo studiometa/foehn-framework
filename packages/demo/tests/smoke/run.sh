@@ -207,14 +207,23 @@ check_page "/projects/page/2/" "<html" "project pagination keeps a full-page fal
 check_page "/projects/corridors/" "plate--" "a project page shows its photographs"
 check_page "/about/" "prose" "the about page renders its copy"
 
+home="$(curl -sk "$url/")"
+grep -q 'data-foehn-lazy-section' <<<"$home" || fail "the homepage does not demonstrate a lazy section"
+grep -q 'data-option-src="/?foehn_sections=testimonials"' <<<"$home" || fail "the lazy testimonial section has no section request URL"
+
+testimonials_section="$(curl -sk "$url/?foehn_sections=testimonials")"
+grep -q 'id="foehn-section-testimonials"' <<<"$testimonials_section" || fail "the testimonial section request returned no wrapper"
+grep -q '>Words<' <<<"$testimonials_section" || fail "the testimonial section request returned no testimonials"
+printf '✓ %s\n' "the homepage lazy-loads its testimonial section"
+
 projects_index="$(curl -sk "$url/projects/")"
-printf '%s' "$projects_index" | grep -q 'data-component="Fetch"' || fail "project pagination does not use the base Fetch component"
-printf '%s' "$projects_index" | grep -q 'data-option-src="/projects/page/2/?foehn_sections=project-index"' || fail "project pagination has no section request URL"
+grep -q 'data-component="Fetch"' <<<"$projects_index" || fail "project pagination does not use the base Fetch component"
+grep -q 'data-option-src="/projects/page/2/?foehn_sections=project-index"' <<<"$projects_index" || fail "project pagination has no section request URL"
 
 project_section="$(curl -sk "$url/projects/page/2/?foehn_sections=project-index")"
-printf '%s' "$project_section" | grep -q 'id="foehn-section-project-index"' || fail "the page-two section request returned no project index wrapper"
-printf '%s' "$project_section" | grep -q '<html' && fail "the page-two section request returned a full page"
-printf '%s' "$project_section" | grep -qE 'href="[^"]*foehn_sections=' && fail "pagination inside a section response retained the section control parameter in its fallback URL"
+grep -q 'id="foehn-section-project-index"' <<<"$project_section" || fail "the page-two section request returned no project index wrapper"
+grep -q '<html' <<<"$project_section" && fail "the page-two section request returned a full page"
+grep -qE 'href="[^"]*foehn_sections=' <<<"$project_section" && fail "pagination inside a section response retained the section control parameter in its fallback URL"
 printf '✓ %s\n' "project pagination swaps a section and keeps full-page fallbacks"
 
 # Image transforms, end to end. The plate crops to two ratios, which is where

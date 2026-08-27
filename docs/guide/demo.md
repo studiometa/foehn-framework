@@ -17,23 +17,28 @@ ddev launch
 
 Admin at `/wp/wp-admin`, with `admin` / `admin`.
 
+A normal install uses released Føhn packages. In a monorepo checkout, run `ddev start` once, then copy `.ddev/config.local.example.yaml` to `.ddev/config.local.yaml` and run `ddev restart`. This mirrors the local framework packages and clears discovery. Restart again after framework source changes.
+
 ## What is demonstrated where
 
-| Attribute                                                         | File                                                         |
-| ----------------------------------------------------------------- | ------------------------------------------------------------ |
-| [`#[AsPostType]`](/api/as-post-type)                              | `app/Models/Product.php`, `app/Models/Testimonial.php`       |
-| [`#[AsPostMeta]`](/api/as-post-meta)                              | `app/Models/Product.php` — `price`, `sale_price`             |
-| [`#[AsTaxonomy]`](/api/as-taxonomy)                               | `app/Taxonomies/`                                            |
-| [`#[AsBlock]`](/api/as-block)                                     | `app/Blocks/` — a container, a sidebar-driven one, a DTO one |
-| [`#[AsBlockBinding]`](/api/as-block-binding)                      | `app/Bindings/ReadingTime.php`                               |
-| [`#[AsSettingsPage]`](/api/as-settings-page)                      | `app/Settings/ThemeSettings.php`, with a Twig form           |
-| [`#[AsRewriteRule]`](/api/as-rewrite-rule)                        | `app/Routes/HealthCheckRoute.php` — `GET /_health`           |
-| [`#[AsTemplateController]`](/api/as-template-controller)          | `app/Controllers/`                                           |
-| [`#[AsContextProvider]`](/api/as-context-provider)                | `app/ContextProviders/`                                      |
-| [`#[AsImageSize]`](/api/as-image-size)                            | `app/ImageSizes/`                                            |
-| [`#[AsMenu]`](/api/as-menu)                                       | `app/Menus/`                                                 |
-| [`#[AsAction]`](/api/as-action) / [`#[AsFilter]`](/api/as-filter) | `app/Hooks/ThemeHooks.php`                                   |
-| [Arrayable DTOs](/guide/arrayable-dtos)                           | `app/Data/HeroContext.php`                                   |
+| Feature                                                           | File                                                                                                                           |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| [`#[AsPostType]`](/api/as-post-type)                              | `theme/app/Models/Project.php`, `theme/app/Models/Testimonial.php`                                                             |
+| [`#[AsPostMeta]`](/api/as-post-meta)                              | `theme/app/Models/Project.php` — `client`, `year`, `location`, `camera`                                                        |
+| [`#[AsTaxonomy]`](/api/as-taxonomy)                               | `theme/app/Taxonomies/`                                                                                                        |
+| [`#[AsBlock]`](/api/as-block)                                     | `theme/app/Blocks/` — a container, a sidebar-driven block, and a DTO block                                                     |
+| [`#[AsBlockBinding]`](/api/as-block-binding)                      | `theme/app/Bindings/ReadingTime.php`                                                                                           |
+| [`#[AsSettingsPage]`](/api/as-settings-page)                      | `theme/app/Settings/ThemeSettings.php`, with a Twig form                                                                       |
+| [`#[AsRewriteRule]`](/api/as-rewrite-rule)                        | `theme/app/Routes/HealthCheckRoute.php` — `GET /_health`                                                                       |
+| [`#[AsTemplateController]`](/api/as-template-controller)          | `theme/app/Controllers/`                                                                                                       |
+| [Section rendering](/guide/section-rendering)                     | AJAX pagination in `theme/templates/sections/project-index.twig`; lazy loading in `theme/templates/sections/testimonials.twig` |
+| [Page cache](/guide/page-cache)                                   | `theme/app/page-cache.config.php`                                                                                              |
+| [`#[AsContextProvider]`](/api/as-context-provider)                | `theme/app/ContextProviders/`                                                                                                  |
+| [`#[AsImageSize]`](/api/as-image-size)                            | `theme/app/ImageSizes/`                                                                                                        |
+| [Image transforms](/guide/images)                                 | `theme/templates/components/photograph.twig`                                                                                   |
+| [`#[AsMenu]`](/api/as-menu)                                       | `theme/app/Menus/`                                                                                                             |
+| [`#[AsAction]`](/api/as-action) / [`#[AsFilter]`](/api/as-filter) | `theme/app/Hooks/ThemeHooks.php`                                                                                               |
+| [Arrayable DTOs](/guide/arrayable-dtos)                           | `theme/app/Data/HeroContext.php`                                                                                               |
 
 The theme's namespace is `Demo\` rather than `App\`, which is the only thing in it you would not copy: `App\` is what the starter uses and what a project of your own should.
 

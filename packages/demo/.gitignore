@@ -28,6 +28,7 @@ composer.lock
 # debug from a CI log.
 /.ddev/*
 !/.ddev/config.yaml
+!/.ddev/config.local.example.yaml
 !/.ddev/docker-compose.minio.yaml
 !/.ddev/nginx/
 !/.ddev/nginx/*.conf

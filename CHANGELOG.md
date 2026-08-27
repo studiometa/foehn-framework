@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
-- The REST/JSON Render API, its configuration, hook, and `/wp-json/foehn/v1/render` route. Section rendering now uses normal page URLs and permanently reserves the namespaced `foehn_sections` query parameter ([#164])
+- **Breaking:** the REST/JSON Render API, its configuration, hook, and `/wp-json/foehn/v1/render` route. Section rendering now uses normal page URLs and permanently reserves the namespaced `foehn_sections` query parameter. See the [migration guide](docs/guide/section-rendering.md#migrate-from-the-render-api) ([#164])
 
 [#164]: https://github.com/studiometa/foehn-framework/pull/164
 
