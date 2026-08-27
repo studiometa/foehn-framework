@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Config\PageCacheConfig;
+use Studiometa\Foehn\Config\QueryFiltersConfig;
+use Studiometa\Foehn\PageCache\QueryKey;
 use Studiometa\Foehn\Views\Sections\SectionRequest;
 
 describe('PageCacheConfig', function () {
@@ -77,5 +79,32 @@ describe('PageCacheConfig', function () {
 
     it('keeps a purge instant, by not letting the browser hold the page', function () {
         expect(new PageCacheConfig()->browserMaxAge)->toBe(0);
+    });
+});
+
+describe('filters as keyed args', function () {
+    it('keys every declared filter without the project naming it twice', function () {
+        // The requirement: a filter that is declared and not keyed is a filter whose
+        // every URL bypasses — and a bypass reads as a slow page, not as an error.
+        $config = new PageCacheConfig(
+            queryFilters: new QueryFiltersConfig(
+                taxonomies: ['genre' => ['in', 'and']],
+                publicVars: ['posts_per_page' => [12, 24]],
+            ),
+        );
+
+        expect(array_keys($config->getCacheQueryArgs()))->toBe(['genre', 'genre__and', 'posts_per_page']);
+        expect(QueryKey::canonical('genre=rock,jazz', $config))->toBe('genre=rock,jazz&');
+        expect(QueryKey::canonical('posts_per_page=99', $config))->toBeNull();
+    });
+
+    it('lets a hand-written pattern win over the derived one', function () {
+        $config = new PageCacheConfig(
+            cacheQueryArgs: ['genre' => '^rock$'],
+            queryFilters: new QueryFiltersConfig(taxonomies: ['genre' => ['in']]),
+        );
+
+        expect($config->getCacheQueryArgs())->toBe(['genre' => '^rock$']);
+        expect(QueryKey::canonical('genre=jazz', $config))->toBeNull();
     });
 });

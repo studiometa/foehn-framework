@@ -37,7 +37,7 @@ final readonly class PageCacheConfig
      * Deliberately narrow: the value becomes part of a filename, so this is the charset
      * a filename may hold and not the charset a URL may.
      */
-    public const DEFAULT_QUERY_ARG_PATTERN = '^[A-Za-z0-9_.\-]{1,64}$';
+    public const DEFAULT_QUERY_ARG_PATTERN = '^[A-Za-z0-9_.,\-]{1,64}$';
 
     /**
      * Control parameters that always bypass full-page caching.
@@ -119,6 +119,27 @@ final readonly class PageCacheConfig
         public array $cacheQueryArgs = [],
 
         /**
+         * Query filters whose args are keyed too, without being named twice.
+         *
+         * ```php
+         * return new PageCacheConfig(
+         *     enabled: true,
+         *     queryFilters: require __DIR__ . '/query-filters.config.php',
+         * );
+         * ```
+         *
+         * Every filter the project declares becomes a keyed arg with a pattern derived
+         * from its own allowlist — see {@see QueryFiltersConfig::toCacheQueryArgs()}.
+         * `cacheQueryArgs` still wins where the two name the same argument, so a project
+         * can tighten one without giving up the rest.
+         *
+         * The drop-in requires this file before WordPress exists, so the object has to
+         * arrive as an object. `require`-ing the filter config is the whole of it: both
+         * are plain values and neither needs a container.
+         */
+        public ?QueryFiltersConfig $queryFilters = null,
+
+        /**
          * URL path prefixes never cached.
          *
          * @var list<string>
@@ -163,13 +184,11 @@ final readonly class PageCacheConfig
     {
         $normalized = [];
 
-        foreach ($this->cacheQueryArgs as $key => $value) {
-            // A list gives `0 => 'page'`, a map `'page' => '^\d+$'`. Both halves are
-            // strings by the declared shape, which is trusted here the way the other
-            // config getters trust theirs.
-            $name = is_int($key) ? $value : $key;
-            $pattern = is_int($key) ? self::DEFAULT_QUERY_ARG_PATTERN : $value;
+        // The derived filters first, so a name in `cacheQueryArgs` overwrites its
+        // derived pattern rather than being dropped as a duplicate.
+        $declared = $this->queryFilters?->toCacheQueryArgs() ?? [];
 
+        foreach ([...$declared, ...self::withPatterns($this->cacheQueryArgs)] as $name => $pattern) {
             if (in_array($name, self::RESERVED_QUERY_ARGS, true)) {
                 continue;
             }
@@ -186,6 +205,34 @@ final readonly class PageCacheConfig
         }
 
         ksort($normalized);
+
+        return $normalized;
+    }
+
+    /**
+     * `cacheQueryArgs` in its map form, whichever of the two forms it was written in.
+     *
+     * A list gives `0 => 'page'` and a map `'page' => '^\d+$'`. Both halves are strings
+     * by the declared shape, which is trusted here the way the other config getters trust
+     * theirs. Doing this before the merge is what lets a hand-written name overwrite a
+     * derived one: two arrays only merge by key if both are keyed by name.
+     *
+     * @param array<string, string>|list<string> $args
+     * @return array<string, string>
+     */
+    private static function withPatterns(array $args): array
+    {
+        $normalized = [];
+
+        foreach ($args as $key => $value) {
+            if (is_int($key)) {
+                $normalized[$value] = self::DEFAULT_QUERY_ARG_PATTERN;
+
+                continue;
+            }
+
+            $normalized[$key] = $value;
+        }
 
         return $normalized;
     }

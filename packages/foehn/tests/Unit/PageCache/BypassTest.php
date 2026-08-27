@@ -188,6 +188,22 @@ describe('Bypass: the context', function () {
         expect(pageCacheBypass()->forContext(pageCacheServer()))->toBe(BypassReason::Search);
     });
 
+    it('caches a search results page when the project keys `s` itself', function () {
+        // The opt-in is naming the argument, and naming it means giving the pattern that
+        // bounds it — which is what turns "one file per phrase anybody types" back into
+        // a finite set. A phrase the pattern refuses still bypasses, through the same
+        // rule that refuses any other invalid keyed value.
+        $GLOBALS['wp_stub_template'] = 'search';
+
+        $config = new PageCacheConfig(
+            enabled: true,
+            environments: ['production'],
+            cacheQueryArgs: ['s' => '^[A-Za-z0-9-]{2,32}$'],
+        );
+
+        expect(pageCacheBypass($config)->forContext(pageCacheServer()))->toBeNull();
+    });
+
     it('refuses a logged-in visitor even with no cookie the config knows', function () {
         $GLOBALS['wp_stub_logged_in'] = true;
 

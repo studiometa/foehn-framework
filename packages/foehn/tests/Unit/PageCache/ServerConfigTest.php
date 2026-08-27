@@ -162,7 +162,35 @@ describe('SnippetPolicy', function () {
         // part of a filename.
         expect(new SnippetPolicy(new PageCacheConfig(cacheQueryArgs: [
             'lang' => '^.+$',
-        ]))->canonicalQueryStatements())->toContain('if ($arg_lang ~ "[^A-Za-z0-9_.\-]|^.{65,}$") { set $foehn_arg_lang "invalid"; }');
+        ]))->canonicalQueryStatements())->toContain('if ($arg_lang ~ "[^A-Za-z0-9_.,\-]|^.{65,}$") { set $foehn_arg_lang "invalid"; }');
+    });
+
+    it('lets a comma through the floor, so a multi-value filter can be keyed', function () {
+        // The comma is the separator between the values of one filter, and nginx reads
+        // `?genre=rock,jazz` with `$arg_genre` like any other value. Without it in the
+        // floor the snippet called every multi-value filter invalid and bypassed it.
+        $statements = new SnippetPolicy(new PageCacheConfig(cacheQueryArgs: [
+            'genre' => '^[a-z0-9-]+(?:,[a-z0-9-]+)*$',
+        ]))->canonicalQueryStatements();
+
+        expect($statements)
+            ->toContain('if ($arg_genre ~ "^[a-z0-9-]+(?:,[a-z0-9-]+)*$") { set $foehn_arg_genre "valid"; }')
+            ->and($statements)
+            ->toContain('set $foehn_q "${foehn_q}genre=$arg_genre&";');
+    });
+
+    it('never keys a bracketed name, so the readers cannot disagree about one', function () {
+        // nginx has no `$arg_genre[]` — a variable name may not hold brackets. So the
+        // bracketed form must fail `knownQueryPattern()` and be passed to PHP, which
+        // joins the members and serves the same file from the drop-in. What must never
+        // happen is nginx reading `$arg_genre`, finding it empty and serving the
+        // unfiltered page to somebody who asked for a filtered one.
+        $policy = new SnippetPolicy(new PageCacheConfig(cacheQueryArgs: ['genre' => '^[a-z,]+$']));
+
+        expect((bool) preg_match('#' . $policy->knownQueryPattern() . '#', 'genre=rock,jazz'))
+            ->toBeTrue()
+            ->and((bool) preg_match('#' . $policy->knownQueryPattern() . '#', 'genre[]=rock&genre[]=jazz'))
+            ->toBeFalse();
     });
 
     it('bypasses a keyed arg that appears twice, which the readers read differently', function () {

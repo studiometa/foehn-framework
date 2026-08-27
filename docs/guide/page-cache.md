@@ -128,9 +128,56 @@ return new PageCacheConfig(
 
 Request order does not matter, and that is the interesting part: no reader sorts the query string. The configuration sorts `cacheQueryArgs` by name, then every reader asks for each value in that normalized order. nginx can do this because `$arg_page` does not care where `page` appeared, so both spellings of a URL land on one file. The order used in the configuration file has no effect.
 
-Each name carries the pattern its value must match, because the value becomes part of a filename — a list without patterns gets `^[A-Za-z0-9_.\-]{1,64}$`. A value your pattern rejects is a bypass, never a guess: `?page=abc` goes to PHP rather than quietly serving page one. Your pattern can only narrow the characters a filename may hold, never widen them.
+Each name carries the pattern its value must match, because the value becomes part of a filename — a list without patterns gets `^[A-Za-z0-9_.,\-]{1,64}$`. A value your pattern rejects is a bypass, never a guess: `?page=abc` goes to PHP rather than quietly serving page one. Your pattern can only narrow the characters a filename may hold, never widen them.
 
-Two more rules keep the readers honest. `?page=` counts as no query at all, and a **repeated** keyed arg bypasses — nginx reads the first `page=` and PHP the last, so `?page=1&page=2` has no answer both would give.
+Two more rules keep the readers honest. `?page=` counts as no query at all, and a **repeated bare name** bypasses — nginx reads the first `page=` and PHP the last, so `?page=1&page=2` has no answer both would give.
+
+### Filters with more than one value
+
+A filter has two spellings, and both are cached:
+
+```
+?genre=rock,jazz            ─┐
+                             ├─→  …/index__genre=rock,jazz&.html
+?genre[]=rock&genre[]=jazz  ─┘
+```
+
+The comma form is what [the query filters](/guide/query-filters) emit and what `$arg_genre` can read, so nginx serves it. The bracketed form is what a checkbox group posts, and nginx cannot read it at all — a variable name may not hold brackets, and there is no `$arg_genre[]`.
+
+So nginx **declines** it rather than guessing: a bracketed name is not a name it was told about, the request goes to PHP, and the drop-in joins the members and serves the file the comma form wrote. Same file, a couple of milliseconds slower. What never happens is nginx reading `$arg_genre`, finding it empty and serving the unfiltered page to someone who asked for a filtered one.
+
+Two consequences worth knowing:
+
+- **The members are joined in request order and never sorted**, so `?genre[]=jazz&genre[]=rock` is a second file holding the same HTML. Sorting is the obvious fix and the wrong one: nginx cannot sort, so a sorted key is one only PHP could compute, and the two readers would part company on the first URL that arrived unsorted. A form emits its checkboxes in document order, so in practice one spelling occurs.
+- **A member may not contain a comma.** `?genre[]=rock,jazz` asks for one term whose slug has a comma in it; `?genre=rock,jazz` asks for two terms. Joining the first would key it where the second lives, so it bypasses instead.
+
+### Keying the filters you already declared
+
+A filter that is declared and not keyed is a filter whose every URL bypasses — and a bypass reads as a slow page rather than as an error, so nobody finds it. Hand the query filter configuration to the page cache and the names come across by themselves:
+
+```php
+// app/page-cache.config.php
+return new PageCacheConfig(
+    enabled: true,
+    queryFilters: require __DIR__ . '/query-filters.config.php',
+);
+```
+
+Every declared filter becomes a keyed arg, and the pattern comes from the allowlist itself: `posts_per_page: [12, 24, 48]` derives `^(?:12|24|48)$`, and a taxonomy derives a comma-separated list of slugs. The cache then refuses exactly the values the filter would have rejected. `cacheQueryArgs` still wins where both name the same argument, so you can tighten one without giving up the rest.
+
+One thing is deliberately not derived: a `publicVars` entry of `true`. It means any value at all, and a keyed argument with no bound on its values is an unbounded number of files on disk. Name it in `cacheQueryArgs` with a pattern you have thought about.
+
+### Caching search results
+
+`?s=` bypasses by default, and the reason is the key space rather than the query: a search takes any string a visitor can type, so keying it is one stored file per phrase anybody ever searches for, and a crawler can write them all.
+
+Naming `s` in `cacheQueryArgs` is the opt-in, and it cannot be given without the pattern that bounds it:
+
+```php
+cacheQueryArgs: ['s' => '^[A-Za-z0-9-]{2,32}$'],
+```
+
+`s` then behaves like any other keyed arg — nginx unrolls it, the value lands in the filename, and a phrase the pattern refuses is served by WordPress exactly as every search is today. Bound it deliberately: the pattern is the only thing standing between a search box and a directory with a file per phrase.
 
 **Anything else** is a bypass. Add a name to `cacheQueryArgs` only when it changes the page, and to `ignoredQueryArgs` only when it does not.
 
