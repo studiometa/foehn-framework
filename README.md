@@ -52,6 +52,7 @@ Kernel::boot(__DIR__ . '/app');
 - ⚡ **Minimal boilerplate** — One line to boot your theme
 - 📦 **Project generator** — Full web root generation via Composer plugin
 - 🏗️ **Starter theme** — Complete example with models, hooks, templates
+- 🐳 **Runtime image** — [`ghcr.io/studiometa/foehn-wordpress`](https://studiometa.github.io/foehn-framework/guide/docker-image), NGINX and PHP with Føhn's serving rules already installed
 
 ## Available Attributes
 
@@ -105,6 +106,7 @@ web/                            # GENERATED (100% gitignored)
 - [Installation](https://studiometa.github.io/foehn-framework/guide/installation)
 - [Theme Conventions](https://studiometa.github.io/foehn-framework/guide/theme-conventions)
 - [Security Guide](https://studiometa.github.io/foehn-framework/guide/security)
+- [Docker Image](https://studiometa.github.io/foehn-framework/guide/docker-image)
 - [API Reference](https://studiometa.github.io/foehn-framework/api/)
 
 ### For AI Agents

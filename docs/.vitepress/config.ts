@@ -98,6 +98,10 @@ export default defineConfig({
           ],
         },
         {
+          text: "Deployment",
+          items: [{ text: "Docker Image", link: "/guide/docker-image" }],
+        },
+        {
           text: "Best Practices",
           items: [
             { text: "Theme Conventions", link: "/guide/theme-conventions" },
