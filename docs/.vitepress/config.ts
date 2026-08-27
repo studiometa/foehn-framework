@@ -98,6 +98,13 @@ export default defineConfig({
           ],
         },
         {
+          text: "Deployment",
+          items: [
+            { text: "Docker Image", link: "/guide/docker-image" },
+            { text: "Deploying to Fly.io", link: "/guide/deployment-fly" },
+          ],
+        },
+        {
           text: "Best Practices",
           items: [
             { text: "Theme Conventions", link: "/guide/theme-conventions" },
