@@ -1,0 +1,21 @@
+<section class="shell" style="margin-top: clamp(4rem, 10vw, 8rem)" aria-labelledby="retours">
+  <h2 class="label label--ink" id="retours">Words</h2>
+  <hr class="rule rule--ink" style="margin-top: 0.75rem" />
+
+  <div class="grid" style="margin-top: clamp(1.5rem, 4vw, 2.5rem)">
+    {% for testimonial in testimonials %}
+      <div class="col-4">
+        <blockquote class="quote">
+          <p class="quote__text">
+            {{ testimonial.content|striptags|trim }}
+          </p>
+          <footer class="quote__source label">
+            {{ testimonial.authorName }}{% if testimonial.authorRole %}
+              , {{ testimonial.authorRole }}
+            {% endif %}
+          </footer>
+        </blockquote>
+      </div>
+    {% endfor %}
+  </div>
+</section>

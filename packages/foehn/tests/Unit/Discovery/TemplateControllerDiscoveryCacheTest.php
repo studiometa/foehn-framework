@@ -3,12 +3,11 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Attributes\AsTemplateController;
-use Studiometa\Foehn\Discovery\TemplateControllerDiscovery;
 use Tests\Fixtures\TemplateControllerFixture;
 
 beforeEach(function () {
     $this->location = testDiscoveryLocation();
-    $this->discovery = new TemplateControllerDiscovery();
+    $this->discovery = testTemplateControllerDiscovery();
 });
 
 describe('TemplateControllerDiscovery caching', function () {
@@ -21,7 +20,7 @@ describe('TemplateControllerDiscovery caching', function () {
     it('restores every item unchanged through a cache file', function () {
         discoverFixture($this->discovery, TemplateControllerFixture::class, $this->location);
 
-        $restored = restoreThroughCacheFile($this->discovery, new TemplateControllerDiscovery());
+        $restored = restoreThroughCacheFile($this->discovery, testTemplateControllerDiscovery());
 
         expect(iterator_to_array($restored->getItems()))->toEqual(iterator_to_array($this->discovery->getItems()));
     });
@@ -29,7 +28,7 @@ describe('TemplateControllerDiscovery caching', function () {
     it('restores the attribute as an instance, not an array', function () {
         discoverFixture($this->discovery, TemplateControllerFixture::class, $this->location);
 
-        $item = restoreThroughCacheFile($this->discovery, new TemplateControllerDiscovery())
+        $item = restoreThroughCacheFile($this->discovery, testTemplateControllerDiscovery())
             ->getItems()
             ->getForLocation($this->location)[0];
 

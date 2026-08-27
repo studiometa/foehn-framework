@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Studiometa\Foehn\Views\Twig;
 
 use Studiometa\Foehn\Attributes\AsTwigExtension;
+use Studiometa\Foehn\Views\Sections\SectionRequest;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFunction;
 
@@ -264,8 +265,11 @@ final class QueryExtension extends AbstractExtension
      */
     protected function getQueryParams(): array
     {
-        /** @var array<string, mixed> */
-        return $_GET;
+        /** @var array<string, mixed> $params */
+        $params = $_GET;
+        unset($params[SectionRequest::PARAMETER]);
+
+        return $params;
     }
 
     /**
@@ -283,7 +287,10 @@ final class QueryExtension extends AbstractExtension
      */
     protected function addQueryArg(array $args): string
     {
-        return add_query_arg($args);
+        unset($args[SectionRequest::PARAMETER]);
+        $uri = remove_query_arg(SectionRequest::PARAMETER, $this->getRequestUri());
+
+        return add_query_arg($args, $uri);
     }
 
     /**
@@ -293,7 +300,9 @@ final class QueryExtension extends AbstractExtension
      */
     protected function removeQueryArg(array $keys): string
     {
-        return remove_query_arg($keys);
+        $keys[] = SectionRequest::PARAMETER;
+
+        return remove_query_arg(array_values(array_unique($keys)), $this->getRequestUri());
     }
 
     /**

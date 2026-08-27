@@ -43,6 +43,7 @@ function wp_stub_reset(): void
     // wrong reason, which is the one kind of green this feature cannot afford.
     $GLOBALS['wp_stub_conditionals'] = [];
     $GLOBALS['wp_stub_is_admin'] = false;
+    $GLOBALS['wp_stub_status_headers'] = [];
     $GLOBALS['wp_stub_template'] = 'index';
     $GLOBALS['wp_stub_posts'] = [];
     $GLOBALS['wp_stub_comments'] = [];
@@ -1007,6 +1008,14 @@ if (!function_exists('is_admin')) {
     function is_admin(): bool
     {
         return $GLOBALS['wp_stub_is_admin'] ?? false;
+    }
+}
+
+if (!function_exists('status_header')) {
+    function status_header(int $code, string $description = ''): void
+    {
+        $GLOBALS['wp_stub_status_headers'][] = compact('code', 'description');
+        http_response_code($code);
     }
 }
 

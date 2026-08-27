@@ -29,6 +29,29 @@ ddev launch              # the site
 ddev launch /wp/wp-admin # the admin
 ```
 
+### Use the monorepo packages
+
+From `packages/demo`, a normal demo install uses the released `studiometa/foehn` packages. To test changes from this monorepo, first run `ddev start` once so Composer installs all dependencies. Then enable the local sync hook and restart:
+
+```bash
+cp .ddev/config.local.example.yaml .ddev/config.local.yaml
+ddev restart
+```
+
+The hook mirrors `packages/foehn` and `packages/installer` into `vendor/`, regenerates the editor entry, and clears the full discovery cache. Run `ddev restart` after framework source changes. Without the hook, the demo can run an older released framework even while its theme uses code from the current branch.
+
+The hook copies source only. If a package changes its Composer dependencies, resolve them through temporary path repositories before restarting. These commands need PHP 8.5 and Composer on the host because DDEV mounts `packages/demo` without its sibling packages:
+
+```bash
+cp composer.json composer.monorepo.json
+cp composer.lock composer.monorepo.lock
+COMPOSER=composer.monorepo.json composer config repositories.foehn '{"type":"path","url":"../foehn","options":{"symlink":false}}'
+COMPOSER=composer.monorepo.json composer config repositories.foehn-installer '{"type":"path","url":"../installer","options":{"symlink":false}}'
+COMPOSER=composer.monorepo.json composer require --no-update studiometa/foehn:@dev studiometa/foehn-installer:@dev
+COMPOSER=composer.monorepo.json composer update studiometa/foehn studiometa/foehn-installer --with-dependencies
+rm composer.monorepo.json composer.monorepo.lock
+```
+
 ## Where it runs
 
 It is up at **<https://foehn-demo.fly.dev>**, so the site can be looked at without installing anything.
@@ -39,23 +62,24 @@ See [the guide](https://studiometa.github.io/foehn-framework/guide/deployment-fl
 
 ## What is demonstrated where
 
-| Attribute                     | Here                                                           |
-| ----------------------------- | -------------------------------------------------------------- |
-| `#[AsPostType]`               | `Models/Project.php`, `Models/Testimonial.php`                 |
-| `#[AsPostMeta]`               | `Models/Project.php` — `client`, `year`, `location`, `camera`  |
-| `#[AsTaxonomy]`               | `Taxonomies/ProjectCategory.php`, `Taxonomies/ProjectTag.php`  |
-| `#[AsBlock]`                  | `Blocks/HeroBlock.php`, `CalloutBlock.php`, `SectionBlock.php` |
-| `#[AsBlockBinding]`           | `Bindings/ReadingTime.php`                                     |
-| `#[AsSettingsPage]`           | `Settings/ThemeSettings.php`, with a Twig form                 |
-| `#[AsRewriteRule]`            | `Routes/HealthCheckRoute.php` — `GET /_health`                 |
-| `#[AsTemplateController]`     | `Controllers/` — front page, projects index, project, page     |
-| Page cache                    | `theme/app/page-cache.config.php`                              |
-| `#[AsContextProvider]`        | `ContextProviders/GlobalContextProvider.php`                   |
-| `#[AsImageSize]`              | `ImageSizes/`, used by `components/card-project.twig`          |
-| `ImageTransformer` (Glide)    | `foehn.config.php`, used by `components/photograph.twig`       |
-| `#[AsMenu]`                   | `Menus/`                                                       |
-| `#[AsAction]` / `#[AsFilter]` | `Hooks/ThemeHooks.php`                                         |
-| Arrayable DTOs                | `Data/HeroContext.php`                                         |
+| Attribute                     | Here                                                                                                                           |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `#[AsPostType]`               | `theme/app/Models/Project.php`, `theme/app/Models/Testimonial.php`                                                             |
+| `#[AsPostMeta]`               | `theme/app/Models/Project.php` — `client`, `year`, `location`, `camera`                                                        |
+| `#[AsTaxonomy]`               | `theme/app/Taxonomies/ProjectCategory.php`, `theme/app/Taxonomies/ProjectTag.php`                                              |
+| `#[AsBlock]`                  | `theme/app/Blocks/HeroBlock.php`, `theme/app/Blocks/CalloutBlock.php`, `theme/app/Blocks/SectionBlock.php`                     |
+| `#[AsBlockBinding]`           | `theme/app/Bindings/ReadingTime.php`                                                                                           |
+| `#[AsSettingsPage]`           | `theme/app/Settings/ThemeSettings.php`, with a Twig form                                                                       |
+| `#[AsRewriteRule]`            | `theme/app/Routes/HealthCheckRoute.php` — `GET /_health`                                                                       |
+| `#[AsTemplateController]`     | `theme/app/Controllers/` — front page, projects index, project, page                                                           |
+| Page cache                    | `theme/app/page-cache.config.php`                                                                                              |
+| Section rendering             | AJAX pagination in `theme/templates/sections/project-index.twig`; lazy loading in `theme/templates/sections/testimonials.twig` |
+| `#[AsContextProvider]`        | `theme/app/ContextProviders/GlobalContextProvider.php`                                                                         |
+| `#[AsImageSize]`              | `theme/app/ImageSizes/`, used by `theme/templates/components/card-project.twig`                                                |
+| `ImageTransformer` (Glide)    | `theme/app/foehn.config.php`, used by `theme/templates/components/photograph.twig`                                             |
+| `#[AsMenu]`                   | `theme/app/Menus/`                                                                                                             |
+| `#[AsAction]` / `#[AsFilter]` | `theme/app/Hooks/ThemeHooks.php`                                                                                               |
+| Arrayable DTOs                | `theme/app/Data/HeroContext.php`                                                                                               |
 
 The framework's own cleanup and security hooks are opted into from `theme/app/foehn.config.php`, `S3UploadsEndpoint` among them.
 

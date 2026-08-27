@@ -123,21 +123,16 @@ describe('Kernel Timber initialization', function () {
         expect($config->defaultCapability)->toBe('edit_posts');
     });
 
-    it('registers RenderApi in container', function () {
-        $kernel = Kernel::boot(dirname(__DIR__, 2) . '/src', []);
+    it('shares section state and rendering services through singletons', function () {
+        Kernel::boot(dirname(__DIR__, 2) . '/src', []);
 
-        // RenderApi should be available in container
-        $renderApi = Kernel::get(\Studiometa\Foehn\Rest\RenderApi::class);
-        expect($renderApi)->toBeInstanceOf(\Studiometa\Foehn\Rest\RenderApi::class);
-    });
-
-    it('registers RenderApiConfig in container with defaults', function () {
-        $kernel = Kernel::boot(dirname(__DIR__, 2) . '/src', []);
-
-        // RenderApiConfig should be available with empty templates by default
-        $config = Kernel::get(\Studiometa\Foehn\Config\RenderApiConfig::class);
-        expect($config)->toBeInstanceOf(\Studiometa\Foehn\Config\RenderApiConfig::class);
-        expect($config->templates)->toBe([]);
+        foreach ([
+            \Studiometa\Foehn\Views\Sections\SectionRequest::class,
+            \Studiometa\Foehn\Views\Sections\SectionCollector::class,
+            \Studiometa\Foehn\Views\Sections\SectionRenderer::class,
+        ] as $class) {
+            expect(Kernel::get($class))->toBe(Kernel::get($class));
+        }
     });
 });
 
@@ -215,7 +210,7 @@ describe('Kernel respects user config files', function () {
             \Studiometa\Foehn\Config\FoehnConfig::class,
             \Studiometa\Foehn\Config\TimberConfig::class,
             \Studiometa\Foehn\Config\RestConfig::class,
-            \Studiometa\Foehn\Config\RenderApiConfig::class,
+            \Studiometa\Foehn\Config\PageCacheConfig::class,
         ] as $class) {
             expect($container->get($class))->toBeInstanceOf($class);
         }

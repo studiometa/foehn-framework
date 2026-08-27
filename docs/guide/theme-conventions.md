@@ -315,11 +315,11 @@ Føhn uses Tempest's config discovery. Any file ending in `.config.php` in the `
 | **File name** | `{name}.config.php` |
 
 ```php
-// app/render-api.config.php
-use Studiometa\Foehn\Config\RenderApiConfig;
+// app/timber.config.php
+use Studiometa\Foehn\Config\TimberConfig;
 
-return new RenderApiConfig(
-    templates: ['partials/*', 'components/*'],
+return new TimberConfig(
+    templatesDir: ['templates'],
 );
 ```
 
@@ -342,6 +342,7 @@ Environment-specific configs are also supported:
 | **Block templates**   | `templates/blocks/`     | `templates/blocks/hero.twig`       |
 | **Components**        | `templates/components/` | `templates/components/button.twig` |
 | **Page templates**    | `templates/pages/`      | `templates/pages/home.twig`        |
+| **Section templates** | `templates/sections/`   | `templates/sections/results.twig`  |
 | **Pattern templates** | `templates/patterns/`   | `templates/patterns/hero.twig`     |
 
 ### Template Naming

@@ -115,7 +115,9 @@ The kernel automatically registers these services as singletons:
 | `ContextProviderRegistry` | —                  | Context provider management     |
 | `DiscoveryRunner`         | —                  | Discovery orchestration         |
 | `AcfBlockRenderer`        | —                  | ACF block rendering             |
-| `RenderApi`               | —                  | Template render API             |
+| `SectionRequest`          | —                  | Current section selection       |
+| `SectionCollector`        | —                  | Page-local section declarations |
+| `SectionRenderer`         | —                  | Atomic section HTML rendering   |
 
 ### getInstance()
 

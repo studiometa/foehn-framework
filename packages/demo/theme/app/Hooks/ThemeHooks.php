@@ -40,6 +40,7 @@ final class ThemeHooks
         }
 
         $query->set('orderby', ['menu_order' => 'ASC', 'date' => 'DESC']);
+        $query->set('posts_per_page', 3);
     }
 
     #[AsFilter('excerpt_length')]
