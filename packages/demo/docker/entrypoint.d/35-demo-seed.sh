@@ -93,44 +93,58 @@ foehn_demo_seed() {
         su -s /bin/sh "${APPLICATION_USER:-application}" -c "cd /app && $1"
     }
 
-    # `core is-installed` asks the database whether the tables are there, which is
-    # the only honest test: the volume outlives the image, so an image that has
-    # never run may well find a site that has been up for months. A restart, a
-    # redeploy and a machine rebuilt from the same volume all land here.
+    # The marker, and not `wp core is-installed`. The two answer different
+    # questions, and the difference is a state this script reached on its first
+    # real deployment: `wp core install` succeeds, a later step fails, the machine
+    # is restarted — and `core is-installed` is now true on a site with no
+    # content, so every boot after it skips the seeding and the site stays half
+    # built forever. Worse, the restart boots cleanly, so the deploy goes green
+    # over a site that never got its portfolio. The marker is written after the
+    # last step and nowhere else, so it means what this script needs to ask:
+    # not "is there a WordPress" but "did this finish".
+    if foehn_demo_run 'wp option get foehn_demo_seeded' >/dev/null 2>&1; then
+        echo "ℹ️ NOTICE ($script_name): the volume already holds the portfolio, seeding nothing."
+        return 0
+    fi
+
+    # Installed but unmarked is the interrupted case above. The content steps are
+    # idempotent — the seed finds its posts by slug and its photographs by their
+    # Unsplash id — so the way out is to run them again rather than to demand a
+    # clean volume from somebody who cannot easily produce one.
     if foehn_demo_run 'wp core is-installed' >/dev/null 2>&1; then
-        echo "ℹ️ NOTICE ($script_name): the volume already holds an installed site, seeding nothing."
-        return 0
-    fi
+        echo "ℹ️ NOTICE ($script_name): WordPress is installed but the portfolio is not, so an earlier boot stopped part way. Building the rest."
+    else
+        # No password, no site. Inventing one would put an admin account with a
+        # guessable password on a public demo, and defaulting to something printed
+        # in the log would be the same thing more slowly. The site stays
+        # uninstalled and says why, which is a state somebody can fix with one
+        # command.
+        if [ -z "${DEMO_ADMIN_PASSWORD:-}" ]; then
+            echo "ℹ️ NOTICE ($script_name): DEMO_ADMIN_PASSWORD is unset, so the site is left uninstalled. Set it with 'fly secrets set DEMO_ADMIN_PASSWORD=...' and deploy again."
+            return 0
+        fi
 
-    # No password, no site. Inventing one would put an admin account with a
-    # guessable password on a public demo, and defaulting to something printed in
-    # the log would be the same thing more slowly. The site stays uninstalled and
-    # says why, which is a state somebody can fix with one command.
-    if [ -z "${DEMO_ADMIN_PASSWORD:-}" ]; then
-        echo "ℹ️ NOTICE ($script_name): DEMO_ADMIN_PASSWORD is unset, so the site is left uninstalled. Set it with 'fly secrets set DEMO_ADMIN_PASSWORD=...' and deploy again."
-        return 0
-    fi
+        # Measured at 36 s on a 1 GB container with uploads on local disk, most of
+        # it in the thirty attachments' sub-sizes; a bucket puts a network round
+        # trip behind each of those and costs more. Said out loud because it
+        # happens once, on a boot Fly is waiting on, and a silent half-minute in a
+        # deploy log is a half-minute somebody spends wondering.
+        echo "ℹ️ NOTICE ($script_name): empty volume, building the portfolio. This takes about half a minute; every boot after it takes none."
 
-    # Measured at 36 s on a 1 GB container with uploads on local disk, most of it
-    # in the thirty attachments' sub-sizes; a bucket puts a network round trip
-    # behind each of those and costs more. Said out loud because it happens once,
-    # on a boot Fly is waiting on, and a silent half-minute in a deploy log is a
-    # half-minute somebody spends wondering.
-    echo "ℹ️ NOTICE ($script_name): empty volume, building the portfolio. This takes about half a minute; every boot after it takes none."
-
-    # `--url` from `WP_HOME`, which `wp-config.php` has already turned into a
-    # constant: WordPress writes that origin into every permalink, menu item and
-    # guid it creates below, and a site seeded against the wrong one is a site
-    # that redirects visitors somewhere it does not serve.
-    if ! foehn_demo_run 'wp core install \
-        --url="$WP_HOME" \
-        --title="Føhn Demo" \
-        --admin_user=admin \
-        --admin_email=admin@example.com \
-        --admin_password="$DEMO_ADMIN_PASSWORD" \
-        --skip-email'; then
-        echo "🛑 ERROR ($script_name): WordPress could not be installed. The container will not start." >&2
-        return 1
+        # `--url` from `WP_HOME`, which `wp-config.php` has already turned into a
+        # constant: WordPress writes that origin into every permalink, menu item
+        # and guid it creates below, and a site seeded against the wrong one is a
+        # site that redirects visitors somewhere it does not serve.
+        if ! foehn_demo_run 'wp core install \
+            --url="$WP_HOME" \
+            --title="Føhn Demo" \
+            --admin_user=admin \
+            --admin_email=admin@example.com \
+            --admin_password="$DEMO_ADMIN_PASSWORD" \
+            --skip-email'; then
+            echo "🛑 ERROR ($script_name): WordPress could not be installed. The container will not start." >&2
+            return 1
+        fi
     fi
 
     # Føhn lives in the theme, so until this runs the site has registered no post
@@ -173,6 +187,14 @@ foehn_demo_seed() {
     # demonstrate. Without this, `/_health` is a 404 on a site that looks fine.
     if ! foehn_demo_run 'wp foehn rewrite:flush'; then
         echo "🛑 ERROR ($script_name): the rewrite rules could not be flushed. The container will not start." >&2
+        return 1
+    fi
+
+    # Last, and only here: everything above has to have succeeded for this to mean
+    # what the guard at the top reads it as. `--autoload=no` because nothing on a
+    # front-end request asks for it.
+    if ! foehn_demo_run 'wp option update foehn_demo_seeded 1 --autoload=no'; then
+        echo "🛑 ERROR ($script_name): the portfolio was built but could not be marked as built, so the next boot would build it again. The container will not start." >&2
         return 1
     fi
 

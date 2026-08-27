@@ -60,6 +60,19 @@ kill_timeout = '30s'
   S3_UPLOADS_ENDPOINT = 'https://fly.storage.tigris.dev'
   S3_UPLOADS_REGION   = 'auto'
 
+  # Tigris refuses the integrity headers AWS SDK 3.337 made the default, and it
+  # refuses them only on the streamed writes — `wp s3-uploads verify`, which puts
+  # a small string, passes either way. So the symptom is not "uploads are broken"
+  # but "sideloading an image fails while the configuration checks out": the
+  # object never lands, and WordPress then reads back the temp file s3-uploads
+  # moved into the bucket and gets "Stream is not seekable" followed by "Sorry,
+  # you are not allowed to upload this file type" — a message about the file
+  # type, for a problem that has nothing to do with the file type.
+  #
+  # MinIO rejects them too, which is why .env.example carries this same line for
+  # the ddev environment. AWS itself needs them left on.
+  S3_UPLOADS_CHECKSUMS = 'false'
+
   # The runtime image maps `/wp-content/uploads/` and `/_image/` to the bucket
   # itself, so WordPress must keep writing its own URLs rather than the bucket's:
   # every photograph is then served from the site's own domain, no bucket
