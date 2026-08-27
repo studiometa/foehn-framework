@@ -346,18 +346,70 @@
 /* ── Pagination ─────────────────────────────────────────── */
 
 .pagination {
-  display: flex;
-  gap: 0.75rem;
-  align-items: baseline;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 1rem var(--gutter);
+  align-items: center;
   margin-top: 3rem;
-  padding-top: 1rem;
-  border-top: var(--rule-width) solid var(--color-ink);
+  padding-block: 1.25rem;
   font-size: var(--text-small);
+  border-top: var(--rule-width) solid var(--color-ink);
+  border-bottom: var(--rule-width) solid var(--color-rule);
+}
+
+.pagination__prev,
+.pagination__next {
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
+  border-bottom: var(--rule-width) solid transparent;
+}
+
+.pagination__prev {
+  grid-column: 1;
+  justify-self: start;
+}
+
+.pagination__next {
+  grid-column: 3;
+  justify-self: end;
+}
+
+.pagination__pages {
+  display: flex;
+  grid-column: 2;
+  gap: 0.25rem;
+  justify-content: center;
+}
+
+.pagination__page {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  min-height: 2rem;
+  font-variant-numeric: tabular-nums;
+  border-bottom: var(--rule-width) solid transparent;
 }
 
 .pagination a:hover,
 .pagination [aria-current] {
-  border-bottom: var(--rule-width) solid var(--color-ink);
+  border-bottom-color: var(--color-ink);
+}
+
+@media (max-width: 35rem) {
+  .pagination {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .pagination__next {
+    grid-column: 2;
+  }
+
+  .pagination__pages {
+    grid-row: 2;
+    grid-column: 1 / -1;
+  }
 }
 
 /* ── Span helpers, used by the templates' 12-column grid ── */

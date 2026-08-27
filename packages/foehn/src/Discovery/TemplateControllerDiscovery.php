@@ -226,7 +226,7 @@ final class TemplateControllerDiscovery implements Discovery
     private function emitSectionResponse(string $body, int $status): void
     {
         if (!headers_sent()) {
-            http_response_code($status);
+            status_header($status);
             header('Content-Type: text/html; charset=UTF-8', true);
             header('Cache-Control: private, no-store', true);
             header('X-Robots-Tag: noindex, nofollow', true);

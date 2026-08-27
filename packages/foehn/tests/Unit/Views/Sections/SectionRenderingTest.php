@@ -445,6 +445,7 @@ describe('TemplateControllerDiscovery section responses', function () {
 
         expect($template)->toBe('');
         expect(http_response_code())->toBe(200);
+        expect($GLOBALS['wp_stub_status_headers'])->toContain(['code' => 200, 'description' => '']);
         expect($body)->toContain('id="foehn-section-results"')->not->toContain('Full page');
         expect($view->renders)->toHaveCount(1);
         expect($view->renders[0])->toBe([
