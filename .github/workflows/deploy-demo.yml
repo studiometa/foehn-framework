@@ -1,0 +1,120 @@
+name: Deploy the demo
+
+# The demo, to Fly, on every release. https://foehn-demo.fly.dev
+#
+# Not triggered by the tag, and that is the whole design of this file.
+# `packages/demo/Dockerfile` builds `FROM ghcr.io/studiometa/foehn-wordpress:
+# <version>-db`, and docker.yml is what publishes that image — on the same tag
+# push. A workflow started by the tag would race an image that does not exist
+# yet and fail on a `manifest unknown` a rerun happens to fix, which is the worst
+# kind of green.
+#
+# So it waits on docker.yml instead, and takes the tag from the run it waited
+# on: the demo then deploys on the runtime image of the release it belongs to,
+# passed as `--build-arg FOEHN_IMAGE=…`. The alternative was to leave the
+# Dockerfile's pinned `ARG` alone and accept a demo that always runs the
+# *previous* release's image — simpler, and wrong for a site whose only job is to
+# show what the current release does.
+#
+# The pinned `ARG` still means what it says: it is what a local `docker build`
+# gets, and what a manual dispatch below deploys.
+#
+# @see .github/workflows/docker.yml
+# @see docs/guide/deployment-fly.md
+
+on:
+  workflow_run:
+    workflows: ["Docker"]
+    types:
+      - completed
+
+  # The only way to run this without cutting a release. It deploys the checked
+  # out ref on the image the Dockerfile pins.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One deploy at a time, and none of them cancelled: a `fly deploy` interrupted
+# part way is a machine in whatever state the release left it.
+concurrency:
+  group: deploy-demo
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to Fly
+    runs-on: ubuntu-latest
+
+    # docker.yml runs on tags, on `main` and on pull requests, and `workflow_run`
+    # fires for all three. Only a tag should deploy — which here is a successful
+    # `push` run whose ref is not `main`, since those are the only two branches
+    # of that trigger.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_branch != 'main')
+
+    steps:
+      # `workflow_run` checks out the default branch by default, not the commit
+      # that triggered the run it is reacting to. Without this the tag would
+      # publish an image and deploy whatever `main` happened to hold.
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.ref }}
+
+      # Through the environment rather than into the command line: `head_branch`
+      # is attacker-controlled input in the general case, and a workflow that
+      # interpolates it into a shell is a workflow that runs it.
+      - name: Work out which runtime image to build on
+        id: image
+        env:
+          TAG: ${{ github.event.workflow_run.head_branch }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          set -euo pipefail
+
+          # Empty on a manual dispatch, which is what leaves the Dockerfile's
+          # pinned ARG in place.
+          if [ -z "$TAG" ]; then
+            echo "build_args=" >> "$GITHUB_OUTPUT"
+            echo "Deploying on the image packages/demo/Dockerfile pins"
+            exit 0
+          fi
+
+          # A git ref may hold `$`, a backtick and parentheses, and this value
+          # ends up on a command line. Releases are `0.5.10`, so anything that is
+          # not that shape is not a release and has no business deploying — which
+          # makes this both the injection guard and the check that the tag names
+          # an image docker.yml would have published.
+          case "$TAG" in
+            *[!0-9.]* | *..* | .* | *.) echo "🛑 \"$TAG\" is not a release tag." >&2; exit 1 ;;
+          esac
+
+          echo "build_args=--build-arg FOEHN_IMAGE=ghcr.io/$OWNER/foehn-wordpress:$TAG-db" >> "$GITHUB_OUTPUT"
+          echo "Deploying on ghcr.io/$OWNER/foehn-wordpress:$TAG-db"
+
+      # Fly publishes no `v`-prefixed major tag for this action; `1` is the one
+      # that moves.
+      - name: Set up flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@1
+
+      # An app-scoped deploy token, so this can deploy foehn-demo and nothing
+      # else. It expires — a year from when it was issued — and the failure then
+      # is an authentication error here, not a broken site.
+      #
+      # `--ha=false` because the app has a volume: Fly's default second machine
+      # has none, so it is not a spare, it is a machine that cannot start a
+      # database. Everything else the deploy needs is in packages/demo/fly.toml.
+      - name: Deploy
+        working-directory: packages/demo
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          # Through the environment, like the tag above and for the same reason.
+          # Interpolated into the `run:` script instead, this value would be a
+          # shell fragment the runner evaluates; read from a variable it is only
+          # ever split into words, which is all the splitting this needs.
+          BUILD_ARGS: ${{ steps.image.outputs.build_args }}
+        run: flyctl deploy --ha=false $BUILD_ARGS

@@ -1,0 +1,76 @@
+#!/bin/sh
+###############################################################################
+# Runs WordPress's due scheduled events, on a real schedule.
+#
+# WordPress's own cron is not a scheduler: it is a check performed on page
+# loads, which spawns a loopback request when something is due. That works on a
+# site where every request reaches PHP, and this image is built so that most do
+# not — a page cache hit is answered by NGINX and PHP never hears about it. The
+# better the cache does its job, the less often cron runs. On a quiet site
+# behind a warm cache it effectively stops.
+#
+# So the events are run from cron instead, and `wp-config.php` sets
+# `DISABLE_WP_CRON` when this is enabled so the two do not both try.
+#
+# Run by cron, from a symlink `85-wp-cron.sh` places in
+# `/etc/periodic/<FOEHN_CRON_SCHEDULE>/`.
+#
+# @see ../entrypoint.d/85-wp-cron.sh
+###############################################################################
+set -eu
+
+say() {
+    printf '%s [foehn-cron] %s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" "$*"
+}
+
+[ "${FOEHN_CRON_ENABLED:-true}" = "true" ] || exit 0
+
+lock_dir="/run/foehn"
+mkdir -p "$lock_dir"
+
+# `-n`: a tick that finds the last one still working leaves it alone. Events
+# run late far more gracefully than they run twice, and a long queue overlapping
+# itself is how one slow job becomes several.
+exec 9>"$lock_dir/cron.lock"
+
+if ! flock -n 9; then
+    say "the previous run is still going, skipping this tick."
+    exit 0
+fi
+
+# As `application`, the user PHP runs as, and never as root.
+#
+# This is the same trap the page cache hook documents: running WP-CLI as root
+# leaves root-owned files under `wp-content/cache/`, after which PHP — which is
+# not root — can no longer write there. The cache then silently stops working on
+# a site that looks healthy. Cron writes more than the cache does, so it matters
+# more here, not less.
+web_user="${APPLICATION_USER:-application}"
+
+# No `--skip-plugins`. Scheduled events belong to plugins more often than to
+# core, so skipping them would run cron and accomplish nothing — the failure
+# would be invisible, because there is nothing left due to complain about.
+if ! output=$(su -s /bin/sh "$web_user" -c \
+    "wp cron event run --due-now --path=/app/web/wp" 2>&1); then
+
+    # A database that is not up yet, or a container with no site in it at all,
+    # is the ordinary case rather than an emergency — the next tick will do the
+    # work. The wording matters: WP-CLI says "This does not seem to be a
+    # WordPress installation", so a pattern built around "not a WordPress
+    # installation" never matches it. Anything else is worth the log line.
+    case "$output" in
+        *'Error establishing a database connection'* | *"Can't connect"* | *'WordPress installation'*)
+            exit 0
+            ;;
+    esac
+
+    say "⚠️ $(printf '%s' "$output" | tail -3)"
+    exit 1
+fi
+
+# Quiet when there was nothing to do, which is most ticks. A cron job that
+# writes to the log every fifteen minutes teaches everyone to ignore the log.
+case "$output" in
+    *'Executed a total of 0 cron events'* | '') ;;
+    *) say "$(printf '%s' "$output" | tail -1)" ;;
+esac

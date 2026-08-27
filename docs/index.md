@@ -28,6 +28,11 @@ features:
   - icon: ⚡
     title: Minimal Boilerplate
     details: One line to boot your theme, attributes handle the rest.
+  - icon: 🐳
+    title: Runtime Image
+    details: A published WordPress image with the page cache, media proxy and backup rules already installed.
+    link: /guide/docker-image
+    linkText: The Docker image
 ---
 
 ## Quick Example

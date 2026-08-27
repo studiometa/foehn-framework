@@ -52,6 +52,14 @@ COMPOSER=composer.monorepo.json composer update studiometa/foehn studiometa/foeh
 rm composer.monorepo.json composer.monorepo.lock
 ```
 
+## Where it runs
+
+It is up at **<https://foehn-demo.fly.dev>**, so the site can be looked at without installing anything.
+
+One Fly app carries the whole of it: `Dockerfile` builds on the `-db` variant of Føhn's runtime image, so MariaDB runs beside PHP in the same container and there is no database app to deploy alongside. The photographs are in a Tigris bucket, served under the site's own domain, and the portfolio is built by the machine itself on a boot that finds an empty volume — see `docker/entrypoint.d/35-demo-seed.sh`.
+
+See [the guide](https://studiometa.github.io/foehn-framework/guide/deployment-fly) for what the app is made of, which values are secrets, and the two failures the first deployment found.
+
 ## What is demonstrated where
 
 | Attribute                     | Here                                                                                                                           |

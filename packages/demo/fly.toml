@@ -1,0 +1,130 @@
+# The demo, on Fly.
+#
+# One app, one machine, one volume. The image is the `-db` variant of Føhn's own
+# runtime image, so MariaDB runs beside PHP in this container and there is no
+# second app to deploy, scale or forget about. @see Dockerfile
+#
+# The site provisions itself: a machine that boots onto an empty volume installs
+# WordPress and builds the portfolio from `database/`, and a machine that boots
+# onto a volume that already holds it does nothing.
+# @see docker/entrypoint.d/35-demo-seed.sh
+#
+# What must exist before the first deploy:
+#
+#     fly volumes create data --size 1 --region cdg --snapshot-retention 14
+#     fly secrets set DB_PASSWORD=… DEMO_ADMIN_PASSWORD=… \
+#         AUTH_KEY=… SECURE_AUTH_KEY=… LOGGED_IN_KEY=… NONCE_KEY=… \
+#         AUTH_SALT=… SECURE_AUTH_SALT=… LOGGED_IN_SALT=… NONCE_SALT=… \
+#         S3_UPLOADS_BUCKET=… AWS_ACCESS_KEY_ID=… AWS_SECRET_ACCESS_KEY=…
+
+app            = 'foehn-demo'
+primary_region = 'cdg'
+
+# InnoDB has to finish flushing its buffer pool before the machine goes away. Cut
+# short, the next boot spends its time on crash recovery instead — measured on
+# this image: a 1 s grace period produced "Starting crash recovery from
+# checkpoint LSN=…" on the following start, a 30 s one did not.
+#
+# Up here with the other top-level keys, and not down beside `[[mounts]]` where
+# it reads better: TOML gives every bare key that follows a table header to that
+# table, so a `kill_timeout` written after `[[mounts]]` becomes a mount option
+# Fly ignores, and the machine keeps the 5 s default without saying so.
+kill_timeout = '30s'
+
+[env]
+  # WordPress writes this origin into every permalink, menu item and guid the
+  # seed creates, and `wp-config.php` turns it into a constant that beats the
+  # stored `home` option — so the site is served wherever this says and nowhere
+  # else. It is here rather than in a secret because it is printed on every page
+  # of the site: there is nothing to hide, and a value in the file is a value
+  # that survives somebody rebuilding the app from this repository. Change it
+  # here first when the demo moves to a domain of its own.
+  WP_HOME = 'https://foehn-demo.fly.dev'
+
+  # The `-db` variant creates the database and the user from these on its first
+  # boot. The name and the user are not secrets — only `DB_PASSWORD` is, and the
+  # server listens on a unix socket and on no TCP port at all, so nothing outside
+  # this container can present them anywhere.
+  DB_NAME = 'foehn_demo'
+  DB_USER = 'foehn'
+
+  # Uploads go to a Tigris bucket, because `web/wp-content/uploads/` is the one
+  # directory a generated web root does not make disposable and this machine's
+  # filesystem is replaced on every deploy. The volume is MariaDB's data
+  # directory and nothing else, so a photograph on local disk is a photograph the
+  # next deploy loses while the database goes on pointing at it.
+  #
+  # Tigris addresses buckets as subdomains, which is the default, so no
+  # `S3_UPLOADS_PATH_STYLE` here. The bucket name and the credentials come from
+  # `fly storage create` and are set as secrets.
+  S3_UPLOADS_ENDPOINT = 'https://fly.storage.tigris.dev'
+  S3_UPLOADS_REGION   = 'auto'
+
+  # Tigris refuses the integrity headers AWS SDK 3.337 made the default, and it
+  # refuses them only on the streamed writes — `wp s3-uploads verify`, which puts
+  # a small string, passes either way. So the symptom is not "uploads are broken"
+  # but "sideloading an image fails while the configuration checks out": the
+  # object never lands, and WordPress then reads back the temp file s3-uploads
+  # moved into the bucket and gets "Stream is not seekable" followed by "Sorry,
+  # you are not allowed to upload this file type" — a message about the file
+  # type, for a problem that has nothing to do with the file type.
+  #
+  # MinIO rejects them too, which is why .env.example carries this same line for
+  # the ddev environment. AWS itself needs them left on.
+  S3_UPLOADS_CHECKSUMS = 'false'
+
+  # The runtime image maps `/wp-content/uploads/` and `/_image/` to the bucket
+  # itself, so WordPress must keep writing its own URLs rather than the bucket's:
+  # every photograph is then served from the site's own domain, no bucket
+  # hostname appears in any page, and the demo stays a single-origin site the day
+  # it moves behind a CDN.
+  S3_UPLOADS_DISABLE_REPLACE_UPLOAD_URL = 'true'
+
+[http_service]
+  internal_port = 80
+  # The site defines `WP_HOME` as an `https://` URL, and a visitor who reaches it
+  # over HTTP gets WordPress's own redirect to the canonical one — a round trip
+  # that Fly can refuse in front of the machine instead.
+  force_https = true
+  auto_stop_machines  = false
+  auto_start_machines = true
+
+  # Not a tuning choice. Scale-to-zero cannot work here for two reasons that both
+  # end in the same place: WordPress's scheduled events cannot fire on a machine
+  # that is stopped, and MariaDB owns a volume — a stopped machine is a database
+  # that is not there to be asked. It also keeps the volume warm, so InnoDB never
+  # has to start from cold for a visitor.
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    interval = '15s'
+    timeout  = '5s'
+    path     = '/healthcheck'
+    # supervisord orders its programs but does not wait for one to be ready
+    # before starting the next, so PHP-FPM can answer before MariaDB has
+    # finished starting — a few seconds in which the site would serve "Error
+    # establishing a database connection" to a check that had already passed it
+    # into rotation. A grace period covers it.
+    grace_period = '15s'
+
+# MariaDB's data directory, which is the whole of what this site keeps: the
+# photographs are in the bucket and everything else is in the image.
+#
+# Fly keeps volume snapshots for five days by default, which is short for the
+# only copy of anything. `fly volumes create data --snapshot-retention 14` is the
+# other half of this block and cannot be expressed here.
+[[mounts]]
+  source      = 'data'
+  destination = '/var/lib/mysql'
+
+[[vm]]
+  # One shared CPU, which is the preset's own definition — `cpus` is not repeated
+  # here because `size` already carries it and a second answer to the same
+  # question is a second thing that can disagree.
+  size   = 'shared-cpu-1x'
+  # The preset's own 256 MB is not enough for PHP and a database in one
+  # container, so the memory is raised and only the memory. Of the 1 GB, MariaDB
+  # takes 192 MB for its buffer pool by default and PHP has the rest. Measured on
+  # this image: 208 MiB peak for the whole container serving 3562 requests at 20
+  # concurrency against an uncached WordPress front page.
+  memory = '1024mb'
