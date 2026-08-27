@@ -31,23 +31,24 @@ ddev launch /wp/wp-admin # the admin
 
 ## What is demonstrated where
 
-| Attribute                     | Here                                                           |
-| ----------------------------- | -------------------------------------------------------------- |
-| `#[AsPostType]`               | `Models/Project.php`, `Models/Testimonial.php`                 |
-| `#[AsPostMeta]`               | `Models/Project.php` — `client`, `year`, `location`, `camera`  |
-| `#[AsTaxonomy]`               | `Taxonomies/ProjectCategory.php`, `Taxonomies/ProjectTag.php`  |
-| `#[AsBlock]`                  | `Blocks/HeroBlock.php`, `CalloutBlock.php`, `SectionBlock.php` |
-| `#[AsBlockBinding]`           | `Bindings/ReadingTime.php`                                     |
-| `#[AsSettingsPage]`           | `Settings/ThemeSettings.php`, with a Twig form                 |
-| `#[AsRewriteRule]`            | `Routes/HealthCheckRoute.php` — `GET /_health`                 |
-| `#[AsTemplateController]`     | `Controllers/` — front page, projects index, project, page     |
-| Page cache                    | `theme/app/page-cache.config.php`                              |
-| `#[AsContextProvider]`        | `ContextProviders/GlobalContextProvider.php`                   |
-| `#[AsImageSize]`              | `ImageSizes/`, used by `components/card-project.twig`          |
-| `ImageTransformer` (Glide)    | `foehn.config.php`, used by `components/photograph.twig`       |
-| `#[AsMenu]`                   | `Menus/`                                                       |
-| `#[AsAction]` / `#[AsFilter]` | `Hooks/ThemeHooks.php`                                         |
-| Arrayable DTOs                | `Data/HeroContext.php`                                         |
+| Attribute                           | Here                                                                                                                    |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `#[AsPostType]`                     | `Models/Project.php`, `Models/Testimonial.php`                                                                          |
+| `#[AsPostMeta]`                     | `Models/Project.php` — `client`, `year`, `location`, `camera`                                                           |
+| `#[AsTaxonomy]`                     | `Taxonomies/ProjectCategory.php`, `Taxonomies/ProjectTag.php`                                                           |
+| `#[AsBlock]`                        | `Blocks/HeroBlock.php`, `CalloutBlock.php`, `SectionBlock.php`                                                          |
+| `#[AsBlockBinding]`                 | `Bindings/ReadingTime.php`                                                                                              |
+| `#[AsSettingsPage]`                 | `Settings/ThemeSettings.php`, with a Twig form                                                                          |
+| `#[AsRewriteRule]`                  | `Routes/HealthCheckRoute.php` — `GET /_health`                                                                          |
+| `#[AsTemplateController]`           | `Controllers/` — front page, projects index, project, page                                                              |
+| Page cache                          | `theme/app/page-cache.config.php`                                                                                       |
+| Section rendering / AJAX pagination | `templates/pages/archive-project.twig`, `templates/sections/project-index.twig`, `templates/components/pagination.twig` |
+| `#[AsContextProvider]`              | `ContextProviders/GlobalContextProvider.php`                                                                            |
+| `#[AsImageSize]`                    | `ImageSizes/`, used by `components/card-project.twig`                                                                   |
+| `ImageTransformer` (Glide)          | `foehn.config.php`, used by `components/photograph.twig`                                                                |
+| `#[AsMenu]`                         | `Menus/`                                                                                                                |
+| `#[AsAction]` / `#[AsFilter]`       | `Hooks/ThemeHooks.php`                                                                                                  |
+| Arrayable DTOs                      | `Data/HeroContext.php`                                                                                                  |
 
 The framework's own cleanup and security hooks are opted into from `theme/app/foehn.config.php`, `S3UploadsEndpoint` among them.
 

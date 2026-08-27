@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Config\PageCacheConfig;
+use Studiometa\Foehn\Views\Sections\SectionRequest;
 
 describe('PageCacheConfig', function () {
     beforeEach(function () {
@@ -40,13 +41,14 @@ describe('PageCacheConfig', function () {
     });
 
     it('reserves section selection from ignored and keyed query configuration', function () {
-        $config = new PageCacheConfig(ignoredQueryArgs: ['foehn_sections', 'utm_source'], cacheQueryArgs: [
-            'foehn_sections',
+        $config = new PageCacheConfig(ignoredQueryArgs: [SectionRequest::PARAMETER, 'utm_source'], cacheQueryArgs: [
+            SectionRequest::PARAMETER,
             'page',
         ]);
 
+        expect(PageCacheConfig::RESERVED_QUERY_ARGS)->toContain(SectionRequest::PARAMETER);
         expect($config->getIgnoredQueryArgs())->toBe(['utm_source']);
-        expect($config->getCacheQueryArgs())->toHaveKeys(['page'])->not->toHaveKey('foehn_sections');
+        expect($config->getCacheQueryArgs())->toHaveKeys(['page'])->not->toHaveKey(SectionRequest::PARAMETER);
     });
 
     it('reads the environment off WordPress', function () {

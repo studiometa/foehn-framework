@@ -13,12 +13,15 @@ use Studiometa\Foehn\Views\Twig\SectionExtension;
 #[\Studiometa\Foehn\Attributes\AsTemplateController('index')]
 final class SectionTestController implements \Studiometa\Foehn\Contracts\TemplateControllerInterface
 {
+    public ?Closure $onHandle = null;
+
     public function __construct(
         private readonly SectionExtension $sections,
     ) {}
 
     public function handle(\Studiometa\Foehn\Views\TemplateContext $context): ?string
     {
+        ($this->onHandle ?? static fn() => null)();
         $this->sections->section(['from_page' => true], 'results', ['explicit' => true]);
         $this->sections->section(['from_page' => true], 'filters');
 
@@ -102,6 +105,65 @@ describe('SectionRequest', function () {
         expect($request->isValid())->toBeFalse()->and($request->errorStatus())->toBe(405);
     });
 
+    it('hides its control parameter from page code and restores the exact request state', function () {
+        $previousGet = $_GET;
+        $previousRequestUri = $_SERVER['REQUEST_URI'] ?? null;
+        $_GET = ['type' => 'project', SectionRequest::PARAMETER => 'results'];
+        $_SERVER['REQUEST_URI'] = '/archive?type=project&foehn_sections=results&foehn_sections=filters#list';
+        $request = new SectionRequest('GET', '/archive?foehn_sections=results');
+
+        try {
+            $inside = $request->withoutControlParameter(static fn(): array => [
+                $_GET,
+                $_SERVER['REQUEST_URI'],
+                add_query_arg('paged', 2),
+            ]);
+
+            expect($inside)->toBe([
+                ['type' => 'project'],
+                '/archive?type=project#list',
+                '/archive?type=project&paged=2',
+            ]);
+            expect($_GET)->toBe(['type' => 'project', SectionRequest::PARAMETER => 'results']);
+            expect($_SERVER['REQUEST_URI'])
+                ->toBe('/archive?type=project&foehn_sections=results&foehn_sections=filters#list');
+        } finally {
+            $_GET = $previousGet;
+
+            if ($previousRequestUri === null) {
+                unset($_SERVER['REQUEST_URI']);
+            } else {
+                $_SERVER['REQUEST_URI'] = $previousRequestUri;
+            }
+        }
+    });
+
+    it('restores absent request state when page code fails', function () {
+        $previousGet = $_GET;
+        $previousRequestUri = $_SERVER['REQUEST_URI'] ?? null;
+        $_GET = [];
+        unset($_SERVER['REQUEST_URI']);
+        $request = new SectionRequest('GET', '/?foehn_sections=results');
+
+        try {
+            expect(fn() => $request->withoutControlParameter(static function (): never {
+                $_GET[SectionRequest::PARAMETER] = 'changed';
+                $_SERVER['REQUEST_URI'] = '/changed';
+
+                throw new RuntimeException('failed');
+            }))
+                ->toThrow(RuntimeException::class, 'failed');
+            expect($_GET)->toBe([]);
+            expect(array_key_exists('REQUEST_URI', $_SERVER))->toBeFalse();
+        } finally {
+            $_GET = $previousGet;
+
+            if ($previousRequestUri !== null) {
+                $_SERVER['REQUEST_URI'] = $previousRequestUri;
+            }
+        }
+    });
+
     it('rejects unsafe, empty, duplicate, repeated, and excessive selections', function (string $uri) {
         $request = new SectionRequest('GET', $uri);
 
@@ -155,6 +217,7 @@ describe('SectionRenderer', function () {
 
         expect(fn() => $this->renderer->renderSelected(['results', 'missing'], $collector))
             ->toThrow(\Studiometa\Foehn\Views\Sections\SectionNotFoundException::class);
+        expect($this->view->renders)->toBe([]);
     });
 
     it('reports duplicate page declarations without replacing their first context', function () {
@@ -231,10 +294,13 @@ describe('SectionExtension', function () {
 
         expect($html)
             ->toContain('data-component="LazyInclude"')
+            ->toContain('data-foehn-lazy-section')
             ->toContain('data-option-src="/archive?type=project&amp;utm_source=test&amp;foehn_sections=results"')
-            ->toContain('data-ref="loading"')
-            ->toContain('data-ref="error" hidden')
+            ->toContain('data-ref="error" role="alert" style="display: none"')
+            ->toContain('data-ref="loading" role="status"')
+            ->not->toContain(' hidden')
             ->not->toContain('foehn-section-results');
+        expect(strpos($html, 'data-ref="error"'))->toBeLessThan(strpos($html, 'data-ref="loading"'));
         expect($this->view->renders)->toBe([]);
     });
 
@@ -246,6 +312,20 @@ describe('SectionExtension', function () {
         );
 
         expect($extension->url('results'))->toBe('/archive?type=project&utm_source=test&foehn_sections=results');
+    });
+
+    it('builds same-origin section URLs for pagination targets', function () {
+        $extension = sectionExtension(
+            new SectionRequest('GET', '/archive'),
+            $this->collector,
+            new SectionRenderer($this->view),
+        );
+
+        expect($extension->url('results', 'https://example.com/archive/page/2/?type=project#list'))
+            ->toBe('/archive/page/2/?type=project&foehn_sections=results#list');
+        expect($extension->url('results', '//evil.example/archive/page/3/?foehn_sections=old'))
+            ->toBe('/archive/page/3/?foehn_sections=results')
+            ->not->toStartWith('//');
     });
 
     it('does not freeze ignored query arguments into URLs emitted by cached pages', function () {
@@ -336,8 +416,18 @@ describe('TemplateControllerDiscovery section responses', function () {
         $view = new SectionTestViewEngine();
         $renderer = new SectionRenderer($view);
         $extension = sectionExtension($request, $collector, $renderer);
+        $controller = new SectionTestController($extension);
+        $observedRequestUris = [];
+        $controller->onHandle = static function () use (&$observedRequestUris): void {
+            $observedRequestUris[] = $_SERVER['REQUEST_URI'] ?? '';
+        };
+        $view->onRender = static function () use (&$observedRequestUris): void {
+            $observedRequestUris[] = $_SERVER['REQUEST_URI'] ?? '';
+        };
+        $_GET = ['type' => 'project', SectionRequest::PARAMETER => 'results'];
+        $_SERVER['REQUEST_URI'] = '/?type=project&foehn_sections=results';
         $container->singleton(SectionRenderer::class, static fn() => $renderer);
-        $container->singleton(SectionTestController::class, static fn() => new SectionTestController($extension));
+        $container->singleton(SectionTestController::class, static fn() => $controller);
         $discovery = new TemplateControllerDiscovery($request, $collector);
         $discovery->discover(
             testDiscoveryLocation(),
@@ -361,6 +451,9 @@ describe('TemplateControllerDiscovery section responses', function () {
             'template' => 'sections/results',
             'context' => ['from_page' => true, 'explicit' => true],
         ]);
+        expect($observedRequestUris)->toBe(['/?type=project', '/?type=project']);
+        expect($_GET)->toBe(['type' => 'project', SectionRequest::PARAMETER => 'results']);
+        expect($_SERVER['REQUEST_URI'])->toBe('/?type=project&foehn_sections=results');
     });
 
     it('emits no partial HTML or exception details when one selected render fails', function () {

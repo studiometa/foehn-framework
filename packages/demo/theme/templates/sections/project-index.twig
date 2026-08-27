@@ -22,6 +22,6 @@
   {% endfor %}
 
   {% if pagination %}
-    {% include 'components/pagination.twig' %}
+    {% include 'components/pagination.twig' with { pagination_section: 'project-index' } %}
   {% endif %}
 </section>

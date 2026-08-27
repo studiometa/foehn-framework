@@ -203,8 +203,19 @@ $head"
 
 check_page "/" "card__title" "the homepage lists a selection of projects"
 check_page "/projects/" "index-row__title" "the projects index lists the series"
+check_page "/projects/page/2/" "<html" "project pagination keeps a full-page fallback"
 check_page "/projects/corridors/" "plate--" "a project page shows its photographs"
 check_page "/about/" "prose" "the about page renders its copy"
+
+projects_index="$(curl -sk "$url/projects/")"
+printf '%s' "$projects_index" | grep -q 'data-component="Fetch"' || fail "project pagination does not use the base Fetch component"
+printf '%s' "$projects_index" | grep -q 'data-option-src="/projects/page/2/?foehn_sections=project-index"' || fail "project pagination has no section request URL"
+
+project_section="$(curl -sk "$url/projects/page/2/?foehn_sections=project-index")"
+printf '%s' "$project_section" | grep -q 'id="foehn-section-project-index"' || fail "the page-two section request returned no project index wrapper"
+printf '%s' "$project_section" | grep -q '<html' && fail "the page-two section request returned a full page"
+printf '%s' "$project_section" | grep -qE 'href="[^"]*foehn_sections=' && fail "pagination inside a section response retained the section control parameter in its fallback URL"
+printf '✓ %s\n' "project pagination swaps a section and keeps full-page fallbacks"
 
 # Image transforms, end to end. The plate crops to two ratios, which is where
 # #[AsImageSize] stops being the answer: a registered size is one shape, and one

@@ -139,7 +139,9 @@ final class TemplateControllerDiscovery implements Discovery
         $instance = get($controller['className']);
 
         if ($this->sectionRequest->isSelected()) {
-            return $this->handleSectionRequest($instance);
+            return $this->sectionRequest->withoutControlParameter(
+                fn(): string => $this->handleSectionRequest($instance),
+            );
         }
 
         $context = TemplateContext::fromTimberContext(Timber::context());

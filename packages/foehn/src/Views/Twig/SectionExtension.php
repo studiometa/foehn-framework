@@ -78,13 +78,11 @@ final class SectionExtension extends AbstractExtension
         return $this->renderer->render($name, $context);
     }
 
-    public function url(string $name): string
+    public function url(string $name, ?string $targetUrl = null): string
     {
         $this->assertSafeName($name);
 
-        $uri = $_SERVER['REQUEST_URI'] ?? '/';
-        [$uri, $fragment] = array_pad(explode('#', $uri, 2), 2, '');
-        [$path, $query] = array_pad(explode('?', $uri, 2), 2, '');
+        [$path, $query, $fragment] = $this->urlParts($targetUrl);
         $path = preg_replace('/[\x00-\x1F\x7F]/', '', str_replace('\\', '/', $path)) ?? '';
         $path = '/' . ltrim($path, '/');
         $ignoredQueryArgs = $this->pageCacheConfig->enabled && $this->pageCacheConfig->allowsEnvironment()
@@ -105,6 +103,26 @@ final class SectionExtension extends AbstractExtension
         return $fragment !== '' ? $url . '#' . $fragment : $url;
     }
 
+    /** @return array{string, string, string} */
+    private function urlParts(?string $targetUrl): array
+    {
+        $currentUri = $_SERVER['REQUEST_URI'] ?? '/';
+
+        if ($targetUrl === null) {
+            [$uri, $fragment] = array_pad(explode('#', $currentUri, 2), 2, '');
+            [$path, $query] = array_pad(explode('?', $uri, 2), 2, '');
+
+            return [$path, $query, $fragment];
+        }
+
+        [$currentUri] = explode('#', $currentUri, 2);
+        [$currentPath] = explode('?', $currentUri, 2);
+        $parts = parse_url(str_replace('\\', '/', $targetUrl));
+        $parts = is_array($parts) ? $parts : [];
+
+        return [$parts['path'] ?? $currentPath, $parts['query'] ?? '', $parts['fragment'] ?? ''];
+    }
+
     private function assertSafeName(string $name): void
     {
         if (!SectionRequest::isSafeName($name)) {
@@ -117,7 +135,7 @@ final class SectionExtension extends AbstractExtension
         $url = htmlspecialchars($this->url($name), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 
         return sprintf(
-            '<div data-component="LazyInclude" data-option-src="%s"><span data-ref="loading">Loading…</span><span data-ref="error" hidden>Unable to load this section.</span></div>',
+            '<div data-component="LazyInclude" data-foehn-lazy-section data-option-src="%s"><span data-ref="error" role="alert" style="display: none">Unable to load this section.</span><span data-ref="loading" role="status">Loading…</span></div>',
             $url,
         );
     }

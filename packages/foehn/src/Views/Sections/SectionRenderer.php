@@ -62,15 +62,17 @@ final class SectionRenderer
      */
     public function renderSelected(array $names, SectionCollector $collector): string
     {
+        foreach ($names as $name) {
+            if (!$collector->has($name)) {
+                throw new SectionNotFoundException();
+            }
+        }
+
         $html = '';
         $this->renderingSelected = true;
 
         try {
             foreach ($names as $name) {
-                if (!$collector->has($name)) {
-                    throw new SectionNotFoundException();
-                }
-
                 $html .= $this->render($name, $collector->context($name));
             }
         } finally {

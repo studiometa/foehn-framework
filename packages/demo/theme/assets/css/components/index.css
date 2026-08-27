@@ -161,6 +161,13 @@
   margin-top: 1.5rem;
 }
 
+/* ── Lazy sections ──────────────────────────────────────── */
+
+/* LazyInclude 1.10 shows its error ref but does not hide its loading ref. */
+[data-foehn-lazy-section] > [data-ref='error'][style*='display: block'] + [data-ref='loading'] {
+  display: none;
+}
+
 /* ── Projects index ─────────────────────────────────────── */
 
 /* One project per row, the number flush left, the title huge, the year flush right:

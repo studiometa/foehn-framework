@@ -68,6 +68,41 @@ final readonly class SectionRequest
         return $this->errorStatus;
     }
 
+    /**
+     * Run page code with the section control parameter hidden from WordPress helpers.
+     *
+     * @template T
+     * @param callable(): T $callback
+     * @return T
+     */
+    public function withoutControlParameter(callable $callback): mixed
+    {
+        $hadGetParameter = array_key_exists(self::PARAMETER, $_GET);
+        $getParameter = $_GET[self::PARAMETER] ?? null;
+        $hadRequestUri = array_key_exists('REQUEST_URI', $_SERVER);
+        $requestUri = $_SERVER['REQUEST_URI'] ?? null;
+
+        unset($_GET[self::PARAMETER]);
+
+        if (is_string($requestUri)) {
+            $_SERVER['REQUEST_URI'] = $this->removeControlParameter($requestUri);
+        }
+
+        try {
+            return $callback();
+        } finally {
+            unset($_GET[self::PARAMETER], $_SERVER['REQUEST_URI']);
+
+            if ($hadGetParameter) {
+                $_GET[self::PARAMETER] = $getParameter;
+            }
+
+            if ($hadRequestUri) {
+                $_SERVER['REQUEST_URI'] = $requestUri;
+            }
+        }
+    }
+
     public static function isSafeName(string $name): bool
     {
         return strlen($name) <= self::MAX_NAME_LENGTH && preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $name) === 1;
@@ -99,6 +134,19 @@ final readonly class SectionRequest
             || array_any($names, static fn(string $name): bool => !self::isSafeName($name));
 
         return $invalid ? [true, false, [], 400] : [true, true, $names, 0];
+    }
+
+    private function removeControlParameter(string $requestUri): string
+    {
+        [$uri, $fragment] = array_pad(explode('#', $requestUri, 2), 2, '');
+        [$path, $query] = array_pad(explode('?', $uri, 2), 2, '');
+        $pairs = array_values(array_filter(
+            explode('&', $query),
+            static fn(string $pair): bool => $pair !== '' && explode('=', $pair, 2)[0] !== self::PARAMETER,
+        ));
+        $uri = $path . ($pairs === [] ? '' : '?' . implode('&', $pairs));
+
+        return $fragment === '' ? $uri : $uri . '#' . $fragment;
     }
 
     /**

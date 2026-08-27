@@ -48,7 +48,9 @@ Names use lowercase letters, numbers, and single hyphens. A name must start and 
 
 The section template also uses normal [context providers](/guide/context-providers). A provider registered for `sections/card-grid` runs when that section template renders.
 
-On a selected request, Føhn first runs the normal controller and page template to rebuild page-local state. Calls to `foehn_section()` declare matching sections but do not render their templates or context providers during this collection pass. Føhn validates all requested names, then renders all selected section templates. If one declaration or render fails, it returns one error and no partial section HTML.
+The active Twig context is captured when `foehn_section()` runs. This capture is shallow. Pass loop-sensitive values such as `post`, `posts`, pagination, and loop indexes in the section context. Section templates and their context providers must not depend on mutable WordPress loop globals such as `get_the_ID()` because a selected section renders after the page shell finishes.
+
+On a selected request, Føhn first validates the request syntax, then runs the normal controller and page template to rebuild page-local state. Calls to `foehn_section()` declare matching sections but do not render their templates or context providers during this collection pass. Føhn checks that every requested declaration exists before it renders any selected section template. If one declaration or render fails, it returns one error and no partial section HTML.
 
 ## Request sections
 
@@ -102,6 +104,17 @@ Use `foehn_section_url()` when the section request targets the current page and 
 </button>
 ```
 
+Pass a normal target URL as the second argument for pagination or other links to another page. Føhn keeps the target path and query state, forces the URL onto the current origin, and adds the section selection:
+
+```twig
+<a
+  href="{{ page.link }}"
+  data-component="Fetch"
+  data-option-src="{{ foehn_section_url('archive-results', page.link) }}">
+  {{ page.title }}
+</a>
+```
+
 Register the base `Fetch` component from `@studiometa/ui` with the action component used above:
 
 ```js
@@ -135,21 +148,31 @@ import { LazyInclude } from "@studiometa/ui";
 registerComponent(LazyInclude);
 ```
 
-On a selected request, `lazy` is ignored and Føhn returns the real wrapped section. `LazyInclude` currently treats an HTTP error body as content, so applications that need custom 404 or 500 feedback should listen for errors at the request layer until `LazyInclude` rejects non-success responses.
+On a selected request, `lazy` is ignored and Føhn returns the real wrapped section. The placeholder uses inline `display: none` for its error ref because `LazyInclude` shows that ref with an inline display value. `LazyInclude` 1.10 does not hide its loading ref after a rejected network request. Add this rule to hide the loading state when the error appears:
+
+```css
+[data-foehn-lazy-section] > [data-ref="error"][style*="display: block"] + [data-ref="loading"] {
+  display: none;
+}
+```
+
+`LazyInclude` also treats a non-success HTTP response body as content. Applications that need custom 404 or 500 feedback must handle the status at the request layer until `LazyInclude` rejects non-success responses.
 
 ## Query helpers and page cache
 
-`foehn_sections` is a control parameter. `query_get()`, `query_has()`, `query_all()`, and `query_hidden_inputs()` hide it. Query URL helpers also remove it when they create normal page URLs. When the page cache is active, section URLs omit its ignored query arguments so cached HTML cannot carry one visitor's tracking parameters into later section requests.
+`foehn_sections` is a control parameter. During a valid section request, Føhn temporarily removes it from `$_GET` and `$_SERVER['REQUEST_URI']` while the controller, page template, section templates, and context providers run. Native WordPress pagination and URL helpers therefore create normal page URLs. Føhn restores the original request state before it returns the response.
+
+`query_get()`, `query_has()`, `query_all()`, and `query_hidden_inputs()` also hide the parameter. Query URL helpers remove it when they create normal page URLs. When the page cache is active, section URLs omit its ignored query arguments so cached HTML cannot carry one visitor's tracking parameters into later section requests. Configure an equivalent ignored-argument policy at any CDN that caches the same pages.
 
 Section requests always return `Cache-Control: private, no-store` and bypass the Føhn full-page cache. This applies to the PHP writer, the early `advanced-cache.php` reader, and generated nginx and Apache rules. A project cannot add `foehn_sections` to ignored or cache-key query arguments.
 
 ## Limits and errors
 
-| Status | Cause                                                                          |
-| ------ | ------------------------------------------------------------------------------ |
-| `400`  | Empty, unsafe, repeated, duplicate, or more than five section names            |
-| `404`  | No page controller matches or the page did not declare every requested section |
-| `405`  | A section request uses a method other than `GET` or `HEAD`                     |
-| `500`  | The page or a selected section could not render                                |
+| Status | Cause                                                               |
+| ------ | ------------------------------------------------------------------- |
+| `400`  | Empty, unsafe, repeated, duplicate, or more than five section names |
+| `404`  | Missing controller, `null` controller result, or undeclared section |
+| `405`  | A method other than `GET` or `HEAD`                                 |
+| `500`  | The page or a selected section could not render                     |
 
 All errors are HTML. Error responses do not include exception details.

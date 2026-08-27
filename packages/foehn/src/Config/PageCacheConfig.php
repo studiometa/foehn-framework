@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Config;
 
+use Studiometa\Foehn\Views\Sections\SectionRequest;
+
 /**
  * The one description of what the page cache stores, and of what it refuses to store.
  *
@@ -45,7 +47,7 @@ final readonly class PageCacheConfig
      *
      * @var list<string>
      */
-    public const RESERVED_QUERY_ARGS = ['foehn_sections'];
+    public const RESERVED_QUERY_ARGS = [SectionRequest::PARAMETER];
 
     public function __construct(
         /** Master switch. Off by default: a cache nobody asked for is a bug. */
