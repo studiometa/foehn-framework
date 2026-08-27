@@ -139,7 +139,7 @@ On a selected request, `lazy` is ignored and Føhn returns the real wrapped sect
 
 ## Query helpers and page cache
 
-`foehn_sections` is a control parameter. `query_get()`, `query_has()`, `query_all()`, and `query_hidden_inputs()` hide it. Query URL helpers also remove it when they create normal page URLs.
+`foehn_sections` is a control parameter. `query_get()`, `query_has()`, `query_all()`, and `query_hidden_inputs()` hide it. Query URL helpers also remove it when they create normal page URLs. When the page cache is active, section URLs omit its ignored query arguments so cached HTML cannot carry one visitor's tracking parameters into later section requests.
 
 Section requests always return `Cache-Control: private, no-store` and bypass the Føhn full-page cache. This applies to the PHP writer, the early `advanced-cache.php` reader, and generated nginx and Apache rules. A project cannot add `foehn_sections` to ignored or cache-key query arguments.
 

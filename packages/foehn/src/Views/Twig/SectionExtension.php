@@ -6,6 +6,7 @@ namespace Studiometa\Foehn\Views\Twig;
 
 use InvalidArgumentException;
 use Studiometa\Foehn\Attributes\AsTwigExtension;
+use Studiometa\Foehn\Config\PageCacheConfig;
 use Studiometa\Foehn\Views\Sections\SectionCollector;
 use Studiometa\Foehn\Views\Sections\SectionRenderer;
 use Studiometa\Foehn\Views\Sections\SectionRequest;
@@ -22,6 +23,7 @@ final class SectionExtension extends AbstractExtension
         private readonly SectionRequest $request,
         private readonly SectionCollector $collector,
         private readonly SectionRenderer $renderer,
+        private readonly PageCacheConfig $pageCacheConfig,
     ) {}
 
     public function getName(): string
@@ -85,10 +87,18 @@ final class SectionExtension extends AbstractExtension
         [$path, $query] = array_pad(explode('?', $uri, 2), 2, '');
         $path = preg_replace('/[\x00-\x1F\x7F]/', '', str_replace('\\', '/', $path)) ?? '';
         $path = '/' . ltrim($path, '/');
-        $pairs = array_values(array_filter(
-            explode('&', $query),
-            static fn(string $pair): bool => $pair !== '' && explode('=', $pair, 2)[0] !== SectionRequest::PARAMETER,
-        ));
+        $ignoredQueryArgs = $this->pageCacheConfig->enabled && $this->pageCacheConfig->allowsEnvironment()
+            ? $this->pageCacheConfig->getIgnoredQueryArgs()
+            : [];
+        $pairs = array_values(array_filter(explode('&', $query), static function (string $pair) use (
+            $ignoredQueryArgs,
+        ): bool {
+            $parameter = explode('=', $pair, 2)[0];
+
+            return $pair !== ''
+            && $parameter !== SectionRequest::PARAMETER
+            && !in_array($parameter, $ignoredQueryArgs, true);
+        }));
         $pairs[] = SectionRequest::PARAMETER . '=' . rawurlencode($name);
         $url = $path . '?' . implode('&', $pairs);
 

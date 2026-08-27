@@ -129,11 +129,6 @@ final class TemplateControllerDiscovery implements Discovery
         }
 
         $templateType = $this->getTemplateType();
-
-        if ($templateType === null) {
-            return $this->sectionRequest->isSelected() ? $this->emitSectionError(404) : $template;
-        }
-
         $controller = $this->findController($templateType);
 
         if ($controller === null) {
@@ -202,7 +197,9 @@ final class TemplateControllerDiscovery implements Discovery
     private function discardBuffersSince(int $level): void
     {
         while (ob_get_level() > $level) {
-            ob_end_clean();
+            if (!ob_end_clean()) {
+                break;
+            }
         }
     }
 
@@ -247,9 +244,9 @@ final class TemplateControllerDiscovery implements Discovery
      *
      * Maps WordPress conditionals to template names.
      *
-     * @return string|null Template type or null if not determinable
+     * @return string Template type
      */
-    private function getTemplateType(): ?string
+    private function getTemplateType(): string
     {
         // Specific templates first (most specific to least specific)
         if (is_404()) {

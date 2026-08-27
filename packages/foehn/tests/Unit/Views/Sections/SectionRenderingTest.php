@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Studiometa\Foehn\Config\PageCacheConfig;
 use Studiometa\Foehn\Contracts\ViewEngineInterface;
 use Studiometa\Foehn\Discovery\TemplateControllerDiscovery;
 use Studiometa\Foehn\Views\Sections\SectionCollector;
@@ -23,6 +24,18 @@ final class SectionTestController implements \Studiometa\Foehn\Contracts\Templat
 
         return '<html><body>Full page</body></html>';
     }
+}
+
+/**
+ * Build the extension with the same explicit dependencies as the application container.
+ */
+function sectionExtension(
+    SectionRequest $request,
+    SectionCollector $collector,
+    SectionRenderer $renderer,
+    ?PageCacheConfig $pageCacheConfig = null,
+): SectionExtension {
+    return new SectionExtension($request, $collector, $renderer, $pageCacheConfig ?? new PageCacheConfig());
 }
 
 final class SectionTestViewEngine implements ViewEngineInterface
@@ -165,7 +178,7 @@ describe('SectionExtension', function () {
     });
 
     it('registers context-aware safe HTML helpers', function () {
-        $extension = new SectionExtension(
+        $extension = sectionExtension(
             new SectionRequest('GET', '/archive'),
             $this->collector,
             new SectionRenderer($this->view),
@@ -181,7 +194,7 @@ describe('SectionExtension', function () {
     });
 
     it('lets explicit context override active Twig context on eager requests', function () {
-        $extension = new SectionExtension(
+        $extension = sectionExtension(
             new SectionRequest('GET', '/archive'),
             $this->collector,
             new SectionRenderer($this->view),
@@ -194,7 +207,7 @@ describe('SectionExtension', function () {
     });
 
     it('collects selected declarations without rendering them', function () {
-        $extension = new SectionExtension(
+        $extension = sectionExtension(
             new SectionRequest('GET', '/archive?foehn_sections=results'),
             $this->collector,
             new SectionRenderer($this->view),
@@ -208,7 +221,7 @@ describe('SectionExtension', function () {
     });
 
     it('emits a neutral LazyInclude placeholder without rendering providers', function () {
-        $extension = new SectionExtension(
+        $extension = sectionExtension(
             new SectionRequest('GET', '/archive'),
             $this->collector,
             new SectionRenderer($this->view),
@@ -226,7 +239,7 @@ describe('SectionExtension', function () {
     });
 
     it('builds a section URL from normal query state and replaces old selection', function () {
-        $extension = new SectionExtension(
+        $extension = sectionExtension(
             new SectionRequest('GET', '/archive'),
             $this->collector,
             new SectionRenderer($this->view),
@@ -235,9 +248,25 @@ describe('SectionExtension', function () {
         expect($extension->url('results'))->toBe('/archive?type=project&utm_source=test&foehn_sections=results');
     });
 
+    it('does not freeze ignored query arguments into URLs emitted by cached pages', function () {
+        $pageCacheConfig = new PageCacheConfig(
+            enabled: true,
+            environments: [PageCacheConfig::environment()],
+            ignoredQueryArgs: ['utm_source'],
+        );
+        $extension = sectionExtension(
+            new SectionRequest('GET', '/archive'),
+            $this->collector,
+            new SectionRenderer($this->view),
+            $pageCacheConfig,
+        );
+
+        expect($extension->url('results'))->toBe('/archive?type=project&foehn_sections=results');
+    });
+
     it('keeps generated URLs on the current origin for protocol-relative request targets', function () {
         $_SERVER['REQUEST_URI'] = '//evil.example/projects/?type=web';
-        $extension = new SectionExtension(
+        $extension = sectionExtension(
             new SectionRequest('GET', '/archive'),
             $this->collector,
             new SectionRenderer($this->view),
@@ -249,7 +278,7 @@ describe('SectionExtension', function () {
     });
 
     it('skips duplicate declarations on normal pages instead of failing the page', function () {
-        $extension = new SectionExtension(
+        $extension = sectionExtension(
             new SectionRequest('GET', '/archive'),
             $this->collector,
             new SectionRenderer($this->view),
@@ -261,7 +290,7 @@ describe('SectionExtension', function () {
     });
 
     it('rejects duplicate declarations during a selected request', function () {
-        $extension = new SectionExtension(
+        $extension = sectionExtension(
             new SectionRequest('GET', '/archive?foehn_sections=results'),
             $this->collector,
             new SectionRenderer($this->view),
@@ -273,7 +302,7 @@ describe('SectionExtension', function () {
     });
 
     it('rejects names that cannot map safely to a section template', function () {
-        $extension = new SectionExtension(
+        $extension = sectionExtension(
             new SectionRequest('GET', '/archive'),
             $this->collector,
             new SectionRenderer($this->view),
@@ -285,7 +314,7 @@ describe('SectionExtension', function () {
 
     it('rejects nested declarations that could not be selected from the page shell', function () {
         $renderer = new SectionRenderer($this->view);
-        $extension = new SectionExtension(new SectionRequest('GET', '/archive'), $this->collector, $renderer);
+        $extension = sectionExtension(new SectionRequest('GET', '/archive'), $this->collector, $renderer);
         $this->view->onRender = static function (string $template) use ($extension): void {
             if ($template === 'sections/results') {
                 $extension->section([], 'nested');
@@ -306,7 +335,7 @@ describe('TemplateControllerDiscovery section responses', function () {
         $collector = new SectionCollector();
         $view = new SectionTestViewEngine();
         $renderer = new SectionRenderer($view);
-        $extension = new SectionExtension($request, $collector, $renderer);
+        $extension = sectionExtension($request, $collector, $renderer);
         $container->singleton(SectionRenderer::class, static fn() => $renderer);
         $container->singleton(SectionTestController::class, static fn() => new SectionTestController($extension));
         $discovery = new TemplateControllerDiscovery($request, $collector);
@@ -344,7 +373,7 @@ describe('TemplateControllerDiscovery section responses', function () {
         $view->results['sections/results'] = '<p>Partial result</p>';
         $view->results['sections/filters'] = new RuntimeException('Secret exception details');
         $renderer = new SectionRenderer($view);
-        $extension = new SectionExtension($request, $collector, $renderer);
+        $extension = sectionExtension($request, $collector, $renderer);
         $container->singleton(SectionRenderer::class, static fn() => $renderer);
         $container->singleton(SectionTestController::class, static fn() => new SectionTestController($extension));
         $discovery = new TemplateControllerDiscovery($request, $collector);
@@ -378,7 +407,7 @@ describe('TemplateControllerDiscovery section responses', function () {
         $collector = new SectionCollector();
         $view = new SectionTestViewEngine();
         $renderer = new SectionRenderer($view);
-        $extension = new SectionExtension($request, $collector, $renderer);
+        $extension = sectionExtension($request, $collector, $renderer);
         $container->singleton(SectionRenderer::class, static fn() => $renderer);
         $container->singleton(SectionTestController::class, static fn() => new SectionTestController($extension));
         $discovery = new TemplateControllerDiscovery($request, $collector);
