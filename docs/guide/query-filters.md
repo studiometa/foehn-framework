@@ -326,17 +326,22 @@ new QueryFiltersConfig(
 
 ## Caching filtered pages
 
-Filter URLs are cacheable, but only the ones the cache has been told about. Hand this configuration to the page cache and every filter you declared is keyed, with the pattern derived from its own allowlist:
+Filter URLs are cacheable, but only the ones the cache has been told about. Name them in the page cache configuration, with the values each one takes:
 
 ```php
 // app/page-cache.config.php
 return new PageCacheConfig(
     enabled: true,
-    queryFilters: require __DIR__ . '/query-filters.config.php',
+    cacheQueryArgs: [
+        'genre' => '^[a-z0-9-]+(?:,[a-z0-9-]+)*$',
+        'posts_per_page' => [12, 24, 48],
+    ],
 );
 ```
 
-Without that, a filtered URL is an argument the cache was not told about, which is a bypass: the page still renders, it just never comes from a file. Both `?genre=rock,jazz` and `?genre[]=rock&genre[]=jazz` are cached once it is there — see [Static Page Cache](/guide/page-cache) for which of the two nginx serves and which the drop-in does.
+The two configurations stay independent — the cache does not read this file, and this file knows nothing about the cache. So a filter added here is a bypass until it is named there: the page still renders, it just never comes from a file. Add the two together.
+
+Once named, both `?genre=rock,jazz` and `?genre[]=rock&genre[]=jazz` are cached — see [Static Page Cache](/guide/page-cache) for which of the two nginx serves and which the drop-in does.
 
 Two filters are worth planning around. `s` bypasses unless you key it deliberately, so a keyword field in a filter form makes every response uncacheable until you do. And a `publicVars` entry of `true` is never derived, because a keyed argument with unbounded values is an unbounded number of files.
 

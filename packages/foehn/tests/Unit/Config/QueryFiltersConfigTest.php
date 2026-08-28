@@ -153,29 +153,3 @@ describe('QueryFiltersConfig', function () {
         });
     });
 });
-
-describe('page cache args', function () {
-    it('derives a keyed arg per declared filter, with the pattern its allowlist implies', function () {
-        $config = new QueryFiltersConfig(
-            taxonomies: ['genre' => ['in', 'not_in', 'and', 'exists']],
-            publicVars: ['posts_per_page' => [12, 24, 48]],
-        );
-
-        // The pattern comes from the allowlist, so the cache refuses exactly the values
-        // QueryFiltersHook would have rejected. Two readers, one definition of valid.
-        expect($config->toCacheQueryArgs())->toBe([
-            'genre' => '^[A-Za-z0-9_-]+(?:,[A-Za-z0-9_-]+)*$',
-            'genre__not_in' => '^[A-Za-z0-9_-]+(?:,[A-Za-z0-9_-]+)*$',
-            'genre__and' => '^[A-Za-z0-9_-]+(?:,[A-Za-z0-9_-]+)*$',
-            'genre__exists' => '^[01]$',
-            'posts_per_page' => '^(?:12|24|48)$',
-        ]);
-    });
-
-    it('does not derive a var whose values are unbounded', function () {
-        // `true` means any value at all, and a keyed arg with no bound on its values is
-        // an unbounded number of files on disk. A project that wants it cached names it
-        // in cacheQueryArgs with a pattern it has thought about.
-        expect(new QueryFiltersConfig(publicVars: ['anything' => true])->toCacheQueryArgs())->toBe([]);
-    });
-});

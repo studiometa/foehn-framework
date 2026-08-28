@@ -151,21 +151,22 @@ Two consequences worth knowing:
 - **The members are joined in request order and never sorted**, so `?genre[]=jazz&genre[]=rock` is a second file holding the same HTML. Sorting is the obvious fix and the wrong one: nginx cannot sort, so a sorted key is one only PHP could compute, and the two readers would part company on the first URL that arrived unsorted. A form emits its checkboxes in document order, so in practice one spelling occurs.
 - **A member may not contain a comma.** `?genre[]=rock,jazz` asks for one term whose slug has a comma in it; `?genre=rock,jazz` asks for two terms. Joining the first would key it where the second lives, so it bypasses instead.
 
-### Keying the filters you already declared
+### Listing values instead of writing a pattern
 
-A filter that is declared and not keyed is a filter whose every URL bypasses — and a bypass reads as a slow page rather than as an error, so nobody finds it. Hand the query filter configuration to the page cache and the names come across by themselves:
+Most arguments have a handful of legal values, and a project knows them. Say so, and the pattern is compiled for you:
 
 ```php
-// app/page-cache.config.php
-return new PageCacheConfig(
-    enabled: true,
-    queryFilters: require __DIR__ . '/query-filters.config.php',
-);
+cacheQueryArgs: [
+    'page',                                     // any value the charset allows
+    'lang' => ['fr', 'en'],                     // only these two
+    'posts_per_page' => [12, 24, 48],
+    'genre' => '^[a-z0-9-]+(?:,[a-z0-9-]+)*$',  // a pattern, when a list will not do
+],
 ```
 
-Every declared filter becomes a keyed arg, and the pattern comes from the allowlist itself: `posts_per_page: [12, 24, 48]` derives `^(?:12|24|48)$`, and a taxonomy derives a comma-separated list of slugs. The cache then refuses exactly the values the filter would have rejected. `cacheQueryArgs` still wins where both name the same argument, so you can tighten one without giving up the rest.
+`?lang=de` is then a bypass, not a stored file. Values are quoted, so `1.5` matches `1.5` and not `165`, and an empty list matches nothing at all — "these values are allowed" with none named is a bypass rather than a free pass.
 
-One thing is deliberately not derived: a `publicVars` entry of `true`. It means any value at all, and a keyed argument with no bound on its values is an unbounded number of files on disk. Name it in `cacheQueryArgs` with a pattern you have thought about.
+Naming a filter here is a separate step from declaring it in [query filters](/guide/query-filters), and deliberately so: the two files stay independent, and the cache never keys an argument because something else declared it. The cost is that a filter you add later is a bypass until you name it here — and a bypass reads as a slow page rather than as an error, so add the two together.
 
 ### Caching search results
 

@@ -90,61 +90,6 @@ final readonly class QueryFiltersConfig
     }
 
     /**
-     * The same filters, as query args the page cache can key, with a pattern each.
-     *
-     * A filter that is declared here and not keyed there is a filter whose every URL
-     * bypasses the cache — and a bypass reads as a slow page rather than as an error, so
-     * nobody finds it. {@see \Studiometa\Foehn\Config\PageCacheConfig::$queryFilters}
-     * takes this and stops the two lists from being maintained twice.
-     *
-     * The pattern comes from the allowlist itself, which is the part worth having: the
-     * cache then refuses exactly the values `QueryFiltersHook` would have rejected, and
-     * the two cannot come to different conclusions about what a valid request is.
-     *
-     * A `publicVars` entry of `true` is deliberately **not** derived. It means any value
-     * at all, and a keyed argument with no bound on its values is an unbounded number of
-     * files on disk — one per string an address bar can hold. A project that wants it
-     * cached names it in `cacheQueryArgs` with a pattern it has thought about.
-     *
-     * @return array<string, string>
-     */
-    public function toCacheQueryArgs(): array
-    {
-        $slug = '[A-Za-z0-9_-]+';
-        $list = '^' . $slug . '(?:,' . $slug . ')*$';
-
-        $args = [];
-
-        foreach ($this->taxonomies as $taxonomy => $operators) {
-            foreach ($operators as $operator) {
-                $name = $operator === 'in' ? $taxonomy : "{$taxonomy}__{$operator}";
-
-                // `exists` is a switch, not a term list.
-                $args[$name] = $operator === 'exists' ? '^[01]$' : $list;
-            }
-        }
-
-        foreach ($this->publicVars as $var => $allowed) {
-            if ($allowed === true) {
-                continue;
-            }
-
-            $values = array_map(static fn(string|int|float|bool $value): string => preg_quote(
-                (string) $value,
-                '#',
-            ), $allowed);
-
-            if ($values === []) {
-                continue;
-            }
-
-            $args[$var] = '^(?:' . implode('|', $values) . ')$';
-        }
-
-        return $args;
-    }
-
-    /**
      * Check if a taxonomy is allowed.
      */
     public function hasTaxonomy(string $taxonomy): bool

@@ -100,44 +100,31 @@ final readonly class PageCacheConfig
         /**
          * Args that change which page is being asked for, so they belong in the key.
          *
-         * Each name carries the pattern its value must match, because the value ends up
-         * in a filename. A list without patterns gets
-         * {@see PageCacheConfig::DEFAULT_QUERY_ARG_PATTERN}:
+         * A name may be given three ways, because the value ends up in a filename and
+         * three is how much detail that needs:
          *
          * ```php
-         * cacheQueryArgs: ['page' => '^[0-9]{1,6}$', 'lang' => '^[a-z]{2}$'],
-         * cacheQueryArgs: ['page', 'lang'],
+         * cacheQueryArgs: [
+         *     'page',                                     // any value the charset allows
+         *     'lang' => ['fr', 'en'],                     // only these values
+         *     'genre' => '^[a-z0-9-]+(?:,[a-z0-9-]+)*$',  // a pattern, for the rest
+         * ],
          * ```
+         *
+         * A bare name gets {@see PageCacheConfig::DEFAULT_QUERY_ARG_PATTERN}. A list of
+         * values becomes the pattern that matches exactly those, which is the form to
+         * reach for: it says what a project actually knows — the four sort orders, the
+         * three page sizes — without anybody writing a regex, and a value outside it is a
+         * bypass rather than a file.
          *
          * A present-but-invalid value is a bypass, never a sanitised guess. Leave this
          * empty unless a query argument really does change the page: every name here is
          * a name the generated snippets have to unroll, and pagination already travels
          * as `/page/2/` rather than as `?page=2`.
          *
-         * @var array<string, string>|list<string>
+         * @var array<string, string|list<scalar>>|list<string>
          */
         public array $cacheQueryArgs = [],
-
-        /**
-         * Query filters whose args are keyed too, without being named twice.
-         *
-         * ```php
-         * return new PageCacheConfig(
-         *     enabled: true,
-         *     queryFilters: require __DIR__ . '/query-filters.config.php',
-         * );
-         * ```
-         *
-         * Every filter the project declares becomes a keyed arg with a pattern derived
-         * from its own allowlist — see {@see QueryFiltersConfig::toCacheQueryArgs()}.
-         * `cacheQueryArgs` still wins where the two name the same argument, so a project
-         * can tighten one without giving up the rest.
-         *
-         * The drop-in requires this file before WordPress exists, so the object has to
-         * arrive as an object. `require`-ing the filter config is the whole of it: both
-         * are plain values and neither needs a container.
-         */
-        public ?QueryFiltersConfig $queryFilters = null,
 
         /**
          * URL path prefixes never cached.
@@ -184,11 +171,7 @@ final readonly class PageCacheConfig
     {
         $normalized = [];
 
-        // The derived filters first, so a name in `cacheQueryArgs` overwrites its
-        // derived pattern rather than being dropped as a duplicate.
-        $declared = $this->queryFilters?->toCacheQueryArgs() ?? [];
-
-        foreach ([...$declared, ...self::withPatterns($this->cacheQueryArgs)] as $name => $pattern) {
+        foreach (self::withPatterns($this->cacheQueryArgs) as $name => $pattern) {
             if (in_array($name, self::RESERVED_QUERY_ARGS, true)) {
                 continue;
             }
@@ -210,14 +193,15 @@ final readonly class PageCacheConfig
     }
 
     /**
-     * `cacheQueryArgs` in its map form, whichever of the two forms it was written in.
+     * `cacheQueryArgs` reduced to `name => pattern`, whichever way it was written.
      *
-     * A list gives `0 => 'page'` and a map `'page' => '^\d+$'`. Both halves are strings
-     * by the declared shape, which is trusted here the way the other config getters trust
-     * theirs. Doing this before the merge is what lets a hand-written name overwrite a
-     * derived one: two arrays only merge by key if both are keyed by name.
+     * A list gives `0 => 'page'`, a map gives `'page' => '^\d+$'`, and a value list gives
+     * `'lang' => ['fr', 'en']`. The value list is the interesting one: it compiles to the
+     * pattern matching exactly those values, so a project states the four sort orders it
+     * supports rather than a regex that means the same thing, and there is still one
+     * shape — a pattern — for the readers and the snippet generators to agree on.
      *
-     * @param array<string, string>|list<string> $args
+     * @param array<string, string|list<scalar>>|list<string> $args
      * @return array<string, string>
      */
     private static function withPatterns(array $args): array
@@ -226,15 +210,47 @@ final readonly class PageCacheConfig
 
         foreach ($args as $key => $value) {
             if (is_int($key)) {
-                $normalized[$value] = self::DEFAULT_QUERY_ARG_PATTERN;
+                // `['page', 'lang']` — a bare name and nothing else. A list entry that is
+                // not a name (`[['fr', 'en']]`, a value list nobody gave a name to) is
+                // dropped here, and is then an argument nobody configured: a bypass.
+                if (is_string($value)) {
+                    $normalized[$value] = self::DEFAULT_QUERY_ARG_PATTERN;
+                }
 
                 continue;
             }
 
-            $normalized[$key] = $value;
+            $normalized[$key] = is_array($value) ? self::patternForValues($value) : $value;
         }
 
         return $normalized;
+    }
+
+    /**
+     * The pattern matching exactly the listed values, and nothing else.
+     *
+     * Every value is quoted, so a `.` in one is a dot and not "any character" — a config
+     * file lists values, and a value that quietly widened into a pattern would key pages
+     * this cache was never told to key.
+     *
+     * An empty list compiles to a pattern nothing matches. That is the honest reading of
+     * "these values are allowed" with none named, and it makes the argument a bypass
+     * rather than silently letting anything through.
+     *
+     * @param list<scalar> $values
+     */
+    private static function patternForValues(array $values): string
+    {
+        if ($values === []) {
+            return '^(?!)$';
+        }
+
+        $quoted = array_map(static fn(string|int|float|bool $value): string => preg_quote(
+            (string) $value,
+            '#',
+        ), $values);
+
+        return '^(?:' . implode('|', $quoted) . ')$';
     }
 
     /**
