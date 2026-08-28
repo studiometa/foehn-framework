@@ -88,44 +88,71 @@ Independent of the design, the diff carries defects that a reviewer should not l
 
 **For basic filtering, no new framework feature is needed.** Drop the `facets[…]` wrapper, use flat native names, and `QueryFiltersHook` covers the custom taxonomies.
 
-## What has to be built
+## The cache side, which is done
 
-In order. The first one blocks the rest.
+Shipped in #167. A filtered URL is now a cached URL, in both spellings a form can produce:
 
-### 1. A multi-value encoding the cache can key
+| URL                          | Served by                                  |
+| ---------------------------- | ------------------------------------------ |
+| `?genre=rock,jazz`           | nginx, ~0.9 ms                             |
+| `?genre[]=rock&genre[]=jazz` | the drop-in, ~2.8 ms, out of the same file |
+| `?s=chaise`                  | nginx, once `s` is named with a pattern    |
 
-Without it, any facet with more than one selected value is uncacheable, and the framework's documented URL format stays at odds with its own cache.
+Three things came out differently from what this document first proposed, and the differences are the interesting part.
 
-The narrow fix is to allow `,` in `QueryKey::VALUE_CHARACTER_CLASS`. A comma is filename-safe, nginx holds it in `$arg_genre__and` without trouble, and it keeps one canonical spelling of a multi-value facet instead of inventing a second. What it costs is a widening of the charset that "can only narrow, never widen" was written to prevent, so it belongs in the class rather than in a project pattern — projects still narrow from there.
+**Ordering was not the hard problem it looked like.** The worry was that `?genre=rock,jazz` and `?genre=jazz,rock` are one page and must be one file. They are not one file, and that is fine: two orders store the same HTML twice, which is wasted disk rather than a wrong answer. Sorting would have been the obvious fix and the wrong one, because nginx cannot sort and a sorted key is one only PHP could compute — the two readers would then part company on the first URL that arrived unsorted. A form emits its checkboxes in document order, so one spelling occurs in practice.
 
-Ordering matters as much as the charset: `?genre=rock,jazz` and `?genre=jazz,rock` are the same query and must be the same file, so the values need sorting into a canonical order — and nginx cannot sort. Either the filter helpers always emit sorted values and an unsorted one is a bypass, or the cache keys the raw string and accepts two files for one result set. **This is the open design question in this item, not the charset.**
+**Deriving the cache config from the filter config was built and then removed.** It worked, but it put a `require` of one config file inside another and tied two concerns that have no reason to know each other. `cacheQueryArgs` takes a list of allowed values instead, so a project states what it knows and the pattern is compiled from it:
 
-### 2. Derive the keyed query args from the declared filters
+```php
+cacheQueryArgs: [
+    'genre' => '^[a-z0-9-]+(?:,[a-z0-9-]+)*$',
+    'posts_per_page' => [12, 24, 48],
+],
+```
 
-The requirement that facet parameters reach the page cache configuration by themselves. `QueryFiltersConfig` and `PageCacheConfig` are independent objects today, and `cacheQueryArgs` is hand-written — so the two lists drift, and a filter that was added last week is a bypass nobody notices, because a bypass looks like a slow page and not like an error.
+The cost is a filter named in two files, and it is stated in both guides: a filter added to one and not the other is a bypass, which reads as a slow page rather than as an error.
 
-The architecture already suits it: the nginx and `.htaccess` snippets are generated from `PageCacheConfig` by `wp foehn cache:config`, and the generated file carries a hash of the configuration. So this is composition at configuration time, not work at request time.
+**Search needed no new switch.** Naming `s` in `cacheQueryArgs` is the opt-in, and the pattern that has to come with it is what bounds the key space.
 
-The allowlist also supplies the pattern for free, which is the part worth having: `posts_per_page: [12, 24, 48]` derives `^(12|24|48)$`, and a taxonomy filter derives the slug charset. The cache then refuses exactly the values the filter would have rejected, and the two cannot disagree about what a valid request is.
+One defect is worth remembering because it is the shape of defect this area produces. The value charset was spelled in three places; widening two of them left `CacheKey::FILENAME_PATTERN` refusing `index__genre=rock,jazz&.html`, so every multi-value request bypassed while reporting `path` — a message about the URL, for a filename the cache would not write. No unit test caught it, because they covered `QueryKey` and never `CacheKey`. The end-to-end suite did. Derive, do not repeat, and keep the smoke test as the oracle.
 
-### 3. A bound on the key space
+## What is left
 
-Facets are combinatorial. Three facets with ten values each is on the order of a thousand stored pages, each a full render, and a crawler that walks the links will produce all of them. `cacheNotFound` carries an explicit warning that turning it on "wants a bound on the entry count"; keyed facet arguments have no equivalent and are a far larger space.
+### 1. A bound on the key space
 
-Options, cheapest first: cap how many keyed arguments may be present at once and bypass beyond it; cap entries per path; or key only the combinations the UI can actually produce.
+Not done, and now the first thing. Facets are combinatorial: three facets with ten values each is on the order of a thousand stored pages, each a full render, and a crawler that walks the links produces all of them. `cacheNotFound` carries an explicit warning that turning it on "wants a bound on the entry count"; keyed arguments have no equivalent and are a far larger space.
 
-### 4. Search, only if the keyword field must be cached
+Options, cheapest first: cap how many keyed arguments may be present at once and bypass beyond it; cap entries per path; or key only the combinations the UI can produce.
 
-`is_search` is an unconditional bypass today. Making it optional means an opt-in flag and a tight value pattern, and accepting that a keyword is an unbounded key space — item 3 becomes a precondition rather than a nicety.
+This matters more now than when it was written, because search can be keyed: a keyword is unbounded input, and the pattern is currently the only thing standing between a search box and a directory with a file per phrase.
 
-If the keyword field can live outside the cached path instead, skip this entirely.
+### 2. The bracketed form on the fast path
 
-## Two decisions to take before any of it
+Tracked in #168. A checkbox group posts `name="genre[]"` and cannot post anything else without JavaScript, so the slower of the two paths is the one a plain facet form uses. A prototype that keys it in nginx is verified and matches PHP exactly; the risk is in the guards, not the join.
+
+Optional. Both forms are cached either way.
 
 **Partial rendering versus caching.** Section requests return `Cache-Control: private, no-store` and bypass the full-page cache, and a project cannot key `foehn_sections`. So Section Rendering and a cached facet response are mutually exclusive as things stand. Either the facet UI uses `Frame`'s full-page fetch — larger response, fully cacheable, no new server feature — or sections are made cacheable, which means teaching the drop-in and the generated nginx rules to key a fragment. The first is the cheap answer and probably the right one for filtering; the second is a real feature with a much wider blast radius.
 
+Now that filter URLs are cached, this leans further towards `Frame`: a full-page fetch of a filtered URL is a cache hit served without PHP, while the same filter through a section is a render every time. The larger response is bytes off a warm file; the section is a cold render. Whichever way it goes, it should be decided before a facet UI is written, because it decides what the templates look like.
+
 **Filtered counts are out of scope.** The proposal's `home.php` derives the available terms from the result set, which is the part that makes a filter a facet. Doing it correctly means counting over the whole filtered set on every request — expensive, and `WP_Query` is not the tool. `docs/guide/query-filters.md` already points at FacetWP or Algolia for this, and that judgement should stand until someone has a requirement that pays for a search engine.
+
+## Where a facet UI would start
+
+Nothing in the framework is missing for basic filtering any more, and nothing demonstrates it either: neither the starter nor the demo has a filter form. The gap is now an example rather than a feature.
+
+The smallest end-to-end version, in order:
+
+1. **A filter form in the demo**, on the projects index, filtering by the categories the portfolio already has. A plain `method="get"` form using native names, the `query_*` helpers for state and URLs, and `cacheQueryArgs` naming the same arguments. It would be the first place the whole path is exercised together, and the smoke test could then assert that a filtered URL is a cache hit.
+2. **The partial-render decision**, applied to that form. Everything above works with a full page load; enhancing it is the step that forces the `Frame`-versus-sections answer.
+3. **The key-space bound**, before any of this is recommended to a real project with more than a handful of terms.
+
+Filtered counts stay out until someone has a requirement that pays for a search engine.
 
 ## Summary
 
-Nothing in the proposal needs to be ported. The filtering it adds already exists in `QueryFiltersHook` in a safer form, its client-side half is worth keeping as it is, and its parameter naming is the one part that must not survive — not because it is unidiomatic, but because it is unkeyable, and a facet system that cannot be cached is the opposite of what this is for.
+Nothing in the proposal needs to be ported. The filtering it adds already exists in `QueryFiltersHook` in a safer form, its client-side half is worth keeping as it is, and its parameter naming is the one part that must not survive — not because it is unidiomatic, but because it is unkeyable.
+
+That last objection is now spent: since #167 a filtered URL is a cached URL, in both spellings, and the framework's own documented filter format is no longer the one shape its own cache refused. What is left is a bound on how many of those files a site may accumulate, and an example that shows the whole thing working.
