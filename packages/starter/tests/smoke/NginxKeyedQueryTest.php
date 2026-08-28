@@ -23,7 +23,8 @@ beforeAll(function () {
     }
 
     Site::enableCache([
-        'cacheQueryArgs' => "['page' => '^[0-9]{1,6}\$', 'lang' => '^[a-z]{2}\$']",
+        'cacheQueryArgs' => "['page' => '^[0-9]{1,6}\$', 'lang' => '^[a-z]{2}\$', "
+            . "'genre' => '^[a-z0-9-]+(?:,[a-z0-9-]+)*\$']",
     ]);
     Site::wp("wp rewrite structure '/%postname%/' --hard");
     Site::useNginx(true);
@@ -73,6 +74,29 @@ describe('keyed query args', function () {
         $reversed = smokeGet('/?lang=fr&page=2');
 
         expectCache($reversed, 'HIT', 'nginx');
+        expect(Site::cachedFiles())->toHaveCount(1);
+    });
+
+    it('serves a multi-value filter from nginx', function () {
+        // The comma form is what the query filters emit and what `$arg_genre` can read,
+        // so it takes the fast path like any other keyed value.
+        [$first, $second] = smokeGetTwice('/?genre=rock,jazz');
+
+        expectCache($first, 'MISS', 'php');
+        expectCache($second, 'HIT', 'nginx');
+        expect(Site::cacheFile('/', 'index__genre=rock,jazz&.html'))->toBeFile();
+    });
+
+    it('serves the bracketed form from the drop-in, out of the same file', function () {
+        // nginx has no `$arg_genre[]`, so it declines and passes the request to PHP
+        // rather than reading `$arg_genre`, finding it empty and serving the unfiltered
+        // page. PHP joins the members and lands on the file the comma form wrote — so
+        // this is a HIT that never touched the theme, and no second file appears.
+        smokeWarm('/?genre=rock,jazz');
+
+        $bracketed = smokeGet('/?genre[]=rock&genre[]=jazz');
+
+        expectCache($bracketed, 'HIT', 'php');
         expect(Site::cachedFiles())->toHaveCount(1);
     });
 

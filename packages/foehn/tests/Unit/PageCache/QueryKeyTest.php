@@ -166,3 +166,83 @@ describe('configuration', function () {
             ->toBe('ref=abc&');
     });
 });
+
+describe('multi-value filters', function () {
+    beforeEach(function () {
+        $this->filters = new PageCacheConfig(cacheQueryArgs: [
+            'genre' => '^[a-z0-9-]+(?:,[a-z0-9-]+)*$',
+            'page' => '^[0-9]{1,6}$',
+        ]);
+    });
+
+    it('keys the comma form, which is the one nginx can read', function () {
+        // The format the query filters emit. Before the comma was in the charset this
+        // was a bypass, which made the framework's own documented filter URLs the one
+        // shape its own page cache refused to store.
+        expect(QueryKey::canonical('genre=rock,jazz', $this->filters))->toBe('genre=rock,jazz&');
+    });
+
+    it('keys the bracketed form to exactly the same file', function (string $query) {
+        // A checkbox group posts `genre[]`, which nginx cannot read at all — there is no
+        // `$arg_genre[]`. It defers instead of guessing, and PHP joins the members here.
+        // Same file as the comma form, so the two spellings never store the page twice.
+        expect(QueryKey::canonical($query, $this->filters))->toBe('genre=rock,jazz&');
+    })->with([
+        ['genre[]=rock&genre[]=jazz'],
+        ['genre%5B%5D=rock&genre%5B%5D=jazz'],
+        ['genre%5b%5d=rock&genre%5b%5d=jazz'],
+    ]);
+
+    it('joins members that another keyed arg was written between', function () {
+        // The members do not have to be adjacent, and the variant is still assembled in
+        // the configuration's order rather than the request's.
+        expect(QueryKey::canonical('genre[]=rock&page=2&genre[]=jazz', $this->filters))
+            ->toBe('genre=rock,jazz&page=2&');
+    });
+
+    it('joins in request order and never sorts', function () {
+        // Sorting is the obvious thing and the wrong thing: nginx cannot sort, so a
+        // sorted key is one only PHP could compute. Two orders are two files holding the
+        // same HTML — wasted disk, which is the cheap half of the trade.
+        expect(QueryKey::canonical('genre[]=jazz&genre[]=rock', $this->filters))->toBe('genre=jazz,rock&');
+    });
+
+    it('refuses a member holding the separator', function () {
+        // `?genre[]=rock,jazz` asks for one term whose slug has a comma in it, and
+        // `?genre=rock,jazz` asks for two terms. Joining the first would key it where
+        // the second lives, and one visitor would get the other's page.
+        expect(QueryKey::canonical('genre[]=rock,jazz', $this->filters))->toBeNull();
+    });
+
+    it('refuses the two spellings mixed', function () {
+        expect(QueryKey::canonical('genre=rock&genre[]=jazz', $this->filters))->toBeNull();
+    });
+
+    it('refuses a joined value its pattern does not allow', function (string $query) {
+        expect(QueryKey::canonical($query, $this->filters))->toBeNull();
+    })->with([
+        ['genre[]=rock&genre[]=JAZZ'],
+        ['genre=rock,JAZZ'],
+        // 64 is the ceiling a filename may carry, joined and all.
+        ['genre=' . implode(',', array_fill(0, 20, 'rock'))],
+    ]);
+
+    it('treats an empty member as absent, and an empty bare arg as it always did', function () {
+        expect(QueryKey::canonical('genre[]=&genre[]=rock', $this->filters))
+            ->toBe('genre=rock&')
+            ->and(QueryKey::canonical('genre[]=', $this->filters))
+            ->toBe('')
+            ->and(QueryKey::canonical('genre=', $this->filters))
+            ->toBe('');
+    });
+
+    it('refuses a bracketed name it was never told about', function () {
+        // The name as written is `foo[]`, and an argument this cache cannot name is one
+        // it does not serve — the same rule that keeps `utm_source[]` from passing for
+        // `utm_source`.
+        expect(QueryKey::canonical('foo[]=bar', $this->filters))
+            ->toBeNull()
+            ->and(QueryKey::canonical('utm_source[]=x', new PageCacheConfig(ignoredQueryArgs: ['utm_source'])))
+            ->toBeNull();
+    });
+});
