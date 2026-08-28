@@ -205,6 +205,51 @@ describe('QueryExtension', function () {
         });
     });
 
+    describe('the comma spelling', function () {
+        it('reads a value out of a comma-separated parameter', function () {
+            // The format the framework documents for a multi-value filter, and the only
+            // one nginx can key. Reading it as one opaque value answered false for every
+            // checkbox on a page reached by a shared filter link.
+            $_GET['genre'] = 'rock,jazz';
+
+            expect($this->extension->contains('genre', 'rock'))->toBeTrue();
+            expect($this->extension->contains('genre', 'jazz'))->toBeTrue();
+            expect($this->extension->contains('genre', 'blues'))->toBeFalse();
+        });
+
+        it('still reads the array spelling a checkbox group posts', function () {
+            $_GET['genre'] = ['rock', 'jazz'];
+
+            expect($this->extension->contains('genre', 'rock'))->toBeTrue();
+            expect($this->extension->contains('genre', 'blues'))->toBeFalse();
+        });
+
+        it('toggles into the comma spelling rather than an indexed one', function () {
+            // `add_query_arg` with an array produces `genre[0]=rock`, a name the page
+            // cache can never key — so every toggle link used to be a permanent bypass.
+            $_GET['genre'] = 'rock';
+            $_SERVER['REQUEST_URI'] = '/blog?genre=rock';
+
+            $result = $this->extension->urlToggle('genre', 'jazz');
+
+            expect($result)->toContain('genre=rock,jazz')->not->toContain('genre%5B0%5D')->not->toContain('%2C');
+        });
+
+        it('toggles a value back out of a comma-separated parameter', function () {
+            $_GET['genre'] = 'rock,jazz';
+            $_SERVER['REQUEST_URI'] = '/blog?genre=rock,jazz';
+
+            expect($this->extension->urlToggle('genre', 'jazz'))->toContain('genre=rock');
+        });
+
+        it('drops the parameter when the last value is toggled off', function () {
+            $_GET['genre'] = 'rock';
+            $_SERVER['REQUEST_URI'] = '/blog?genre=rock';
+
+            expect($this->extension->urlToggle('genre', 'rock'))->not->toContain('genre');
+        });
+    });
+
     describe('urlToggle', function () {
         it('adds value when not present', function () {
             $_SERVER['REQUEST_URI'] = '/blog';

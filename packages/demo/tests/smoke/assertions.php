@@ -406,6 +406,55 @@ if ($attachmentId > 0) {
 }
 
 // ──────────────────────────────────────────────
+// Filtering the projects archive
+//
+// The filter form emits nothing WordPress does not already parse, and that claim is
+// only worth anything against a real WP_Query. Both spellings a browser can produce
+// are checked, because a checkbox group posts one and a hand-written link the other.
+// ──────────────────────────────────────────────
+
+$series = get_terms(['taxonomy' => 'project_category', 'hide_empty' => true, 'fields' => 'slugs']);
+
+if (is_array($series) && count($series) >= 2) {
+    [$first, $second] = $series;
+
+    $filtered = static function (mixed $value) use ($first): array {
+        // Exactly what WordPress receives from the URL: the taxonomy's own query var,
+        // no hook and no custom parameter in sight.
+        $query = new WP_Query([
+            'post_type' => 'project',
+            'posts_per_page' => -1,
+            'fields' => 'ids',
+            'project_category' => $value,
+        ]);
+
+        return $query->posts;
+    };
+
+    $one = $filtered($first);
+
+    $results->true('filtering by one series returns something', $one !== []);
+
+    // The array form is what `project_category[]` checkboxes post, and the comma form
+    // is what a link carries. WP_Query sorts and joins both before parsing, so they
+    // are the same query — this asserts it rather than trusting it.
+    $results->same(
+        'the checkbox and the comma spellings are one query',
+        $filtered([$first, $second]),
+        $filtered($first . ',' . $second),
+    );
+
+    $both = $filtered([$first, $second]);
+
+    $results->true('filtering by two series returns at least as many', count($both) >= count($one));
+
+    // A slug nobody registered must return nothing rather than everything: a filter
+    // that silently ignores what it does not understand is a filter that shows the
+    // unfiltered archive while claiming otherwise.
+    $results->same('an unknown series returns nothing', [], $filtered('not-a-series'));
+}
+
+// ──────────────────────────────────────────────
 // Report
 // ──────────────────────────────────────────────
 

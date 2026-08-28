@@ -127,7 +127,24 @@ final class QueryExtension extends AbstractExtension
             return in_array((string) $value, array_map('strval', $current), true);
         }
 
-        return (string) $current === (string) $value;
+        // A comma-separated string is the framework's own multi-value format — it is
+        // what `?genre=rock,jazz` means to WP_Query, and the one spelling nginx can key.
+        // Reading it as a single opaque value made `query_contains()` answer false for
+        // every checkbox on a page reached by a shared filter link.
+        return in_array((string) $value, self::split((string) $current), true);
+    }
+
+    /**
+     * A query parameter's values, whichever of the two spellings carried them.
+     *
+     * @return list<string>
+     */
+    private static function split(string $value): array
+    {
+        return array_values(array_filter(
+            array_map('trim', explode(',', $value)),
+            static fn(string $part): bool => $part !== '',
+        ));
     }
 
     /**
@@ -183,35 +200,63 @@ final class QueryExtension extends AbstractExtension
     }
 
     /**
-     * Remove a value from a query parameter array.
+     * Remove a value from a query parameter.
      */
     private function urlToggleRemove(string $key, string $value): string
     {
-        $current = $this->get($key, []);
-        $current = is_array($current) ? $current : [$current];
-        $current = array_filter($current, static fn(mixed $v): bool => (string) $v !== $value);
+        $current = array_values(array_filter($this->values($key), static fn(string $v): bool => $v !== $value));
 
         if ($current === []) {
             return $this->urlWithout($key);
         }
 
-        return $this->escUrl($this->addQueryArg([$key => array_values($current)]));
+        return $this->multiValueUrl($key, $current);
     }
 
     /**
-     * Add a value to a query parameter array.
+     * Add a value to a query parameter.
      */
     private function urlToggleAdd(string $key, string $value): string
     {
-        $current = $this->get($key, []);
+        return $this->multiValueUrl($key, [...$this->values($key), $value]);
+    }
 
-        if (!is_array($current)) {
-            $current = $current !== null ? [$current] : [];
+    /**
+     * A URL carrying several values for one parameter, joined by a literal comma.
+     *
+     * `add_query_arg()` percent-encodes the separator into `%2C`, which is correct and
+     * useless here: a comma is a sub-delimiter a query string may carry as itself, no
+     * reader decodes one back, and `%` is not a character the page cache will put in a
+     * filename. Encoded, every one of these links is a cache bypass — which is a slow
+     * page rather than an error, so nobody would find it.
+     *
+     * @param list<string> $values
+     */
+    private function multiValueUrl(string $key, array $values): string
+    {
+        $url = $this->escUrl($this->addQueryArg([$key => implode(',', $values)]));
+
+        return str_replace('%2C', ',', $url);
+    }
+
+    /**
+     * The current values of a parameter, from either spelling, as a plain list.
+     *
+     * @return list<string>
+     */
+    private function values(string $key): array
+    {
+        $current = $this->get($key);
+
+        if ($current === null) {
+            return [];
         }
 
-        $current[] = $value;
+        if (is_array($current)) {
+            return array_values(array_map('strval', $current));
+        }
 
-        return $this->escUrl($this->addQueryArg([$key => array_values($current)]));
+        return self::split((string) $current);
     }
 
     /**

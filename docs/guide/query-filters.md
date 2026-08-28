@@ -16,10 +16,15 @@ WordPress already handles many URL parameters natively:
 | `orderby`       | `?orderby=date`       | Sort field       |
 | `order`         | `?order=DESC`         | Sort direction   |
 
+A **registered public taxonomy is already in that list.** `register_taxonomy()` gives it a query var, so `?genre=rock` filters an archive with no configuration at all — and `WP_Query` reads both `?genre=rock,jazz` and the `?genre[]=rock&genre[]=jazz` a checkbox group posts, sorting the terms and building one `IN` clause from either. Most filter UIs need nothing on this page.
+
 Føhn's query filters extend this with:
 
 1. **Security allowlist** for custom taxonomies and private query vars
-2. **Twig helpers** for building filter UIs
+2. **Operators** — `__and`, `__not_in`, `__exists` — which WordPress does not parse itself
+3. **Twig helpers** for building filter UIs
+
+Reach for them when you need an operator, when you want to expose a private var such as `posts_per_page`, or when the taxonomy is not public.
 
 ## QueryFiltersConfig
 
@@ -157,7 +162,7 @@ The `exclude` parameter lets you omit parameters that your form controls directl
 <form method="get">
   <fieldset>
     <legend>Genre</legend>
-    {% for term in terms('genre') %}
+    {% for term in get_terms('genre') %}
       <label>
         <input
           type="checkbox"
@@ -177,7 +182,7 @@ The `exclude` parameter lets you omit parameters that your form controls directl
 
 ```twig
 <ul class="filter-tags">
-  {% for term in terms('genre') %}
+  {% for term in get_terms('genre') %}
     <li>
       <a
         href="{{ query_url_toggle('genre', term.slug) }}"
@@ -256,7 +261,7 @@ The `exclude` parameter lets you omit parameters that your form controls directl
     <label for="category">Category</label>
     <select name="category" id="category">
       <option value="">All categories</option>
-      {% for term in terms('category') %}
+      {% for term in get_terms('category') %}
         <option
           value="{{ term.slug }}"
           {{ query_get('category') == term.slug ? 'selected' }}
@@ -283,7 +288,7 @@ The `exclude` parameter lets you omit parameters that your form controls directl
 For basic counts, use WordPress taxonomy term counts:
 
 ```twig
-{% for term in terms('genre') %}
+{% for term in get_terms('genre') %}
   {{ term.name }} ({{ term.count }})
 {% endfor %}
 ```
@@ -323,6 +328,39 @@ new QueryFiltersConfig(
 | `query_url_toggle(key, value)` | Build URL with value toggled                      |
 | `query_url_clear()`            | Build URL with all parameters removed             |
 | `query_hidden_inputs(exclude)` | Generate hidden inputs for form                   |
+
+## A worked example
+
+The demo's projects archive is the whole path in one page — `packages/demo/theme/templates/pages/archive-project.twig`:
+
+```twig
+<form
+  method="get"
+  action="{{ fn('get_post_type_archive_link', 'project') }}"
+  data-component="Fetch Action"
+  data-option-history
+  data-on:change="Fetch.fetch()">
+  {% for term in series %}
+    <label>
+      <input
+        type="checkbox"
+        name="project_category[]"
+        value="{{ term.slug }}"
+        {{ query_contains('project_category', term.slug) ? 'checked' }} />
+      {{ term.title }}
+    </label>
+  {% endfor %}
+  <button type="submit">Filter</button>
+</form>
+```
+
+Three things about it are the point:
+
+**It uses no framework feature to filter.** `project_category` is the taxonomy's own query var, `orderby` is a public one, and there is no config file, no hook and no custom parameter. `query_contains()` reads the state back, and that is all Føhn contributes.
+
+**It works without JavaScript.** The form submits, the page reloads filtered, the checkboxes come back checked. `Fetch` from `@studiometa/ui` enhances that: it fetches the same URL and swaps the elements whose `id` it finds in the response.
+
+**The enhanced request is still cached.** `Fetch` is given no `data-option-src`, so it fetches the whole filtered page — which the page cache serves without starting PHP — and keeps the one element it needs. A [section](/guide/section-rendering) response would be smaller, and would never be cached: it carries `Cache-Control: private, no-store` by design. Bytes off a warm file beat a cold render.
 
 ## Caching filtered pages
 
