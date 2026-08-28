@@ -71,8 +71,16 @@ final readonly class CacheKey
      * Checked immediately before the write, though every part of the name was
      * validated on the way in: the string that reaches a filename has passed through
      * more hands than the one that was validated, and this is the last of them.
+     *
+     * Built from {@see QueryKey::VALUE_CHARACTER_CLASS} rather than spelled again, plus
+     * the `=` and `&` that join a name to its value. A literal here was a third copy of
+     * one decision, and it drifted the first time the value charset moved: adding the
+     * comma for multi-value filters left this pattern refusing `index__genre=rock,jazz&`,
+     * so every one of those requests bypassed with a reason that said `path` — a message
+     * about the URL, for a filename this file would not write. Derived, it cannot say no
+     * to a value the rest of the cache has already said yes to.
      */
-    public const FILENAME_PATTERN = '/^index(__[A-Za-z0-9=&_.-]+)?\.html$/';
+    public const FILENAME_PATTERN = '/^index(__[' . QueryKey::VALUE_CHARACTER_CLASS . '=&]+)?\.html$/';
 
     private function __construct(
         /** Lowercased, port-stripped request host. */

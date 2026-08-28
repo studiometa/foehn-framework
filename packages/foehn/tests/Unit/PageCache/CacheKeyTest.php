@@ -160,3 +160,35 @@ describe('CacheKey', function () {
         expect(CacheKey::FILENAME)->toBe('index.html');
     });
 });
+
+describe('multi-value filenames', function () {
+    it('writes the filename a multi-value filter keys to', function () {
+        // The gap that let a real bypass through: the query key was right, and the
+        // filename pattern — a second spelling of the same charset — refused it. Every
+        // filtered request then bypassed with a reason that said `path`.
+        $key = CacheKey::create('example.com', '/blog/', 'genre=rock,jazz&');
+
+        expect($key)->not->toBeNull();
+        expect($key->filename())->toBe('index__genre=rock,jazz&.html');
+        expect(CacheKey::isWritableFilename('index__genre=rock,jazz&.html'))->toBeTrue();
+    });
+
+    it('accepts every value the query key is allowed to produce', function (string $variant) {
+        expect(CacheKey::create('example.com', '/', $variant))->not->toBeNull();
+    })->with([
+        ['genre=rock,jazz&'],
+        ['lang=fr&page=2&'],
+        ['v=1.5&'],
+        ['s=hello-world&'],
+        ['a=x_y-z.1,2&'],
+    ]);
+
+    it('still refuses a filename carrying a separator of its own', function (string $filename) {
+        expect(CacheKey::isWritableFilename($filename))->toBeFalse();
+    })->with([
+        ['index__genre=rock/../../etc/passwd&.html'],
+        ['index__genre=a b&.html'],
+        ['index__genre=a%2Fb&.html'],
+        ['index.php'],
+    ]);
+});
