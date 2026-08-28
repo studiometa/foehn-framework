@@ -324,7 +324,29 @@ new QueryFiltersConfig(
 | `query_url_clear()`            | Build URL with all parameters removed             |
 | `query_hidden_inputs(exclude)` | Generate hidden inputs for form                   |
 
+## Caching filtered pages
+
+Filter URLs are cacheable, but only the ones the cache has been told about. Name them in the page cache configuration, with the values each one takes:
+
+```php
+// app/page-cache.config.php
+return new PageCacheConfig(
+    enabled: true,
+    cacheQueryArgs: [
+        'genre' => '^[a-z0-9-]+(?:,[a-z0-9-]+)*$',
+        'posts_per_page' => [12, 24, 48],
+    ],
+);
+```
+
+The two configurations stay independent — the cache does not read this file, and this file knows nothing about the cache. So a filter added here is a bypass until it is named there: the page still renders, it just never comes from a file. Add the two together.
+
+Once named, both `?genre=rock,jazz` and `?genre[]=rock&genre[]=jazz` are cached — see [Static Page Cache](/guide/page-cache) for which of the two nginx serves and which the drop-in does.
+
+Two filters are worth planning around. `s` bypasses unless you key it deliberately, so a keyword field in a filter form makes every response uncacheable until you do. And a `publicVars` entry of `true` is never derived, because a keyed argument with unbounded values is an unbounded number of files.
+
 ## See Also
 
+- [Static Page Cache](/guide/page-cache) - Keying filter URLs so filtered pages are cached
 - [Hooks Guide](/guide/hooks) - Enable QueryFiltersHook
 - [Twig Extensions](/guide/twig-extensions) - Other built-in helpers

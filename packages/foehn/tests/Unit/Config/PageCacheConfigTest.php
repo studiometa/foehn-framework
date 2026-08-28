@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Config\PageCacheConfig;
+use Studiometa\Foehn\PageCache\QueryKey;
 use Studiometa\Foehn\Views\Sections\SectionRequest;
 
 describe('PageCacheConfig', function () {
@@ -77,5 +78,40 @@ describe('PageCacheConfig', function () {
 
     it('keeps a purge instant, by not letting the browser hold the page', function () {
         expect(new PageCacheConfig()->browserMaxAge)->toBe(0);
+    });
+});
+
+describe('values instead of patterns', function () {
+    it('keys exactly the values a project listed', function () {
+        // The form to reach for: a project states the page sizes it supports, and the
+        // pattern that means the same thing is compiled from them.
+        $config = new PageCacheConfig(cacheQueryArgs: ['posts_per_page' => [12, 24, 48]]);
+
+        expect($config->getCacheQueryArgs())->toBe(['posts_per_page' => '^(?:12|24|48)$']);
+        expect(QueryKey::canonical('posts_per_page=24', $config))->toBe('posts_per_page=24&');
+        expect(QueryKey::canonical('posts_per_page=99', $config))->toBeNull();
+    });
+
+    it('quotes a listed value rather than letting it widen into a pattern', function () {
+        // A config file lists values. `1.5` must match `1.5` and not `165`, or the cache
+        // keys pages it was never told to key.
+        $config = new PageCacheConfig(cacheQueryArgs: ['v' => ['1.5']]);
+
+        expect(QueryKey::canonical('v=1.5', $config))->toBe('v=1.5&');
+        expect(QueryKey::canonical('v=165', $config))->toBeNull();
+    });
+
+    it('lets an empty list match nothing at all', function () {
+        // "These values are allowed" with none named is a bypass, not a free pass.
+        $config = new PageCacheConfig(cacheQueryArgs: ['v' => []]);
+
+        expect(QueryKey::canonical('v=anything', $config))->toBeNull();
+    });
+
+    it('still takes a bare name and a pattern', function () {
+        $config = new PageCacheConfig(cacheQueryArgs: ['page', 'lang' => '^[a-z]{2}$']);
+
+        expect(array_keys($config->getCacheQueryArgs()))->toBe(['lang', 'page']);
+        expect(QueryKey::canonical('page=2&lang=fr', $config))->toBe('lang=fr&page=2&');
     });
 });

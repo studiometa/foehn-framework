@@ -163,12 +163,42 @@ final readonly class Bypass
         }
 
         foreach (self::CONTEXT_CONDITIONALS as $function => $candidate) {
-            if (function_exists($function) && $function() === true) {
-                return $candidate;
+            if (!function_exists($function) || $function() !== true) {
+                continue;
             }
+
+            if ($candidate === BypassReason::Search && $this->searchIsKeyed()) {
+                continue;
+            }
+
+            return $candidate;
         }
 
         return null;
+    }
+
+    /**
+     * Whether the project has asked for search results to be cached, by keying `s`.
+     *
+     * Search bypasses by default, and the reason is the key space rather than the query:
+     * `s` takes any string a visitor can type, so keying it without a pattern is one
+     * stored file per phrase anybody ever searches for, and a crawler can write them all.
+     *
+     * Naming `s` in `cacheQueryArgs` is the opt-in, and it cannot be given without also
+     * giving the pattern that bounds it — the pattern is what makes the space finite, and
+     * a value that does not match it bypasses exactly as before:
+     *
+     * ```php
+     * cacheQueryArgs: ['s' => '^[A-Za-z0-9-]{2,32}$'],
+     * ```
+     *
+     * The rest follows from machinery that already exists: `s` becomes an argument nginx
+     * unrolls like `page`, the value lands in the filename, and a search for a phrase the
+     * pattern refuses is served by WordPress the way every search is today.
+     */
+    private function searchIsKeyed(): bool
+    {
+        return array_key_exists('s', $this->config->getCacheQueryArgs());
     }
 
     /**
