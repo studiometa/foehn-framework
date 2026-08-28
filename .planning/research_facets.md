@@ -4,7 +4,9 @@ Two questions, asked on 2026-08-27 against [wordpress-project!715](https://gitla
 
 The answer to the first is mostly yes, and the proposal should not be ported — this document is deliberately adversarial about why.
 
-The requirement that decides everything here: **a GET request carrying facets must be cacheable**, and the parameters a facet form emits must reach the page cache configuration without anybody maintaining a second list by hand.
+The requirement that decides everything here: **a GET request carrying facets must be cacheable.** A facet system whose every URL bypasses the cache is the opposite of what it is for.
+
+The second requirement as first stated — that a facet form's parameters reach the page cache configuration without anybody maintaining a second list — was built and then dropped. It cost a `require` of one config file inside another, and tying two concerns that have no reason to know each other was worse than naming a filter twice. See "The cache side, which is done".
 
 ## What the proposal does
 
