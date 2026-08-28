@@ -11,12 +11,70 @@
     <h1 class="title" style="margin-top: 0.75rem">Projects</h1>
 
     <div class="masthead__meta">
-      <p class="label">{{ posts|length }} series</p>
+      {# An id, so the count is swapped with the results rather than left stale. #}
+      <p class="label" id="project-count">{{ posts|length }} series</p>
       {% if archive_description %}
         <div class="label">{{ archive_description|striptags|trim }}</div>
       {% endif %}
     </div>
   </section>
+
+  {#
+    Filtering, with nothing WordPress does not already parse.
+
+    `project_category[]` is the taxonomy's own query var. WP_Query reads it whether it
+    arrives as an array from a checkbox group or as `?project_category=a,b`, sorts the
+    terms and builds one IN clause — so this form needs no hook, no manager and no
+    custom parameter. `orderby` is a public query var for the same reason.
+
+    Without JavaScript this submits and the page reloads filtered. `Fetch` enhances
+    that: it fetches the same URL and swaps the elements whose `id` it finds in the
+    response, which here are the index and the count.
+
+    Deliberately no `data-option-src`, unlike the pagination links below, which point
+    at a section URL. A section response is smaller but is never cached — it carries
+    `Cache-Control: private, no-store` by design. A filtered *page* URL is cached, so
+    fetching the whole page and keeping one div of it is served from the cache with no
+    PHP at all. Bytes off a warm file beat a cold render.
+  #}
+  <form
+    method="get"
+    action="{{ fn('get_post_type_archive_link', 'project') }}"
+    class="shell filters"
+    data-component="Fetch Action"
+    data-option-history
+    data-on:change="Fetch.fetch()">
+    <fieldset class="filters__group">
+      <legend class="label label--ink">Series</legend>
+
+      {% for term in series %}
+        <label class="filters__option">
+          <input
+            type="checkbox"
+            name="project_category[]"
+            value="{{ term.slug }}"
+            {{ query_contains('project_category', term.slug) ? 'checked' }} />
+          {{ term.title }}
+        </label>
+      {% endfor %}
+    </fieldset>
+
+    <label class="filters__group">
+      <span class="label label--ink">Order</span>
+      <select name="orderby">
+        <option value="date" {{ query_get('orderby', 'date') == 'date' ? 'selected' }}>Newest</option>
+        <option value="title" {{ query_get('orderby') == 'title' ? 'selected' }}>Title</option>
+      </select>
+    </label>
+
+    {# The no-JS path, and the way out of a filter. Both are plain HTML. #}
+    <div class="filters__actions">
+      <button type="submit">Filter</button>
+      {% if query_all() is not empty %}
+        <a href="{{ query_url_clear() }}">Reset</a>
+      {% endif %}
+    </div>
+  </form>
 
   {{ foehn_section('project-index', { posts, pagination }) }}
 {% endblock %}

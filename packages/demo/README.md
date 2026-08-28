@@ -73,6 +73,7 @@ See [the guide](https://studiometa.github.io/foehn-framework/guide/deployment-fl
 | `#[AsRewriteRule]`            | `theme/app/Routes/HealthCheckRoute.php` — `GET /_health`                                                                       |
 | `#[AsTemplateController]`     | `theme/app/Controllers/` — front page, projects index, project, page                                                           |
 | Page cache                    | `theme/app/page-cache.config.php`                                                                                              |
+| Query filters                 | `pages/archive-project.twig` — a native GET form, keyed and cached                                                             |
 | Section rendering             | AJAX pagination in `theme/templates/sections/project-index.twig`; lazy loading in `theme/templates/sections/testimonials.twig` |
 | `#[AsContextProvider]`        | `theme/app/ContextProviders/GlobalContextProvider.php`                                                                         |
 | `#[AsImageSize]`              | `theme/app/ImageSizes/`, used by `theme/templates/components/card-project.twig`                                                |
