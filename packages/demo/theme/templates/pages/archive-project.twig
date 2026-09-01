@@ -36,6 +36,26 @@
     `Cache-Control: private, no-store` by design. A filtered *page* URL is cached, so
     fetching the whole page and keeping one div of it is served from the cache with no
     PHP at all. Bytes off a warm file beat a cold render.
+
+    `selector` is named rather than left at its default, and this is not a
+    micro-optimisation. The default is `[id]`, and the layout wraps this form in
+    `#main` and `#demo-app` — so every fetch replaced the form with the server's copy
+    of it and threw away whatever was ticked. Two quick clicks then raced, and the
+    first response to arrive rewrote the second checkbox back to unchecked. Naming the
+    two regions that change keeps the controls out of the swap, which is also what
+    lets somebody keep clicking while a request is still in the air.
+
+    The URL is built here rather than left to the component, and that is a workaround
+    with a measured reason. `Fetch` folds a GET form's fields onto its action by name,
+    keeping one value per name — so a checkbox group, whose whole point is repeated
+    names, reaches the server with one of its values. Ticking a second series changed
+    nothing: `FormData` held both, `new URLSearchParams(FormData)` serialises both, and
+    the request carried the first. Passing the serialised form to `fetch()` is the one
+    line that fixes it, and it is what the no-JS submit does anyway.
+
+    `abort()` before each request makes the last click the one that wins. Two requests
+    in flight together are otherwise a race the network settles, and the earlier answer
+    can arrive last and rewrite the listing under the boxes that are ticked.
   #}
   <form
     method="get"
@@ -43,7 +63,8 @@
     class="shell filters"
     data-component="Fetch Action"
     data-option-history
-    data-on:change="Fetch.fetch()">
+    data-option-selector="#foehn-section-project-index, #project-count"
+    data-on:change="() => { Fetch.abort(); Fetch.fetch(this.action + '?' + new URLSearchParams(new FormData(this))) }">
     {#
       `facet()` is what makes these options a facet rather than a list: each one knows
       how many results it would give in the view being looked at, and an option that
