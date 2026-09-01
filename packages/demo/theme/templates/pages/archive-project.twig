@@ -56,6 +56,14 @@
     <fieldset class="filters__group">
       <legend class="label label--ink">Series</legend>
 
+      {#
+        Checkboxes, and several may be ticked at once: `project_category[]` reaches
+        WP_Query as an array and becomes one `IN` clause, so two series show the union
+        of both. Radios would be the honest control for a single choice, and this is
+        not one — narrowing to one series is what clicking a series on a project page
+        already does.
+      #}
+
       {% for option in facet('project_category') %}
         <label class="filters__option {{ option.isEmpty ? 'filters__option--empty' }}">
           <input
