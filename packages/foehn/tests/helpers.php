@@ -37,11 +37,33 @@ function tearDownTestContainer(): void
 /**
  * A template controller discovery with inert section services.
  */
-function testTemplateControllerDiscovery(): \Studiometa\Foehn\Discovery\TemplateControllerDiscovery
-{
+function testTemplateControllerDiscovery(
+    ?\Studiometa\Foehn\Views\Sections\SectionRequest $request = null,
+    ?\Studiometa\Foehn\Views\Sections\SectionCollector $collector = null,
+    ?\Studiometa\Foehn\Config\PageCacheConfig $pageCacheConfig = null,
+): \Studiometa\Foehn\Discovery\TemplateControllerDiscovery {
+    $request ??= new \Studiometa\Foehn\Views\Sections\SectionRequest('GET', '/');
+
     return new \Studiometa\Foehn\Discovery\TemplateControllerDiscovery(
-        new \Studiometa\Foehn\Views\Sections\SectionRequest('GET', '/'),
-        new \Studiometa\Foehn\Views\Sections\SectionCollector(),
+        $request,
+        $collector ?? new \Studiometa\Foehn\Views\Sections\SectionCollector(),
+        testSectionResponse($request, $pageCacheConfig),
+    );
+}
+
+/**
+ * A section response wired to a page cache that is off unless a test turns it on.
+ *
+ * Off is the state most tests want: the cache decides nothing about the HTML, only about
+ * the headers beside it.
+ */
+function testSectionResponse(
+    ?\Studiometa\Foehn\Views\Sections\SectionRequest $request = null,
+    ?\Studiometa\Foehn\Config\PageCacheConfig $pageCacheConfig = null,
+): \Studiometa\Foehn\Views\Sections\SectionResponse {
+    return new \Studiometa\Foehn\Views\Sections\SectionResponse(
+        $request ?? new \Studiometa\Foehn\Views\Sections\SectionRequest('GET', '/'),
+        new \Studiometa\Foehn\PageCache\Bypass($pageCacheConfig ?? new \Studiometa\Foehn\Config\PageCacheConfig()),
     );
 }
 
@@ -334,6 +356,23 @@ function pageCacheServer(array $overrides = []): array
         'REQUEST_URI' => '/blog/',
         ...$overrides,
     ];
+}
+
+/**
+ * The keyed query args a project asked for, without the ones the framework always adds.
+ *
+ * `foehn_sections` is keyed on every configuration — see
+ * {@see \Studiometa\Foehn\Config\PageCacheConfig::RESERVED_QUERY_ARGS} — and a test about
+ * how a *project's* list is normalised has nothing to say about it.
+ *
+ * @return array<string, string>
+ */
+function projectCacheQueryArgs(\Studiometa\Foehn\Config\PageCacheConfig $config): array
+{
+    return array_diff_key(
+        $config->getCacheQueryArgs(),
+        array_flip(\Studiometa\Foehn\Config\PageCacheConfig::RESERVED_QUERY_ARGS),
+    );
 }
 
 /**

@@ -60,9 +60,17 @@ describe('Bypass: the request', function () {
             ->toBe(BypassReason::QueryString);
     });
 
-    it('refuses section selection before a cached page can be served or recorded', function () {
+    it('lets a section request through, because a fragment is cached like a page', function () {
+        // Nothing in the request rules cares whether the body will be a page or a
+        // fragment: the cookies, the method, the host and the path are the same questions.
         expect(pageCacheBypass()->forRequest(pageCacheServer([
             'REQUEST_URI' => '/blog/?foehn_sections=results',
+        ])))->toBeNull();
+    });
+
+    it('refuses a section selection the parser would refuse', function () {
+        expect(pageCacheBypass()->forRequest(pageCacheServer([
+            'REQUEST_URI' => '/blog/?foehn_sections=Results',
         ])))
             ->toBe(BypassReason::QueryString);
     });
@@ -267,6 +275,29 @@ describe('Bypass: the response', function () {
 
     it('tolerates whitespace after the closing tag', function () {
         expect(pageCacheBypass()->forResponse(pageCacheBody() . "\n\n", 200, [], pageCacheServer()))->toBeNull();
+    });
+
+    it('stores a section response that is far shorter than a page', function () {
+        // A fragment is legitimately small. The 255-byte floor is a rule about pages —
+        // a stub, a redirect page, the tail of a render that died — and applying it to a
+        // pagination bar would refuse it for a reason that has nothing to do with it.
+        expect(pageCacheBypass()->forResponse(
+            '<div id="foehn-section-pagination" data-foehn-section="pagination"><a href="/2/">2</a></div>',
+            200,
+            [],
+            pageCacheServer(['REQUEST_URI' => '/blog/?foehn_sections=pagination']),
+        ))->toBeNull();
+    });
+
+    it('refuses a section render that died before it finished', function () {
+        // The fragment's own boundary, because a fragment has no `</html>` to end with.
+        // SectionRenderer wraps every section in a div, so a selection ends with one.
+        expect(pageCacheBypass()->forResponse(
+            '<div id="foehn-section-listing" data-foehn-section="listing"><p>Fatal error: ',
+            200,
+            [],
+            pageCacheServer(['REQUEST_URI' => '/blog/?foehn_sections=listing']),
+        ))->toBe(BypassReason::BodyIncomplete);
     });
 
     it('refuses a body holding a substring the config excluded', function () {

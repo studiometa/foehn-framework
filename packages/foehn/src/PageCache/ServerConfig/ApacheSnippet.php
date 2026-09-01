@@ -53,6 +53,10 @@ final readonly class ApacheSnippet
         // permutation — and serving the unkeyed `index.html` for `?page=2` would hand a
         // visitor page one. So a request carrying a keyed arg falls through to PHP, where
         // the drop-in serves the right file a few milliseconds later.
+        //
+        // That is also why this block needs no counterpart to the nginx `X-Robots-Tag`
+        // rule. `foehn_sections` is a keyed arg, so a section request is one Apache never
+        // answers; the drop-in does, and it replays the `noindex` the response recorded.
         $args = $this->policy->ignorableQueryPattern();
         $maintenance = $this->policy->maintenanceUrlPath();
         $hash = $this->policy->hash();

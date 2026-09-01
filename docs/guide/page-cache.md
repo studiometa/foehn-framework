@@ -104,6 +104,8 @@ A request has to pass all of these. When one fails, the response carries the rea
 | Response | status 200 (or 404 with `cacheNotFound`); `Content-Type` is `text/html`; no `Location` header                                                                                                                                                                 |
 | Body     | at least 255 bytes; ends with `</html>`, so a render that died mid-template is never frozen; contains none of `excludeWhenBodyContains`                                                                                                                       |
 
+A [section response](/guide/section-rendering) is a fragment rather than a document, so the body rule reads differently for it: no minimum length, and it has to end with the `</div>` every section is wrapped in. Everything else on this list applies to it unchanged.
+
 ### Query strings
 
 Every argument in a request falls into exactly one of three classes.
@@ -179,6 +181,22 @@ cacheQueryArgs: ['s' => '^[A-Za-z0-9-]{2,32}$'],
 ```
 
 `s` then behaves like any other keyed arg — nginx unrolls it, the value lands in the filename, and a phrase the pattern refuses is served by WordPress exactly as every search is today. Bound it deliberately: the pattern is the only thing standing between a search box and a directory with a file per phrase.
+
+### Caching section responses
+
+`foehn_sections` is keyed on every configuration, with no setting to turn on. A [section request](/guide/section-rendering) asks for the HTML of named regions of a page instead of the whole document, so it is a different response for the same URL and gets a file of its own:
+
+```
+/products/?foehn_sections=listing,pagination  →  …/products/index__foehn_sections=listing,pagination&.html
+```
+
+That is what makes filtering and paginating in place cheap: the second visitor to ask for the same selection is served off a file, by nginx, with no PHP at all.
+
+The key space is bounded without anybody bounding it. The grammar comes from the parser — lowercase `[a-z0-9-]` names, comma-separated, at most five — and a name no template declared is a 404 while a name outside the grammar is a 400. Only 200s are stored, so the files that can exist are the section combinations your templates actually declare.
+
+Two things are not yours to change. A project **cannot ignore** `foehn_sections`: an ignored one would key a section request onto the whole page's file, so one visitor would ask for a fragment and be handed a page. And a project **cannot give it a pattern** — a widened one would key values the parser refuses.
+
+A section response always carries `X-Robots-Tag: noindex, nofollow`, cached or not: a fragment indexed on its own is a search result that leads to half a page. The drop-in replays it from the stored headers; the nginx snippet cannot read those, so it derives the same header from `$arg_foehn_sections` instead. Apache never serves a section request at all — `foehn_sections` is a keyed arg, and mod_rewrite cannot key one — so it falls through to the drop-in, which does replay it.
 
 **Anything else** is a bypass. Add a name to `cacheQueryArgs` only when it changes the page, and to `ignoredQueryArgs` only when it does not.
 
@@ -267,6 +285,8 @@ Some are never stored:
 Every line is validated when written **and** when read, because the file sits on a disk between those two moments.
 
 **Only the drop-in replays them.** nginx's static file module has no notion of an embedded header block, and `proxy_cache`'s stored format is nginx's own — written and read by the same module, not an interchange format. So the fast path sends the headers the snippet derives from your configuration, and the drop-in sends those plus what was recorded. If a page depends on a header it sets itself, that page is faster to exclude than to reason about.
+
+The one header the snippet derives rather than leaves behind is the `X-Robots-Tag` of a section response, because a cached fragment that lost its `noindex` would be indexed as if it were a page.
 
 ### The gaps, stated
 

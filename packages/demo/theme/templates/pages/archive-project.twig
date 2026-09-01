@@ -32,10 +32,10 @@
     response, which here are the index and the count.
 
     Deliberately no `data-option-src`, unlike the pagination links below, which point
-    at a section URL. A section response is smaller but is never cached — it carries
-    `Cache-Control: private, no-store` by design. A filtered *page* URL is cached, so
-    fetching the whole page and keeping one div of it is served from the cache with no
-    PHP at all. Bytes off a warm file beat a cold render.
+    at a section URL. Both are cached — `foehn_sections` is a cache-key query argument —
+    so the choice is about how many files a filter combination occupies rather than
+    about whether it is cached at all. Fetching the whole page and keeping one div of it
+    reuses the file the no-JS path already warmed.
   #}
   <form
     method="get"

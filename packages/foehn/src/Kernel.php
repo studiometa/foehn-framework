@@ -31,6 +31,7 @@ use Studiometa\Foehn\Views\ContextProviderRegistry;
 use Studiometa\Foehn\Views\Sections\SectionCollector;
 use Studiometa\Foehn\Views\Sections\SectionRenderer;
 use Studiometa\Foehn\Views\Sections\SectionRequest;
+use Studiometa\Foehn\Views\Sections\SectionResponse;
 use Studiometa\Foehn\Views\TimberViewEngine;
 use Symfony\Component\Cache\Adapter\PhpFilesAdapter;
 use Tempest\Container\Container;
@@ -326,6 +327,16 @@ final class Kernel
         $this->container->singleton(Store::class, fn() => new Store($this->container->get(PageCacheConfig::class)));
 
         $this->container->singleton(Bypass::class, fn() => new Bypass($this->container->get(PageCacheConfig::class)));
+
+        // Below `Bypass`, because a section response asks it whether it is one the page
+        // cache would store — which is what decides its `Cache-Control`.
+        $this->container->singleton(
+            SectionResponse::class,
+            fn() => new SectionResponse(
+                $this->container->get(SectionRequest::class),
+                $this->container->get(Bypass::class),
+            ),
+        );
 
         $this->container->singleton(
             Recorder::class,

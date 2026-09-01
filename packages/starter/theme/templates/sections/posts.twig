@@ -1,0 +1,24 @@
+{#
+  The archive's list of posts, declared as a section.
+
+  A section is a named region of a normal page that Føhn can render on its own:
+  `?foehn_sections=posts` runs the same query, the same controller and the same context,
+  and returns this markup alone. Filtering and paginating in place then costs one small
+  response rather than a whole document — and the page cache stores it like any other,
+  so a repeat of the same selection is served from a file.
+#}
+{% if posts %}
+  <div class="grid grid--3">
+    {% for post in posts %}
+      {% include 'components/card-post.twig' with {
+        post: post
+      } %}
+    {% endfor %}
+  </div>
+
+  {% include 'components/pagination.twig' %}
+{% else %}
+  <p>
+    Aucun article trouvé.
+  </p>
+{% endif %}

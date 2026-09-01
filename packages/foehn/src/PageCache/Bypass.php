@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Studiometa\Foehn\PageCache;
 
 use Studiometa\Foehn\Config\PageCacheConfig;
+use Studiometa\Foehn\Views\Sections\SectionRequest;
 
 /**
  * The one answer to "may this request be cached?", for every reader that can ask it.
@@ -27,12 +28,35 @@ use Studiometa\Foehn\Config\PageCacheConfig;
 final readonly class Bypass
 {
     /**
-     * Shortest body worth storing.
+     * Shortest page worth storing.
      *
      * Anything below this is a stub, a redirect page or the tail of a render that
      * died — none of which should be frozen for the next eight hours.
      */
     public const MIN_BODY_LENGTH = 255;
+
+    /**
+     * What a finished response looks like, by what was asked for.
+     *
+     * The rule exists because a render that dies mid-template still flushes its buffer,
+     * and a half-written page is exactly the one that must not be frozen for the next
+     * eight hours. What "finished" means depends on what was asked for, and this is the
+     * only place in the cache where that is true.
+     *
+     * **A page** ends with `</html>` and is at least {@see Bypass::MIN_BODY_LENGTH} bytes.
+     *
+     * **A section response** ends with the `</div>` that
+     * {@see \Studiometa\Foehn\Views\Sections\SectionRenderer} wraps every section in,
+     * at any length — a fragment is legitimately small, and a byte count that made sense
+     * for a page would refuse to store a pagination bar for a reason that has nothing to
+     * do with it.
+     *
+     * @var array<string, array{int, string}> Shortest body, and what a finished one ends with.
+     */
+    private const BODY_SHAPE = [
+        'page' => [self::MIN_BODY_LENGTH, '</html>'],
+        'section' => [0, '</div>'],
+    ];
 
     /**
      * Constants whose mere definition means "not a page".
@@ -239,14 +263,10 @@ final readonly class Bypass
             return BypassReason::Redirect;
         }
 
-        if (strlen($body) < self::MIN_BODY_LENGTH) {
-            return BypassReason::BodyTooShort;
-        }
+        $reason = $this->bodyIsComplete($body, $server);
 
-        // A render that died mid-template still flushes its buffer, and a fatal is
-        // exactly the page that must not be frozen for the next eight hours.
-        if (!str_ends_with(rtrim($body), '</html>')) {
-            return BypassReason::BodyIncomplete;
+        if ($reason !== null) {
+            return $reason;
         }
 
         foreach ($this->config->excludeWhenBodyContains as $needle) {
@@ -256,6 +276,42 @@ final readonly class Bypass
         }
 
         return null;
+    }
+
+    /**
+     * Whether a body looks like the whole of what was being rendered.
+     *
+     * See {@see Bypass::BODY_SHAPE} for what "the whole of it" means and why it is two
+     * answers rather than one.
+     *
+     * @param array<string, mixed> $server
+     */
+    private function bodyIsComplete(string $body, array $server): ?BypassReason
+    {
+        [$minimum, $terminator] = self::BODY_SHAPE[$this->isSectionRequest($server) ? 'section' : 'page'];
+
+        if (strlen($body) < $minimum) {
+            return BypassReason::BodyTooShort;
+        }
+
+        return str_ends_with(rtrim($body), $terminator) ? null : BypassReason::BodyIncomplete;
+    }
+
+    /**
+     * Whether the request asked for named sections of a page rather than the page.
+     *
+     * Read from the array rather than from the globals, because every other rule in this
+     * class is a function of its arguments and this one has to be too: the drop-in, the
+     * writer and the test suite all hand `Bypass` a `$_SERVER` that is not necessarily the
+     * process's own. Built from the same query string the key is built from, so there is
+     * one reading of the request rather than two — and the method is `GET` because this is
+     * only ever asked after {@see Bypass::forRequest()} has refused every other one.
+     *
+     * @param array<string, mixed> $server
+     */
+    private function isSectionRequest(array $server): bool
+    {
+        return new SectionRequest('GET', '/?' . $this->queryString($server))->isSelected();
     }
 
     /**

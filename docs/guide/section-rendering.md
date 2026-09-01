@@ -14,7 +14,7 @@ The Render API, `RenderApiConfig`, `RenderApiHook`, and `/wp-json/foehn/v1/rende
 | Send `template` or a keyed `templates` object to a REST URL | Add one name or up to five comma-separated names to the normal page URL                           |
 | Send scalar context values in the query string              | Build context in the page controller, context providers, and explicit server-side section context |
 | Parse JSON and read `html` or keyed values                  | Read the HTML response directly; each section has a stable wrapper ID                             |
-| Set `cacheMaxAge` on the endpoint                           | Section responses are always `private, no-store`; cache the full page or underlying data instead  |
+| Set `cacheMaxAge` on the endpoint                           | Section responses are cached by the Føhn page cache under the same rules as pages, with nothing to configure |
 | Enable debug details in the response                        | Read exception details from the server log; public error HTML does not expose them                |
 
 Move each public partial to `templates/sections/{name}.twig`, declare it in its normal page template, and update any context-provider target from the old template path, such as `partials/results`, to the conventional section path, `sections/results`. Replace REST requests such as `/wp-json/foehn/v1/render?template=partials/results` with the page URL, such as `/products/?foehn_sections=results`. A former multi-template request becomes one ordered selection such as `?foehn_sections=filters,results`.
@@ -197,7 +197,13 @@ On a selected request, `lazy` is ignored and Føhn returns the real wrapped sect
 
 `query_get()`, `query_has()`, `query_all()`, and `query_hidden_inputs()` also hide the parameter. Query URL helpers remove it when they create normal page URLs. When the page cache is active, section URLs omit its ignored query arguments so cached HTML cannot carry one visitor's tracking parameters into later section requests. Configure an equivalent ignored-argument policy at any CDN that caches the same pages.
 
-Section requests always return `Cache-Control: private, no-store` and bypass the Føhn full-page cache. This applies to the PHP writer, the early `advanced-cache.php` reader, and generated nginx and Apache rules. A project cannot add `foehn_sections` to ignored or cache-key query arguments.
+Section responses are cached, under exactly the rules a page is. `foehn_sections` is a cache-key query argument on every configuration, with nothing to enable: `/products/?foehn_sections=listing` stores as `index__foehn_sections=listing&.html` beside the page's own `index.html`, and the second request for the same selection is served from that file. nginx serves it directly; Apache cannot key a query argument, so it falls through to the `advanced-cache.php` reader a few milliseconds later.
+
+A request the cache would not store — a logged-in visitor, a `HEAD`, an error status, an environment the cache is off in — still returns `Cache-Control: private, no-store`. That decision is the page cache's own eligibility check rather than a second rule, so the two cannot disagree.
+
+A project cannot add `foehn_sections` to ignored query arguments, and cannot give it a pattern of its own. An ignored one would key a section request onto the whole page's file, so one visitor would ask for a fragment and be handed a page; a project pattern would key values the parser refuses. See [the page cache guide](/guide/page-cache#caching-section-responses).
+
+Every section response carries `X-Robots-Tag: noindex, nofollow`, cached or not.
 
 ## Limits and errors
 
