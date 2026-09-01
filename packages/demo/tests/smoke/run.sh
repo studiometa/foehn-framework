@@ -218,13 +218,17 @@ printf '✓ %s\n' "the homepage lazy-loads its testimonial section"
 
 projects_index="$(curl -sk "$url/projects/")"
 grep -q 'data-component="Fetch"' <<<"$projects_index" || fail "project pagination does not use the base Fetch component"
-grep -q 'data-option-src="/projects/page/2/?foehn_sections=project-index"' <<<"$projects_index" || fail "project pagination has no section request URL"
+grep -q 'data-option-history' <<<"$projects_index" || fail "project pagination does not put the page it fetched in the URL"
+# A section response carries Cache-Control: private, no-store, so fetching one would
+# trade a page served from the cache without PHP for a fragment rendered every time.
+# Pagination fetches the whole page and swaps the regions it names.
+grep -qE 'data-option-src="[^"]*foehn_sections=' <<<"$projects_index" && fail "project pagination fetches a section URL, which is never cached"
 
 project_section="$(curl -sk "$url/projects/page/2/?foehn_sections=project-index")"
 grep -q 'id="foehn-section-project-index"' <<<"$project_section" || fail "the page-two section request returned no project index wrapper"
 grep -q '<html' <<<"$project_section" && fail "the page-two section request returned a full page"
 grep -qE 'href="[^"]*foehn_sections=' <<<"$project_section" && fail "pagination inside a section response retained the section control parameter in its fallback URL"
-printf '✓ %s\n' "project pagination swaps a section and keeps full-page fallbacks"
+printf '✓ %s\n' "project pagination fetches whole pages, and a section request still returns a fragment"
 
 # Image transforms, end to end. The plate crops to two ratios, which is where
 # #[AsImageSize] stops being the answer: a registered size is one shape, and one

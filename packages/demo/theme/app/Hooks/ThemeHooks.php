@@ -31,16 +31,39 @@ final class ThemeHooks
     /**
      * The projects index is a curated sequence, so it follows menu_order rather than
      * the date a series happened to be published.
+     *
+     * Defaults, not overrides. Setting these unconditionally is what made the archive's
+     * own sort and per-page controls do nothing at all: the form put `orderby` in the
+     * URL, WordPress read it, and this handler overwrote it a moment later — a control
+     * that renders, submits, changes the address bar and has no effect.
+     *
+     * At priority 20 so `QueryFiltersHook` has already run: it empties a `posts_per_page`
+     * outside the allowlist, and this then supplies the default rather than leaving
+     * WordPress to fall back to the site option.
      */
-    #[AsAction('pre_get_posts')]
+    #[AsAction('pre_get_posts', priority: 20)]
     public function orderProjects(\WP_Query $query): void
     {
         if (is_admin() || !$query->is_main_query() || !$query->is_post_type_archive('project')) {
             return;
         }
 
-        $query->set('orderby', ['menu_order' => 'ASC', 'date' => 'DESC']);
-        $query->set('posts_per_page', 3);
+        // The curated sequence, unless the visitor has asked for a sort of their own —
+        // in either half of the pair.
+        if (!$query->get('orderby') && !$query->get('order')) {
+            $query->set('orderby', ['menu_order' => 'ASC', 'date' => 'DESC']);
+        }
+
+        // A direction on its own needs a single column to apply to. The multi-key form
+        // above carries a direction per key and makes WordPress ignore `order`
+        // altogether, so choosing "Ascending" and nothing else would do nothing at all.
+        if (!$query->get('orderby')) {
+            $query->set('orderby', 'menu_order');
+        }
+
+        if (!$query->get('posts_per_page')) {
+            $query->set('posts_per_page', 3);
+        }
     }
 
     #[AsFilter('excerpt_length')]

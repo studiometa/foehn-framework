@@ -30,6 +30,6 @@
   },
   "dependencies": {
     "@studiometa/js-toolkit": "^3.9.0",
-    "@studiometa/ui": "^1.10.0"
+    "@studiometa/ui": "^1.11.0"
   }
 }
