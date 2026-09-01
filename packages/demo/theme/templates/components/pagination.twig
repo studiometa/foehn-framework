@@ -1,3 +1,19 @@
+{#
+  Pagination, enhanced when the caller names the section it lives in.
+
+  The links keep their real `href`, so without JavaScript — and for a middle-click or
+  a shared link — they are ordinary page URLs. `Fetch` swaps the named regions
+  instead, and `history` puts that same page URL in the address bar, so the back
+  button and a copied link both land on the page being looked at.
+
+  No `data-option-src`, deliberately. A section URL would return a smaller response
+  and could not be cached — `foehn_sections` requests carry `Cache-Control:
+  private, no-store` — and it would be the URL `history` pushed, which would leave
+  `?foehn_sections=…` in the address bar. Fetching the page the link already points
+  at costs a few more bytes off a warm cache file and keeps the URL honest.
+#}
+{% set pagination_targets = pagination_targets|default('#foehn-section-' ~ (pagination_section|default(''))) %}
+
 {% if pagination %}
   <nav class="pagination" aria-label="Pagination">
     {% if pagination.prev %}
@@ -7,7 +23,8 @@
         aria-label="Previous page"
         {% if pagination_section is defined %}
           data-component="Fetch"
-          data-option-src="{{ foehn_section_url(pagination_section, pagination.prev.link) }}"
+          data-option-history
+          data-option-selector="{{ pagination_targets }}"
         {% endif %}>
         &larr; Previous
       </a>
@@ -26,7 +43,8 @@
               class="pagination__page"
               {% if pagination_section is defined %}
                 data-component="Fetch"
-                data-option-src="{{ foehn_section_url(pagination_section, page.link) }}"
+                data-option-history
+                data-option-selector="{{ pagination_targets }}"
               {% endif %}>{{ page.title }}</a>
           {% endif %}
         </li>
@@ -40,7 +58,8 @@
         aria-label="Next page"
         {% if pagination_section is defined %}
           data-component="Fetch"
-          data-option-src="{{ foehn_section_url(pagination_section, pagination.next.link) }}"
+          data-option-history
+          data-option-selector="{{ pagination_targets }}"
         {% endif %}>
         Next &rarr;
       </a>
