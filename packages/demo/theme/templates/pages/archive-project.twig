@@ -45,13 +45,10 @@
     two regions that change keeps the controls out of the swap, which is also what
     lets somebody keep clicking while a request is still in the air.
 
-    The URL is built here rather than left to the component, and that is a workaround
-    with a measured reason. `Fetch` folds a GET form's fields onto its action by name,
-    keeping one value per name — so a checkbox group, whose whole point is repeated
-    names, reaches the server with one of its values. Ticking a second series changed
-    nothing: `FormData` held both, `new URLSearchParams(FormData)` serialises both, and
-    the request carried the first. Passing the serialised form to `fetch()` is the one
-    line that fixes it, and it is what the no-JS submit does anyway.
+    `fetch()` is called with no URL, because the component builds one itself: since
+    1.11.0 it folds *every* value of a repeated field onto the action, which is what a
+    checkbox group is made of. Ticking a second series adds a second
+    `project_category[]` to the request, exactly as the no-JS submit does.
 
     `abort()` before each request makes the last click the one that wins. Two requests
     in flight together are otherwise a race the network settles, and the earlier answer
@@ -64,7 +61,7 @@
     data-component="Fetch Action"
     data-option-history
     data-option-selector="#foehn-section-project-index, #project-count"
-    data-on:change="() => { Fetch.abort(); Fetch.fetch(this.action + '?' + new URLSearchParams(new FormData(this))) }">
+    data-on:change="() => { Fetch.abort(); Fetch.fetch() }">
     {#
       `facet()` is what makes these options a facet rather than a list: each one knows
       how many results it would give in the view being looked at, and an option that
