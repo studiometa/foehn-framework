@@ -48,8 +48,17 @@ final class ThemeHooks
             return;
         }
 
-        if (!$query->get('orderby')) {
+        // The curated sequence, unless the visitor has asked for a sort of their own —
+        // in either half of the pair.
+        if (!$query->get('orderby') && !$query->get('order')) {
             $query->set('orderby', ['menu_order' => 'ASC', 'date' => 'DESC']);
+        }
+
+        // A direction on its own needs a single column to apply to. The multi-key form
+        // above carries a direction per key and makes WordPress ignore `order`
+        // altogether, so choosing "Ascending" and nothing else would do nothing at all.
+        if (!$query->get('orderby')) {
+            $query->set('orderby', 'menu_order');
         }
 
         if (!$query->get('posts_per_page')) {

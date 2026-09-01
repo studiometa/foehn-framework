@@ -83,11 +83,26 @@
       {% endfor %}
     </fieldset>
 
+    {#
+      `orderby` and `order` are both public query vars, so this pair needs no more
+      configuration than the series do. The default is neither of them: with nothing
+      asked for, `ThemeHooks` orders the archive by the curated sequence.
+    #}
+    <label class="filters__group">
+      <span class="label label--ink">Sort by</span>
+      <select name="orderby">
+        <option value="date" {{ query_get('orderby', 'date') == 'date' ? 'selected' }}>Date</option>
+        <option value="title" {{ query_get('orderby') == 'title' ? 'selected' }}>Title</option>
+      </select>
+    </label>
+
+    {# Lowercase, because the page cache keys the value and `DESC` would be a second
+       spelling of the same page. WordPress reads either. #}
     <label class="filters__group">
       <span class="label label--ink">Order</span>
-      <select name="orderby">
-        <option value="date" {{ query_get('orderby', 'date') == 'date' ? 'selected' }}>Newest</option>
-        <option value="title" {{ query_get('orderby') == 'title' ? 'selected' }}>Title</option>
+      <select name="order">
+        <option value="desc" {{ query_get('order', 'desc')|lower == 'desc' ? 'selected' }}>Descending</option>
+        <option value="asc" {{ query_get('order')|lower == 'asc' ? 'selected' }}>Ascending</option>
       </select>
     </label>
 

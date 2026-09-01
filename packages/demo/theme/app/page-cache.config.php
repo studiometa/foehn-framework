@@ -42,6 +42,9 @@ return new PageCacheConfig(
         // The two orders the form offers, and nothing else — `?orderby=rand` would be
         // a different page for every visitor and is not one of them.
         'orderby' => ['date', 'title'],
+        // Lowercase only, though WordPress reads either case. `desc` and `DESC` are the
+        // same page, and keying both would store it twice.
+        'order' => ['asc', 'desc'],
         // The same three values `query-filters.config.php` allows. Named twice, in two
         // files that do not read each other — a keyed argument the filter would reject
         // is a stored file nobody can reach, and a filter the cache does not know is a
