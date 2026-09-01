@@ -254,6 +254,44 @@ describe('Server: resolving its config', function () {
     });
 });
 
+describe('Server: looking for a stored 404', function () {
+    // These run in-process, because `serve()` only exits when it has something to send.
+    // What they pin is the probe itself: whether the drop-in looks for a 404 at all.
+    it('looks for one and boots WordPress when there is none', function () {
+        $config = new PageCacheConfig(
+            enabled: true,
+            path: $this->root,
+            environments: ['production'],
+            cacheNotFound: true,
+        );
+
+        $_SERVER['REQUEST_METHOD'] = 'GET';
+        $_SERVER['HTTP_HOST'] = 'example.com';
+        $_SERVER['REQUEST_URI'] = '/gone/';
+
+        Server::serve($config);
+
+        expect(true)->toBeTrue('serve() returned rather than sending anything');
+    });
+
+    it('does not look when the project has turned 404 caching off', function () {
+        $config = new PageCacheConfig(
+            enabled: true,
+            path: $this->root,
+            environments: ['production'],
+            cacheNotFound: false,
+        );
+
+        $_SERVER['REQUEST_METHOD'] = 'GET';
+        $_SERVER['HTTP_HOST'] = 'example.com';
+        $_SERVER['REQUEST_URI'] = '/gone/';
+
+        Server::serve($config);
+
+        expect(true)->toBeTrue('serve() returned rather than sending anything');
+    });
+});
+
 describe('Server: a stored 404', function () {
     it('serves it with the status it was stored with', function () {
         // The defect this fixes: the body came back with `200 OK`, which is a soft 404 —

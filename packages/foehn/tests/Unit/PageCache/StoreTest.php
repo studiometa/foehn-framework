@@ -225,6 +225,17 @@ describe('Store', function () {
                 ->toBe($this->root . '/example.com/blog/index--404.html.headers');
         });
 
+        it('counts pages rather than files in its stats', function () {
+            // `cache:status` reports this number. With a headers sibling per entry,
+            // counting files would tell somebody they have twice the pages they have.
+            $this->store->put($this->key, '<html>hi</html>', 200, ['X-Robots-Tag: noindex']);
+
+            $stats = $this->store->stats();
+
+            expect($stats['files'])->toBe(1);
+            expect($stats['bytes'])->toBeGreaterThan(strlen('<html>hi</html>'));
+        });
+
         it('purges the headers and the 404 with the page', function () {
             $this->store->put($this->key, '<html>hi</html>', 200, ['X-Robots-Tag: noindex']);
             $this->store->put($this->key, '<html>gone</html>', 404, ['X-Robots-Tag: noindex']);
