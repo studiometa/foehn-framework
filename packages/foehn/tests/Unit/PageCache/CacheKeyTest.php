@@ -191,4 +191,34 @@ describe('multi-value filenames', function () {
         ['index__genre=a%2Fb&.html'],
         ['index.php'],
     ]);
+
+describe('status and headers in the name', function () {
+    it('names a 404 apart from the page at the same URL', function () {
+        $key = CacheKey::create('example.com', '/gone/');
+
+        expect($key?->filename())->toBe('index.html');
+        expect($key?->filename(404))->toBe('index--404.html');
+        expect($key?->relativePath(404))->toBe('example.com/gone/index--404.html');
+    });
+
+    it('names the headers file after the body it belongs to', function () {
+        $key = CacheKey::create('example.com', '/blog/', 'lang=fr&');
+
+        expect($key?->headersFilename())->toBe('index__lang=fr&.html.headers');
+        expect($key?->headersFilename(404))->toBe('index__lang=fr&--404.html.headers');
+        expect($key?->headersRelativePath())->toBe('example.com/blog/index__lang=fr&.html.headers');
+    });
+
+    it('allows a 404 name to be written', function () {
+        // The last gate before the write has to know about the suffix, or every cached
+        // 404 would be refused as an unwritable filename.
+        expect(CacheKey::isWritableFilename('index--404.html'))->toBeTrue();
+        expect(CacheKey::isWritableFilename('index__lang=fr&--404.html'))->toBeTrue();
+    });
+
+    it('still refuses a name that is not this cache\'s', function () {
+        expect(CacheKey::isWritableFilename('index--404.php'))->toBeFalse();
+        expect(CacheKey::isWritableFilename('index.html.headers'))->toBeFalse();
+    });
+});
 });
