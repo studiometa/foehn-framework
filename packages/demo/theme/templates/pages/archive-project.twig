@@ -44,17 +44,33 @@
     data-component="Fetch Action"
     data-option-history
     data-on:change="Fetch.fetch()">
+    {#
+      `facet()` is what makes these options a facet rather than a list: each one knows
+      how many results it would give in the view being looked at, and an option that
+      would give none says so instead of leaving the visitor to find out.
+
+      The counts come from the current filters with *this* taxonomy's own filter lifted.
+      Left in, picking one series would report zero for every other series and a visitor
+      could never pick a second one — see Studiometa\Foehn\Query\Facets.
+    #}
     <fieldset class="filters__group">
       <legend class="label label--ink">Series</legend>
 
-      {% for term in series %}
-        <label class="filters__option">
+      {% for option in facet('project_category') %}
+        <label class="filters__option {{ option.isEmpty ? 'filters__option--empty' }}">
           <input
             type="checkbox"
             name="project_category[]"
-            value="{{ term.slug }}"
-            {{ query_contains('project_category', term.slug) ? 'checked' }} />
-          {{ term.title }}
+            value="{{ option.term.slug }}"
+            {{ option.active ? 'checked' }}
+            {# A dead end is disabled rather than hidden: the set of filters should not
+               move around as the visitor uses it. An already-checked one stays usable,
+               or there would be no way to undo it. #}
+            {{ option.isEmpty and not option.active ? 'disabled' }} />
+          {{ option.term.name }}
+          {% if option.count is not null %}
+            <span class="filters__count">{{ option.count }}</span>
+          {% endif %}
         </label>
       {% endfor %}
     </fieldset>
@@ -64,6 +80,22 @@
       <select name="orderby">
         <option value="date" {{ query_get('orderby', 'date') == 'date' ? 'selected' }}>Newest</option>
         <option value="title" {{ query_get('orderby') == 'title' ? 'selected' }}>Title</option>
+      </select>
+    </label>
+
+    {#
+      The one filter here that WordPress will not read from a URL by itself.
+      `posts_per_page` is a private query var — a visitor who can set it can ask for
+      every post on the site — so `QueryFiltersHook` makes it public against the
+      allowlist in `app/query-filters.config.php`, and a value outside that list is
+      refused rather than clamped.
+    #}
+    <label class="filters__group">
+      <span class="label label--ink">Per page</span>
+      <select name="posts_per_page">
+        {% for size in [3, 6, 12] %}
+          <option value="{{ size }}" {{ query_get('posts_per_page', 3) == size ? 'selected' }}>{{ size }}</option>
+        {% endfor %}
       </select>
     </label>
 

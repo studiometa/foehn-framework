@@ -575,3 +575,17 @@
   gap: 1rem;
   margin-left: auto;
 }
+
+/* The count beside a facet option: present, and not competing with the label. */
+.filters__count {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.55;
+}
+
+/*
+ * An option that would return nothing. Dimmed rather than removed, so the set of
+ * filters does not move around while somebody is using it.
+ */
+.filters__option--empty {
+  opacity: 0.4;
+}

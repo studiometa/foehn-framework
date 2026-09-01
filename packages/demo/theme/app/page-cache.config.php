@@ -42,5 +42,10 @@ return new PageCacheConfig(
         // The two orders the form offers, and nothing else — `?orderby=rand` would be
         // a different page for every visitor and is not one of them.
         'orderby' => ['date', 'title'],
+        // The same three values `query-filters.config.php` allows. Named twice, in two
+        // files that do not read each other — a keyed argument the filter would reject
+        // is a stored file nobody can reach, and a filter the cache does not know is a
+        // bypass nobody notices.
+        'posts_per_page' => [3, 6, 12],
     ],
 );

@@ -6,6 +6,7 @@ use Studiometa\Foehn\Config\FoehnConfig;
 use Studiometa\Foehn\Hooks\Cleanup\CleanHeadTags;
 use Studiometa\Foehn\Hooks\Cleanup\DisableEmoji;
 use Studiometa\Foehn\Hooks\Cleanup\DisableOembed;
+use Studiometa\Foehn\Hooks\QueryFiltersHook;
 use Studiometa\Foehn\Hooks\S3UploadsEndpoint;
 use Studiometa\Foehn\Hooks\Security\DisableVersionDisclosure;
 use Studiometa\Foehn\Hooks\Security\DisableXmlRpc;
@@ -33,6 +34,11 @@ return new FoehnConfig(
         // Registers the @ui and @svg Twig namespaces studiometa/ui ships its
         // components under. Inert when the package is not installed.
         StudiometaUi::class,
+        // Makes `posts_per_page` settable from the URL, bounded by the allowlist in
+        // `query-filters.config.php`. Everything else the projects archive filters by
+        // is a public query var WordPress already reads, so this hook is here for the
+        // one filter that is not.
+        QueryFiltersHook::class,
         // Points humanmade/s3-uploads at MinIO. Without it the plugin talks to AWS, whose
         // endpoint is the only one its constants can describe.
         S3UploadsEndpoint::class,

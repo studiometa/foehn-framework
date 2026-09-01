@@ -283,9 +283,58 @@ The `exclude` parameter lets you omit parameters that your form controls directl
 </form>
 ```
 
-## Static Counts
+## Facets: options that know their own count
 
-For basic counts, use WordPress taxonomy term counts:
+A filter lists every term. A facet says how many results each term would give, and which ones would give none — the difference between a control a visitor can use and one they have to guess at.
+
+`facet()` returns those options for a taxonomy:
+
+```twig
+{% for option in facet('project_category') %}
+  <label>
+    <input
+      type="checkbox"
+      name="project_category[]"
+      value="{{ option.term.slug }}"
+      {{ option.active ? 'checked' }}
+      {{ option.isEmpty and not option.active ? 'disabled' }} />
+    {{ option.term.name }}
+    {% if option.count is not null %}({{ option.count }}){% endif %}
+  </label>
+{% endfor %}
+```
+
+Each option carries a `term` (a plain `WP_Term`), a `count`, and `active`. `isEmpty` is true when choosing it would give an empty page.
+
+### Each facet is counted with its own filter lifted
+
+This is the part that is easy to get wrong, and getting it wrong is worse than having no counts. Counts for `project_category` come from the current query **minus its own `project_category` constraint**, while every other filter on the page still applies.
+
+Leave the filter in and picking "still life" makes every other series report zero, so a visitor who wants two series can never pick the second one. The control silently stops working.
+
+### The whole filtered set, not the current page
+
+A tempting shortcut is to derive the options from the posts already on the page:
+
+```php
+// Don't: this counts the ten posts on screen.
+$ids = array_map(fn($post) => $post->id, $posts);
+$terms = wp_get_object_terms($ids, 'project_category');
+```
+
+The list of filters then changes as the visitor pages through the results, and a term that appears only on page three is invisible on page one. `facet()` queries the filtered set instead.
+
+### What it costs
+
+One query for the post ids and one grouped count per facet, at render time. The number of terms does not change the cost — a single `GROUP BY` covers all of them — but the size of the result set does.
+
+On a page in the [page cache](/guide/page-cache) that is paid **once per stored page rather than once per visitor**, which is what makes it affordable. On an uncached page it is paid every time.
+
+Above `Facets::MAX_COUNTED_POSTS` (2000) results, options come back with `count` set to `null` rather than slowly. `null` is not zero: nothing was counted, so nothing is reported as a dead end. Templates check `option.count is not null` before printing.
+
+## Unfiltered counts
+
+`term.count` is WordPress's own total for a term, across the whole site:
 
 ```twig
 {% for term in get_terms('genre') %}
@@ -293,9 +342,9 @@ For basic counts, use WordPress taxonomy term counts:
 {% endfor %}
 ```
 
-::: warning
-`term.count` shows the total posts in that term, not filtered by current query. For filtered counts (faceted search), consider using [FacetWP](https://facetwp.com/) or [Algolia](https://www.algolia.com/).
-:::
+It ignores the current query, so on a filtered archive it will disagree with what the page shows. Use it for a tag cloud or a menu; use `facet()` above for anything a visitor filters with.
+
+A search engine — [FacetWP](https://facetwp.com/), [Algolia](https://www.algolia.com/) — is still the answer when facets have to span post types, weight relevance, or count over sets larger than `Facets::MAX_COUNTED_POSTS`.
 
 ## API Reference
 
