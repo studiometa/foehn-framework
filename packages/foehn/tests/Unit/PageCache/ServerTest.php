@@ -50,6 +50,46 @@ function pageCacheServeInProcess(string $root, array $server, string $body = '',
     return ['status' => $status, 'output' => implode("\n", $output)];
 }
 
+
+/**
+ * Serve a stored 404 in its own process and report the status the drop-in set.
+ *
+ * `header()` is inert under the CLI SAPI, but a status set before any output is tracked,
+ * so a shutdown function can read back what `Server::send()` decided. That is the only
+ * assertion that matters here: the body was always served, and the status was always 200.
+ *
+ * @param array<string, string> $server
+ * @return array{status: int, output: string}
+ */
+function pageCacheServeNotFoundInProcess(string $root, array $server, string $body, bool $cacheNotFound = true): array
+{
+    $bootstrap = var_export(dirname(__DIR__, 2) . '/bootstrap.php', true);
+    $script = sprintf(
+        'require %s;
+        $_SERVER = array_merge($_SERVER, %s);
+        $config = new Studiometa\Foehn\Config\PageCacheConfig(
+            enabled: true, path: %s, debugHeaders: false, cacheNotFound: %s,
+        );
+        $store = new Studiometa\Foehn\PageCache\Store($config);
+        $store->put(Studiometa\Foehn\PageCache\CacheKey::create("example.com", %s), %s, 404);
+        register_shutdown_function(function () { fwrite(STDERR, "|STATUS=" . var_export(http_response_code(), true)); });
+        Studiometa\Foehn\PageCache\Server::serve($config);
+        echo "BOOTED";',
+        $bootstrap,
+        var_export($server, true),
+        var_export($root, true),
+        $cacheNotFound ? 'true' : 'false',
+        var_export($server['REQUEST_URI'] ?? '/', true),
+        var_export($body, true),
+    );
+
+    $output = [];
+    $status = 0;
+    exec('php -r ' . escapeshellarg($script) . ' 2>&1', $output, $status);
+
+    return ['status' => $status, 'output' => implode("\n", $output)];
+}
+
 beforeEach(function () {
     wp_stub_reset();
     $GLOBALS['wp_stub_environment_type'] = 'production';
@@ -211,5 +251,35 @@ describe('Server: resolving its config', function () {
         Server::boot($this->app);
 
         expect(true)->toBeTrue();
+    });
+});
+
+describe('Server: a stored 404', function () {
+    it('serves it with the status it was stored with', function () {
+        // The defect this fixes: the body came back with `200 OK`, which is a soft 404 —
+        // indexable, and invisible to anything watching status codes.
+        $result = pageCacheServeNotFoundInProcess(
+            $this->root,
+            ['REQUEST_METHOD' => 'GET', 'HTTP_HOST' => 'example.com', 'REQUEST_URI' => '/gone/'],
+            '<html>not found</html>',
+        );
+
+        expect($result['output'])->toContain('<html>not found</html>');
+        expect($result['output'])->toContain('|STATUS=404');
+        expect($result['output'])->not->toContain('BOOTED');
+    });
+
+    it('is left on disk when the project has stopped caching 404s', function () {
+        // Turning the option off has to stop serving what is already stored, rather than
+        // wait for a purge that may never come.
+        $result = pageCacheServeNotFoundInProcess(
+            $this->root,
+            ['REQUEST_METHOD' => 'GET', 'HTTP_HOST' => 'example.com', 'REQUEST_URI' => '/gone/'],
+            '<html>not found</html>',
+            false,
+        );
+
+        expect($result['output'])->toContain('BOOTED');
+        expect($result['output'])->not->toContain('<html>not found</html>');
     });
 });

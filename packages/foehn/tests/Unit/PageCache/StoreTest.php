@@ -162,4 +162,65 @@ describe('Store', function () {
     it('reports an empty cache without inventing entries', function () {
         expect($this->store->stats())->toBe(['files' => 0, 'bytes' => 0, 'oldest' => null, 'newest' => null]);
     });
+
+    describe('status and headers', function () {
+        it('stores a 404 under a name of its own', function () {
+            // The body alone cannot say what status it was sent with, so the name does.
+            expect($this->store->put($this->key, '<html>gone</html>', 404))->toBeTrue();
+
+            expect($this->root . '/example.com/blog/index--404.html')->toBeFile();
+            expect($this->root . '/example.com/blog/index.html')->not->toBeFile();
+        });
+
+        it('keeps a 200 and a 404 for one URL apart', function () {
+            $this->store->put($this->key, '<html>page</html>');
+            $this->store->put($this->key, '<html>gone</html>', 404);
+
+            expect($this->store->get($this->key))->toBe('<html>page</html>');
+            expect($this->store->get($this->key, 404))->toBe('<html>gone</html>');
+        });
+
+        it('cannot confuse a 404 name with a keyed variant', function () {
+            // A variant always ends with `&`, so it can never produce the 404 suffix.
+            $keyed = CacheKey::create('example.com', '/blog/', 'x=--404&');
+
+            expect($keyed?->filename())->toBe('index__x=--404&.html');
+            expect($keyed?->filename(404))->toBe('index__x=--404&--404.html');
+        });
+
+        it('stores the headers a response carried, beside the body', function () {
+            $this->store->put($this->key, '<html>hi</html>', 200, [
+                'Link: </a.css>; rel=preload',
+                'Set-Cookie: session=secret',
+            ]);
+
+            expect($this->store->headers($this->key))->toBe(['Link: </a.css>; rel=preload']);
+            expect($this->root . '/example.com/blog/index.html.headers')->toBeFile();
+        });
+
+        it('writes no headers file when a response had nothing worth keeping', function () {
+            $this->store->put($this->key, '<html>hi</html>', 200, ['Set-Cookie: a=b']);
+
+            expect($this->root . '/example.com/blog/index.html.headers')->not->toBeFile();
+            expect($this->store->headers($this->key))->toBe([]);
+        });
+
+        it('drops a stale headers file when the page stops sending any', function () {
+            $this->store->put($this->key, '<html>hi</html>', 200, ['X-Robots-Tag: noindex']);
+            $this->store->put($this->key, '<html>hi</html>', 200, []);
+
+            expect($this->root . '/example.com/blog/index.html.headers')->not->toBeFile();
+        });
+
+        it('purges the headers and the 404 with the page', function () {
+            $this->store->put($this->key, '<html>hi</html>', 200, ['X-Robots-Tag: noindex']);
+            $this->store->put($this->key, '<html>gone</html>', 404, ['X-Robots-Tag: noindex']);
+
+            $this->store->forget($this->key);
+
+            // A sidecar that outlived its body would be replayed onto the next page
+            // stored at the same URL.
+            expect(glob($this->root . '/example.com/blog/*'))->toBe([]);
+        });
+    });
 });

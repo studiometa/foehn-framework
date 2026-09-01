@@ -109,7 +109,20 @@ final readonly class Server
         }
 
         $store = new Store($config);
+        $status = 200;
         $file = $store->file($key);
+
+        // A stored 404 is looked for only when the project still wants them cached, and
+        // only after the 200: turning `cacheNotFound` off must stop serving the ones
+        // already on disk rather than wait for a purge.
+        if (($file === null || !is_file($file)) && $config->cacheNotFound) {
+            $notFound = $store->file($key, 404);
+
+            if ($notFound !== null && is_file($notFound)) {
+                $status = 404;
+                $file = $notFound;
+            }
+        }
 
         if ($file === null || !is_file($file)) {
             DebugHeaders::send($config, DebugHeaders::STATE_MISS, BypassReason::NotCached);
@@ -125,18 +138,33 @@ final readonly class Server
             return;
         }
 
-        self::send($config, $file);
+        self::send($config, $file, $status, $store->headers($key, $status));
     }
 
     /**
      * Send a stored file and stop.
      */
-    private static function send(PageCacheConfig $config, string $file): void
+    /**
+     * @param list<string> $stored Headers recorded with the entry, already validated.
+     */
+    private static function send(PageCacheConfig $config, string $file, int $status = 200, array $stored = []): void
     {
         $modified = (int) filemtime($file);
         $etag = '"' . md5($file . ':' . $modified) . '"';
 
         DebugHeaders::send($config, DebugHeaders::STATE_HIT);
+
+        // What the response itself carried, before the headers this cache owns — so a
+        // page's own `Link:` or `X-Robots-Tag` survives a hit, and none of them can
+        // overwrite the freshness headers below. nginx cannot replay these; see
+        // StoredHeaders.
+        foreach ($stored as $header) {
+            header($header, false);
+        }
+
+        if ($status !== 200) {
+            http_response_code($status);
+        }
 
         header('Content-Type: text/html; charset=UTF-8');
         header('Last-Modified: ' . gmdate('D, d M Y H:i:s', $modified) . ' GMT');

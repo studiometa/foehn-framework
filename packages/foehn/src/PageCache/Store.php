@@ -34,17 +34,25 @@ final readonly class Store
     /**
      * The absolute file a key maps to, or null when it would leave the cache root.
      */
-    public function file(CacheKey $key): ?string
+    public function file(CacheKey $key, int $status = 200): ?string
     {
-        return $this->directory()->resolve($key->relativePath());
+        return $this->directory()->resolve($key->relativePath($status));
+    }
+
+    /**
+     * The absolute file holding this entry's recorded headers, if it may be written.
+     */
+    public function headersFile(CacheKey $key, int $status = 200): ?string
+    {
+        return $this->directory()->resolve($key->headersRelativePath($status));
     }
 
     /**
      * Whether a key has a stored file.
      */
-    public function has(CacheKey $key): bool
+    public function has(CacheKey $key, int $status = 200): bool
     {
-        $file = $this->file($key);
+        $file = $this->file($key, $status);
 
         return $file !== null && is_file($file);
     }
@@ -55,9 +63,9 @@ final readonly class Store
      * A false is never an error to show a visitor: the page has already been rendered
      * and is on its way out. It only means the next request pays for a render too.
      */
-    public function put(CacheKey $key, string $body): bool
+    public function put(CacheKey $key, string $body, int $status = 200, array $headers = []): bool
     {
-        $file = $this->file($key);
+        $file = $this->file($key, $status);
 
         if ($file === null || !CacheKey::isWritableFilename(basename($file))) {
             return false;
@@ -75,15 +83,59 @@ final readonly class Store
             return false;
         }
 
-        return $this->writeAtomically($file, $body);
+        if (!$this->writeAtomically($file, $body)) {
+            return false;
+        }
+
+        // The headers are written after the body and never instead of it: a hit with the
+        // headers missing is the response this cache has always sent, while a headers
+        // file with no body is an entry nothing will ever read.
+        $kept = StoredHeaders::keep($headers);
+        $headersFile = $this->headersFile($key, $status);
+
+        if ($headersFile === null) {
+            return true;
+        }
+
+        if ($kept === []) {
+            // A page that recorded nothing worth replaying must not keep a stale file
+            // from the last time it did.
+            if (is_file($headersFile)) {
+                unlink($headersFile);
+            }
+
+            return true;
+        }
+
+        $this->writeAtomically($headersFile, StoredHeaders::encode($kept));
+
+        return true;
+    }
+
+    /**
+     * The headers recorded with a stored entry, or none.
+     *
+     * @return list<string>
+     */
+    public function headers(CacheKey $key, int $status = 200): array
+    {
+        $file = $this->headersFile($key, $status);
+
+        if ($file === null || !is_file($file)) {
+            return [];
+        }
+
+        $contents = file_get_contents($file);
+
+        return $contents === false ? [] : StoredHeaders::decode($contents);
     }
 
     /**
      * Read a stored body, or null when there is none or it has expired.
      */
-    public function get(CacheKey $key): ?string
+    public function get(CacheKey $key, int $status = 200): ?string
     {
-        $file = $this->file($key);
+        $file = $this->file($key, $status);
 
         if ($file === null || !is_file($file) || $this->isExpired($file)) {
             return null;
@@ -127,7 +179,7 @@ final readonly class Store
 
         $removed = 0;
 
-        foreach ((array) glob($directory . '/index*.html') as $file) {
+        foreach ((array) glob($directory . '/index*.html{,' . CacheKey::HEADERS_SUFFIX . '}', GLOB_BRACE) as $file) {
             if (!is_string($file)) {
                 continue;
             }

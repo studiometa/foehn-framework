@@ -31,6 +31,14 @@ use Studiometa\Foehn\Config\PageCacheConfig;
  * server level, `set` under `if` is the documented behaviour of the rewrite module rather
  * than the trap it is in a location.
  *
+ * **A stored 404 is never served from here.** This snippet only ever builds
+ * `index.html` and `index__variant.html`, and a 404 is stored as
+ * `index__variant--404.html` — so nginx simply does not find it and the request goes to
+ * PHP, which answers with the right status. nginx cannot set a status on a static
+ * response without `error_page`, and this arrangement means it never has to. The same
+ * goes for the headers a page recorded: the drop-in replays them, this does not, and
+ * both send the freshness headers below.
+ *
  * **The stored files are unreachable from outside.** They are served through an internal
  * redirect into a `location ^~` marked `internal`, so no visitor can request a cache file
  * by name, and a `.php` written under that directory by any cache is unreachable as well

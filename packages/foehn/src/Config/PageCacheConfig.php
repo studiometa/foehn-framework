@@ -141,7 +141,15 @@ final readonly class PageCacheConfig
         public array $excludeWhenBodyContains = [],
 
         /**
-         * Cache 404s (own TTL bucket, always short).
+         * Cache 404s.
+         *
+         * Stored under their own filename — `index--404.html` — so both readers can tell
+         * them from a page, and served with a 404 status by the drop-in. nginx does not
+         * serve them at all: it never looks for that name, so the request reaches PHP,
+         * which is the only reader that can set a status on a stored file.
+         *
+         * They share the `ttl` of everything else. An earlier version of this note
+         * promised a shorter bucket of their own; there has never been one.
          *
          * Off by default is also what stops an attacker filling the disk with a
          * directory per made-up URL. Turning it on wants a bound on the entry count.

@@ -235,6 +235,39 @@ do_action('foehn/page_cache/flush');
 
 These actions are also the seam for a CDN purge integration.
 
+## What a stored entry holds
+
+A stored entry is a body, its status, and the headers the response set for itself:
+
+```
+example.com/blog/index.html                 the body
+example.com/blog/index.html.headers         what that response sent, minus what the cache owns
+example.com/blog/index--404.html            a 404 for the same URL, when `cacheNotFound` is on
+```
+
+### The status
+
+A body cannot say what status it was sent with, so the name does. A 404 is stored as `index--404.html`, and the drop-in serves it as a 404.
+
+**nginx never serves one.** The generated snippet only ever builds `index.html` and `index__variant.html`, so it does not find the 404, the request reaches PHP, and PHP answers with the right status. nginx cannot set a status on a static response without `error_page`, and this way it does not have to. The cost is that cached 404s are as fast as the drop-in, not as fast as nginx — which is the right trade for a page nobody should be reaching often.
+
+A keyed variant can never be mistaken for a 404: a variant always ends with `&`, because each keyed argument appends one.
+
+### The headers
+
+The response's own headers — a `Link:` preload, a page-specific `Content-Security-Policy`, an `X-Robots-Tag` — are stored beside the body and replayed on a hit. Without that, they appeared on the miss and vanished on every hit, so the same URL answered differently depending on cache state.
+
+Some are never stored:
+
+| Not stored                                                                                        | Why                                                                                                                                                                              |
+| ------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Set-Cookie`                                                                                      | A cookie belongs to the visitor it was minted for. Replaying one would hand that session to everybody who asked for the page next. This is a security boundary, not a preference |
+| `Cache-Control`, `ETag`, `Last-Modified`, `Content-Length`, `Content-Type`, `Vary`, `Date`, `Age` | The cache computes these for the file it is actually sending; a recorded copy would contradict it                                                                                |
+
+Every line is validated when written **and** when read, because the file sits on a disk between those two moments.
+
+**Only the drop-in replays them.** nginx's static file module has no notion of an embedded header block, and `proxy_cache`'s stored format is nginx's own — written and read by the same module, not an interchange format. So the fast path sends the headers the snippet derives from your configuration, and the drop-in sends those plus what was recorded. If a page depends on a header it sets itself, that page is faster to exclude than to reason about.
+
 ### The gaps, stated
 
 - **A renamed term leaves its old archive cached.** `edited_term` fires after the change, so only the new URL can be purged. The old one goes stale until the TTL sweep reaches it.

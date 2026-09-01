@@ -80,7 +80,31 @@ final readonly class CacheKey
      * about the URL, for a filename this file would not write. Derived, it cannot say no
      * to a value the rest of the cache has already said yes to.
      */
-    public const FILENAME_PATTERN = '/^index(__[' . QueryKey::VALUE_CHARACTER_CLASS . '=&]+)?\.html$/';
+    public const FILENAME_PATTERN =
+        '/^index(__[' . QueryKey::VALUE_CHARACTER_CLASS . '=&]+)?(' . self::NOT_FOUND_SUFFIX . ')?\.html$/';
+
+    /**
+     * What marks a stored file as a 404 rather than a 200.
+     *
+     * A cache stores a body, and a body alone cannot say what status it was sent with —
+     * so `cacheNotFound` used to store a "not found" page and both readers served it as
+     * `200 OK`. Search engines call that a soft 404 and monitoring cannot see it at all.
+     *
+     * The status therefore goes in the name, and it can go there unambiguously: a variant
+     * always ends with `&`, because {@see QueryKey::canonical()} appends one per argument.
+     * So a name ending in `--404.html` is one this cache wrote for a 404 and can never be
+     * a keyed variant that happens to look like one.
+     *
+     * It is also what keeps nginx honest without teaching it a trick. The generated
+     * snippet only ever builds `index.html` and `index__variant.html`, so it never finds
+     * a 404 file, forwards the request to PHP, and the drop-in answers with the right
+     * status. nginx cannot set a status on a static response without `error_page`, and
+     * this way it does not have to.
+     */
+    public const NOT_FOUND_SUFFIX = '--404';
+
+    /** What a stored entry's headers file is called, relative to its body. */
+    public const HEADERS_SUFFIX = '.headers';
 
     private function __construct(
         /** Lowercased, port-stripped request host. */
@@ -126,29 +150,52 @@ final readonly class CacheKey
     /**
      * The stored filename for this key.
      */
-    public function filename(): string
+    public function filename(int $status = 200): string
     {
-        return self::filenameFor($this->variant);
+        return self::filenameFor($this->variant, $status);
+    }
+
+    /**
+     * The file holding this entry's recorded response headers.
+     *
+     * A sibling of the body rather than a header block inside it, so the body stays a
+     * file a webserver can send untouched — which is the whole point of storing one.
+     */
+    public function headersFilename(int $status = 200): string
+    {
+        return $this->filename($status) . self::HEADERS_SUFFIX;
     }
 
     /**
      * The path of the stored file, relative to the cache root.
      */
-    public function relativePath(): string
+    public function relativePath(int $status = 200): string
     {
-        return rtrim($this->host . $this->path, '/') . '/' . $this->filename();
+        return $this->relativeDirectory() . '/' . $this->filename($status);
+    }
+
+    /**
+     * The path of this entry's stored headers, relative to the cache root.
+     */
+    public function headersRelativePath(int $status = 200): string
+    {
+        return $this->relativeDirectory() . '/' . $this->headersFilename($status);
     }
 
     /**
      * The filename a canonical query suffix stores under.
      */
-    private static function filenameFor(string $variant): string
+    private static function filenameFor(string $variant, int $status = 200): string
     {
-        if ($variant === '') {
+        $suffix = $status === 404 ? self::NOT_FOUND_SUFFIX : '';
+
+        if ($variant === '' && $suffix === '') {
             return self::FILENAME;
         }
 
-        return 'index' . self::VARIANT_SEPARATOR . $variant . '.html';
+        $keyed = $variant === '' ? '' : self::VARIANT_SEPARATOR . $variant;
+
+        return 'index' . $keyed . $suffix . '.html';
     }
 
     /**
