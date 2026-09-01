@@ -343,6 +343,24 @@ final readonly class Site
     }
 
     /**
+     * The stored pages, without the headers files that sit beside them.
+     *
+     * An entry is a body plus, when the response set headers worth replaying, a
+     * `.headers` sibling — and WordPress sets a `Link:` header on nearly every page, so
+     * in practice most entries have one. Assertions about how many pages are stored mean
+     * bodies, so they count these.
+     *
+     * @return list<string>
+     */
+    public static function cachedPages(): array
+    {
+        return array_values(array_filter(
+            self::cachedFiles(),
+            static fn(string $file): bool => str_ends_with($file, '.html'),
+        ));
+    }
+
+    /**
      * Wait until the homepage is answered by a given reader.
      */
     public static function awaitVia(string $via, int $attempts = 40): bool

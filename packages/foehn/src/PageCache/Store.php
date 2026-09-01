@@ -296,7 +296,14 @@ final readonly class Store
                 continue;
             }
 
-            $files++;
+            // Bodies, not files: a stored entry may have a `.headers` sibling, and
+            // `cache:status` reporting twice as many pages as there are would be a
+            // number nobody could act on. The bytes are every file, because that is
+            // what the disk holds.
+            if (str_ends_with($entry->getFilename(), '.html')) {
+                $files++;
+            }
+
             $bytes += (int) $entry->getSize();
             $modified = (int) $entry->getMTime();
             $oldest = $oldest === null ? $modified : min($oldest, $modified);

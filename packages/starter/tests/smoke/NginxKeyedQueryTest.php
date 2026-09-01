@@ -74,7 +74,7 @@ describe('keyed query args', function () {
         $reversed = smokeGet('/?lang=fr&page=2');
 
         expectCache($reversed, 'HIT', 'nginx');
-        expect(Site::cachedFiles())->toHaveCount(1);
+        expect(Site::cachedPages())->toHaveCount(1);
     });
 
     it('serves a multi-value filter from nginx', function () {
@@ -97,14 +97,14 @@ describe('keyed query args', function () {
         $bracketed = smokeGet('/?genre[]=rock&genre[]=jazz');
 
         expectCache($bracketed, 'HIT', 'php');
-        expect(Site::cachedFiles())->toHaveCount(1);
+        expect(Site::cachedPages())->toHaveCount(1);
     });
 
     it('keeps a keyed arg apart from the page without it', function () {
         smokeWarm('/');
         smokeWarm('/?page=2');
 
-        expect(Site::cachedFiles())
+        expect(Site::cachedPages())
             ->toContain(Site::host() . '/index.html')
             ->toContain(Site::host() . '/index__page=2&.html');
     });
