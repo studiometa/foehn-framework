@@ -29,8 +29,7 @@
 
   {% if pagination %}
     {% include 'components/pagination.twig' with {
-      pagination_section: 'project-index',
-      pagination_targets: '#foehn-section-project-index, #project-count'
+      pagination_sections: 'project-count,project-index'
     } %}
   {% endif %}
 </section>

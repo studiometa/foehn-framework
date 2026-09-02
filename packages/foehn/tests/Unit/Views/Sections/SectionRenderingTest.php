@@ -327,6 +327,44 @@ describe('SectionExtension', function () {
             ->not->toStartWith('//');
     });
 
+    it('builds a URL for several sections at once, and one the parser accepts back', function () {
+        // A form that updates a listing and the count beside it asks for both regions in
+        // one request. The round-trip is the assertion: the helper writes the parameter
+        // this class parses, and a comma it encoded would be a URL nobody could answer.
+        $extension = sectionExtension(
+            new SectionRequest('GET', '/archive'),
+            $this->collector,
+            new SectionRenderer($this->view),
+        );
+
+        $url = $extension->url('results,count');
+
+        expect($url)->toBe('/archive?type=project&utm_source=test&foehn_sections=results,count');
+
+        $request = new SectionRequest('GET', $url);
+
+        expect($request->isSelected())->toBeTrue();
+        expect($request->isValid())->toBeTrue();
+        expect($request->names())->toBe(['results', 'count']);
+    });
+
+    it('refuses a selection the request would answer 400 to', function () {
+        // Every rule here belongs to SectionRequest, and this asserts the helper asks it
+        // rather than keeping a looser copy: a URL that is built and then refused is a
+        // page that breaks on the fetch and nowhere else.
+        $extension = sectionExtension(
+            new SectionRequest('GET', '/archive'),
+            $this->collector,
+            new SectionRenderer($this->view),
+        );
+
+        expect(fn() => $extension->url('results,results'))->toThrow(InvalidArgumentException::class);
+        expect(fn() => $extension->url('results,Count'))->toThrow(InvalidArgumentException::class);
+        expect(fn() => $extension->url('a,b,c,d,e,f'))->toThrow(InvalidArgumentException::class);
+        expect(fn() => $extension->url('results,'))->toThrow(InvalidArgumentException::class);
+        expect(fn() => $extension->url(''))->toThrow(InvalidArgumentException::class);
+    });
+
     it('does not freeze ignored query arguments into URLs emitted by cached pages', function () {
         $pageCacheConfig = new PageCacheConfig(
             enabled: true,
@@ -602,10 +640,7 @@ describe('section response headers', function () {
         expect(($this->headers)())->not->toContain('Cache-Control: private, no-store');
     });
 
-    it('still says no-store for a request the cache would not store', function (
-        callable $arrange,
-        int $status,
-    ) {
+    it('still says no-store for a request the cache would not store', function (callable $arrange, int $status) {
         $config = $arrange();
 
         expect(($this->headers)($config, $status))->toContain('Cache-Control: private, no-store');
@@ -615,16 +650,22 @@ describe('section response headers', function () {
             fn(): PageCacheConfig => new PageCacheConfig(enabled: true, environments: ['staging']),
             200,
         ],
-        'a logged-in visitor' => [function (): null {
-            $_COOKIE['wordpress_logged_in_x'] = '1';
+        'a logged-in visitor' => [
+            function (): null {
+                $_COOKIE['wordpress_logged_in_x'] = '1';
 
-            return null;
-        }, 200],
-        'a POST' => [function (): null {
-            $_SERVER['REQUEST_METHOD'] = 'POST';
+                return null;
+            },
+            200,
+        ],
+        'a POST' => [
+            function (): null {
+                $_SERVER['REQUEST_METHOD'] = 'POST';
 
-            return null;
-        }, 200],
+                return null;
+            },
+            200,
+        ],
         'an error status' => [fn(): null => null, 404],
     ]);
 

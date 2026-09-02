@@ -139,6 +139,27 @@ final readonly class SectionRequest
     }
 
     /**
+     * Whether a list of names is a selection this parser would accept.
+     *
+     * What a selection has to satisfy beyond the grammar of one name — at least one, no
+     * more than {@see SectionRequest::MAX_SECTIONS}, no repeat — stated once and asked
+     * twice. {@see \Studiometa\Foehn\Views\Twig\SectionExtension::url()} writes the
+     * parameter that this class parses back, so a second copy of these rules would
+     * eventually be a URL the helper is happy to build and the request answers 400 to.
+     *
+     * @param list<string> $names
+     */
+    public static function isSafeSelection(array $names): bool
+    {
+        return (
+            $names !== []
+            && count($names) <= self::MAX_SECTIONS
+            && count($names) === count(array_unique($names))
+            && !array_any($names, static fn(string $name): bool => !self::isSafeName($name))
+        );
+    }
+
+    /**
      * @return array{bool, bool, list<string>, int}
      */
     private function parseSelection(string $method, string $requestUri): array
@@ -158,12 +179,8 @@ final readonly class SectionRequest
         }
 
         $names = explode(',', rawurldecode(str_replace('+', ' ', $values[0])));
-        $invalid =
-            count($names) > self::MAX_SECTIONS
-            || count($names) !== count(array_unique($names))
-            || array_any($names, static fn(string $name): bool => !self::isSafeName($name));
 
-        return $invalid ? [true, false, [], 400] : [true, true, $names, 0];
+        return self::isSafeSelection($names) ? [true, true, $names, 0] : [true, false, [], 400];
     }
 
     private function removeControlParameter(string $requestUri): string

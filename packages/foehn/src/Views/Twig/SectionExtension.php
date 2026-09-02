@@ -78,9 +78,23 @@ final class SectionExtension extends AbstractExtension
         return $this->renderer->render($name, $context);
     }
 
-    public function url(string $name, ?string $targetUrl = null): string
+    /**
+     * The URL that renders a selection of this page's sections instead of the page.
+     *
+     * `$selection` is one name or several separated by commas, which is the parameter's
+     * own grammar rather than a second one — `foehn_section_url('list,count')` and
+     * `?foehn_sections=list,count` are the same string. One name was the whole signature
+     * until a page needed to swap two regions at once: a filter form that updates a
+     * listing and the result count beside it can either name both here, or fetch the
+     * entire page for the one div it keeps.
+     */
+    public function url(string $selection, ?string $targetUrl = null): string
     {
-        $this->assertSafeName($name);
+        $names = explode(',', $selection);
+
+        if (!SectionRequest::isSafeSelection($names)) {
+            throw new InvalidArgumentException('Invalid section selection.');
+        }
 
         [$path, $query, $fragment] = $this->urlParts($targetUrl);
         $path = preg_replace('/[\x00-\x1F\x7F]/', '', str_replace('\\', '/', $path)) ?? '';
@@ -97,7 +111,13 @@ final class SectionExtension extends AbstractExtension
             && $parameter !== SectionRequest::PARAMETER
             && !in_array($parameter, $ignoredQueryArgs, true);
         }));
-        $pairs[] = SectionRequest::PARAMETER . '=' . rawurlencode($name);
+        // Joined with a literal comma, not an encoded one. `%2C` would be the same value
+        // to PHP and a different one to nginx, whose `$arg_foehn_sections` is the raw
+        // query string: the two readers would compute two filenames for one response and
+        // the fast path would never find what the recorder wrote. The names are
+        // `[a-z0-9-]` by {@see SectionRequest::NAME_PATTERN}, so there is nothing else
+        // here an encoder would have had to touch.
+        $pairs[] = SectionRequest::PARAMETER . '=' . implode(',', $names);
         $url = $path . '?' . implode('&', $pairs);
 
         return $fragment !== '' ? $url . '#' . $fragment : $url;

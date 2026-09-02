@@ -1,0 +1,12 @@
+{#
+  How many series the current view holds, as a section of its own.
+
+  A section rather than a plain `id`, because it is not on the same part of the page as
+  the results — it sits in the masthead — and a response that carries both regions is
+  what lets a filter update the two of them without shipping the whole document. One
+  paragraph, so `p { margin: 0 }` keeps the wrapper `div` layout-neutral inside the
+  masthead's flex row.
+#}
+<p class="label">
+  {{ posts|length }} series
+</p>

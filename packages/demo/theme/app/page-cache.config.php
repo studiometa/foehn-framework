@@ -23,13 +23,19 @@ use Studiometa\Foehn\Config\PageCacheConfig;
  * taxonomy terms, which is the whole reason it can be cached. A form that posts
  * something excludes its page. See docs/guide/page-cache.md.
  *
- * The two arguments the filter form emits are keyed, so a filtered archive is a
- * cached archive rather than a bypass. Both spellings a browser can produce reach the
- * same file: `?project_category[]=corridors&project_category[]=osaka` from the
- * checkbox group, and `?project_category=corridors,osaka` from a hand-written link.
- * Naming them here is a separate step from the template that emits them, and it has
- * to be: an argument this file does not name is one the cache never stores, which
- * looks like a slow page rather than an error.
+ * Every argument the filter form emits is keyed, so a filtered archive is a cached
+ * archive rather than a bypass. Both spellings a browser can produce reach the same
+ * file: `?project_category[]=corridors&project_category[]=osaka` from the checkbox
+ * group, and `?project_category=corridors,osaka` from a hand-written link. Naming them
+ * here is a separate step from the template that emits them, and it has to be: an
+ * argument this file does not name is one the cache never stores, which looks like a
+ * slow page rather than an error.
+ *
+ * `foehn_sections` is the exception, and not one to add below. The form and the
+ * pagination fetch section URLs, and the framework keys that parameter itself against
+ * its own grammar — see `PageCacheConfig::RESERVED_QUERY_ARGS`. So a filtered fragment
+ * comes off a file exactly like a filtered page, and neither a theme that forgot it nor
+ * one that widened it can change that.
  */
 return new PageCacheConfig(
     enabled: true,

@@ -8,14 +8,14 @@ There is no REST endpoint and no section configuration. A page declares the sect
 
 The Render API, `RenderApiConfig`, `RenderApiHook`, and `/wp-json/foehn/v1/render` route were removed. Section rendering replaces browser-facing partial rendering, but it deliberately does not expose arbitrary Twig paths or client-supplied template context.
 
-| Render API                                                  | Section rendering                                                                                 |
-| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| Allow template paths in `render-api.config.php`             | Declare fixed names with `foehn_section()` in the page that owns them                             |
-| Send `template` or a keyed `templates` object to a REST URL | Add one name or up to five comma-separated names to the normal page URL                           |
-| Send scalar context values in the query string              | Build context in the page controller, context providers, and explicit server-side section context |
-| Parse JSON and read `html` or keyed values                  | Read the HTML response directly; each section has a stable wrapper ID                             |
+| Render API                                                  | Section rendering                                                                                            |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Allow template paths in `render-api.config.php`             | Declare fixed names with `foehn_section()` in the page that owns them                                        |
+| Send `template` or a keyed `templates` object to a REST URL | Add one name or up to five comma-separated names to the normal page URL                                      |
+| Send scalar context values in the query string              | Build context in the page controller, context providers, and explicit server-side section context            |
+| Parse JSON and read `html` or keyed values                  | Read the HTML response directly; each section has a stable wrapper ID                                        |
 | Set `cacheMaxAge` on the endpoint                           | Section responses are cached by the Føhn page cache under the same rules as pages, with nothing to configure |
-| Enable debug details in the response                        | Read exception details from the server log; public error HTML does not expose them                |
+| Enable debug details in the response                        | Read exception details from the server log; public error HTML does not expose them                           |
 
 Move each public partial to `templates/sections/{name}.twig`, declare it in its normal page template, and update any context-provider target from the old template path, such as `partials/results`, to the conventional section path, `sections/results`. Replace REST requests such as `/wp-json/foehn/v1/render?template=partials/results` with the page URL, such as `/products/?foehn_sections=results`. A former multi-template request becomes one ordered selection such as `?foehn_sections=filters,results`.
 
@@ -126,12 +126,12 @@ For a `GET` form, Fetch keeps the fixed section selection from `data-option-src`
 </form>
 ```
 
-Use `foehn_section_url()` when the section request targets the current page and must preserve its query state:
+Use `foehn_section_url()` when the section request targets the current page and must preserve its query state. Ask for several sections by separating their names with commas, exactly as the parameter carries them — up to the five a request accepts:
 
 ```twig
 <button
   data-component="Action Fetch"
-  data-option-src="{{ foehn_section_url('archive-results') }}"
+  data-option-src="{{ foehn_section_url('archive-results,archive-count') }}"
   data-on:click="Fetch.fetch()">
   Refresh results
 </button>
@@ -159,6 +159,8 @@ registerComponent(Fetch);
 ```
 
 `Fetch` reads the returned HTML and replaces the element whose `id` matches the response wrapper. No JSON parsing and no Datastar integration are required.
+
+Leave `selector` at its default of `[id]` for a section request. The response holds only the wrappers of the sections that were asked for, so nothing else on the page can match — while a fetch of the whole page also matches the layout's own `id`s and replaces the form the visitor is using with the server's copy of it. Keep `history` on: `Fetch` pushes the element's own `action` or `href`, so `?foehn_sections=…` stays out of the address bar.
 
 The current `Fetch` history option records the fetched URL as-is. If you enable Fetch history, the browser history entry includes `?foehn_sections=...`. Do not enable it when the address must stay a normal full-page URL, or update history in application code after the fetch.
 

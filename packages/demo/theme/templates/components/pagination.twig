@@ -1,19 +1,20 @@
 {#
-  Pagination, enhanced when the caller names the section it lives in.
+  Pagination, enhanced when the caller names the sections it should swap.
 
   The links keep their real `href`, so without JavaScript — and for a middle-click or
-  a shared link — they are ordinary page URLs. `Fetch` swaps the named regions
-  instead, and `history` puts that same page URL in the address bar, so the back
-  button and a copied link both land on the page being looked at.
+  a shared link — they are ordinary page URLs. `Fetch` requests the section URL of the
+  same page instead and swaps the named regions, while `history` follows the `href`, so
+  the back button and a copied link both land on the page being looked at and
+  `?foehn_sections=…` never reaches the address bar.
 
-  No `data-option-src`, deliberately. A section URL would return a smaller response
-  and could not be cached — `foehn_sections` requests carry `Cache-Control:
-  private, no-store` — and it would be the URL `history` pushed, which would leave
-  `?foehn_sections=…` in the address bar. Fetching the page the link already points
-  at costs a few more bytes off a warm cache file and keeps the URL honest.
+  `src` used to be refused here for two reasons that have both since stopped being
+  true: a section response carried `Cache-Control: private, no-store`, and `history`
+  pushed whatever was requested. Section responses are cached under the same rules as
+  pages now, and @studiometa/ui 1.11.0 separated the URL to push from the URL to fetch.
+
+  With the response holding only these regions, `selector` can stay at its default of
+  `[id]` — there is no `#main` in a fragment to match by accident.
 #}
-{% set pagination_targets = pagination_targets|default('#foehn-section-' ~ (pagination_section|default(''))) %}
-
 {% if pagination %}
   <nav class="pagination" aria-label="Pagination">
     {% if pagination.prev %}
@@ -21,10 +22,10 @@
         href="{{ pagination.prev.link }}"
         class="pagination__prev"
         aria-label="Previous page"
-        {% if pagination_section is defined %}
+        {% if pagination_sections is defined %}
           data-component="Fetch"
           data-option-history
-          data-option-selector="{{ pagination_targets }}"
+          data-option-src="{{ foehn_section_url(pagination_sections, pagination.prev.link) }}"
         {% endif %}>
         &larr; Previous
       </a>
@@ -41,10 +42,10 @@
             <a
               href="{{ page.link }}"
               class="pagination__page"
-              {% if pagination_section is defined %}
+              {% if pagination_sections is defined %}
                 data-component="Fetch"
                 data-option-history
-                data-option-selector="{{ pagination_targets }}"
+                data-option-src="{{ foehn_section_url(pagination_sections, page.link) }}"
               {% endif %}>{{ page.title }}</a>
           {% endif %}
         </li>
@@ -56,10 +57,10 @@
         href="{{ pagination.next.link }}"
         class="pagination__next"
         aria-label="Next page"
-        {% if pagination_section is defined %}
+        {% if pagination_sections is defined %}
           data-component="Fetch"
           data-option-history
-          data-option-selector="{{ pagination_targets }}"
+          data-option-src="{{ foehn_section_url(pagination_sections, pagination.next.link) }}"
         {% endif %}>
         Next &rarr;
       </a>
