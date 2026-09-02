@@ -23,13 +23,26 @@ enum VerificationProfile: string
     case Updates = 'updates';
 
     /**
+     * The deployment script's gate: the booted site is a safe production installation.
+     *
+     * It exists only now that every check the specification lists is implemented —
+     * environment, debug, indexing, salts, real cron, heartbeat, backlog and page-cache
+     * storage. A profile that shipped with some of them would report a pass that means
+     * less than the name on it, which is the one failure mode a release gate cannot
+     * have.
+     */
+    case Production = 'production';
+
+    /**
      * Specified profiles that do not exist yet, and the roadmap item that brings each one.
+     *
+     * Empty, and kept rather than deleted: the next specified-but-unbuilt profile gets
+     * the same "not available yet" message instead of being reported as an unknown
+     * option, which is the difference between a gate that is coming and a typo.
      *
      * @var array<string, string>
      */
-    public const PLANNED = [
-        'production' => 'roadmap item 16, production verification',
-    ];
+    public const PLANNED = [];
 
     /**
      * Every profile that can be selected today, for an option's help and its errors.

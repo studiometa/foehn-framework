@@ -10,7 +10,7 @@ Latest release: `0.5.10`.
 | --- | ------------------------------ | ------------- | ------------------------------------------------------------- | ----- |
 | 11  | `#[AsAbility]` + AI guardrails | **Undecided** | [abilities_spec.md](abilities_spec.md)                        | 4–7 d |
 | 15  | Unified cache invalidation     | **Done**      | [operations_spec.md](operations_spec.md) §3                   | 2–3 d |
-| 16  | Production verification        | **Approved**  | [diagnostics-command-spec.md](diagnostics-command-spec.md) §4 | 2–3 d |
+| 16  | Production verification        | **Done**      | [diagnostics-command-spec.md](diagnostics-command-spec.md) §4 | 2–3 d |
 | 17  | Non-production indexing guard  | **Done**      | [operations_spec.md](operations_spec.md) §4                   | 1–2 d |
 | 18  | Real WP-Cron heartbeat         | **Done**      | [operations_spec.md](operations_spec.md) §5                   | 1–2 d |
 | 19  | Føhn admin cache controls      | **Done**      | [operations_spec.md](operations_spec.md) §§6–8                | 2–3 d |

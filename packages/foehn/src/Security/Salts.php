@@ -48,6 +48,21 @@ final readonly class Salts
     public const PLACEHOLDER_PREFIX = 'change-me-';
 
     /**
+     * What the generated `wp-config.php` defines when a key is missing outside production.
+     *
+     * A derivable value, deliberately: it lets a developer log in on a machine where no
+     * keys were ever generated, and it is refused in production before a request is
+     * served. It is listed here because production verification has to recognise it —
+     * a constant that *is* defined and *is* non-empty and is still worthless is
+     * otherwise indistinguishable from a real key.
+     *
+     * `studiometa/foehn-installer` writes the string from its own copy, the way it
+     * writes the eight names above: a Composer plugin cannot reach the project's
+     * autoloader. The two copies are the contract, and this is the readable half.
+     */
+    public const INSECURE_PREFIX = 'insecure-development-key-';
+
+    /**
      * @param array<string, string> $values Keyed by constant name
      */
     private function __construct(

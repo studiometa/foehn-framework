@@ -39,6 +39,9 @@ function wp_stub_reset(): void
     }
 
     $GLOBALS['wp_stub_as_has_scheduled'] = [];
+    // The scheduled-event queue `_get_cron_array()` answers with. Reset, because a
+    // backlog left behind by one test would make the next one report a site in trouble.
+    $GLOBALS['wp_stub_cron_events'] = [];
 
     // The page cache asks a dozen template conditionals whether this request is an
     // ordinary page. A leaked `true` would make an eligibility test pass for the
@@ -1748,6 +1751,20 @@ if (!function_exists('wp_doing_cron')) {
     function wp_doing_cron(): bool
     {
         return wp_stub_conditional('wp_doing_cron');
+    }
+}
+
+/**
+ * The scheduled-event queue, in core's own shape: `timestamp => hook => key => args`.
+ *
+ * The private function rather than `wp_get_ready_cron_jobs()`, because that one applies
+ * core's gate and answers an empty array while `DISABLE_WP_CRON` is on — which on a
+ * production site is always, and production verification still has to read the queue.
+ */
+if (!function_exists('_get_cron_array')) {
+    function _get_cron_array(): array
+    {
+        return $GLOBALS['wp_stub_cron_events'] ?? [];
     }
 }
 

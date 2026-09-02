@@ -7,6 +7,7 @@ namespace Studiometa\Foehn\Verification;
 use Studiometa\Foehn\Attributes\AsCliCommand;
 use Studiometa\Foehn\Console\CliCommandInterface;
 use Studiometa\Foehn\Console\WpCli;
+use Studiometa\Foehn\Verification\Production\ProductionChecks;
 use Studiometa\Foehn\Verification\Updates\UpdatesChecks;
 
 #[AsCliCommand(
@@ -24,11 +25,13 @@ use Studiometa\Foehn\Verification\Updates\UpdatesChecks;
         ## OPTIONS
 
         [--profile=<profile>]
-        : Which gate to run. Required. Currently only `updates`.
+        : Which gate to run. Required. `updates` for CI after a WordPress or plugin
+        update; `production` for the deployment script.
 
         [--output=<path>]
-        : Where to write the JSON report. Required for `updates`. Relative paths resolve
-        from ABSPATH. The file is written atomically, on a pass and on a failure alike.
+        : Where to write the JSON report. Required for `updates`, optional for
+        `production`. Relative paths resolve from ABSPATH. The file is written
+        atomically, on a pass and on a failure alike.
 
         [--format=<format>]
         : Terminal output only: `table` (default) or `json`. `--output` is the artifact
@@ -49,6 +52,9 @@ use Studiometa\Foehn\Verification\Updates\UpdatesChecks;
 
             # CI, after a WordPress core or plugin update
             wp foehn verify --profile=updates --output=build/foehn-verification.json
+
+            # The deployment script, against the booted production site
+            wp foehn verify --profile=production
         DOC,
 )]
 final readonly class VerifyCommand implements CliCommandInterface
@@ -68,6 +74,7 @@ final readonly class VerifyCommand implements CliCommandInterface
         private ReportWriter $writer,
         private ReportRenderer $renderer,
         private UpdatesChecks $updates,
+        private ProductionChecks $production,
     ) {}
 
     /**
@@ -76,7 +83,9 @@ final readonly class VerifyCommand implements CliCommandInterface
      */
     public function __invoke(array $args, array $assocArgs): void
     {
-        if ($this->profile($assocArgs) === null) {
+        $profile = $this->profile($assocArgs);
+
+        if ($profile === null) {
             return;
         }
 
@@ -86,28 +95,30 @@ final readonly class VerifyCommand implements CliCommandInterface
             return;
         }
 
-        $output = $this->output($assocArgs);
+        $output = $this->output($assocArgs, $profile);
 
-        if ($output === null) {
+        if ($output === false) {
             return;
         }
 
         try {
-            $report = $this->updates->run();
+            $report = $profile === VerificationProfile::Production ? $this->production->run() : $this->updates->run();
 
             // Rendered before it is written, so a run whose report cannot be written
             // still says what it found. Written on a pass as well as a failure: a CI job
             // that only keeps failing artifacts cannot diff against the last good one.
             $this->renderer->render($report, $format);
 
-            $path = $this->writer->write($output, $report);
+            $path = $output === null ? null : $this->writer->write($output, $report);
         } catch (VerificationFailure $failure) {
             $this->fail($failure->getMessage());
 
             return;
         }
 
-        $this->cli->log("Report written to {$path}");
+        if ($path !== null) {
+            $this->cli->log("Report written to {$path}");
+        }
 
         if ($report->status() === VerificationStatus::Fail) {
             $this->cli->error('Verification failed.', exit: false);
@@ -182,15 +193,19 @@ final readonly class VerifyCommand implements CliCommandInterface
     }
 
     /**
-     * Where to write the report, or null after reporting that nowhere was given.
+     * Where to write the report: a path, `null` for nowhere, or `false` after refusing.
      *
-     * Required, because `updates` exists to hand CI an artifact: a run whose findings
-     * only ever reached a terminal is a run nobody can attach to the update it was
-     * reviewing.
+     * Three answers rather than two, because "no path was given" is legitimate for one
+     * profile and an argument error for the other. `updates` exists to hand CI an
+     * artifact — a run whose findings only reached a terminal is a run nobody can attach
+     * to the update it was reviewing — while `production` is a deployment gate whose
+     * answer is its exit status, and a deploy script that had to nominate a file for a
+     * report nothing reads would be carrying the artifact of a different job.
      *
      * @param array<string, mixed> $assocArgs
+     * @return string|null|false
      */
-    private function output(array $assocArgs): ?string
+    private function output(array $assocArgs, VerificationProfile $profile): string|false|null
     {
         $output = $assocArgs['output'] ?? null;
 
@@ -198,9 +213,13 @@ final readonly class VerifyCommand implements CliCommandInterface
             return $output;
         }
 
+        if ($profile !== VerificationProfile::Updates) {
+            return null;
+        }
+
         $this->fail('The --output option is required for the updates profile.');
 
-        return null;
+        return false;
     }
 
     /**

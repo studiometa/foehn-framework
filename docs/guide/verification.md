@@ -6,18 +6,21 @@
 wp foehn verify --profile=updates --output=build/foehn-verification.json
 ```
 
-Today there is one profile. `updates` is the gate you run after WordPress core or a plugin has been updated: it boots the site through WP-CLI and fails when that process raised a PHP or WordPress diagnostic somebody has to act on.
+There are two profiles, for two different gates:
 
-::: warning `--profile=production` does not exist yet
-The deployment gate that rejects unsafe production configuration is specified but not implemented, so the name is refused with exit status `2` rather than accepted with half its checks. It arrives with roadmap item 16, once the indexing guard and the cron heartbeat it reads are in place. A gate that passed while some of its checks were missing would be worse than no gate.
-:::
+| Profile      | Run by                | Asks                                                                            |
+| ------------ | --------------------- | ------------------------------------------------------------------------------- |
+| `updates`    | CI                    | Did booting this site raise a PHP or WordPress diagnostic somebody must act on? |
+| `production` | The deployment script | Is this booted site configured as a safe production installation?               |
+
+The profile is required. There is no default, because a release gate that quietly ran the wrong subset is the failure this option exists to prevent.
 
 ## Options
 
 | Option                 | Rule                                                                                                                                                                    |
 | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--profile=updates`    | Required. A missing or unknown name exits `2`. There is no default, because a gate that ran the wrong subset silently is the failure this option exists to prevent.     |
-| `--output=<path>`      | Required for `updates`. Relative paths resolve from `ABSPATH`, not from the working directory. Written atomically, on a pass and on a failure alike.                    |
+| `--profile=<name>`     | Required, `updates` or `production`. A missing or unknown name exits `2`.                                                                                               |
+| `--output=<path>`      | Required for `updates`, optional for `production`. Relative paths resolve from `ABSPATH`, not the working directory. Written atomically, on a pass and a failure alike. |
 | `--format=table\|json` | Terminal output only. Default `table`. `--format=json` prints the same bytes the report file holds, so a line copied out of a log matches a later grep of the artifact. |
 
 There is no flag to select or skip individual checks. The profile owns what it runs.
@@ -107,6 +110,62 @@ The report is deterministic, and that is a requirement rather than a nicety: two
 - **No timestamps, absolute paths, stack traces, environment URLs, keys or salts.** Paths are relative to the install — `wp-content/plugins/example/plugin.php` — and a Phar is named without being located: `phar://wp/php/WP_CLI/Runner.php`. A file that can be placed nowhere is reported by name alone.
 
 The hook-based sources carry no file or line of their own, so Føhn derives them from the backtrace: the first frame that is neither WordPress core nor the collector. That is the code you have to change, rather than the core function that reported it.
+
+## What the `production` profile checks
+
+```bash
+wp foehn verify --profile=production
+```
+
+Eight checks, and the profile exists only because all eight do — a gate shipped with some of its checks missing would report a pass that means less than the name on it.
+
+| Check                | Passes when                                                                                                                      |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `environment`        | Resolved `WP_ENVIRONMENT_TYPE` is exactly `production`.                                                                          |
+| `debug`              | `WP_DEBUG` and `WP_DEBUG_DISPLAY` are both off.                                                                                  |
+| `indexing`           | WordPress indexing is enabled (`blog_public`) and Føhn's [non-production guard](./security#non-production-indexing) is inactive. |
+| `salts`              | All eight keys and salts exist, are unique, are long enough, and are not generated placeholders.                                 |
+| `real-cron`          | `DISABLE_WP_CRON` is on **and** a real cron runner is configured.                                                                |
+| `cron-heartbeat`     | [`foehn_cron_last_run`](./docker-image#the-heartbeat) is a timestamp inside the window this cadence allows.                      |
+| `cron-backlog`       | No scheduled event is overdue past that same window.                                                                             |
+| `page-cache-storage` | If caching is on for production, its root resolves inside itself and is writable.                                                |
+
+**It does not adapt to the environment it finds.** Run against staging, it fails at the first check, on purpose: a gate that relaxed its rules when the site said `staging` would wave through a production machine whose `WP_ENVIRONMENT_TYPE` was simply wrong — and that is the misconfiguration most worth catching, because the page cache and the indexing guard key off the same value.
+
+`--output` is optional here. A deployment script wants a verdict, and its verdict is the exit status.
+
+### The cron window
+
+`cron-heartbeat` and `cron-backlog` are judged against one number: twice the configured cadence plus five minutes. `FOEHN_CRON_SCHEDULE` sets the cadence and defaults to `15min`, so the default window is 35 minutes.
+
+Two intervals rather than one, because busybox's `run-parts` fires on a fixed period and a pass takes as long as its events take — a deploy landing between two ticks can legitimately see one interval of silence. One number for both checks, because if the runner has been passing on schedule then nothing can be overdue by longer than the window in which it should have run: a stale heartbeat and a backlog are two symptoms of one fault.
+
+**Scale-to-zero deployments must arrange an external scheduler.** A stopped machine records no heartbeat, so this check fails — correctly, because its scheduled events genuinely are not running. See [the scheduler contract](./deployment-fly#scale-to-zero-and-the-scheduler-you-then-owe-the-site).
+
+### What it cannot prove
+
+- **That no CDN or web server adds an `X-Robots-Tag`.** `indexing` reads WordPress and Føhn. A deployment that needs the end-to-end guarantee has to inspect the public HTTP response.
+- **That every scheduled callback succeeded.** The heartbeat says the runner completed a pass. A job that throws on every run leaves a fresh heartbeat behind it; Action Scheduler monitoring is a separate concern.
+- **That the keys are secret.** `salts` checks that they exist, differ and are not placeholders. It cannot know whether one was committed to a repository.
+
+### Secrets
+
+The report never contains a key or salt — not a value, not a fragment, not even a length, because a length is a hint about a secret and the report is a file CI keeps. What it names is which of the eight constants had a problem, and those names are public.
+
+For the same reason it carries no filesystem paths and no timestamps. The heartbeat is reported as a freshness state (`fresh`, `stale`, `missing`, `invalid`) and the window it was judged against, so two runs of an unchanged site produce the same bytes and a diff between two artifacts is a change in the site.
+
+## In a deployment script
+
+```bash
+composer install --no-dev --optimize-autoloader
+wp foehn cache:config --write
+wp foehn cache:clear
+
+# Refuse to finish the deploy on unsafe production configuration.
+wp foehn verify --profile=production
+```
+
+Exit `1` means a check failed and the deploy should stop. Exit `2` means the gate could not run at all, which is not a passing site either. A WordPress that cannot boot fails before the command exists, so the script must treat a missing command as its own infrastructure failure.
 
 ## In CI, after a WordPress update
 

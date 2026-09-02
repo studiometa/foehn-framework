@@ -65,6 +65,20 @@ function verifyUpdates(string $arguments = ''): array
  *
  * @return array{0: int, 1: int}
  */
+/**
+ * Delete a report if there is one.
+ *
+ * Not `@unlink()`: a suppressed diagnostic still reaches a custom error handler, and this
+ * suite runs with `failOnWarning`, so the `@` turns a missing file into a failed test
+ * rather than into silence.
+ */
+function verifyRemoveReport(string $path): void
+{
+    if (is_file($path)) {
+        unlink($path);
+    }
+}
+
 function verifyDiscoveryState(): array
 {
     $line = (string) Site::wp('wp foehn discovery:status | grep "Locations cached:"');
@@ -219,14 +233,75 @@ describe('verify --profile=updates: a site with a deprecation', function () {
     });
 });
 
-describe('verify: the profile is a required, closed choice', function () {
-    it('refuses production, because its checks do not exist yet', function () {
+describe('verify --profile=production: a site that is not production', function () {
+    it('refuses to pass on a local site, rather than adapting to it', function () {
+        // The starter's ddev site runs WP_ENVIRONMENT_TYPE=local, so this is the negative
+        // case and it is the one worth having in a real WordPress: the profile does not
+        // relax its rules for the environment it finds. A gate that did would wave
+        // through a production machine whose WP_ENVIRONMENT_TYPE was simply wrong.
+        //
+        // Exit 1, not 2: the gate ran and the site failed it. A deploy script has to be
+        // able to tell that from "the gate could not run".
         $run = Site::run('wp foehn verify --profile=production');
 
-        expect($run['status'])->toBe(2, $run['output']);
-        expect($run['output'])->toContain('not available yet');
+        expect($run['status'])->toBe(1, $run['output']);
+        expect($run['output'])->toContain('environment');
+        expect($run['output'])->toContain('not production');
     });
 
+    it('runs every check it promises, on a real WordPress', function () {
+        // The profile exists only because all eight do. Asserting the names here is what
+        // would catch a check quietly dropped from the assembler — the report would still
+        // say `pass`, with less behind it than the name implies.
+        $path = Site::path(VERIFY_REPORT);
+        verifyRemoveReport($path);
+
+        Site::run('wp foehn verify --profile=production --output=' . VERIFY_OUTPUT);
+
+        expect($path)->toBeFile();
+        $report = json_decode((string) file_get_contents($path), true, flags: JSON_THROW_ON_ERROR);
+
+        expect($report['profile'])->toBe('production');
+        expect(array_column($report['checks'], 'name'))->toBe([
+            'cron-backlog',
+            'cron-heartbeat',
+            'debug',
+            'environment',
+            'indexing',
+            'page-cache-storage',
+            'real-cron',
+            'salts',
+        ]);
+
+        verifyRemoveReport($path);
+    });
+
+    it('writes a report carrying no key, no path and no timestamp', function () {
+        // The artifact CI keeps. A salt in it would be a secret in a build log, and a
+        // timestamp would make two runs of an unchanged site undiffable.
+        $path = Site::path(VERIFY_REPORT);
+        verifyRemoveReport($path);
+
+        Site::run('wp foehn verify --profile=production --output=' . VERIFY_OUTPUT);
+        $json = (string) file_get_contents($path);
+
+        foreach (['AUTH_SALT' => null, 'NONCE_SALT' => null] as $name => $_) {
+            $value = Site::wp('wp eval ' . escapeshellarg("echo defined('{$name}') ? {$name} : '';"));
+
+            if (is_string($value) && strlen($value) > 12) {
+                expect($json)->not->toContain(substr($value, 0, 12));
+            }
+        }
+
+        expect($json)->not->toContain('/var/www/html');
+        expect($json)->not->toContain(Site::path(''));
+        expect($json)->not->toMatch('/\b2\d{9}\b/');
+
+        verifyRemoveReport($path);
+    });
+});
+
+describe('verify: the profile is a required, closed choice', function () {
     it('refuses to run without a profile', function () {
         $run = Site::run('wp foehn verify');
 

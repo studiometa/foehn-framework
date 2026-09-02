@@ -2,7 +2,11 @@
 
 declare(strict_types=1);
 
+use Studiometa\Foehn\Config\PageCacheConfig;
 use Studiometa\Foehn\Console\WpCli;
+use Studiometa\Foehn\Indexing\IndexingProtection;
+use Studiometa\Foehn\PageCache\Store;
+use Studiometa\Foehn\Verification\Production\ProductionChecks;
 use Studiometa\Foehn\Verification\ReportRenderer;
 use Studiometa\Foehn\Verification\ReportWriter;
 use Studiometa\Foehn\Verification\Updates\DiagnosticsCollector;
@@ -57,11 +61,15 @@ beforeEach(function () {
     $this->collector = new DiagnosticsCollector();
     $this->collector->start();
 
+    $this->cacheRoot = pageCacheRoot();
+    $this->pageCache = new PageCacheConfig(enabled: false, path: $this->cacheRoot);
+
     $this->command = new VerifyCommand(
         new WpCli(),
         new ReportWriter(),
         new ReportRenderer(new WpCli()),
         new UpdatesChecks(new RuntimeDiagnosticsCheck($this->collector)),
+        new ProductionChecks($this->pageCache, new Store($this->pageCache), new IndexingProtection()),
     );
 });
 
@@ -71,6 +79,7 @@ afterEach(function () {
 
     @chmod($this->directory, 0o777);
     removeTestDirectory($this->directory);
+    removeTestDirectory($this->cacheRoot);
 });
 
 describe('verify: the arguments', function () {
@@ -96,16 +105,41 @@ describe('verify: the arguments', function () {
         expect(verifyExitStatuses())->toBe([2]);
     });
 
-    it('refuses production, and says it does not exist yet', function () {
-        // The profile is specified but not built. A gate that ran a subset of the checks
-        // its name promises would report a pass nobody should trust, so the name is
-        // refused until every one of those checks exists.
+    it('runs the production profile now that every check it promises exists', function () {
+        // It used to be refused with "not available yet", because a gate that ran a
+        // subset of the checks its name promises would report a pass nobody should
+        // trust. All eight are implemented, so the name resolves.
         ($this->command)([], ['profile' => 'production', 'output' => $this->output]);
 
-        expect(verifyExitStatuses())->toBe([2]);
-        expect(verifyError())->toContain('not available yet');
-        expect(verifyError())->toContain('roadmap item 16');
-        expect(is_file($this->output))->toBeFalse();
+        $report = json_decode((string) file_get_contents($this->output), true, flags: JSON_THROW_ON_ERROR);
+
+        expect($report['profile'])->toBe('production');
+        expect(array_column($report['checks'], 'name'))->toBe([
+            'cron-backlog',
+            'cron-heartbeat',
+            'debug',
+            'environment',
+            'indexing',
+            'page-cache-storage',
+            'real-cron',
+            'salts',
+        ]);
+    });
+
+    it('does not require an output path for production, whose answer is its exit status', function () {
+        // A deploy script wants a verdict, not an artifact. Requiring it to nominate a
+        // file for a report nothing reads would be carrying another job's paperwork.
+        ($this->command)([], ['profile' => 'production']);
+
+        expect(verifyError())->not->toContain('--output option is required');
+        expect(verifyOutput())->not->toContain('Report written to');
+    });
+
+    it('still writes a production report when one is asked for', function () {
+        ($this->command)([], ['profile' => 'production', 'output' => $this->output]);
+
+        expect($this->output)->toBeFile();
+        expect(verifyOutput())->toContain('Report written to');
     });
 
     it('refuses updates without an output path', function () {
@@ -213,6 +247,7 @@ describe('verify: a run with something to report', function () {
                     new ReportWriter(),
                     new ReportRenderer(new WpCli()),
                     new UpdatesChecks(new RuntimeDiagnosticsCheck($collector)),
+                    new ProductionChecks($this->pageCache, new Store($this->pageCache), new IndexingProtection()),
                 ))([], ['profile' => 'updates', 'output' => $this->output]);
             } finally {
                 $collector->stop();
@@ -255,6 +290,7 @@ describe('verify: when the run itself cannot answer', function () {
             new ReportWriter(),
             new ReportRenderer(new WpCli()),
             new UpdatesChecks(new RuntimeDiagnosticsCheck(new DiagnosticsCollector())),
+            new ProductionChecks($this->pageCache, new Store($this->pageCache), new IndexingProtection()),
         );
 
         $command([], ['profile' => 'updates', 'output' => $this->output]);
