@@ -41,6 +41,19 @@ use Studiometa\Foehn\Config\PageCacheConfig;
  */
 final readonly class Invalidator
 {
+    /**
+     * When the cache was last emptied in full, as a Unix timestamp.
+     *
+     * One option, overwritten, and not autoloaded. The Føhn dashboard has to be able to
+     * answer "when was this last cleared" — an operator watching a deploy needs to know
+     * whether the empty cache in front of them is the one they just emptied — and a
+     * single timestamp is the smallest thing that answers it. Deliberately *not* an event
+     * log: per-URL and per-section purges are not recorded at all, because a table
+     * growing by a row per content edit is a maintenance burden nobody asked for and the
+     * question it would answer is one no operator has.
+     */
+    public const LAST_FLUSH_OPTION = 'foehn_page_cache_last_flush';
+
     public function __construct(
         private PageCacheConfig $config,
         private Store $store,
@@ -53,7 +66,11 @@ final readonly class Invalidator
      */
     public function flush(): int
     {
-        return $this->store->flush();
+        $removed = $this->store->flush();
+
+        $this->recordFlush();
+
+        return $removed;
     }
 
     /**
@@ -97,6 +114,29 @@ final readonly class Invalidator
     public function root(): string
     {
         return $this->config->getPath();
+    }
+
+    /**
+     * Note the moment, when there is a WordPress to note it in.
+     *
+     * Guarded on the function rather than on a constant, because this class is reached
+     * from contexts that have no database: `wp foehn cache:clear` has one, the page-cache
+     * drop-in loads from `wp-settings.php` before options are readable, and the unit
+     * suite has neither. A flush that could not be recorded is still a flush, so the
+     * missing timestamp is never an error — the dashboard says "unknown", which is what
+     * it would have to say anyway.
+     *
+     * Recorded even when the cache was already empty. "Nothing was there" and "nobody has
+     * cleared it" are different facts, and an operator who has just pressed the button is
+     * owed the first.
+     */
+    private function recordFlush(): void
+    {
+        if (!function_exists('update_option')) {
+            return;
+        }
+
+        update_option(self::LAST_FLUSH_OPTION, time(), false);
     }
 
     /**

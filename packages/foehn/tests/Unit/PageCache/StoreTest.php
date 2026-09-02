@@ -198,6 +198,49 @@ describe('Store', function () {
         expect($this->store->stats())->toBe(['files' => 0, 'bytes' => 0, 'oldest' => null, 'newest' => null]);
     });
 
+    describe('section statistics', function () {
+        it('counts the section entries and their bytes', function () {
+            // The number the Føhn dashboard shows beside the total, so that "clear section
+            // cache" is a decision an operator can make rather than guess at.
+            $this->store->put(
+                CacheKey::create('example.com', '/blog/', 'foehn_sections=posts&'),
+                str_repeat('x', 40),
+                200,
+                ['X-Robots-Tag: noindex, nofollow'],
+            );
+            $this->store->put(CacheKey::create('example.com', '/about/', 'foehn_sections=form&'), str_repeat('x', 60));
+
+            $sections = $this->store->sectionStats();
+
+            // Two bodies. The bytes are every file, sidecar included, because that is what
+            // the disk holds — the same rule `stats()` uses.
+            expect($sections['files'])->toBe(2);
+            expect($sections['bytes'])->toBeGreaterThan(100);
+        });
+
+        it('counts none of the pages the section clear would leave alone', function () {
+            $this->store->put($this->key, str_repeat('x', 100));
+            $this->store->put($this->key, str_repeat('x', 30), 404);
+            $this->store->put(CacheKey::create('example.com', '/blog/', 'lang=fr&'), str_repeat('x', 20));
+
+            expect($this->store->sectionStats())->toBe(['files' => 0, 'bytes' => 0]);
+        });
+
+        it('leaves out a project argument whose name merely ends in the reserved one', function () {
+            // Parsed rather than searched for `foehn_sections=`, so a project that keys
+            // `my_foehn_sections` does not see its variants counted as sections — and does
+            // not then press a button expecting them to go.
+            $store = pageCacheStore($this->root);
+            $store->put(CacheKey::create('example.com', '/blog/', 'my_foehn_sections=posts&'), str_repeat('x', 20));
+
+            expect($store->sectionStats()['files'])->toBe(0);
+        });
+
+        it('reports nothing for an empty cache', function () {
+            expect($this->store->sectionStats())->toBe(['files' => 0, 'bytes' => 0]);
+        });
+    });
+
     describe('status and headers', function () {
         it('stores a 404 under a name of its own', function () {
             // The body alone cannot say what status it was sent with, so the name does.

@@ -6,6 +6,7 @@ namespace Studiometa\Foehn;
 
 use Psr\Cache\CacheItemPoolInterface;
 use RuntimeException;
+use Studiometa\Foehn\Admin\CacheActions;
 use Studiometa\Foehn\Blocks\BlockEditorAssets;
 use Studiometa\Foehn\Cache\TransientCache;
 use Studiometa\Foehn\Config\ConfigLoader;
@@ -19,6 +20,7 @@ use Studiometa\Foehn\Contracts\CacheInterface;
 use Studiometa\Foehn\Contracts\ImageTransformer;
 use Studiometa\Foehn\Contracts\JobDispatcher;
 use Studiometa\Foehn\Contracts\ViewEngineInterface;
+use Studiometa\Foehn\Cron\Heartbeat;
 use Studiometa\Foehn\Discovery\DiscoveryLocations;
 use Studiometa\Foehn\Discovery\DiscoveryRunner;
 use Studiometa\Foehn\Images\NullTransformer;
@@ -225,6 +227,12 @@ final class Kernel
 
         // Register infrastructure services
         $this->registerInfrastructureServices();
+
+        // Peer of the above rather than part of it: the operational controls read the
+        // cache but are not part of serving it, and `registerInfrastructureServices()` is
+        // already long enough that a reader scrolling it loses track of which service
+        // belongs to what.
+        $this->registerAdminServices();
     }
 
     /**
@@ -404,6 +412,22 @@ final class Kernel
     }
 
     /**
+     * Register the operational cache controls.
+     */
+    private function registerAdminServices(): void
+    {
+        $this->container->singleton(Heartbeat::class, static fn() => new Heartbeat());
+
+        // Registered whether or not the cache is on, for the same reason `Invalidator` is:
+        // an operator switching it off is the one who needs the files an earlier release
+        // left behind gone.
+        $this->container->singleton(
+            CacheActions::class,
+            fn() => new CacheActions($this->container->get(Invalidator::class)),
+        );
+    }
+
+    /**
      * Initialize Timber if available.
      */
     private function initializeTimber(): void
@@ -464,7 +488,24 @@ final class Kernel
         // search results. It adds nothing at all in production. See IndexingProtection.
         $this->container->get(IndexingProtection::class)->register();
 
+        $this->registerAdminControls();
         $this->registerPageCache();
+    }
+
+    /**
+     * Wire the operational cache controls.
+     *
+     * Not in `FoehnConfig::hooks` and not gated on the page cache. These are not opt-in:
+     * a project that had to enable the controls it would clear a stale page with has no
+     * way to find out that it needed to, and the clears have to keep working on a site
+     * that has just switched caching off — the files from the release that had it on are
+     * still there.
+     */
+    private function registerAdminControls(): void
+    {
+        /** @var CacheActions $actions */
+        $actions = $this->container->get(CacheActions::class);
+        $actions->register();
     }
 
     /**

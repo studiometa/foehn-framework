@@ -188,11 +188,7 @@ final readonly class Store
                 continue;
             }
 
-            $body = CacheKey::isWritableFilename(basename($file));
-
-            if (unlink($file) && $body) {
-                $removed++;
-            }
+            $removed += $this->remove($file);
         }
 
         $this->directory()->pruneUpwards($directory);
@@ -247,11 +243,7 @@ final readonly class Store
                 continue;
             }
 
-            $body = CacheKey::isWritableFilename(basename($entry));
-
-            if (unlink($entry) && $body) {
-                $removed++;
-            }
+            $removed += $this->remove($entry);
         }
 
         return $removed;
@@ -344,11 +336,7 @@ final readonly class Store
                 continue;
             }
 
-            $body = CacheKey::isWritableFilename($entry->getFilename());
-
-            if (unlink($entry->getPathname()) && $body) {
-                $removed++;
-            }
+            $removed += $this->remove($entry->getPathname());
         }
 
         foreach ($emptied as $path) {
@@ -369,13 +357,50 @@ final readonly class Store
      */
     public function stats(): array
     {
+        return $this->measure();
+    }
+
+    /**
+     * What the section cache alone is holding.
+     *
+     * Reported beside {@see Store::stats()} rather than folded into it, because the two
+     * numbers answer different questions and an operator looking at a dashboard needs
+     * both: how much of the site is cached, and how much of that is the fragments a
+     * filtered archive fetches. A section entry rebuilds in a fraction of a page render,
+     * so a section count that dwarfs the page count is a reason to clear sections only —
+     * which is the button beside it.
+     *
+     * See {@see CacheKey::isSectionEntry()} for why the filename is parsed rather than
+     * searched for `foehn_sections=`.
+     *
+     * @return array{files: int, bytes: int}
+     */
+    public function sectionStats(): array
+    {
+        $measured = $this->measure(CacheKey::isSectionEntry(...));
+
+        return ['files' => $measured['files'], 'bytes' => $measured['bytes']];
+    }
+
+    /**
+     * Count the entries a filename predicate accepts, and their bytes.
+     *
+     * One walk for both public readers, so the two can never come to disagree about what
+     * a body is or which bytes count — and a dashboard that showed more section entries
+     * than entries would be a dashboard nobody trusts again.
+     *
+     * @param (callable(string): bool)|null $accepts Which filenames to count. Null counts all.
+     * @return array{files: int, bytes: int, oldest: int|null, newest: int|null}
+     */
+    private function measure(?callable $accepts = null): array
+    {
         $files = 0;
         $bytes = 0;
         $oldest = null;
         $newest = null;
 
         foreach ($this->directory()->walk($this->root()) as $entry) {
-            if ($entry->isDir()) {
+            if ($entry->isDir() || $accepts !== null && !$accepts($entry->getFilename())) {
                 continue;
             }
 
@@ -394,6 +419,27 @@ final readonly class Store
         }
 
         return ['files' => $files, 'bytes' => $bytes, 'oldest' => $oldest, 'newest' => $newest];
+    }
+
+    /**
+     * Delete one file and say whether it counted as an entry.
+     *
+     * The one place the counting rule lives, because four deletion paths need it and four
+     * copies of it drifted once already. A stored entry is a body plus, sometimes, a
+     * `.headers` sidecar — so a sidecar is deleted and *not* counted, and an operator told
+     * "12 cleared" for six pages has been handed a number they cannot act on.
+     *
+     * A failed `unlink()` counts as nothing rather than raising. The file is still there
+     * and the reported number says so, which is the honest answer for a cache whose
+     * directory may be owned by another user after a container restart.
+     *
+     * @return int 1 for a stored response body, 0 for anything else.
+     */
+    private function remove(string $file): int
+    {
+        $body = CacheKey::isWritableFilename(basename($file));
+
+        return unlink($file) && $body ? 1 : 0;
     }
 
     private function directory(): CacheDirectory

@@ -272,6 +272,42 @@ describe('Invalidator: clearing one URL', function () {
     });
 });
 
+describe('Invalidator: recording the last full purge', function () {
+    it('notes the moment, in one non-autoloaded option', function () {
+        // The Føhn dashboard's "last full purge" row, and the smallest thing that can
+        // answer it: one timestamp, overwritten. Deliberately not an event log.
+        $before = time();
+
+        $this->invalidator->flush();
+
+        $written = wp_stub_get_calls('update_option');
+
+        expect($written)->toHaveCount(1);
+        expect($written[0]['args']['option'])->toBe(Invalidator::LAST_FLUSH_OPTION);
+        expect($written[0]['args']['value'])->toBeGreaterThanOrEqual($before);
+        expect($written[0]['args']['autoload'])->toBeFalse();
+    });
+
+    it('notes a purge that had nothing to remove', function () {
+        // "Nothing was there" and "nobody has cleared it" are different facts, and the
+        // operator who has just pressed the button is owed the first.
+        $this->invalidator->flush();
+
+        expect($GLOBALS['wp_stub_options'][Invalidator::LAST_FLUSH_OPTION] ?? null)->toBeInt();
+    });
+
+    it('records nothing for a purge of one URL or of the sections', function () {
+        // No per-URL and no per-section history: a row per content edit is a maintenance
+        // burden bought to answer a question no operator has asked.
+        invalidatorFixture($this->store);
+
+        $this->invalidator->flushSections();
+        $this->invalidator->forgetUrl('https://example.com/blog/');
+
+        expect(wp_stub_get_calls('update_option'))->toBeEmpty();
+    });
+});
+
 describe('Invalidator: what it reports about itself', function () {
     it('names the cache root every operation stays inside', function () {
         expect($this->invalidator->root())->toBe($this->root);
