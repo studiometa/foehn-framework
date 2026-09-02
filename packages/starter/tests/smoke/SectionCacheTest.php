@@ -121,6 +121,19 @@ describe('cached section responses', function () {
         expect($second->header('x-robots-tag'))->toBe('noindex, nofollow');
     });
 
+    it('does not tell the world no-store for a response it stores', function () {
+        // The bug this pins: rendering runs with `foehn_sections` hidden from `$_SERVER`,
+        // and while the response was built inside that window the cache rules saw a page,
+        // judged the fragment incomplete against the page's body rule, and answered
+        // `no-store` — for a body the recorder then wrote to disk. A CDN honouring that
+        // header would have undone the fast path entirely.
+        [$first, $second] = smokeGetTwice('/?foehn_sections=posts');
+
+        expect($first->header('cache-control') ?? '')->not->toContain('no-store');
+        expectCache($second, 'HIT');
+        expect($second->header('cache-control'))->toContain('must-revalidate');
+    });
+
     it('sends no noindex on the page itself', function () {
         // The header is conditional on `$arg_foehn_sections`, and an empty nginx variable
         // is a header nginx does not send. If that stopped holding, every cached page on

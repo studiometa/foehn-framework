@@ -141,9 +141,18 @@ final class TemplateControllerDiscovery implements Discovery
         $instance = get($controller['className']);
 
         if ($this->sectionRequest->isSelected()) {
-            return $this->sectionRequest->withoutControlParameter(
-                fn(): string => $this->handleSectionRequest($instance),
+            // Only the rendering runs with the control parameter hidden. Sending the
+            // response must not, because deciding whether it may be cached means asking
+            // `Bypass`, and `Bypass` recognises a section by the request URI — the very
+            // thing this hides. Inside the callback it saw a page, applied the page's
+            // body rule and answered `no-store` for responses the recorder then stored.
+            $rendered = $this->sectionRequest->withoutControlParameter(
+                fn(): string|int => $this->renderSelectedSections($instance),
             );
+
+            return is_int($rendered)
+                ? $this->sectionResponse->error($rendered)
+                : $this->sectionResponse->send($rendered);
         }
 
         $context = TemplateContext::fromTimberContext(Timber::context());
@@ -161,9 +170,12 @@ final class TemplateControllerDiscovery implements Discovery
     }
 
     /**
-     * Run the normal controller and page template, then emit only its selected sections.
+     * Run the normal controller and page template and return the selected sections.
+     *
+     * An `int` is a status to answer with instead — the response itself is built by the
+     * caller, outside the window where the control parameter is hidden.
      */
-    private function handleSectionRequest(TemplateControllerInterface $controller): string
+    private function renderSelectedSections(TemplateControllerInterface $controller): string|int
     {
         $bufferLevel = ob_get_level();
         ob_start();
@@ -175,7 +187,7 @@ final class TemplateControllerDiscovery implements Discovery
             if ($page === null) {
                 $this->discardBuffersSince($bufferLevel);
 
-                return $this->sectionResponse->error(404);
+                return 404;
             }
 
             /** @var SectionRenderer $renderer */
@@ -184,17 +196,17 @@ final class TemplateControllerDiscovery implements Discovery
         } catch (SectionNotFoundException) {
             $this->discardBuffersSince($bufferLevel);
 
-            return $this->sectionResponse->error(404);
+            return 404;
         } catch (\Throwable $throwable) {
             $this->discardBuffersSince($bufferLevel);
             error_log('[foehn] section rendering: ' . $throwable->getMessage());
 
-            return $this->sectionResponse->error(500);
+            return 500;
         }
 
         $this->discardBuffersSince($bufferLevel);
 
-        return $this->sectionResponse->send($html);
+        return $html;
     }
 
     private function discardBuffersSince(int $level): void
