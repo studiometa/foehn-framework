@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\PageCache;
 
+use Studiometa\Foehn\Views\Sections\SectionRequest;
+
 /**
  * A request turned into the one filename that every reader can compute.
  *
@@ -339,5 +341,74 @@ final readonly class CacheKey
     public static function isWritableFilename(string $filename): bool
     {
         return preg_match(self::FILENAME_PATTERN, $filename) === 1;
+    }
+
+    /**
+     * Whether a filename is a section-cache entry, body or sidecar.
+     *
+     * A section entry is a stored variant whose canonical query carries
+     * {@see SectionRequest::PARAMETER} — the fragment responses, as opposed to the whole
+     * pages and the other keyed variants that sit in the same directory.
+     *
+     * Matched by *parsing* the variant rather than searching the string for
+     * `foehn_sections=`. A keyed argument name may contain an underscore, so a project
+     * that configured `my_foehn_sections` would otherwise have its variants deleted by a
+     * button labelled "clear section cache". Values cannot contain `=` or `&` — see
+     * {@see QueryKey::VALUE_CHARACTER_CLASS} — so splitting on those two is exact.
+     */
+    public static function isSectionEntry(string $filename): bool
+    {
+        $variant = self::variantOf($filename);
+
+        if ($variant === null || $variant === '') {
+            return false;
+        }
+
+        foreach (explode('&', $variant) as $pair) {
+            if (explode('=', $pair, 2)[0] === SectionRequest::PARAMETER) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * The canonical query suffix a stored filename carries, or null when the name is not
+     * one this cache writes.
+     *
+     * The null is the load-bearing half. Deletion walks a directory tree, and a file the
+     * cache did not write is a file it has no business removing — a developer's stray
+     * copy, something another tool left there. An unrecognised name is refused rather
+     * than parsed as far as it goes.
+     *
+     * An empty string means a recognised name with no variant: the plain `index.html`.
+     */
+    public static function variantOf(string $filename): ?string
+    {
+        if (str_ends_with($filename, self::HEADERS_SUFFIX)) {
+            $filename = substr($filename, 0, -strlen(self::HEADERS_SUFFIX));
+        }
+
+        if (!self::isWritableFilename($filename)) {
+            return null;
+        }
+
+        // Peeled off rather than read from the pattern's capture group. A keyed value may
+        // contain `-`, so the group is greedy enough to swallow the `--404` suffix and
+        // hand back `lang=fr&--404` as the variant. The suffixes are unambiguous from the
+        // right, though: a variant always ends with `&`, because
+        // {@see QueryKey::canonical()} appends one per argument, so a name ending in
+        // `--404.html` is one this cache wrote for a 404 and never a variant that looks
+        // like one.
+        $stem = substr($filename, 0, -strlen('.html'));
+
+        if (str_ends_with($stem, self::NOT_FOUND_SUFFIX)) {
+            $stem = substr($stem, 0, -strlen(self::NOT_FOUND_SUFFIX));
+        }
+
+        $prefix = 'index' . self::VARIANT_SEPARATOR;
+
+        return str_starts_with($stem, $prefix) ? substr($stem, strlen($prefix)) : '';
     }
 }

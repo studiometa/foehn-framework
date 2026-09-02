@@ -166,8 +166,12 @@ final readonly class Store
     /**
      * Delete the entries of one URL's directory.
      *
-     * `index*.html` rather than `index.html`, so the variant slot the filename reserves
-     * is purged with the page it belongs to rather than left behind.
+     * `index*.html` rather than `index.html`, so every variant slot the filename
+     * reserves — the keyed query args, the 404, the section fragments — is purged with
+     * the page it belongs to rather than left behind. That glob is the invariant this
+     * method is really about, and it has a regression test of its own.
+     *
+     * @return int Stored response bodies removed.
      */
     public function forget(CacheKey $key): int
     {
@@ -184,7 +188,11 @@ final readonly class Store
                 continue;
             }
 
-            $removed += (int) unlink($file);
+            $body = CacheKey::isWritableFilename(basename($file));
+
+            if (unlink($file) && $body) {
+                $removed++;
+            }
         }
 
         $this->directory()->pruneUpwards($directory);
@@ -197,6 +205,8 @@ final readonly class Store
      *
      * An archive's pagination is stale whenever the archive is: `/blog/page/2/` holds
      * the same posts `/blog/` does, one screen further down.
+     *
+     * @return int Stored response bodies removed.
      */
     public function forgetPaginated(CacheKey $key): int
     {
@@ -217,7 +227,9 @@ final readonly class Store
     }
 
     /**
-     * Empty the cache. Returns the number of files deleted.
+     * Empty the cache.
+     *
+     * @return int Stored response bodies removed.
      */
     public function flush(): int
     {
@@ -229,7 +241,72 @@ final readonly class Store
                 continue;
             }
 
-            $removed += is_dir($entry) && !is_link($entry) ? $directory->deleteTree($entry) : (int) unlink($entry);
+            if (is_dir($entry) && !is_link($entry)) {
+                $removed += $directory->deleteTree($entry);
+
+                continue;
+            }
+
+            $body = CacheKey::isWritableFilename(basename($entry));
+
+            if (unlink($entry) && $body) {
+                $removed++;
+            }
+        }
+
+        return $removed;
+    }
+
+    /**
+     * Delete every section-cache entry, and nothing else.
+     *
+     * A section entry is a stored variant whose canonical query carries
+     * `foehn_sections` — the fragments a filtered archive fetches, which go stale for
+     * their own reasons and are the cheapest thing to rebuild. Whole pages and the other
+     * keyed variants that share the directory are left where they are; that selectivity
+     * is the entire point of the operation, so it has a test per neighbour it must not
+     * touch.
+     *
+     * Runs whether or not caching is currently enabled. A release that had it on can
+     * have left files behind, and an operator turning it off is exactly the person who
+     * wants them gone.
+     *
+     * @return int Stored response bodies removed.
+     */
+    public function flushSections(): int
+    {
+        $directory = $this->directory();
+        $removed = 0;
+        $touched = [];
+
+        foreach ($directory->walk($this->root()) as $entry) {
+            if ($entry->isDir()) {
+                continue;
+            }
+
+            if (!CacheKey::isSectionEntry($entry->getFilename())) {
+                continue;
+            }
+
+            $body = CacheKey::isWritableFilename($entry->getFilename());
+            $parent = $entry->getPath();
+
+            if (!unlink($entry->getPathname())) {
+                continue;
+            }
+
+            $touched[$parent] = true;
+
+            if ($body) {
+                $removed++;
+            }
+        }
+
+        // Pruned after the walk rather than inside it: the iterator is reading the
+        // directory this would remove, and CHILD_FIRST does not help — a section entry
+        // sits beside the page it belongs to, not below it.
+        foreach (array_keys($touched) as $parent) {
+            $directory->pruneUpwards($parent);
         }
 
         return $removed;
@@ -241,6 +318,8 @@ final readonly class Store
      * nginx's `try_files` cannot check a file's age, and neither can `mod_rewrite`, so
      * this is not an optimisation: with a `ttl` set, the sweep interval is the real
      * bound on how stale a served page can be.
+     *
+     * @return int Stored response bodies removed.
      */
     public function sweep(): int
     {
@@ -265,7 +344,11 @@ final readonly class Store
                 continue;
             }
 
-            $removed += (int) unlink($entry->getPathname());
+            $body = CacheKey::isWritableFilename($entry->getFilename());
+
+            if (unlink($entry->getPathname()) && $body) {
+                $removed++;
+            }
         }
 
         foreach ($emptied as $path) {

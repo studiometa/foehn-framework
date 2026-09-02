@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Config;
 
+use Studiometa\Foehn\Helpers\Env;
 use Studiometa\Foehn\Views\Sections\SectionRequest;
 
 /**
@@ -361,7 +362,7 @@ final readonly class PageCacheConfig
             return $this->debugHeaders;
         }
 
-        return defined('WP_DEBUG') && (bool) constant('WP_DEBUG');
+        return Env::isDebug();
     }
 
     /**
@@ -375,27 +376,14 @@ final readonly class PageCacheConfig
     /**
      * The environment, resolved without needing WordPress to be loaded.
      *
-     * The drop-in runs from `wp-settings.php`, after `wp-config.php` has defined
-     * `WP_ENVIRONMENT_TYPE` and after `wp-includes/load.php` has defined
-     * `wp_get_environment_type()`, so both are usually available. The fallbacks are
-     * for the cases where neither is — and default to production, as WordPress does.
+     * Delegated to {@see Env} rather than answered here, so the cache and the
+     * operational features cannot read one site as two different environments. The
+     * drop-in runs from `wp-settings.php` and reaches this before
+     * `wp_get_environment_type()` exists, which is why `Env` resolves the constant and
+     * the environment variable as well.
      */
     public static function environment(): string
     {
-        if (function_exists('wp_get_environment_type')) {
-            return wp_get_environment_type();
-        }
-
-        if (defined('WP_ENVIRONMENT_TYPE')) {
-            $type = (string) constant('WP_ENVIRONMENT_TYPE');
-
-            if ($type !== '') {
-                return $type;
-            }
-        }
-
-        $type = getenv('WP_ENVIRONMENT_TYPE');
-
-        return is_string($type) && $type !== '' ? $type : 'production';
+        return Env::get();
     }
 }

@@ -25,6 +25,7 @@ use Studiometa\Foehn\Jobs\ActionSchedulerJobDispatcher;
 use Studiometa\Foehn\Jobs\JobRegistry;
 use Studiometa\Foehn\PageCache\Bypass;
 use Studiometa\Foehn\PageCache\CanonicalRedirect;
+use Studiometa\Foehn\PageCache\Invalidator;
 use Studiometa\Foehn\PageCache\Purger;
 use Studiometa\Foehn\PageCache\Recorder;
 use Studiometa\Foehn\PageCache\Store;
@@ -327,6 +328,15 @@ final class Kernel
         // and `cache:status` have to work on a site that has just turned it off.
         $this->container->singleton(Store::class, fn() => new Store($this->container->get(PageCacheConfig::class)));
 
+        // The single runtime entry point for deletion — WP-CLI, the WordPress
+        // invalidation hooks and the admin controls all go through it. A singleton for
+        // the same reason as the store above: files an earlier release left behind stay
+        // removable on a site that has since turned the cache off.
+        $this->container->singleton(
+            Invalidator::class,
+            fn() => new Invalidator($this->container->get(PageCacheConfig::class), $this->container->get(Store::class)),
+        );
+
         $this->container->singleton(Bypass::class, fn() => new Bypass($this->container->get(PageCacheConfig::class)));
 
         // Below `Bypass`, because a section response asks it whether it is one the page
@@ -350,7 +360,10 @@ final class Kernel
 
         $this->container->singleton(
             Purger::class,
-            fn() => new Purger($this->container->get(PageCacheConfig::class), $this->container->get(Store::class)),
+            fn() => new Purger(
+                $this->container->get(PageCacheConfig::class),
+                $this->container->get(Invalidator::class),
+            ),
         );
     }
 

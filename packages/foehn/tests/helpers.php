@@ -343,6 +343,16 @@ function pageCacheStore(string $root, int $ttl = 0): \Studiometa\Foehn\PageCache
 }
 
 /**
+ * The one runtime deletion path, rooted at a temporary directory.
+ */
+function pageCacheInvalidator(string $root, bool $enabled = true): \Studiometa\Foehn\PageCache\Invalidator
+{
+    $config = new \Studiometa\Foehn\Config\PageCacheConfig(enabled: $enabled, path: $root);
+
+    return new \Studiometa\Foehn\PageCache\Invalidator($config, new \Studiometa\Foehn\PageCache\Store($config));
+}
+
+/**
  * The `$_SERVER` of an ordinary anonymous GET for the site's own host.
  *
  * @param array<string, mixed> $overrides

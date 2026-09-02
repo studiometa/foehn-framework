@@ -152,16 +152,19 @@ DB_USER=db
 DB_PASSWORD=db
 DB_HOST=db
 
-WP_ENV=development
+# local, development, staging or production
+WP_ENVIRONMENT_TYPE=local
 WP_DEBUG=true
 WP_HOME=https://my-project.ddev.site
 ```
+
+`WP_ENVIRONMENT_TYPE` is the name WordPress itself uses, and the one every part of the framework reads through [`Env`](/api/helpers#env). Anything outside `production` is treated as non-production: the page cache stays inert and the indexing guard keeps the site out of search results.
 
 ## Deployment
 
 For production:
 
-1. Set `WP_ENV=production` and `WP_DEBUG=false`
+1. Set `WP_ENVIRONMENT_TYPE=production` and `WP_DEBUG=false`
 2. Discovery cache is already enabled (`DiscoveryCacheStrategy::FULL`)
 3. After deployment, warm the cache:
    ```bash

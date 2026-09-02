@@ -8,8 +8,7 @@ use Studiometa\Foehn\Attributes\AsCliCommand;
 use Studiometa\Foehn\Config\PageCacheConfig;
 use Studiometa\Foehn\Console\CliCommandInterface;
 use Studiometa\Foehn\Console\WpCli;
-use Studiometa\Foehn\PageCache\CacheKey;
-use Studiometa\Foehn\PageCache\Store;
+use Studiometa\Foehn\PageCache\Invalidator;
 
 #[AsCliCommand(name: 'cache:clear', description: 'Clear the static page cache', longDescription: <<<'DOC'
     ## OPTIONS
@@ -40,7 +39,7 @@ final class PageCacheClearCommand implements CliCommandInterface
     public function __construct(
         private readonly WpCli $cli,
         private readonly PageCacheConfig $config,
-        private readonly Store $store,
+        private readonly Invalidator $invalidator,
     ) {}
 
     /**
@@ -63,32 +62,24 @@ final class PageCacheClearCommand implements CliCommandInterface
             return;
         }
 
-        $removed = $this->store->flush();
+        $removed = $this->invalidator->flush();
 
-        $this->cli->success(sprintf('Page cache cleared (%d file%s).', $removed, $removed === 1 ? '' : 's'));
+        $this->cli->success(sprintf('Page cache cleared (%d page%s).', $removed, $removed === 1 ? '' : 's'));
     }
 
     private function clearUrl(string $url): void
     {
-        $host = parse_url($url, PHP_URL_HOST);
-        $path = parse_url($url, PHP_URL_PATH);
+        // Null is a URL that cannot become a cache key at all — no host, or a path this
+        // cache would refuse to write. Reported as the argument error it is, rather than
+        // as a successful clear of nothing.
+        $removed = $this->invalidator->forgetUrl($url, paginated: true);
 
-        if (!is_string($host)) {
-            $this->cli->error("Not a URL with a host: {$url}");
-
-            return;
-        }
-
-        $key = CacheKey::create($host, is_string($path) ? $path : '/');
-
-        if ($key === null) {
+        if ($removed === null) {
             $this->cli->error("That URL cannot be a cache key: {$url}");
 
             return;
         }
 
-        $removed = $this->store->forgetPaginated($key);
-
-        $this->cli->success(sprintf('Cleared %s (%d file%s).', $url, $removed, $removed === 1 ? '' : 's'));
+        $this->cli->success(sprintf('Cleared %s (%d page%s).', $url, $removed, $removed === 1 ? '' : 's'));
     }
 }

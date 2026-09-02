@@ -75,7 +75,15 @@ final readonly class CacheDirectory
     }
 
     /**
-     * Delete a directory and everything under it. Returns the number of files removed.
+     * Delete a directory and everything under it.
+     *
+     * Everything is removed — a headers sidecar, a temporary file a killed write left
+     * behind — and only stored response bodies are counted. That is the one meaning a
+     * deletion count has anywhere in this feature: an entry is a page plus, usually, a
+     * sidecar, and WordPress sets a `Link:` header on nearly every response, so counting
+     * files would report twice as many pages as the site has.
+     *
+     * @return int Stored response bodies removed.
      */
     public function deleteTree(string $directory): int
     {
@@ -92,7 +100,11 @@ final readonly class CacheDirectory
                 continue;
             }
 
-            $removed += (int) unlink($entry->getPathname());
+            $body = CacheKey::isWritableFilename($entry->getFilename());
+
+            if (unlink($entry->getPathname()) && $body) {
+                $removed++;
+            }
         }
 
         rmdir($directory);

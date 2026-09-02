@@ -231,6 +231,16 @@ Named here so nothing is assumed: device, scheme and consent variants; pre-compr
 
 Purging is what decides whether the feature is safe, so it is event-driven rather than left to the TTL.
 
+Everything that deletes a stored page at runtime goes through one service, `PageCache\Invalidator`, with three operations: clear everything, clear the section-cache entries only, clear one URL with every variant it owns. The WordPress hooks below, `wp foehn cache:clear` and the admin controls are all callers of it. Two of them used to build a cache key from a URL with their own `parse_url()`, which is how a WP-CLI clear and an automatic purge come to disagree about which files one URL owns — and the one that disagrees quietly is the one that leaves a stale page up.
+
+Every operation reports the same number: **stored response bodies deleted**. An entry is a body plus, usually, a headers sidecar, and the sidecar goes with its body without being counted.
+
+Clearing one URL takes its page, its cached 404, its keyed query variants and its section fragments. Clearing the section cache takes only the variants keyed by `foehn_sections` — the whole pages and the other keyed variants sitting in the same directory are left alone.
+
+Invalidation keeps working while `enabled` is `false`. A release that had the cache on leaves files behind, and the project switching it off is exactly the one who needs them gone.
+
+It is the static page cache and nothing else. The discovery cache, transformed images, application transients and PHP's OPcache have their own lifecycles, and a content edit is not a reason to clear any of them.
+
 Editing a post queues its permalink, the front page, the posts page, its post type archive, its author and month archives, every term archive it appears in, its ancestors (a parent page lists its children) and both adjacent posts (a single template renders previous/next links). Targets accumulate during the request and are acted on once, on `shutdown`, so a bulk edit does not run the same recursive delete forty times.
 
 Hooked for you: `save_post`, `deleted_post`, `before_delete_post`, `wp_trash_post`, `untrash_post`, `attachment_updated`, `comment_post`, `transition_comment_status`, `edited_term`, `delete_term`.
@@ -313,7 +323,7 @@ composer install && wp foehn cache:config --write && wp foehn cache:clear
 
 | Command                                        | What it does                                                                                                |
 | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `wp foehn cache:clear [--url=<url>]`           | Empty the cache, or drop one URL along with its `page/**` subtree.                                          |
+| `wp foehn cache:clear [--url=<url>]`           | Empty the cache, or drop one URL along with its `page/**` subtree. Reports pages, not files.                |
 | `wp foehn cache:status`                        | Whether it is on, whether it is on _here_, where it writes, what is in it, and which readers are installed. |
 | `wp foehn cache:config --server=nginx\|apache` | Print the server config, or write it with `--write`.                                                        |
 | `wp foehn cache:warm [--sync] [--limit=<n>]`   | Request every URL in the sitemap. Queued through Action Scheduler unless `--sync`.                          |
