@@ -165,6 +165,13 @@ if (!class_exists('WP_CLI')) {
             wp_stub_record('wp_cli_warning', compact('message'));
         }
 
+        // Records instead of exiting, like error() above: a test asserting which status a
+        // command chose cannot assert it from a process that has already ended.
+        public static function halt(int $status): void
+        {
+            wp_stub_record('wp_cli_halt', compact('status'));
+        }
+
         public static function line(string $message = ''): void
         {
             wp_stub_record('wp_cli_line', compact('message'));

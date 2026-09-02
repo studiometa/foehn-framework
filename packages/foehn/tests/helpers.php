@@ -323,6 +323,29 @@ function makeCommandContractSuite(array $contracts): void
 }
 
 /**
+ * A verification report of the `updates` profile, holding the checks a test cares about.
+ */
+function testVerificationReport(\Studiometa\Foehn\Verification\VerificationResult ...$checks): \Studiometa\Foehn\Verification\VerificationReport
+{
+    return new \Studiometa\Foehn\Verification\VerificationReport(
+        \Studiometa\Foehn\Verification\VerificationProfile::Updates,
+        array_values($checks),
+    );
+}
+
+/**
+ * A directory a verification report can be written into, guaranteed not to be shared.
+ */
+function testVerificationDirectory(): string
+{
+    $directory = sys_get_temp_dir() . '/foehn-tests/verify-' . uniqid('', true);
+
+    mkdir($directory, 0o777, true);
+
+    return $directory;
+}
+
+/**
  * A directory for a page cache under test, guaranteed not to be shared.
  */
 function pageCacheRoot(): string
