@@ -13,15 +13,24 @@
       </span>
 
       <span class="index-row__aside label">
-        {% if project.location %}<span>{{ project.location }}</span>{% endif %}
-        {% if project.year %}<span class="index-number">{{ project.year }}</span>{% endif %}
+        {% if project.location %}
+          <span>{{ project.location }}</span>
+        {% endif %}
+        {% if project.year %}
+          <span class="index-number">{{ project.year }}</span>
+        {% endif %}
       </span>
     </a>
   {% else %}
-    <p>No projects published yet.</p>
+    <p>
+      No projects published yet.
+    </p>
   {% endfor %}
 
   {% if pagination %}
-    {% include 'components/pagination.twig' with { pagination_section: 'project-index' } %}
+    {% include 'components/pagination.twig' with {
+      pagination_section: 'project-index',
+      pagination_targets: '#foehn-section-project-index, #project-count'
+    } %}
   {% endif %}
 </section>

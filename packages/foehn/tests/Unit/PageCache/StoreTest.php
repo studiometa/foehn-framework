@@ -212,6 +212,30 @@ describe('Store', function () {
             expect($this->root . '/example.com/blog/index.html.headers')->not->toBeFile();
         });
 
+        it('reports no headers when a page never stored any', function () {
+            $this->store->put($this->key, '<html>hi</html>');
+
+            expect($this->store->headers($this->key))->toBe([]);
+        });
+
+        it('points at a headers file beside the body it belongs to', function () {
+            expect($this->store->headersFile($this->key))
+                ->toBe($this->root . '/example.com/blog/index.html.headers');
+            expect($this->store->headersFile($this->key, 404))
+                ->toBe($this->root . '/example.com/blog/index--404.html.headers');
+        });
+
+        it('counts pages rather than files in its stats', function () {
+            // `cache:status` reports this number. With a headers sibling per entry,
+            // counting files would tell somebody they have twice the pages they have.
+            $this->store->put($this->key, '<html>hi</html>', 200, ['X-Robots-Tag: noindex']);
+
+            $stats = $this->store->stats();
+
+            expect($stats['files'])->toBe(1);
+            expect($stats['bytes'])->toBeGreaterThan(strlen('<html>hi</html>'));
+        });
+
         it('purges the headers and the 404 with the page', function () {
             $this->store->put($this->key, '<html>hi</html>', 200, ['X-Robots-Tag: noindex']);
             $this->store->put($this->key, '<html>gone</html>', 404, ['X-Robots-Tag: noindex']);
