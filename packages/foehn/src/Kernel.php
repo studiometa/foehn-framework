@@ -6,6 +6,7 @@ namespace Studiometa\Foehn;
 
 use Psr\Cache\CacheItemPoolInterface;
 use RuntimeException;
+use Studiometa\Foehn\Admin\AdminBar;
 use Studiometa\Foehn\Admin\CacheActions;
 use Studiometa\Foehn\Admin\Dashboard;
 use Studiometa\Foehn\Blocks\BlockEditorAssets;
@@ -413,7 +414,7 @@ final class Kernel
     }
 
     /**
-     * Register the operational admin page and its cache controls.
+     * Register the operational admin page, its handlers and the admin-bar controls.
      */
     private function registerAdminServices(): void
     {
@@ -435,6 +436,8 @@ final class Kernel
                 $this->container->get(Heartbeat::class),
             ),
         );
+
+        $this->container->singleton(AdminBar::class, static fn() => new AdminBar());
     }
 
     /**
@@ -503,7 +506,7 @@ final class Kernel
     }
 
     /**
-     * Wire the operational admin page and its cache controls.
+     * Wire the operational admin page, its handlers and the admin-bar controls.
      *
      * Not in `FoehnConfig::hooks` and not gated on the page cache. These are not opt-in:
      * a project that had to enable the page it would read the cache's state on has no way
@@ -520,6 +523,10 @@ final class Kernel
         /** @var Dashboard $dashboard */
         $dashboard = $this->container->get(Dashboard::class);
         $dashboard->register();
+
+        /** @var AdminBar $adminBar */
+        $adminBar = $this->container->get(AdminBar::class);
+        $adminBar->register();
     }
 
     /**

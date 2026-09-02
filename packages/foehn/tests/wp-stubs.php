@@ -59,10 +59,16 @@ function wp_stub_reset(): void
     $GLOBALS['wp_stub_sitemap_urls'] = [];
     unset($GLOBALS['wp_stub_sitemap_providers'], $GLOBALS['wp_stub_remote_status'], $GLOBALS['wp_stub_remote_error']);
 
-    // The admin mutation handlers read all three. A referer or a screen left behind would
-    // make a redirect land somewhere a later test never set up, and a leaked screen would
-    // make the admin bar's current-item entry appear for a request that has no post.
-    unset($GLOBALS['wp_stub_referer'], $GLOBALS['wp_stub_current_screen'], $GLOBALS['wp_stub_queried_object']);
+    // The admin controls read all four. A referer left behind would make a redirect land
+    // somewhere a later test never set up, and a leaked screen, queried object or global
+    // post would make the admin bar's current-item entry appear for a request that has no
+    // post to clear.
+    unset(
+        $GLOBALS['wp_stub_referer'],
+        $GLOBALS['wp_stub_current_screen'],
+        $GLOBALS['wp_stub_queried_object'],
+        $GLOBALS['wp_stub_post'],
+    );
 
     // Theme paths fall back to their stub defaults, so a test that points them at
     // a fixture directory cannot leak that into the next one.
@@ -1801,7 +1807,16 @@ if (!function_exists('get_post')) {
             return $post;
         }
 
-        return $GLOBALS['wp_stub_posts'][(int) $post] ?? null;
+        $id = (int) $post;
+
+        // Called with nothing, WordPress answers with the global post — which is how an
+        // edit screen hands the row it has already loaded to code that never named an id.
+        // The admin-bar controls depend on that, so the stub has to have it.
+        if ($id === 0) {
+            return $GLOBALS['wp_stub_post'] ?? null;
+        }
+
+        return $GLOBALS['wp_stub_posts'][$id] ?? null;
     }
 }
 

@@ -328,6 +328,8 @@ composer install && wp foehn cache:config --write && wp foehn cache:clear
 | `wp foehn cache:config --server=nginx\|apache` | Print the server config, or write it with `--write`.                                                        |
 | `wp foehn cache:warm [--sync] [--limit=<n>]`   | Request every URL in the sitemap. Queued through Action Scheduler unless `--sync`.                          |
 
+The same operations are available from the browser, on the Føhn admin page and in the admin bar — see [Admin Cache Controls](/guide/admin-cache-controls).
+
 ## Debugging
 
 With `WP_DEBUG` on — or `debugHeaders: true` — every response says what happened and which reader decided it:
