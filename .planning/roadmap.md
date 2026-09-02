@@ -22,6 +22,12 @@ Every planned evolution of Føhn, in one place. Detail lives in the linked specs
 | 12  | Object storage for uploads     | **Done**      | [uploads_object_storage_spec.md](uploads_object_storage_spec.md)      | ~1 d   |
 | 13  | Release `0.5.0`                | **Done**      | —                                                                     | —      |
 | 14  | Release `0.5.1`                | **Ready**     | —                                                                     | —      |
+| 15  | Unified cache invalidation     | **Approved**  | [operations_spec.md](operations_spec.md) §3                           | 2–3 d  |
+| 16  | Production verification        | **Approved**  | [diagnostics-command-spec.md](diagnostics-command-spec.md) §4         | 2–3 d  |
+| 17  | Non-production indexing guard  | **Approved**  | [operations_spec.md](operations_spec.md) §4                           | 1–2 d  |
+| 18  | Real WP-Cron heartbeat         | **Approved**  | [operations_spec.md](operations_spec.md) §5                           | 1–2 d  |
+| 19  | Føhn admin cache controls      | **Approved**  | [operations_spec.md](operations_spec.md) §§6–8                        | 2–3 d  |
+| 20  | Update verification            | **Approved**  | [diagnostics-command-spec.md](diagnostics-command-spec.md) §3         | 2–3 d  |
 
 Done and shipped: the block editor layer ([editor_layer_spec.md](editor_layer_spec.md)), and on 2026-08-19 the discovery rewrite onto `tempest/discovery`, `*.config.php` loading, the self-warming discovery cache, and generated WordPress security keys.
 
@@ -45,6 +51,22 @@ Done and shipped: the block editor layer ([editor_layer_spec.md](editor_layer_sp
 **10 after 9**, so each feature's example is written once, in `packages/starter`, and moved once. `packages/starter` is currently two things at odds with each other: the minimal starting point `composer create-project` gives someone, and the demonstration of everything Føhn ships. A new `packages/demo` takes the second job — every post type, block, taxonomy, route, settings page and binding, plus the whole of `tests/smoke/` and the browser suite, which is where exhaustive coverage belongs. The starter keeps what a new project cannot start without: the boot, the config files, the templates a WordPress theme needs, and the front-end tooling with `@studiometa/foehn-vite-plugin`. Where exactly the line falls in `theme/app/` is settled when it is written up.
 
 **13 waits on 1**, by decision on 2026-08-19. Note the cost: everything merged that day is unreleased, and `packages/starter` requires `studiometa/foehn: ^0.4`, so `composer create-project` still installs `0.4.1` — the version whose front-end fatals and whose auth keys are `md5()` of the web root. No live project off the published starter until a tag exists. Cutting `0.5.0` now and shipping the page cache as `0.6.0` remains available; nothing technical couples them.
+
+### Next operational sequence
+
+```text
+15 ──→ 19
+17 ─┬→ 16
+18 ─┘
+15 ───→ 16
+20      (independent after the shared verification report exists)
+```
+
+**15 precedes 19** because the dashboard, admin bar and WP-CLI must call one invalidation service instead of implementing three deletion paths.
+
+**17 and 18 precede the complete production profile in 16** because indexing activation and the cron heartbeat are the state that deployment verification reads. The shared verification result and command shell can land earlier, but `--profile=production` must not pass while planned checks are absent.
+
+**20 shares the command and report with 16 but not its policy.** `wp foehn verify --profile=updates` is a CI update gate that reports process-local PHP and WordPress diagnostics. `--profile=production` is a deployment gate that rejects unsafe production configuration. There is no separate `diagnostics`, `doctor`, or public health-check command.
 
 ## Undecided
 
