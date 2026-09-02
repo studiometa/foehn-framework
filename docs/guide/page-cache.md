@@ -152,6 +152,7 @@ Two consequences worth knowing:
 
 - **The members are joined in request order and never sorted**, so `?genre[]=jazz&genre[]=rock` is a second file holding the same HTML. Sorting is the obvious fix and the wrong one: nginx cannot sort, so a sorted key is one only PHP could compute, and the two readers would part company on the first URL that arrived unsorted. A form emits its checkboxes in document order, so in practice one spelling occurs.
 - **A member may not contain a comma.** `?genre[]=rock,jazz` asks for one term whose slug has a comma in it; `?genre=rock,jazz` asks for two terms. Joining the first would key it where the second lives, so it bypasses instead.
+- **The comma stays a comma, and Føhn has to insist on that.** WordPress rebuilds the query string of a paginated URL with its values encoded, so `/archive/page/2/?genre=rock,jazz` is answered with a 301 to `?genre=rock%2Cjazz` — and nginx keys the raw query string, so it would then look for `index__genre=rock%2Cjazz&.html` while the recorder wrote `index__genre=rock,jazz&.html`. Two readers, two filenames, and a cache that quietly stops being read. So `PageCache\CanonicalRedirect` cancels a canonical redirect whose only change is that encoding, and keeps the literal comma in one that does something else. It is registered in every environment, because the URLs are the same in every environment.
 
 ### Listing values instead of writing a pattern
 

@@ -24,6 +24,7 @@ use Studiometa\Foehn\Images\NullTransformer;
 use Studiometa\Foehn\Jobs\ActionSchedulerJobDispatcher;
 use Studiometa\Foehn\Jobs\JobRegistry;
 use Studiometa\Foehn\PageCache\Bypass;
+use Studiometa\Foehn\PageCache\CanonicalRedirect;
 use Studiometa\Foehn\PageCache\Purger;
 use Studiometa\Foehn\PageCache\Recorder;
 use Studiometa\Foehn\PageCache\Store;
@@ -403,6 +404,11 @@ final class Kernel
         // Editor phase: ship the block editor registrar and the block definitions.
         // Always on — block authoring must not be opt-in like the classes in src/Hooks/.
         add_action('enqueue_block_editor_assets', $this->onEnqueueBlockEditorAssets(...));
+
+        // Not part of registerPageCache(), and not gated on it: the framework emits URLs
+        // with literal commas in every environment, and core redirects them away in every
+        // environment. See CanonicalRedirect.
+        new CanonicalRedirect()->register();
 
         $this->registerPageCache();
     }

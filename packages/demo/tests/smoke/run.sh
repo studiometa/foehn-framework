@@ -219,16 +219,50 @@ printf '✓ %s\n' "the homepage lazy-loads its testimonial section"
 projects_index="$(curl -sk "$url/projects/")"
 grep -q 'data-component="Fetch"' <<<"$projects_index" || fail "project pagination does not use the base Fetch component"
 grep -q 'data-option-history' <<<"$projects_index" || fail "project pagination does not put the page it fetched in the URL"
-# A section response carries Cache-Control: private, no-store, so fetching one would
-# trade a page served from the cache without PHP for a fragment rendered every time.
-# Pagination fetches the whole page and swaps the regions it names.
-grep -qE 'data-option-src="[^"]*foehn_sections=' <<<"$projects_index" && fail "project pagination fetches a section URL, which is never cached"
 
-project_section="$(curl -sk "$url/projects/page/2/?foehn_sections=project-index")"
+# This pair used to assert the opposite: that nothing here fetched a section URL, because
+# a section response carried `Cache-Control: private, no-store` and fetching one traded a
+# page served off a file for a fragment rendered every time. Section responses are stored
+# under the same rules as pages now — `foehn_sections` is a cache-key query argument — so
+# the archive fetches fragments, and both URLs below are cached.
+#
+# Spelled out in full rather than matched loosely, because the selection *is* the cache
+# key: a name added or dropped here is a different file, and a reader that disagrees about
+# which one silently misses.
+grep -q 'data-option-src="/projects/page/2/?foehn_sections=project-count,project-index"' <<<"$projects_index" ||
+	fail "project pagination does not fetch the count and the index as one section request"
+
+# The filter form is a section too, and it asks for itself: its facet counts, its dead-end
+# options, its ticked boxes and its Reset link are all answers to the current URL that only
+# the server can give.
+grep -q 'data-option-src="/projects/?foehn_sections=project-count,project-filters,project-index"' <<<"$projects_index" ||
+	fail "the filter form does not request its own section alongside the count and the index"
+grep -q 'id="foehn-section-project-filters"' <<<"$projects_index" || fail "the filter form is not a section"
+# `morph` is load-bearing, not cosmetic. The default `replace` calls replaceWith, which
+# would destroy the form node the visitor is using on every change — taking focus to
+# <body>, and taking with it the Fetch instance running the request.
+grep -q 'data-option-mode="morph"' <<<"$projects_index" || fail "the filter form would be replaced rather than morphed, which loses focus mid-interaction"
+
+project_section="$(curl -sk "$url/projects/page/2/?foehn_sections=project-count,project-index")"
 grep -q 'id="foehn-section-project-index"' <<<"$project_section" || fail "the page-two section request returned no project index wrapper"
+grep -q 'id="foehn-section-project-count"' <<<"$project_section" || fail "the page-two section request returned no count wrapper, so the count would go stale on paging"
 grep -q '<html' <<<"$project_section" && fail "the page-two section request returned a full page"
+# `href` only. Pagination inside a section response now carries a section URL in
+# `data-option-src` on purpose; what must stay clean is the link a visitor without
+# JavaScript follows, and the one `history` pushes.
 grep -qE 'href="[^"]*foehn_sections=' <<<"$project_section" && fail "pagination inside a section response retained the section control parameter in its fallback URL"
-printf '✓ %s\n' "project pagination fetches whole pages, and a section request still returns a fragment"
+printf '✓ %s\n' "project pagination fetches a section URL and gets a fragment back"
+
+# The form rendered for two different URLs, which is the whole reason it is a section.
+filtered_form="$(curl -sk "$url/projects/?project_category%5B%5D=still-life&foehn_sections=project-filters" | tr '\n' ' ')"
+grep -qE 'value="still-life" +checked' <<<"$filtered_form" || fail "the filter form does not reflect the filter it was asked to render"
+grep -q 'filters__count' <<<"$filtered_form" || fail "the filter form renders no facet counts"
+grep -q 'Reset' <<<"$filtered_form" || fail "the filter form offers no way out of a filter"
+
+bare_form="$(curl -sk "$url/projects/?foehn_sections=project-filters" | tr '\n' ' ')"
+grep -qE 'value="still-life" +checked' <<<"$bare_form" && fail "the filter form shows a filter the URL did not ask for"
+grep -q 'Reset' <<<"$bare_form" && fail "the filter form offers a reset on an unfiltered archive, so it is not tracking the query"
+printf '✓ %s\n' "the filter form is a section the server re-renders for the current URL"
 
 # Image transforms, end to end. The plate crops to two ratios, which is where
 # #[AsImageSize] stops being the answer: a registered size is one shape, and one
