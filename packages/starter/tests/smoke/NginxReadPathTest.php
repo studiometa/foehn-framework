@@ -54,7 +54,7 @@ describe('nginx read path', function () {
         smokeWarm('/');
 
         expect(Site::cacheFile('/'))->toBeFile();
-        expect(Site::cachedFiles())->toContain(Site::host() . '/index.html');
+        expect(Site::cachedPages())->toContain(Site::host() . '/index.html');
     });
 
     it('sends the headers a shared cache needs to not get this wrong', function () {

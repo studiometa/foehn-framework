@@ -409,7 +409,7 @@ Three things about it are the point:
 
 **It works without JavaScript.** The form submits, the page reloads filtered, the checkboxes come back checked. `Fetch` from `@studiometa/ui` enhances that: it fetches the same URL and swaps the elements whose `id` it finds in the response.
 
-**The enhanced request is still cached.** `Fetch` is given no `data-option-src`, so it fetches the whole filtered page — which the page cache serves without starting PHP — and keeps the one element it needs. A [section](/guide/section-rendering) response would be smaller, and would never be cached: it carries `Cache-Control: private, no-store` by design. Bytes off a warm file beat a cold render.
+**The enhanced request is still cached.** `Fetch` is given no `data-option-src`, so it fetches the whole filtered page — which the page cache serves without starting PHP — and keeps the one element it needs. Pointing it at a [section](/guide/section-rendering) URL instead is also cached, and sends fewer bytes; the trade is that each filter combination then occupies two stored files rather than one, because the page and the fragment are separate responses.
 
 ## Caching filtered pages
 

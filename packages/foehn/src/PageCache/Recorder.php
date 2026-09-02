@@ -68,15 +68,9 @@ final class Recorder
      */
     public function onFlush(string $body): string
     {
-        $status = http_response_code();
-        $reason = $this->bypass->forResponse(
-            $body,
-            is_int($status) ? $status : 200,
-            headers_sent() ? [] : headers_list(),
-            $_SERVER,
-            $_COOKIE,
-            $_POST,
-        );
+        $status = is_int(http_response_code()) ? (int) http_response_code() : 200;
+        $headers = headers_sent() ? [] : headers_list();
+        $reason = $this->bypass->forResponse($body, $status, $headers, $_SERVER, $_COOKIE, $_POST);
 
         if ($reason !== null) {
             DebugHeaders::send($this->config, DebugHeaders::STATE_BYPASS, $reason);
@@ -94,7 +88,10 @@ final class Recorder
 
         $body .= self::marker();
 
-        $this->store->put($key, $body);
+        // The status and the headers travel with the body now. A 404 stored without its
+        // status came back as a 200, which is a soft 404 that nothing downstream can see
+        // — and a page's own headers vanished on every hit.
+        $this->store->put($key, $body, $status, $headers);
 
         DebugHeaders::send($this->config, DebugHeaders::STATE_MISS);
 

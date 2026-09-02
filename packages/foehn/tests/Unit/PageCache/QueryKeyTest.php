@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Studiometa\Foehn\Config\PageCacheConfig;
 use Studiometa\Foehn\PageCache\CacheKey;
 use Studiometa\Foehn\PageCache\QueryKey;
+use Studiometa\Foehn\Views\Sections\SectionRequest;
 
 /**
  * The query string half of the key.
@@ -23,13 +24,67 @@ beforeEach(function () {
     ], ignoredQueryArgs: ['utm_source', 'gclid']);
 });
 
-describe('reserved controls', function () {
-    it('always bypasses section requests, even when project config tries to cache them', function () {
-        $config = new PageCacheConfig(ignoredQueryArgs: ['foehn_sections'], cacheQueryArgs: ['foehn_sections']);
-
-        expect(QueryKey::canonical('foehn_sections=results', $config))->toBeNull();
-        expect(QueryKey::canonical('utm_source=test&foehn_sections=results', $config))->toBeNull();
+describe('section requests', function () {
+    it('keys a selection, so a fragment is a file of its own rather than a re-render', function () {
+        expect(QueryKey::canonical('foehn_sections=listing,pagination', $this->config))
+            ->toBe('foehn_sections=listing,pagination&');
+        expect(QueryKey::canonical('foehn_sections=listing&page=2', $this->config))
+            ->toBe('foehn_sections=listing&page=2&');
     });
+
+    it('names the file after the selection', function () {
+        expect(CacheKey::create('example.test', '/blog/', 'foehn_sections=listing,pagination&')?->relativePath())
+            ->toBe('example.test/blog/index__foehn_sections=listing,pagination&.html');
+    });
+
+    it('keys it whatever the project config says, and never ignores it', function () {
+        // Ignoring is the dangerous half: it would key a section request where the whole
+        // page lives, so one visitor gets a fragment and the next gets a page. And a
+        // project pattern would be a second grammar next to the parser's.
+        $config = new PageCacheConfig(ignoredQueryArgs: ['foehn_sections'], cacheQueryArgs: [
+            'foehn_sections' => '^.+$',
+        ]);
+
+        expect($config->getIgnoredQueryArgs())->not->toContain('foehn_sections');
+        expect($config->getCacheQueryArgs()['foehn_sections'])->toBe(SectionRequest::VALUE_PATTERN);
+        expect(QueryKey::canonical('foehn_sections=Results', $config))->toBeNull();
+    });
+
+    it('refuses a selection the parser would refuse', function (string $value) {
+        expect(QueryKey::canonical('foehn_sections=' . $value, $this->config))->toBeNull();
+    })->with([
+        'an uppercase name' => ['Listing'],
+        'a name that starts with a dash' => ['-listing'],
+        'a name that ends with a dash' => ['listing-'],
+        'a doubled separator' => ['listing,,pagination'],
+        'a traversal' => ['../secret'],
+        'more names than MAX_SECTIONS' => ['a,b,c,d,e,f'],
+    ]);
+
+    it('accepts exactly what the parser accepts', function (string $value) {
+        // The pattern is derived from SectionRequest's own constants, and this is what
+        // says so: two spellings of one grammar would drift, and the cache has already
+        // paid for that once.
+        $names = explode(',', $value);
+        $parserAccepts = count($names) <= SectionRequest::MAX_SECTIONS
+            && array_all($names, static fn(string $name): bool => SectionRequest::isSafeName($name));
+
+        expect(preg_match('#' . SectionRequest::VALUE_PATTERN . '#', $value) === 1)->toBe($parserAccepts);
+    })->with([
+        ['listing'],
+        ['a'],
+        ['archive-results'],
+        ['a1-b2-c3'],
+        ['listing,pagination'],
+        ['a,b,c,d,e'],
+        ['a,b,c,d,e,f'],
+        ['Listing'],
+        ['listing_results'],
+        ['-listing'],
+        ['listing-'],
+        ['listing,,pagination'],
+        [''],
+    ]);
 });
 
 describe('canonical order', function () {
@@ -132,11 +187,11 @@ describe('configuration', function () {
     it('sorts the keyed args, because that order names every stored file', function () {
         $config = new PageCacheConfig(cacheQueryArgs: ['page' => '^\d+$', 'lang' => '^[a-z]{2}$']);
 
-        expect(array_keys($config->getCacheQueryArgs()))->toBe(['lang', 'page']);
+        expect(array_keys(projectCacheQueryArgs($config)))->toBe(['lang', 'page']);
     });
 
     it('gives a shorthand list the default pattern', function () {
-        expect(new PageCacheConfig(cacheQueryArgs: ['page'])->getCacheQueryArgs())->toBe([
+        expect(projectCacheQueryArgs(new PageCacheConfig(cacheQueryArgs: ['page'])))->toBe([
             'page' => PageCacheConfig::DEFAULT_QUERY_ARG_PATTERN,
         ]);
     });
@@ -149,7 +204,7 @@ describe('configuration', function () {
             'hashed' => '^a#b$',
         ]);
 
-        expect(array_keys($config->getCacheQueryArgs()))->toBe(['ok']);
+        expect(array_keys(projectCacheQueryArgs($config)))->toBe(['ok']);
         // And an unconfigured arg is a bypass, never a silent unkeyed hit.
         expect(QueryKey::canonical('broken=x', $config))->toBeNull();
     });

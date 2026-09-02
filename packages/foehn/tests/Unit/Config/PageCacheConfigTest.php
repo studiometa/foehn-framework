@@ -41,15 +41,30 @@ describe('PageCacheConfig', function () {
             ->toContain('mc_cid');
     });
 
-    it('reserves section selection from ignored and keyed query configuration', function () {
+    it('refuses to let a project ignore section selection', function () {
+        // The rule that must not stop holding. An ignored `foehn_sections` would key a
+        // section request onto the whole page's file: one visitor asks for a fragment and
+        // is handed a page, the next asks for the page and is handed a fragment.
         $config = new PageCacheConfig(ignoredQueryArgs: [SectionRequest::PARAMETER, 'utm_source'], cacheQueryArgs: [
-            SectionRequest::PARAMETER,
             'page',
         ]);
 
         expect(PageCacheConfig::RESERVED_QUERY_ARGS)->toContain(SectionRequest::PARAMETER);
         expect($config->getIgnoredQueryArgs())->toBe(['utm_source']);
-        expect($config->getCacheQueryArgs())->toHaveKeys(['page'])->not->toHaveKey(SectionRequest::PARAMETER);
+    });
+
+    it('keys section selection with the parser grammar, whatever the config says', function () {
+        // On by default and not configurable: a fragment is a different response for the
+        // same URL, so it needs a file of its own — and the grammar belongs to
+        // SectionRequest, because a widened one would key values the parser refuses.
+        $config = new PageCacheConfig(cacheQueryArgs: [SectionRequest::PARAMETER => '^.+$', 'page']);
+
+        expect($config->getCacheQueryArgs())->toBe([
+            SectionRequest::PARAMETER => SectionRequest::VALUE_PATTERN,
+            'page' => PageCacheConfig::DEFAULT_QUERY_ARG_PATTERN,
+        ]);
+        expect(new PageCacheConfig()->getCacheQueryArgs())
+            ->toBe([SectionRequest::PARAMETER => SectionRequest::VALUE_PATTERN]);
     });
 
     it('reads the environment off WordPress', function () {
@@ -87,7 +102,7 @@ describe('values instead of patterns', function () {
         // pattern that means the same thing is compiled from them.
         $config = new PageCacheConfig(cacheQueryArgs: ['posts_per_page' => [12, 24, 48]]);
 
-        expect($config->getCacheQueryArgs())->toBe(['posts_per_page' => '^(?:12|24|48)$']);
+        expect(projectCacheQueryArgs($config))->toBe(['posts_per_page' => '^(?:12|24|48)$']);
         expect(QueryKey::canonical('posts_per_page=24', $config))->toBe('posts_per_page=24&');
         expect(QueryKey::canonical('posts_per_page=99', $config))->toBeNull();
     });
@@ -111,7 +126,7 @@ describe('values instead of patterns', function () {
     it('still takes a bare name and a pattern', function () {
         $config = new PageCacheConfig(cacheQueryArgs: ['page', 'lang' => '^[a-z]{2}$']);
 
-        expect(array_keys($config->getCacheQueryArgs()))->toBe(['lang', 'page']);
+        expect(array_keys(projectCacheQueryArgs($config)))->toBe(['lang', 'page']);
         expect(QueryKey::canonical('page=2&lang=fr', $config))->toBe('lang=fr&page=2&');
     });
 });

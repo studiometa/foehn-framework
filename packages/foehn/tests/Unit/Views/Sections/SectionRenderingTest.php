@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use Studiometa\Foehn\Config\PageCacheConfig;
 use Studiometa\Foehn\Contracts\ViewEngineInterface;
-use Studiometa\Foehn\Discovery\TemplateControllerDiscovery;
 use Studiometa\Foehn\Views\Sections\SectionCollector;
 use Studiometa\Foehn\Views\Sections\SectionRenderer;
 use Studiometa\Foehn\Views\Sections\SectionRequest;
@@ -328,6 +327,44 @@ describe('SectionExtension', function () {
             ->not->toStartWith('//');
     });
 
+    it('builds a URL for several sections at once, and one the parser accepts back', function () {
+        // A form that updates a listing and the count beside it asks for both regions in
+        // one request. The round-trip is the assertion: the helper writes the parameter
+        // this class parses, and a comma it encoded would be a URL nobody could answer.
+        $extension = sectionExtension(
+            new SectionRequest('GET', '/archive'),
+            $this->collector,
+            new SectionRenderer($this->view),
+        );
+
+        $url = $extension->url('results,count');
+
+        expect($url)->toBe('/archive?type=project&utm_source=test&foehn_sections=results,count');
+
+        $request = new SectionRequest('GET', $url);
+
+        expect($request->isSelected())->toBeTrue();
+        expect($request->isValid())->toBeTrue();
+        expect($request->names())->toBe(['results', 'count']);
+    });
+
+    it('refuses a selection the request would answer 400 to', function () {
+        // Every rule here belongs to SectionRequest, and this asserts the helper asks it
+        // rather than keeping a looser copy: a URL that is built and then refused is a
+        // page that breaks on the fetch and nowhere else.
+        $extension = sectionExtension(
+            new SectionRequest('GET', '/archive'),
+            $this->collector,
+            new SectionRenderer($this->view),
+        );
+
+        expect(fn() => $extension->url('results,results'))->toThrow(InvalidArgumentException::class);
+        expect(fn() => $extension->url('results,Count'))->toThrow(InvalidArgumentException::class);
+        expect(fn() => $extension->url('a,b,c,d,e,f'))->toThrow(InvalidArgumentException::class);
+        expect(fn() => $extension->url('results,'))->toThrow(InvalidArgumentException::class);
+        expect(fn() => $extension->url(''))->toThrow(InvalidArgumentException::class);
+    });
+
     it('does not freeze ignored query arguments into URLs emitted by cached pages', function () {
         $pageCacheConfig = new PageCacheConfig(
             enabled: true,
@@ -428,7 +465,7 @@ describe('TemplateControllerDiscovery section responses', function () {
         $_SERVER['REQUEST_URI'] = '/?type=project&foehn_sections=results';
         $container->singleton(SectionRenderer::class, static fn() => $renderer);
         $container->singleton(SectionTestController::class, static fn() => $controller);
-        $discovery = new TemplateControllerDiscovery($request, $collector);
+        $discovery = testTemplateControllerDiscovery($request, $collector);
         $discovery->discover(
             testDiscoveryLocation(),
             new \Tempest\Reflection\ClassReflector(SectionTestController::class),
@@ -470,7 +507,7 @@ describe('TemplateControllerDiscovery section responses', function () {
         $extension = sectionExtension($request, $collector, $renderer);
         $container->singleton(SectionRenderer::class, static fn() => $renderer);
         $container->singleton(SectionTestController::class, static fn() => new SectionTestController($extension));
-        $discovery = new TemplateControllerDiscovery($request, $collector);
+        $discovery = testTemplateControllerDiscovery($request, $collector);
         $discovery->discover(
             testDiscoveryLocation(),
             new \Tempest\Reflection\ClassReflector(SectionTestController::class),
@@ -504,7 +541,7 @@ describe('TemplateControllerDiscovery section responses', function () {
         $extension = sectionExtension($request, $collector, $renderer);
         $container->singleton(SectionRenderer::class, static fn() => $renderer);
         $container->singleton(SectionTestController::class, static fn() => new SectionTestController($extension));
-        $discovery = new TemplateControllerDiscovery($request, $collector);
+        $discovery = testTemplateControllerDiscovery($request, $collector);
         $discovery->discover(
             testDiscoveryLocation(),
             new \Tempest\Reflection\ClassReflector(SectionTestController::class),
@@ -526,7 +563,7 @@ describe('TemplateControllerDiscovery section responses', function () {
     });
 
     it('returns an HTML error before controller lookup for an invalid request', function () {
-        $discovery = new TemplateControllerDiscovery(
+        $discovery = testTemplateControllerDiscovery(
             new SectionRequest('GET', '/?foehn_sections=../secret'),
             new SectionCollector(),
         );
@@ -541,7 +578,7 @@ describe('TemplateControllerDiscovery section responses', function () {
     });
 
     it('returns 404 when no normal page controller matches', function () {
-        $discovery = new TemplateControllerDiscovery(
+        $discovery = testTemplateControllerDiscovery(
             new SectionRequest('GET', '/?foehn_sections=results'),
             new SectionCollector(),
         );
@@ -556,7 +593,7 @@ describe('TemplateControllerDiscovery section responses', function () {
     });
 
     it('never emits a body for HEAD errors', function () {
-        $discovery = new TemplateControllerDiscovery(
+        $discovery = testTemplateControllerDiscovery(
             new SectionRequest('HEAD', '/?foehn_sections=results'),
             new SectionCollector(),
         );
@@ -566,5 +603,85 @@ describe('TemplateControllerDiscovery section responses', function () {
         $body = (string) ob_get_clean();
 
         expect(http_response_code())->toBe(404)->and($body)->toBe('');
+    });
+});
+
+describe('section response headers', function () {
+    beforeEach(function () {
+        wp_stub_reset();
+        $GLOBALS['wp_stub_environment_type'] = 'production';
+        $this->server = $_SERVER;
+        $this->cookie = $_COOKIE;
+        $_SERVER = [...$_SERVER, ...pageCacheServer(['REQUEST_URI' => '/blog/?foehn_sections=results'])];
+        $_COOKIE = [];
+        $this->body = '<div id="foehn-section-results" data-foehn-section="results">Results</div>';
+        $this->headers = fn(?PageCacheConfig $config = null, int $status = 200): array => testSectionResponse(
+            new SectionRequest('GET', '/blog/?foehn_sections=results'),
+            $config ?? new PageCacheConfig(enabled: true),
+        )->headers($this->body, $status);
+    });
+
+    afterEach(function () {
+        $_SERVER = $this->server;
+        $_COOKIE = $this->cookie;
+    });
+
+    it('never lets a fragment be indexed, cached or not', function () {
+        // A fragment indexed on its own is a search result that leads to half a page, so
+        // this one is unconditional — it is the header a cached section has to keep.
+        expect(($this->headers)())->toContain('X-Robots-Tag: noindex, nofollow');
+        expect(($this->headers)(null, 400))->toContain('X-Robots-Tag: noindex, nofollow');
+    });
+
+    it('stops refusing to cache a response the cache would store', function () {
+        // The change this whole feature turns on: a section request is stored under the
+        // rules a page is, so the header that made that impossible is gone from the
+        // responses that qualify.
+        expect(($this->headers)())->not->toContain('Cache-Control: private, no-store');
+    });
+
+    it('still says no-store for a request the cache would not store', function (callable $arrange, int $status) {
+        $config = $arrange();
+
+        expect(($this->headers)($config, $status))->toContain('Cache-Control: private, no-store');
+    })->with([
+        'the cache is off' => [fn(): PageCacheConfig => new PageCacheConfig(), 200],
+        'the wrong environment' => [
+            fn(): PageCacheConfig => new PageCacheConfig(enabled: true, environments: ['staging']),
+            200,
+        ],
+        'a logged-in visitor' => [
+            function (): null {
+                $_COOKIE['wordpress_logged_in_x'] = '1';
+
+                return null;
+            },
+            200,
+        ],
+        'a POST' => [
+            function (): null {
+                $_SERVER['REQUEST_METHOD'] = 'POST';
+
+                return null;
+            },
+            200,
+        ],
+        'an error status' => [fn(): null => null, 404],
+    ]);
+
+    it('asks Bypass rather than keeping a second copy of the rule', function () {
+        // If these two ever disagree, a response says `no-store` and is written to disk
+        // anyway, or says nothing and is never written. Both fail silently.
+        $config = new PageCacheConfig(enabled: true);
+        $headers = ($this->headers)($config);
+        $storable = pageCacheBypass($config)->forResponse($this->body, 200, $headers, $_SERVER, $_COOKIE) === null;
+
+        expect(in_array('Cache-Control: private, no-store', $headers, true))->toBe(!$storable);
+    });
+
+    it('keeps the Allow header a 405 owes the client', function () {
+        expect(($this->headers)(null, 405))
+            ->toContain('Allow: GET, HEAD')
+            ->toContain('Cache-Control: private, no-store');
     });
 });

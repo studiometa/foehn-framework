@@ -13,6 +13,7 @@ use Studiometa\Foehn\Views\Sections\SectionCollector;
 use Studiometa\Foehn\Views\Sections\SectionNotFoundException;
 use Studiometa\Foehn\Views\Sections\SectionRenderer;
 use Studiometa\Foehn\Views\Sections\SectionRequest;
+use Studiometa\Foehn\Views\Sections\SectionResponse;
 use Studiometa\Foehn\Views\TemplateContext;
 use Tempest\Discovery\Discovery;
 use Tempest\Discovery\DiscoveryLocation;
@@ -43,6 +44,7 @@ final class TemplateControllerDiscovery implements Discovery
     public function __construct(
         private readonly SectionRequest $sectionRequest,
         private readonly SectionCollector $sectionCollector,
+        private readonly SectionResponse $sectionResponse,
     ) {}
 
     /**
@@ -125,23 +127,32 @@ final class TemplateControllerDiscovery implements Discovery
     public function handleTemplateInclude(string $template): string
     {
         if ($this->sectionRequest->isSelected() && !$this->sectionRequest->isValid()) {
-            return $this->emitSectionError($this->sectionRequest->errorStatus());
+            return $this->sectionResponse->error($this->sectionRequest->errorStatus());
         }
 
         $templateType = $this->getTemplateType();
         $controller = $this->findController($templateType);
 
         if ($controller === null) {
-            return $this->sectionRequest->isSelected() ? $this->emitSectionError(404) : $template;
+            return $this->sectionRequest->isSelected() ? $this->sectionResponse->error(404) : $template;
         }
 
         /** @var TemplateControllerInterface $instance */
         $instance = get($controller['className']);
 
         if ($this->sectionRequest->isSelected()) {
-            return $this->sectionRequest->withoutControlParameter(
-                fn(): string => $this->handleSectionRequest($instance),
+            // Only the rendering runs with the control parameter hidden. Sending the
+            // response must not, because deciding whether it may be cached means asking
+            // `Bypass`, and `Bypass` recognises a section by the request URI — the very
+            // thing this hides. Inside the callback it saw a page, applied the page's
+            // body rule and answered `no-store` for responses the recorder then stored.
+            $rendered = $this->sectionRequest->withoutControlParameter(
+                fn(): string|int => $this->renderSelectedSections($instance),
             );
+
+            return is_int($rendered)
+                ? $this->sectionResponse->error($rendered)
+                : $this->sectionResponse->send($rendered);
         }
 
         $context = TemplateContext::fromTimberContext(Timber::context());
@@ -159,9 +170,12 @@ final class TemplateControllerDiscovery implements Discovery
     }
 
     /**
-     * Run the normal controller and page template, then emit only its selected sections.
+     * Run the normal controller and page template and return the selected sections.
+     *
+     * An `int` is a status to answer with instead — the response itself is built by the
+     * caller, outside the window where the control parameter is hidden.
      */
-    private function handleSectionRequest(TemplateControllerInterface $controller): string
+    private function renderSelectedSections(TemplateControllerInterface $controller): string|int
     {
         $bufferLevel = ob_get_level();
         ob_start();
@@ -173,7 +187,7 @@ final class TemplateControllerDiscovery implements Discovery
             if ($page === null) {
                 $this->discardBuffersSince($bufferLevel);
 
-                return $this->emitSectionError(404);
+                return 404;
             }
 
             /** @var SectionRenderer $renderer */
@@ -182,18 +196,17 @@ final class TemplateControllerDiscovery implements Discovery
         } catch (SectionNotFoundException) {
             $this->discardBuffersSince($bufferLevel);
 
-            return $this->emitSectionError(404);
+            return 404;
         } catch (\Throwable $throwable) {
             $this->discardBuffersSince($bufferLevel);
             error_log('[foehn] section rendering: ' . $throwable->getMessage());
 
-            return $this->emitSectionError(500);
+            return 500;
         }
 
         $this->discardBuffersSince($bufferLevel);
-        $this->emitSectionResponse($html, 200);
 
-        return '';
+        return $html;
     }
 
     private function discardBuffersSince(int $level): void
@@ -202,42 +215,6 @@ final class TemplateControllerDiscovery implements Discovery
             if (!ob_end_clean()) {
                 break;
             }
-        }
-    }
-
-    private function emitSectionError(int $status): string
-    {
-        $title = match ($status) {
-            400 => 'Invalid section request',
-            405 => 'Method not allowed',
-            404 => 'Section not found',
-            default => 'Unable to render sections',
-        };
-        $body = sprintf(
-            '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>%1$s</title></head><body><h1>%1$s</h1></body></html>',
-            $title,
-        );
-
-        $this->emitSectionResponse($body, $status);
-
-        return '';
-    }
-
-    private function emitSectionResponse(string $body, int $status): void
-    {
-        if (!headers_sent()) {
-            status_header($status);
-            header('Content-Type: text/html; charset=UTF-8', true);
-            header('Cache-Control: private, no-store', true);
-            header('X-Robots-Tag: noindex, nofollow', true);
-
-            if ($status === 405) {
-                header('Allow: GET, HEAD', true);
-            }
-        }
-
-        if (!$this->sectionRequest->isHead()) {
-            echo $body;
         }
     }
 

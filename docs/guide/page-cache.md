@@ -104,6 +104,8 @@ A request has to pass all of these. When one fails, the response carries the rea
 | Response | status 200 (or 404 with `cacheNotFound`); `Content-Type` is `text/html`; no `Location` header                                                                                                                                                                 |
 | Body     | at least 255 bytes; ends with `</html>`, so a render that died mid-template is never frozen; contains none of `excludeWhenBodyContains`                                                                                                                       |
 
+A [section response](/guide/section-rendering) is a fragment rather than a document, so the body rule reads differently for it: no minimum length, and it has to end with the `</div>` every section is wrapped in. Everything else on this list applies to it unchanged.
+
 ### Query strings
 
 Every argument in a request falls into exactly one of three classes.
@@ -150,6 +152,7 @@ Two consequences worth knowing:
 
 - **The members are joined in request order and never sorted**, so `?genre[]=jazz&genre[]=rock` is a second file holding the same HTML. Sorting is the obvious fix and the wrong one: nginx cannot sort, so a sorted key is one only PHP could compute, and the two readers would part company on the first URL that arrived unsorted. A form emits its checkboxes in document order, so in practice one spelling occurs.
 - **A member may not contain a comma.** `?genre[]=rock,jazz` asks for one term whose slug has a comma in it; `?genre=rock,jazz` asks for two terms. Joining the first would key it where the second lives, so it bypasses instead.
+- **The comma stays a comma, and Føhn has to insist on that.** WordPress rebuilds the query string of a paginated URL with its values encoded, so `/archive/page/2/?genre=rock,jazz` is answered with a 301 to `?genre=rock%2Cjazz` — and nginx keys the raw query string, so it would then look for `index__genre=rock%2Cjazz&.html` while the recorder wrote `index__genre=rock,jazz&.html`. Two readers, two filenames, and a cache that quietly stops being read. So `PageCache\CanonicalRedirect` cancels a canonical redirect whose only change is that encoding, and keeps the literal comma in one that does something else. It is registered in every environment, because the URLs are the same in every environment.
 
 ### Listing values instead of writing a pattern
 
@@ -179,6 +182,22 @@ cacheQueryArgs: ['s' => '^[A-Za-z0-9-]{2,32}$'],
 ```
 
 `s` then behaves like any other keyed arg — nginx unrolls it, the value lands in the filename, and a phrase the pattern refuses is served by WordPress exactly as every search is today. Bound it deliberately: the pattern is the only thing standing between a search box and a directory with a file per phrase.
+
+### Caching section responses
+
+`foehn_sections` is keyed on every configuration, with no setting to turn on. A [section request](/guide/section-rendering) asks for the HTML of named regions of a page instead of the whole document, so it is a different response for the same URL and gets a file of its own:
+
+```
+/products/?foehn_sections=listing,pagination  →  …/products/index__foehn_sections=listing,pagination&.html
+```
+
+That is what makes filtering and paginating in place cheap: the second visitor to ask for the same selection is served off a file, by nginx, with no PHP at all.
+
+The key space is bounded without anybody bounding it. The grammar comes from the parser — lowercase `[a-z0-9-]` names, comma-separated, at most five — and a name no template declared is a 404 while a name outside the grammar is a 400. Only 200s are stored, so the files that can exist are the section combinations your templates actually declare.
+
+Two things are not yours to change. A project **cannot ignore** `foehn_sections`: an ignored one would key a section request onto the whole page's file, so one visitor would ask for a fragment and be handed a page. And a project **cannot give it a pattern** — a widened one would key values the parser refuses.
+
+A section response always carries `X-Robots-Tag: noindex, nofollow`, cached or not: a fragment indexed on its own is a search result that leads to half a page. The drop-in replays it from the stored headers; the nginx snippet cannot read those, so it derives the same header from `$arg_foehn_sections` instead. Apache never serves a section request at all — `foehn_sections` is a keyed arg, and mod_rewrite cannot key one — so it falls through to the drop-in, which does replay it.
 
 **Anything else** is a bypass. Add a name to `cacheQueryArgs` only when it changes the page, and to `ignoredQueryArgs` only when it does not.
 
@@ -234,6 +253,41 @@ do_action('foehn/page_cache/flush');
 ```
 
 These actions are also the seam for a CDN purge integration.
+
+## What a stored entry holds
+
+A stored entry is a body, its status, and the headers the response set for itself:
+
+```
+example.com/blog/index.html                 the body
+example.com/blog/index.html.headers         what that response sent, minus what the cache owns
+example.com/blog/index--404.html            a 404 for the same URL, when `cacheNotFound` is on
+```
+
+### The status
+
+A body cannot say what status it was sent with, so the name does. A 404 is stored as `index--404.html`, and the drop-in serves it as a 404.
+
+**nginx never serves one.** The generated snippet only ever builds `index.html` and `index__variant.html`, so it does not find the 404, the request reaches PHP, and PHP answers with the right status. nginx cannot set a status on a static response without `error_page`, and this way it does not have to. The cost is that cached 404s are as fast as the drop-in, not as fast as nginx — which is the right trade for a page nobody should be reaching often.
+
+A keyed variant can never be mistaken for a 404: a variant always ends with `&`, because each keyed argument appends one.
+
+### The headers
+
+The response's own headers — a `Link:` preload, a page-specific `Content-Security-Policy`, an `X-Robots-Tag` — are stored beside the body and replayed on a hit. Without that, they appeared on the miss and vanished on every hit, so the same URL answered differently depending on cache state.
+
+Some are never stored:
+
+| Not stored                                                                                        | Why                                                                                                                                                                              |
+| ------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Set-Cookie`                                                                                      | A cookie belongs to the visitor it was minted for. Replaying one would hand that session to everybody who asked for the page next. This is a security boundary, not a preference |
+| `Cache-Control`, `ETag`, `Last-Modified`, `Content-Length`, `Content-Type`, `Vary`, `Date`, `Age` | The cache computes these for the file it is actually sending; a recorded copy would contradict it                                                                                |
+
+Every line is validated when written **and** when read, because the file sits on a disk between those two moments.
+
+**Only the drop-in replays them.** nginx's static file module has no notion of an embedded header block, and `proxy_cache`'s stored format is nginx's own — written and read by the same module, not an interchange format. So the fast path sends the headers the snippet derives from your configuration, and the drop-in sends those plus what was recorded. If a page depends on a header it sets itself, that page is faster to exclude than to reason about.
+
+The one header the snippet derives rather than leaves behind is the `X-Robots-Tag` of a section response, because a cached fragment that lost its `noindex` would be indexed as if it were a page.
 
 ### The gaps, stated
 

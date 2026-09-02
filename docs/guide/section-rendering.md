@@ -8,14 +8,14 @@ There is no REST endpoint and no section configuration. A page declares the sect
 
 The Render API, `RenderApiConfig`, `RenderApiHook`, and `/wp-json/foehn/v1/render` route were removed. Section rendering replaces browser-facing partial rendering, but it deliberately does not expose arbitrary Twig paths or client-supplied template context.
 
-| Render API                                                  | Section rendering                                                                                 |
-| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| Allow template paths in `render-api.config.php`             | Declare fixed names with `foehn_section()` in the page that owns them                             |
-| Send `template` or a keyed `templates` object to a REST URL | Add one name or up to five comma-separated names to the normal page URL                           |
-| Send scalar context values in the query string              | Build context in the page controller, context providers, and explicit server-side section context |
-| Parse JSON and read `html` or keyed values                  | Read the HTML response directly; each section has a stable wrapper ID                             |
-| Set `cacheMaxAge` on the endpoint                           | Section responses are always `private, no-store`; cache the full page or underlying data instead  |
-| Enable debug details in the response                        | Read exception details from the server log; public error HTML does not expose them                |
+| Render API                                                  | Section rendering                                                                                            |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Allow template paths in `render-api.config.php`             | Declare fixed names with `foehn_section()` in the page that owns them                                        |
+| Send `template` or a keyed `templates` object to a REST URL | Add one name or up to five comma-separated names to the normal page URL                                      |
+| Send scalar context values in the query string              | Build context in the page controller, context providers, and explicit server-side section context            |
+| Parse JSON and read `html` or keyed values                  | Read the HTML response directly; each section has a stable wrapper ID                                        |
+| Set `cacheMaxAge` on the endpoint                           | Section responses are cached by the Føhn page cache under the same rules as pages, with nothing to configure |
+| Enable debug details in the response                        | Read exception details from the server log; public error HTML does not expose them                           |
 
 Move each public partial to `templates/sections/{name}.twig`, declare it in its normal page template, and update any context-provider target from the old template path, such as `partials/results`, to the conventional section path, `sections/results`. Replace REST requests such as `/wp-json/foehn/v1/render?template=partials/results` with the page URL, such as `/products/?foehn_sections=results`. A former multi-template request becomes one ordered selection such as `?foehn_sections=filters,results`.
 
@@ -126,12 +126,12 @@ For a `GET` form, Fetch keeps the fixed section selection from `data-option-src`
 </form>
 ```
 
-Use `foehn_section_url()` when the section request targets the current page and must preserve its query state:
+Use `foehn_section_url()` when the section request targets the current page and must preserve its query state. Ask for several sections by separating their names with commas, exactly as the parameter carries them — up to the five a request accepts:
 
 ```twig
 <button
   data-component="Action Fetch"
-  data-option-src="{{ foehn_section_url('archive-results') }}"
+  data-option-src="{{ foehn_section_url('archive-results,archive-count') }}"
   data-on:click="Fetch.fetch()">
   Refresh results
 </button>
@@ -159,6 +159,8 @@ registerComponent(Fetch);
 ```
 
 `Fetch` reads the returned HTML and replaces the element whose `id` matches the response wrapper. No JSON parsing and no Datastar integration are required.
+
+Leave `selector` at its default of `[id]` for a section request. The response holds only the wrappers of the sections that were asked for, so nothing else on the page can match — while a fetch of the whole page also matches the layout's own `id`s and replaces the form the visitor is using with the server's copy of it. Keep `history` on: `Fetch` pushes the element's own `action` or `href`, so `?foehn_sections=…` stays out of the address bar.
 
 The current `Fetch` history option records the fetched URL as-is. If you enable Fetch history, the browser history entry includes `?foehn_sections=...`. Do not enable it when the address must stay a normal full-page URL, or update history in application code after the fetch.
 
@@ -197,7 +199,13 @@ On a selected request, `lazy` is ignored and Føhn returns the real wrapped sect
 
 `query_get()`, `query_has()`, `query_all()`, and `query_hidden_inputs()` also hide the parameter. Query URL helpers remove it when they create normal page URLs. When the page cache is active, section URLs omit its ignored query arguments so cached HTML cannot carry one visitor's tracking parameters into later section requests. Configure an equivalent ignored-argument policy at any CDN that caches the same pages.
 
-Section requests always return `Cache-Control: private, no-store` and bypass the Føhn full-page cache. This applies to the PHP writer, the early `advanced-cache.php` reader, and generated nginx and Apache rules. A project cannot add `foehn_sections` to ignored or cache-key query arguments.
+Section responses are cached, under exactly the rules a page is. `foehn_sections` is a cache-key query argument on every configuration, with nothing to enable: `/products/?foehn_sections=listing` stores as `index__foehn_sections=listing&.html` beside the page's own `index.html`, and the second request for the same selection is served from that file. nginx serves it directly; Apache cannot key a query argument, so it falls through to the `advanced-cache.php` reader a few milliseconds later.
+
+A request the cache would not store — a logged-in visitor, a `HEAD`, an error status, an environment the cache is off in — still returns `Cache-Control: private, no-store`. That decision is the page cache's own eligibility check rather than a second rule, so the two cannot disagree.
+
+A project cannot add `foehn_sections` to ignored query arguments, and cannot give it a pattern of its own. An ignored one would key a section request onto the whole page's file, so one visitor would ask for a fragment and be handed a page; a project pattern would key values the parser refuses. See [the page cache guide](/guide/page-cache#caching-section-responses).
+
+Every section response carries `X-Robots-Tag: noindex, nofollow`, cached or not.
 
 ## Limits and errors
 

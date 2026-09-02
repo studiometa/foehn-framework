@@ -13,21 +13,8 @@
     </header>
 
     <div class="archive__posts container">
-      {% if posts %}
-        <div class="grid grid--3">
-          {% for post in posts %}
-            {% include 'components/card-post.twig' with {
-              post: post
-            } %}
-          {% endfor %}
-        </div>
-
-        {% include 'components/pagination.twig' %}
-      {% else %}
-        <p>
-          Aucun article trouvé.
-        </p>
-      {% endif %}
+      {# Declared as a section, so `?foehn_sections=posts` returns this list alone. #}
+      {{ foehn_section('posts', { posts, pagination }) }}
     </div>
   </div>
 {% endblock %}

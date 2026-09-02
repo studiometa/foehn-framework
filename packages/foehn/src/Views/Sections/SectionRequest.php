@@ -18,6 +18,36 @@ final readonly class SectionRequest
 
     public const MAX_NAME_LENGTH = 64;
 
+    /**
+     * The grammar one section name follows, unanchored.
+     *
+     * A constant rather than a literal inside {@see SectionRequest::isSafeName()} because
+     * the page cache has to state the same grammar to key `?foehn_sections=`, and a second
+     * copy of it would drift. That has already cost this codebase one bug: a hand-written
+     * copy of the cache's value charset stopped matching the original and made every
+     * multi-value filter unstorable (see {@see \Studiometa\Foehn\PageCache\CacheKey::FILENAME_PATTERN}).
+     */
+    public const NAME_PATTERN = '[a-z0-9]+(?:-[a-z0-9]+)*';
+
+    /**
+     * The whole parameter value, as the one pattern the page cache keys it with.
+     *
+     * Derived from {@see SectionRequest::NAME_PATTERN} and {@see SectionRequest::MAX_SECTIONS},
+     * so what the cache stores is exactly what this class accepts.
+     *
+     * Two things it deliberately does not say, because neither can make it wrong:
+     *
+     * **The per-name length.** {@see SectionRequest::MAX_NAME_LENGTH} is 64 and
+     * {@see \Studiometa\Foehn\PageCache\QueryKey::VALUE_MAX_LENGTH} caps the whole value at
+     * 64, which is the stricter bound of the two.
+     *
+     * **Uniqueness.** `?foehn_sections=a,a` is a duplicate this parser refuses and a regex
+     * cannot express. It is keyed, no file is ever written for it — the response is a 400
+     * and only 200s are stored — so every reader misses and PHP answers with the 400.
+     */
+    public const VALUE_PATTERN =
+        '^' . self::NAME_PATTERN . '(?:,' . self::NAME_PATTERN . '){0,' . (self::MAX_SECTIONS - 1) . '}$';
+
     private bool $selected;
 
     private bool $valid;
@@ -105,7 +135,28 @@ final readonly class SectionRequest
 
     public static function isSafeName(string $name): bool
     {
-        return strlen($name) <= self::MAX_NAME_LENGTH && preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $name) === 1;
+        return strlen($name) <= self::MAX_NAME_LENGTH && preg_match('/^' . self::NAME_PATTERN . '$/', $name) === 1;
+    }
+
+    /**
+     * Whether a list of names is a selection this parser would accept.
+     *
+     * What a selection has to satisfy beyond the grammar of one name — at least one, no
+     * more than {@see SectionRequest::MAX_SECTIONS}, no repeat — stated once and asked
+     * twice. {@see \Studiometa\Foehn\Views\Twig\SectionExtension::url()} writes the
+     * parameter that this class parses back, so a second copy of these rules would
+     * eventually be a URL the helper is happy to build and the request answers 400 to.
+     *
+     * @param list<string> $names
+     */
+    public static function isSafeSelection(array $names): bool
+    {
+        return (
+            $names !== []
+            && count($names) <= self::MAX_SECTIONS
+            && count($names) === count(array_unique($names))
+            && !array_any($names, static fn(string $name): bool => !self::isSafeName($name))
+        );
     }
 
     /**
@@ -128,12 +179,8 @@ final readonly class SectionRequest
         }
 
         $names = explode(',', rawurldecode(str_replace('+', ' ', $values[0])));
-        $invalid =
-            count($names) > self::MAX_SECTIONS
-            || count($names) !== count(array_unique($names))
-            || array_any($names, static fn(string $name): bool => !self::isSafeName($name));
 
-        return $invalid ? [true, false, [], 400] : [true, true, $names, 0];
+        return self::isSafeSelection($names) ? [true, true, $names, 0] : [true, false, [], 400];
     }
 
     private function removeControlParameter(string $requestUri): string

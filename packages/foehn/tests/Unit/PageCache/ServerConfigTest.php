@@ -6,6 +6,7 @@ use Studiometa\Foehn\Config\PageCacheConfig;
 use Studiometa\Foehn\PageCache\ServerConfig\ApacheSnippet;
 use Studiometa\Foehn\PageCache\ServerConfig\NginxSnippet;
 use Studiometa\Foehn\PageCache\ServerConfig\SnippetPolicy;
+use Studiometa\Foehn\Views\Sections\SectionRequest;
 
 /**
  * Characterization tests. Both snippets are built by string concatenation, which is easy
@@ -60,15 +61,16 @@ describe('SnippetPolicy', function () {
         expect(preg_match('/' . $pattern . '/', 'utm_sourcex=a'))->toBe(0);
     });
 
-    it('never lets generated server rules serve a section request', function () {
-        $config = new PageCacheConfig(ignoredQueryArgs: ['foehn_sections', 'utm_source'], cacheQueryArgs: [
-            'foehn_sections',
-        ]);
-        $policy = new SnippetPolicy($config);
+    it('lets nginx serve a section request, and never Apache', function () {
+        // `foehn_sections` is keyed, so nginx can build the filename for it and
+        // `mod_rewrite` cannot — the same split every keyed arg gets. Apache passes it to
+        // PHP, which is also what keeps the `noindex` on that path: the drop-in replays
+        // the header the response recorded.
+        $policy = new SnippetPolicy(new PageCacheConfig(ignoredQueryArgs: ['foehn_sections', 'utm_source']));
 
         expect(preg_match('/' . $policy->ignorableQueryPattern() . '/', 'foehn_sections=results'))->toBe(0);
-        expect(preg_match('/' . $policy->knownQueryPattern() . '/', 'foehn_sections=results'))->toBe(0);
-        expect($policy->canonicalQueryStatements())->toBe('');
+        expect(preg_match('/' . $policy->knownQueryPattern() . '/', 'foehn_sections=results'))->toBe(1);
+        expect($policy->canonicalQueryStatements())->toContain('set $foehn_q "${foehn_q}foehn_sections=$arg_foehn_sections&";');
     });
 
     it('ignores nothing but an absent query string when the project ignores no args', function () {
@@ -289,8 +291,24 @@ describe('NginxSnippet', function () {
             ->toContain('set $foehn_variant "__$foehn_q";');
     });
 
-    it('says so rather than emitting nothing when no arg is keyed', function () {
-        expect($this->snippet)->toContain('# No keyed query args are configured');
+    it('keys a section request even when the project keyed nothing', function () {
+        // The default configuration keys one arg, so there is always something to unroll.
+        expect($this->snippet)
+            ->toContain('if ($arg_foehn_sections ~ "' . SectionRequest::VALUE_PATTERN . '")')
+            ->toContain('set $foehn_q "${foehn_q}foehn_sections=$arg_foehn_sections&";');
+    });
+
+    it('keeps a cached fragment out of the index, which nginx cannot replay', function () {
+        // The drop-in replays the `X-Robots-Tag` a section response recorded; nginx has no
+        // way to read a stored header, so it derives the one that matters from the
+        // request. A variable rather than an `add_header` under the `if`: `add_header` is
+        // not allowed in a server-level `if`, and nginx omits a header whose value is
+        // empty — which is what makes one unconditional `add_header` behave conditionally.
+        expect($this->snippet)
+            ->toContain('set $foehn_robots "";')
+            ->toContain('if ($arg_foehn_sections != "") {')
+            ->toContain('set $foehn_robots "noindex, nofollow";')
+            ->toContain('add_header X-Robots-Tag $foehn_robots;');
     });
 
     it('makes the cache directory unreachable from outside', function () {

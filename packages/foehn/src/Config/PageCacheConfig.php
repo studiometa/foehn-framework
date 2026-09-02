@@ -40,10 +40,20 @@ final readonly class PageCacheConfig
     public const DEFAULT_QUERY_ARG_PATTERN = '^[A-Za-z0-9_.,\-]{1,64}$';
 
     /**
-     * Control parameters that always bypass full-page caching.
+     * Control parameters the framework owns, whatever a project's config says.
      *
-     * Projects cannot ignore or key these names. The PHP readers and generated server
-     * rules all use the normalized getters below, so the reservation has one source.
+     * A reserved name is keyed by {@see PageCacheConfig::getCacheQueryArgs()} with the
+     * framework's own pattern and is refused by {@see PageCacheConfig::getIgnoredQueryArgs()}.
+     * Ignoring is the dangerous half: an ignored `foehn_sections` keys a section request
+     * where the whole page lives, so the next visitor asking for a fragment is handed the
+     * page, and the next visitor asking for the page is handed a fragment.
+     *
+     * A project cannot supply its own pattern for one either. The grammar is the parser's
+     * — see {@see SectionRequest::VALUE_PATTERN} — and a widened one would key values the
+     * parser refuses.
+     *
+     * The PHP readers and the generated server rules all use the normalized getters below,
+     * so the reservation has one source.
      *
      * @var list<string>
      */
@@ -141,7 +151,15 @@ final readonly class PageCacheConfig
         public array $excludeWhenBodyContains = [],
 
         /**
-         * Cache 404s (own TTL bucket, always short).
+         * Cache 404s.
+         *
+         * Stored under their own filename — `index--404.html` — so both readers can tell
+         * them from a page, and served with a 404 status by the drop-in. nginx does not
+         * serve them at all: it never looks for that name, so the request reaches PHP,
+         * which is the only reader that can set a status on a stored file.
+         *
+         * They share the `ttl` of everything else. An earlier version of this note
+         * promised a shorter bucket of their own; there has never been one.
          *
          * Off by default is also what stops an attacker filling the disk with a
          * directory per made-up URL. Turning it on wants a bound on the entry count.
@@ -186,6 +204,18 @@ final readonly class PageCacheConfig
 
             $normalized[$name] = $pattern;
         }
+
+        // Always keyed, and never from the config file. A section request returns the
+        // HTML of named regions rather than a page, so it is a different response for
+        // the same URL and needs a filename of its own —
+        // `index__foehn_sections=listing,pagination&.html`. Keying it is what makes
+        // filtering and paginating through sections come off a file like everything else.
+        //
+        // The key space is bounded for free: a name nothing declared makes
+        // `SectionRequest` invalid, which answers 400, and only 200s are ever stored. So
+        // the files that can exist are the section combinations the templates declare,
+        // and no crawler can add to them.
+        $normalized[SectionRequest::PARAMETER] = SectionRequest::VALUE_PATTERN;
 
         ksort($normalized);
 
@@ -278,11 +308,15 @@ final readonly class PageCacheConfig
     }
 
     /**
-     * The ignored query args, minus any name that is also keyed.
+     * The ignored query args, minus any name that is also keyed, minus the reserved ones.
      *
      * A name in both lists is a contradiction in a config file, and the keyed meaning is
      * the specific one. Resolving it here rather than at each call site is what stops the
      * writer dropping an argument the snippet keys, which would serve the wrong page.
+     *
+     * The reserved names are refused explicitly rather than left to the keyed check, even
+     * though every one of them is keyed: this is the rule that must not quietly stop
+     * holding, and {@see PageCacheConfig::RESERVED_QUERY_ARGS} says why.
      *
      * @return list<string>
      */

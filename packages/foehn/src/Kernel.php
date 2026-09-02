@@ -24,6 +24,7 @@ use Studiometa\Foehn\Images\NullTransformer;
 use Studiometa\Foehn\Jobs\ActionSchedulerJobDispatcher;
 use Studiometa\Foehn\Jobs\JobRegistry;
 use Studiometa\Foehn\PageCache\Bypass;
+use Studiometa\Foehn\PageCache\CanonicalRedirect;
 use Studiometa\Foehn\PageCache\Purger;
 use Studiometa\Foehn\PageCache\Recorder;
 use Studiometa\Foehn\PageCache\Store;
@@ -31,6 +32,7 @@ use Studiometa\Foehn\Views\ContextProviderRegistry;
 use Studiometa\Foehn\Views\Sections\SectionCollector;
 use Studiometa\Foehn\Views\Sections\SectionRenderer;
 use Studiometa\Foehn\Views\Sections\SectionRequest;
+use Studiometa\Foehn\Views\Sections\SectionResponse;
 use Studiometa\Foehn\Views\TimberViewEngine;
 use Symfony\Component\Cache\Adapter\PhpFilesAdapter;
 use Tempest\Container\Container;
@@ -327,6 +329,16 @@ final class Kernel
 
         $this->container->singleton(Bypass::class, fn() => new Bypass($this->container->get(PageCacheConfig::class)));
 
+        // Below `Bypass`, because a section response asks it whether it is one the page
+        // cache would store — which is what decides its `Cache-Control`.
+        $this->container->singleton(
+            SectionResponse::class,
+            fn() => new SectionResponse(
+                $this->container->get(SectionRequest::class),
+                $this->container->get(Bypass::class),
+            ),
+        );
+
         $this->container->singleton(
             Recorder::class,
             fn() => new Recorder(
@@ -392,6 +404,11 @@ final class Kernel
         // Editor phase: ship the block editor registrar and the block definitions.
         // Always on — block authoring must not be opt-in like the classes in src/Hooks/.
         add_action('enqueue_block_editor_assets', $this->onEnqueueBlockEditorAssets(...));
+
+        // Not part of registerPageCache(), and not gated on it: the framework emits URLs
+        // with literal commas in every environment, and core redirects them away in every
+        // environment. See CanonicalRedirect.
+        new CanonicalRedirect()->register();
 
         $this->registerPageCache();
     }
