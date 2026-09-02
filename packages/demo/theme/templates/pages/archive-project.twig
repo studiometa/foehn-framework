@@ -36,6 +36,23 @@
     `Cache-Control: private, no-store` by design. A filtered *page* URL is cached, so
     fetching the whole page and keeping one div of it is served from the cache with no
     PHP at all. Bytes off a warm file beat a cold render.
+
+    `selector` is named rather than left at its default, and this is not a
+    micro-optimisation. The default is `[id]`, and the layout wraps this form in
+    `#main` and `#demo-app` — so every fetch replaced the form with the server's copy
+    of it and threw away whatever was ticked. Two quick clicks then raced, and the
+    first response to arrive rewrote the second checkbox back to unchecked. Naming the
+    two regions that change keeps the controls out of the swap, which is also what
+    lets somebody keep clicking while a request is still in the air.
+
+    `fetch()` is called with no URL, because the component builds one itself: since
+    1.11.0 it folds *every* value of a repeated field onto the action, which is what a
+    checkbox group is made of. Ticking a second series adds a second
+    `project_category[]` to the request, exactly as the no-JS submit does.
+
+    `abort()` before each request makes the last click the one that wins. Two requests
+    in flight together are otherwise a race the network settles, and the earlier answer
+    can arrive last and rewrite the listing under the boxes that are ticked.
   #}
   <form
     method="get"
@@ -43,27 +60,83 @@
     class="shell filters"
     data-component="Fetch Action"
     data-option-history
-    data-on:change="Fetch.fetch()">
+    data-option-selector="#foehn-section-project-index, #project-count"
+    data-on:change="() => { Fetch.abort(); Fetch.fetch() }">
+    {#
+      `facet()` is what makes these options a facet rather than a list: each one knows
+      how many results it would give in the view being looked at, and an option that
+      would give none says so instead of leaving the visitor to find out.
+
+      The counts come from the current filters with *this* taxonomy's own filter lifted.
+      Left in, picking one series would report zero for every other series and a visitor
+      could never pick a second one — see Studiometa\Foehn\Query\Facets.
+    #}
     <fieldset class="filters__group">
       <legend class="label label--ink">Series</legend>
 
-      {% for term in series %}
-        <label class="filters__option">
+      {#
+        Checkboxes, and several may be ticked at once: `project_category[]` reaches
+        WP_Query as an array and becomes one `IN` clause, so two series show the union
+        of both. Radios would be the honest control for a single choice, and this is
+        not one — narrowing to one series is what clicking a series on a project page
+        already does.
+      #}
+
+      {% for option in facet('project_category') %}
+        <label class="filters__option {{ option.isEmpty ? 'filters__option--empty' }}">
           <input
             type="checkbox"
             name="project_category[]"
-            value="{{ term.slug }}"
-            {{ query_contains('project_category', term.slug) ? 'checked' }} />
-          {{ term.title }}
+            value="{{ option.term.slug }}"
+            {{ option.active ? 'checked' }}
+            {# A dead end is disabled rather than hidden: the set of filters should not
+               move around as the visitor uses it. An already-checked one stays usable,
+               or there would be no way to undo it. #}
+            {{ option.isEmpty and not option.active ? 'disabled' }} />
+          {{ option.term.name }}
+          {% if option.count is not null %}
+            <span class="filters__count">{{ option.count }}</span>
+          {% endif %}
         </label>
       {% endfor %}
     </fieldset>
 
+    {#
+      `orderby` and `order` are both public query vars, so this pair needs no more
+      configuration than the series do. The default is neither of them: with nothing
+      asked for, `ThemeHooks` orders the archive by the curated sequence.
+    #}
+    <label class="filters__group">
+      <span class="label label--ink">Sort by</span>
+      <select name="orderby">
+        <option value="date" {{ query_get('orderby', 'date') == 'date' ? 'selected' }}>Date</option>
+        <option value="title" {{ query_get('orderby') == 'title' ? 'selected' }}>Title</option>
+      </select>
+    </label>
+
+    {# Lowercase, because the page cache keys the value and `DESC` would be a second
+       spelling of the same page. WordPress reads either. #}
     <label class="filters__group">
       <span class="label label--ink">Order</span>
-      <select name="orderby">
-        <option value="date" {{ query_get('orderby', 'date') == 'date' ? 'selected' }}>Newest</option>
-        <option value="title" {{ query_get('orderby') == 'title' ? 'selected' }}>Title</option>
+      <select name="order">
+        <option value="desc" {{ query_get('order', 'desc')|lower == 'desc' ? 'selected' }}>Descending</option>
+        <option value="asc" {{ query_get('order')|lower == 'asc' ? 'selected' }}>Ascending</option>
+      </select>
+    </label>
+
+    {#
+      The one filter here that WordPress will not read from a URL by itself.
+      `posts_per_page` is a private query var — a visitor who can set it can ask for
+      every post on the site — so `QueryFiltersHook` makes it public against the
+      allowlist in `app/query-filters.config.php`, and a value outside that list is
+      refused rather than clamped.
+    #}
+    <label class="filters__group">
+      <span class="label label--ink">Per page</span>
+      <select name="posts_per_page">
+        {% for size in [3, 6, 12] %}
+          <option value="{{ size }}" {{ query_get('posts_per_page', 3) == size ? 'selected' }}>{{ size }}</option>
+        {% endfor %}
       </select>
     </label>
 

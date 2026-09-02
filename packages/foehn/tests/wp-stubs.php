@@ -29,6 +29,8 @@ function wp_stub_reset(): void
     $GLOBALS['wp_stub_attachments'] = [];
     $GLOBALS['wp_stub_post_meta'] = [];
     $GLOBALS['wp_stub_post_fields'] = [];
+    $GLOBALS['wp_stub_terms'] = [];
+    $GLOBALS['wp_stub_query_posts'] = [];
     if (!function_exists('wp_get_environment_type')) {
         function wp_get_environment_type(): string
         {
@@ -240,6 +242,8 @@ if (!class_exists('WP_Term')) {
         public int $term_id = 0;
         public string $slug = '';
         public string $taxonomy = '';
+        public string $name = '';
+        public int $count = 0;
     }
 }
 
@@ -247,9 +251,32 @@ if (!class_exists('WP_Query')) {
     class WP_Query
     {
         private bool $is_main = true;
-        private array $query_vars = [];
+        // Public, as it is on the real WP_Query — `Query\Facets` reads it the way
+        // WordPress lets any consumer read it.
+        public array $query_vars = [];
         public array $posts = [];
         public int $post_count = 0;
+
+        /**
+         * A secondary query, as `new WP_Query($vars)` builds in `Query\Facets`.
+         *
+         * The posts come from `$GLOBALS['wp_stub_query_posts']`, which a test sets to
+         * either a list or a callable taking the vars — the callable is what lets a test
+         * assert that a facet was counted with its own filter lifted.
+         */
+        public function __construct(array $vars = [])
+        {
+            $this->query_vars = $vars;
+
+            if ($vars === []) {
+                return;
+            }
+
+            $this->is_main = false;
+            $posts = $GLOBALS['wp_stub_query_posts'] ?? [];
+            $this->posts = is_callable($posts) ? $posts($vars) : $posts;
+            $this->post_count = count($this->posts);
+        }
 
         public function is_main_query(): bool
         {
@@ -348,6 +375,22 @@ if (!class_exists('WP_REST_Response')) {
     }
 }
 
+if (!function_exists('get_terms')) {
+    function get_terms(array $args = []): array
+    {
+        $taxonomy = $args['taxonomy'] ?? '';
+
+        return $GLOBALS['wp_stub_terms'][$taxonomy] ?? [];
+    }
+}
+
+if (!function_exists('get_taxonomy')) {
+    function get_taxonomy(string $taxonomy): object
+    {
+        return (object) ['name' => $taxonomy, 'query_var' => $taxonomy];
+    }
+}
+
 if (!class_exists('wpdb')) {
     class wpdb
     {
@@ -357,10 +400,20 @@ if (!class_exists('wpdb')) {
         public string $users = 'wp_users';
         public string $usermeta = 'wp_usermeta';
         public string $options = 'wp_options';
+        public string $term_relationships = 'wp_term_relationships';
+        public string $term_taxonomy = 'wp_term_taxonomy';
+
+        /** Rows the next `get_results()` returns, set by a test. */
+        public array $results = [];
+
+        /** Every query this saw, so a test can assert what was asked for. */
+        public array $queries = [];
 
         public function get_results(string $query): array
         {
-            return [];
+            $this->queries[] = $query;
+
+            return $this->results;
         }
 
         public function prepare(string $query, mixed ...$args): string

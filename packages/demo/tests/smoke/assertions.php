@@ -72,7 +72,7 @@ $config = Kernel::get(FoehnConfig::class);
 
 // theme/app/foehn.config.php opts into 10 hook classes. Before config files were
 // loaded this was 0, and every security hook in the theme was silently inert.
-$results->same('foehn.config.php is loaded (opt-in hooks)', 10, count($config->hooks));
+$results->same('foehn.config.php is loaded (opt-in hooks)', 11, count($config->hooks));
 
 $results->true('opt-in security hooks are applied', has_filter('xmlrpc_enabled') !== false);
 
@@ -453,6 +453,70 @@ if (is_array($series) && count($series) >= 2) {
     // unfiltered archive while claiming otherwise.
     $results->same('an unknown series returns nothing', [], $filtered('not-a-series'));
 }
+
+// ──────────────────────────────────────────────
+// Facet counts
+//
+// The claim worth testing against a real database is the disjunctive one: a facet is
+// counted with its own filter lifted, so picking one series does not make every other
+// series report zero. A unit test proves the vars are right; only this proves the
+// counts are.
+// ──────────────────────────────────────────────
+
+$facets = new Studiometa\Foehn\Query\Facets();
+
+$unfiltered = new WP_Query(['post_type' => 'project', 'posts_per_page' => 3]);
+$options = $facets->for('project_category', $unfiltered);
+
+$results->true('every series is offered as an option', count($options) >= 2);
+
+$counted = array_sum(array_map(static fn(object $o): int => (int) $o->count, $options));
+
+// Each project carries exactly one series in this fixture, so the counts add up to the
+// number of projects — and to more than the three on the page, which is the other half
+// of the claim: options come from the whole filtered set, not the current page.
+$published = new WP_Query(['post_type' => 'project', 'posts_per_page' => -1, 'fields' => 'ids']);
+
+$results->same('the counts cover every project, not the page', count($published->posts), $counted);
+
+$first = $options[0];
+
+$filtered = new WP_Query([
+    'post_type' => 'project',
+    'posts_per_page' => 3,
+    'project_category' => $first->term->slug,
+]);
+
+$filteredOptions = $facets->for('project_category', $filtered);
+
+$results->same(
+    'filtering one series leaves the other counts alone',
+    array_map(static fn(object $o): ?int => $o->count, $options),
+    array_map(static fn(object $o): ?int => $o->count, $filteredOptions),
+);
+
+$results->true('the filtered series is marked active', $filteredOptions[0]->active);
+
+$results->same(
+    'the other series are not',
+    false,
+    $filteredOptions[1]->active ?? true,
+);
+
+// ──────────────────────────────────────────────
+// Query filters: the one var WordPress will not read from a URL
+// ──────────────────────────────────────────────
+
+$filtersConfig = Kernel::container()->get(Studiometa\Foehn\Config\QueryFiltersConfig::class);
+
+$results->same(
+    'query-filters.config.php exposes posts_per_page, bounded',
+    [3, 6, 12],
+    $filtersConfig->publicVars['posts_per_page'] ?? null,
+);
+
+$results->true('an allowed page size passes', $filtersConfig->validatePublicVar('posts_per_page', '6'));
+$results->true('one outside the list does not', !$filtersConfig->validatePublicVar('posts_per_page', '999'));
 
 // ──────────────────────────────────────────────
 // Report
