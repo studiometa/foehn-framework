@@ -71,7 +71,7 @@
     <div class="filters__actions">
       <button type="submit">Filter</button>
       {% if query_all() is not empty %}
-        <a href="{{ query_url_clear() }}">Reset</a>
+        <a href="{{ query_url_clear() }}" data-component="Fetch" data-option-history>Reset</a>
       {% endif %}
     </div>
   </form>
