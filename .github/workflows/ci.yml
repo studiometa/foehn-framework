@@ -3,8 +3,13 @@ name: CI
 on:
   push:
     branches: [main]
+  # Every pull request, whatever it targets. The `branches: [main]` filter this
+  # replaces matched on the *base*, so a stacked pull request — one opened against
+  # the branch below it rather than against `main` — ran no checks at all, and a
+  # stack of six could only be reviewed one PR at a time as each bottom branch
+  # merged down. `docker.yml` beside this file never had the filter, which is why
+  # its checks were the only ones a stacked branch ever got.
   pull_request:
-    branches: [main]
 
 jobs:
   lint:
