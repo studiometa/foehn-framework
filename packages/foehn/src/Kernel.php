@@ -14,6 +14,7 @@ use Studiometa\Foehn\Config\PageCacheConfig;
 use Studiometa\Foehn\Config\RestConfig;
 use Studiometa\Foehn\Config\TimberConfig;
 use Studiometa\Foehn\Console\ClassFileGenerator;
+use Studiometa\Foehn\Console\WpCli;
 use Studiometa\Foehn\Contracts\CacheInterface;
 use Studiometa\Foehn\Contracts\ImageTransformer;
 use Studiometa\Foehn\Contracts\JobDispatcher;
@@ -30,6 +31,7 @@ use Studiometa\Foehn\PageCache\Invalidator;
 use Studiometa\Foehn\PageCache\Purger;
 use Studiometa\Foehn\PageCache\Recorder;
 use Studiometa\Foehn\PageCache\Store;
+use Studiometa\Foehn\Verification\Updates\DiagnosticsCollector;
 use Studiometa\Foehn\Views\ContextProviderRegistry;
 use Studiometa\Foehn\Views\Sections\SectionCollector;
 use Studiometa\Foehn\Views\Sections\SectionRenderer;
@@ -181,6 +183,9 @@ final class Kernel
         // Register core services
         $this->registerCoreServices();
 
+        // Start recording diagnostics, before anything else Foehn does can raise one
+        $this->startDiagnostics();
+
         // Initialize Timber
         $this->initializeTimber();
 
@@ -301,6 +306,10 @@ final class Kernel
             fn() => new BlockEditorAssets($this->container->get(DiscoveryRunner::class), $this->foehnConfig),
         );
 
+        // A singleton because it is one process's record: the collector the kernel starts
+        // has to be the collector `wp foehn verify` reads back.
+        $this->container->singleton(DiagnosticsCollector::class, static fn() => new DiagnosticsCollector());
+
         $this->container->singleton(JobRegistry::class, static fn() => new JobRegistry());
 
         $this->container->singleton(
@@ -371,6 +380,27 @@ final class Kernel
                 $this->container->get(Invalidator::class),
             ),
         );
+    }
+
+    /**
+     * Start the diagnostics collector `wp foehn verify --profile=updates` reads.
+     *
+     * Under WP-CLI only, and as early as the container allows: everything raised after
+     * this line is recorded, and everything before it — core loading, mu-plugins,
+     * plugins — is not, whatever the command later reports. Deliberately before Timber
+     * and before the lifecycle hooks, because both of those are code that can raise a
+     * deprecation of its own and an update review wants to see it.
+     *
+     * Nothing is registered outside WP-CLI: an HTTP request would pay for an error
+     * handler and three hooks that no command will ever read.
+     */
+    private function startDiagnostics(): void
+    {
+        if (!WpCli::isAvailable()) {
+            return;
+        }
+
+        $this->container->get(DiagnosticsCollector::class)->start();
     }
 
     /**

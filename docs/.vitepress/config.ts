@@ -102,6 +102,7 @@ export default defineConfig({
           items: [
             { text: "Docker Image", link: "/guide/docker-image" },
             { text: "Deploying to Fly.io", link: "/guide/deployment-fly" },
+            { text: "Verification", link: "/guide/verification" },
           ],
         },
         {

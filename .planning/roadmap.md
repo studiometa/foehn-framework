@@ -14,7 +14,7 @@ Latest release: `0.5.10`.
 | 17  | Non-production indexing guard  | **Done**      | [operations_spec.md](operations_spec.md) §4                   | 1–2 d |
 | 18  | Real WP-Cron heartbeat         | **Done**      | [operations_spec.md](operations_spec.md) §5                   | 1–2 d |
 | 19  | Føhn admin cache controls      | **Approved**  | [operations_spec.md](operations_spec.md) §§6–8                | 2–3 d |
-| 20  | Update verification            | **Approved**  | [diagnostics-command-spec.md](diagnostics-command-spec.md) §3 | 2–3 d |
+| 20  | Update verification            | **Done**      | [diagnostics-command-spec.md](diagnostics-command-spec.md) §3 | 2–3 d |
 
 ## Shipped foundation
 

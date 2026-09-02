@@ -115,6 +115,32 @@ final readonly class Site
     }
 
     /**
+     * Run a command in the container and hand back its exit status with its output.
+     *
+     * Beside {@see Site::wp()} rather than replacing it, because the two want opposite
+     * things. `wp()` exists to read a value: it discards stderr and reports failure as
+     * null, which is right for `wp option get`. This one exists for a command whose exit
+     * status *is* the assertion — `wp foehn verify` exits 0, 1 or 2 on purpose — so it
+     * keeps the status and merges stderr, where WP-CLI puts the message explaining it.
+     *
+     * @return array{status: int, output: string}
+     */
+    public static function run(string $command): array
+    {
+        $script = sprintf('cd /var/www/html && %s', $command);
+        $output = [];
+        $status = 0;
+
+        exec(
+            sprintf('cd %s && ddev exec %s 2>&1', escapeshellarg(self::root()), escapeshellarg($script)),
+            $output,
+            $status,
+        );
+
+        return ['status' => $status, 'output' => implode("\n", $output)];
+    }
+
+    /**
      * Enable the page cache for this environment, by writing the file the config loader
      * reads in preference to the plain one.
      *
@@ -354,10 +380,10 @@ final readonly class Site
      */
     public static function cachedPages(): array
     {
-        return array_values(array_filter(
-            self::cachedFiles(),
-            static fn(string $file): bool => str_ends_with($file, '.html'),
-        ));
+        return array_values(array_filter(self::cachedFiles(), static fn(string $file): bool => str_ends_with(
+            $file,
+            '.html',
+        )));
     }
 
     /**
