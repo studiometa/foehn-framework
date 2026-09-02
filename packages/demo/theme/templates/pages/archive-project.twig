@@ -20,151 +20,16 @@
   </section>
 
   {#
-    Filtering, with nothing WordPress does not already parse.
+    Three sections, because a filter changes three parts of this page and they are not
+    next to each other: the count up in the masthead, the form, and the results. One
+    request renders all three — `?foehn_sections=project-count,project-filters,project-index`
+    — and the form is in there because its facet counts, its dead-end options and its
+    Reset link are all answers to the current URL that only the server can give.
 
-    `project_category[]` is the taxonomy's own query var. WP_Query reads it whether it
-    arrives as an array from a checkbox group or as `?project_category=a,b`, sorts the
-    terms and builds one IN clause — so this form needs no hook, no manager and no
-    custom parameter. `orderby` is a public query var for the same reason.
-
-    Without JavaScript this submits and the page reloads filtered. `Fetch` enhances
-    that: it requests the two regions the filters change and swaps them.
-
-    `src` is a section URL, so the response is those two regions and nothing else —
-    and that is what makes `selector` safe to leave at its default of `[id]`. Naming
-    the regions was the earlier fix for a real bug: fetching the whole page matched
-    `#main` and `#demo-app` too, so every fetch replaced the form with the server's
-    copy of it and threw away whatever was ticked, and two quick clicks raced with the
-    first answer rewriting the second checkbox back to unchecked. A section response
-    cannot reach the form, because the form is not in it. The controls stay put, which
-    is also what lets somebody keep clicking while a request is in the air.
-
-    The address bar still gets the plain URL: `history` follows the element's own
-    `action` rather than what was requested, so `?foehn_sections=…` never reaches it or
-    anything a visitor copies out of it. That is what @studiometa/ui 1.11.0 added, and
-    the reason this can use `src` at all.
-
-    It costs a second cache file per filter combination — the fragment beside the page
-    the no-JS path warms. Both are cached: `foehn_sections` is a cache-key query
-    argument, so a filtered fragment comes off disk exactly like a filtered page.
-
-    `fetch()` is called with no URL, because the component builds one itself: since
-    1.11.0 it folds *every* value of a repeated field onto `src`, which is what a
-    checkbox group is made of. Ticking a second series adds a second
-    `project_category[]` to the request, exactly as the no-JS submit does. The fixed
-    `foehn_sections` in `src` survives alongside them.
-
-    `abort()` before each request makes the last click the one that wins. Two requests
-    in flight together are otherwise a race the network settles, and the earlier answer
-    can arrive last and rewrite the listing under the boxes that are ticked.
+    The form declares no context: nothing it renders comes from this template, only from
+    the query. See `sections/project-filters.twig` for why the swap uses `morph`.
   #}
-  {% set archive_url = fn('get_post_type_archive_link', 'project') %}
-
-  <form
-    method="get"
-    action="{{ archive_url }}"
-    class="shell filters"
-    data-component="Fetch Action"
-    data-option-history
-    data-option-src="{{ foehn_section_url('project-count,project-index', archive_url) }}"
-    data-on:change="() => { Fetch.abort(); Fetch.fetch() }">
-    {#
-      `facet()` is what makes these options a facet rather than a list: each one knows
-      how many results it would give in the view being looked at, and an option that
-      would give none says so instead of leaving the visitor to find out.
-
-      The counts come from the current filters with *this* taxonomy's own filter lifted.
-      Left in, picking one series would report zero for every other series and a visitor
-      could never pick a second one — see Studiometa\Foehn\Query\Facets.
-    #}
-    <fieldset class="filters__group">
-      <legend class="label label--ink">Series</legend>
-
-      {#
-        Checkboxes, and several may be ticked at once: `project_category[]` reaches
-        WP_Query as an array and becomes one `IN` clause, so two series show the union
-        of both. Radios would be the honest control for a single choice, and this is
-        not one — narrowing to one series is what clicking a series on a project page
-        already does.
-      #}
-
-      {% for option in facet('project_category') %}
-        <label class="filters__option {{ option.isEmpty ? 'filters__option--empty' }}">
-          <input
-            type="checkbox"
-            name="project_category[]"
-            value="{{ option.term.slug }}"
-            {{ option.active ? 'checked' }}
-            {# A dead end is disabled rather than hidden: the set of filters should not
-               move around as the visitor uses it. An already-checked one stays usable,
-               or there would be no way to undo it. #}
-            {{ option.isEmpty and not option.active ? 'disabled' }} />
-          {{ option.term.name }}
-          {% if option.count is not null %}
-            <span class="filters__count">{{ option.count }}</span>
-          {% endif %}
-        </label>
-      {% endfor %}
-    </fieldset>
-
-    {#
-      `orderby` and `order` are both public query vars, so this pair needs no more
-      configuration than the series do. The default is neither of them: with nothing
-      asked for, `ThemeHooks` orders the archive by the curated sequence.
-    #}
-    <label class="filters__group">
-      <span class="label label--ink">Sort by</span>
-      <select name="orderby">
-        <option value="date" {{ query_get('orderby', 'date') == 'date' ? 'selected' }}>Date</option>
-        <option value="title" {{ query_get('orderby') == 'title' ? 'selected' }}>Title</option>
-      </select>
-    </label>
-
-    {# Lowercase, because the page cache keys the value and `DESC` would be a second
-       spelling of the same page. WordPress reads either. #}
-    <label class="filters__group">
-      <span class="label label--ink">Order</span>
-      <select name="order">
-        <option value="desc" {{ query_get('order', 'desc')|lower == 'desc' ? 'selected' }}>Descending</option>
-        <option value="asc" {{ query_get('order')|lower == 'asc' ? 'selected' }}>Ascending</option>
-      </select>
-    </label>
-
-    {#
-      The one filter here that WordPress will not read from a URL by itself.
-      `posts_per_page` is a private query var — a visitor who can set it can ask for
-      every post on the site — so `QueryFiltersHook` makes it public against the
-      allowlist in `app/query-filters.config.php`, and a value outside that list is
-      refused rather than clamped.
-    #}
-    <label class="filters__group">
-      <span class="label label--ink">Per page</span>
-      <select name="posts_per_page">
-        {% for size in [3, 6, 12] %}
-          <option value="{{ size }}" {{ query_get('posts_per_page', 3) == size ? 'selected' }}>{{ size }}</option>
-        {% endfor %}
-      </select>
-    </label>
-
-    {#
-      The no-JS path, and the way out of a filter. Both are plain HTML.
-
-      Reset is the one control here that wants the whole page rather than a section, and
-      so it has no `src`: it has to bring back the emptied form as well as the results,
-      and a section response is precisely the response that cannot touch the form. The
-      default `[id]` matching `#main` is the behaviour, not an oversight.
-
-      It is also always rendered, never `{% if query_all() is not empty %}`. Nothing
-      inside this form is ever re-rendered — that is the point of fetching sections — so
-      a control that appears only on a filtered page would never appear at all once the
-      filtering stopped reloading the page. Whatever lives in here has to be true of
-      every state of the page, and "go back to the unfiltered archive" is.
-    #}
-    <div class="filters__actions">
-      <button type="submit">Filter</button>
-      <a href="{{ query_url_clear() }}" data-component="Fetch" data-option-history>Reset</a>
-    </div>
-  </form>
+  {{ foehn_section('project-filters') }}
 
   {{ foehn_section('project-index', { posts, pagination }) }}
 {% endblock %}
