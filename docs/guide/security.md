@@ -8,15 +8,15 @@ When building WordPress themes with Føhn, security should be a top priority. Th
 
 ### Escaping Functions
 
-| Function         | Use Case                          | Example                                      |
-| ---------------- | --------------------------------- | -------------------------------------------- |
-| `esc_html()`     | Text content inside HTML elements | `<p><?php echo esc_html($text); ?></p>`      |
-| `esc_attr()`     | HTML attribute values             | `<div class="<?php echo esc_attr($class); ?>">`   |
-| `esc_url()`      | URLs (href, src, etc.)            | `<a href="<?php echo esc_url($url); ?>">`    |
+| Function         | Use Case                          | Example                                                   |
+| ---------------- | --------------------------------- | --------------------------------------------------------- |
+| `esc_html()`     | Text content inside HTML elements | `<p><?php echo esc_html($text); ?></p>`                   |
+| `esc_attr()`     | HTML attribute values             | `<div class="<?php echo esc_attr($class); ?>">`           |
+| `esc_url()`      | URLs (href, src, etc.)            | `<a href="<?php echo esc_url($url); ?>">`                 |
 | `esc_textarea()` | Textarea content                  | `<textarea><?php echo esc_textarea($text); ?></textarea>` |
 | `esc_js()`       | Inline JavaScript strings         | `<script>var x = '<?php echo esc_js($val); ?>';</script>` |
-| `wp_kses_post()` | HTML content (allows safe tags)   | `<div><?php echo wp_kses_post($html); ?></div>` |
-| `wp_kses()`      | HTML with custom allowed tags     | `echo wp_kses($html, $allowed_tags);`        |
+| `wp_kses_post()` | HTML content (allows safe tags)   | `<div><?php echo wp_kses_post($html); ?></div>`           |
+| `wp_kses()`      | HTML with custom allowed tags     | `echo wp_kses($html, $allowed_tags);`                     |
 
 ### When to Use Each Function
 
@@ -192,6 +192,31 @@ public function handleContact(\WP_REST_Request $request): \WP_REST_Response
     // Process the sanitized data...
 }
 ```
+
+## Non-Production Indexing
+
+Every environment that is not `production` is kept out of the search index automatically. A staging copy is the same site with the same content on a crawlable hostname, and indexed it competes with the real site for the real site's own pages — usually noticed long after the damage is done.
+
+Føhn applies four measures as soon as `wp_get_environment_type()` reports anything other than `production`:
+
+| Hook                  | Effect                                                             |
+| --------------------- | ------------------------------------------------------------------ |
+| `wp_robots`           | `<meta name="robots" content="noindex, nofollow">` in the document |
+| `send_headers`        | `X-Robots-Tag: noindex, nofollow` on the response                  |
+| `robots_txt`          | `User-agent: *` followed by `Disallow: /`                          |
+| `wp_sitemaps_enabled` | Core sitemaps off, so `/wp-sitemap.xml` returns a 404              |
+
+Contradictory `index` and `follow` directives are removed from the robots array, so an SEO plugin that adds them cannot produce `content="follow, noindex, nofollow"`. Directives about how to present an indexed page, such as `max-image-preview`, are left alone.
+
+**The meta tag is the protection that matters, not `robots.txt`.** Føhn serves cached pages from a file: nginx or the drop-in answers and PHP does not run at all on later requests, so a rule carried only by a header PHP sends applies to the first visitor and to nobody after. The directive in the document is stored with the page and is still there whichever reader hands the file over. `robots.txt` is advisory and is fetched once for the whole host.
+
+**Nothing here is configurable.** There is no option, no filter and no opt-in: an indexing guard that a project can forget to enable is a staging site in the search results.
+
+**Production is untouched.** In production the module registers no hooks at all, so a production response is byte-for-byte what it would be without it. There is no filter to misbehave and no header to send by accident.
+
+**`blog_public` is never written.** Marking a site private through the option would put the policy in the database, and a database copied from staging to production — which is how staging databases usually arrive anywhere — would carry the staging answer with it and de-index the live site. Deployment configuration owns `WP_ENVIRONMENT_TYPE`; Føhn only reads it.
+
+**Known limit:** this reaches only what PHP and WordPress emit. A CDN or web server that adds an `X-Robots-Tag` of its own is outside it, and so is a `robots.txt` served as a real file before WordPress is reached. Inspect the public HTTP response when the guarantee has to hold end to end.
 
 ## Security Checklist
 

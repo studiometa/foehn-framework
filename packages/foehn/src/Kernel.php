@@ -21,6 +21,7 @@ use Studiometa\Foehn\Contracts\ViewEngineInterface;
 use Studiometa\Foehn\Discovery\DiscoveryLocations;
 use Studiometa\Foehn\Discovery\DiscoveryRunner;
 use Studiometa\Foehn\Images\NullTransformer;
+use Studiometa\Foehn\Indexing\IndexingProtection;
 use Studiometa\Foehn\Jobs\ActionSchedulerJobDispatcher;
 use Studiometa\Foehn\Jobs\JobRegistry;
 use Studiometa\Foehn\PageCache\Bypass;
@@ -337,6 +338,11 @@ final class Kernel
             fn() => new Invalidator($this->container->get(PageCacheConfig::class), $this->container->get(Store::class)),
         );
 
+        // A singleton on every site, production included, so production verification can
+        // ask it whether it is active and be told no. The instance is inert there: it
+        // registers nothing unless the environment is something other than production.
+        $this->container->singleton(IndexingProtection::class, static fn() => new IndexingProtection());
+
         $this->container->singleton(Bypass::class, fn() => new Bypass($this->container->get(PageCacheConfig::class)));
 
         // Below `Bypass`, because a section response asks it whether it is one the page
@@ -422,6 +428,11 @@ final class Kernel
         // with literal commas in every environment, and core redirects them away in every
         // environment. See CanonicalRedirect.
         new CanonicalRedirect()->register();
+
+        // Not in `FoehnConfig::hooks` either, and for a stronger reason than the redirect
+        // above: an indexing guard nobody remembered to opt into is a staging site in the
+        // search results. It adds nothing at all in production. See IndexingProtection.
+        $this->container->get(IndexingProtection::class)->register();
 
         $this->registerPageCache();
     }
