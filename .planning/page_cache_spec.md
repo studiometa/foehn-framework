@@ -1,6 +1,6 @@
 # Page Cache Spec: foehn
 
-Companion to `.planning/research_page_cache.md`, which argued the case. This document specifies what to build.
+This document records the architecture and safety rules of the implemented page cache. Current usage is documented in [`docs/guide/page-cache.md`](../docs/guide/page-cache.md).
 
 ## 1. Overview
 

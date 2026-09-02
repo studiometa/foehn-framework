@@ -4,7 +4,7 @@ Uploads are the one part of a Føhn site that does not survive a deploy.
 
 Everything else the framework generates is disposable: `web/wp/` comes from Composer, `web/wp-config.php` and the symlinks come from the installer, the discovery cache rebuilds itself on the first request. `web/wp-content/uploads/` is the exception — it is the only directory whose contents are neither in the repository nor reproducible, and the generated web root is exactly the shape people deploy to containers, where local disk does not persist between releases.
 
-Nothing in the monorepo touches `upload_dir`. This has been recorded as a gap twice: [`editor_layer_spec.md`](editor_layer_spec.md) §9 lists it as phase 4, and [`research_responsive_images.md`](research_responsive_images.md) notes that offloaded uploads break local variant generation and need detecting.
+Føhn integrates object storage without owning `upload_dir` or implementing an upload pipeline. This document records that decision and the conditions that would justify changing it. Current usage is documented in [`docs/guide/uploads.md`](../docs/guide/uploads.md).
 
 > **Revised 2026-08-20.** The first draft of this spec proposed building `studiometa/foehn-uploads` on `async-aws/s3`, at 6–8 days. That recommendation is withdrawn. Checking what the installer already generates showed that the plugin's only documented prerequisite is already met and most of the claimed ergonomic advantages are already available for free. §2 is the current recommendation; §5 keeps the build-it analysis for the day something makes it necessary.
 
@@ -87,7 +87,7 @@ So `Studiometa\Foehn\Hooks\S3UploadsEndpoint` reads `S3_UPLOADS_ENDPOINT` and `S
 
 MinIO as a ddev service in `packages/demo`, a real `wp media import`, and smoke assertions that the object exists in the bucket and that the rendered page's `srcset` points at the bucket URL. MinIO in ddev keeps it hermetic: no credentials in CI, no network flakiness, no bill.
 
-Every assertion checked to fail with the feature removed, as with items 2 through 10.
+Every assertion was checked to fail with the feature removed, so the smoke proof is meaningful.
 
 ### 3.4 Where the requirement goes
 
@@ -115,7 +115,7 @@ The one place owning the pipeline genuinely wins is image processing, and it is 
 
 Under a stream wrapper, WordPress never has the file locally, so `#[AsImageSize]` sub-size generation writes each variant over the network, and the image editor works only because the plugin fetches originals back down. The alternative — **copy after upload**: let WordPress write locally exactly as it does today, and once `wp_generate_attachment_metadata` has produced the original and every sub-size, upload the set, rewrite the URLs and optionally delete the local copies. This is what WP Offload Media does. It needs no stream wrapper, no `upload_dir` filter and no filesystem emulation: an API client, five filters and a decision about local retention. `async-aws/s3` (MIT, ^8.2, 17.5 M installs) would be the client, since under this model the AWS SDK's stream wrapper — the one thing it has that async-aws lacks — is exactly what is not needed.
 
-It closes the [`research_responsive_images.md`](research_responsive_images.md) risk rather than mitigating it: variants get generated before the upload, on a real filesystem, and travel with the original.
+It also keeps image variant generation on a real filesystem before the variants travel with the original. Current image transformation behavior is documented in [`docs/guide/images.md`](../docs/guide/images.md).
 
 **Build it when, and only when, all three hold:**
 
@@ -123,7 +123,7 @@ It closes the [`research_responsive_images.md`](research_responsive_images.md) r
 2. Sub-size generation over the network is measured to be a problem on a real site, not predicted to be one.
 3. More than one project is running offloaded uploads, so the maintenance has somewhere to amortise.
 
-Until then, detection is `defined('S3_UPLOADS_BUCKET')` and the responsive-images work falls back, which is what that research already planned to do.
+Until then, detection is `defined('S3_UPLOADS_BUCKET')` and image transformation falls back when it cannot read a source locally.
 
 ## 6. Out of scope
 
@@ -135,9 +135,9 @@ Until then, detection is `defined('S3_UPLOADS_BUCKET')` and the responsive-image
 
 ## 7. Interaction with the rest of the roadmap
 
-**Page cache (item 1).** Cached HTML contains media URLs, so changing `S3_UPLOADS_BUCKET_URL` makes every cached page stale. Since these are constants rather than options, no `updated_option` hook fires and the page cache cannot detect it — a deploy that changes the CDN needs a cache flush, which is a documentation line, not code. Worth saying out loud in the page cache's docs, because it is the kind of thing that produces a bug report about "images broken after deploy".
+**Page cache.** Cached HTML contains media URLs, so changing `S3_UPLOADS_BUCKET_URL` makes every cached page stale. Since these are constants rather than options, no `updated_option` hook fires and the page cache cannot detect it — a deploy that changes the CDN needs a cache flush, which is a documentation line, not code. Worth saying out loud in the page cache's docs, because it is the kind of thing that produces a bug report about "images broken after deploy".
 
-**Responsive images.** See §5. The research doc's risk stands, and its planned fallback is correct.
+**Responsive images.** See §5 and the current [image guide](../docs/guide/images.md) for source access and fallback behavior.
 
 **`#[AsImageSize]`.** Unchanged in behaviour, slower per upload under the stream wrapper.
 

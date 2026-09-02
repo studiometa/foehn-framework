@@ -90,16 +90,18 @@ npm run fmt:check          # Check markdown formatting
 
 ## Planning Documents
 
-See `.planning/` directory:
+See `.planning/` for current and proposed work:
 
-- `task_plan.md` - Project phases and progress
-- `architecture.md` - Technical architecture
-- `research_notes.md` - Design decisions
-- `theme_example.md` - Usage examples
+- `roadmap.md` - Current status, delivery order, and recorded decisions
+- `operations_spec.md` - Approved operational safeguards and cache controls
+- `diagnostics-command-spec.md` - Approved update and production verification
+- `abilities_spec.md` - Undecided WordPress Abilities API proposal
+
+Implemented behavior is documented in `docs/`. Maintained examples live in `packages/starter/` and `packages/demo/`.
 
 ## Current Phase
 
-Check `.planning/task_plan.md` for current implementation status.
+Check `.planning/roadmap.md` for current implementation status.
 
 ## Commit Guidelines
 
