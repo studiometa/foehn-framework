@@ -7,6 +7,7 @@ namespace Studiometa\Foehn;
 use Psr\Cache\CacheItemPoolInterface;
 use RuntimeException;
 use Studiometa\Foehn\Admin\CacheActions;
+use Studiometa\Foehn\Admin\Dashboard;
 use Studiometa\Foehn\Blocks\BlockEditorAssets;
 use Studiometa\Foehn\Cache\TransientCache;
 use Studiometa\Foehn\Config\ConfigLoader;
@@ -412,7 +413,7 @@ final class Kernel
     }
 
     /**
-     * Register the operational cache controls.
+     * Register the operational admin page and its cache controls.
      */
     private function registerAdminServices(): void
     {
@@ -424,6 +425,15 @@ final class Kernel
         $this->container->singleton(
             CacheActions::class,
             fn() => new CacheActions($this->container->get(Invalidator::class)),
+        );
+
+        $this->container->singleton(
+            Dashboard::class,
+            fn() => new Dashboard(
+                $this->container->get(PageCacheConfig::class),
+                $this->container->get(Store::class),
+                $this->container->get(Heartbeat::class),
+            ),
         );
     }
 
@@ -493,19 +503,23 @@ final class Kernel
     }
 
     /**
-     * Wire the operational cache controls.
+     * Wire the operational admin page and its cache controls.
      *
      * Not in `FoehnConfig::hooks` and not gated on the page cache. These are not opt-in:
-     * a project that had to enable the controls it would clear a stale page with has no
-     * way to find out that it needed to, and the clears have to keep working on a site
-     * that has just switched caching off — the files from the release that had it on are
-     * still there.
+     * a project that had to enable the page it would read the cache's state on has no way
+     * to find out that it needed to, and the clears have to keep working on a site that
+     * has just switched caching off — the files from the release that had it on are still
+     * there.
      */
     private function registerAdminControls(): void
     {
         /** @var CacheActions $actions */
         $actions = $this->container->get(CacheActions::class);
         $actions->register();
+
+        /** @var Dashboard $dashboard */
+        $dashboard = $this->container->get(Dashboard::class);
+        $dashboard->register();
     }
 
     /**
