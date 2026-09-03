@@ -18,12 +18,26 @@ namespace Studiometa\Foehn\Helpers;
  * 1. `wp_get_environment_type()`, when WordPress is loaded;
  * 2. the `WP_ENVIRONMENT_TYPE` constant, for the readers that run before it is;
  * 3. the `WP_ENVIRONMENT_TYPE` environment variable;
- * 4. `production`.
+ * 4. the `WP_ENV` environment variable, an accepted alias for it;
+ * 5. `production`.
  *
- * Steps 2 and 3 exist for the page-cache drop-in, which runs from `wp-settings.php`
+ * Steps 2 to 4 exist for the page-cache drop-in, which runs from `wp-settings.php`
  * before `wp-includes/load.php` has defined the function. Production is the default
  * because it is the answer that makes the framework behave most conservatively — and
  * because it is what WordPress defaults to.
+ *
+ * **`WP_ENV` is an alias, and the generated `wp-config.php` honours it too.** That
+ * second half is what makes it an alias rather than a trap. `wp_get_environment_type()`
+ * reads the *constant*, and step 1 wins whenever WordPress is loaded — so a name known
+ * only here would be honoured by the drop-in, which runs before the constant exists,
+ * and ignored by every reader after it. One site, two environments, and the page cache
+ * on the wrong side of the disagreement. The installer defines `WP_ENVIRONMENT_TYPE`
+ * from either name, so this fallback only ever answers for a reader that arrives before
+ * the constant does.
+ *
+ * `APP_ENV` is not read. It was never a WordPress name, nothing this framework
+ * generates has ever written it, and one alias is as many as a single question should
+ * have.
  *
  * **No `.env` file is read at runtime.** A production container injects environment
  * variables without ever writing one, so a framework that needed the file would be
@@ -50,9 +64,21 @@ final class Env
             }
         }
 
-        $type = getenv('WP_ENVIRONMENT_TYPE');
+        return self::variable('WP_ENVIRONMENT_TYPE') ?? self::variable('WP_ENV') ?? 'production';
+    }
 
-        return is_string($type) && $type !== '' ? $type : 'production';
+    /**
+     * An environment variable, with an empty value read as absent.
+     *
+     * Empty rather than merely unset, because an `.env` line with nothing after the `=`
+     * is how a variable comes to exist without a value — and that has to fall through to
+     * the alias below it rather than answer for it.
+     */
+    private static function variable(string $name): ?string
+    {
+        $value = getenv($name);
+
+        return is_string($value) && $value !== '' ? $value : null;
     }
 
     /**

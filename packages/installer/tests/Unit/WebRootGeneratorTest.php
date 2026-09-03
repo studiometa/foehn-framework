@@ -413,6 +413,81 @@ describe('WebRootGenerator', function () {
         expect($output)->not->toContain('PRODUCTION');
     });
 
+    it('accepts WP_ENV as an alias for WP_ENVIRONMENT_TYPE', function () {
+        // The half that makes the alias an alias rather than a trap.
+        //
+        // wp_get_environment_type() reads this constant, and it is the first thing
+        // Foehn's Env helper asks once WordPress is loaded. An alias known only to Env
+        // would therefore be honoured by the page-cache drop-in, which runs before this
+        // file, and ignored by every reader after it — one site reporting two
+        // environments, with the cache on the wrong side of the disagreement.
+        linkRealAutoloader($this->root);
+
+        ($this->generate)();
+
+        stubWordPress($this->root, "echo 'TYPE=' . WP_ENVIRONMENT_TYPE . PHP_EOL;");
+
+        expect(runWpConfig($this->root, ['WP_ENV' => 'staging']))->toContain('TYPE=staging');
+    });
+
+    it('prefers WP_ENVIRONMENT_TYPE over the WP_ENV alias', function () {
+        linkRealAutoloader($this->root);
+
+        ($this->generate)();
+
+        stubWordPress($this->root, "echo 'TYPE=' . WP_ENVIRONMENT_TYPE . PHP_EOL;");
+
+        expect(runWpConfig($this->root, [
+            'WP_ENVIRONMENT_TYPE' => 'production',
+            'WP_ENV' => 'staging',
+        ]))->toContain('TYPE=production');
+    });
+
+    it('selects the environment-specific config from the WP_ENV alias too', function () {
+        // The second of the three readers. All three resolve the environment from one
+        // variable, because three disagreeing is worse than any one being wrong: a site
+        // would load staging's configuration, be refused as an unconfigured production
+        // install, and report itself as production to the page cache.
+        linkRealAutoloader($this->root);
+
+        mkdir($this->root . '/config', 0o777, true);
+        file_put_contents($this->root . '/config/wordpress.staging.config.php', "<?php echo 'STAGING' . PHP_EOL;\n");
+        file_put_contents(
+            $this->root . '/config/wordpress.production.config.php',
+            "<?php echo 'PRODUCTION' . PHP_EOL;\n",
+        );
+
+        ($this->generate)();
+
+        $output = runWpConfig($this->root, ['WP_ENV' => 'staging']);
+
+        expect($output)->toContain('STAGING');
+        expect($output)->not->toContain('PRODUCTION');
+    });
+
+    it('reads the security-keys guard through the alias as well', function () {
+        // The third reader. WP_ENV=production has to refuse a keyless request exactly as
+        // the canonical name does, or the alias would be a way around the guard.
+        mkdir($this->root . '/vendor', 0o777, true);
+        file_put_contents($this->root . '/vendor/autoload.php', "<?php\n");
+
+        ($this->generate)();
+
+        unlink($this->root . '/.env');
+
+        expect(runWpConfig($this->root, ['WP_ENV' => 'production']))->toContain('wp foehn salts:generate');
+    });
+
+    it('does not read APP_ENV, which was never a WordPress name', function () {
+        linkRealAutoloader($this->root);
+
+        ($this->generate)();
+
+        stubWordPress($this->root, "echo 'TYPE=' . WP_ENVIRONMENT_TYPE . PHP_EOL;");
+
+        expect(runWpConfig($this->root, ['APP_ENV' => 'staging']))->toContain('TYPE=production');
+    });
+
     it('still defines the constants after the project configuration has run', function () {
         linkRealAutoloader($this->root);
 

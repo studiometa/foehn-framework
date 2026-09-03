@@ -163,6 +163,17 @@ final class WebRootGenerator
                 return $value !== false ? $value : $default;
             };
 
+            // Which environment this is, resolved once and used everywhere below: the
+            // per-environment config file, the security-keys guard, and the
+            // WP_ENVIRONMENT_TYPE constant that wp_get_environment_type() answers with.
+            //
+            // WP_ENV is an accepted alias, read only when WP_ENVIRONMENT_TYPE is absent
+            // or empty. Resolved here rather than at each reader because the three
+            // disagreeing is worse than any one of them being wrong: a site would load
+            // staging's configuration, be refused as an unconfigured production install,
+            // and report itself as production to the page cache.
+            $environmentType = $env('WP_ENVIRONMENT_TYPE') ?: $env('WP_ENV') ?: 'production';
+
             PHP;
 
         // Add config loading if config directory exists
@@ -179,8 +190,7 @@ final class WebRootGenerator
                 }
 
                 // Load environment-specific overrides
-                \$environment = \$env('WP_ENVIRONMENT_TYPE', 'production');
-                \$envConfig = \$configDir . "/wordpress.{\$environment}.config.php";
+                \$envConfig = \$configDir . "/wordpress.{\$environmentType}.config.php";
                 if (file_exists(\$envConfig)) {
                     require_once \$envConfig;
                 }
@@ -266,7 +276,7 @@ final class WebRootGenerator
                 // These keys sign login cookies. Guessable ones can be forged, so a
                 // production request is refused rather than served with them. WP-CLI
                 // is exempt, because that is where `wp foehn salts:generate` runs.
-                if (!defined('WP_CLI') && \$env('WP_ENVIRONMENT_TYPE', 'production') === 'production') {
+                if (!defined('WP_CLI') && \$environmentType === 'production') {
                     http_response_code(500);
                     echo "WordPress security keys are not configured. Run: wp foehn salts:generate\\n";
                     exit(1);
@@ -281,7 +291,13 @@ final class WebRootGenerator
             \$table_prefix = \$env('DB_PREFIX', 'wp_');
 
             // Environment
-            define('WP_ENVIRONMENT_TYPE', \$env('WP_ENVIRONMENT_TYPE', 'production'));
+            //
+            // The constant wp_get_environment_type() answers with, which is the first
+            // thing Foehn's Env helper asks once WordPress is loaded. The WP_ENV alias
+            // has to reach this line rather than living in Env alone: otherwise it would
+            // be honoured by the page-cache drop-in, which runs before this, and ignored
+            // by every reader after it.
+            define('WP_ENVIRONMENT_TYPE', \$environmentType);
 
             // Debug
             \$isDebug = filter_var(\$env('WP_DEBUG', false), FILTER_VALIDATE_BOOLEAN);

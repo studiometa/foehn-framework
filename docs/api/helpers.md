@@ -169,7 +169,8 @@ The current environment name, resolved the way WordPress resolves it:
 1. `wp_get_environment_type()`, when WordPress is loaded;
 2. the `WP_ENVIRONMENT_TYPE` constant, for readers that run before it is;
 3. the `WP_ENVIRONMENT_TYPE` environment variable;
-4. `production`.
+4. the `WP_ENV` environment variable, an accepted alias for it;
+5. `production`.
 
 ```php
 use Studiometa\Foehn\Helpers\Env;
@@ -177,12 +178,14 @@ use Studiometa\Foehn\Helpers\Env;
 $env = Env::get(); // 'production' | 'staging' | 'development' | 'local'
 ```
 
-Steps 2 and 3 exist for the page-cache drop-in, which runs from `wp-settings.php` before `wp-includes/load.php` has defined the function. WordPress is preferred over the raw value because `wp_get_environment_type()` applies core's allowlist and its `WP_ENVIRONMENT_TYPE` filter — reading the variable first would silently ignore both.
+Steps 2 to 4 exist for the page-cache drop-in, which runs from `wp-settings.php` before `wp-includes/load.php` has defined the function. WordPress is preferred over the raw value because `wp_get_environment_type()` applies core's allowlist and its `WP_ENVIRONMENT_TYPE` filter — reading the variable first would silently ignore both.
 
 **No `.env` file is read at runtime.** A production container injects environment variables without ever writing one, so a framework that needed the file would be reading nothing precisely where being right matters most. `WP_ENVIRONMENT_TYPE` reaches PHP through the generated `wp-config.php`, which is what loads `.env` when there is one.
 
-::: warning `APP_ENV` and `WP_ENV` are gone
-Earlier releases resolved the environment from `APP_ENV`, then `WP_ENV`. Both are ignored now, with no fallback: set `WP_ENVIRONMENT_TYPE` instead, which is the name WordPress itself uses and the one the generated `wp-config.php` already reads.
+`WP_ENV` is an alias, honoured by the generated `wp-config.php` as well as here: it resolves the environment once from either name and defines `WP_ENVIRONMENT_TYPE` from the result, so `wp_get_environment_type()`, the per-environment config file and `Env` cannot disagree. Step 4 above only ever answers for a reader that arrives before that constant exists — the page-cache drop-in.
+
+::: warning `APP_ENV` is gone
+Earlier releases resolved the environment from `APP_ENV` first. It is no longer read, with no fallback: it was never a WordPress name and nothing the framework generates has written it. Use `WP_ENVIRONMENT_TYPE`, or `WP_ENV` if a project already sets it.
 :::
 
 ### is()

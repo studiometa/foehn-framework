@@ -35,6 +35,7 @@ function envInProcessWithoutWordPress(string $snippet): string
 
 beforeEach(function (): void {
     wp_stub_reset();
+    putenv('WP_ENV');
     // Unset rather than reset: `wp_stub_reset()` leaves this global alone, so a value
     // one case sets is still what `wp_get_environment_type()` answers in the next —
     // and the case that asserts the default would then be passing or failing on
@@ -46,6 +47,7 @@ beforeEach(function (): void {
 afterEach(function (): void {
     unset($GLOBALS['wp_stub_environment_type']);
     putenv('WP_ENVIRONMENT_TYPE');
+    putenv('WP_ENV');
 });
 
 describe('Env: the environment WordPress reports', function (): void {
@@ -94,6 +96,39 @@ describe('Env: the environment WordPress reports', function (): void {
             . "putenv('WP_ENVIRONMENT_TYPE=staging');"
             . 'echo Studiometa\\Foehn\\Helpers\\Env::get();',
         ))->toBe('staging');
+    });
+
+    it('reads WP_ENV as an alias when the canonical name is not set', function (): void {
+        // Kept because projects already set it. Safe only because the generated
+        // wp-config.php honours it too — see the installer suite: an alias known to this
+        // class alone would be read by the drop-in and ignored by every later reader,
+        // since step 1 wins as soon as WordPress is loaded.
+        expect(envInProcessWithoutWordPress("putenv('WP_ENV=staging'); echo Studiometa\\Foehn\\Helpers\\Env::get();"))
+            ->toBe('staging');
+    });
+
+    it('prefers WP_ENVIRONMENT_TYPE over the alias', function (): void {
+        expect(envInProcessWithoutWordPress(
+            "putenv('WP_ENVIRONMENT_TYPE=production');"
+            . "putenv('WP_ENV=staging');"
+            . 'echo Studiometa\\Foehn\\Helpers\\Env::get();',
+        ))->toBe('production');
+    });
+
+    it('falls through an empty WP_ENVIRONMENT_TYPE to the alias', function (): void {
+        // An .env line with nothing after the `=` is how a variable comes to exist
+        // without a value, and it has to fall through rather than answer.
+        expect(envInProcessWithoutWordPress(
+            "putenv('WP_ENVIRONMENT_TYPE=');"
+            . "putenv('WP_ENV=staging');"
+            . 'echo Studiometa\\Foehn\\Helpers\\Env::get();',
+        ))
+            ->toBe('staging');
+    });
+
+    it('does not read APP_ENV, which was never a WordPress name', function (): void {
+        expect(envInProcessWithoutWordPress("putenv('APP_ENV=staging'); echo Studiometa\\Foehn\\Helpers\\Env::get();"))
+            ->toBe('production');
     });
 
     it('falls back to production, which is what WordPress does', function (): void {
