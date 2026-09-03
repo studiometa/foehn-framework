@@ -57,6 +57,20 @@ describe('starter packaging', function () {
         expect($composer['config']['allow-plugins'] ?? [])->toHaveKey('pestphp/pest-plugin');
     });
 
+    // Une version exacte, pas une plage : `composer create-project` doit installer
+    // une combinaison que quelqu'un a fait tourner, pas ce que la plage admet ce
+    // jour-là. Une plage remise à la place d'un pin ne casserait rien tout de
+    // suite — elle rendrait juste le pin sans objet, sans bruit.
+    it('épingle le framework à une version exacte', function () use ($racine) {
+        $composer = json_decode((string) file_get_contents($racine . '/composer.json'), true);
+
+        foreach (['studiometa/foehn', 'studiometa/foehn-installer'] as $paquet) {
+            $contrainte = $composer['require'][$paquet] ?? '';
+
+            expect($contrainte)->toMatch('/^\\d+\\.\\d+\\.\\d+$/');
+        }
+    });
+
     // Le fichier sert deux dispositions : quatre niveaux ici, deux dans un projet.
     // Un nombre en dur ne peut pas servir les deux, et c'est le défaut d'origine.
     it('trouve son autoloader dans les deux dispositions', function () use ($racine) {

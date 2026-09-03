@@ -32,6 +32,40 @@ jobs:
       - name: Run static analysis
         run: composer analyse
 
+      # The starter and the demo pin the framework to an exact version, so that
+      # `composer create-project` installs a combination somebody has run rather
+      # than whatever the range admits that day. The cost is that every release
+      # has to move the pin, and a pin is easy to forget: 0.6.0 shipped a starter
+      # requiring `^0.5`, which a caret on a 0.x resolves to the *previous* minor,
+      # so create-project kept building 0.5.10 projects while the tag said 0.6.0.
+      # `Prepare 0.5.0` bumped it by hand and `Prepare 0.6.0` did not. This is the
+      # step that stops a release from depending on memory.
+      - name: Check the starter and the demo require the version being tagged
+        run: |
+          TAG=${GITHUB_REF#refs/tags/}
+
+          for package in starter demo; do
+            for dependency in studiometa/foehn studiometa/foehn-installer; do
+              CONSTRAINT=$(php -r '
+                $composer = json_decode(file_get_contents($argv[1]), true);
+                echo $composer["require"][$argv[2]] ?? "";
+              ' "packages/$package/composer.json" "$dependency")
+
+              if [[ -z "$CONSTRAINT" ]]; then
+                echo "::error::packages/$package does not require $dependency"
+                exit 1
+              fi
+
+              php -r '
+                require "vendor/autoload.php";
+                exit(Composer\Semver\Semver::satisfies($argv[1], $argv[2]) ? 0 : 1);
+              ' "$TAG" "$CONSTRAINT" || {
+                echo "::error::packages/$package requires $dependency:$CONSTRAINT, which does not admit $TAG"
+                exit 1
+              }
+            done
+          done
+
   # The Vite plugin is the one package that ships through npm rather than Packagist,
   # and for its first four releases it shipped nowhere at all: split.yml mirrors the
   # PHP packages only, so `npm install` in a project created from the starter got a

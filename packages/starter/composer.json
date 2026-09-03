@@ -22,8 +22,8 @@
         "composer/installers": "^2.0",
         "johnpbloch/wordpress": "^7.0",
         "studiometa/ui": "^1.10",
-        "studiometa/foehn": "^0.6",
-        "studiometa/foehn-installer": "^0.6"
+        "studiometa/foehn": "0.6.0",
+        "studiometa/foehn-installer": "0.6.0"
     },
     "repositories": [
         {
