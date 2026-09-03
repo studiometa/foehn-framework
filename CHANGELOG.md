@@ -11,11 +11,95 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Page-local HTML section rendering through `?foehn_sections=...`, with `foehn_section()` and `foehn_section_url()` Twig helpers, active Twig context, atomic multi-section responses, and lazy loading through `@studiometa/ui` `LazyInclude` ([#164])
 
+- One page-cache invalidation service, `PageCache\Invalidator`, with full, section-only and per-URL clearing. Every runtime caller goes through it: the WordPress invalidation hooks, `wp foehn cache:clear`, and the new admin controls ([#174])
+
+  Two of those callers used to build a cache key from a URL with their own `parse_url()`. That is how a manual clear and an automatic purge come to disagree about which files one URL owns — and the one that disagrees quietly is the one that leaves a stale page up. `Store` keeps the filesystem, `Purger` keeps deciding when, and this owns turning a URL into the files it owns.
+
+  Section-only clearing removes the variants keyed by `foehn_sections` and their header sidecars, and nothing else: whole pages, cached 404s and unrelated keyed variants in the same directory survive. Recognising one takes parsing the stored filename into name/value pairs rather than searching it for `foehn_sections=`, so a project that keys an argument called `my_foehn_sections` does not have its variants deleted by a control labelled "clear section cache".
+
+  It works while `enabled` is `false`, on purpose. A release that had the cache on leaves files behind, and the project switching it off is precisely the one that needs them gone.
+
+- Non-production sites are kept out of the search index automatically: `noindex, nofollow` in the document through `wp_robots`, an `X-Robots-Tag` header, a whole-host `Disallow: /` in `robots.txt`, and core sitemaps off ([#175])
+
+  A staging copy is the same site with the same content on a crawlable hostname. Indexed, it competes with the real one for the real one's own pages, and nothing about it is visible from inside WordPress until somebody searches.
+
+  The meta tag is the protection that matters rather than `robots.txt`. Føhn serves cached pages from a file, so nginx or the drop-in answers and PHP does not run at all on later requests — a rule carried only by a header PHP sends applies to the first visitor and to nobody after. The directive in the document is stored with the page and survives whichever reader hands the file over.
+
+  `blog_public` is never written. The option would put the policy in the database, and a database copied from staging to production carries the staging answer with it and de-indexes the live site from a row nobody thinks to look at. **In production the module registers no hooks at all**, so a production response is byte-for-byte what it was.
+
+  It reaches only what PHP and WordPress emit: an `X-Robots-Tag` added by a CDN or web server is outside it, and so is a `robots.txt` served as a real file before WordPress.
+
+- The runtime image's cron records a heartbeat, `foehn_cron_last_run`, as a non-autoloaded Unix timestamp after a successful pass ([#176])
+
+  A cron job that stops working is silent by nature: nothing is due, nothing complains, and the site looks fine until somebody notices the newsletter has not gone out since March. The heartbeat is what `wp foehn verify --profile=production` fails a deploy on.
+
+  A tick that found nothing due records it too. That is the normal case on a site behind a warm cache, which is the whole reason this image runs cron at all, so a heartbeat that only moved when work happened would go stale on precisely the quietest, healthiest sites. Four cases deliberately leave the previous value alone — no WordPress, no database, failed event execution, and a tick that could not take the overlap lock — and that is what makes a stale heartbeat mean something. Persistence is part of success: if the option write fails, the runner fails.
+
+  Scale-to-zero deployments cannot promise a fresh in-container heartbeat and need an external scheduler keeping the same contract. See [the scheduler contract](docs/guide/deployment-fly.md#scale-to-zero-and-the-scheduler-you-then-owe-the-site).
+
+- `wp foehn verify --profile=updates --output=<path>`, a CI gate that fails when booting the site raised a PHP or WordPress diagnostic somebody has to act on ([#177])
+
+  Four sources from the point the theme starts Føhn: PHP errors through `set_error_handler()`, `deprecated_function_run`, `deprecated_hook_run` and `doing_it_wrong_run`. The handler delegates to whatever was installed before it and otherwise returns `false`, so nothing here suppresses, converts or duplicates an error. Items are deduplicated with a count, paths are relative to `ABSPATH`, and diagnostics raised inside the WP-CLI Phar stay in the report but do not fail the run.
+
+  The error handler does not filter on `error_reporting()`. WordPress narrows that mask itself when `WP_DEBUG` is off, and one of the bits it drops is `E_DEPRECATED` — the exact diagnostic this profile exists to catch. The cost is that an `@`-suppressed warning is reported too.
+
+  It observes one WP-CLI process and says so: it cannot see anything raised before the theme starts Føhn, anything from another process, or a fatal that stops the command loading. A clean report means "this process raised nothing actionable", not "the site is compatible", and CI still owns boot failure and log collection.
+
+- A Føhn admin page and admin-bar cache controls, for users with `manage_options` ([#178])
+
+  The page reports the resolved `WP_ENVIRONMENT_TYPE` and `WP_DEBUG`, the page cache's configured _and_ effective state, its path and TTL, the total and section response counts, the cache size, the last full purge and the last cron heartbeat. Two buttons clear everything or the section cache; the admin bar adds those plus "clear this page". It is not an `#[AsSettingsPage]` — it owns no settings — and there is no dashboard framework behind it.
+
+  Every mutation is POST-only, capability-checked, and carries a nonce minted for that one action, so the token on "clear everything" cannot authorise "clear this post". The browser posts an intent and never a target: "clear this page" travels as a post id, and the permalink is resolved server-side from the row. No filesystem path and no caller-supplied URL is ever accepted — not because they would be validated carefully, but because a parameter that does not exist cannot be got wrong. The answer is a fixed result code and a count, through `wp_safe_redirect()`.
+
+  Admin-bar items are nonce-protected hidden forms submitted by a small inline script, because a link that changes state is a link a crawler or a prefetch can follow. The page stays the no-JavaScript path.
+
+- `wp foehn verify --profile=production`, a deployment gate that rejects unsafe production configuration ([#179])
+
+  Eight checks: the resolved environment, debug and debug display, WordPress indexing plus the non-production guard being inactive, all eight keys and salts, `DISABLE_WP_CRON` with a real runner, heartbeat freshness, the cron backlog, and page-cache storage being writable. The profile exists only because all eight do — a gate shipped with some of its checks missing would report a pass that means less than the name on it.
+
+  It does not adapt to the environment it finds. Run against staging it fails at the first check, on purpose: a gate that relaxed its rules when the site said `staging` would wave through a production machine whose `WP_ENVIRONMENT_TYPE` was simply wrong, and that is the misconfiguration most worth catching, because the page cache and the indexing guard key off the same value.
+
+  No secret, path or timestamp reaches the report. The salts check names which of the eight constants had a problem and never a value, a fragment or a length — a length is a hint about a secret, and the report is a file CI keeps. The heartbeat is a freshness state plus the window it was judged against rather than an age, so two runs of an unchanged site produce the same bytes.
+
+### Changed
+
+- **Breaking:** `Env::get()` resolves the environment the way WordPress does — `wp_get_environment_type()`, then the `WP_ENVIRONMENT_TYPE` constant, then the environment variable, then `production` — and `PageCacheConfig::environment()` delegates to it, so the cache and the operational features cannot read one site as two environments ([#174])
+
+  See **Removed** below for the `APP_ENV` and `WP_ENV` migration, which is the part that can bite silently.
+
+- **Breaking:** `Env::isLocal()` is true for `local` only, and no longer for `development` as well. WordPress defines the two as separate types — a laptop and a shared server somebody develops against — and folding them together made the one question the method exists to answer unanswerable ([#174])
+
+- **Breaking:** `Purger::__construct()` and `PageCacheClearCommand::__construct()` take a `PageCache\Invalidator` where they took a `PageCache\Store`. A project that resolves either from the container is unaffected; one that constructs them by hand has to pass the new collaborator ([#174])
+
+- **Breaking:** a deletion count now means **stored response bodies** everywhere, so `Store::flush()`, `forget()`, `forgetPaginated()` and `sweep()` return roughly half what they used to, and `wp foehn cache:clear` reports pages rather than files ([#174])
+
+  An entry is a body plus, usually, a header sidecar, and WordPress sets a `Link:` header on nearly every response — so the old number was about twice the number of pages, which is a number nobody can act on. `Store::stats()` already counted bodies; this brings the deletion paths in line with it.
+
+- CI runs on every pull request rather than only those targeting `main`. The `branches: [main]` filter matched on the base branch, so a stacked pull request — one opened against the branch below it — ran no checks at all ([#174])
+
 ### Removed
 
 - **Breaking:** the REST/JSON Render API, its configuration, hook, and `/wp-json/foehn/v1/render` route. Section rendering now uses normal page URLs and permanently reserves the namespaced `foehn_sections` query parameter. See the [migration guide](docs/guide/section-rendering.md#migrate-from-the-render-api) ([#164])
 
+- **Breaking:** `APP_ENV` and `WP_ENV` are no longer read, with no fallback. Set `WP_ENVIRONMENT_TYPE` instead — the name WordPress itself uses, and the one the generated `wp-config.php` has always read ([#174])
+
+  **This one fails silently, so check it before upgrading.** A site whose environment came from `APP_ENV=staging` now resolves to `production`, and everything keys off that value: the page cache becomes eligible where it was inert, and the non-production indexing guard stands down. A staging site can start caching _and_ inviting search engines with no error anywhere.
+
+  ```diff
+  # .env
+  - APP_ENV=staging
+  + WP_ENVIRONMENT_TYPE=staging
+  ```
+
+  `local`, `development`, `staging` and `production` are the four values WordPress defines. Anything that is not `production` is treated as non-production by the page cache, the indexing guard and `wp foehn verify`.
+
 [#164]: https://github.com/studiometa/foehn-framework/pull/164
+[#174]: https://github.com/studiometa/foehn-framework/pull/174
+[#175]: https://github.com/studiometa/foehn-framework/pull/175
+[#176]: https://github.com/studiometa/foehn-framework/pull/176
+[#177]: https://github.com/studiometa/foehn-framework/pull/177
+[#178]: https://github.com/studiometa/foehn-framework/pull/178
+[#179]: https://github.com/studiometa/foehn-framework/pull/179
 
 ## [0.5.10] - 2026-08-26
 
