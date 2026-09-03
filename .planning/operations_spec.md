@@ -30,7 +30,22 @@ Resolution order:
 1. `wp_get_environment_type()` when WordPress provides it;
 2. the `WP_ENVIRONMENT_TYPE` constant;
 3. the `WP_ENVIRONMENT_TYPE` environment variable;
-4. `production`.
+4. the `WP_ENV` environment variable, an accepted alias;
+5. `production`.
+
+`WP_ENV` is kept because projects already set it. It is an alias and not a second
+source of truth: the generated `wp-config.php` resolves the environment once from either
+name and defines `WP_ENVIRONMENT_TYPE` from the result, so `wp_get_environment_type()`,
+the per-environment config file, the security-keys guard and `Env` cannot disagree.
+Step 4 exists only for a reader that arrives before that constant does — the page-cache
+drop-in.
+
+An alias honoured by `Env` alone would be worse than none: step 1 wins whenever
+WordPress is loaded, so the drop-in would read `staging` while every later reader read
+`production`, and the page cache would be on the wrong side of the disagreement.
+
+`APP_ENV` is not read. It was never a WordPress name and nothing this framework
+generates has written it.
 
 `Env::isDebug()` returns the resolved boolean value of `WP_DEBUG`. `PageCacheConfig::environment()` delegates to `Env` so cache and operational features cannot interpret the environment differently.
 
