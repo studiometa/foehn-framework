@@ -12,3 +12,8 @@
 /composer.local.lock export-ignore
 /.ddev/config.monorepo.yaml export-ignore
 /.gitattributes export-ignore
+
+# La suite de tests d'empaquetage regarde le paquet depuis le monorepo : elle lit
+# ce fichier-ci, qui ne part pas dans l'archive. Livrée, elle rendait
+# `composer test` rouge dans tout projet créé depuis ce starter.
+/tests/php/Unit/StarterPackagingTest.php export-ignore

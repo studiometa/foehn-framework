@@ -40,7 +40,7 @@ afterAll(function () {
 
 beforeEach(function () {
     if (!Site::isRunning()) {
-        $this->markTestSkipped('ddev is not running — start it in packages/starter and try again.');
+        $this->markTestSkipped('ddev is not running — run `ddev start` and try again.');
     }
 
     Site::clearCache();
@@ -114,6 +114,15 @@ describe('drop-in read path', function () {
 
 describe('drop-in read path: the TTL', function () {
     afterEach(function () {
+        // Guarded on the site, not only for speed. `afterEach` runs for a case
+        // `beforeEach` skipped, and `enableCache()` writes a config file into the
+        // project and then waits out opcache's file-update protection — so without
+        // this, merely collecting the suite on a machine with no ddev left a
+        // generated config behind and spent two seconds per case doing it.
+        if (!Site::isRunning()) {
+            return;
+        }
+
         Site::enableCache();
     });
 
