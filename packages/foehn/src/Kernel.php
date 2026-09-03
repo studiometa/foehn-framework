@@ -6,6 +6,9 @@ namespace Studiometa\Foehn;
 
 use Psr\Cache\CacheItemPoolInterface;
 use RuntimeException;
+use Studiometa\Foehn\Admin\AdminBar;
+use Studiometa\Foehn\Admin\CacheActions;
+use Studiometa\Foehn\Admin\Dashboard;
 use Studiometa\Foehn\Blocks\BlockEditorAssets;
 use Studiometa\Foehn\Cache\TransientCache;
 use Studiometa\Foehn\Config\ConfigLoader;
@@ -14,20 +17,25 @@ use Studiometa\Foehn\Config\PageCacheConfig;
 use Studiometa\Foehn\Config\RestConfig;
 use Studiometa\Foehn\Config\TimberConfig;
 use Studiometa\Foehn\Console\ClassFileGenerator;
+use Studiometa\Foehn\Console\WpCli;
 use Studiometa\Foehn\Contracts\CacheInterface;
 use Studiometa\Foehn\Contracts\ImageTransformer;
 use Studiometa\Foehn\Contracts\JobDispatcher;
 use Studiometa\Foehn\Contracts\ViewEngineInterface;
+use Studiometa\Foehn\Cron\Heartbeat;
 use Studiometa\Foehn\Discovery\DiscoveryLocations;
 use Studiometa\Foehn\Discovery\DiscoveryRunner;
 use Studiometa\Foehn\Images\NullTransformer;
+use Studiometa\Foehn\Indexing\IndexingProtection;
 use Studiometa\Foehn\Jobs\ActionSchedulerJobDispatcher;
 use Studiometa\Foehn\Jobs\JobRegistry;
 use Studiometa\Foehn\PageCache\Bypass;
 use Studiometa\Foehn\PageCache\CanonicalRedirect;
+use Studiometa\Foehn\PageCache\Invalidator;
 use Studiometa\Foehn\PageCache\Purger;
 use Studiometa\Foehn\PageCache\Recorder;
 use Studiometa\Foehn\PageCache\Store;
+use Studiometa\Foehn\Verification\Updates\DiagnosticsCollector;
 use Studiometa\Foehn\Views\ContextProviderRegistry;
 use Studiometa\Foehn\Views\Sections\SectionCollector;
 use Studiometa\Foehn\Views\Sections\SectionRenderer;
@@ -179,6 +187,9 @@ final class Kernel
         // Register core services
         $this->registerCoreServices();
 
+        // Start recording diagnostics, before anything else Foehn does can raise one
+        $this->startDiagnostics();
+
         // Initialize Timber
         $this->initializeTimber();
 
@@ -218,6 +229,12 @@ final class Kernel
 
         // Register infrastructure services
         $this->registerInfrastructureServices();
+
+        // Peer of the above rather than part of it: the operational controls read the
+        // cache but are not part of serving it, and `registerInfrastructureServices()` is
+        // already long enough that a reader scrolling it loses track of which service
+        // belongs to what.
+        $this->registerAdminServices();
     }
 
     /**
@@ -299,6 +316,10 @@ final class Kernel
             fn() => new BlockEditorAssets($this->container->get(DiscoveryRunner::class), $this->foehnConfig),
         );
 
+        // A singleton because it is one process's record: the collector the kernel starts
+        // has to be the collector `wp foehn verify` reads back.
+        $this->container->singleton(DiagnosticsCollector::class, static fn() => new DiagnosticsCollector());
+
         $this->container->singleton(JobRegistry::class, static fn() => new JobRegistry());
 
         $this->container->singleton(
@@ -327,6 +348,20 @@ final class Kernel
         // and `cache:status` have to work on a site that has just turned it off.
         $this->container->singleton(Store::class, fn() => new Store($this->container->get(PageCacheConfig::class)));
 
+        // The single runtime entry point for deletion — WP-CLI, the WordPress
+        // invalidation hooks and the admin controls all go through it. A singleton for
+        // the same reason as the store above: files an earlier release left behind stay
+        // removable on a site that has since turned the cache off.
+        $this->container->singleton(
+            Invalidator::class,
+            fn() => new Invalidator($this->container->get(PageCacheConfig::class), $this->container->get(Store::class)),
+        );
+
+        // A singleton on every site, production included, so production verification can
+        // ask it whether it is active and be told no. The instance is inert there: it
+        // registers nothing unless the environment is something other than production.
+        $this->container->singleton(IndexingProtection::class, static fn() => new IndexingProtection());
+
         $this->container->singleton(Bypass::class, fn() => new Bypass($this->container->get(PageCacheConfig::class)));
 
         // Below `Bypass`, because a section response asks it whether it is one the page
@@ -350,8 +385,59 @@ final class Kernel
 
         $this->container->singleton(
             Purger::class,
-            fn() => new Purger($this->container->get(PageCacheConfig::class), $this->container->get(Store::class)),
+            fn() => new Purger(
+                $this->container->get(PageCacheConfig::class),
+                $this->container->get(Invalidator::class),
+            ),
         );
+    }
+
+    /**
+     * Start the diagnostics collector `wp foehn verify --profile=updates` reads.
+     *
+     * Under WP-CLI only, and as early as the container allows: everything raised after
+     * this line is recorded, and everything before it — core loading, mu-plugins,
+     * plugins — is not, whatever the command later reports. Deliberately before Timber
+     * and before the lifecycle hooks, because both of those are code that can raise a
+     * deprecation of its own and an update review wants to see it.
+     *
+     * Nothing is registered outside WP-CLI: an HTTP request would pay for an error
+     * handler and three hooks that no command will ever read.
+     */
+    private function startDiagnostics(): void
+    {
+        if (!WpCli::isAvailable()) {
+            return;
+        }
+
+        $this->container->get(DiagnosticsCollector::class)->start();
+    }
+
+    /**
+     * Register the operational admin page, its handlers and the admin-bar controls.
+     */
+    private function registerAdminServices(): void
+    {
+        $this->container->singleton(Heartbeat::class, static fn() => new Heartbeat());
+
+        // Registered whether or not the cache is on, for the same reason `Invalidator` is:
+        // an operator switching it off is the one who needs the files an earlier release
+        // left behind gone.
+        $this->container->singleton(
+            CacheActions::class,
+            fn() => new CacheActions($this->container->get(Invalidator::class)),
+        );
+
+        $this->container->singleton(
+            Dashboard::class,
+            fn() => new Dashboard(
+                $this->container->get(PageCacheConfig::class),
+                $this->container->get(Store::class),
+                $this->container->get(Heartbeat::class),
+            ),
+        );
+
+        $this->container->singleton(AdminBar::class, static fn() => new AdminBar());
     }
 
     /**
@@ -410,7 +496,37 @@ final class Kernel
         // environment. See CanonicalRedirect.
         new CanonicalRedirect()->register();
 
+        // Not in `FoehnConfig::hooks` either, and for a stronger reason than the redirect
+        // above: an indexing guard nobody remembered to opt into is a staging site in the
+        // search results. It adds nothing at all in production. See IndexingProtection.
+        $this->container->get(IndexingProtection::class)->register();
+
+        $this->registerAdminControls();
         $this->registerPageCache();
+    }
+
+    /**
+     * Wire the operational admin page, its handlers and the admin-bar controls.
+     *
+     * Not in `FoehnConfig::hooks` and not gated on the page cache. These are not opt-in:
+     * a project that had to enable the page it would read the cache's state on has no way
+     * to find out that it needed to, and the clears have to keep working on a site that
+     * has just switched caching off — the files from the release that had it on are still
+     * there.
+     */
+    private function registerAdminControls(): void
+    {
+        /** @var CacheActions $actions */
+        $actions = $this->container->get(CacheActions::class);
+        $actions->register();
+
+        /** @var Dashboard $dashboard */
+        $dashboard = $this->container->get(Dashboard::class);
+        $dashboard->register();
+
+        /** @var AdminBar $adminBar */
+        $adminBar = $this->container->get(AdminBar::class);
+        $adminBar->register();
     }
 
     /**

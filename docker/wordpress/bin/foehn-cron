@@ -15,7 +15,13 @@
 # Run by cron, from a symlink `85-wp-cron.sh` places in
 # `/etc/periodic/<FOEHN_CRON_SCHEDULE>/`.
 #
+# A successful run records `foehn_cron_last_run`, the heartbeat production
+# verification reads to tell a site whose events are running from one whose cron
+# died quietly weeks ago. Which runs do *not* record it is the whole point, and
+# is documented where it is written, at the bottom of this file.
+#
 # @see ../entrypoint.d/85-wp-cron.sh
+# @see ../../../docs/guide/docker-image.md
 ###############################################################################
 set -eu
 
@@ -68,8 +74,60 @@ if ! output=$(su -s /bin/sh "$web_user" -c \
     exit 1
 fi
 
-# Quiet when there was nothing to do, which is most ticks. A cron job that
-# writes to the log every fifteen minutes teaches everyone to ignore the log.
+# The heartbeat, written only now that the run above has actually succeeded.
+#
+# `foehn_cron_last_run` is what `wp foehn verify --profile=production` reads to
+# tell a site whose events are running from a site whose cron died quietly six
+# weeks ago. That only works if the option is a liveness signal rather than an
+# activity one: a tick where nothing was due is the *normal* case on a healthy
+# site, so it refreshes the heartbeat too. An option that only moved when work
+# happened would go stale on precisely the site that has nothing to do, and
+# verification would reject it for being healthy.
+#
+# So it is written here, after the success paths, and after every early exit
+# above: no WordPress, no database, failed events and a lock this tick could not
+# take all leave the previous value alone, which is what makes a stale heartbeat
+# mean something.
+now=$(date -u '+%s')
+
+# `wp eval` rather than `wp option update --autoload=no`, even though this image
+# ships a WP-CLI that understands that flag (2.12; the values are on/off/yes/no).
+# `wp option update` exits 1 when the value it was given is the one already
+# stored, saying "Could not update option" — the same message, and the same exit
+# code, as a database that would not take the write. Two ticks in the same second
+# would therefore report a healthy run as a broken one, and there is no way to
+# tell the two apart from the outside.
+#
+# Reading the option back is also a stronger claim than `update_option()`'s
+# return value: it says the timestamp is in the database, not merely that nothing
+# objected on the way there. `false` is the third argument, so the option is not
+# autoloaded — a value only a deployment script reads has no business being
+# fetched on every page load of the site.
+#
+# Persistence is part of success: a run whose events fired but whose heartbeat
+# never landed would be a site that verification declares dead while it works,
+# and that is worth failing the tick over rather than hiding.
+# Held in a variable so it can be read as PHP. The double quotes are escaped
+# only against *this* shell; what lands in the variable is ordinary PHP, and the
+# single quotes around it below are what keep it whole through `su`'s shell.
+heartbeat_php="
+    update_option(\"foehn_cron_last_run\", $now, false);
+
+    if ((int) get_option(\"foehn_cron_last_run\") !== $now) {
+        WP_CLI::error(\"the option did not hold the timestamp.\");
+    }
+"
+
+if ! heartbeat=$(su -s /bin/sh "$web_user" -c \
+    "wp eval '$heartbeat_php' --path=/app/web/wp" 2>&1); then
+
+    say "⚠️ the events ran but the heartbeat failed: $(printf '%s' "$heartbeat" | tail -3)"
+    exit 1
+fi
+
+# Quiet when there was nothing to do, which is most ticks — the heartbeat above
+# included, which is why it says nothing of its own. A cron job that writes to
+# the log every fifteen minutes teaches everyone to ignore the log.
 case "$output" in
     *'Executed a total of 0 cron events'* | '') ;;
     *) say "$(printf '%s' "$output" | tail -1)" ;;

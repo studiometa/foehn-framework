@@ -323,6 +323,29 @@ function makeCommandContractSuite(array $contracts): void
 }
 
 /**
+ * A verification report of the `updates` profile, holding the checks a test cares about.
+ */
+function testVerificationReport(\Studiometa\Foehn\Verification\VerificationResult ...$checks): \Studiometa\Foehn\Verification\VerificationReport
+{
+    return new \Studiometa\Foehn\Verification\VerificationReport(
+        \Studiometa\Foehn\Verification\VerificationProfile::Updates,
+        array_values($checks),
+    );
+}
+
+/**
+ * A directory a verification report can be written into, guaranteed not to be shared.
+ */
+function testVerificationDirectory(): string
+{
+    $directory = sys_get_temp_dir() . '/foehn-tests/verify-' . uniqid('', true);
+
+    mkdir($directory, 0o777, true);
+
+    return $directory;
+}
+
+/**
  * A directory for a page cache under test, guaranteed not to be shared.
  */
 function pageCacheRoot(): string
@@ -340,6 +363,16 @@ function pageCacheStore(string $root, int $ttl = 0): \Studiometa\Foehn\PageCache
         path: $root,
         ttl: $ttl,
     ));
+}
+
+/**
+ * The one runtime deletion path, rooted at a temporary directory.
+ */
+function pageCacheInvalidator(string $root, bool $enabled = true): \Studiometa\Foehn\PageCache\Invalidator
+{
+    $config = new \Studiometa\Foehn\Config\PageCacheConfig(enabled: $enabled, path: $root);
+
+    return new \Studiometa\Foehn\PageCache\Invalidator($config, new \Studiometa\Foehn\PageCache\Store($config));
 }
 
 /**
@@ -422,4 +455,64 @@ function pageCacheTerm(int $id, string $slug, string $taxonomy): WP_Term
     $term->taxonomy = $taxonomy;
 
     return $term;
+}
+
+/**
+ * The admin cache handlers, with `exit` replaced by a counter.
+ *
+ * A handler that really exited would take the test runner with it, so the terminating
+ * call is a collaborator — see `CacheActions::$halt`. The count is what proves a handler
+ * stopped where it said it would.
+ */
+function adminCacheActions(\Studiometa\Foehn\PageCache\Invalidator $invalidator): \Studiometa\Foehn\Admin\CacheActions
+{
+    $GLOBALS['wp_stub_halted'] = 0;
+
+    return new \Studiometa\Foehn\Admin\CacheActions($invalidator, static function (): void {
+        $GLOBALS['wp_stub_halted']++;
+    });
+}
+
+/**
+ * Present the request an authorised POST to one of the cache actions looks like.
+ *
+ * Everything the handlers read lives in superglobals, so a test that wants to assert what
+ * they do has to set them — and a test that wants to assert what they refuse has to set
+ * all but one. Named arguments make the missing one the point of each case.
+ *
+ * @param array<string, string> $extra Additional POST fields, for the ones a handler must ignore.
+ */
+function adminCacheRequest(
+    string $method = 'POST',
+    bool $capable = true,
+    ?string $nonce = null,
+    ?int $postId = null,
+    array $extra = [],
+): void {
+    $_SERVER['REQUEST_METHOD'] = $method;
+    $GLOBALS['wp_stub_user_can'][\Studiometa\Foehn\Admin\CacheActions::CAPABILITY] = $capable;
+
+    $_POST = $extra;
+
+    if ($nonce !== null) {
+        $_POST['_wpnonce'] = $nonce;
+    }
+
+    if ($postId !== null) {
+        $_POST[\Studiometa\Foehn\Admin\CacheActions::POST_ID_FIELD] = (string) $postId;
+    }
+}
+
+/**
+ * Forget every superglobal a cache-action test wrote.
+ *
+ * `wp_stub_reset()` reaches neither the superglobals nor
+ * `$GLOBALS['wp_stub_environment_type']`, and a leaked nonce would authorise the next
+ * test's request for it.
+ */
+function adminCacheRequestReset(): void
+{
+    $_POST = [];
+    $_GET = [];
+    unset($_SERVER['REQUEST_METHOD'], $GLOBALS['wp_stub_halted'], $GLOBALS['wp_stub_environment_type']);
 }

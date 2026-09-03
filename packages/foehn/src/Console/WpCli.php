@@ -46,6 +46,19 @@ final class WpCli
     }
 
     /**
+     * End the process with an exit status of your own.
+     *
+     * `error()` always exits `1`, so a command that has to distinguish "the thing you
+     * asked about is wrong" from "this check could not run at all" cannot express the
+     * second one through it. Print the message with `error(exit: false)` first: this
+     * only carries the status.
+     */
+    public function halt(int $status): void
+    {
+        WP_CLI::halt($status);
+    }
+
+    /**
      * Display a warning message.
      */
     public function warning(string $message): void

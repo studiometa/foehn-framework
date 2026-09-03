@@ -39,6 +39,9 @@ function wp_stub_reset(): void
     }
 
     $GLOBALS['wp_stub_as_has_scheduled'] = [];
+    // The scheduled-event queue `_get_cron_array()` answers with. Reset, because a
+    // backlog left behind by one test would make the next one report a site in trouble.
+    $GLOBALS['wp_stub_cron_events'] = [];
 
     // The page cache asks a dozen template conditionals whether this request is an
     // ordinary page. A leaked `true` would make an eligibility test pass for the
@@ -58,6 +61,17 @@ function wp_stub_reset(): void
     $GLOBALS['wp_stub_adjacent_posts'] = [];
     $GLOBALS['wp_stub_sitemap_urls'] = [];
     unset($GLOBALS['wp_stub_sitemap_providers'], $GLOBALS['wp_stub_remote_status'], $GLOBALS['wp_stub_remote_error']);
+
+    // The admin controls read all four. A referer left behind would make a redirect land
+    // somewhere a later test never set up, and a leaked screen, queried object or global
+    // post would make the admin bar's current-item entry appear for a request that has no
+    // post to clear.
+    unset(
+        $GLOBALS['wp_stub_referer'],
+        $GLOBALS['wp_stub_current_screen'],
+        $GLOBALS['wp_stub_queried_object'],
+        $GLOBALS['wp_stub_post'],
+    );
 
     // Theme paths fall back to their stub defaults, so a test that points them at
     // a fixture directory cannot leak that into the next one.
@@ -163,6 +177,13 @@ if (!class_exists('WP_CLI')) {
         public static function warning(string $message): void
         {
             wp_stub_record('wp_cli_warning', compact('message'));
+        }
+
+        // Records instead of exiting, like error() above: a test asserting which status a
+        // command chose cannot assert it from a process that has already ended.
+        public static function halt(int $status): void
+        {
+            wp_stub_record('wp_cli_halt', compact('status'));
         }
 
         public static function line(string $message = ''): void
@@ -812,20 +833,43 @@ if (!function_exists('get_query_var')) {
     }
 }
 
+/**
+ * The scheme and host of a URL, or an empty string when it has none.
+ *
+ * WordPress's own `add_query_arg()` and `remove_query_arg()` return an absolute URL when
+ * they were given one, and the admin controls rely on that: a redirect target that lost
+ * its host would be a relative `Location` header. Every earlier caller in this suite
+ * passes a bare path, which still comes back a bare path.
+ */
+function wp_stub_url_origin(string $url): string
+{
+    $parsed = parse_url($url);
+    $scheme = $parsed['scheme'] ?? null;
+    $host = $parsed['host'] ?? null;
+
+    if (!is_string($scheme) || !is_string($host)) {
+        return '';
+    }
+
+    $port = $parsed['port'] ?? null;
+
+    return $scheme . '://' . $host . ($port === null ? '' : ':' . $port);
+}
+
 if (!function_exists('add_query_arg')) {
     function add_query_arg(array|string $key, mixed $value = null, ?string $url = null): string
     {
         // Simple implementation for testing
         if (is_array($key)) {
             $args = $key;
-            $url = $value ?? $_SERVER['REQUEST_URI'] ?? '/';
+            $url = is_string($value) ? $value : $_SERVER['REQUEST_URI'] ?? '/';
         } else {
             $args = [$key => $value];
             $url = $url ?? $_SERVER['REQUEST_URI'] ?? '/';
         }
 
         $parsed = parse_url($url);
-        $path = $parsed['path'] ?? '/';
+        $path = wp_stub_url_origin($url) . ($parsed['path'] ?? '/');
         parse_str($parsed['query'] ?? '', $existing);
 
         $merged = array_merge($existing, $args);
@@ -842,7 +886,7 @@ if (!function_exists('remove_query_arg')) {
         $keys = (array) $keys;
 
         $parsed = parse_url($url);
-        $path = $parsed['path'] ?? '/';
+        $path = wp_stub_url_origin($url) . ($parsed['path'] ?? '/');
         parse_str($parsed['query'] ?? '', $existing);
 
         foreach ($keys as $key) {
@@ -1348,6 +1392,18 @@ if (!function_exists('content_url')) {
     }
 }
 
+if (!function_exists('admin_url')) {
+    function admin_url(string $path = '', string $scheme = 'admin'): string
+    {
+        // `/wp/wp-admin/`, as a Bedrock-style install has it — the layout the constants
+        // above describe. A test asserting a redirect target reads this string, so it has
+        // to be the one a real install would produce.
+        $base = rtrim($GLOBALS['wp_stub_home_url'] ?? 'http://example.com', '/') . '/wp/wp-admin/';
+
+        return $base . ltrim($path, '/');
+    }
+}
+
 if (!function_exists('wp_json_encode')) {
     function wp_json_encode(mixed $data, int $flags = 0, int $depth = 512): string|false
     {
@@ -1698,6 +1754,20 @@ if (!function_exists('wp_doing_cron')) {
     }
 }
 
+/**
+ * The scheduled-event queue, in core's own shape: `timestamp => hook => key => args`.
+ *
+ * The private function rather than `wp_get_ready_cron_jobs()`, because that one applies
+ * core's gate and answers an empty array while `DISABLE_WP_CRON` is on — which on a
+ * production site is always, and production verification still has to read the queue.
+ */
+if (!function_exists('_get_cron_array')) {
+    function _get_cron_array(): array
+    {
+        return $GLOBALS['wp_stub_cron_events'] ?? [];
+    }
+}
+
 if (!function_exists('is_feed')) {
     function is_feed(mixed $feeds = ''): bool
     {
@@ -1754,7 +1824,16 @@ if (!function_exists('get_post')) {
             return $post;
         }
 
-        return $GLOBALS['wp_stub_posts'][(int) $post] ?? null;
+        $id = (int) $post;
+
+        // Called with nothing, WordPress answers with the global post — which is how an
+        // edit screen hands the row it has already loaded to code that never named an id.
+        // The admin-bar controls depend on that, so the stub has to have it.
+        if ($id === 0) {
+            return $GLOBALS['wp_stub_post'] ?? null;
+        }
+
+        return $GLOBALS['wp_stub_posts'][$id] ?? null;
     }
 }
 
@@ -1939,5 +2018,216 @@ if (!function_exists('wp_get_upload_dir')) {
             'basedir' => $GLOBALS['wp_stub_upload_basedir'] ?? '/tmp/uploads',
             'baseurl' => $GLOBALS['wp_stub_upload_baseurl'] ?? 'http://example.com/wp-content/uploads',
         ];
+    }
+}
+
+// ──────────────────────────────────────────────
+// Admin mutations: nonces, redirects and the admin bar
+// ──────────────────────────────────────────────
+
+if (!function_exists('wp_create_nonce')) {
+    /**
+     * A token that is only valid for the action string it was created with.
+     *
+     * The action goes *into* the token rather than being ignored, because that is the
+     * property the cache handlers depend on: a nonce minted for "clear everything" must
+     * not authorise "clear this post". A stub that returned one constant would make the
+     * test for that pass whether or not the code checks anything.
+     */
+    function wp_create_nonce(string $action = '-1'): string
+    {
+        return 'nonce:' . $action;
+    }
+}
+
+if (!function_exists('wp_verify_nonce')) {
+    function wp_verify_nonce(string $nonce, string $action = '-1'): int|false
+    {
+        return $nonce === wp_create_nonce($action) ? 1 : false;
+    }
+}
+
+if (!function_exists('wp_nonce_field')) {
+    function wp_nonce_field(
+        string $action = '-1',
+        string $name = '_wpnonce',
+        bool $referer = true,
+        bool $display = true,
+    ): string {
+        wp_stub_record('wp_nonce_field', compact('action', 'name', 'referer', 'display'));
+
+        $field = sprintf(
+            '<input type="hidden" name="%s" value="%s">',
+            esc_attr($name),
+            esc_attr(wp_create_nonce($action)),
+        );
+
+        if ($display) {
+            echo $field;
+        }
+
+        return $field;
+    }
+}
+
+if (!function_exists('wp_unslash')) {
+    function wp_unslash(mixed $value): mixed
+    {
+        return is_string($value) ? stripslashes($value) : $value;
+    }
+}
+
+if (!function_exists('wp_get_referer')) {
+    function wp_get_referer(): string|false
+    {
+        return $GLOBALS['wp_stub_referer'] ?? false;
+    }
+}
+
+if (!function_exists('wp_validate_redirect')) {
+    /**
+     * Only a target on the site's own host survives.
+     *
+     * The real function compares the host against `allowed_redirect_hosts`; this compares
+     * it against `home_url()`, which is the same rule for a single site. A relative target
+     * is allowed, as WordPress allows it.
+     */
+    function wp_validate_redirect(string $location, string $default = ''): string
+    {
+        $location = trim($location);
+
+        if ($location === '') {
+            return $default;
+        }
+
+        $host = parse_url($location, PHP_URL_HOST);
+
+        if (!is_string($host)) {
+            return str_starts_with($location, '/') ? $location : $default;
+        }
+
+        return $host === parse_url(home_url('/'), PHP_URL_HOST) ? $location : $default;
+    }
+}
+
+if (!function_exists('wp_safe_redirect')) {
+    function wp_safe_redirect(string $location, int $status = 302, string|false $xRedirectBy = 'WordPress'): bool
+    {
+        wp_stub_record('wp_safe_redirect', compact('location', 'status'));
+
+        return true;
+    }
+}
+
+if (!function_exists('wp_die')) {
+    /**
+     * Records rather than exits, so a refusal can be asserted.
+     *
+     * The real function ends the request. A test that could not observe a refusal is a
+     * test that cannot tell a handler which refuses from one which does nothing, and the
+     * refusals are the behaviour worth proving here.
+     *
+     * @param array<string, mixed> $args
+     */
+    function wp_die(string $message = '', string $title = '', array $args = []): void
+    {
+        wp_stub_record('wp_die', compact('message', 'title', 'args'));
+    }
+}
+
+if (!function_exists('is_post_publicly_viewable')) {
+    function is_post_publicly_viewable(mixed $post = null): bool
+    {
+        $resolved = $post instanceof WP_Post ? $post : get_post($post);
+
+        return $resolved instanceof WP_Post && $resolved->post_status === 'publish';
+    }
+}
+
+if (!class_exists('WP_Screen')) {
+    class WP_Screen
+    {
+        public function __construct(
+            public string $base = '',
+            public string $action = '',
+        ) {}
+    }
+}
+
+if (!function_exists('get_current_screen')) {
+    function get_current_screen(): ?WP_Screen
+    {
+        return $GLOBALS['wp_stub_current_screen'] ?? null;
+    }
+}
+
+if (!class_exists('WP_Admin_Bar')) {
+    /**
+     * Collects the nodes rather than rendering them.
+     *
+     * Keyed by id and kept in insertion order, which is what the assertions need: that a
+     * node exists, which parent it hangs off, and — the one that matters — that no href
+     * on it is a URL that would change anything if a browser followed it.
+     */
+    class WP_Admin_Bar
+    {
+        /** @var array<string, array<string, mixed>> */
+        public array $nodes = [];
+
+        /**
+         * @param array<string, mixed> $node
+         */
+        public function add_node(array $node): void
+        {
+            $id = (string) ($node['id'] ?? '');
+
+            $this->nodes[$id] = $node;
+        }
+
+        /**
+         * @param array<string, mixed> $node
+         */
+        public function add_menu(array $node): void
+        {
+            $this->add_node($node);
+        }
+    }
+}
+
+// ──────────────────────────────────────────────
+// Human-readable formatting
+// ──────────────────────────────────────────────
+
+if (!function_exists('size_format')) {
+    function size_format(int|float|string $bytes, int $decimals = 0): string|false
+    {
+        $bytes = (float) $bytes;
+
+        if ($bytes < 0) {
+            return false;
+        }
+
+        foreach ([['GB', 1024 ** 3], ['MB', 1024 ** 2], ['KB', 1024]] as [$unit, $size]) {
+            if ($bytes >= $size) {
+                return number_format($bytes / $size, $decimals) . ' ' . $unit;
+            }
+        }
+
+        return number_format($bytes, 0) . ' B';
+    }
+}
+
+if (!function_exists('human_time_diff')) {
+    function human_time_diff(int $from, int $to = 0): string
+    {
+        $seconds = abs(($to === 0 ? time() : $to) - $from);
+
+        foreach ([['hour', 3600], ['min', 60]] as [$unit, $size]) {
+            if ($seconds >= $size) {
+                return intdiv($seconds, $size) . ' ' . $unit . 's';
+            }
+        }
+
+        return $seconds . ' secs';
     }
 }

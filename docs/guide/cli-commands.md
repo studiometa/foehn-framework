@@ -104,6 +104,18 @@ wp foehn rewrite:flush
 
 Foehn flushes on its own when the set of `#[AsRewriteRule]` declarations changes. This command is for when something else left the rules stale. See [Rewrite Rules](/guide/rewrite-rules#flushing-which-is-the-whole-difficulty).
 
+### Verification
+
+```bash
+# Fail a CI job when a WordPress or plugin update raised a diagnostic
+wp foehn verify --profile=updates --output=build/foehn-verification.json
+
+# Refuse to finish a deploy on unsafe production configuration
+wp foehn verify --profile=production
+```
+
+Runs one named release gate and writes a deterministic JSON report. It exits `0` on a pass, `1` on actionable diagnostics or a failed check, and `2` when the gate could not run at all — so a CI job can tell a regression from a broken step. The profile is required and there is no flag to select individual checks. See [Verification](/guide/verification) for both profiles, the report schema, and what each gate cannot observe.
+
 ### Security Keys
 
 WordPress signs authentication cookies and nonces with eight keys. They live in the environment, so a project keeps them wherever it keeps its other secrets. `composer install` fills them into `.env` on a first install, and the generated `wp-config.php` refuses to serve a production request without them.

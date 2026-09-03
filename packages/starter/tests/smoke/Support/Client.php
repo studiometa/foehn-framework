@@ -25,6 +25,16 @@ final readonly class Client
      */
     public static function get(string $url, array $cookies = [], array $headers = []): Response
     {
+        return self::send($url, $cookies, $headers);
+    }
+
+    /**
+     * @param array<string, string> $cookies
+     * @param array<string, string> $headers
+     * @param string|null $body A request body, which also makes the request a POST.
+     */
+    private static function send(string $url, array $cookies, array $headers, ?string $body = null): Response
+    {
         $handle = curl_init($url);
 
         if (!$handle instanceof CurlHandle) {
@@ -66,19 +76,40 @@ final readonly class Client
             curl_setopt($handle, CURLOPT_COOKIE, implode('; ', $pairs));
         }
 
-        $body = curl_exec($handle);
+        if ($body !== null) {
+            curl_setopt($handle, CURLOPT_POST, true);
+            curl_setopt($handle, CURLOPT_POSTFIELDS, $body);
+        }
+
+        $received = curl_exec($handle);
         $status = (int) curl_getinfo($handle, CURLINFO_RESPONSE_CODE);
         $error = curl_error($handle);
 
         // No curl_close(): deprecated since PHP 8.5, and the handle is freed with the
         // CurlHandle object anyway.
 
-        if (!is_string($body)) {
+        if (!is_string($received)) {
             throw new RuntimeException(sprintf('Request to %s failed: %s', $url, $error));
         }
 
         /** @var array<string, string> $collected */
-        return new Response($status, $collected, $body);
+        return new Response($status, $collected, $received);
+    }
+
+    /**
+     * Post a form to a URL.
+     *
+     * Needed only by the admin-mutation assertions, which have to prove that an
+     * unauthorised POST is refused — and a refusal cannot be tested with a GET, because a
+     * GET is refused for a different reason and would pass while the real check was
+     * missing.
+     *
+     * @param array<string, string> $fields
+     * @param array<string, string> $cookies
+     */
+    public static function post(string $url, array $fields = [], array $cookies = []): Response
+    {
+        return self::send($url, $cookies, [], http_build_query($fields));
     }
 
     /**

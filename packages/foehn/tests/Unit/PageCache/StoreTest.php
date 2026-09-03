@@ -112,6 +112,41 @@ describe('Store', function () {
         expect($this->store->flush())->toBe(0);
     });
 
+    it('counts pages rather than files, whichever way it deletes them', function () {
+        // One meaning of a deletion count across the whole feature: stored response
+        // bodies. An entry is a body plus, usually, a headers sidecar — WordPress sets a
+        // `Link:` header on nearly every response — so counting files reports twice as
+        // many pages as the site has, and an operator reading "12 cleared" for six pages
+        // has been handed a number they cannot act on.
+        $headers = ['Link: </a.css>; rel=preload'];
+        $this->store->put($this->key, '<html>blog</html>', 200, $headers);
+
+        expect(glob($this->root . '/example.com/blog/*'))->toHaveCount(2);
+        expect($this->store->forget($this->key))->toBe(1);
+
+        $this->store->put($this->key, '<html>blog</html>', 200, $headers);
+        $this->store->put(CacheKey::create('example.com', '/blog/page/2/'), '<html>blog 2</html>', 200, $headers);
+
+        expect($this->store->forgetPaginated($this->key))->toBe(2);
+
+        $this->store->put($this->key, '<html>blog</html>', 200, $headers);
+        $this->store->put(CacheKey::create('example.com', '/about/'), '<html>about</html>', 200, $headers);
+
+        expect($this->store->flush())->toBe(2);
+    });
+
+    it('counts pages rather than files when it sweeps', function () {
+        $store = pageCacheStore($this->root, ttl: 3600);
+        $store->put($this->key, '<html>blog</html>', 200, ['Link: </a.css>; rel=preload']);
+
+        foreach ((array) glob($this->root . '/example.com/blog/*') as $file) {
+            touch((string) $file, time() - 7200);
+        }
+
+        expect($store->sweep())->toBe(1);
+        expect($this->root . '/example.com/blog')->not->toBeDirectory();
+    });
+
     it('never expires a page when the TTL says to keep it until a purge', function () {
         $this->store->put($this->key, '<html>hello</html>');
         touch($this->root . '/example.com/blog/index.html', time() - 86400);
@@ -163,6 +198,49 @@ describe('Store', function () {
         expect($this->store->stats())->toBe(['files' => 0, 'bytes' => 0, 'oldest' => null, 'newest' => null]);
     });
 
+    describe('section statistics', function () {
+        it('counts the section entries and their bytes', function () {
+            // The number the Føhn dashboard shows beside the total, so that "clear section
+            // cache" is a decision an operator can make rather than guess at.
+            $this->store->put(
+                CacheKey::create('example.com', '/blog/', 'foehn_sections=posts&'),
+                str_repeat('x', 40),
+                200,
+                ['X-Robots-Tag: noindex, nofollow'],
+            );
+            $this->store->put(CacheKey::create('example.com', '/about/', 'foehn_sections=form&'), str_repeat('x', 60));
+
+            $sections = $this->store->sectionStats();
+
+            // Two bodies. The bytes are every file, sidecar included, because that is what
+            // the disk holds — the same rule `stats()` uses.
+            expect($sections['files'])->toBe(2);
+            expect($sections['bytes'])->toBeGreaterThan(100);
+        });
+
+        it('counts none of the pages the section clear would leave alone', function () {
+            $this->store->put($this->key, str_repeat('x', 100));
+            $this->store->put($this->key, str_repeat('x', 30), 404);
+            $this->store->put(CacheKey::create('example.com', '/blog/', 'lang=fr&'), str_repeat('x', 20));
+
+            expect($this->store->sectionStats())->toBe(['files' => 0, 'bytes' => 0]);
+        });
+
+        it('leaves out a project argument whose name merely ends in the reserved one', function () {
+            // Parsed rather than searched for `foehn_sections=`, so a project that keys
+            // `my_foehn_sections` does not see its variants counted as sections — and does
+            // not then press a button expecting them to go.
+            $store = pageCacheStore($this->root);
+            $store->put(CacheKey::create('example.com', '/blog/', 'my_foehn_sections=posts&'), str_repeat('x', 20));
+
+            expect($store->sectionStats()['files'])->toBe(0);
+        });
+
+        it('reports nothing for an empty cache', function () {
+            expect($this->store->sectionStats())->toBe(['files' => 0, 'bytes' => 0]);
+        });
+    });
+
     describe('status and headers', function () {
         it('stores a 404 under a name of its own', function () {
             // The body alone cannot say what status it was sent with, so the name does.
@@ -189,10 +267,15 @@ describe('Store', function () {
         });
 
         it('stores the headers a response carried, beside the body', function () {
-            $this->store->put($this->key, '<html>hi</html>', 200, [
-                'Link: </a.css>; rel=preload',
-                'Set-Cookie: session=secret',
-            ]);
+            $this->store->put(
+                $this->key,
+                '<html>hi</html>',
+                200,
+                [
+                    'Link: </a.css>; rel=preload',
+                    'Set-Cookie: session=secret',
+                ],
+            );
 
             expect($this->store->headers($this->key))->toBe(['Link: </a.css>; rel=preload']);
             expect($this->root . '/example.com/blog/index.html.headers')->toBeFile();
@@ -219,8 +302,7 @@ describe('Store', function () {
         });
 
         it('points at a headers file beside the body it belongs to', function () {
-            expect($this->store->headersFile($this->key))
-                ->toBe($this->root . '/example.com/blog/index.html.headers');
+            expect($this->store->headersFile($this->key))->toBe($this->root . '/example.com/blog/index.html.headers');
             expect($this->store->headersFile($this->key, 404))
                 ->toBe($this->root . '/example.com/blog/index--404.html.headers');
         });

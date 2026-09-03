@@ -85,6 +85,24 @@ WordPress's pseudo-cron fires on page loads. This image serves cache hits from N
 
 Cron cannot fire on a machine that is stopped, so a site using scale-to-zero gets no scheduled events and no error about it.
 
+### The heartbeat
+
+A cron job that stops working is silent by nature: nothing is due, nothing complains, and the site looks fine until somebody notices the newsletter has not gone out since March. So each successful tick records a timestamp:
+
+| Option                | Value          | Autoload |
+| --------------------- | -------------- | -------- |
+| `foehn_cron_last_run` | Unix timestamp | off      |
+
+Not autoloaded, because a value only a deployment script reads should not be fetched on every page load. `wp foehn verify --profile=production` reads it and fails a deploy whose heartbeat is missing or older than the configured cadence allows.
+
+**A tick that found nothing due still refreshes it.** Nothing being due is the normal case on a site behind a warm cache, so a heartbeat that only moved when work happened would go stale on the quietest, healthiest sites and get them rejected for it. What the heartbeat claims is that the runner completed, not that it had something to do.
+
+If the option write itself fails, the tick fails with it. A run whose events fired but whose heartbeat never landed is a working site that verification declares dead, and that is worth a visible failure rather than a quiet one.
+
+Four cases deliberately leave the previous value alone, which is what makes a stale heartbeat mean something: no WordPress in the container, an unreachable database, failed event execution, and a tick that could not take the overlap lock because the previous one was still running. The first, second and fourth exit `0` — they are ordinary — and only failed execution exits non-zero.
+
+The heartbeat does not prove that every scheduled callback succeeded internally. It proves the runner reached the end of a run. An event whose callback throws makes the tick fail and is caught; an event whose callback quietly does the wrong thing is not this mechanism's job.
+
 ## Database backups
 
 Off unless a site asks for them. `BACKUP_ENABLED=true` schedules a `mariadb-dump` into a [Restic](https://restic.net) repository on S3-compatible storage, with grandfather-father-son retention, a weekly prune and a weekly restore drill.

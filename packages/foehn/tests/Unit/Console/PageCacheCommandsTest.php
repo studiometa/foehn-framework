@@ -8,6 +8,7 @@ use Studiometa\Foehn\Console\Commands\PageCacheConfigCommand;
 use Studiometa\Foehn\Console\Commands\PageCacheStatusCommand;
 use Studiometa\Foehn\Console\WpCli;
 use Studiometa\Foehn\PageCache\CacheKey;
+use Studiometa\Foehn\PageCache\Invalidator;
 use Studiometa\Foehn\PageCache\ServerConfig\ApacheSnippet;
 use Studiometa\Foehn\PageCache\Store;
 
@@ -18,6 +19,7 @@ beforeEach(function () {
     $this->root = pageCacheRoot();
     $this->config = new PageCacheConfig(enabled: true, path: $this->root);
     $this->store = new Store($this->config);
+    $this->invalidator = new Invalidator($this->config, $this->store);
 
     $this->logged = static fn(): string => implode("\n", array_column(
         array_column(wp_stub_get_calls('wp_cli_log'), 'args'),
@@ -30,14 +32,16 @@ afterEach(function () {
 });
 
 describe('cache:clear', function () {
-    it('empties the cache and says how much it removed', function () {
+    it('empties the cache and says how many pages it removed', function () {
         $this->store->put(CacheKey::create('example.com', '/'), '<html>home</html>');
         $this->store->put(CacheKey::create('example.com', '/blog/'), '<html>blog</html>');
 
-        (new PageCacheClearCommand(new WpCli(), $this->config, $this->store))([], []);
+        (new PageCacheClearCommand(new WpCli(), $this->config, $this->invalidator))([], []);
 
         expect($this->store->stats()['files'])->toBe(0);
-        expect(wp_stub_get_calls('wp_cli_success')[0]['args']['message'])->toContain('2 files');
+        // Pages, not files. An entry is a body and usually a headers sidecar, so the
+        // file count is about double and is a number nobody can act on.
+        expect(wp_stub_get_calls('wp_cli_success')[0]['args']['message'])->toContain('2 pages');
     });
 
     it('clears one URL and its pagination, leaving the rest', function () {
@@ -45,7 +49,7 @@ describe('cache:clear', function () {
         $this->store->put(CacheKey::create('example.com', '/blog/page/2/'), '<html>blog 2</html>');
         $this->store->put(CacheKey::create('example.com', '/about/'), '<html>about</html>');
 
-        (new PageCacheClearCommand(new WpCli(), $this->config, $this->store))([], [
+        (new PageCacheClearCommand(new WpCli(), $this->config, $this->invalidator))([], [
             'url' => 'https://example.com/blog/',
         ]);
 
@@ -55,9 +59,22 @@ describe('cache:clear', function () {
     });
 
     it('refuses a URL it cannot turn into a cache key', function () {
-        (new PageCacheClearCommand(new WpCli(), $this->config, $this->store))([], ['url' => '/blog/']);
+        (new PageCacheClearCommand(new WpCli(), $this->config, $this->invalidator))([], ['url' => '/blog/']);
 
         expect(wp_stub_get_calls('wp_cli_error'))->toHaveCount(1);
+        expect(wp_stub_get_calls('wp_cli_success'))->toBe([]);
+    });
+
+    it('reports a URL nothing was cached for as a clear, not as an error', function () {
+        // The distinction the null return exists for: a URL this cache would refuse to
+        // key is an argument mistake, and a valid URL with no stored page is a clear
+        // that had nothing to do.
+        (new PageCacheClearCommand(new WpCli(), $this->config, $this->invalidator))([], [
+            'url' => 'https://example.com/never-visited/',
+        ]);
+
+        expect(wp_stub_get_calls('wp_cli_error'))->toBe([]);
+        expect(wp_stub_get_calls('wp_cli_success')[0]['args']['message'])->toContain('0 pages');
     });
 
     it('still clears what an earlier release left behind, and says so', function () {
@@ -67,7 +84,7 @@ describe('cache:clear', function () {
         $store = new Store($disabled);
         $store->put(CacheKey::create('example.com', '/'), '<html>home</html>');
 
-        (new PageCacheClearCommand(new WpCli(), $disabled, $store))([], []);
+        (new PageCacheClearCommand(new WpCli(), $disabled, new Invalidator($disabled, $store)))([], []);
 
         expect($store->stats()['files'])->toBe(0);
         expect(wp_stub_get_calls('wp_cli_warning'))->toHaveCount(1);

@@ -21,6 +21,9 @@ use WP_Term;
  * run the same recursive delete forty times, and the fortieth would be walking
  * directories the first had already removed.
  *
+ * The deletion itself belongs to {@see Invalidator}, which every other caller uses too.
+ * This class decides *when* and *what*; it does not build a cache key or touch a file.
+ *
  * Two escape hatches are actions rather than methods, so a plugin, a CDN integration or
  * a project's own code can reach them without a class reference:
  *
@@ -61,7 +64,7 @@ final class Purger
 
     public function __construct(
         private readonly PageCacheConfig $config,
-        private readonly Store $store,
+        private readonly Invalidator $invalidator,
         ?PurgeTargets $resolver = null,
     ) {
         $this->resolver = $resolver ?? new PurgeTargets();
@@ -219,19 +222,16 @@ final class Purger
     {
         if ($this->flushQueued) {
             $this->flushQueued = false;
-            $this->store->flush();
+            $this->invalidator->flush();
 
             return;
         }
 
         foreach ($this->targets as $url => $paginated) {
-            $key = self::keyFor($url);
-
-            if ($key === null) {
-                continue;
-            }
-
-            $paginated ? $this->store->forgetPaginated($key) : $this->store->forget($key);
+            // A null answer is a URL that cannot become a cache key, which means no file
+            // was ever written for it. There is nothing to purge and nobody to report it
+            // to: this runs on `shutdown`, with the response already on its way out.
+            $this->invalidator->forgetUrl($url, $paginated);
         }
 
         $this->targets = [];
@@ -324,21 +324,6 @@ final class Purger
         }
 
         $this->targets[$url] = ($this->targets[$url] ?? false) || $paginated;
-    }
-
-    /**
-     * The key a purge target maps to, or null when the URL has none.
-     */
-    private static function keyFor(string $url): ?CacheKey
-    {
-        $host = parse_url($url, PHP_URL_HOST);
-        $path = parse_url($url, PHP_URL_PATH);
-
-        if (!is_string($host)) {
-            return null;
-        }
-
-        return CacheKey::create($host, is_string($path) ? $path : '/');
     }
 
     /**

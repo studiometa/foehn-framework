@@ -5,69 +5,94 @@ declare(strict_types=1);
 namespace Studiometa\Foehn\Helpers;
 
 /**
- * Environment detection helpers.
+ * The one place the framework decides which environment it is running in.
  *
- * Provides a consistent API for detecting the current environment
- * and debug mode, supporting multiple env variable conventions.
+ * Everything that behaves differently outside production — page-cache eligibility,
+ * the non-production indexing guard, the operational dashboard, production
+ * verification — reads it here. Two of those disagreeing is not a cosmetic problem: a
+ * site that the cache considers production and the indexing guard considers staging
+ * serves cached pages that tell search engines to drop them.
  *
- * @see https://github.com/studiometa/foehn-framework/issues/55
+ * The resolution order is WordPress's own, in the order WordPress itself would answer:
+ *
+ * 1. `wp_get_environment_type()`, when WordPress is loaded;
+ * 2. the `WP_ENVIRONMENT_TYPE` constant, for the readers that run before it is;
+ * 3. the `WP_ENVIRONMENT_TYPE` environment variable;
+ * 4. `production`.
+ *
+ * Steps 2 and 3 exist for the page-cache drop-in, which runs from `wp-settings.php`
+ * before `wp-includes/load.php` has defined the function. Production is the default
+ * because it is the answer that makes the framework behave most conservatively — and
+ * because it is what WordPress defaults to.
+ *
+ * **No `.env` file is read at runtime.** A production container injects environment
+ * variables without ever writing one, so a framework that needed the file would be
+ * reading nothing precisely where being right matters most.
+ *
+ * @see https://developer.wordpress.org/reference/functions/wp_get_environment_type/
  */
 final class Env
 {
     /**
-     * Get the current environment name.
-     *
-     * Checks APP_ENV, WP_ENV, or falls back to 'production'.
+     * The environment WordPress reports, or the closest thing available to the caller.
      */
     public static function get(): string
     {
-        return getenv('APP_ENV') ?: getenv('WP_ENV') ?: 'production';
+        if (function_exists('wp_get_environment_type')) {
+            return wp_get_environment_type();
+        }
+
+        if (defined('WP_ENVIRONMENT_TYPE')) {
+            $type = (string) constant('WP_ENVIRONMENT_TYPE');
+
+            if ($type !== '') {
+                return $type;
+            }
+        }
+
+        $type = getenv('WP_ENVIRONMENT_TYPE');
+
+        return is_string($type) && $type !== '' ? $type : 'production';
     }
 
     /**
-     * Check if the current environment matches.
+     * Whether the current environment is the one named.
      */
     public static function is(string $environment): bool
     {
         return self::get() === $environment;
     }
 
-    /**
-     * Check if running in production.
-     */
     public static function isProduction(): bool
     {
         return self::is('production');
     }
 
-    /**
-     * Check if running in development.
-     */
     public static function isDevelopment(): bool
     {
         return self::is('development');
     }
 
-    /**
-     * Check if running in staging.
-     */
     public static function isStaging(): bool
     {
         return self::is('staging');
     }
 
     /**
-     * Check if running in a local environment.
+     * Whether this is a developer's own machine.
      *
-     * Returns true for both 'local' and 'development' environments.
+     * Exactly `local`, and not `development` as well. WordPress defines the two as
+     * separate types — `local` is a laptop, `development` is a shared server somebody
+     * develops against — and folding them together would make the one question this
+     * method exists to answer unanswerable.
      */
     public static function isLocal(): bool
     {
-        return self::is('local') || self::is('development');
+        return self::is('local');
     }
 
     /**
-     * Check if WordPress debug mode is enabled.
+     * Whether `WP_DEBUG` is on.
      */
     public static function isDebug(): bool
     {

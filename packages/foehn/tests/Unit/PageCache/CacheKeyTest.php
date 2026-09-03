@@ -192,33 +192,104 @@ describe('multi-value filenames', function () {
         ['index.php'],
     ]);
 
-describe('status and headers in the name', function () {
-    it('names a 404 apart from the page at the same URL', function () {
-        $key = CacheKey::create('example.com', '/gone/');
+    describe('status and headers in the name', function () {
+        it('names a 404 apart from the page at the same URL', function () {
+            $key = CacheKey::create('example.com', '/gone/');
 
-        expect($key?->filename())->toBe('index.html');
-        expect($key?->filename(404))->toBe('index--404.html');
-        expect($key?->relativePath(404))->toBe('example.com/gone/index--404.html');
+            expect($key?->filename())->toBe('index.html');
+            expect($key?->filename(404))->toBe('index--404.html');
+            expect($key?->relativePath(404))->toBe('example.com/gone/index--404.html');
+        });
+
+        it('names the headers file after the body it belongs to', function () {
+            $key = CacheKey::create('example.com', '/blog/', 'lang=fr&');
+
+            expect($key?->headersFilename())->toBe('index__lang=fr&.html.headers');
+            expect($key?->headersFilename(404))->toBe('index__lang=fr&--404.html.headers');
+            expect($key?->headersRelativePath())->toBe('example.com/blog/index__lang=fr&.html.headers');
+        });
+
+        it('allows a 404 name to be written', function () {
+            // The last gate before the write has to know about the suffix, or every cached
+            // 404 would be refused as an unwritable filename.
+            expect(CacheKey::isWritableFilename('index--404.html'))->toBeTrue();
+            expect(CacheKey::isWritableFilename('index__lang=fr&--404.html'))->toBeTrue();
+        });
+
+        it('still refuses a name that is not this cache\'s', function () {
+            expect(CacheKey::isWritableFilename('index--404.php'))->toBeFalse();
+            expect(CacheKey::isWritableFilename('index.html.headers'))->toBeFalse();
+        });
     });
 
-    it('names the headers file after the body it belongs to', function () {
-        $key = CacheKey::create('example.com', '/blog/', 'lang=fr&');
+    describe('reading a stored name back', function () {
+        it('reads the variant out of every name this cache writes', function () {
+            expect(CacheKey::variantOf('index.html'))->toBe('');
+            expect(CacheKey::variantOf('index--404.html'))->toBe('');
+            expect(CacheKey::variantOf('index__lang=fr&.html'))->toBe('lang=fr&');
+            expect(CacheKey::variantOf('index__lang=fr&page=2&.html'))->toBe('lang=fr&page=2&');
+            expect(CacheKey::variantOf('index__lang=fr&--404.html'))->toBe('lang=fr&');
+        });
 
-        expect($key?->headersFilename())->toBe('index__lang=fr&.html.headers');
-        expect($key?->headersFilename(404))->toBe('index__lang=fr&--404.html.headers');
-        expect($key?->headersRelativePath())->toBe('example.com/blog/index__lang=fr&.html.headers');
-    });
+        it('reads a headers sidecar as the entry it belongs to', function () {
+            expect(CacheKey::variantOf('index.html.headers'))->toBe('');
+            expect(CacheKey::variantOf('index__lang=fr&.html.headers'))->toBe('lang=fr&');
+        });
 
-    it('allows a 404 name to be written', function () {
-        // The last gate before the write has to know about the suffix, or every cached
-        // 404 would be refused as an unwritable filename.
-        expect(CacheKey::isWritableFilename('index--404.html'))->toBeTrue();
-        expect(CacheKey::isWritableFilename('index__lang=fr&--404.html'))->toBeTrue();
-    });
+        it('refuses a name this cache did not write', function () {
+            // The load-bearing half. Deleting a section entry means walking a directory
+            // tree, and a file the cache did not write is a file it has no business
+            // removing — a developer's own copy, something another tool left there. An
+            // unrecognised name is refused rather than parsed as far as it goes.
+            foreach ([
+                'index.php',
+                'index.html.bak',
+                'index__lang=fr&.html.tmp',
+                'index__lang=fr&.html.0.tmp',
+                'notindex.html',
+                'index__.html',
+                'index.htm',
+                '',
+            ] as $filename) {
+                expect(CacheKey::variantOf($filename))->toBeNull(var_export($filename, true) . ' is not ours');
+            }
+        });
 
-    it('still refuses a name that is not this cache\'s', function () {
-        expect(CacheKey::isWritableFilename('index--404.php'))->toBeFalse();
-        expect(CacheKey::isWritableFilename('index.html.headers'))->toBeFalse();
+        it('recognises a section entry wherever the variant puts it', function () {
+            expect(CacheKey::isSectionEntry('index__foehn_sections=posts&.html'))->toBeTrue();
+            expect(CacheKey::isSectionEntry('index__foehn_sections=posts&.html.headers'))->toBeTrue();
+            expect(CacheKey::isSectionEntry('index__foehn_sections=posts,pagination&.html'))->toBeTrue();
+            // The canonical order is the configuration's, sorted — so the reserved name is
+            // not necessarily first.
+            expect(CacheKey::isSectionEntry('index__author=jane&foehn_sections=posts&.html'))->toBeTrue();
+            expect(CacheKey::isSectionEntry('index__foehn_sections=posts&lang=fr&--404.html'))->toBeTrue();
+        });
+
+        it('does not read a whole page or an unrelated variant as a section entry', function () {
+            expect(CacheKey::isSectionEntry('index.html'))->toBeFalse();
+            expect(CacheKey::isSectionEntry('index.html.headers'))->toBeFalse();
+            expect(CacheKey::isSectionEntry('index--404.html'))->toBeFalse();
+            expect(CacheKey::isSectionEntry('index__lang=fr&.html'))->toBeFalse();
+        });
+
+        it('does not read a project name that merely ends in the reserved one as a section', function () {
+            // A keyed argument name may hold an underscore, so `my_foehn_sections` is a name
+            // a project can legitimately configure — and a control labelled "clear section
+            // cache" has no business deleting its variants. This is why the variant is
+            // parsed into pairs instead of searched for `foehn_sections=`.
+            expect(CacheKey::isSectionEntry('index__my_foehn_sections=posts&.html'))->toBeFalse();
+            expect(CacheKey::isSectionEntry('index__lang=fr&my_foehn_sections=posts&.html'))->toBeFalse();
+        });
+
+        it('does not read a value that looks like the reserved name as a section', function () {
+            // A value cannot contain `=` or `&`, so splitting the variant on those two is
+            // exact — but a value may perfectly well spell the name.
+            expect(CacheKey::isSectionEntry('index__lang=foehn_sections&.html'))->toBeFalse();
+        });
+
+        it('does not read a file it did not write as a section entry', function () {
+            expect(CacheKey::isSectionEntry('index__foehn_sections=posts&.html.bak'))->toBeFalse();
+            expect(CacheKey::isSectionEntry('index__foehn_sections=posts&.php'))->toBeFalse();
+        });
     });
-});
 });

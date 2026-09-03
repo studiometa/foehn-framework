@@ -166,8 +166,12 @@ final readonly class Store
     /**
      * Delete the entries of one URL's directory.
      *
-     * `index*.html` rather than `index.html`, so the variant slot the filename reserves
-     * is purged with the page it belongs to rather than left behind.
+     * `index*.html` rather than `index.html`, so every variant slot the filename
+     * reserves — the keyed query args, the 404, the section fragments — is purged with
+     * the page it belongs to rather than left behind. That glob is the invariant this
+     * method is really about, and it has a regression test of its own.
+     *
+     * @return int Stored response bodies removed.
      */
     public function forget(CacheKey $key): int
     {
@@ -184,7 +188,7 @@ final readonly class Store
                 continue;
             }
 
-            $removed += (int) unlink($file);
+            $removed += $this->remove($file);
         }
 
         $this->directory()->pruneUpwards($directory);
@@ -197,6 +201,8 @@ final readonly class Store
      *
      * An archive's pagination is stale whenever the archive is: `/blog/page/2/` holds
      * the same posts `/blog/` does, one screen further down.
+     *
+     * @return int Stored response bodies removed.
      */
     public function forgetPaginated(CacheKey $key): int
     {
@@ -217,7 +223,9 @@ final readonly class Store
     }
 
     /**
-     * Empty the cache. Returns the number of files deleted.
+     * Empty the cache.
+     *
+     * @return int Stored response bodies removed.
      */
     public function flush(): int
     {
@@ -229,7 +237,68 @@ final readonly class Store
                 continue;
             }
 
-            $removed += is_dir($entry) && !is_link($entry) ? $directory->deleteTree($entry) : (int) unlink($entry);
+            if (is_dir($entry) && !is_link($entry)) {
+                $removed += $directory->deleteTree($entry);
+
+                continue;
+            }
+
+            $removed += $this->remove($entry);
+        }
+
+        return $removed;
+    }
+
+    /**
+     * Delete every section-cache entry, and nothing else.
+     *
+     * A section entry is a stored variant whose canonical query carries
+     * `foehn_sections` — the fragments a filtered archive fetches, which go stale for
+     * their own reasons and are the cheapest thing to rebuild. Whole pages and the other
+     * keyed variants that share the directory are left where they are; that selectivity
+     * is the entire point of the operation, so it has a test per neighbour it must not
+     * touch.
+     *
+     * Runs whether or not caching is currently enabled. A release that had it on can
+     * have left files behind, and an operator turning it off is exactly the person who
+     * wants them gone.
+     *
+     * @return int Stored response bodies removed.
+     */
+    public function flushSections(): int
+    {
+        $directory = $this->directory();
+        $removed = 0;
+        $touched = [];
+
+        foreach ($directory->walk($this->root()) as $entry) {
+            if ($entry->isDir()) {
+                continue;
+            }
+
+            if (!CacheKey::isSectionEntry($entry->getFilename())) {
+                continue;
+            }
+
+            $body = CacheKey::isWritableFilename($entry->getFilename());
+            $parent = $entry->getPath();
+
+            if (!unlink($entry->getPathname())) {
+                continue;
+            }
+
+            $touched[$parent] = true;
+
+            if ($body) {
+                $removed++;
+            }
+        }
+
+        // Pruned after the walk rather than inside it: the iterator is reading the
+        // directory this would remove, and CHILD_FIRST does not help — a section entry
+        // sits beside the page it belongs to, not below it.
+        foreach (array_keys($touched) as $parent) {
+            $directory->pruneUpwards($parent);
         }
 
         return $removed;
@@ -241,6 +310,8 @@ final readonly class Store
      * nginx's `try_files` cannot check a file's age, and neither can `mod_rewrite`, so
      * this is not an optimisation: with a `ttl` set, the sweep interval is the real
      * bound on how stale a served page can be.
+     *
+     * @return int Stored response bodies removed.
      */
     public function sweep(): int
     {
@@ -265,7 +336,7 @@ final readonly class Store
                 continue;
             }
 
-            $removed += (int) unlink($entry->getPathname());
+            $removed += $this->remove($entry->getPathname());
         }
 
         foreach ($emptied as $path) {
@@ -286,13 +357,50 @@ final readonly class Store
      */
     public function stats(): array
     {
+        return $this->measure();
+    }
+
+    /**
+     * What the section cache alone is holding.
+     *
+     * Reported beside {@see Store::stats()} rather than folded into it, because the two
+     * numbers answer different questions and an operator looking at a dashboard needs
+     * both: how much of the site is cached, and how much of that is the fragments a
+     * filtered archive fetches. A section entry rebuilds in a fraction of a page render,
+     * so a section count that dwarfs the page count is a reason to clear sections only —
+     * which is the button beside it.
+     *
+     * See {@see CacheKey::isSectionEntry()} for why the filename is parsed rather than
+     * searched for `foehn_sections=`.
+     *
+     * @return array{files: int, bytes: int}
+     */
+    public function sectionStats(): array
+    {
+        $measured = $this->measure(CacheKey::isSectionEntry(...));
+
+        return ['files' => $measured['files'], 'bytes' => $measured['bytes']];
+    }
+
+    /**
+     * Count the entries a filename predicate accepts, and their bytes.
+     *
+     * One walk for both public readers, so the two can never come to disagree about what
+     * a body is or which bytes count — and a dashboard that showed more section entries
+     * than entries would be a dashboard nobody trusts again.
+     *
+     * @param (callable(string): bool)|null $accepts Which filenames to count. Null counts all.
+     * @return array{files: int, bytes: int, oldest: int|null, newest: int|null}
+     */
+    private function measure(?callable $accepts = null): array
+    {
         $files = 0;
         $bytes = 0;
         $oldest = null;
         $newest = null;
 
         foreach ($this->directory()->walk($this->root()) as $entry) {
-            if ($entry->isDir()) {
+            if ($entry->isDir() || $accepts !== null && !$accepts($entry->getFilename())) {
                 continue;
             }
 
@@ -311,6 +419,27 @@ final readonly class Store
         }
 
         return ['files' => $files, 'bytes' => $bytes, 'oldest' => $oldest, 'newest' => $newest];
+    }
+
+    /**
+     * Delete one file and say whether it counted as an entry.
+     *
+     * The one place the counting rule lives, because four deletion paths need it and four
+     * copies of it drifted once already. A stored entry is a body plus, sometimes, a
+     * `.headers` sidecar — so a sidecar is deleted and *not* counted, and an operator told
+     * "12 cleared" for six pages has been handed a number they cannot act on.
+     *
+     * A failed `unlink()` counts as nothing rather than raising. The file is still there
+     * and the reported number says so, which is the honest answer for a cache whose
+     * directory may be owned by another user after a container restart.
+     *
+     * @return int 1 for a stored response body, 0 for anything else.
+     */
+    private function remove(string $file): int
+    {
+        $body = CacheKey::isWritableFilename(basename($file));
+
+        return unlink($file) && $body ? 1 : 0;
     }
 
     private function directory(): CacheDirectory
