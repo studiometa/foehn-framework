@@ -24,8 +24,8 @@
         "johnpbloch/wordpress": "^7.0",
         "league/flysystem-aws-s3-v3": "^3.0",
         "league/glide": "^4.0",
-        "studiometa/foehn": "0.6.0",
-        "studiometa/foehn-installer": "0.6.0",
+        "studiometa/foehn": "0.6.1",
+        "studiometa/foehn-installer": "0.6.1",
         "studiometa/ui": "^1.10"
     },
     "repositories": [

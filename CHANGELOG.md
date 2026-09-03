@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.1] - 2026-09-03
+
+A new project gets the version on the tag, and a suite it can run.
+
+### Fixed
+
+- `composer create-project studiometa/foehn-starter` installed the previous minor: the starter required `^0.5`, and a caret on a `0.x` version pins the minor ([#185])
+- A project created from the starter could not run the smoke suite it was given — no Pest, no PSR-4 mapping for its support classes, and a bootstrap that resolved outside the project ([#185])
+- `composer test` in a generated project failed on the starter's own packaging test, which reads a file the archive does not carry ([#185])
+- Two smoke teardowns ran for cases they had skipped, one warning and one writing a config file into the project ([#185])
+
+### Changed
+
+- The starter and the demo pin `studiometa/foehn` and `studiometa/foehn-installer` to an exact version rather than a range, so `create-project` installs a combination somebody has run. The release workflow refuses a tag its own starter would not install ([#185])
+
+[#185]: https://github.com/studiometa/foehn-framework/pull/185
+[0.6.1]: https://github.com/studiometa/foehn-framework/releases/tag/0.6.1
+
 ## [0.6.0] - 2026-09-03
 
 A deploy can refuse to finish.
