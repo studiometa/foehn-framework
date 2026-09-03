@@ -22,14 +22,17 @@
         "composer/installers": "^2.0",
         "johnpbloch/wordpress": "^7.0",
         "studiometa/ui": "^1.10",
-        "studiometa/foehn": "^0.5",
-        "studiometa/foehn-installer": "^0.5"
+        "studiometa/foehn": "^0.6",
+        "studiometa/foehn-installer": "^0.6"
     },
     "repositories": [
         {
             "type": "composer",
             "url": "https://wpackagist.org",
-            "only": ["wpackagist-plugin/*", "wpackagist-theme/*"]
+            "only": [
+                "wpackagist-plugin/*",
+                "wpackagist-theme/*"
+            ]
         }
     ],
     "autoload": {
@@ -43,8 +46,12 @@
         },
         "wordpress-install-dir": "web/wp",
         "installer-paths": {
-            "web/wp-content/plugins/{$name}/": ["type:wordpress-plugin"],
-            "web/wp-content/mu-plugins/{$name}/": ["type:wordpress-muplugin"]
+            "web/wp-content/plugins/{$name}/": [
+                "type:wordpress-plugin"
+            ],
+            "web/wp-content/mu-plugins/{$name}/": [
+                "type:wordpress-muplugin"
+            ]
         }
     },
     "config": {
@@ -54,9 +61,22 @@
             "studiometa/foehn-installer": true,
             "johnpbloch/wordpress-core-installer": true,
             "composer/installers": true,
-            "studiometa/ui": true
+            "studiometa/ui": true,
+            "pestphp/pest-plugin": true
         }
     },
     "minimum-stability": "stable",
-    "prefer-stable": true
+    "prefer-stable": true,
+    "require-dev": {
+        "pestphp/pest": "^5.1"
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Studiometa\\Foehn\\Smoke\\": "tests/smoke/"
+        }
+    },
+    "scripts": {
+        "test": "pest --configuration=phpunit.xml --test-directory=tests/php",
+        "test:smoke": "pest --configuration=phpunit.smoke.xml --test-directory=tests/smoke"
+    }
 }

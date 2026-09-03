@@ -35,7 +35,7 @@ afterAll(function () {
 
 beforeEach(function () {
     if (!Site::isRunning()) {
-        $this->markTestSkipped('ddev is not running — start it in packages/starter and try again.');
+        $this->markTestSkipped('ddev is not running — run `ddev start` and try again.');
     }
 
     Site::clearCache();
@@ -197,6 +197,15 @@ describe('nginx read path: invalidation', function () {
     });
 
     afterEach(function () {
+        // Guarded, because `afterEach` runs even for a case `beforeEach` skipped —
+        // and it skips whenever there is no ddev, which is the normal state of a
+        // project freshly created from this starter. Ungarded, the property was
+        // never set and five cases reported a warning instead of a skip; under
+        // `failOnWarning` that is a red suite for a site nobody has started yet.
+        if (!isset($this->postId)) {
+            return;
+        }
+
         Site::wp(sprintf('wp post delete %d --force', $this->postId));
     });
 

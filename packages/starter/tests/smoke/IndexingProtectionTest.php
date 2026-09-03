@@ -23,7 +23,7 @@ use Studiometa\Foehn\Smoke\Support\Site;
  */
 beforeEach(function () {
     if (!Site::isRunning()) {
-        $this->markTestSkipped('ddev is not running — start it in packages/starter and try again.');
+        $this->markTestSkipped('ddev is not running — run `ddev start` and try again.');
     }
 });
 

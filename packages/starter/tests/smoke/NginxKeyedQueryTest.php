@@ -23,8 +23,8 @@ beforeAll(function () {
     }
 
     Site::enableCache([
-        'cacheQueryArgs' => "['page' => '^[0-9]{1,6}\$', 'lang' => '^[a-z]{2}\$', "
-            . "'genre' => '^[a-z0-9-]+(?:,[a-z0-9-]+)*\$']",
+        'cacheQueryArgs' =>
+            "['page' => '^[0-9]{1,6}\$', 'lang' => '^[a-z]{2}\$', " . "'genre' => '^[a-z0-9-]+(?:,[a-z0-9-]+)*\$']",
     ]);
     Site::wp("wp rewrite structure '/%postname%/' --hard");
     Site::useNginx(true);
@@ -44,7 +44,7 @@ afterAll(function () {
 
 beforeEach(function () {
     if (!Site::isRunning()) {
-        $this->markTestSkipped('ddev is not running — start it in packages/starter and try again.');
+        $this->markTestSkipped('ddev is not running — run `ddev start` and try again.');
     }
 
     Site::clearCache();
