@@ -5,17 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.6.0] - 2026-09-03
+
+A deploy can refuse to finish.
 
 ### Added
 
 - Page-local HTML section rendering through `?foehn_sections=...`, with `foehn_section()` and `foehn_section_url()` Twig helpers, active Twig context, atomic multi-section responses, and lazy loading through `@studiometa/ui` `LazyInclude` ([#164])
+- One page-cache invalidation service, `PageCache\Invalidator`, with full, section-only and per-URL clearing. Every runtime caller uses it ([#174])
+- Non-production sites are kept out of the search index: `noindex, nofollow`, an `X-Robots-Tag`, `Disallow: /` and no core sitemaps. Production registers nothing ([#175])
+- The runtime image's cron records a `foehn_cron_last_run` heartbeat after a successful pass ([#176])
+- `wp foehn verify --profile=updates`, a CI gate that fails on the PHP and WordPress diagnostics raised while the site boots ([#177])
+- A Føhn admin page and admin-bar cache controls for `manage_options`, POST-only and nonce-protected ([#178])
+- `wp foehn verify --profile=production`, a deployment gate over environment, debug, indexing, salts, cron and page-cache storage ([#179])
+
+### Changed
+
+- **Breaking:** `Env::get()` resolves `wp_get_environment_type()`, the `WP_ENVIRONMENT_TYPE` constant, that environment variable, the `WP_ENV` alias, then `production`; `PageCacheConfig::environment()` delegates to it ([#174], [#183])
+- **Breaking:** `Env::isLocal()` is true for `local` only, no longer for `development` ([#174])
+- **Breaking:** `Purger::__construct()` and `PageCacheClearCommand::__construct()` take a `PageCache\Invalidator` instead of a `PageCache\Store` ([#174])
+- **Breaking:** a deletion count means stored response bodies, so `Store::flush()`, `forget()`, `forgetPaginated()`, `sweep()` and `wp foehn cache:clear` report about half what they did ([#174])
+- CI runs on every pull request, not only those targeting `main` ([#174])
 
 ### Removed
 
 - **Breaking:** the REST/JSON Render API, its configuration, hook, and `/wp-json/foehn/v1/render` route. Section rendering now uses normal page URLs and permanently reserves the namespaced `foehn_sections` query parameter. See the [migration guide](docs/guide/section-rendering.md#migrate-from-the-render-api) ([#164])
+- **Breaking:** `APP_ENV` is no longer read. Set `WP_ENVIRONMENT_TYPE`, or `WP_ENV` which is kept as an alias — a site left on `APP_ENV` resolves to `production` silently, which makes the page cache eligible and stands the indexing guard down ([#174], [#183])
 
 [#164]: https://github.com/studiometa/foehn-framework/pull/164
+[#174]: https://github.com/studiometa/foehn-framework/pull/174
+[#175]: https://github.com/studiometa/foehn-framework/pull/175
+[#176]: https://github.com/studiometa/foehn-framework/pull/176
+[#177]: https://github.com/studiometa/foehn-framework/pull/177
+[#178]: https://github.com/studiometa/foehn-framework/pull/178
+[#179]: https://github.com/studiometa/foehn-framework/pull/179
+[#183]: https://github.com/studiometa/foehn-framework/pull/183
+[0.6.0]: https://github.com/studiometa/foehn-framework/releases/tag/0.6.0
 
 ## [0.5.10] - 2026-08-26
 
