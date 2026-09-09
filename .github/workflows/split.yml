@@ -11,6 +11,31 @@ jobs:
   split:
     name: Split ${{ matrix.package.name }}
     runs-on: ubuntu-latest
+
+    # One split at a time per target repository.
+    #
+    # A release is two pushes — the `main` merge and the tag — so GitHub starts two runs
+    # of this workflow within a second of each other. The action has no tag-only mode:
+    # `branch` defaults to `main` and is required, so *both* runs clone the target, commit
+    # the package tree onto `main` and push that branch. The second to arrive is rejected
+    # with `! [rejected] main -> main (fetch first)`, and because the action pushes the
+    # branch before the tag and dies on a failed command, the tag push never happens at
+    # all. That is how `0.6.1` reached four mirrors and left `foehn-demo` a version
+    # behind, with one red job as the only sign.
+    #
+    # Serialised, either order works: whichever run goes second finds the content already
+    # there, prints "No files to change", and goes straight to pushing its tag.
+    #
+    # Keyed on the remote rather than on the run, because two runs pushing *different*
+    # targets never collide and grouping them all would make each release wait five times
+    # over. `cancel-in-progress` stays off — the run being kept is the one carrying the
+    # tag. GitHub queues only one run per group, so a third push landing on the same
+    # target inside a ~20s split would still drop the middle one; that is a narrower
+    # window than a release, which was hitting the race every time.
+    concurrency:
+      group: split-${{ matrix.package.remote }}
+      cancel-in-progress: false
+
     strategy:
       fail-fast: false
       matrix:
