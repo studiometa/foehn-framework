@@ -123,6 +123,13 @@ jobs:
           echo "WP-CLI is installed"
           run 'wp --allow-root --version --skip-plugins --skip-themes 2>/dev/null' | grep -q 'WP-CLI'
 
+          echo "WP-CLI raises no deprecation of its own on this PHP"
+          # The two the published 2.12.0 phar raises on PHP 8.5, and the reason
+          # the Dockerfile builds its own: one per colourised fragment from
+          # `php-cli-tools`, one per process from `react/promise`. `colorize()`
+          # exercises the first; any command at all exercises the second.
+          ! run 'wp --allow-root --skip-wordpress eval "echo WP_CLI::colorize(\"%Gok%n\");" 2>&1' | grep -q 'Deprecated'
+
           echo "The extensions a WordPress site needs are present"
           for ext in mysqli gd exif intl; do
             run "php -m" | grep -qx "$ext"
