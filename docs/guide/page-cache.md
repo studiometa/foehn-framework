@@ -132,6 +132,8 @@ Request order does not matter, and that is the interesting part: no reader sorts
 
 Each name carries the pattern its value must match, because the value becomes part of a filename — a list without patterns gets `^[A-Za-z0-9_.,\-]{1,64}$`. A value your pattern rejects is a bypass, never a guess: `?page=abc` goes to PHP rather than quietly serving page one. Your pattern can only narrow the characters a filename may hold, never widen them.
 
+A name may hold a hyphen — a taxonomy registered as `product-type` has a query var spelled that way. nginx cannot hold one in a variable name, so the snippet spells it `$foehn_val_product_type` and reads the value out of the query string instead of through `$arg_`. That makes `a-b` and `a_b` one variable: name both, and neither is keyed.
+
 Two more rules keep the readers honest. `?page=` counts as no query at all, and a **repeated bare name** bypasses — nginx reads the first `page=` and PHP the last, so `?page=1&page=2` has no answer both would give.
 
 ### Filters with more than one value

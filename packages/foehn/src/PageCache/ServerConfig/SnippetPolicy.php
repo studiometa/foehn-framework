@@ -121,7 +121,8 @@ final readonly class SnippetPolicy
      * without nginx being able to sort anything.
      *
      * Each arg has two spellings and nginx reads them differently. The bare `genre=` is
-     * `$arg_genre`. The bracketed `genre[]=rock&genre[]=jazz` — what a checkbox group
+     * `$arg_genre` — see {@see SnippetPolicy::bareStatement()} for the name nginx cannot
+     * spell that way. The bracketed `genre[]=rock&genre[]=jazz` — what a checkbox group
      * posts — has no variable at all, because a variable name may not hold brackets, so
      * its members are read out of `$args` one regex capture at a time and joined with
      * commas in request order, which is exactly the join PHP performs. Both spellings end
@@ -140,8 +141,10 @@ final readonly class SnippetPolicy
         $lines = [];
 
         foreach ($this->config->getCacheQueryArgs() as $name => $pattern) {
+            $var = self::variable($name);
+
             $lines[] = sprintf('# %s — the bare spelling, or the members of the bracketed one joined.', $name);
-            $lines[] = sprintf('set $foehn_val_%s $arg_%s;', $name, $name);
+            $lines[] = $this->bareStatement($name);
             $lines = [...$lines, ...$this->memberStatements($name)];
 
             // Six statements where PHP needs two, because nginx has no `and` and therefore
@@ -155,20 +158,63 @@ final readonly class SnippetPolicy
             //
             // Run on the joined value, so the 64-character floor caps the members as a
             // whole — which is the cap PHP applies to them too.
-            $lines[] = sprintf('set $foehn_arg_%s "empty";', $name);
-            $lines[] = sprintf('if ($foehn_val_%s != "") { set $foehn_arg_%s "invalid"; }', $name, $name);
-            $lines[] = sprintf('if ($foehn_val_%s ~ "%s") { set $foehn_arg_%s "valid"; }', $name, $pattern, $name);
-            $lines[] = sprintf('if ($foehn_val_%s ~ "%s") { set $foehn_arg_%s "invalid"; }', $name, $floor, $name);
+            $lines[] = sprintf('set $foehn_arg_%s "empty";', $var);
+            $lines[] = sprintf('if ($foehn_val_%s != "") { set $foehn_arg_%s "invalid"; }', $var, $var);
+            $lines[] = sprintf('if ($foehn_val_%s ~ "%s") { set $foehn_arg_%s "valid"; }', $var, $pattern, $var);
+            $lines[] = sprintf('if ($foehn_val_%s ~ "%s") { set $foehn_arg_%s "invalid"; }', $var, $floor, $var);
+            // The key carries the name as written — `a-b=` — since that is the filename
+            // PHP wrote; only the variable holding the value is spelled nginx's way.
             $lines[] = sprintf(
                 'if ($foehn_arg_%s = "valid") { set $foehn_q "${foehn_q}%s=$foehn_val_%s&"; }',
+                $var,
                 $name,
-                $name,
-                $name,
+                $var,
             );
-            $lines[] = sprintf('if ($foehn_arg_%s = "invalid") { set $foehn_bypass 0; }', $name);
+            $lines[] = sprintf('if ($foehn_arg_%s = "invalid") { set $foehn_bypass 0; }', $var);
         }
 
         return implode("\n", $lines);
+    }
+
+    /**
+     * The nginx variable suffix a keyed name gets: `a-b` becomes `$foehn_val_a_b`.
+     *
+     * A keyed name may hold a hyphen — a taxonomy registered as `product-type` has a
+     * query var spelled that way — and an nginx variable name may not: `$foehn_val_a-b`
+     * fails `nginx -t`, and `$arg_a-b` is read as `$arg_a` followed by the literal `-b`.
+     * The hyphen is the only character a name admits that a variable does not, so one
+     * replacement is the whole rule. It is not injective — `a-b` and `a_b` meet here —
+     * which is why {@see PageCacheConfig::getCacheQueryArgs()} keys neither of a pair
+     * that would.
+     */
+    public static function variable(string $name): string
+    {
+        return str_replace('-', '_', $name);
+    }
+
+    /**
+     * The statement that reads the bare spelling of one keyed arg into `$foehn_val_name`.
+     *
+     * `$arg_name` when nginx can spell it. A hyphenated name has no `$arg_` at all, so its
+     * value is captured out of `$args` with `$arg_name`'s own rule written out: the first
+     * occurrence at the start or after an `&`, with its `=`, up to the next `&`. A bare
+     * `a-b` with no `=` is skipped exactly as `$arg_a-b` would have skipped it, so the
+     * repeated and mixed-spelling guards below hold for both reads alike.
+     */
+    private function bareStatement(string $name): string
+    {
+        $var = self::variable($name);
+
+        if ($var === $name) {
+            return sprintf('set $foehn_val_%s $arg_%s;', $var, $name);
+        }
+
+        return sprintf(
+            'set $foehn_val_%s "";' . "\n" . 'if ($args ~ "(?:^|&)%s=([^&]*)") { set $foehn_val_%s "$1"; }',
+            $var,
+            self::quote($name),
+            $var,
+        );
     }
 
     /**
@@ -206,6 +252,7 @@ final readonly class SnippetPolicy
      */
     private function memberStatements(string $name): array
     {
+        $var = self::variable($name);
         $quoted = self::quote($name);
         $bracketed = $quoted . self::BRACKETS;
         $next = sprintf('[^&]*&(?:[^&]*&)*?%s=', $bracketed);
@@ -218,8 +265,8 @@ final readonly class SnippetPolicy
                 'if ($args ~ "(?:^|&)%s=%s([^&]*)") { set $foehn_val_%s "%s"; }',
                 $bracketed,
                 str_repeat($next, $slot),
-                $name,
-                $slot === 0 ? '$1' : sprintf('${foehn_val_%s},$1', $name),
+                $var,
+                $slot === 0 ? '$1' : sprintf('${foehn_val_%s},$1', $var),
             );
         }
 

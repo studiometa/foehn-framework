@@ -359,6 +359,49 @@ describe('SnippetPolicy', function () {
         expect($statements)->toContain('(?:^|&)a\-b(?:\[\]|%5[Bb]%5[Dd])=([^&]*)');
     });
 
+    it('spells a hyphenated keyed name the way an nginx variable can be spelled', function () {
+        // A taxonomy registered as `product-type` has a query var with a hyphen in it, and
+        // an nginx variable name may not: `$foehn_val_a-b` fails `nginx -t`, and `$arg_a-b`
+        // is `$arg_a` followed by a literal `-b`. So the variable takes an underscore, and
+        // the bare spelling is captured out of `$args` with `$arg_name`'s own rule — while
+        // the key keeps the name as written, because that is the filename PHP wrote.
+        $config = new PageCacheConfig(enabled: true, path: $this->config->path, cacheQueryArgs: ['a-b']);
+        $statements = new SnippetPolicy($config)->canonicalQueryStatements();
+
+        expect($statements)
+            ->toContain('set $foehn_val_a_b "";')
+            ->toContain('if ($args ~ "(?:^|&)a\-b=([^&]*)") { set $foehn_val_a_b "$1"; }')
+            ->toContain('{ set $foehn_val_a_b "${foehn_val_a_b},$1"; }')
+            ->toContain('if ($foehn_val_a_b != "") { set $foehn_arg_a_b "invalid"; }')
+            ->toContain('if ($foehn_arg_a_b = "valid") { set $foehn_q "${foehn_q}a-b=$foehn_val_a_b&"; }')
+            ->not->toContain('$arg_a');
+
+        // No variable anywhere in the rendered snippet ends at a hyphen: `$name-` is where
+        // nginx would either refuse the file or read a shorter variable than was meant.
+        expect(preg_match('/\$\{?[A-Za-z0-9_]+-/', (string) new NginxSnippet($config)->render()))->toBe(0);
+        expect(SnippetPolicy::variable('a-b'))->toBe('a_b');
+    });
+
+    it('reads a hyphenated name the way $arg_name reads one it can spell', function () {
+        // The capture stands in for `$arg_a-b`, so it has to skip and stop where that
+        // would: first occurrence, `=` required, value up to the next `&`, name whole.
+        $statements = new SnippetPolicy(new PageCacheConfig(cacheQueryArgs: ['a-b']))->canonicalQueryStatements();
+
+        preg_match('/if \(\$args ~ "([^"]+)"\) \{ set \$foehn_val_a_b "\$1"; \}/', $statements, $matches);
+        $capture = static fn(string $query): ?string => preg_match('#' . $matches[1] . '#', $query, $m) === 1
+            ? $m[1]
+            : null;
+
+        expect($capture('a-b=x'))->toBe('x');
+        expect($capture('page=2&a-b=x&lang=fr'))->toBe('x');
+        expect($capture('a-b=1&a-b=2'))->toBe('1');
+        expect($capture('a-b='))->toBe('');
+        expect($capture('a-b'))->toBeNull();
+        expect($capture('a-b&a-b=2'))->toBe('2');
+        expect($capture('xa-b=1'))->toBeNull();
+        expect($capture('a-bx=1'))->toBeNull();
+    });
+
     it('bypasses a keyed arg that appears twice, which the readers read differently', function () {
         $policy = new SnippetPolicy(new PageCacheConfig(cacheQueryArgs: ['page']));
 

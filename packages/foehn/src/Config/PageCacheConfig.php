@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Studiometa\Foehn\Config;
 
 use Studiometa\Foehn\Helpers\Env;
+use Studiometa\Foehn\PageCache\ServerConfig\SnippetPolicy;
 use Studiometa\Foehn\Views\Sections\SectionRequest;
 
 /**
@@ -183,6 +184,9 @@ final readonly class PageCacheConfig
      * Entries this cache cannot honour are dropped rather than repaired: an unusable
      * name is then simply an argument nobody configured, which is a bypass. A pattern
      * is dropped if it cannot compile, and `#` is refused because it is the delimiter.
+     * Two names nginx would hold in one variable — `a-b` and `a_b`, see
+     * {@see SnippetPolicy::variable()} — are both dropped, since a snippet keying one of
+     * them would read the other's value as its own.
      *
      * @return array<string, string>
      */
@@ -217,6 +221,21 @@ final readonly class PageCacheConfig
         // the files that can exist are the section combinations the templates declare,
         // and no crawler can add to them.
         $normalized[SectionRequest::PARAMETER] = SectionRequest::VALUE_PATTERN;
+
+        // A hyphen is the one character a name may hold and an nginx variable may not, so
+        // `a-b` and `a_b` are one `$foehn_val_a_b` in the snippet — and the second `set`
+        // would overwrite the first, keying a page under the wrong filter. Neither name is
+        // keyed then, which is a bypass for both. The reserved name is never the one to
+        // go: a project's `foehn-sections` yields to it.
+        $variables = array_count_values(array_map(SnippetPolicy::variable(...), array_keys($normalized)));
+        $normalized = array_filter(
+            $normalized,
+            static fn(string $name): bool => (
+                $variables[SnippetPolicy::variable($name)] === 1
+                || in_array($name, self::RESERVED_QUERY_ARGS, true)
+            ),
+            ARRAY_FILTER_USE_KEY,
+        );
 
         ksort($normalized);
 
