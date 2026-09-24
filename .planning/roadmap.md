@@ -2,7 +2,7 @@
 
 Current and proposed Føhn work, in one place. Detail lives in the linked active specifications; status lives here.
 
-Latest release: `0.5.10`.
+Latest release: `0.6.1`.
 
 ## Active and proposed work
 
@@ -18,7 +18,7 @@ Latest release: `0.5.10`.
 
 ## Shipped foundation
 
-Items 1–10 and 12–14 are done. They include the static page cache, discovery introspection, post meta, the ACF package split, rewrite rules, settings pages, block bindings, the starter/demo split, object-storage integration, and releases from `0.5.0` through `0.5.10`.
+Items 1–10 and 12–14 are done. They include the static page cache, discovery introspection, post meta, the ACF package split, rewrite rules, settings pages, block bindings, the starter/demo split, object-storage integration, and releases from `0.5.0` through `0.6.1`.
 
 Current behavior is documented in `docs/` and demonstrated in `packages/starter/` and `packages/demo/`. The [page-cache architecture](page_cache_spec.md) and [object-storage decision](uploads_object_storage_spec.md) remain as design references.
 
