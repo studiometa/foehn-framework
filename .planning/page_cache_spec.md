@@ -218,7 +218,7 @@ location ^~ /wp-content/cache/foehn/ {
 }
 ```
 
-Five details that are load-bearing rather than stylistic:
+The details that are load-bearing rather than stylistic:
 
 - **A regex capture on `$uri` comes back percent-encoded**, even though `$uri` itself is decoded. Deriving the path with `if ($uri ~ "^(.*?)/?$")` reads as the obvious way to drop a trailing slash, and it silently misses every non-ASCII URL: the page is stored under its decoded name and looked up under its encoded one, so nginx never serves an accented permalink and the drop-in quietly covers for it. `$uri` is interpolated whole, and the trailing slash costs a second `-f` test instead.
 - **`set` inside `if` is why this is server-level.** Building a filename needs `set`, and inside a `location` a matched `if` continues in an implicit location that inherits no content handler — a `try_files` there is silently skipped, so every request carrying `?utm_source=` falls through to PHP while still answering `HIT`. That was the first version of this file, and the end-to-end suite is what caught it. At server level, `set` under `if` is ordinary rewrite-module behaviour.
