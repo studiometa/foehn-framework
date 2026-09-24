@@ -438,10 +438,19 @@ if (is_array($series) && count($series) >= 2) {
     // The array form is what `project_category[]` checkboxes post, and the comma form
     // is what a link carries. WP_Query sorts and joins both before parsing, so they
     // are the same query — this asserts it rather than trusting it.
+    //
+    // Sorted before comparing: both fixture posts share a date, the query orders by
+    // date, and MySQL returns ties in whatever order it likes — same set, unordered.
+    $sortedIds = static function (array $ids): array {
+        sort($ids);
+
+        return $ids;
+    };
+
     $results->same(
         'the checkbox and the comma spellings are one query',
-        $filtered([$first, $second]),
-        $filtered($first . ',' . $second),
+        $sortedIds($filtered([$first, $second])),
+        $sortedIds($filtered($first . ',' . $second)),
     );
 
     $both = $filtered([$first, $second]);
@@ -497,11 +506,7 @@ $results->same(
 
 $results->true('the filtered series is marked active', $filteredOptions[0]->active);
 
-$results->same(
-    'the other series are not',
-    false,
-    $filteredOptions[1]->active ?? true,
-);
+$results->same('the other series are not', false, $filteredOptions[1]->active ?? true);
 
 // ──────────────────────────────────────────────
 // Query filters: the one var WordPress will not read from a URL
