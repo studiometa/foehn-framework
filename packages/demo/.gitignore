@@ -12,6 +12,10 @@ composer.lock
 /theme/dist/
 .stylelintcache
 
+# Tests — result caches written by Pest when test suites run
+/.phpunit.cache/
+/.phpunit.smoke.cache/
+
 # Environment
 .env
 
@@ -37,6 +41,9 @@ composer.lock
 # nginx/. Only our file is kept — nginx-site.conf beside it is ddev-generated.
 !/.ddev/nginx_full/
 !/.ddev/nginx_full/00-foehn-image-limit.conf
+# Written and removed by smoke tests; left behind on aborted runs.
+# Smoke tests generate this nginx include for testing, then delete it when done.
+/.ddev/nginx/foehn-page-cache.conf
 
 # OS
 .DS_Store

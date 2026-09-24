@@ -11,6 +11,10 @@ composer.lock
 /theme/dist/
 .stylelintcache
 
+# Tests — result caches written by Pest when test suites run
+/.phpunit.cache/
+/.phpunit.smoke.cache/
+
 # Environment
 .env
 
@@ -31,6 +35,9 @@ composer.lock
 # Composer par .gitattributes : les hooks qu'il porte supposent les dépôts
 # `path` du monorepo.
 !/.ddev/config.monorepo.yaml
+# Written and removed by smoke tests; left behind on aborted runs.
+# Smoke tests generate this nginx include for testing, then delete it when done.
+/.ddev/nginx/foehn-page-cache.conf
 
 # OS
 .DS_Store
