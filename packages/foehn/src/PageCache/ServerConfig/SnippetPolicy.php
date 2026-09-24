@@ -192,7 +192,12 @@ final readonly class SnippetPolicy
      *   term with a comma in its slug, and a join would key it where `?genre=rock,jazz`
      *   lives. A second spelling of a charset is how dd53e71 quietly refused every
      *   multi-value filename;
-     * - **both spellings in one URL** — PHP refuses that too.
+     * - **both spellings in one URL, with or without an `=` on the bare one** — PHP
+     *   refuses that too. `?genre&genre[]=rock` is the shape that matters: PHP counts the
+     *   bare `genre` as an occurrence with an empty value, while `$arg_genre` is empty for
+     *   it and the member capture would have keyed `genre=rock`. WordPress's own
+     *   `$_GET['genre']` would be `''` there, so the joined key would name a filtered page
+     *   for a request that asked for the unfiltered one.
      *
      * `%5B%5D` is admitted alongside `[]` in any case of the hex, because the query
      * string is never decoded by either reader and a form encoder may write either.
@@ -225,8 +230,10 @@ final readonly class SnippetPolicy
         );
         $lines[] = sprintf('if ($args ~ "(?:^|&)%s=?(?:&|$)") { set $foehn_bypass 0; }', $bracketed);
         $lines[] = sprintf('if ($args ~ "(?:^|&)%s=[^&]*%s") { set $foehn_bypass 0; }', $bracketed, $member);
+        // `(?:=[^&]*)?` and `(?:=|&|$)` admit the bare name without its `=`, because nginx's
+        // `$arg_name` skips one written that way while PHP counts it as an occurrence.
         $lines[] = sprintf(
-            'if ($args ~ "(?:^|&)(?:%s=[^&]*&(?:[^&]*&)*%s=|%s=[^&]*&(?:[^&]*&)*%s=)") { set $foehn_bypass 0; }',
+            'if ($args ~ "(?:^|&)(?:%s(?:=[^&]*)?&(?:[^&]*&)*%s=|%s=[^&]*&(?:[^&]*&)*%s(?:=|&|$))") { set $foehn_bypass 0; }',
             $quoted,
             $bracketed,
             $bracketed,
@@ -241,6 +248,11 @@ final readonly class SnippetPolicy
      *
      * nginx's `$arg_page` is the first `page=` in the query string, PHP's `$_GET['page']`
      * the last. `?page=1&page=2` has no answer both readers would give, so it gets none.
+     *
+     * An occurrence written without its `=` counts too. `$arg_page` skips a bare `page`
+     * and reads the `page=2` after it, while PHP's count of occurrences includes both and
+     * refuses — so `?page&page=2` needs the same decline as `?page=&page=2`, and the guard
+     * makes the `=` optional on both occurrences rather than trust one reader over the other.
      */
     public function repeatedQueryStatements(): string
     {
@@ -249,7 +261,11 @@ final readonly class SnippetPolicy
         foreach (array_keys($this->config->getCacheQueryArgs()) as $name) {
             $quoted = self::quote($name);
 
-            $lines[] = sprintf('if ($args ~ "(?:^|&)%s=[^&]*&(?:.*&)?%s=") { set $foehn_bypass 0; }', $quoted, $quoted);
+            $lines[] = sprintf(
+                'if ($args ~ "(?:^|&)%s(?:=[^&]*)?&(?:.*&)?%s(?:=|&|$)") { set $foehn_bypass 0; }',
+                $quoted,
+                $quoted,
+            );
         }
 
         return implode("\n", $lines);

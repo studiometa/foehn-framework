@@ -155,7 +155,7 @@ nginx has no loop, so its join is unrolled to a fixed number of members and it c
 | six members or more                                                                      | the drop-in      |
 | an empty member — `?genre[]=&genre[]=rock`                                               | the drop-in      |
 | a member holding a comma — `?genre[]=rock,jazz`                                          | nobody: a bypass |
-| both spellings at once — `?genre=rock&genre[]=jazz`                                      | nobody: a bypass |
+| both spellings at once — `?genre=rock&genre[]=jazz`, `?genre&genre[]=rock`               | nobody: a bypass |
 | a bracketed name you did not key — `?foo[]=bar`, `?utm_source[]=x`                       | nobody: a bypass |
 
 Five is the bound the framework already puts on a comma list — a section request carries at most five names — and each member costs one more regex pass over the query string on every request. A facet with more boxes ticked than that is still cached, just not on the fast path.

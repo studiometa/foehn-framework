@@ -156,6 +156,10 @@ describe('keyed query args', function () {
         // key it where the two-term page lives. PHP refuses it, so must nginx.
         'a member holding the separator' => ['?genre=rock,jazz', '?genre[]=rock,jazz', 'BYPASS', null],
         'both spellings in one URL' => ['?genre=rock,jazz', '?genre=rock&genre[]=jazz', 'BYPASS', null],
+        // The bare spelling with no `=`: `$arg_genre` skips it, PHP counts it as an
+        // occurrence — so nginx must not join the member on its own.
+        'both spellings, the bare one with no value' => ['?genre=rock', '?genre&genre[]=rock', 'BYPASS', null],
+        'both spellings, the bare one last and with no value' => ['?genre=rock', '?genre[]=rock&genre', 'BYPASS', null],
         'a member the pattern rejects' => ['?genre=rock,jazz', '?genre[]=rock&genre[]=JAZZ', 'BYPASS', null],
         'a member outside the charset' => ['?genre=rock,jazz', '?genre[]=rock&genre[]=%C3%A9t%C3%A9', 'BYPASS', null],
         'a bracketed name nobody configured' => ['?genre=rock', '?foo[]=bar', 'BYPASS', null],
@@ -184,6 +188,9 @@ describe('keyed query args', function () {
         // nginx reads the first `page=`, PHP the last. Neither guesses.
         'a repeated keyed arg' => ['?page=1&page=2', 'BYPASS'],
         'a repeated keyed arg whose first value is empty' => ['?page=&page=2', 'BYPASS'],
+        // `$arg_page` skips an occurrence with no `=` and reads the next; PHP counts both.
+        'a repeated keyed arg whose first occurrence has no value' => ['?page&page=2', 'BYPASS'],
+        'a repeated keyed arg whose last occurrence has no value' => ['?page=2&page', 'BYPASS'],
         'a value its pattern rejects' => ['?page=abc', 'BYPASS'],
         'a value that would leave the cache directory' => ['?page=../../etc/passwd', 'BYPASS'],
         'an arg nobody configured' => ['?foo=bar', 'BYPASS'],

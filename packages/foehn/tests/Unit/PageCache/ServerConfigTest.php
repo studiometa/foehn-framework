@@ -275,14 +275,74 @@ describe('SnippetPolicy', function () {
                 . QueryKey::MEMBER_CHARACTER_CLASS
                 . '&]") { set $foehn_bypass 0; }',
             )
-            // Both spellings in one URL, in either order.
+            // Both spellings in one URL, in either order, with or without an `=` on the
+            // bare one — `$arg_genre` skips a bare `genre`, PHP counts it.
             ->toContain(
-                'if ($args ~ "(?:^|&)(?:genre=[^&]*&(?:[^&]*&)*genre'
+                'if ($args ~ "(?:^|&)(?:genre(?:=[^&]*)?&(?:[^&]*&)*genre'
                 . $brackets
                 . '=|genre'
                 . $brackets
-                . '=[^&]*&(?:[^&]*&)*genre=)") { set $foehn_bypass 0; }',
+                . '=[^&]*&(?:[^&]*&)*genre(?:=|&|$))") { set $foehn_bypass 0; }',
             );
+    });
+
+    it('declines the shapes PHP refuses, and only those, when its guards are run as regexes', function () {
+        // The guards are PCRE on both sides, so running them here is running what nginx
+        // runs. A query string trips a decline when any guard matches it; the expectation
+        // is QueryKey's own answer, so the two readers are compared rather than restated.
+        $config = new PageCacheConfig(cacheQueryArgs: ['genre' => '^[a-z]+(?:,[a-z]+)*$', 'page' => '^[0-9]+$']);
+        $policy = new SnippetPolicy($config);
+        $statements = $policy->canonicalQueryStatements() . "\n" . $policy->repeatedQueryStatements();
+
+        preg_match_all('/if \(\$args ~ "([^"]+)"\) \{ set \$foehn_bypass 0; \}/', $statements, $matches);
+        $guards = $matches[1];
+        expect($guards)->not->toBeEmpty();
+
+        $declined = static fn(string $query): bool => array_any(
+            $guards,
+            static fn(string $guard): bool => preg_match('#' . $guard . '#', $query) === 1,
+        );
+
+        // Refused by PHP because both spellings are present — the bare one with a value,
+        // empty, or with no `=` at all, in either order.
+        foreach ([
+            'genre=rock&genre[]=jazz',
+            'genre[]=jazz&genre=rock',
+            'genre=&genre[]=rock',
+            'genre&genre[]=rock',
+            'genre[]=rock&genre',
+            'genre&genre[]=rock&genre[]=jazz',
+            'genre[]=rock&genre&genre[]=jazz',
+            'genre[]=rock&page=2&genre',
+            // Refused by PHP because a bare name occurs twice, `=` or not.
+            'page=1&page=2',
+            'page=&page=2',
+            'page&page=2',
+            'page=2&page',
+            'page&page',
+        ] as $query) {
+            expect(QueryKey::canonical($query, $config))->toBeNull($query);
+            expect($declined($query))->toBeTrue($query);
+        }
+
+        // Keyed by PHP, so no guard may fire: nginx joins these itself.
+        foreach ([
+            'genre',
+            'genre=rock',
+            'genre[]=rock&genre[]=jazz',
+            'genre[]=rock&page=2&genre[]=jazz',
+            'page=2&genre[]=jazz&genre[]=rock',
+            'page&genre[]=rock',
+            'page=2',
+        ] as $query) {
+            expect(QueryKey::canonical($query, $config))->not->toBeNull($query);
+            expect($declined($query))->toBeFalse($query);
+        }
+
+        // A name is matched whole: `genrex` is another arg, refused by the known-args
+        // pattern rather than mistaken for a second `genre` by a guard.
+        expect($declined('genre[]=rock&genrex=1'))->toBeFalse();
+        expect($declined('genrex=1&genre=rock'))->toBeFalse();
     });
 
     it('bounds the members it joins at the framework\'s own bound on a comma list', function () {
@@ -302,7 +362,10 @@ describe('SnippetPolicy', function () {
     it('bypasses a keyed arg that appears twice, which the readers read differently', function () {
         $policy = new SnippetPolicy(new PageCacheConfig(cacheQueryArgs: ['page']));
 
-        expect($policy->repeatedQueryStatements())->toContain('if ($args ~ "(?:^|&)page=[^&]*&(?:.*&)?page=")');
+        // The `=` is optional on both occurrences: `$arg_page` skips a bare `page` and
+        // reads the `page=2` after it, PHP counts both and refuses.
+        expect($policy->repeatedQueryStatements())
+            ->toContain('if ($args ~ "(?:^|&)page(?:=[^&]*)?&(?:.*&)?page(?:=|&|$)") { set $foehn_bypass 0; }');
     });
 
     it('points the maintenance test at ABSPATH rather than at the document root', function () {
