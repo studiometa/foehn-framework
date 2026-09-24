@@ -1,0 +1,39 @@
+# No codecov.yml existed before this file: the project/patch checks that everything
+# else runs against are whatever is configured on codecov.io, and this file leaves
+# them alone on purpose — it defines nothing under `coverage.status`. What it adds is
+# a `component_management` entry, which is additive and gets its own status check
+# rather than replacing the default one (see docs.codecov.com/docs/components).
+#
+# Why this component exists (studiometa/foehn-framework#134):
+#
+# The page cache's serve path (`advanced-cache.php`, loaded from
+# `Studiometa\Foehn\PageCache\Server::boot()`), the warmer's HTTP calls, and the
+# generated nginx snippet are exercised for real only by `composer test:smoke` —
+# an HTTP-driven suite that drives a live WordPress inside ddev
+# (packages/starter/tests/smoke/, see run.sh and the Pest specs beside it). The CI
+# job that runs it, "Integration - Starter in WordPress", uploads no coverage: doing
+# that honestly needs a coverage driver running inside the ddev web container, a way
+# to collect coverage per HTTP request (advanced-cache.php runs before WordPress, so
+# the collection window has to open before it), and a merge step feeding a second
+# `codecov-action` upload. Investigated for #134 and set aside for now — reliably
+# standing that up in CI, rather than a spike, is more than a day of work on its own.
+#
+# Until it lands, the default patch check stays honest for the rest of the codebase
+# and this component absorbs the gap instead: #124, almost entirely PageCache work,
+# merged at 80.77% patch coverage against the repo-wide target (87.34% that day) —
+# every uncovered line in it was covered by the smoke suite instead, not untested.
+# 70% keeps this component from waving through a PR that adds real gaps in the part
+# of PageCache that unit tests can reach, without failing the check on the part that
+# only an HTTP-driven WordPress can prove.
+component_management:
+  individual_components:
+    - component_id: pagecache
+      name: Page Cache (integration-only paths)
+      paths:
+        - packages/foehn/src/PageCache/**
+        - packages/foehn/src/Console/Commands/PageCacheStatusCommand.php
+        - packages/foehn/src/Console/Commands/PageCacheConfigCommand.php
+        - packages/installer/src/WebRootGenerator.php
+      statuses:
+        - type: patch
+          target: 70%
