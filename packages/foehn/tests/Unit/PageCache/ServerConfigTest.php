@@ -380,6 +380,7 @@ describe('SnippetPolicy', function () {
         // nginx would either refuse the file or read a shorter variable than was meant.
         expect(preg_match('/\$\{?[A-Za-z0-9_]+-/', (string) new NginxSnippet($config)->render()))->toBe(0);
         expect(SnippetPolicy::variable('a-b'))->toBe('a_b');
+        expect(PageCacheConfig::variableName('a-b'))->toBe('a_b');
     });
 
     it('reads a hyphenated name the way $arg_name reads one it can spell', function () {

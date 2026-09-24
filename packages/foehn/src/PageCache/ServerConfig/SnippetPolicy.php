@@ -179,17 +179,12 @@ final readonly class SnippetPolicy
     /**
      * The nginx variable suffix a keyed name gets: `a-b` becomes `$foehn_val_a_b`.
      *
-     * A keyed name may hold a hyphen — a taxonomy registered as `product-type` has a
-     * query var spelled that way — and an nginx variable name may not: `$foehn_val_a-b`
-     * fails `nginx -t`, and `$arg_a-b` is read as `$arg_a` followed by the literal `-b`.
-     * The hyphen is the only character a name admits that a variable does not, so one
-     * replacement is the whole rule. It is not injective — `a-b` and `a_b` meet here —
-     * which is why {@see PageCacheConfig::getCacheQueryArgs()} keys neither of a pair
-     * that would.
+     * The rule belongs to the configuration, which is what refuses two names that would
+     * meet in one variable; this only spells it. See {@see PageCacheConfig::variableName()}.
      */
     public static function variable(string $name): string
     {
-        return str_replace('-', '_', $name);
+        return PageCacheConfig::variableName($name);
     }
 
     /**
