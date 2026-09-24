@@ -107,6 +107,21 @@ describe('cache:config', function () {
         expect(wp_stub_get_calls('wp_cli_success'))->toBe([]);
     });
 
+    it('prints a snippet that reads a keyed arg in both its spellings', function () {
+        // The snippet a deploy installs is this command's output, so the bracketed capture
+        // has to survive the trip through WP-CLI and not only exist in the generator.
+        $keyed = new PageCacheConfig(enabled: true, path: $this->served->path, cacheQueryArgs: ['genre']);
+
+        (new PageCacheConfigCommand(new WpCli(), $keyed))([], ['server' => 'nginx']);
+
+        $printed = implode("\n", array_column(array_column(wp_stub_get_calls('wp_cli_line'), 'args'), 'message'));
+
+        expect($printed)
+            ->toContain('set $foehn_val_genre $arg_genre;')
+            ->toContain('if ($args ~ "(?:^|&)genre(?:\\[\\]|%5[Bb]%5[Dd])=([^&]*)") { set $foehn_val_genre "$1"; }')
+            ->toContain('genre(?:\\[\\]|%5[Bb]%5[Dd])?');
+    });
+
     it('prints the Apache block', function () {
         (new PageCacheConfigCommand(new WpCli(), $this->served))([], ['server' => 'apache']);
 
