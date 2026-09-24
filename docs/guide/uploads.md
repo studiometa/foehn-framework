@@ -95,7 +95,7 @@ That checks the credentials and a round trip. It does **not** check that `S3_UPL
 curl -I "$(wp eval 'echo wp_get_attachment_url(ID);')"
 ```
 
-A `403` on a bucket that accepted the write usually means the bucket policy denies anonymous reads — which is also what a proxy hits, since it fetches anonymously. Object ACLs are not enough on their own on most S3-compatible providers — see `packages/demo/tests/smoke/provision-bucket.php` for the policy the demo applies to MinIO.
+A `403` on a bucket that accepted the write usually means the bucket policy denies anonymous reads — which is also what a proxy hits, since it fetches anonymously. Object ACLs are not enough on their own on most S3-compatible providers — see `packages/demo/tests/smoke/provision-bucket.php` for the policy the demo applies to RustFS.
 
 ## Migrating an existing library
 
@@ -118,4 +118,4 @@ Every intermediate sub-size write is a network round trip, `#[AsImageSize]` size
 
 ## Seeing it work
 
-`packages/demo` runs the whole path against MinIO in a ddev service: a real upload, the original and every sub-size in the bucket, nothing left on local disk, and a request to the public URL that returns the bytes. `packages/demo/tests/smoke/run.sh` is the shortest description of what "working" means here.
+`packages/demo` runs the whole path against RustFS in a ddev service: a real upload, the original and every sub-size in the bucket, nothing left on local disk, and a request to the public URL that returns the bytes. `packages/demo/tests/smoke/run.sh` is the shortest description of what "working" means here.

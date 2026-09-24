@@ -69,8 +69,8 @@ kill_timeout = '30s'
   # you are not allowed to upload this file type" — a message about the file
   # type, for a problem that has nothing to do with the file type.
   #
-  # MinIO rejects them too, which is why .env.example carries this same line for
-  # the ddev environment. AWS itself needs them left on.
+  # Not a Tigris quirk: .env.example carries this same line for the ddev
+  # environment's object store. AWS itself needs them left on.
   S3_UPLOADS_CHECKSUMS = 'false'
 
   # The runtime image maps `/wp-content/uploads/` and `/_image/` to the bucket

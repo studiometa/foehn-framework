@@ -1,0 +1,47 @@
+# RustFS, so the demo offloads its uploads to object storage the way a deployed
+# site does.
+#
+# Uploads are the one directory a generated web root does not make disposable, and
+# `humanmade/s3-uploads` is how a Føhn site puts them somewhere a container restart
+# cannot take with it. Testing that against a real bucket would mean credentials in
+# CI and a bill; RustFS speaks the same API in a container next to WordPress.
+#
+# RustFS rather than MinIO: MinIO stopped publishing community images in October
+# 2025, archived its open-source repository in February 2026 and deleted
+# `minio/minio` from Docker Hub on 2026-09-11, which is the day `ddev start` stopped
+# working here. RustFS is Apache 2.0 and a drop-in for what the demo uses: the S3
+# API on port 9000, path-style addressing, credentials from the environment, and
+# `PutBucketPolicy`, which tests/smoke/provision-bucket.php relies on for
+# anonymous reads.
+#
+# Two URLs, and the difference between them is the whole configuration:
+#
+# PHP talks to it at http://rustfs:9000, on the project network. Nothing else needs
+# to reach it: uploads are served from the site's own domain, proxied to the bucket
+# by .ddev/nginx/uploads-proxy.conf, so no port of this service is published and no
+# bucket hostname appears in any URL.
+services:
+  rustfs:
+    container_name: ddev-${DDEV_SITENAME}-rustfs
+    image: rustfs/rustfs:1.0.0
+    restart: "no"
+    labels:
+      com.ddev.site-name: ${DDEV_SITENAME}
+      com.ddev.approot: ${DDEV_APPROOT}
+    environment:
+      - RUSTFS_ACCESS_KEY=foehn
+      - RUSTFS_SECRET_KEY=foehn-demo-secret
+      # The demo's credentials are in the repository on purpose: this bucket exists
+      # inside one ddev project and holds nothing but the demo's own test image.
+    volumes:
+      - rustfs:/data
+    healthcheck:
+      # `/health/ready` and not `/health/live`: it answers 503 until the server can
+      # take requests, which is what the post-start hook waits for.
+      test: ["CMD", "curl", "-f", "http://localhost:9000/health/ready"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+volumes:
+  rustfs:

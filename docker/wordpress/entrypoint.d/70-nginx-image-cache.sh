@@ -57,7 +57,7 @@ foehn_nginx_image_cache() {
 
         endpoint_host=$(echo "${S3_UPLOADS_ENDPOINT}" | sed -e 's|^[a-z][a-z0-9+.-]*://||' -e 's|/.*$||')
 
-        # Comme le proxy de médias : MinIO en développement adresse par le chemin,
+        # Comme le proxy de médias : RustFS en développement adresse par le chemin,
         # Tigris et OVH par le sous-domaine.
         if [ "${S3_UPLOADS_PATH_STYLE:-}" = "true" ]; then
             cache_host="$endpoint_host"
