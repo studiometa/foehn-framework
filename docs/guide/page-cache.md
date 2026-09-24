@@ -84,12 +84,12 @@ wp foehn cache:config --server=apache --write
 
 That merges a marker-delimited block into `web/.htaccess`, leaving your own rules and WordPress's permalink block where they are. On a first run it adds the permalink block too: the starter ships no `.htaccess` and `DISALLOW_FILE_MODS` stops WordPress writing one, so installing the cache rules alone would break every URL on the site.
 
-Re-run `cache:config` whenever you change `page-cache*.config.php`. The generated snippets carry a `# policy:` hash, and `wp foehn cache:status` tells you when an installed one no longer matches:
+Re-run `cache:config` whenever you change `page-cache*.config.php`, and after a Føhn update that changes what the snippet says. The generated snippets carry a `# policy:` hash of the configuration they bake in and of the generator that wrote them, and `wp foehn cache:status` tells you when an installed one no longer matches either:
 
 ```
 Read paths:
   ✓ drop-in (advanced-cache.php)
-  ! nginx (/srv/example/config/nginx/foehn-page-cache.conf) — generated from a different config, re-run cache:config
+  ! nginx (/srv/example/config/nginx/foehn-page-cache.conf) — generated from a different config or an older release, re-run cache:config
   · apache
 ```
 
@@ -132,11 +132,13 @@ Request order does not matter, and that is the interesting part: no reader sorts
 
 Each name carries the pattern its value must match, because the value becomes part of a filename — a list without patterns gets `^[A-Za-z0-9_.,\-]{1,64}$`. A value your pattern rejects is a bypass, never a guess: `?page=abc` goes to PHP rather than quietly serving page one. Your pattern can only narrow the characters a filename may hold, never widen them.
 
+A name may hold a hyphen — a taxonomy registered as `product-type` has a query var spelled that way. nginx cannot hold one in a variable name, so the snippet spells it `$foehn_val_product_type` and reads the value out of the query string instead of through `$arg_`. That makes `a-b` and `a_b` one variable: name both, and neither is keyed.
+
 Two more rules keep the readers honest. `?page=` counts as no query at all, and a **repeated bare name** bypasses — nginx reads the first `page=` and PHP the last, so `?page=1&page=2` has no answer both would give.
 
 ### Filters with more than one value
 
-A filter has two spellings, and both are cached:
+A filter has two spellings, and nginx serves both out of one file:
 
 ```
 ?genre=rock,jazz            ─┐
@@ -144,14 +146,26 @@ A filter has two spellings, and both are cached:
 ?genre[]=rock&genre[]=jazz  ─┘
 ```
 
-The comma form is what [the query filters](/guide/query-filters) emit and what `$arg_genre` can read, so nginx serves it. The bracketed form is what a checkbox group posts, and nginx cannot read it at all — a variable name may not hold brackets, and there is no `$arg_genre[]`.
+The comma form is what [the query filters](/guide/query-filters) emit, and `$arg_genre` reads it like any other value. The bracketed form is what a checkbox group posts, and nginx has no variable for it — a variable name may not hold brackets. So the generated snippet reads the members out of `$args` one regex capture at a time and joins them with commas in request order, which is exactly the join PHP performs. `genre%5B%5D=` is read the same way: a form encoder may write either spelling, and neither reader decodes the query string.
 
-So nginx **declines** it rather than guessing: a bracketed name is not a name it was told about, the request goes to PHP, and the drop-in joins the members and serves the file the comma form wrote. Same file, a couple of milliseconds slower. What never happens is nginx reading `$arg_genre`, finding it empty and serving the unfiltered page to someone who asked for a filtered one.
+nginx has no loop, so its join is unrolled to a fixed number of members and it cannot skip one. Whatever it cannot join **exactly** as PHP would, it declines: the request goes to PHP, and the drop-in serves the same file a couple of milliseconds later. A decline is a slower page; a wrong key is one visitor being handed another's page — so the safe direction is never in doubt.
 
-Two consequences worth knowing:
+| Query string                                                                             | Served by        |
+| ---------------------------------------------------------------------------------------- | ---------------- |
+| `?genre[]=rock&genre[]=jazz` — up to five members, in any order, other args between them | nginx            |
+| `?genre%5B%5D=rock&genre%5B%5D=jazz`                                                     | nginx            |
+| six members or more                                                                      | the drop-in      |
+| an empty member — `?genre[]=&genre[]=rock`                                               | the drop-in      |
+| a member holding a comma — `?genre[]=rock,jazz`                                          | nobody: a bypass |
+| both spellings at once — `?genre=rock&genre[]=jazz`, `?genre&genre[]=rock`               | nobody: a bypass |
+| a bracketed name you did not key — `?foo[]=bar`, `?utm_source[]=x`                       | nobody: a bypass |
+
+Five is the bound the framework already puts on a comma list — a section request carries at most five names — and each member costs one more regex pass over the query string on every request. A facet with more boxes ticked than that is still cached, just not on the fast path.
+
+Three consequences worth knowing:
 
 - **The members are joined in request order and never sorted**, so `?genre[]=jazz&genre[]=rock` is a second file holding the same HTML. Sorting is the obvious fix and the wrong one: nginx cannot sort, so a sorted key is one only PHP could compute, and the two readers would part company on the first URL that arrived unsorted. A form emits its checkboxes in document order, so in practice one spelling occurs.
-- **A member may not contain a comma.** `?genre[]=rock,jazz` asks for one term whose slug has a comma in it; `?genre=rock,jazz` asks for two terms. Joining the first would key it where the second lives, so it bypasses instead.
+- **A member may not contain a comma.** `?genre[]=rock,jazz` asks for one term whose slug has a comma in it; `?genre=rock,jazz` asks for two terms. Joining the first would key it where the second lives, so both readers bypass instead — nginx with a guard derived from the same character class PHP checks, so the two cannot drift apart.
 - **The comma stays a comma, and Føhn has to insist on that.** WordPress rebuilds the query string of a paginated URL with its values encoded, so `/archive/page/2/?genre=rock,jazz` is answered with a 301 to `?genre=rock%2Cjazz` — and nginx keys the raw query string, so it would then look for `index__genre=rock%2Cjazz&.html` while the recorder wrote `index__genre=rock,jazz&.html`. Two readers, two filenames, and a cache that quietly stops being read. So `PageCache\CanonicalRedirect` cancels a canonical redirect whose only change is that encoding, and keeps the literal comma in one that does something else. It is registered in every environment, because the URLs are the same in every environment.
 
 ### Listing values instead of writing a pattern

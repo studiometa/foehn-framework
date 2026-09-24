@@ -6,6 +6,7 @@ namespace Studiometa\Foehn\PageCache\ServerConfig;
 
 use Studiometa\Foehn\Config\PageCacheConfig;
 use Studiometa\Foehn\PageCache\QueryKey;
+use Studiometa\Foehn\Views\Sections\SectionRequest;
 
 /**
  * The parts of a page-cache policy a web server can express.
@@ -17,6 +18,15 @@ use Studiometa\Foehn\PageCache\QueryKey;
  */
 final readonly class SnippetPolicy
 {
+    /**
+     * The `[]` suffix of a bracketed arg, as a regex, in both spellings a browser sends.
+     *
+     * A form serialises `genre[]` literally or percent-escapes it to `genre%5B%5D`, and
+     * neither reader decodes the query string, so both have to be recognised as written.
+     * Mirrors {@see QueryKey}'s own reading of a bracketed name, hex case included.
+     */
+    private const BRACKETS = '(?:\\[\\]|%5[Bb]%5[Dd])';
+
     public function __construct(
         public PageCacheConfig $config,
     ) {}
@@ -88,13 +98,41 @@ final readonly class SnippetPolicy
     }
 
     /**
-     * One `if`/`set` pair per keyed query arg, in the configuration's canonical order.
+     * How many members of a bracketed arg nginx will join before it declines.
+     *
+     * PHP has no such bound: it joins whatever arrives and lets the 64-character floor
+     * refuse the result. nginx has no loop, so every member it can read is one more
+     * statement in the snippet and one more regex pass over `$args` on every request —
+     * and the bound has to be drawn somewhere. Five is the most members any comma list
+     * the framework itself emits can hold ({@see SectionRequest::MAX_SECTIONS}), so a
+     * section request in either spelling is always within reach of nginx; a checkbox
+     * facet with more boxes ticked than that falls through to the drop-in, which serves
+     * the same file two milliseconds later.
+     */
+    public const MEMBER_SLOTS = SectionRequest::MAX_SECTIONS;
+
+    /**
+     * The statements per keyed query arg, in the configuration's canonical order.
      *
      * This is the unrolled form of {@see \Studiometa\Foehn\PageCache\QueryKey::canonical()}:
      * the loop PHP runs over the sorted arg list becomes a fixed sequence of statements,
      * and `$arg_name` is independent of where the arg appeared in the query string. That
      * is the whole trick behind `?page=2&lang=fr` and `?lang=fr&page=2` reaching one file
      * without nginx being able to sort anything.
+     *
+     * Each arg has two spellings and nginx reads them differently. The bare `genre=` is
+     * `$arg_genre` — see {@see SnippetPolicy::bareStatement()} for the name nginx cannot
+     * spell that way. The bracketed `genre[]=rock&genre[]=jazz` — what a checkbox group
+     * posts — has no variable at all, because a variable name may not hold brackets, so
+     * its members are read out of `$args` one regex capture at a time and joined with
+     * commas in request order, which is exactly the join PHP performs. Both spellings end
+     * up in one `$foehn_val_genre`, and the validation that follows does not know which
+     * one it was given.
+     *
+     * Every shape nginx cannot join the way PHP would is a **decline** — a bypass to the
+     * drop-in, which computes the key in PHP and serves the same file. Declining is the
+     * safe direction: a wrong key serves one visitor another's page, a decline costs two
+     * milliseconds. See {@see SnippetPolicy::memberStatements()} for the shapes.
      */
     public function canonicalQueryStatements(): string
     {
@@ -103,6 +141,12 @@ final readonly class SnippetPolicy
         $lines = [];
 
         foreach ($this->config->getCacheQueryArgs() as $name => $pattern) {
+            $var = self::variable($name);
+
+            $lines[] = sprintf('# %s — the bare spelling, or the members of the bracketed one joined.', $name);
+            $lines[] = $this->bareStatement($name);
+            $lines = [...$lines, ...$this->memberStatements($name)];
+
             // Six statements where PHP needs two, because nginx has no `and` and therefore
             // no way to say "present *and* invalid" in one condition. A sentinel says it
             // instead, and the order is the logic: empty unless present, valid if the
@@ -111,20 +155,134 @@ final readonly class SnippetPolicy
             // The alternative — falling back to the unkeyed file when a value does not
             // validate — is what this replaced, and it served the unpaginated page to
             // anyone who asked for `?page=abc`.
-            $lines[] = sprintf('set $foehn_arg_%s "empty";', $name);
-            $lines[] = sprintf('if ($arg_%s != "") { set $foehn_arg_%s "invalid"; }', $name, $name);
-            $lines[] = sprintf('if ($arg_%s ~ "%s") { set $foehn_arg_%s "valid"; }', $name, $pattern, $name);
-            $lines[] = sprintf('if ($arg_%s ~ "%s") { set $foehn_arg_%s "invalid"; }', $name, $floor, $name);
+            //
+            // Run on the joined value, so the 64-character floor caps the members as a
+            // whole — which is the cap PHP applies to them too.
+            $lines[] = sprintf('set $foehn_arg_%s "empty";', $var);
+            $lines[] = sprintf('if ($foehn_val_%s != "") { set $foehn_arg_%s "invalid"; }', $var, $var);
+            $lines[] = sprintf('if ($foehn_val_%s ~ "%s") { set $foehn_arg_%s "valid"; }', $var, $pattern, $var);
+            $lines[] = sprintf('if ($foehn_val_%s ~ "%s") { set $foehn_arg_%s "invalid"; }', $var, $floor, $var);
+            // The key carries the name as written — `a-b=` — since that is the filename
+            // PHP wrote; only the variable holding the value is spelled nginx's way.
             $lines[] = sprintf(
-                'if ($foehn_arg_%s = "valid") { set $foehn_q "${foehn_q}%s=$arg_%s&"; }',
+                'if ($foehn_arg_%s = "valid") { set $foehn_q "${foehn_q}%s=$foehn_val_%s&"; }',
+                $var,
                 $name,
-                $name,
-                $name,
+                $var,
             );
-            $lines[] = sprintf('if ($foehn_arg_%s = "invalid") { set $foehn_bypass 0; }', $name);
+            $lines[] = sprintf('if ($foehn_arg_%s = "invalid") { set $foehn_bypass 0; }', $var);
         }
 
         return implode("\n", $lines);
+    }
+
+    /**
+     * The nginx variable suffix a keyed name gets: `a-b` becomes `$foehn_val_a_b`.
+     *
+     * The rule belongs to the configuration, which is what refuses two names that would
+     * meet in one variable; this only spells it. See {@see PageCacheConfig::variableName()}.
+     */
+    public static function variable(string $name): string
+    {
+        return PageCacheConfig::variableName($name);
+    }
+
+    /**
+     * The statement that reads the bare spelling of one keyed arg into `$foehn_val_name`.
+     *
+     * `$arg_name` when nginx can spell it. A hyphenated name has no `$arg_` at all, so its
+     * value is captured out of `$args` with `$arg_name`'s own rule written out: the first
+     * occurrence at the start or after an `&`, with its `=`, up to the next `&`. A bare
+     * `a-b` with no `=` is skipped exactly as `$arg_a-b` would have skipped it, so the
+     * repeated and mixed-spelling guards below hold for both reads alike.
+     */
+    private function bareStatement(string $name): string
+    {
+        $var = self::variable($name);
+
+        if ($var === $name) {
+            return sprintf('set $foehn_val_%s $arg_%s;', $var, $name);
+        }
+
+        return sprintf(
+            'set $foehn_val_%s "";' . "\n" . 'if ($args ~ "(?:^|&)%s=([^&]*)") { set $foehn_val_%s "$1"; }',
+            $var,
+            self::quote($name),
+            $var,
+        );
+    }
+
+    /**
+     * The statements that read the bracketed spelling of one keyed arg out of `$args`.
+     *
+     * One regex per member slot. The k-th capture is anchored on the first occurrence
+     * and skips forward k-1 times with `[^&]*&(?:[^&]*&)*?name[]=` — "finish this value,
+     * step over whole pairs, land on the next occurrence". Leftmost-first matching pins
+     * the anchor to the first occurrence and the lazy skip to the nearest next one, so
+     * the capture is the k-th member in request order and nothing else. The pairs are
+     * consumed whole and `[^&]*` cannot cross a separator, so there is no ambiguity for
+     * the engine to backtrack through.
+     *
+     * Then the declines, each one a shape PHP keys but nginx cannot key the same way,
+     * or one PHP refuses that a join here would have accepted:
+     *
+     * - **more members than there are slots** — nginx would silently drop the rest;
+     * - **an empty member** — PHP skips it, and a fixed sequence of captures cannot;
+     * - **a member outside {@see QueryKey::MEMBER_CHARACTER_CLASS}** — PHP refuses it,
+     *   and the class is derived rather than restated: `?genre[]=rock,jazz` asks for one
+     *   term with a comma in its slug, and a join would key it where `?genre=rock,jazz`
+     *   lives. A second spelling of a charset is how dd53e71 quietly refused every
+     *   multi-value filename;
+     * - **both spellings in one URL, with or without an `=` on the bare one** — PHP
+     *   refuses that too. `?genre&genre[]=rock` is the shape that matters: PHP counts the
+     *   bare `genre` as an occurrence with an empty value, while `$arg_genre` is empty for
+     *   it and the member capture would have keyed `genre=rock`. WordPress's own
+     *   `$_GET['genre']` would be `''` there, so the joined key would name a filtered page
+     *   for a request that asked for the unfiltered one.
+     *
+     * `%5B%5D` is admitted alongside `[]` in any case of the hex, because the query
+     * string is never decoded by either reader and a form encoder may write either.
+     *
+     * @return list<string>
+     */
+    private function memberStatements(string $name): array
+    {
+        $var = self::variable($name);
+        $quoted = self::quote($name);
+        $bracketed = $quoted . self::BRACKETS;
+        $next = sprintf('[^&]*&(?:[^&]*&)*?%s=', $bracketed);
+        $member = sprintf('[^%s&]', QueryKey::MEMBER_CHARACTER_CLASS);
+
+        $lines = [];
+
+        for ($slot = 0; $slot < self::MEMBER_SLOTS; $slot++) {
+            $lines[] = sprintf(
+                'if ($args ~ "(?:^|&)%s=%s([^&]*)") { set $foehn_val_%s "%s"; }',
+                $bracketed,
+                str_repeat($next, $slot),
+                $var,
+                $slot === 0 ? '$1' : sprintf('${foehn_val_%s},$1', $var),
+            );
+        }
+
+        $lines[] = sprintf(
+            'if ($args ~ "(?:^|&)%s=%s") { set $foehn_bypass 0; }',
+            $bracketed,
+            str_repeat($next, self::MEMBER_SLOTS),
+        );
+        $lines[] = sprintf('if ($args ~ "(?:^|&)%s=?(?:&|$)") { set $foehn_bypass 0; }', $bracketed);
+        $lines[] = sprintf('if ($args ~ "(?:^|&)%s=[^&]*%s") { set $foehn_bypass 0; }', $bracketed, $member);
+        // `(?:=[^&]*)?` and `(?:=|&|$)` admit the bare name without its `=`, because nginx's
+        // `$arg_name` skips one written that way while PHP counts it as an occurrence.
+        $lines[] = sprintf(
+            'if ($args ~ "(?:^|&)(?:%s(?:=[^&]*)?&(?:[^&]*&)*%s=|%s=[^&]*&(?:[^&]*&)*%s(?:=|&|$))") { set $foehn_bypass 0; }',
+            $quoted,
+            $bracketed,
+            $bracketed,
+            $quoted,
+        );
+
+        return $lines;
     }
 
     /**
@@ -132,6 +290,11 @@ final readonly class SnippetPolicy
      *
      * nginx's `$arg_page` is the first `page=` in the query string, PHP's `$_GET['page']`
      * the last. `?page=1&page=2` has no answer both readers would give, so it gets none.
+     *
+     * An occurrence written without its `=` counts too. `$arg_page` skips a bare `page`
+     * and reads the `page=2` after it, while PHP's count of occurrences includes both and
+     * refuses — so `?page&page=2` needs the same decline as `?page=&page=2`, and the guard
+     * makes the `=` optional on both occurrences rather than trust one reader over the other.
      */
     public function repeatedQueryStatements(): string
     {
@@ -140,7 +303,11 @@ final readonly class SnippetPolicy
         foreach (array_keys($this->config->getCacheQueryArgs()) as $name) {
             $quoted = self::quote($name);
 
-            $lines[] = sprintf('if ($args ~ "(?:^|&)%s=[^&]*&(?:.*&)?%s=") { set $foehn_bypass 0; }', $quoted, $quoted);
+            $lines[] = sprintf(
+                'if ($args ~ "(?:^|&)%s(?:=[^&]*)?&(?:.*&)?%s(?:=|&|$)") { set $foehn_bypass 0; }',
+                $quoted,
+                $quoted,
+            );
         }
 
         return implode("\n", $lines);
@@ -153,16 +320,28 @@ final readonly class SnippetPolicy
      * the filename, but both are args nginx knows how to serve. Anything else is a
      * bypass. Apache gets {@see SnippetPolicy::ignorableQueryPattern()} instead, because
      * it cannot build a keyed filename and must not serve the unkeyed one in its place.
+     *
+     * A keyed name is known in both its spellings, `genre` and `genre[]`, since
+     * {@see SnippetPolicy::canonicalQueryStatements()} can key either.
      */
     public function knownQueryPattern(): string
     {
-        $names = [...$this->config->getIgnoredQueryArgs(), ...array_keys($this->config->getCacheQueryArgs())];
+        // A keyed name in either spelling, an ignored one only as written: PHP matches an
+        // ignored name against the raw `utm_source[]`, which is not `utm_source`, and an
+        // argument this cache cannot name is one it does not serve.
+        $names = [
+            ...array_map(self::quote(...), $this->config->getIgnoredQueryArgs()),
+            ...array_map(
+                static fn(string $name): string => self::quote($name) . self::BRACKETS . '?',
+                array_keys($this->config->getCacheQueryArgs()),
+            ),
+        ];
 
         if ($names === []) {
             return '^$';
         }
 
-        return '^(?:(?:' . implode('|', array_map(self::quote(...), $names)) . ')(?:=[^&]*)?(?:&|$))*$';
+        return '^(?:(?:' . implode('|', $names) . ')(?:=[^&]*)?(?:&|$))*$';
     }
 
     /**
@@ -190,12 +369,30 @@ final readonly class SnippetPolicy
     }
 
     /**
+     * The generator's own version, folded into {@see SnippetPolicy::hash()}.
+     *
+     * Bump it whenever the emitted nginx or Apache changes for a fixed configuration.
+     * The hash is what `cache:status` compares an installed include against, and a hash
+     * of the configuration alone cannot see a generator change: an include written by an
+     * older release carries the same configuration, states older rules, and would read
+     * as current. #193 was such a change — it rewrote how every keyed arg is read — and
+     * an include from before it kept answering HIT under the old rules with a matching
+     * `# policy:` line.
+     */
+    public const int GENERATOR_VERSION = 2;
+
+    /**
      * A short hash of the policy, so `cache:status` can spot a snippet left behind.
+     *
+     * Covers the configuration the snippet bakes in and the generator that wrote it
+     * ({@see SnippetPolicy::GENERATOR_VERSION}), so an include is stale after either
+     * changes. It goes into the `# policy:` line of both snippets.
      */
     public function hash(): string
     {
         return substr(
             sha1((string) json_encode([
+                self::GENERATOR_VERSION,
                 $this->cacheUrlPath(),
                 $this->config->bypassCookies,
                 $this->config->getIgnoredQueryArgs(),

@@ -63,8 +63,35 @@ describe('PageCacheConfig', function () {
             SectionRequest::PARAMETER => SectionRequest::VALUE_PATTERN,
             'page' => PageCacheConfig::DEFAULT_QUERY_ARG_PATTERN,
         ]);
-        expect(new PageCacheConfig()->getCacheQueryArgs())
-            ->toBe([SectionRequest::PARAMETER => SectionRequest::VALUE_PATTERN]);
+        expect(new PageCacheConfig()->getCacheQueryArgs())->toBe([
+            SectionRequest::PARAMETER => SectionRequest::VALUE_PATTERN,
+        ]);
+    });
+
+    it('keys neither of two names nginx would hold in one variable', function () {
+        // `a-b` and `a_b` are both `$foehn_val_a_b` in the snippet, and the second `set`
+        // would overwrite the first — a page keyed under the wrong filter. Dropping both
+        // makes them a bypass in every reader, which is the safe direction.
+        $config = new PageCacheConfig(cacheQueryArgs: ['a-b', 'a_b', 'page']);
+
+        expect(array_keys(projectCacheQueryArgs($config)))->toBe(['page']);
+        expect(QueryKey::canonical('a-b=x', $config))->toBeNull();
+        expect(QueryKey::canonical('a_b=x', $config))->toBeNull();
+    });
+
+    it('keeps a hyphenated name that collides with nothing', function () {
+        $config = new PageCacheConfig(cacheQueryArgs: ['product-type']);
+
+        expect(array_keys(projectCacheQueryArgs($config)))->toBe(['product-type']);
+        expect(QueryKey::canonical('product-type=shoes', $config))->toBe('product-type=shoes&');
+    });
+
+    it('never lets a project name displace the reserved one', function () {
+        // `foehn-sections` would share `$foehn_val_foehn_sections` with the reserved arg;
+        // the project's spelling is the one that goes.
+        $config = new PageCacheConfig(cacheQueryArgs: ['foehn-sections']);
+
+        expect($config->getCacheQueryArgs())->toBe([SectionRequest::PARAMETER => SectionRequest::VALUE_PATTERN]);
     });
 
     it('reads the environment off WordPress', function () {

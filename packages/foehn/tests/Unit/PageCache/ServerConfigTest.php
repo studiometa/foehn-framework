@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Config\PageCacheConfig;
+use Studiometa\Foehn\PageCache\QueryKey;
 use Studiometa\Foehn\PageCache\ServerConfig\ApacheSnippet;
 use Studiometa\Foehn\PageCache\ServerConfig\NginxSnippet;
 use Studiometa\Foehn\PageCache\ServerConfig\SnippetPolicy;
@@ -70,7 +71,8 @@ describe('SnippetPolicy', function () {
 
         expect(preg_match('/' . $policy->ignorableQueryPattern() . '/', 'foehn_sections=results'))->toBe(0);
         expect(preg_match('/' . $policy->knownQueryPattern() . '/', 'foehn_sections=results'))->toBe(1);
-        expect($policy->canonicalQueryStatements())->toContain('set $foehn_q "${foehn_q}foehn_sections=$arg_foehn_sections&";');
+        expect($policy->canonicalQueryStatements())
+            ->toContain('set $foehn_q "${foehn_q}foehn_sections=$foehn_val_foehn_sections&";');
     });
 
     it('ignores nothing but an absent query string when the project ignores no args', function () {
@@ -125,6 +127,14 @@ describe('SnippetPolicy', function () {
         ['foo=bar'],
         ['page=2&foo=bar'],
         ['pagex=2'],
+        // The bracketed spelling of a keyed name is one nginx can now key; of an ignored
+        // name it is not, because PHP matches an ignored name against the raw `utm_source[]`.
+        ['page[]=2'],
+        ['lang%5B%5D=fr'],
+        ['lang%5b%5d=fr&page=2'],
+        ['utm_source[]=a'],
+        ['pagex[]=2'],
+        ['[]=2'],
     ]);
 
     it('unrolls the keyed args in the configuration order, not the request order', function () {
@@ -134,7 +144,8 @@ describe('SnippetPolicy', function () {
             new PageCacheConfig(cacheQueryArgs: ['page', 'lang']),
         )->canonicalQueryStatements();
 
-        expect(strpos($statements, 'lang=$arg_lang&'))->toBeLessThan((int) strpos($statements, 'page=$arg_page&'));
+        expect(strpos($statements, 'lang=$foehn_val_lang&'))
+            ->toBeLessThan((int) strpos($statements, 'page=$foehn_val_page&'));
     });
 
     it('bypasses a keyed value its pattern rejects, rather than serving the unkeyed page', function () {
@@ -147,8 +158,8 @@ describe('SnippetPolicy', function () {
 
         expect($statements)
             ->toContain('set $foehn_arg_page "empty";')
-            ->toContain('if ($arg_page != "") { set $foehn_arg_page "invalid"; }')
-            ->toContain('if ($arg_page ~ "^[0-9]+$") { set $foehn_arg_page "valid"; }')
+            ->toContain('if ($foehn_val_page != "") { set $foehn_arg_page "invalid"; }')
+            ->toContain('if ($foehn_val_page ~ "^[0-9]+$") { set $foehn_arg_page "valid"; }')
             ->toContain('if ($foehn_arg_page = "invalid") { set $foehn_bypass 0; }');
 
         // And the order is the logic: a valid value has to be able to overwrite the
@@ -164,7 +175,7 @@ describe('SnippetPolicy', function () {
         // part of a filename.
         expect(new SnippetPolicy(new PageCacheConfig(cacheQueryArgs: [
             'lang' => '^.+$',
-        ]))->canonicalQueryStatements())->toContain('if ($arg_lang ~ "[^A-Za-z0-9_.,\-]|^.{65,}$") { set $foehn_arg_lang "invalid"; }');
+        ]))->canonicalQueryStatements())->toContain('if ($foehn_val_lang ~ "[^A-Za-z0-9_.,\-]|^.{65,}$") { set $foehn_arg_lang "invalid"; }');
     });
 
     it('lets a comma through the floor, so a multi-value filter can be keyed', function () {
@@ -176,29 +187,229 @@ describe('SnippetPolicy', function () {
         ]))->canonicalQueryStatements();
 
         expect($statements)
-            ->toContain('if ($arg_genre ~ "^[a-z0-9-]+(?:,[a-z0-9-]+)*$") { set $foehn_arg_genre "valid"; }')
+            ->toContain('if ($foehn_val_genre ~ "^[a-z0-9-]+(?:,[a-z0-9-]+)*$") { set $foehn_arg_genre "valid"; }')
             ->and($statements)
-            ->toContain('set $foehn_q "${foehn_q}genre=$arg_genre&";');
+            ->toContain('set $foehn_q "${foehn_q}genre=$foehn_val_genre&";');
     });
 
-    it('never keys a bracketed name, so the readers cannot disagree about one', function () {
-        // nginx has no `$arg_genre[]` — a variable name may not hold brackets. So the
-        // bracketed form must fail `knownQueryPattern()` and be passed to PHP, which
-        // joins the members and serves the same file from the drop-in. What must never
-        // happen is nginx reading `$arg_genre`, finding it empty and serving the
-        // unfiltered page to somebody who asked for a filtered one.
+    it('knows a keyed name in both spellings, and an ignored one only as written', function () {
+        // There is no `$arg_genre[]`, so the bracketed spelling used to fail this pattern
+        // and fall through to PHP. The statements below can key it now, so it is admitted —
+        // for a keyed name only. PHP matches an ignored name against the raw `utm_source[]`,
+        // which is not `utm_source`, and an argument this cache cannot name is a bypass.
         $policy = new SnippetPolicy(new PageCacheConfig(cacheQueryArgs: ['genre' => '^[a-z,]+$']));
+        $known = static fn(string $query): bool => (bool) preg_match('#' . $policy->knownQueryPattern() . '#', $query);
 
-        expect((bool) preg_match('#' . $policy->knownQueryPattern() . '#', 'genre=rock,jazz'))
-            ->toBeTrue()
-            ->and((bool) preg_match('#' . $policy->knownQueryPattern() . '#', 'genre[]=rock&genre[]=jazz'))
-            ->toBeFalse();
+        expect($known('genre=rock,jazz'))->toBeTrue();
+        expect($known('genre[]=rock&genre[]=jazz'))->toBeTrue();
+        expect($known('genre%5B%5D=rock&genre%5b%5d=jazz'))->toBeTrue();
+        expect($known('genre[]=rock&utm_source=x'))->toBeTrue();
+        expect($known('utm_source[]=x'))->toBeFalse();
+        expect($known('foo[]=bar'))->toBeFalse();
+        expect($known('genre[=rock'))->toBeFalse();
+    });
+
+    it('reads the members of a bracketed arg out of $args, one slot at a time', function () {
+        // The k-th capture is anchored on the first occurrence and skips forward k-1 times
+        // with "finish this value, step over whole pairs, land on the next occurrence".
+        // Leftmost-first matching and the lazy skip make it the k-th member in request
+        // order — which is the order PHP joins in, and the order it must never sort.
+        $statements = new SnippetPolicy(new PageCacheConfig(cacheQueryArgs: ['genre']))->canonicalQueryStatements();
+        $brackets = '(?:\[\]|%5[Bb]%5[Dd])';
+        $next = '[^&]*&(?:[^&]*&)*?genre' . $brackets . '=';
+
+        expect($statements)
+            ->toContain('set $foehn_val_genre $arg_genre;')
+            ->toContain('if ($args ~ "(?:^|&)genre' . $brackets . '=([^&]*)") { set $foehn_val_genre "$1"; }')
+            ->toContain(
+                'if ($args ~ "(?:^|&)genre'
+                . $brackets
+                . '='
+                . $next
+                . '([^&]*)") { set $foehn_val_genre "${foehn_val_genre},$1"; }',
+            )
+            ->toContain(
+                'if ($args ~ "(?:^|&)genre'
+                . $brackets
+                . '='
+                . str_repeat($next, SnippetPolicy::MEMBER_SLOTS - 1)
+                . '([^&]*)")',
+            );
+
+        // One capture per slot, and the first replaces `$arg_genre` rather than appending
+        // to it — otherwise the bare spelling's empty value would become a leading comma.
+        expect(substr_count($statements, 'set $foehn_val_genre "${foehn_val_genre},$1"; }'))
+            ->toBe(SnippetPolicy::MEMBER_SLOTS - 1);
+
+        // The join comes first, then the validation runs on what was joined: `$arg_genre`
+        // appears in the statements exactly once, as the value to start from.
+        expect(substr_count($statements, '$arg_genre'))->toBe(1);
+    });
+
+    it('declines every bracketed shape it cannot join the way PHP does', function () {
+        // A wrong key serves one visitor another's page; a decline costs two milliseconds
+        // in the drop-in. So each of these is a bypass, not a best effort.
+        $statements = new SnippetPolicy(new PageCacheConfig(cacheQueryArgs: ['genre']))->canonicalQueryStatements();
+        $brackets = '(?:\[\]|%5[Bb]%5[Dd])';
+        $next = '[^&]*&(?:[^&]*&)*?genre' . $brackets . '=';
+
+        expect($statements)
+            // More members than slots: nginx would silently drop the rest.
+            ->toContain(
+                'if ($args ~ "(?:^|&)genre'
+                . $brackets
+                . '='
+                . str_repeat($next, SnippetPolicy::MEMBER_SLOTS)
+                . '") { set $foehn_bypass 0; }',
+            )
+            // An empty member, with or without its `=`: PHP skips it, a fixed sequence of
+            // captures cannot.
+            ->toContain('if ($args ~ "(?:^|&)genre' . $brackets . '=?(?:&|$)") { set $foehn_bypass 0; }')
+            // A member outside the member charset — the comma above all, since a member
+            // holding the separator would join to the key of a different request. The
+            // class is the one QueryKey uses, not a second spelling of it.
+            ->toContain(
+                'if ($args ~ "(?:^|&)genre'
+                . $brackets
+                . '=[^&]*[^'
+                . QueryKey::MEMBER_CHARACTER_CLASS
+                . '&]") { set $foehn_bypass 0; }',
+            )
+            // Both spellings in one URL, in either order, with or without an `=` on the
+            // bare one — `$arg_genre` skips a bare `genre`, PHP counts it.
+            ->toContain(
+                'if ($args ~ "(?:^|&)(?:genre(?:=[^&]*)?&(?:[^&]*&)*genre'
+                . $brackets
+                . '=|genre'
+                . $brackets
+                . '=[^&]*&(?:[^&]*&)*genre(?:=|&|$))") { set $foehn_bypass 0; }',
+            );
+    });
+
+    it('declines the shapes PHP refuses, and only those, when its guards are run as regexes', function () {
+        // The guards are PCRE on both sides, so running them here is running what nginx
+        // runs. A query string trips a decline when any guard matches it; the expectation
+        // is QueryKey's own answer, so the two readers are compared rather than restated.
+        $config = new PageCacheConfig(cacheQueryArgs: ['genre' => '^[a-z]+(?:,[a-z]+)*$', 'page' => '^[0-9]+$']);
+        $policy = new SnippetPolicy($config);
+        $statements = $policy->canonicalQueryStatements() . "\n" . $policy->repeatedQueryStatements();
+
+        preg_match_all('/if \(\$args ~ "([^"]+)"\) \{ set \$foehn_bypass 0; \}/', $statements, $matches);
+        $guards = $matches[1];
+        expect($guards)->not->toBeEmpty();
+
+        $declined = static fn(string $query): bool => array_any(
+            $guards,
+            static fn(string $guard): bool => preg_match('#' . $guard . '#', $query) === 1,
+        );
+
+        // Refused by PHP because both spellings are present — the bare one with a value,
+        // empty, or with no `=` at all, in either order.
+        foreach ([
+            'genre=rock&genre[]=jazz',
+            'genre[]=jazz&genre=rock',
+            'genre=&genre[]=rock',
+            'genre&genre[]=rock',
+            'genre[]=rock&genre',
+            'genre&genre[]=rock&genre[]=jazz',
+            'genre[]=rock&genre&genre[]=jazz',
+            'genre[]=rock&page=2&genre',
+            // Refused by PHP because a bare name occurs twice, `=` or not.
+            'page=1&page=2',
+            'page=&page=2',
+            'page&page=2',
+            'page=2&page',
+            'page&page',
+        ] as $query) {
+            expect(QueryKey::canonical($query, $config))->toBeNull($query);
+            expect($declined($query))->toBeTrue($query);
+        }
+
+        // Keyed by PHP, so no guard may fire: nginx joins these itself.
+        foreach ([
+            'genre',
+            'genre=rock',
+            'genre[]=rock&genre[]=jazz',
+            'genre[]=rock&page=2&genre[]=jazz',
+            'page=2&genre[]=jazz&genre[]=rock',
+            'page&genre[]=rock',
+            'page=2',
+        ] as $query) {
+            expect(QueryKey::canonical($query, $config))->not->toBeNull($query);
+            expect($declined($query))->toBeFalse($query);
+        }
+
+        // A name is matched whole: `genrex` is another arg, refused by the known-args
+        // pattern rather than mistaken for a second `genre` by a guard.
+        expect($declined('genre[]=rock&genrex=1'))->toBeFalse();
+        expect($declined('genrex=1&genre=rock'))->toBeFalse();
+    });
+
+    it('bounds the members it joins at the framework\'s own bound on a comma list', function () {
+        // PHP joins any number and lets the 64-character floor refuse the result; nginx has
+        // no loop, so each member is one more statement and one more regex pass per request.
+        // Five is what a section request can carry, so that one never falls through.
+        expect(SnippetPolicy::MEMBER_SLOTS)->toBe(SectionRequest::MAX_SECTIONS)->toBe(5);
+    });
+
+    it('escapes a keyed name inside the bracketed captures too', function () {
+        // A name with a regex metacharacter in it would otherwise rewrite the pattern.
+        $statements = new SnippetPolicy(new PageCacheConfig(cacheQueryArgs: ['a-b']))->canonicalQueryStatements();
+
+        expect($statements)->toContain('(?:^|&)a\-b(?:\[\]|%5[Bb]%5[Dd])=([^&]*)');
+    });
+
+    it('spells a hyphenated keyed name the way an nginx variable can be spelled', function () {
+        // A taxonomy registered as `product-type` has a query var with a hyphen in it, and
+        // an nginx variable name may not: `$foehn_val_a-b` fails `nginx -t`, and `$arg_a-b`
+        // is `$arg_a` followed by a literal `-b`. So the variable takes an underscore, and
+        // the bare spelling is captured out of `$args` with `$arg_name`'s own rule — while
+        // the key keeps the name as written, because that is the filename PHP wrote.
+        $config = new PageCacheConfig(enabled: true, path: $this->config->path, cacheQueryArgs: ['a-b']);
+        $statements = new SnippetPolicy($config)->canonicalQueryStatements();
+
+        expect($statements)
+            ->toContain('set $foehn_val_a_b "";')
+            ->toContain('if ($args ~ "(?:^|&)a\-b=([^&]*)") { set $foehn_val_a_b "$1"; }')
+            ->toContain('{ set $foehn_val_a_b "${foehn_val_a_b},$1"; }')
+            ->toContain('if ($foehn_val_a_b != "") { set $foehn_arg_a_b "invalid"; }')
+            ->toContain('if ($foehn_arg_a_b = "valid") { set $foehn_q "${foehn_q}a-b=$foehn_val_a_b&"; }')
+            ->not->toContain('$arg_a');
+
+        // No variable anywhere in the rendered snippet ends at a hyphen: `$name-` is where
+        // nginx would either refuse the file or read a shorter variable than was meant.
+        expect(preg_match('/\$\{?[A-Za-z0-9_]+-/', (string) new NginxSnippet($config)->render()))->toBe(0);
+        expect(SnippetPolicy::variable('a-b'))->toBe('a_b');
+        expect(PageCacheConfig::variableName('a-b'))->toBe('a_b');
+    });
+
+    it('reads a hyphenated name the way $arg_name reads one it can spell', function () {
+        // The capture stands in for `$arg_a-b`, so it has to skip and stop where that
+        // would: first occurrence, `=` required, value up to the next `&`, name whole.
+        $statements = new SnippetPolicy(new PageCacheConfig(cacheQueryArgs: ['a-b']))->canonicalQueryStatements();
+
+        preg_match('/if \(\$args ~ "([^"]+)"\) \{ set \$foehn_val_a_b "\$1"; \}/', $statements, $matches);
+        $capture = static fn(string $query): ?string => preg_match('#' . $matches[1] . '#', $query, $m) === 1
+            ? $m[1]
+            : null;
+
+        expect($capture('a-b=x'))->toBe('x');
+        expect($capture('page=2&a-b=x&lang=fr'))->toBe('x');
+        expect($capture('a-b=1&a-b=2'))->toBe('1');
+        expect($capture('a-b='))->toBe('');
+        expect($capture('a-b'))->toBeNull();
+        expect($capture('a-b&a-b=2'))->toBe('2');
+        expect($capture('xa-b=1'))->toBeNull();
+        expect($capture('a-bx=1'))->toBeNull();
     });
 
     it('bypasses a keyed arg that appears twice, which the readers read differently', function () {
         $policy = new SnippetPolicy(new PageCacheConfig(cacheQueryArgs: ['page']));
 
-        expect($policy->repeatedQueryStatements())->toContain('if ($args ~ "(?:^|&)page=[^&]*&(?:.*&)?page=")');
+        // The `=` is optional on both occurrences: `$arg_page` skips a bare `page` and
+        // reads the `page=2` after it, PHP counts both and refuses.
+        expect($policy->repeatedQueryStatements())
+            ->toContain('if ($args ~ "(?:^|&)page(?:=[^&]*)?&(?:.*&)?page(?:=|&|$)") { set $foehn_bypass 0; }');
     });
 
     it('points the maintenance test at ABSPATH rather than at the document root', function () {
@@ -226,6 +437,44 @@ describe('SnippetPolicy', function () {
         )
             ->not
             ->toBe($hash);
+    });
+
+    it('changes its hash when the generator changes, whatever the configuration', function () {
+        // The hash is what `cache:status` compares an installed include against. #193
+        // rewrote how every keyed arg is read, and an include generated before it carried
+        // the same configuration — so a hash of the configuration alone called it current.
+        // This is that hash, as the earlier generator computed it; the policy's own must
+        // differ from it, and does so through GENERATOR_VERSION.
+        $policy = new SnippetPolicy($this->config);
+        $configurationOnly = substr(
+            sha1((string) json_encode([
+                $policy->cacheUrlPath(),
+                $this->config->bypassCookies,
+                $this->config->getIgnoredQueryArgs(),
+                $this->config->getCacheQueryArgs(),
+                $this->config->cacheNotFound,
+                $this->config->browserMaxAge,
+            ])),
+            0,
+            12,
+        );
+        $versioned = static fn(int $version): string => substr(
+            sha1((string) json_encode([
+                $version,
+                $policy->cacheUrlPath(),
+                $policy->config->bypassCookies,
+                $policy->config->getIgnoredQueryArgs(),
+                $policy->config->getCacheQueryArgs(),
+                $policy->config->cacheNotFound,
+                $policy->config->browserMaxAge,
+            ])),
+            0,
+            12,
+        );
+
+        expect($policy->hash())
+            ->not->toBe($configurationOnly)->toBe($versioned(SnippetPolicy::GENERATOR_VERSION))
+            ->not->toBe($versioned(SnippetPolicy::GENERATOR_VERSION + 1));
     });
 });
 
@@ -286,16 +535,26 @@ describe('NginxSnippet', function () {
         ]);
 
         expect((string) new NginxSnippet($config)->render())
-            ->toContain('if ($arg_page ~ "^[0-9]{1,6}$") { set $foehn_arg_page "valid"; }')
-            ->toContain('if ($foehn_arg_page = "valid") { set $foehn_q "${foehn_q}page=$arg_page&"; }')
+            ->toContain('if ($foehn_val_page ~ "^[0-9]{1,6}$") { set $foehn_arg_page "valid"; }')
+            ->toContain('if ($foehn_arg_page = "valid") { set $foehn_q "${foehn_q}page=$foehn_val_page&"; }')
             ->toContain('set $foehn_variant "__$foehn_q";');
     });
 
     it('keys a section request even when the project keyed nothing', function () {
         // The default configuration keys one arg, so there is always something to unroll.
         expect($this->snippet)
-            ->toContain('if ($arg_foehn_sections ~ "' . SectionRequest::VALUE_PATTERN . '")')
-            ->toContain('set $foehn_q "${foehn_q}foehn_sections=$arg_foehn_sections&";');
+            ->toContain('if ($foehn_val_foehn_sections ~ "' . SectionRequest::VALUE_PATTERN . '")')
+            ->toContain('set $foehn_q "${foehn_q}foehn_sections=$foehn_val_foehn_sections&";');
+    });
+
+    it('joins the bracketed spelling of a section request like any other keyed arg', function () {
+        // `foehn_sections` is keyed on every configuration, so it gets the same two
+        // spellings — and the key nginx builds for `?foehn_sections[]=a&foehn_sections[]=b`
+        // is the one PHP builds, because QueryKey does not know a reserved name from a
+        // project's own.
+        expect($this->snippet)
+            ->toContain('set $foehn_val_foehn_sections $arg_foehn_sections;')
+            ->toContain('if ($args ~ "(?:^|&)foehn_sections(?:\\[\\]|%5[Bb]%5[Dd])=([^&]*)") {');
     });
 
     it('keeps a cached fragment out of the index, which nginx cannot replay', function () {
@@ -304,9 +563,13 @@ describe('NginxSnippet', function () {
         // request. A variable rather than an `add_header` under the `if`: `add_header` is
         // not allowed in a server-level `if`, and nginx omits a header whose value is
         // empty — which is what makes one unconditional `add_header` behave conditionally.
+        //
+        // Derived from the joined value and not from `$arg_foehn_sections`, which is empty
+        // for `?foehn_sections[]=listing` — a request nginx now serves, and one that would
+        // otherwise go out as an indexable fragment.
         expect($this->snippet)
             ->toContain('set $foehn_robots "";')
-            ->toContain('if ($arg_foehn_sections != "") {')
+            ->toContain('if ($foehn_val_foehn_sections != "") {')
             ->toContain('set $foehn_robots "noindex, nofollow";')
             ->toContain('add_header X-Robots-Tag $foehn_robots;');
     });

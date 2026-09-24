@@ -172,6 +172,24 @@ final readonly class PageCacheConfig
     ) {}
 
     /**
+     * The name a keyed arg gets when a webserver holds it in a variable: `a-b` becomes `a_b`.
+     *
+     * A keyed name may hold a hyphen — a taxonomy registered as `product-type` has a
+     * query var spelled that way — and an nginx variable name may not: `$foehn_val_a-b`
+     * fails `nginx -t`, and `$arg_a-b` is read as `$arg_a` followed by the literal `-b`.
+     * The hyphen is the only character a name admits that a variable does not, so one
+     * replacement is the whole rule. It is not injective — `a-b` and `a_b` meet here —
+     * which is why {@see self::getCacheQueryArgs()} keys neither of a pair that would.
+     *
+     * Decided here and not in the snippet generators, because it is this configuration
+     * that has to refuse the colliding pair: the generators only spell what it kept.
+     */
+    public static function variableName(string $name): string
+    {
+        return str_replace('-', '_', $name);
+    }
+
+    /**
      * The keyed query args, normalised to `name => pattern` and **sorted by name**.
      *
      * The sort is the whole point, not tidiness. Every reader builds a filename by
@@ -183,6 +201,9 @@ final readonly class PageCacheConfig
      * Entries this cache cannot honour are dropped rather than repaired: an unusable
      * name is then simply an argument nobody configured, which is a bypass. A pattern
      * is dropped if it cannot compile, and `#` is refused because it is the delimiter.
+     * Two names nginx would hold in one variable — `a-b` and `a_b`, see
+     * {@see self::variableName()} — are both dropped, since a snippet keying one of
+     * them would read the other's value as its own.
      *
      * @return array<string, string>
      */
@@ -217,6 +238,21 @@ final readonly class PageCacheConfig
         // the files that can exist are the section combinations the templates declare,
         // and no crawler can add to them.
         $normalized[SectionRequest::PARAMETER] = SectionRequest::VALUE_PATTERN;
+
+        // A hyphen is the one character a name may hold and an nginx variable may not, so
+        // `a-b` and `a_b` are one `$foehn_val_a_b` in the snippet — and the second `set`
+        // would overwrite the first, keying a page under the wrong filter. Neither name is
+        // keyed then, which is a bypass for both. The reserved name is never the one to
+        // go: a project's `foehn-sections` yields to it.
+        $variables = array_count_values(array_map(self::variableName(...), array_keys($normalized)));
+        $normalized = array_filter(
+            $normalized,
+            static fn(string $name): bool => (
+                $variables[self::variableName($name)] === 1
+                || in_array($name, self::RESERVED_QUERY_ARGS, true)
+            ),
+            ARRAY_FILTER_USE_KEY,
+        );
 
         ksort($normalized);
 

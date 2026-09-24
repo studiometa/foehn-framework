@@ -218,13 +218,14 @@ location ^~ /wp-content/cache/foehn/ {
 }
 ```
 
-Five details that are load-bearing rather than stylistic:
+The details that are load-bearing rather than stylistic:
 
 - **A regex capture on `$uri` comes back percent-encoded**, even though `$uri` itself is decoded. Deriving the path with `if ($uri ~ "^(.*?)/?$")` reads as the obvious way to drop a trailing slash, and it silently misses every non-ASCII URL: the page is stored under its decoded name and looked up under its encoded one, so nginx never serves an accented permalink and the drop-in quietly covers for it. `$uri` is interpolated whole, and the trailing slash costs a second `-f` test instead.
 - **`set` inside `if` is why this is server-level.** Building a filename needs `set`, and inside a `location` a matched `if` continues in an implicit location that inherits no content handler — a `try_files` there is silently skipped, so every request carrying `?utm_source=` falls through to PHP while still answering `HIT`. That was the first version of this file, and the end-to-end suite is what caught it. At server level, `set` under `if` is ordinary rewrite-module behaviour.
 - **The headers live in the cache location, not at server level.** PHP emits its own `MISS`/`BYPASS` with a reason; two writers of one header name produce a response carrying both.
 - **`.maintenance` is at `$document_root/wp/.maintenance`**, because WordPress writes it to `ABSPATH` and core lives in `web/wp/`. The path is derived from `ABSPATH`, not hard-coded. A stock rocket-nginx config gets this wrong; `prod-wp-rocket.conf` does not.
 - **A keyed arg's value is held to a charset floor** as well as to the project's pattern, since it lands in a filename.
+- **The bracketed spelling is joined in nginx too.** There is no `$arg_genre[]`, so `?genre[]=rock&genre[]=jazz` is read out of `$args` one regex capture per member slot — `SnippetPolicy::MEMBER_SLOTS`, five — and joined with commas in request order, the join `QueryKey` performs. The validation then runs on the joined value. Every shape nginx cannot join exactly as PHP would is a decline to the drop-in rather than a guess: more members than slots, an empty member, a member outside `QueryKey::MEMBER_CHARACTER_CLASS`, both spellings in one URL — the bare one with or without its `=`, since `$arg_genre` skips a bare `genre` while `QueryKey` counts it as an occurrence. (#168)
 - nginx cannot check a file's age, so **TTL is not enforced here**. Expiry belongs to the sweep (§7); with `ttl` set, the sweep interval is the real staleness bound.
 
 ### 5.2 Apache
@@ -359,7 +360,7 @@ Named here so nobody assumes otherwise: keyed query args; device, scheme and con
 
 - **A purge rule nobody wrote.** Any page whose content depends on a post in a way §6 does not model goes stale. The TTL and sweep are the safety net; that is precisely why they are in v1 rather than deferred.
 - **nginx `if` semantics.** `if` inside `location` is famously sharp-edged. The snippet stays within the documented-safe forms (`return`, `try_files`) and is generated, never hand-edited, so a project cannot half-modify it.
-- **Config drift between the four readers.** Mitigated by generation from one config object plus the smoke test asserting `Via: nginx`. It remains the thing most likely to bite, so `cache:status` reports which readers are installed and whether their snippets match the current config hash.
+- **Config drift between the four readers.** Mitigated by generation from one config object plus the smoke test asserting `Via: nginx`. It remains the thing most likely to bite, so `cache:status` reports which readers are installed and whether their snippets match the current policy hash — of the configuration and of the generator version, so an include left behind by an older release reads as stale too.
 - **Taking over `nginx-site.conf`** costs ddev's future updates to that file. Accepted deliberately, in exchange for testing the fast path locally.
 
 ## 13. Phases

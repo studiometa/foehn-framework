@@ -66,7 +66,8 @@ describe('section requests', function () {
         // says so: two spellings of one grammar would drift, and the cache has already
         // paid for that once.
         $names = explode(',', $value);
-        $parserAccepts = count($names) <= SectionRequest::MAX_SECTIONS
+        $parserAccepts =
+            count($names) <= SectionRequest::MAX_SECTIONS
             && array_all($names, static fn(string $name): bool => SectionRequest::isSafeName($name));
 
         expect(preg_match('#' . SectionRequest::VALUE_PATTERN . '#', $value) === 1)->toBe($parserAccepts);
@@ -238,9 +239,9 @@ describe('multi-value filters', function () {
     });
 
     it('keys the bracketed form to exactly the same file', function (string $query) {
-        // A checkbox group posts `genre[]`, which nginx cannot read at all — there is no
-        // `$arg_genre[]`. It defers instead of guessing, and PHP joins the members here.
-        // Same file as the comma form, so the two spellings never store the page twice.
+        // A checkbox group posts `genre[]`. nginx joins the members out of `$args` and
+        // PHP joins them here, and the two joins have to agree to the byte. Same file as
+        // the comma form, so the two spellings never store the page twice.
         expect(QueryKey::canonical($query, $this->filters))->toBe('genre=rock,jazz&');
     })->with([
         ['genre[]=rock&genre[]=jazz'],

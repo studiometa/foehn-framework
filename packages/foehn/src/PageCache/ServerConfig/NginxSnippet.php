@@ -92,7 +92,13 @@ final readonly class NginxSnippet
 
             set \$foehn_bypass 1;
 
-            # The keyed query args, in the configuration's canonical order.
+            # The keyed query args, in the configuration's canonical order. Each one is read
+            # in both its spellings: `genre=rock,jazz` through `\$arg_genre`, and the
+            # `genre[]=rock&genre[]=jazz` a checkbox group posts by capturing the members
+            # out of `\$args` one slot at a time and joining them the way PHP does. A shape
+            # nginx cannot join the way PHP would — an empty member, more members than
+            # slots, a member with a comma in it, both spellings at once — is a bypass to
+            # the drop-in, which serves the same file a little more slowly.
             set \$foehn_q "";
             {$canonical}
             set \$foehn_variant "";
@@ -132,14 +138,16 @@ final readonly class NginxSnippet
 
             # A section response is a fragment of a page and must never be indexed on its
             # own. The drop-in replays the headers a response recorded; nginx has no way to
-            # read them, so the one header that matters is derived from the request here.
+            # read them, so the one header that matters is derived from the request here —
+            # from the joined value rather than from `\$arg_{$section}`, so that a section
+            # request in the bracketed spelling is served with it too.
             #
             # A variable rather than an `add_header` under this `if`: `add_header` is not
             # allowed in a server-level `if` at all, and nginx omits a header whose value
             # is the empty string — which is what makes one unconditional `add_header` in
             # the location below behave conditionally.
             set \$foehn_robots "";
-            if (\$arg_{$section} != "") {
+            if (\$foehn_val_{$section} != "") {
                 set \$foehn_robots "noindex, nofollow";
             }
 

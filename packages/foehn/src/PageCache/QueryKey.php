@@ -35,16 +35,18 @@ use Studiometa\Foehn\Config\PageCacheConfig;
  *
  * **A multi-value filter has two spellings, and they key to one file.** `?genre=rock,jazz`
  * is the comma form, which nginx reads with `$arg_genre` like any other value.
- * `?genre[]=rock&genre[]=jazz` is the form a checkbox group posts, and nginx cannot read
- * it at all — a variable name may not hold brackets, and there is no `$arg_genre[]`.
+ * `?genre[]=rock&genre[]=jazz` is the form a checkbox group posts, and there is no
+ * `$arg_genre[]` — a variable name may not hold brackets — so the generated snippet reads
+ * the members out of `$args` one regex capture at a time and joins them with commas in
+ * request order, which is the join this class performs. See
+ * {@see \Studiometa\Foehn\PageCache\ServerConfig\SnippetPolicy::canonicalQueryStatements()}.
  *
- * That asymmetry is settled by nginx **declining** rather than guessing: a bracketed name
- * fails {@see \Studiometa\Foehn\PageCache\ServerConfig\SnippetPolicy::knownQueryPattern()},
- * so the request is passed to PHP, where this class joins the members in request order and
- * produces the key the comma form would have produced. The page is still served from cache
- * — by the drop-in rather than by nginx, a couple of milliseconds slower — and the file is
- * the same file. What never happens is nginx computing a key PHP disagrees with, which is
- * the only outcome that would serve one visitor another's page.
+ * nginx has no loop, so its copy of the join is unrolled to a fixed number of members and
+ * cannot skip an empty one. Every shape it cannot join exactly as this class would — more
+ * members than it has slots, an empty member, both spellings in one URL — it **declines**:
+ * the request goes to PHP, this class computes the key, and the drop-in serves the same
+ * file a couple of milliseconds slower. What never happens is nginx computing a key PHP
+ * disagrees with, which is the only outcome that would serve one visitor another's page.
  */
 final readonly class QueryKey
 {
@@ -128,8 +130,9 @@ final readonly class QueryKey
             }
 
             if (array_key_exists($name, $keyed)) {
-                // An empty member is simply absent. Nothing can disagree about that: the
-                // bracketed form is never keyed by nginx in the first place.
+                // An empty member is simply absent. nginx cannot skip one — its join is a
+                // fixed sequence of captures — so it declines the request rather than
+                // disagree, and this is the only reader that ever keys it.
                 if ($value !== '') {
                     $members[$name][] = $value;
                 }
