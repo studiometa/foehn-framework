@@ -83,9 +83,9 @@ final class PageCacheStatusCommand implements CliCommandInterface
      * Which of the read paths are installed, and whether they still match the config.
      *
      * The thing most likely to bite this feature is a snippet generated from an older
-     * policy: it keeps serving, it keeps answering HIT, and it is answering it under
-     * rules the site no longer has. So the snippets carry a policy hash and this
-     * compares it.
+     * policy — an earlier config, or an earlier release whose generator said something
+     * else: it keeps serving, it keeps answering HIT, and it is answering it under rules
+     * the site no longer has. So the snippets carry a policy hash and this compares it.
      */
     private function reportReaders(): void
     {
@@ -161,7 +161,7 @@ final class PageCacheStatusCommand implements CliCommandInterface
                 $current ? '✓' : '!',
                 $label,
                 $path,
-                $current ? '' : ' — generated from a different config, re-run cache:config',
+                $current ? '' : ' — generated from a different config or an older release, re-run cache:config',
             ));
 
             return true;

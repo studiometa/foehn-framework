@@ -437,6 +437,44 @@ describe('SnippetPolicy', function () {
             ->not
             ->toBe($hash);
     });
+
+    it('changes its hash when the generator changes, whatever the configuration', function () {
+        // The hash is what `cache:status` compares an installed include against. #193
+        // rewrote how every keyed arg is read, and an include generated before it carried
+        // the same configuration — so a hash of the configuration alone called it current.
+        // This is that hash, as the earlier generator computed it; the policy's own must
+        // differ from it, and does so through GENERATOR_VERSION.
+        $policy = new SnippetPolicy($this->config);
+        $configurationOnly = substr(
+            sha1((string) json_encode([
+                $policy->cacheUrlPath(),
+                $this->config->bypassCookies,
+                $this->config->getIgnoredQueryArgs(),
+                $this->config->getCacheQueryArgs(),
+                $this->config->cacheNotFound,
+                $this->config->browserMaxAge,
+            ])),
+            0,
+            12,
+        );
+        $versioned = static fn(int $version): string => substr(
+            sha1((string) json_encode([
+                $version,
+                $policy->cacheUrlPath(),
+                $policy->config->bypassCookies,
+                $policy->config->getIgnoredQueryArgs(),
+                $policy->config->getCacheQueryArgs(),
+                $policy->config->cacheNotFound,
+                $policy->config->browserMaxAge,
+            ])),
+            0,
+            12,
+        );
+
+        expect($policy->hash())
+            ->not->toBe($configurationOnly)->toBe($versioned(SnippetPolicy::GENERATOR_VERSION))
+            ->not->toBe($versioned(SnippetPolicy::GENERATOR_VERSION + 1));
+    });
 });
 
 describe('NginxSnippet', function () {

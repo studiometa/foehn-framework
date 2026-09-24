@@ -84,12 +84,12 @@ wp foehn cache:config --server=apache --write
 
 That merges a marker-delimited block into `web/.htaccess`, leaving your own rules and WordPress's permalink block where they are. On a first run it adds the permalink block too: the starter ships no `.htaccess` and `DISALLOW_FILE_MODS` stops WordPress writing one, so installing the cache rules alone would break every URL on the site.
 
-Re-run `cache:config` whenever you change `page-cache*.config.php`. The generated snippets carry a `# policy:` hash, and `wp foehn cache:status` tells you when an installed one no longer matches:
+Re-run `cache:config` whenever you change `page-cache*.config.php`, and after a Føhn update that changes what the snippet says. The generated snippets carry a `# policy:` hash of the configuration they bake in and of the generator that wrote them, and `wp foehn cache:status` tells you when an installed one no longer matches either:
 
 ```
 Read paths:
   ✓ drop-in (advanced-cache.php)
-  ! nginx (/srv/example/config/nginx/foehn-page-cache.conf) — generated from a different config, re-run cache:config
+  ! nginx (/srv/example/config/nginx/foehn-page-cache.conf) — generated from a different config or an older release, re-run cache:config
   · apache
 ```
 

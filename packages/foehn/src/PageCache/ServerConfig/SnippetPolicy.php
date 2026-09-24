@@ -374,12 +374,30 @@ final readonly class SnippetPolicy
     }
 
     /**
+     * The generator's own version, folded into {@see SnippetPolicy::hash()}.
+     *
+     * Bump it whenever the emitted nginx or Apache changes for a fixed configuration.
+     * The hash is what `cache:status` compares an installed include against, and a hash
+     * of the configuration alone cannot see a generator change: an include written by an
+     * older release carries the same configuration, states older rules, and would read
+     * as current. #193 was such a change — it rewrote how every keyed arg is read — and
+     * an include from before it kept answering HIT under the old rules with a matching
+     * `# policy:` line.
+     */
+    public const int GENERATOR_VERSION = 2;
+
+    /**
      * A short hash of the policy, so `cache:status` can spot a snippet left behind.
+     *
+     * Covers the configuration the snippet bakes in and the generator that wrote it
+     * ({@see SnippetPolicy::GENERATOR_VERSION}), so an include is stale after either
+     * changes. It goes into the `# policy:` line of both snippets.
      */
     public function hash(): string
     {
         return substr(
             sha1((string) json_encode([
+                self::GENERATOR_VERSION,
                 $this->cacheUrlPath(),
                 $this->config->bypassCookies,
                 $this->config->getIgnoredQueryArgs(),

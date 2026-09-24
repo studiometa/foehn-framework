@@ -10,6 +10,8 @@ use Studiometa\Foehn\Console\WpCli;
 use Studiometa\Foehn\PageCache\CacheKey;
 use Studiometa\Foehn\PageCache\Invalidator;
 use Studiometa\Foehn\PageCache\ServerConfig\ApacheSnippet;
+use Studiometa\Foehn\PageCache\ServerConfig\NginxSnippet;
+use Studiometa\Foehn\PageCache\ServerConfig\SnippetPolicy;
 use Studiometa\Foehn\PageCache\Store;
 
 beforeEach(function () {
@@ -187,5 +189,63 @@ describe('cache:status', function () {
         (new PageCacheStatusCommand(new WpCli(), $this->config, $this->store))([], []);
 
         expect(($this->logged)())->toContain('Oldest entry: —');
+    });
+
+    describe('an installed nginx include', function () {
+        beforeEach(function () {
+            // Where `cache:config --write` puts it: under the project, which is the
+            // directory above the document root the snippets derive from ABSPATH.
+            $this->include = dirname(SnippetPolicy::documentRoot() ?? '') . '/' . PageCacheConfigCommand::NGINX_PATH;
+
+            if (!is_dir(dirname($this->include))) {
+                mkdir(dirname($this->include), 0o777, true);
+            }
+        });
+
+        afterEach(function () {
+            @unlink($this->include);
+        });
+
+        it('is current when it carries the policy hash this release computes', function () {
+            file_put_contents(
+                $this->include,
+                "# Foehn page cache\n# policy: " . new NginxSnippet($this->config)->hash() . "\n",
+            );
+
+            (new PageCacheStatusCommand(new WpCli(), $this->config, $this->store))([], []);
+
+            expect(($this->logged)())
+                ->toContain('✓ nginx (' . $this->include . ')')
+                ->not->toContain('re-run cache:config');
+        });
+
+        it('is out of date when an older generator wrote it, even from the same config', function () {
+            // The hash an include generated before #193 carries: the configuration alone.
+            // The rules it states are not the ones this release generates, so it must be
+            // reported — a HIT under old rules is the failure mode the hash exists for.
+            $policy = new SnippetPolicy($this->config);
+            $older = substr(
+                sha1((string) json_encode([
+                    $policy->cacheUrlPath(),
+                    $this->config->bypassCookies,
+                    $this->config->getIgnoredQueryArgs(),
+                    $this->config->getCacheQueryArgs(),
+                    $this->config->cacheNotFound,
+                    $this->config->browserMaxAge,
+                ])),
+                0,
+                12,
+            );
+            file_put_contents($this->include, "# Foehn page cache\n# policy: {$older}\n");
+
+            (new PageCacheStatusCommand(new WpCli(), $this->config, $this->store))([], []);
+
+            expect(($this->logged)())
+                ->toContain(
+                    '! nginx ('
+                    . $this->include
+                    . ') — generated from a different config or an older release, re-run cache:config',
+                );
+        });
     });
 });

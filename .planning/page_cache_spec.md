@@ -360,7 +360,7 @@ Named here so nobody assumes otherwise: keyed query args; device, scheme and con
 
 - **A purge rule nobody wrote.** Any page whose content depends on a post in a way §6 does not model goes stale. The TTL and sweep are the safety net; that is precisely why they are in v1 rather than deferred.
 - **nginx `if` semantics.** `if` inside `location` is famously sharp-edged. The snippet stays within the documented-safe forms (`return`, `try_files`) and is generated, never hand-edited, so a project cannot half-modify it.
-- **Config drift between the four readers.** Mitigated by generation from one config object plus the smoke test asserting `Via: nginx`. It remains the thing most likely to bite, so `cache:status` reports which readers are installed and whether their snippets match the current config hash.
+- **Config drift between the four readers.** Mitigated by generation from one config object plus the smoke test asserting `Via: nginx`. It remains the thing most likely to bite, so `cache:status` reports which readers are installed and whether their snippets match the current policy hash — of the configuration and of the generator version, so an include left behind by an older release reads as stale too.
 - **Taking over `nginx-site.conf`** costs ddev's future updates to that file. Accepted deliberately, in exchange for testing the fast path locally.
 
 ## 13. Phases
