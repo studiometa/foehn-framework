@@ -16,7 +16,7 @@
 # whole container under load. Pinned to a release rather than `latest-db`, so a
 # rebuild of the demo two months from now produces the site that was tested and
 # not the site the image drifted into.
-ARG FOEHN_IMAGE=ghcr.io/studiometa/foehn-wordpress:0.5.10-db
+ARG FOEHN_IMAGE=ghcr.io/studiometa/foehn-wordpress:0.6.1-db
 
 ###############################################################################
 # The theme's assets.

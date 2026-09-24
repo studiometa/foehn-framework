@@ -1,6 +1,6 @@
 {
   "name": "@studiometa/foehn-vite-plugin",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "Vite plugin for F\u00f8hn WordPress framework",
   "type": "module",
   "exports": {
