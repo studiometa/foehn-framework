@@ -45,7 +45,7 @@ The ownership line is the one part the image cannot do for you, because only the
 | Scheduled events                  | WordPress's cron run from the container's crontab rather than from page loads     |
 | Database backups                  | Scheduled dumps to a Restic repository on object storage, off unless asked for    |
 | Health endpoint                   | `GET /healthcheck`, answered by PHP-FPM, so it fails when PHP is down             |
-| WP-CLI                            | `/usr/local/bin/wp`                                                               |
+| WP-CLI                            | `/usr/local/bin/wp` — 2.12, built with the dependency fixes PHP 8.5 needs         |
 | `mariadb-client`                  | `mysql` and `mysqldump`, which every `wp db` subcommand shells out to             |
 | MariaDB (the `-db` tag only)      | A database in the same container, supervised beside PHP                           |
 | Project rules from `config/nginx` | Included in the `server` block, after the image's own                             |

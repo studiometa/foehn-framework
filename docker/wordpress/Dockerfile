@@ -15,6 +15,58 @@
 
 ARG PHP_VERSION=8.5
 
+###############################################################################
+# WP-CLI, built here rather than downloaded.
+#
+# The published `wp-cli.phar` is 2.12.0 from May 2025, and it carries two
+# dependencies that PHP 8.5 deprecates on every run: `php-cli-tools` 0.12.5
+# (`Colors.php:95`, "Using null as an array offset", once per colourised
+# fragment) and `react/promise` 2.11 (a `case x;`, once per process). Both are
+# fixed upstream — `php-cli-tools` 0.12.6 in September 2025, `react/promise`
+# 3.3.0 in August 2025 — and neither fix is in any stable phar, because there
+# has been no WP-CLI release since. Measured on one `wp foehn verify`: some 100
+# lines of `PHP Deprecated:` in a CI trace ahead of the eight lines that matter.
+#
+# So the same phar upstream would build, built with those two dependencies
+# moved forward inside the ranges WP-CLI already declares (`~0.12.4` and
+# `^2.2`). `utils/make-phar.php` is upstream's own build script and the version
+# it stamps is the one in `vendor/wp-cli/wp-cli/VERSION`, so `wp cli version`
+# still says 2.12.0 and means it.
+#
+# A phar and not a `vendor/` tree, on purpose: `wp foehn verify
+# --profile=updates` recognises WP-CLI's own diagnostics by the `phar://` scheme
+# of their file and keeps them out of the exit status. Installed as a directory,
+# WP-CLI's remaining deprecations — there will be more, PHP moves — would count
+# against the project being verified.
+#
+# The bundle pins `platform.php` to 5.6 so upstream's phar runs everywhere; it
+# also stops Composer from resolving anything newer, so it goes. `wp-cli-tests`
+# goes with it: a dev dependency whose PHPUnit 5 cannot be installed on this
+# PHP, and `--no-dev` does not exempt it from the solver.
+#
+# `E_DEPRECATED` is off for the build script only. The bundle's own
+# `symfony/finder` raises two on PHP 8.5; they are upstream's build tool's, not
+# the phar's, and a log that shows them is a log that hides the line that
+# failed.
+###############################################################################
+FROM composer:2 AS wp-cli
+
+WORKDIR /build
+
+RUN composer create-project wp-cli/wp-cli-bundle:^2.12 . \
+        --no-install --no-scripts --no-interaction --no-progress \
+    && composer config --unset platform.php \
+    && composer remove --dev wp-cli/wp-cli-tests --no-install --no-interaction \
+    && composer update wp-cli/php-cli-tools composer/composer \
+        --with-all-dependencies --no-dev --no-interaction --no-progress \
+    && php -d phar.readonly=0 -d error_reporting='E_ALL & ~E_DEPRECATED' \
+        utils/make-phar.php wp-cli.phar --quiet \
+    && ./wp-cli.phar --allow-root cli version
+
+###############################################################################
+# The runtime.
+###############################################################################
+
 # `webdevops/php-nginx` runs NGINX and PHP-FPM under a supervisord that does not
 # need to be PID 1 — which is what makes it work on Fly, where init always is. It
 # also ships `mysqli`, `gd`, `exif`, `intl` and `bcmath`, and its default
@@ -23,10 +75,8 @@ FROM webdevops/php-nginx:${PHP_VERSION}-alpine AS base
 
 # WP-CLI. Clearing a cache, rewriting a URL, flushing rewrite rules: none of it
 # has a URL, all of it is done over a shell, and it is the same binary on every
-# site.
-RUN curl -fsSL -o /usr/local/bin/wp \
-        https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar \
-    && chmod +x /usr/local/bin/wp
+# site. Built above; see there for why it is not the published phar.
+COPY --from=wp-cli --chmod=755 /build/wp-cli.phar /usr/local/bin/wp
 
 # The two halves of a database backup: something that reads the database and
 # something that stores what it read. Both belong in this image and not in a
