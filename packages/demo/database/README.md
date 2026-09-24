@@ -27,7 +27,7 @@ A WordPress site is not only its database.
 **The database** is `demo.sql.gz`, and `ddev import-db` is enough for it.
 
 **The photographs are not in it.** The demo offloads uploads to object storage, so
-the files live in a MinIO bucket that no repository should contain. The originals
+the files live in a RustFS bucket that no repository should contain. The originals
 travel as plain JPEGs instead, and `restore-media.php` copies each one to the path
 its attachment already claims — `get_attached_file()` returns an `s3://` path while
 `humanmade/s3-uploads` is active, so the copy goes through the plugin's own stream

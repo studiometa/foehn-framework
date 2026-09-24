@@ -28,7 +28,7 @@ if (!$s3->doesBucketExist($bucket)) {
 }
 
 // The plugin uploads objects with a public-read ACL, which is how AWS serves them and
-// is not how MinIO does: it ignores per-object ACLs unless the bucket policy allows
+// is not how RustFS does: it ignores per-object ACLs unless the bucket policy allows
 // anonymous reads. Without this every upload succeeds and every image 404s — the
 // failure that looks like a broken theme and is a storage configuration.
 $s3->putBucketPolicy([

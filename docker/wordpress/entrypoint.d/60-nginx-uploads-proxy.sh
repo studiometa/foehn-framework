@@ -57,7 +57,7 @@ foehn_nginx_uploads_proxy() {
         endpoint_host=$(echo "${S3_UPLOADS_ENDPOINT}" | sed -e 's|^[a-z][a-z0-9+.-]*://||' -e 's|/.*$||')
 
         # Two ways to address an object, and development does not use the same one as
-        # production. MinIO is path-style: the bucket is the first path segment.
+        # production. RustFS is path-style: the bucket is the first path segment.
         # Tigris, OVH and AWS are virtual-hosted: the bucket is a subdomain.
         # `S3_UPLOADS_PATH_STYLE` is the variable s3-uploads and Føhn already read,
         # so there is nothing new to set.

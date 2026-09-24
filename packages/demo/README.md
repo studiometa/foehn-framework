@@ -84,7 +84,7 @@ See [the guide](https://studiometa.github.io/foehn-framework/guide/deployment-fl
 
 The framework's own cleanup and security hooks are opted into from `theme/app/foehn.config.php`, `S3UploadsEndpoint` among them.
 
-Uploads are offloaded to object storage, because `web/wp-content/uploads/` is the one directory a generated web root does not make disposable. `humanmade/s3-uploads` does the offloading and MinIO stands in for the bucket, as a ddev service in `.ddev/docker-compose.minio.yaml` — so the whole path runs with no credentials, no network and no bill. See [the guide](https://studiometa.github.io/foehn-framework/guide/uploads).
+Uploads are offloaded to object storage, because `web/wp-content/uploads/` is the one directory a generated web root does not make disposable. `humanmade/s3-uploads` does the offloading and RustFS stands in for the bucket, as a ddev service in `.ddev/docker-compose.rustfs.yaml` — so the whole path runs with no credentials, no network and no bill. See [the guide](https://studiometa.github.io/foehn-framework/guide/uploads).
 
 Both ways of sizing an image are here, because they answer different questions. The homepage cards use a registered `#[AsImageSize]`: one shape, known up front, generated at upload. The plates on a project page cannot — they crop to 3:4 standing and 3:2 lying down, and a size registered today would apply to nothing already uploaded — so `photograph.twig` asks for the crop it wants with `image_url()` and `GlideTransformer` produces it. Measured here, a plate is 356ms the first time and 24ms every time after, because `.ddev/nginx/image-cache.conf` serves the cached result straight from the bucket and WordPress never boots. See [the guide](https://studiometa.github.io/foehn-framework/guide/images).
 

@@ -263,18 +263,18 @@ Anything in the project's `config/nginx/*.conf` is included in the `server` bloc
 
 Read from the same variables WordPress and `humanmade/s3-uploads` already read.
 
-| Variable                    | Default             | Role                                                                |
-| --------------------------- | ------------------- | ------------------------------------------------------------------- |
-| `S3_UPLOADS_BUCKET`         | —                   | The site's bucket. Unset means media is served from local disk      |
-| `S3_UPLOADS_ENDPOINT`       | —                   | The S3 endpoint, from which the bucket's host is derived            |
-| `S3_UPLOADS_PATH_STYLE`     | `false`             | `true` addresses `<endpoint>/<bucket>/<key>` — MinIO in development |
-| `S3_UPLOADS_PROXY_ENABLE`   | `true`              | `false` turns the media proxy off                                   |
-| `S3_UPLOADS_PROXY_HOST`     | derived             | To go through a CDN, or an endpoint that follows neither style      |
-| `S3_UPLOADS_PROXY_RESOLVER` | `1.1.1.1 8.8.8.8`   | The resolver NGINX uses for the bucket's host                       |
-| `FOEHN_PAGE_CACHE_CONFIG`   | —                   | `false` generates no page cache rules and leaves it to the drop-in  |
-| `FOEHN_CRON_ENABLED`        | `true`              | `false` gives WordPress its pseudo-cron back                        |
-| `FOEHN_CRON_SCHEDULE`       | `15min`             | How often scheduled events run                                      |
-| `FOEHN_NGINX_CONF_DIR`      | `/app/config/nginx` | Where the project's own NGINX rules are read from                   |
+| Variable                    | Default             | Role                                                                 |
+| --------------------------- | ------------------- | -------------------------------------------------------------------- |
+| `S3_UPLOADS_BUCKET`         | —                   | The site's bucket. Unset means media is served from local disk       |
+| `S3_UPLOADS_ENDPOINT`       | —                   | The S3 endpoint, from which the bucket's host is derived             |
+| `S3_UPLOADS_PATH_STYLE`     | `false`             | `true` addresses `<endpoint>/<bucket>/<key>` — RustFS in development |
+| `S3_UPLOADS_PROXY_ENABLE`   | `true`              | `false` turns the media proxy off                                    |
+| `S3_UPLOADS_PROXY_HOST`     | derived             | To go through a CDN, or an endpoint that follows neither style       |
+| `S3_UPLOADS_PROXY_RESOLVER` | `1.1.1.1 8.8.8.8`   | The resolver NGINX uses for the bucket's host                        |
+| `FOEHN_PAGE_CACHE_CONFIG`   | —                   | `false` generates no page cache rules and leaves it to the drop-in   |
+| `FOEHN_CRON_ENABLED`        | `true`              | `false` gives WordPress its pseudo-cron back                         |
+| `FOEHN_CRON_SCHEDULE`       | `15min`             | How often scheduled events run                                       |
+| `FOEHN_NGINX_CONF_DIR`      | `/app/config/nginx` | Where the project's own NGINX rules are read from                    |
 
 The `DB_*` and `BACKUP_*` variables are listed above, with the features that read them.
 

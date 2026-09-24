@@ -67,7 +67,7 @@ esac
 
 printf '✓ the request warmed the discovery cache\n'
 
-# Uploads go to the MinIO service, so the assertions need something uploaded. The
+# Uploads go to the RustFS service, so the assertions need something uploaded. The
 # fixture is committed rather than fetched: a smoke test that needs the network to
 # reach a stock photo site fails for reasons that have nothing to do with Føhn.
 #
@@ -151,7 +151,7 @@ printf '✓ a rewrite rule answers its URL\n'
 # assertions above prove the URL was written; only a request proves it resolves,
 # and it has to come from out here rather than from the container, because that is
 # where a browser stands. The whole path is exercised: nginx takes
-# /wp-content/uploads/, proxies it to MinIO, and hands back the bytes.
+# /wp-content/uploads/, proxies it to RustFS, and hands back the bytes.
 image="$(ddev exec "cd /var/www/html && wp eval 'echo wp_get_attachment_url($attachment);'" 2>/dev/null | tr -d '\r' | tail -n1)"
 
 served="$(curl -sk -o /dev/null -w '%{http_code} %{content_type}' "$image")"
@@ -164,7 +164,7 @@ case "$served" in
     response: $served
 
 Either .ddev/nginx/uploads-proxy.conf is not mapping /wp-content/uploads/ to the
-bucket, or MinIO is refusing the read: it ignores the public-read ACL the plugin
+bucket, or RustFS is refusing the read: it ignores the public-read ACL the plugin
 sets unless the bucket policy allows anonymous reads. See
 tests/smoke/provision-bucket.php.
 

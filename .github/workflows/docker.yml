@@ -243,9 +243,12 @@ jobs:
           set -euo pipefail
 
           docker network create backupnet
-          docker run -d --name minio --network backupnet \
-            -e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=minioadmin \
-            minio/minio server /data
+          # RustFS and not MinIO: `minio/minio` left Docker Hub on 2026-09-11.
+          # Restic creates the bucket itself, so nothing here provisions one —
+          # which is the point of the first check below.
+          docker run -d --name rustfs --network backupnet \
+            -e RUSTFS_ACCESS_KEY=rustfsadmin -e RUSTFS_SECRET_KEY=rustfsadmin \
+            rustfs/rustfs:1.0.0
           docker run -d --name backupdb --network backupnet \
             -e MARIADB_ROOT_PASSWORD=root -e MARIADB_DATABASE=wp \
             -e MARIADB_USER=wp -e MARIADB_PASSWORD=secret mariadb:11.8
@@ -267,8 +270,8 @@ jobs:
             docker run -d --name backupsite --network backupnet \
               -e BACKUP_ENABLED=true -e BACKUP_SCHEDULE=daily \
               -e DB_HOST=backupdb -e DB_NAME=wp -e DB_USER=wp -e DB_PASSWORD=secret \
-              -e RESTIC_REPOSITORY=s3:http://minio:9000/backups -e RESTIC_PASSWORD=repopass \
-              -e AWS_ACCESS_KEY_ID="${1:-minioadmin}" -e AWS_SECRET_ACCESS_KEY="${2:-minioadmin}" \
+              -e RESTIC_REPOSITORY=s3:http://rustfs:9000/backups -e RESTIC_PASSWORD=repopass \
+              -e AWS_ACCESS_KEY_ID="${1:-rustfsadmin}" -e AWS_SECRET_ACCESS_KEY="${2:-rustfsadmin}" \
               -e FLY_APP_NAME=ci-site foehn-wordpress:check >/dev/null
             sleep 12
           }
@@ -301,7 +304,7 @@ jobs:
           ! timeout 120 docker exec backupsite /opt/docker/bin/foehn-backup 2>/tmp/bad.log
           grep -q 'could not be opened or created' /tmp/bad.log
 
-          docker rm -f backupsite backupdb minio
+          docker rm -f backupsite backupdb rustfs
           docker network rm backupnet
 
       # The backup check exists because CI once proved a job was scheduled and

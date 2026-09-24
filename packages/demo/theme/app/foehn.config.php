@@ -39,7 +39,7 @@ return new FoehnConfig(
         // is a public query var WordPress already reads, so this hook is here for the
         // one filter that is not.
         QueryFiltersHook::class,
-        // Points humanmade/s3-uploads at MinIO. Without it the plugin talks to AWS, whose
+        // Points humanmade/s3-uploads at RustFS. Without it the plugin talks to AWS, whose
         // endpoint is the only one its constants can describe.
         S3UploadsEndpoint::class,
         YouTubeNoCookieHooks::class,

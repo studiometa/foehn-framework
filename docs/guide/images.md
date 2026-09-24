@@ -66,7 +66,7 @@ location @foehn {
 
 Named arguments and not `$args`, so the same transform written in another order finds the same file instead of building a second copy of it. An absent parameter leaves its slot empty, so a width-only resize is `600x-max-` and the shape stays fixed.
 
-With uploads in a bucket, point the same rewrite at the bucket — the shape is the one an uploads proxy already has; `packages/demo/.ddev/nginx/image-cache.conf` is a working example against MinIO.
+With uploads in a bucket, point the same rewrite at the bucket — the shape is the one an uploads proxy already has; `packages/demo/.ddev/nginx/image-cache.conf` is a working example against RustFS.
 
 `^~` and not a regex location: a regex would lose to the `\.(jpg|png|webp)$` static-file rule most WordPress configurations already carry, and every transform would 404.
 
