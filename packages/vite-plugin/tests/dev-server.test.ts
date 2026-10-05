@@ -89,6 +89,50 @@ describe("dev server", () => {
         await server.close();
         await vi.waitFor(() => expect(existsSync(hotPath())).toBe(false));
     });
+
+    it.each([
+        ["an entry PHP enqueues", "/theme/assets/js/app.js", "from-vite"],
+        ["a CSS entry", "/theme/assets/css/app.css", "color: red"],
+        ["a CSS module import", "/theme/assets/css/app.css?import", "color: red"],
+        ["the Vite client", "/@vite/client", "createHotContext"],
+        ["a public file", "/robots.txt", "from-public"],
+    ])("serves %s from Vite", async (_label, path, expected) => {
+        const body = await (await fetch(`${origin()}${path}`)).text();
+        expect(body).not.toContain("from-ddev");
+        expect(body).toContain(expected);
+    });
+
+    it("answers the HMR ping from Vite", async () => {
+        const response = await fetch(`${origin()}/`, {
+            headers: { Accept: "text/x-vite-ping" },
+        });
+        expect(response.status).toBe(204);
+    });
+
+    it("keeps the HMR websocket on Vite", async () => {
+        const url = `${origin().replace("http", "ws")}/?token=${server.config.webSocketToken}`;
+        const socket = new WebSocket(url, "vite-hmr");
+        const message = await new Promise<string>((done, fail) => {
+            socket.addEventListener("message", (event) => done(String(event.data)));
+            socket.addEventListener("error", () => fail(new Error("websocket failed")));
+        });
+        socket.close();
+        expect(JSON.parse(message)).toEqual({ type: "connected" });
+    });
+
+    it.each([
+        ["the home page", "/"],
+        ["the admin", "/wp/wp-admin/"],
+        ["a front-end URL", "/sample-page/?preview=true"],
+        ["a missing file", "/theme/assets/js/missing.js"],
+    ])("proxies %s to DDEV", async (_label, path) => {
+        const body = await (await fetch(`${origin()}${path}`)).text();
+        expect(body).toBe(`from-ddev ${path}`);
+    });
+
+    function origin(): string {
+        return `http://127.0.0.1:${(server.httpServer!.address() as AddressInfo).port}`;
+    }
 });
 
 describe("build", () => {

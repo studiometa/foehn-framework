@@ -1,5 +1,7 @@
-import { resolve } from "node:path";
+import { statSync } from "node:fs";
+import type { IncomingMessage } from "node:http";
 import type { AddressInfo } from "node:net";
+import { join, resolve } from "node:path";
 import type { Plugin, ResolvedConfig, ViteDevServer } from "vite";
 import type { FoehnPluginOptions, ResolvedFoehnPluginOptions } from "./options.js";
 import { resolveOptions } from "./options.js";
@@ -46,11 +48,13 @@ export function foehn(options: FoehnPluginOptions): Plugin[] {
                 server: proxyTarget
                     ? {
                           proxy: {
-                              // Proxy all non-asset requests to DDEV
-                              "^(?!/@|/node_modules|/src)": {
+                              // Vite answers what it can serve, DDEV the rest
+                              "/": {
                                   target: proxyTarget,
                                   changeOrigin: true,
                                   secure: false,
+                                  bypass: (req) =>
+                                      isServedByVite(req, config) ? req.url : undefined,
                               },
                           },
                       }
@@ -132,6 +136,34 @@ function matchPattern(file: string, pattern: string): boolean {
         .replace(/\?/g, ".");
 
     return new RegExp(`^${regexPattern}$`).test(file);
+}
+
+/**
+ * Whether the dev server answers a request itself: its internal routes
+ * (`/@vite/client`, `/@fs/`, `/@id/`, `/__open-in-editor`), dependencies, the
+ * HMR ping, and every file under the root or the public directory, whatever
+ * the query (`?import`, `?direct`, `?v=`).
+ */
+function isServedByVite(req: IncomingMessage, config: ResolvedConfig): boolean {
+    if (req.headers.accept === "text/x-vite-ping") {
+        return true;
+    }
+
+    let path: string;
+    try {
+        path = decodeURIComponent((req.url ?? "/").split(/[?#]/)[0]);
+    } catch {
+        // A malformed URL is not a module, let WordPress answer it
+        return false;
+    }
+
+    if (path.startsWith("/@") || path.startsWith("/__") || path.startsWith("/node_modules/")) {
+        return true;
+    }
+
+    return [config.root, config.publicDir].some(
+        (dir) => dir !== "" && statSync(join(dir, path), { throwIfNoEntry: false })?.isFile(),
+    );
 }
 
 /**
