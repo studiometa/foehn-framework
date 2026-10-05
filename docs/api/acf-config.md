@@ -43,18 +43,21 @@ return new AcfConfig(
 
 ### Field Transformation
 
-When `transformFields` is enabled (default), raw ACF field values are automatically converted to Timber objects inside block rendering:
+When `transformFields` is enabled (default), Timber's ACF transforms replace ACF's formatting for some field types while Føhn reads a block's fields. The stored value becomes a Timber object:
 
-| ACF Field Type | Raw Value     | Timber Object          |
-| -------------- | ------------- | ---------------------- |
-| Image          | Attachment ID | `Timber\Image`         |
-| Post Object    | Post ID       | `Timber\Post`          |
-| Relationship   | Array of IDs  | Array of `Timber\Post` |
-| Taxonomy       | Term ID       | `Timber\Term`          |
+| ACF Field Type | Stored Value  | Timber Object                     |
+| -------------- | ------------- | --------------------------------- |
+| Image          | Attachment ID | `Timber\Image`                    |
+| Post Object    | Post ID       | `Timber\Post`                     |
+| Relationship   | Array of IDs  | `Timber\PostArrayObject` of posts |
+| Taxonomy       | Term ID       | `Timber\Term`                     |
+| Date Picker    | `Ymd` string  | `DateTimeImmutable`               |
+
+See the [ACF blocks guide](/guide/acf-blocks#transformed-field-types) for every type.
 
 ### Disabling Transformation
 
-For performance or when you want raw values:
+For performance, or when you want ACF's own formatting:
 
 ```php
 return new AcfConfig(

@@ -131,17 +131,17 @@ return new AcfConfig(
 
 ### Transformed Field Types
 
-| ACF Field Type     | Timber Type                                |
-| ------------------ | ------------------------------------------ |
-| `image`            | `Timber\Image`                             |
-| `gallery`          | `Timber\PostQuery` (array of Images)       |
-| `file`             | `Timber\Attachment`                        |
-| `post_object`      | `Timber\Post` (or `PostQuery` if multiple) |
-| `relationship`     | `Timber\PostQuery`                         |
-| `taxonomy`         | `Timber\Term` (or array of Terms)          |
-| `user`             | `Timber\User` (or array of Users)          |
-| `date_picker`      | `DateTimeImmutable`                        |
-| `date_time_picker` | `DateTimeImmutable`                        |
+| ACF Field Type     | Timber Type                                      |
+| ------------------ | ------------------------------------------------ |
+| `image`            | `Timber\Image`                                   |
+| `gallery`          | `Timber\PostArrayObject` of images               |
+| `file`             | `Timber\Attachment`                              |
+| `post_object`      | `Timber\Post` (or `PostArrayObject` if multiple) |
+| `relationship`     | `Timber\PostArrayObject`                         |
+| `taxonomy`         | `Timber\Term` (or array of Terms)                |
+| `user`             | `Timber\User` (or array of Users)                |
+| `date_picker`      | `DateTimeImmutable`                              |
+| `date_time_picker` | `DateTimeImmutable`                              |
 
 ### Nested Fields Support
 
@@ -180,7 +180,7 @@ public function compose(array $block, array $fields): array
 public function compose(array $block, array $fields): array
 {
     // $fields['image'] is already a Timber\Image
-    // $fields['related_posts'] is already a Timber\PostQuery
+    // $fields['related_posts'] is already a Timber\PostArrayObject
     return $fields;
 }
 ```
