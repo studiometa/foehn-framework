@@ -4,6 +4,8 @@ Advanced Custom Fields integration for [Føhn](https://github.com/studiometa/foe
 
 See the [documentation](https://studiometa.github.io/foehn-framework/).
 
+For AI agents, this package ships the `foehn-acf` [Agent Skill](https://agentskills.io/) in [`skills/foehn-acf/SKILL.md`](skills/foehn-acf/SKILL.md). See [AI Agents](https://studiometa.github.io/foehn-framework/guide/ai-agents) to install it.
+
 > **Note**
 > This package is part of the [Føhn Framework](https://github.com/studiometa/foehn-framework) monorepo.
 > Please report issues and submit pull requests in the [main repository](https://github.com/studiometa/foehn-framework).

@@ -90,6 +90,10 @@ public function enqueueAssets(): void
 }
 ```
 
+## AI agents
+
+This package ships the `foehn-vite-plugin` [Agent Skill](https://agentskills.io/) in [`skills/foehn-vite-plugin/SKILL.md`](skills/foehn-vite-plugin/SKILL.md). See [AI Agents](https://studiometa.github.io/foehn-framework/guide/ai-agents) to install it.
+
 ## License
 
 MIT

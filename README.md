@@ -107,11 +107,12 @@ web/                            # GENERATED (100% gitignored)
 - [Theme Conventions](https://studiometa.github.io/foehn-framework/guide/theme-conventions)
 - [Security Guide](https://studiometa.github.io/foehn-framework/guide/security)
 - [Docker Image](https://studiometa.github.io/foehn-framework/guide/docker-image)
+- [AI Agents](https://studiometa.github.io/foehn-framework/guide/ai-agents)
 - [API Reference](https://studiometa.github.io/foehn-framework/api/)
 
 ### For AI Agents
 
-This package includes an [Agent Skill](https://agentskills.io/) at `packages/foehn/skills/foehn/SKILL.md` with comprehensive usage reference. Compatible agents will discover it automatically.
+Each package ships an [Agent Skill](https://agentskills.io/): `foehn`, `foehn-acf` and `foehn-vite-plugin`. Install them pinned to the `studiometa/foehn` version in your `composer.lock` with `npx skills add studiometa/foehn-framework#<version>`. See [AI Agents](https://studiometa.github.io/foehn-framework/guide/ai-agents).
 
 ## Development
 
