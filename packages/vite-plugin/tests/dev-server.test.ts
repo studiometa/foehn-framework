@@ -84,9 +84,10 @@ describe("dev server", () => {
     });
 
     it("writes the URL the server listens on", async () => {
-        await vi.waitFor(() => expect(existsSync(hotPath())).toBe(true));
         const port = (server.httpServer!.address() as AddressInfo).port;
-        expect(await readFile(hotPath(), "utf-8")).toBe(`http://localhost:${port}`);
+        await vi.waitFor(async () =>
+            expect(await readFile(hotPath(), "utf-8")).toBe(`http://localhost:${port}`),
+        );
     });
 
     it("removes the hot file when the server closes", async () => {
@@ -121,6 +122,23 @@ describe("dev server", () => {
         await server.close();
         expect(process.listeners("SIGINT")).toEqual(signalListeners.SIGINT);
         expect(process.listeners("SIGHUP")).toEqual(signalListeners.SIGHUP);
+    });
+
+    it("writes https when the server uses TLS", async () => {
+        await server.close();
+        // No certificate: the server listens, which is all the hot file needs.
+        server = await createServer({
+            root,
+            configFile: false,
+            logLevel: "silent",
+            plugins: [plugin()],
+            server: { host: "127.0.0.1", port: 0, https: {} },
+        });
+        await server.listen();
+        const port = (server.httpServer!.address() as AddressInfo).port;
+        await vi.waitFor(async () =>
+            expect(await readFile(hotPath(), "utf-8")).toBe(`https://localhost:${port}`),
+        );
     });
 
     it.each([
