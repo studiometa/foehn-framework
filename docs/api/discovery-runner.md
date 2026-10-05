@@ -40,7 +40,7 @@ final class DiscoveryRunner
 
 ## Which discoveries run
 
-Nothing lists them. A class implementing `Tempest\Discovery\Discovery` inside a scanned location is found, resolved from the container and run — the framework's own nineteen included. That is what lets a package or a theme's `app/` directory add one; see [Custom Discovery](/guide/custom-discovery).
+Nothing lists them. A class implementing `Tempest\Discovery\Discovery` inside a scanned location is found, resolved from the container and run — the framework's own included. That is what lets a package or a theme's `app/` directory add one; see [Custom Discovery](/guide/custom-discovery).
 
 The phase comes from [`#[AsDiscovery]`](./as-discovery) on the class, defaulting to `DiscoveryPhase::Main`. Within a phase, discoveries apply in class name order.
 
@@ -54,11 +54,11 @@ wp_loaded         → runLateDiscoveries()  → DiscoveryPhase::Late
 
 `Kernel` registers all three at priority 1. Each phase runs at most once; a second call is a no-op, which is what `hasRun()` reports.
 
-| Phase   | Framework discoveries                                                                                                                                                                                           |
-| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Early` | `CliCommandDiscovery`, `HookDiscovery`, `ImageSizeDiscovery`, `ShortcodeDiscovery`, `TimberModelDiscovery`, `TwigExtensionDiscovery`                                                                            |
-| `Main`  | `AcfBlockDiscovery`, `AcfFieldGroupDiscovery`, `AcfOptionsPageDiscovery`, `BlockDiscovery`, `BlockPatternDiscovery`, `CronDiscovery`, `JobDiscovery`, `MenuDiscovery`, `PostTypeDiscovery`, `TaxonomyDiscovery` |
-| `Late`  | `ContextProviderDiscovery`, `RestRouteDiscovery`, `TemplateControllerDiscovery`                                                                                                                                 |
+| Phase   | Framework discoveries                                                                                                                                                                                                                                                                                                                    |
+| ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Early` | `CliCommandDiscovery`, `HookDiscovery`, `ImageSizeDiscovery`, `ShortcodeDiscovery`, `TimberModelDiscovery`, `TwigExtensionDiscovery`                                                                                                                                                                                                     |
+| `Main`  | `AcfBlockDiscovery`, `AcfFieldGroupDiscovery`, `AcfOptionsPageDiscovery`, `BlockBindingDiscovery`, `BlockCategoryDiscovery`, `BlockDiscovery`, `BlockPatternDiscovery`, `CronDiscovery`, `JobDiscovery`, `MenuDiscovery`, `PostMetaDiscovery`, `PostTypeDiscovery`, `RewriteRuleDiscovery`, `SettingsPageDiscovery`, `TaxonomyDiscovery` |
+| `Late`  | `ContextProviderDiscovery`, `RestRouteDiscovery`, `TemplateControllerDiscovery`                                                                                                                                                                                                                                                          |
 
 ## How a request builds them
 

@@ -268,6 +268,8 @@ use Studiometa\Foehn\Attributes\AsBlockCategory;
 final class ThemeBlocks {}
 ```
 
+The categories go first in the inserter. A slug that is already registered, by core or by another class, is skipped. See [`#[AsBlockCategory]`](/api/as-block-category#registration).
+
 ## Full Configuration Example
 
 ```php
