@@ -10,7 +10,7 @@ use Studiometa\Foehn\Contracts\Arrayable;
 /**
  * DTO for spacing fields.
  *
- * Matches the output of SpacingBuilder fields.
+ * Matches the `top` and `bottom` fields of SpacingBuilder.
  */
 final readonly class SpacingData implements Arrayable
 {
@@ -22,13 +22,16 @@ final readonly class SpacingData implements Arrayable
     ) {}
 
     /**
-     * Create from ACF field values.
+     * Create from the value of the ACF fields a SpacingBuilder adds.
      *
-     * @param array<string, mixed>|null $fields ACF fields array
-     * @param string $prefix Field name prefix (matching SpacingBuilder name)
+     * Pass the value of the group that holds the fragment, for example
+     * `$fields['spacing']` after `addGroup('spacing')->addFields(new SpacingBuilder())`,
+     * or the fields themselves when the fragment is not in a group.
+     *
+     * @param array<string, mixed>|null $spacing Value with the `top` and `bottom` keys
      */
-    public static function fromAcf(?array $fields, string $prefix = 'spacing'): self
+    public static function fromAcf(?array $spacing): self
     {
-        return new self(top: $fields[$prefix . '_top'] ?? 'medium', bottom: $fields[$prefix . '_bottom'] ?? 'medium');
+        return new self(top: $spacing['top'] ?? 'medium', bottom: $spacing['bottom'] ?? 'medium');
     }
 }

@@ -107,7 +107,7 @@ final readonly class SpacingData implements Arrayable
         public string $bottom = 'medium',
     ) {}
 
-    public static function fromAcf(?array $fields, string $prefix = 'spacing'): self;
+    public static function fromAcf(?array $spacing): self;
 }
 ```
 
@@ -116,9 +116,9 @@ final readonly class SpacingData implements Arrayable
 ```php
 use Studiometa\Foehn\Data\SpacingData;
 
-// From ACF fields with prefix
-$spacing = SpacingData::fromAcf($fields, 'spacing');
-// Reads $fields['spacing_top'] and $fields['spacing_bottom']
+// From the group that holds the fragment: addGroup('spacing')->addFields(new SpacingBuilder())
+$spacing = SpacingData::fromAcf($fields['spacing'] ?? null);
+// Reads $fields['spacing']['top'] and $fields['spacing']['bottom']
 
 // Manual
 $spacing = new SpacingData(top: 'large', bottom: 'small');
