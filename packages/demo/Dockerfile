@@ -61,9 +61,10 @@ WORKDIR /app
 COPY composer.json ./
 COPY theme/ ./theme/
 
-# No lockfile, on purpose: the demo resolves `studiometa/foehn: ^0.5` from
-# Packagist, so the deployed site shows the last released framework — which is
-# what a real project starting today would get. Pinning it here would make the
+# No lockfile, on purpose: the demo resolves the exact `studiometa/foehn` release
+# its composer.json pins from Packagist, so the deployed site shows the framework
+# the last release commit moved it to — which is what a real project starting
+# today would get. Pinning it here would make the
 # demo a record of the day it was built.
 #
 # `--no-dev`, because the test suites are not served; `--optimize-autoloader`,
