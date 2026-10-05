@@ -33,14 +33,17 @@ jobs:
       # `^0.5` through 0.6.2, so it could not be installed next to the framework
       # it extends. This is the step that stops a release from depending on memory.
       #
-      # It reads the composer.json and package.json of every package, and the
-      # version the root composer.json gives the framework path repository. It
-      # refuses the tag when a constraint on a studiometa/foehn* or
-      # @studiometa/foehn-* package is not the tag itself. The pins in $required
-      # must also exist, so that removing one is not a way to pass. It runs before
-      # composer install, which needs nothing from vendor/ here, and which would
-      # otherwise fail first on a forgotten pin with a resolution error.
-      - name: Check every inter-package constraint is the version being tagged
+      # It reads the composer.json and package.json of every package, the version
+      # the root composer.json gives the framework path repository, and the
+      # `version` of every package.json that has one (the Vite plugin and the
+      # unpublished root). It refuses the tag when one of these, or a constraint on
+      # a studiometa/foehn* or @studiometa/foehn-* package, is not the tag itself.
+      # The pins in $required must also exist, so that removing one is not a way to
+      # pass. It runs before composer install, which needs nothing from vendor/
+      # here, and which would otherwise fail first on a forgotten pin with a
+      # resolution error. Checking the plugin version here as well, and not only in
+      # publish-npm, stops the release job too: it needs only this job.
+      - name: Check every package version and inter-package constraint is the tag
         run: |
           TAG=${GITHUB_REF#refs/tags/}
 
@@ -55,12 +58,17 @@ jobs:
               "packages/starter/package.json @studiometa/foehn-vite-plugin",
               "packages/demo/package.json @studiometa/foehn-vite-plugin",
               "composer.json studiometa/foehn",
+              "packages/vite-plugin/package.json version",
+              "package.json version",
             ];
             $sections = ["require", "require-dev", "dependencies", "devDependencies", "peerDependencies", "optionalDependencies"];
 
             $pins = [];
-            foreach (glob("packages/*/{composer,package}.json", GLOB_BRACE) as $file) {
+            foreach (["package.json", ...glob("packages/*/{composer,package}.json", GLOB_BRACE)] as $file) {
               $json = json_decode(file_get_contents($file), true, flags: JSON_THROW_ON_ERROR);
+              if (isset($json["version"])) {
+                $pins["$file version"] = $json["version"];
+              }
               foreach ($sections as $section) {
                 foreach ($json[$section] ?? [] as $name => $constraint) {
                   if (preg_match("#^@?studiometa/foehn(-|$)#", $name)) {

@@ -117,10 +117,10 @@ Check `.planning/roadmap.md` for current implementation status.
 - GitHub Actions workflow handles release creation automatically
 - Every package carries the same version, PHP and npm alike, and every inter-package dependency requires that **exact** version: no caret, no range. So `composer create-project` and `npm install` get a combination somebody has run. `0.6.0` shipped a starter requiring `^0.5` — a caret on a `0.x` pins the minor, so create-project kept building `0.5.10` projects — and `foehn-acf` required `^0.5` up to `0.6.2`, so it could not be installed with the current framework
 - **Every** release commit moves each of these to the version being tagged:
-  - `packages/vite-plugin/package.json`: `version`
+  - `packages/vite-plugin/package.json` and the root `package.json`: `version`
   - `packages/acf/composer.json`: `studiometa/foehn`
   - `packages/starter/composer.json` and `packages/demo/composer.json`: `studiometa/foehn` and `studiometa/foehn-installer`
   - `packages/starter/package.json` and `packages/demo/package.json`: `@studiometa/foehn-vite-plugin`, then `npm install --package-lock-only` to update `package-lock.json`
   - the root `composer.json`: the `studiometa/foehn` version of the `packages/foehn` path repository, which the `foehn-acf` pin resolves against in the monorepo
-- The release workflow refuses a tag when any `studiometa/foehn*` or `@studiometa/foehn-*` constraint in a package, or the root path repository version, is not the tag itself. The publish job also refuses a tag that is not the `packages/vite-plugin/package.json` version, rather than publish a version nobody tagged
+- The release workflow refuses a tag when any `studiometa/foehn*` or `@studiometa/foehn-*` constraint in a package, the root path repository version, or the `version` of the Vite plugin or the root `package.json` is not the tag itself. The publish job checks the plugin version again before it publishes, rather than publish a version nobody tagged
 - The Vite plugin publishes to npm through trusted publishing. There is no `NPM_TOKEN`: the job proves its identity with an OIDC token, against a trusted publisher configured on npmjs.com that names this repository and `release.yml`. A rename of the workflow file breaks publishing until the trusted publisher is updated
