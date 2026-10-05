@@ -282,7 +282,7 @@ public function blockCategories(array $categories): array
 }
 ```
 
-`wp foehn make:block` writes `category: 'theme'` (change it with `--category=`). WordPress has no `theme` category, so register it with this filter or pick a core category such as `widgets`, `design`, `text` or `media`.
+`wp foehn make:block` writes `category: 'theme'` (change it with `--category=`). `theme` is a core WordPress category (since 5.8), with `text`, `media`, `design`, `widgets`, `embed` and `reusable`, so a generated block needs no extra registration. Declare a slug that core does not provide with `#[AsBlockCategory]`.
 
 ## Troubleshooting
 
