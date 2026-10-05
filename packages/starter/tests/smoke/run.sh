@@ -103,3 +103,36 @@ unbuilt theme (no theme/dist/.vite/manifest.json) looks exactly like this.
 $(printf '%s' "$page" | grep -iE 'stylesheet|<script' | head -5)"
 
 printf '✓ the built stylesheet and script are on the page\n'
+
+# A password-protected post has to answer with WordPress's password form and with
+# nothing the password guards. Both controllers send it to pages/password, which
+# the starter did not ship: the single threw "Failed to render template" and
+# answered 500, and the page fell back to pages/page — whose `post.content` Timber
+# prints in full, password or not.
+check_protected() {
+	local type="$1" id link status
+
+	id="$(ddev exec "cd /var/www/html && wp post create --post_type=$type --post_status=publish --post_title='Protected $type' --post_password=smoke --post_content=protected-content-marker --porcelain" 2>/dev/null | tr -d '\r' | grep -xE '[0-9]+' | tail -n1 || true)"
+	[ -n "$id" ] || fail "could not create a password-protected $type"
+
+	link="$(ddev exec "cd /var/www/html && wp eval 'echo get_permalink($id);'" 2>/dev/null | tr -d '\r' | tail -n1)"
+	status="$(curl -sk -o "$body" -w '%{http_code}' "$link")"
+
+	# Removed before any check can fail, so a second run starts from the same site.
+	ddev exec "cd /var/www/html && wp post delete $id --force" >/dev/null 2>&1 || true
+
+	[ "$status" = "200" ] || fail "a password-protected $type returned HTTP $status
+$(grep -iE -m3 'Fatal error|Uncaught' "$body" | head -c 800)"
+
+	grep -q 'name="post_password"' "$body" || fail "a password-protected $type rendered without the password form
+$(head -c 400 "$body")"
+
+	if grep -q 'protected-content-marker' "$body"; then
+		fail "a password-protected $type printed the content its password guards"
+	fi
+
+	printf '✓ a password-protected %s shows the password form and nothing else\n' "$type"
+}
+
+check_protected post
+check_protected page
