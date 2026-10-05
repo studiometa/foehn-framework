@@ -16,9 +16,10 @@ theme/dist
 dist
 
 # The host's `composer.lock` is not committed for this package on purpose: the
-# demo tracks `studiometa/foehn: ^0.5` and the deployed site is meant to show the
-# last release. A lockfile from a developer's machine would pin it to whatever
-# they happened to have.
+# demo requires the exact `studiometa/foehn` release its composer.json pins, and
+# the deployed site is meant to show that release with the rest of its
+# dependencies as they are today. A lockfile from a developer's machine would pin
+# them to whatever they happened to have.
 composer.lock
 
 # ddev's own directory is a per-machine, per-project-name artifact: certificates,
