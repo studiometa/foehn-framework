@@ -9,7 +9,7 @@ Føhn is a WordPress framework for classic (PHP and Twig) themes. You declare Wo
 
 ACF blocks, ACF field groups and ACF options pages are not in this package. They are in `studiometa/foehn-acf`, with its own `foehn-acf` skill. The Vite build is in `@studiometa/foehn-vite-plugin`, with the `foehn-vite-plugin` skill.
 
-Full documentation: https://studiometa.github.io/foehn-framework/
+Documentation index (one Markdown file per page): https://studiometa.github.io/foehn-framework/llms.txt
 
 ## Mental model
 
@@ -301,7 +301,7 @@ All commands are under `wp foehn` (`ddev wp foehn …` in a DDEV project).
 | `verify --profile=updates\|production`                                                                                                                                                                                      | Release gates with a JSON report.                                   |
 | `salts:generate` (`--force` rotates)                                                                                                                                                                                        | Write the WordPress security keys to `.env`.                        |
 
-Run `wp help foehn <command>` for the options of one command. See https://studiometa.github.io/foehn-framework/guide/cli-commands.html.
+Run `wp help foehn <command>` for the options of one command. See https://studiometa.github.io/foehn-framework/guide/cli-commands.md.
 
 ## Gotchas
 

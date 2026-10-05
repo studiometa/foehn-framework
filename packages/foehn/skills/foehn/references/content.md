@@ -2,7 +2,7 @@
 
 Post types, taxonomies, post meta, model queries and settings pages.
 
-Docs: [Post types](https://studiometa.github.io/foehn-framework/guide/post-types.html), [Taxonomies](https://studiometa.github.io/foehn-framework/guide/taxonomies.html), [Querying posts](https://studiometa.github.io/foehn-framework/guide/querying-posts.html), [Settings pages](https://studiometa.github.io/foehn-framework/guide/settings-pages.html).
+Docs: [Post types](https://studiometa.github.io/foehn-framework/guide/post-types.md), [Taxonomies](https://studiometa.github.io/foehn-framework/guide/taxonomies.md), [Querying posts](https://studiometa.github.io/foehn-framework/guide/querying-posts.md), [Settings pages](https://studiometa.github.io/foehn-framework/guide/settings-pages.md).
 
 ## `#[AsPostType]`
 

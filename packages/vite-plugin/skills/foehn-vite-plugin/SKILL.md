@@ -7,7 +7,7 @@ description: 'Configure the Vite build of a Føhn theme with @studiometa/foehn-v
 
 `@studiometa/foehn-vite-plugin` builds the theme's JavaScript and CSS with Vite. `Studiometa\Foehn\Assets\ViteManifest` (in `studiometa/foehn`) puts that build on the page. The two halves meet through files on disk, never through imports. For hooks, `#[AsAction]` and the rest of the PHP side, load the `foehn` skill.
 
-Full guide: https://studiometa.github.io/foehn-framework/guide/assets
+Full guide: https://studiometa.github.io/foehn-framework/guide/assets.md
 
 ## Mental model
 
@@ -190,6 +190,6 @@ To add a component, add a file in `theme/assets/js/components/` and put `data-co
 ## Related
 
 - `foehn` skill: hooks (`#[AsAction]`), the kernel, Twig and the rest of the PHP side.
-- Assets guide: https://studiometa.github.io/foehn-framework/guide/assets
-- Starter theme guide: https://studiometa.github.io/foehn-framework/guide/starter-theme
-- Hooks guide: https://studiometa.github.io/foehn-framework/guide/hooks
+- Assets guide: https://studiometa.github.io/foehn-framework/guide/assets.md
+- Starter theme guide: https://studiometa.github.io/foehn-framework/guide/starter-theme.md
+- Hooks guide: https://studiometa.github.io/foehn-framework/guide/hooks.md

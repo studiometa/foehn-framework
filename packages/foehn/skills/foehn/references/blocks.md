@@ -2,7 +2,7 @@
 
 Native blocks, sidebar controls, containers, the Interactivity API, block patterns and block bindings. ACF blocks (`#[AsAcfBlock]`) are in the `foehn-acf` skill.
 
-Docs: [Native blocks](https://studiometa.github.io/foehn-framework/guide/native-blocks.html), [Block editor](https://studiometa.github.io/foehn-framework/guide/block-editor.html), [Block patterns](https://studiometa.github.io/foehn-framework/guide/block-patterns.html), [Block bindings](https://studiometa.github.io/foehn-framework/guide/block-bindings.html).
+Docs: [Native blocks](https://studiometa.github.io/foehn-framework/guide/native-blocks.md), [Block editor](https://studiometa.github.io/foehn-framework/guide/block-editor.md), [Block patterns](https://studiometa.github.io/foehn-framework/guide/block-patterns.md), [Block bindings](https://studiometa.github.io/foehn-framework/guide/block-bindings.md).
 
 ## The model
 

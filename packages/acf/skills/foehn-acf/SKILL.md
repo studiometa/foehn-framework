@@ -105,7 +105,7 @@ What happens at render time (`AcfBlockRenderer`):
 3. These keys are merged into the context, after `compose()`: `block`, `block_id`, `block_name`, `block_class`, `is_preview`, `align`, `anchor`. `block_class` contains `wp-block-acf-<name>`, `align<value>` and the editor's custom class.
 4. `render($context, $isPreview)` returns the HTML.
 
-Attribute arguments: `name`, `title`, `category` (default `'common'`), `icon` (default `block-default`), `description`, `keywords`, `mode` (`'preview'`, `'edit'` or `'auto'`), `supports`, `postTypes` (empty means all), `parent`. `supports` is merged over the defaults `['align' => false, 'mode' => true, 'multiple' => true]`. Use `'jsx' => true` for InnerBlocks. A custom `category` must exist: declare it with `#[AsBlockCategory]` from the core package. Full reference: [#[AsAcfBlock]](https://studiometa.github.io/foehn-framework/api/as-acf-block.html), [AcfBlockInterface](https://studiometa.github.io/foehn-framework/api/acf-block-interface.html), [ACF blocks guide](https://studiometa.github.io/foehn-framework/guide/acf-blocks.html).
+Attribute arguments: `name`, `title`, `category` (default `'common'`), `icon` (default `block-default`), `description`, `keywords`, `mode` (`'preview'`, `'edit'` or `'auto'`), `supports`, `postTypes` (empty means all), `parent`. `supports` is merged over the defaults `['align' => false, 'mode' => true, 'multiple' => true]`. Use `'jsx' => true` for InnerBlocks. A custom `category` must exist: declare it with `#[AsBlockCategory]` from the core package. Full reference: [#[AsAcfBlock]](https://studiometa.github.io/foehn-framework/api/as-acf-block.md), [AcfBlockInterface](https://studiometa.github.io/foehn-framework/api/acf-block-interface.md), [ACF blocks guide](https://studiometa.github.io/foehn-framework/guide/acf-blocks.md).
 
 ### Field transformation
 
@@ -174,7 +174,7 @@ final class ProductFields implements AcfFieldGroupInterface
 
 `location` has two forms. A flat array is a list of `==` rules joined with AND: `['post_type' => 'page', 'page_template' => 'page-contact.php']`. For OR groups or other operators, use the full ACF format, an array of groups of `['param' => ..., 'operator' => ..., 'value' => ...]` rules. See [references/fields.md](references/fields.md#locations).
 
-The other arguments (`title`, `position`, `menuOrder`, `style`, `labelPlacement`, `instructionPlacement`, `hideOnScreen`) override the values the builder produces. Read the values in a Timber model with `$post->meta('price')` or with `get_field()`. Reference: [#[AsAcfFieldGroup]](https://studiometa.github.io/foehn-framework/api/as-acf-field-group.html).
+The other arguments (`title`, `position`, `menuOrder`, `style`, `labelPlacement`, `instructionPlacement`, `hideOnScreen`) override the values the builder produces. Read the values in a Timber model with `$post->meta('price')` or with `get_field()`. Reference: [#[AsAcfFieldGroup]](https://studiometa.github.io/foehn-framework/api/as-acf-field-group.md).
 
 ## Options page
 
@@ -218,7 +218,7 @@ final class ThemeSettings implements AcfOptionsPageInterface
 - **The values are stored under `postId`, which defaults to the menu slug, not `'options'`.** Read them with `get_field('footer_text', 'theme-settings')`. Set `postId: 'options'` if you want ACF's usual `'option'`/`'options'` storage.
 - A sub-page sets `parentSlug` to the parent's menu slug. `redirect` (default `true`) sends a parent page to its first child.
 - `AcfOptionsPageInterface` is optional. Without it, the page registers but has no fields from the class. Use that when a field group with `location: ['options_page' => 'theme-settings']` supplies them.
-- Other arguments: `position`, `autoload` (default `true`), `updateButton`, `updatedMessage`. Reference: [#[AsAcfOptionsPage]](https://studiometa.github.io/foehn-framework/api/as-acf-options-page.html), [options pages guide](https://studiometa.github.io/foehn-framework/guide/acf-options-pages.html).
+- Other arguments: `position`, `autoload` (default `true`), `updateButton`, `updatedMessage`. Reference: [#[AsAcfOptionsPage]](https://studiometa.github.io/foehn-framework/api/as-acf-options-page.md), [options pages guide](https://studiometa.github.io/foehn-framework/guide/acf-options-pages.md).
 
 Expose options to every template with a context provider and `AcfOptionsService` (injected by the container):
 

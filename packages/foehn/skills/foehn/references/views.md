@@ -2,7 +2,7 @@
 
 Template controllers, `TemplateContext`, context providers, DTOs, sections and the Twig functions Føhn adds.
 
-Docs: [Template controllers](https://studiometa.github.io/foehn-framework/guide/template-controllers.html), [Context providers](https://studiometa.github.io/foehn-framework/guide/context-providers.html), [Arrayable DTOs](https://studiometa.github.io/foehn-framework/guide/arrayable-dtos.html), [Section rendering](https://studiometa.github.io/foehn-framework/guide/section-rendering.html), [Twig extensions](https://studiometa.github.io/foehn-framework/guide/twig-extensions.html).
+Docs: [Template controllers](https://studiometa.github.io/foehn-framework/guide/template-controllers.md), [Context providers](https://studiometa.github.io/foehn-framework/guide/context-providers.md), [Arrayable DTOs](https://studiometa.github.io/foehn-framework/guide/arrayable-dtos.md), [Section rendering](https://studiometa.github.io/foehn-framework/guide/section-rendering.md), [Twig extensions](https://studiometa.github.io/foehn-framework/guide/twig-extensions.md).
 
 ## Request flow
 

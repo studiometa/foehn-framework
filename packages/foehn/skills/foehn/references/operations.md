@@ -2,7 +2,7 @@
 
 Config files, opt-in hooks, the discovery cache, the page cache, query filters, images, the object cache, verification and security keys.
 
-Docs: [Configuration](https://studiometa.github.io/foehn-framework/guide/configuration.html), [Hooks](https://studiometa.github.io/foehn-framework/guide/hooks.html#built-in-hooks), [Discovery cache](https://studiometa.github.io/foehn-framework/guide/discovery-cache.html), [Page cache](https://studiometa.github.io/foehn-framework/guide/page-cache.html), [Query filters](https://studiometa.github.io/foehn-framework/guide/query-filters.html), [Images](https://studiometa.github.io/foehn-framework/guide/images.html), [Caching](https://studiometa.github.io/foehn-framework/guide/caching.html), [Verification](https://studiometa.github.io/foehn-framework/guide/verification.html), [Security](https://studiometa.github.io/foehn-framework/guide/security.html).
+Docs: [Configuration](https://studiometa.github.io/foehn-framework/guide/configuration.md), [Hooks](https://studiometa.github.io/foehn-framework/guide/hooks.md#built-in-hooks), [Discovery cache](https://studiometa.github.io/foehn-framework/guide/discovery-cache.md), [Page cache](https://studiometa.github.io/foehn-framework/guide/page-cache.md), [Query filters](https://studiometa.github.io/foehn-framework/guide/query-filters.md), [Images](https://studiometa.github.io/foehn-framework/guide/images.md), [Caching](https://studiometa.github.io/foehn-framework/guide/caching.md), [Verification](https://studiometa.github.io/foehn-framework/guide/verification.md), [Security](https://studiometa.github.io/foehn-framework/guide/security.md).
 
 ## Config files
 

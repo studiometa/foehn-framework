@@ -2,7 +2,7 @@
 
 REST routes, rewrite rules, shortcodes, WP-CLI commands, background jobs, cron, Twig extensions and custom discoveries.
 
-Docs: [REST API](https://studiometa.github.io/foehn-framework/guide/rest-api.html), [Rewrite rules](https://studiometa.github.io/foehn-framework/guide/rewrite-rules.html), [Shortcodes](https://studiometa.github.io/foehn-framework/guide/shortcodes.html), [CLI commands](https://studiometa.github.io/foehn-framework/guide/cli-commands.html), [Twig extensions](https://studiometa.github.io/foehn-framework/guide/twig-extensions.html), [Custom discovery](https://studiometa.github.io/foehn-framework/guide/custom-discovery.html).
+Docs: [REST API](https://studiometa.github.io/foehn-framework/guide/rest-api.md), [Rewrite rules](https://studiometa.github.io/foehn-framework/guide/rewrite-rules.md), [Shortcodes](https://studiometa.github.io/foehn-framework/guide/shortcodes.md), [CLI commands](https://studiometa.github.io/foehn-framework/guide/cli-commands.md), [Twig extensions](https://studiometa.github.io/foehn-framework/guide/twig-extensions.md), [Custom discovery](https://studiometa.github.io/foehn-framework/guide/custom-discovery.md).
 
 ## `#[AsRestRoute]`
 
