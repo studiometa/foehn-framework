@@ -54,7 +54,7 @@ The plugin enables Vite's native manifest generation (`build.manifest: true`). T
 
 ### Hot Reload
 
-During development, the plugin writes a `hot` file containing the dev server URL. The PHP side reads this file to detect dev mode and inject the Vite client script.
+During development, the plugin writes a `hot` file inside `outDir` containing the dev server URL. It creates `outDir` when needed, so the dev server works before the first build. `ViteManifest::fromTheme()` reads the same file to detect dev mode and inject the Vite client script. If you change `hotFile`, pass the same name as the second argument of `fromTheme()`.
 
 ### File Watching
 
@@ -62,7 +62,7 @@ The plugin watches files matching the `reload` patterns and triggers a full page
 
 ### DDEV Integration
 
-When a `.ddev/config.yaml` file is detected, the plugin automatically configures a proxy to the DDEV site, allowing seamless development with HMR.
+When a `.ddev/config.yaml` file is detected, the plugin proxies the dev server to the DDEV site. Vite keeps every request it can serve (its own `/@` routes, `/node_modules/`, the HMR connection and every file under the Vite root or the public directory) and sends the others, such as WordPress pages, to DDEV.
 
 ## Options
 
@@ -72,7 +72,7 @@ When a `.ddev/config.yaml` file is detected, the plugin automatically configures
 | `reload`   | `string \| string[]` | `["templates/**/*.twig"]` | Patterns to watch for full reload |
 | `outDir`   | `string`             | `"dist"`                  | Output directory for built assets |
 | `themeDir` | `string`             | `process.cwd()`           | Theme directory context           |
-| `hotFile`  | `string`             | `"hot"`                   | Name of the hot file              |
+| `hotFile`  | `string`             | `"hot"`                   | Name of the hot file, in `outDir` |
 
 ## PHP Integration
 
