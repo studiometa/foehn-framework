@@ -9,9 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Agent Skills for coding agents: `foehn`, `foehn-acf` and `foehn-vite-plugin`, one in each package. `npx skills add studiometa/foehn-framework#<version>` installs them at the release in `composer.lock`, and the [AI Agents](https://studiometa.github.io/foehn-framework/guide/ai-agents) guide documents the install, the pin and `llms.txt` ([#TBD])
+- Agent Skills for coding agents: `foehn`, `foehn-acf` and `foehn-vite-plugin`, one in each package. `npx skills add studiometa/foehn-framework#<version>` installs them at the release in `composer.lock`, and the [AI Agents](https://studiometa.github.io/foehn-framework/guide/ai-agents) guide documents the install, the pin and `llms.txt` ([#196])
 
-[#TBD]: https://github.com/studiometa/foehn-framework/pull/TBD
+[#196]: https://github.com/studiometa/foehn-framework/pull/196
 
 ## [0.6.2] - 2026-09-24
 
