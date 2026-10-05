@@ -10,14 +10,17 @@ use StoutLogic\AcfBuilder\FieldsBuilder;
  * Reusable button/link field fragment.
  *
  * Creates the following fields:
- * - {$name}_link (link)
- * - {$name}_style (select)
- * - {$name}_size (select) - optional
+ * - link (link)
+ * - style (select)
+ * - size (select) - optional
+ *
+ * The name does not prefix them: add the fragment inside a group, for example
+ * `addGroup('cta')->addFields(new ButtonLinkBuilder())`.
  */
 final class ButtonLinkBuilder extends FieldsBuilder
 {
     /**
-     * @param string $name Field name prefix
+     * @param string $name Name of the fragment's own builder. It does not prefix the field names
      * @param string $label Field group label
      * @param array<string, string> $styles Available button styles
      * @param array<string, string>|null $sizes Available button sizes (null to disable)
