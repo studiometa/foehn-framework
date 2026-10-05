@@ -40,6 +40,7 @@ export default defineConfig({
             { text: "Starter Theme", link: "/guide/starter-theme" },
             { text: "Demo Project", link: "/guide/demo" },
             { text: "Manual Installation", link: "/guide/installation" },
+            { text: "AI Agents", link: "/guide/ai-agents" },
           ],
         },
         {

@@ -460,6 +460,8 @@ return [
 
 For complete documentation, see the [Føhn documentation](https://github.com/studiometa/foehn-framework).
 
+For AI agents, this package ships the `foehn` [Agent Skill](https://agentskills.io/) in [`skills/foehn/SKILL.md`](skills/foehn/SKILL.md). See [AI Agents](https://studiometa.github.io/foehn-framework/guide/ai-agents) to install it.
+
 ## License
 
 MIT License. See [LICENSE](LICENSE) for details.
