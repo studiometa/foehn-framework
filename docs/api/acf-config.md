@@ -22,9 +22,9 @@ final readonly class AcfConfig
 
 ## Properties
 
-| Property          | Type   | Default | Description                                  |
-| ----------------- | ------ | ------- | -------------------------------------------- |
-| `transformFields` | `bool` | `true`  | Auto-convert ACF values to Timber objects    |
+| Property          | Type   | Default | Description                               |
+| ----------------- | ------ | ------- | ----------------------------------------- |
+| `transformFields` | `bool` | `true`  | Auto-convert ACF values to Timber objects |
 
 ## Usage
 
@@ -45,12 +45,12 @@ return new AcfConfig(
 
 When `transformFields` is enabled (default), raw ACF field values are automatically converted to Timber objects inside block rendering:
 
-| ACF Field Type | Raw Value       | Timber Object         |
-| -------------- | --------------- | --------------------- |
-| Image          | Attachment ID   | `Timber\Image`        |
-| Post Object    | Post ID         | `Timber\Post`         |
-| Relationship   | Array of IDs    | Array of `Timber\Post`|
-| Taxonomy       | Term ID         | `Timber\Term`         |
+| ACF Field Type | Raw Value     | Timber Object          |
+| -------------- | ------------- | ---------------------- |
+| Image          | Attachment ID | `Timber\Image`         |
+| Post Object    | Post ID       | `Timber\Post`          |
+| Relationship   | Array of IDs  | Array of `Timber\Post` |
+| Taxonomy       | Term ID       | `Timber\Term`          |
 
 ### Disabling Transformation
 
@@ -62,7 +62,7 @@ return new AcfConfig(
 );
 ```
 
-With transformation disabled, ACF fields return their raw values (IDs, arrays) and you must resolve objects manually.
+With transformation disabled, block fields have ACF's formatting, as `get_fields()` returns them: an image is what its `return_format` gives (an array, a URL or an ID), and you must resolve Timber objects manually.
 
 ## Related
 

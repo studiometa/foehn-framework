@@ -90,13 +90,33 @@ final readonly class HeroBlock implements AcfBlockInterface
 </section>
 ```
 
+## Field Values
+
+`$fields` holds what [`get_fields()`](https://www.advancedcustomfields.com/resources/get_fields/) returns for the block. ACF loads the block's data before it calls the render callback, so the values are formatted and nested like the values of a post:
+
+```php
+[
+    'title' => 'Hello',
+    'show_cta' => true,
+    'meta' => ['label' => 'New', 'icon' => $icon], // Timber\Image
+    'items' => [
+        ['heading' => 'First', 'picture' => $picture], // Timber\Image
+        ['heading' => 'Second', 'picture' => false],
+    ],
+]
+```
+
+Do not read `$block['data']`. It is what ACF stores in the block comment: flat and unformatted (`items: 2`, `items_0_heading`, `meta_label`, image IDs, `"1"` for a true/false), or keyed by field key in a block template.
+
 ## Automatic Field Transformation
 
 By default, Føhn automatically transforms ACF field values into Timber objects. This means you don't need to manually convert image IDs to `Timber\Image`, post IDs to `Timber\Post`, etc.
 
+While it reads the block's fields, Føhn replaces ACF's formatting of the types below with Timber's ACF transforms, the way Timber does for `$post->meta($name, ['transform_value' => true])`. The other types keep ACF's formatting. A `get_field()` call in the block's own code still returns ACF's formatting.
+
 ### Enabled by Default
 
-Field transformation is enabled by default. To disable it, create an ACF config file:
+Field transformation is enabled by default. To disable it, create an ACF config file. Every field then has ACF's formatting: an image is what its `return_format` gives, an array by default.
 
 ```php
 <?php

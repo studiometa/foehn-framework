@@ -100,7 +100,7 @@ final readonly class HeroBlock implements AcfBlockInterface
 
 What happens at render time (`AcfBlockRenderer`):
 
-1. Field values are read from the block data, then transformed to Timber objects (see below).
+1. Field values are read with `get_fields($block['id'])`. ACF loads the block's data before the render callback, so the values are formatted and nested like the values of a post: a group is an array of its sub-fields, a repeater is a list of rows, a true/false is a `bool`. With the field transformation on, some types become Timber objects (see below).
 2. `compose($block, $fields)` builds the context. It can return an array or an `Arrayable` DTO (see the `foehn` skill); a DTO is converted with `toArray()`.
 3. These keys are merged into the context, after `compose()`: `block`, `block_id`, `block_name`, `block_class`, `is_preview`, `align`, `anchor`. `block_class` contains `wp-block-acf-<name>`, `align<value>` and the editor's custom class.
 4. `render($context, $isPreview)` returns the HTML.
@@ -109,7 +109,7 @@ Attribute arguments: `name`, `title`, `category` (default `'common'`), `icon` (d
 
 ### Field transformation
 
-With the default `AcfConfig`, block field values become Timber objects before `compose()`, also inside repeater, group and flexible content rows:
+With the default `AcfConfig`, Timber's ACF transforms replace ACF's formatting for these types, also inside repeater, group and flexible content rows. Other types keep ACF's formatting:
 
 | ACF type                          | Value in `$fields`                            |
 | --------------------------------- | --------------------------------------------- |
@@ -121,7 +121,7 @@ With the default `AcfConfig`, block field values become Timber objects before `c
 | `user`                            | `Timber\User` (or an array)                   |
 | `date_picker`, `date_time_picker` | `DateTimeImmutable`                           |
 
-To keep raw ACF values (for example image IDs for `ImageData::fromAttachmentId()`), turn it off in a config file:
+To get ACF's own formatting for every type, turn it off in a config file. An image is then what its `return_format` gives: an array by default, an ID with `return_format: id` (which `ImageData::fromAttachmentId()` needs).
 
 ```php
 <?php
@@ -134,7 +134,7 @@ use Studiometa\Foehn\Config\AcfConfig;
 return new AcfConfig(transformFields: false);
 ```
 
-The package ships the default config, and the theme's file overrides it. The transformation applies to ACF blocks only. Field groups and options pages return what `get_field()` returns.
+The package ships the default config, and the theme's file overrides it. The transformation applies to ACF blocks only. Field groups and options pages return what `get_field()` returns. A `get_field()` call inside a block's own code also returns ACF's formatting, not the transformed value.
 
 ## Field group
 
@@ -303,6 +303,6 @@ wp foehn make:options-page FooterSettings --parent=theme-settings              #
 - **Field keys are unique.** The `FieldsBuilder` name (`new FieldsBuilder('hero')`) gives the ACF group and field keys. Two classes with the same builder name collide. The `name` argument of `#[AsAcfFieldGroup]` does not change these keys.
 - **Transformed values are objects.** With `transformFields` on, an image is a `Timber\Image`, not an ID. Do not pass it to `ImageData::fromAttachmentId()` or `wp_get_attachment_image()`.
 - **Fragments do not prefix field names.** `new ButtonLinkBuilder('cta')` still creates `link`, `style` and `size`. Wrap fragments in `addGroup()`. acf-builder has no `appendFields()` method: use `addFields()`.
-- **Block values come from the raw block data.** `$fields` is `$block['data']` without the `_…` and `field_…` keys. `get_fields($block['id'])` is used only when the block has no data. For a group or repeater, dump `$fields` once to see the keys before you write `compose()`.
+- **Read `$fields`, not `$block['data']`.** `$block['data']` is what ACF stores in the block comment: flat and unformatted (`items: 2`, `items_0_heading`, `meta_label`, an image ID, `"1"` for true), or keyed by field key in a block template. `$fields` is what `get_fields()` returns, keyed by field name: `$fields['meta']['label']`, `$fields['items'][0]['heading']`.
 - **Discovery cache.** In an environment where the discovery cache is on, a new class is not found until you run `wp foehn discovery:generate`, or `wp foehn discovery:clear`. See the `foehn` skill.
 - **Nothing registers without ACF Pro.** If a block or options page is missing, first make sure ACF Pro is active (`wp plugin list`), then run `wp foehn discovery:list` to see what discovery found.
