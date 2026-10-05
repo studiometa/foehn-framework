@@ -123,7 +123,7 @@ use StoutLogic\AcfBuilder\FieldsBuilder;
 #[AsAcfBlock(
     name: 'hero',
     title: 'Hero Banner',
-    category: 'layout',
+    category: 'design',
     icon: 'cover-image',
 )]
 final readonly class HeroBlock implements AcfBlockInterface
