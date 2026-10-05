@@ -11,7 +11,7 @@ final readonly class AsAcfBlock
     public function __construct(
         public string $name,
         public string $title,
-        public string $category = 'common',
+        public string $category = 'widgets',
         public ?string $icon = null,
         public ?string $description = null,
         public array $keywords = [],
@@ -32,7 +32,7 @@ final readonly class AsAcfBlock
 | ------------- | ---------- | ----------- | --------------------------------------- |
 | `name`        | `string`   | —           | Block name without `acf/` (required)    |
 | `title`       | `string`   | —           | Display title (required)                |
-| `category`    | `string`   | `'common'`  | Block category                          |
+| `category`    | `string`   | `'widgets'` | Block category                          |
 | `icon`        | `?string`  | `null`      | Dashicon name or SVG                    |
 | `description` | `?string`  | `null`      | Block description                       |
 | `keywords`    | `string[]` | `[]`        | Search keywords                         |
@@ -59,7 +59,7 @@ use StoutLogic\AcfBuilder\FieldsBuilder;
 #[AsAcfBlock(
     name: 'hero',
     title: 'Hero Banner',
-    category: 'layout',
+    category: 'design',
     icon: 'cover-image',
 )]
 final readonly class HeroBlock implements AcfBlockInterface
@@ -98,7 +98,7 @@ final readonly class HeroBlock implements AcfBlockInterface
 #[AsAcfBlock(
     name: 'testimonial',
     title: 'Testimonial',
-    category: 'common',
+    category: 'text',
     icon: 'format-quote',
     description: 'Display a customer testimonial',
     keywords: ['quote', 'review'],
