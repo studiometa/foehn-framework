@@ -16,17 +16,21 @@ describe("writeHotFile", () => {
     it("writes the server URL to the hot file", async () => {
         vi.mocked(fs.writeFile).mockResolvedValue();
 
-        await writeHotFile("/theme", "hot", "http://localhost:5173");
+        await writeHotFile("/theme/dist/hot", "http://localhost:5173");
 
-        expect(fs.writeFile).toHaveBeenCalledWith("/theme/hot", "http://localhost:5173", "utf-8");
+        expect(fs.writeFile).toHaveBeenCalledWith(
+            "/theme/dist/hot",
+            "http://localhost:5173",
+            "utf-8",
+        );
     });
 
-    it("uses custom hot file name", async () => {
+    it("creates the directory of the hot file", async () => {
         vi.mocked(fs.writeFile).mockResolvedValue();
 
-        await writeHotFile("/theme", ".hot", "http://localhost:5173");
+        await writeHotFile("/theme/dist/hot", "http://localhost:5173");
 
-        expect(fs.writeFile).toHaveBeenCalledWith("/theme/.hot", "http://localhost:5173", "utf-8");
+        expect(fs.mkdir).toHaveBeenCalledWith("/theme/dist", { recursive: true });
     });
 });
 
@@ -42,15 +46,15 @@ describe("removeHotFile", () => {
     it("removes the hot file", async () => {
         vi.mocked(fs.unlink).mockResolvedValue();
 
-        await removeHotFile("/theme", "hot");
+        await removeHotFile("/theme/dist/hot");
 
-        expect(fs.unlink).toHaveBeenCalledWith("/theme/hot");
+        expect(fs.unlink).toHaveBeenCalledWith("/theme/dist/hot");
     });
 
     it("silently ignores missing file", async () => {
         vi.mocked(fs.unlink).mockRejectedValue(new Error("ENOENT"));
 
         // Should not throw
-        await expect(removeHotFile("/theme", "hot")).resolves.toBeUndefined();
+        await expect(removeHotFile("/theme/dist/hot")).resolves.toBeUndefined();
     });
 });

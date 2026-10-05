@@ -1,4 +1,5 @@
 import { resolve } from "node:path";
+import type { AddressInfo } from "node:net";
 import type { Plugin, ResolvedConfig, ViteDevServer } from "vite";
 import type { FoehnPluginOptions, ResolvedFoehnPluginOptions } from "./options.js";
 import { resolveOptions } from "./options.js";
@@ -15,6 +16,9 @@ import {
  */
 export function foehn(options: FoehnPluginOptions): Plugin[] {
     const resolvedOptions = resolveOptions(options);
+    const outDir = resolve(resolvedOptions.themeDir, resolvedOptions.outDir);
+    // Inside the build output, where `ViteManifest` looks for it.
+    const hotPath = resolve(outDir, resolvedOptions.hotFile);
     let config: ResolvedConfig;
 
     const mainPlugin: Plugin = {
@@ -34,7 +38,7 @@ export function foehn(options: FoehnPluginOptions): Plugin[] {
             return {
                 build: {
                     manifest: true,
-                    outDir: resolve(resolvedOptions.themeDir, resolvedOptions.outDir),
+                    outDir,
                     rollupOptions: {
                         input: entries,
                     },
@@ -58,25 +62,25 @@ export function foehn(options: FoehnPluginOptions): Plugin[] {
             config = resolvedConfig;
         },
 
-        async configureServer(server: ViteDevServer) {
-            const serverUrl = getServerUrl(server, config);
-
-            // Write hot file when server starts
+        configureServer(server: ViteDevServer) {
+            // Write hot file when server starts, with the address it listens on
             server.httpServer?.once("listening", async () => {
-                const url = serverUrl ?? `http://localhost:${config.server.port}`;
-                await writeHotFile(resolvedOptions.themeDir, resolvedOptions.hotFile, url);
+                const address = server.httpServer?.address();
+                if (typeof address === "object" && address) {
+                    await writeHotFile(hotPath, getServerUrl(address, config));
+                }
             });
 
             // Remove hot file when server closes
             server.httpServer?.on("close", async () => {
-                await removeHotFile(resolvedOptions.themeDir, resolvedOptions.hotFile);
+                await removeHotFile(hotPath);
             });
         },
 
         async buildEnd() {
             // Ensure hot file is removed after build
             if (config.command === "build") {
-                await removeHotFile(resolvedOptions.themeDir, resolvedOptions.hotFile);
+                await removeHotFile(hotPath);
             }
         },
     };
@@ -131,17 +135,14 @@ function matchPattern(file: string, pattern: string): boolean {
 }
 
 /**
- * Get the dev server URL.
+ * Get the URL a browser reaches the dev server at.
  */
-function getServerUrl(server: ViteDevServer, config: ResolvedConfig): string | undefined {
-    const address = server.httpServer?.address();
-    if (typeof address === "object" && address) {
-        const protocol = config.server.https ? "https" : "http";
-        const host =
-            address.address === "::" || address.address === "0.0.0.0"
-                ? "localhost"
-                : address.address;
-        return `${protocol}://${host}:${address.port}`;
-    }
-    return undefined;
+function getServerUrl(address: AddressInfo, config: ResolvedConfig): string {
+    const protocol = config.server.https ? "https" : "http";
+    const host = ["::", "0.0.0.0", "::1", "127.0.0.1"].includes(address.address)
+        ? "localhost"
+        : address.family === "IPv6"
+          ? `[${address.address}]`
+          : address.address;
+    return `${protocol}://${host}:${address.port}`;
 }
