@@ -467,6 +467,14 @@ The form posts to `wp-login.php?action=postpass`, which sets the password cookie
 
 `render()` throws a `RuntimeException` when the template does not exist, so a controller that names `pages/password` needs the file in the theme. Do not use `renderFirst(['pages/password', 'pages/page'])` as a fallback: `pages/page` prints `post.content`, which is the protected content.
 
+Listings need the same care. Timber builds `post.excerpt` from the full content and does not check the password, so an archive or a search result that prints excerpts shows the start of a protected post. Test `post.password_required` before you print the excerpt, as the starter's `components/card-post.twig` does:
+
+```twig
+{% if not post.password_required and post.excerpt %}
+  <p>{{ post.excerpt }}</p>
+{% endif %}
+```
+
 ## Context Providers vs Template Controllers
 
 | Feature      | Context Provider             | Template Controller          |
