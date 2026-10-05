@@ -3,7 +3,7 @@ import { createServer as createHttpServer, type Server } from "node:http";
 import { existsSync } from "node:fs";
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import type { AddressInfo } from "node:net";
-import { tmpdir } from "node:os";
+import { constants, tmpdir } from "node:os";
 import { join } from "node:path";
 import { build, createServer, type ViteDevServer } from "vite";
 import { foehn } from "../src/plugin.js";
@@ -56,9 +56,14 @@ const hotPath = () => join(root, "theme/dist/hot");
 
 describe("dev server", () => {
     let server: ViteDevServer;
+    let signalListeners: Record<"SIGINT" | "SIGHUP", Function[]>;
 
     beforeEach(async () => {
         await rm(join(root, "theme/dist"), { recursive: true, force: true });
+        signalListeners = {
+            SIGINT: process.listeners("SIGINT"),
+            SIGHUP: process.listeners("SIGHUP"),
+        };
         server = await createServer({
             root,
             configFile: false,
@@ -88,6 +93,34 @@ describe("dev server", () => {
         await vi.waitFor(() => expect(existsSync(hotPath())).toBe(true));
         await server.close();
         await vi.waitFor(() => expect(existsSync(hotPath())).toBe(false));
+    });
+
+    // Vite closes the server on SIGTERM only. Ctrl+C and a closed terminal kill
+    // the process, and a hot file left behind points every page at a dead server.
+    it.each(["SIGINT", "SIGHUP"] as const)(
+        "removes the hot file when %s stops the process",
+        async (signal) => {
+            await vi.waitFor(() => expect(existsSync(hotPath())).toBe(true));
+            // Only the plugin's listeners: the test worker has its own.
+            const listeners = process
+                .listeners(signal)
+                .filter((listener) => !signalListeners[signal].includes(listener));
+            expect(listeners).toHaveLength(1);
+            const exit = vi.spyOn(process, "exit").mockImplementation((() => {}) as never);
+            try {
+                listeners[0](signal);
+                expect(existsSync(hotPath())).toBe(false);
+                expect(exit).toHaveBeenCalledWith(128 + constants.signals[signal]);
+            } finally {
+                exit.mockRestore();
+            }
+        },
+    );
+
+    it("stops listening for signals when the server closes", async () => {
+        await server.close();
+        expect(process.listeners("SIGINT")).toEqual(signalListeners.SIGINT);
+        expect(process.listeners("SIGHUP")).toEqual(signalListeners.SIGHUP);
     });
 
     it.each([

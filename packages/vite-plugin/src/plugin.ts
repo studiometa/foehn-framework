@@ -1,6 +1,7 @@
 import { statSync } from "node:fs";
 import type { IncomingMessage } from "node:http";
 import type { AddressInfo } from "node:net";
+import { constants } from "node:os";
 import { join, resolve } from "node:path";
 import type { Plugin, ResolvedConfig, ViteDevServer } from "vite";
 import type { FoehnPluginOptions, ResolvedFoehnPluginOptions } from "./options.js";
@@ -12,6 +13,9 @@ import {
     writeHotFile,
     removeHotFile,
 } from "./utils/index.js";
+
+/** Signals that end the process without Vite closing the server first. */
+const EXIT_SIGNALS = ["SIGINT", "SIGHUP"] as const;
 
 /**
  * Creates the Føhn Vite plugin.
@@ -67,24 +71,43 @@ export function foehn(options: FoehnPluginOptions): Plugin[] {
         },
 
         configureServer(server: ViteDevServer) {
+            const httpServer = server.httpServer;
+            if (!httpServer) {
+                return;
+            }
+
             // Write hot file when server starts, with the address it listens on
-            server.httpServer?.once("listening", async () => {
-                const address = server.httpServer?.address();
+            httpServer.once("listening", async () => {
+                const address = httpServer.address();
                 if (typeof address === "object" && address) {
                     await writeHotFile(hotPath, getServerUrl(address, config));
                 }
             });
 
+            // Vite closes the server on SIGTERM only. Ctrl+C (SIGINT) and a
+            // closed terminal (SIGHUP) kill the process, and a hot file left
+            // behind points every WordPress page at a dead server.
+            const onSignal = (signal: NodeJS.Signals) => {
+                removeHotFile(hotPath);
+                process.exit(128 + constants.signals[signal]);
+            };
+            for (const signal of EXIT_SIGNALS) {
+                process.on(signal, onSignal);
+            }
+
             // Remove hot file when server closes
-            server.httpServer?.on("close", async () => {
-                await removeHotFile(hotPath);
+            httpServer.on("close", () => {
+                removeHotFile(hotPath);
+                for (const signal of EXIT_SIGNALS) {
+                    process.off(signal, onSignal);
+                }
             });
         },
 
-        async buildEnd() {
+        buildEnd() {
             // Ensure hot file is removed after build
             if (config.command === "build") {
-                await removeHotFile(hotPath);
+                removeHotFile(hotPath);
             }
         },
     };

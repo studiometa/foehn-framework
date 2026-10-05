@@ -8,7 +8,7 @@ How `npm run dev` (`vite`) works with `@studiometa/foehn-vite-plugin`, and what 
 2. When the HTTP server is listening, the plugin writes the hot file at `<themeDir>/<outDir>/<hotFile>` (`theme/dist/hot` in the starter). It creates `outDir` first, so you do not have to build before `npm run dev`. The content is the URL the server listens on, for example `http://localhost:5173`: `https` when you set `server.https`, the port Vite actually took, and `localhost` for a wildcard or loopback host.
 3. WordPress renders a page. `ViteManifest` finds the hot file in `<distPath>/<hotFile>`, then enqueues `<url>/@vite/client` (handle `vite-client`) and `<url>/<entry>` for each `enqueue()` call, all as `type="module"`.
 4. A change to a file that matches `reload` sends a full page reload. Changes to JS and CSS go through normal Vite HMR.
-5. When the server closes, the plugin deletes the hot file. `vite build` also deletes it at the end of the build.
+5. When the server closes, the plugin deletes the hot file. It also deletes it when Ctrl+C (`SIGINT`) or a closed terminal (`SIGHUP`) stops the process, because Vite closes the server only on `SIGTERM`. `vite build` also deletes it at the end of the build. Only a process that is killed (`SIGKILL`) or crashes leaves the file behind.
 
 ## Hot file name
 

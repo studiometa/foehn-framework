@@ -19,7 +19,7 @@ The plugin writes one of two things. `ViteManifest` reads whichever one exists:
 | `npm run dev`   | `<outDir>/hot` holding the dev server URL     | enqueues `/@vite/client` and each entry from the dev server (HMR) |
 | neither         | nothing                                       | enqueues nothing, no error                                        |
 
-The hot file wins: when it exists and is not empty, the manifest is not read. The plugin removes the hot file when the dev server closes and at the end of a build.
+The hot file wins: when it exists and is not empty, the manifest is not read. The plugin removes the hot file when the dev server closes, on Ctrl+C, when the terminal closes, and at the end of a build.
 
 The **entry name** is the key that joins the two halves. It is the path given to `input`, relative to the Vite project root (the directory that holds `vite.config.js`, usually the project root, not the theme). In the starter, that is `theme/assets/js/app.js`, not `assets/js/app.js`.
 
@@ -179,7 +179,7 @@ To add a component, add a file in `theme/assets/js/components/` and put `data-co
 - **Wrong entry name.** `enqueue('assets/js/app.js', ...)` when `input` says `theme/assets/js/app.js` enqueues nothing, with no error. With the default `themeDir`, copy the exact string from `input`. Open `theme/dist/.vite/manifest.json` to see the keys.
 - **Build outside the theme.** `outDir` must be inside the served theme directory (`theme/dist` in the starter). The default `dist` is relative to `themeDir`, which is the project root by default.
 - **Custom hot file name.** The plugin writes the hot file at `<outDir>/<hotFile>`, which is where `ViteManifest::fromTheme()` reads it. If you change `hotFile`, pass the same name as the second argument of `fromTheme()` / `fromChildTheme()`, or `isDevServer()` stays `false`. See [references/dev-server.md](references/dev-server.md).
-- **Stale hot file.** The hot file wins over the manifest. If the page loads from `localhost:5173` after you stop the dev server, a hot file was left behind: delete it.
+- **Stale hot file.** The hot file wins over the manifest. If the page loads from `localhost:5173` after you stop the dev server, a hot file was left behind, for example by a killed or crashed process: delete it.
 - **No assets at all.** No manifest and no hot file means nothing is enqueued. Run `npm run build`, then check `ViteManifest::fromTheme()->exists()`.
 - **Do not add `type="module"` yourself.** `wp_script_add_data($handle, 'type', 'module')` has no effect in WordPress. `ViteManifest` already rewrites the tag.
 - **Do not enqueue the imported CSS by hand.** A JS entry's imported CSS is enqueued by `enqueue()`. A separate CSS `input` (like `app.css`) is its own entry and needs its own `enqueue()` call.

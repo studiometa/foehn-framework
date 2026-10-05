@@ -1,4 +1,5 @@
-import { mkdir, unlink, writeFile } from "node:fs/promises";
+import { rmSync } from "node:fs";
+import { mkdir, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 
 /**
@@ -13,12 +14,9 @@ export async function writeHotFile(hotPath: string, serverUrl: string): Promise<
 }
 
 /**
- * Remove the hot file when the dev server stops.
+ * Remove the hot file when the dev server stops. Synchronous, so it is done
+ * before a process that is exiting goes away. A missing file is not an error.
  */
-export async function removeHotFile(hotPath: string): Promise<void> {
-    try {
-        await unlink(hotPath);
-    } catch {
-        // File may not exist, ignore
-    }
+export function removeHotFile(hotPath: string): void {
+    rmSync(hotPath, { force: true });
 }
