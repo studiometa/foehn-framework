@@ -275,7 +275,10 @@ To rename, remove or reorder existing categories, use the filter directly:
 #[AsFilter('block_categories_all')]
 public function blockCategories(array $categories): array
 {
-    return [['slug' => 'theme', 'title' => 'Theme', 'icon' => null], ...$categories];
+    return array_map(
+        static fn(array $category): array => $category['slug'] === 'theme' ? [...$category, 'title' => 'Site'] : $category,
+        $categories,
+    );
 }
 ```
 
