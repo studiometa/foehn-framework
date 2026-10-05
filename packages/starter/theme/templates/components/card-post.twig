@@ -17,7 +17,11 @@
 
     <time class="card-post__date" datetime="{{ post.date('c') }}">{{ post.date('j F Y') }}</time>
 
-    {% if post.excerpt %}
+    {#
+      Timber construit l'extrait à partir du contenu sans tenir compte du mot de
+      passe : sans ce test, la liste affiche le début d'un article protégé.
+    #}
+    {% if not post.password_required and post.excerpt %}
       <p class="card-post__excerpt">
         {{ post.excerpt }}
       </p>

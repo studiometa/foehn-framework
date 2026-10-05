@@ -108,15 +108,17 @@ printf '✓ the built stylesheet and script are on the page\n'
 # nothing the password guards. Both controllers send it to pages/password, which
 # the starter did not ship: the single threw "Failed to render template" and
 # answered 500, and the page fell back to pages/page — whose `post.content` Timber
-# prints in full, password or not.
+# prints in full, password or not. The homepage lists posts through card-post,
+# whose `post.excerpt` Timber also builds from the full content.
 check_protected() {
-	local type="$1" id link status
+	local type="$1" id link status listing
 
 	id="$(ddev exec "cd /var/www/html && wp post create --post_type=$type --post_status=publish --post_title='Protected $type' --post_password=smoke --post_content=protected-content-marker --porcelain" 2>/dev/null | tr -d '\r' | grep -xE '[0-9]+' | tail -n1 || true)"
 	[ -n "$id" ] || fail "could not create a password-protected $type"
 
 	link="$(ddev exec "cd /var/www/html && wp eval 'echo get_permalink($id);'" 2>/dev/null | tr -d '\r' | tail -n1)"
 	status="$(curl -sk -o "$body" -w '%{http_code}' "$link")"
+	listing="$(curl -sk "$url/")"
 
 	# Removed before any check can fail, so a second run starts from the same site.
 	ddev exec "cd /var/www/html && wp post delete $id --force" >/dev/null 2>&1 || true
@@ -129,6 +131,10 @@ $(head -c 400 "$body")"
 
 	if grep -q 'protected-content-marker' "$body"; then
 		fail "a password-protected $type printed the content its password guards"
+	fi
+
+	if grep -q 'protected-content-marker' <<<"$listing"; then
+		fail "the homepage printed the content of a password-protected $type"
 	fi
 
 	printf '✓ a password-protected %s shows the password form and nothing else\n' "$type"
