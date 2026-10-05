@@ -68,6 +68,7 @@ See [the guide](https://studiometa.github.io/foehn-framework/guide/deployment-fl
 | `#[AsPostMeta]`               | `theme/app/Models/Project.php` — `client`, `year`, `location`, `camera`                                                        |
 | `#[AsTaxonomy]`               | `theme/app/Taxonomies/ProjectCategory.php`, `theme/app/Taxonomies/ProjectTag.php`                                              |
 | `#[AsBlock]`                  | `theme/app/Blocks/HeroBlock.php`, `theme/app/Blocks/CalloutBlock.php`, `theme/app/Blocks/SectionBlock.php`                     |
+| `#[AsBlockCategory]`          | `theme/app/Blocks/BlockCategories.php` — the `layout` category the hero block uses                                             |
 | `#[AsBlockBinding]`           | `theme/app/Bindings/ReadingTime.php`                                                                                           |
 | `#[AsSettingsPage]`           | `theme/app/Settings/ThemeSettings.php`, with a Twig form                                                                       |
 | `#[AsRewriteRule]`            | `theme/app/Routes/HealthCheckRoute.php` — `GET /_health`                                                                       |
