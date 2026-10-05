@@ -25,6 +25,8 @@ function wp_stub_reset(): void
     $GLOBALS['wp_stub_user_can'] = [];
     $GLOBALS['wp_stub_acf_fields'] = [];
     $GLOBALS['wp_stub_acf_field_objects'] = [];
+    $GLOBALS['wp_stub_acf_field_types'] = [];
+    $GLOBALS['wp_stub_acf_stores'] = [];
     $GLOBALS['wp_stub_options'] = [];
     $GLOBALS['wp_stub_attachments'] = [];
     $GLOBALS['wp_stub_post_meta'] = [];
@@ -658,6 +660,51 @@ if (!function_exists('get_field_object')) {
         wp_stub_record('get_field_object', compact('selector', 'postId', 'formatValue'));
 
         return $GLOBALS['wp_stub_acf_field_objects'][$postId][$selector] ?? false;
+    }
+}
+
+if (!class_exists('acf_field')) {
+    class acf_field
+    {
+        public function format_value(mixed $value, mixed $postId, array $field): mixed
+        {
+            return $value;
+        }
+    }
+}
+
+if (!function_exists('acf_get_field_type')) {
+    function acf_get_field_type(string $name): ?acf_field
+    {
+        return $GLOBALS['wp_stub_acf_field_types'][$name] ?? null;
+    }
+}
+
+if (!class_exists('ACF_Data')) {
+    class ACF_Data
+    {
+        public function __construct(
+            public array $data = [],
+        ) {}
+
+        public function get(string|false $name = false): mixed
+        {
+            return $name === false ? $this->data : $this->data[$name] ?? null;
+        }
+
+        public function remove(string $name = ''): static
+        {
+            unset($this->data[$name]);
+
+            return $this;
+        }
+    }
+}
+
+if (!function_exists('acf_get_store')) {
+    function acf_get_store(string $name = ''): ACF_Data
+    {
+        return $GLOBALS['wp_stub_acf_stores'][$name] ??= new ACF_Data();
     }
 }
 
