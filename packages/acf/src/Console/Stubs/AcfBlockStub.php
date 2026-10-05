@@ -13,7 +13,7 @@ use Tempest\Discovery\SkipDiscovery;
 #[AsAcfBlock(
     name: 'dummy-acf-block',
     title: 'Dummy ACF Block',
-    category: 'common',
+    category: 'widgets',
     icon: 'block-default',
     description: 'A custom ACF block.',
     keywords: ['custom', 'acf'],

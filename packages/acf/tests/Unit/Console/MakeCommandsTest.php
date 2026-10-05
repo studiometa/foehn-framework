@@ -58,7 +58,7 @@ describe('make:acf-block', function () {
     it('generates an ACF block with the requested mode and category', function () {
         (new MakeAcfBlockCommand($this->cli, $this->generator))(['testimonial'], [
             'class' => 'MakeTestimonialBlock',
-            'category' => 'formatting',
+            'category' => 'text',
             'mode' => 'edit',
         ]);
 
@@ -68,9 +68,18 @@ describe('make:acf-block', function () {
         expect($attribute->name)
             ->toBe('testimonial')
             ->and($attribute->category)
-            ->toBe('formatting')
+            ->toBe('text')
             ->and($attribute->mode)
             ->toBe('edit');
+    });
+
+    it('defaults to the widgets category, like #[AsBlock]', function () {
+        (new MakeAcfBlockCommand($this->cli, $this->generator))(['banner'], ['class' => 'MakeBannerBlock']);
+
+        /** @var AsAcfBlock $attribute */
+        $attribute = ($this->generatedAttribute)(($this->path)('Blocks', 'MakeBannerBlock'), AsAcfBlock::class);
+
+        expect($attribute->category)->toBe('widgets');
     });
 
     it('seeds the field builder with the block key', function () {

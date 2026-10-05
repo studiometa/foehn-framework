@@ -39,7 +39,7 @@ describe('AcfBlockDiscovery apply', function () {
         expect($blocks)->toHaveCount(1);
         expect($blocks[0]['args']['config']['name'])->toBe('testimonial');
         expect($blocks[0]['args']['config']['title'])->toBe('Testimonial');
-        expect($blocks[0]['args']['config']['category'])->toBe('formatting');
+        expect($blocks[0]['args']['config']['category'])->toBe('text');
         expect($blocks[0]['args']['config']['icon'])->toBe('format-quote');
         expect($blocks[0]['args']['config']['keywords'])->toBe(['quote', 'testimonial']);
 
