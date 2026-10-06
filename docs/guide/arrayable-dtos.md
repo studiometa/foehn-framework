@@ -225,8 +225,8 @@ Matches fields produced by `SpacingBuilder`.
 ```php
 use Studiometa\Foehn\Data\SpacingData;
 
-// From ACF fields
-$spacing = SpacingData::fromAcf($fields, 'spacing');
+// From the group that holds the fragment: addGroup('spacing')->addFields(new SpacingBuilder())
+$spacing = SpacingData::fromAcf($fields['spacing'] ?? null);
 // → SpacingData { top: 'large', bottom: 'medium' }
 
 // Manual construction

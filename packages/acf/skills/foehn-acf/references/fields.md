@@ -182,8 +182,8 @@ The same fragment class can be used by a block, a field group and an options pag
 These are in `studiometa/foehn`, not in this package. See the `foehn` skill and the [Arrayable DTOs guide](https://studiometa.github.io/foehn-framework/guide/arrayable-dtos.md).
 
 - `Studiometa\Foehn\Data\LinkData::fromAcf(?array $link): ?self` takes an ACF link value (`return_format: array`) and returns `null` when it has no URL. Properties: `url`, `title`, `target`.
-- `Studiometa\Foehn\Data\SpacingData` has `top` and `bottom` (default `medium`). `SpacingData::fromAcf($fields, 'spacing')` reads the flat keys `spacing_top` and `spacing_bottom`. For a `SpacingBuilder` in a group, build it directly: `new SpacingData(top: $spacing['top'] ?? 'medium', bottom: $spacing['bottom'] ?? 'medium')`.
-- `Studiometa\Foehn\Data\ImageData::fromAttachmentId(?int $id, string $size = 'large'): ?self` needs an attachment ID. It does not accept a `Timber\Image`, so use it only with `AcfConfig(transformFields: false)` or with fields that are not transformed.
+- `Studiometa\Foehn\Data\SpacingData` has `top` and `bottom` (default `medium`). `SpacingData::fromAcf(?array $spacing)` reads the `top` and `bottom` keys of the value you pass: `SpacingData::fromAcf($fields['spacing'] ?? null)` for a `SpacingBuilder` in a `spacing` group.
+- `Studiometa\Foehn\Data\ImageData::fromAttachmentId(?int $id, string $size = 'large'): ?self` needs an attachment ID. It does not accept a `Timber\Image`, so use it only with `AcfConfig(transformFields: false)` and an image field with `return_format: id`.
 
 `compose()` can return one of these DTOs, or your own `Arrayable` class. The renderer calls `toArray()`.
 
