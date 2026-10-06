@@ -26,7 +26,7 @@ use function Tempest\Support\str;
     : Block title (defaults to humanized name)
 
     [--category=<category>]
-    : Block category (defaults to 'common')
+    : Block category (defaults to 'widgets')
 
     [--mode=<mode>]
     : Display mode: 'preview', 'edit', or 'auto' (defaults to 'preview')
@@ -114,7 +114,7 @@ final class MakeAcfBlockCommand implements CliCommandInterface
 
         $className = $assocArgs['class'] ?? str($name)->pascal()->toString() . 'Block';
         $title = $assocArgs['title'] ?? str($name)->replace('-', ' ')->title()->toString();
-        $category = $assocArgs['category'] ?? 'common';
+        $category = $assocArgs['category'] ?? 'widgets';
         $mode = $assocArgs['mode'] ?? 'preview';
         $fields = ($assocArgs['fields'] ?? null) !== null ? array_map('trim', explode(',', $assocArgs['fields'])) : [];
         $force = ($assocArgs['force'] ?? null) !== null;

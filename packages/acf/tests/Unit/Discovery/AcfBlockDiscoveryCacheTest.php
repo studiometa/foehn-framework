@@ -40,7 +40,7 @@ describe('AcfBlockDiscovery caching', function () {
             ->and($item['attribute']->title)
             ->toBe('Testimonial')
             ->and($item['attribute']->category)
-            ->toBe('formatting')
+            ->toBe('text')
             ->and($item['attribute']->keywords)
             ->toBe(['quote', 'testimonial'])
             ->and($item['className'])

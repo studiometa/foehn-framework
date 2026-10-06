@@ -17,7 +17,7 @@ final readonly class AsAcfBlock
     /**
      * @param string $name Block name (without namespace, e.g., 'hero')
      * @param string $title Block title displayed in editor
-     * @param string $category Block category (common, formatting, layout, widgets, embed, or custom)
+     * @param string $category Block category (text, media, design, widgets, theme, embed, or custom)
      * @param string|null $icon Dashicon name or custom SVG
      * @param string|null $description Block description
      * @param string[] $keywords Search keywords
@@ -30,7 +30,7 @@ final readonly class AsAcfBlock
     public function __construct(
         public string $name,
         public string $title,
-        public string $category = 'common',
+        public string $category = 'widgets',
         public ?string $icon = null,
         public ?string $description = null,
         public array $keywords = [],

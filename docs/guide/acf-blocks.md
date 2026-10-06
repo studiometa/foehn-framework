@@ -31,7 +31,7 @@ use StoutLogic\AcfBuilder\FieldsBuilder;
 #[AsAcfBlock(
     name: 'hero',
     title: 'Hero Banner',
-    category: 'layout',
+    category: 'design',
     icon: 'cover-image',
 )]
 final readonly class HeroBlock implements AcfBlockInterface
@@ -221,7 +221,7 @@ With automatic transformation, you can use Timber's full API directly:
 #[AsAcfBlock(
     name: 'testimonial',
     title: 'Testimonial',
-    category: 'common',
+    category: 'text',
     icon: 'format-quote',
     description: 'Display a customer testimonial',
     keywords: ['quote', 'review', 'customer'],
@@ -251,7 +251,7 @@ use StoutLogic\AcfBuilder\FieldsBuilder;
 #[AsAcfBlock(
     name: 'features',
     title: 'Features Grid',
-    category: 'layout',
+    category: 'design',
     icon: 'grid-view',
 )]
 final readonly class FeaturesBlock implements AcfBlockInterface
@@ -513,7 +513,7 @@ templates/blocks/
 | ------------- | ---------- | ----------- | ---------------------------------- |
 | `name`        | `string`   | _required_  | Block name (without `acf/` prefix) |
 | `title`       | `string`   | _required_  | Display title                      |
-| `category`    | `string`   | `'common'`  | Block category                     |
+| `category`    | `string`   | `'widgets'` | Block category                     |
 | `icon`        | `?string`  | `null`      | Dashicon or SVG                    |
 | `description` | `?string`  | `null`      | Block description                  |
 | `keywords`    | `string[]` | `[]`        | Search keywords                    |

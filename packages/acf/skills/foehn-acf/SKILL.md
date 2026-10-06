@@ -45,7 +45,7 @@ use Studiometa\Foehn\Contracts\ViewEngineInterface;
 #[AsAcfBlock(
     name: 'hero',
     title: 'Hero Banner',
-    category: 'layout',
+    category: 'design',
     icon: 'cover-image',
     keywords: ['banner', 'header'],
     supports: ['align' => ['wide', 'full']],
@@ -107,7 +107,7 @@ What happens at render time (`AcfBlockRenderer`):
 3. These keys are merged into the context, after `compose()`: `block`, `block_id`, `block_name`, `block_class`, `is_preview`, `align`, `anchor`. `block_class` contains `wp-block-acf-<name>`, `align<value>` and the editor's custom class.
 4. `render($context, $isPreview)` returns the HTML.
 
-Attribute arguments: `name`, `title`, `category` (default `'common'`), `icon` (default `block-default`), `description`, `keywords`, `mode` (`'preview'`, `'edit'` or `'auto'`), `supports`, `postTypes` (empty means all), `parent`. `supports` is merged over the defaults `['align' => false, 'mode' => true, 'multiple' => true]`. Use `'jsx' => true` for InnerBlocks. A custom `category` must exist: declare it with `#[AsBlockCategory]` from the core package. Full reference: [#[AsAcfBlock]](https://studiometa.github.io/foehn-framework/api/as-acf-block.md), [AcfBlockInterface](https://studiometa.github.io/foehn-framework/api/acf-block-interface.md), [ACF blocks guide](https://studiometa.github.io/foehn-framework/guide/acf-blocks.md).
+Attribute arguments: `name`, `title`, `category` (default `'widgets'`, the same as `#[AsBlock]`), `icon` (default `block-default`), `description`, `keywords`, `mode` (`'preview'`, `'edit'` or `'auto'`), `supports`, `postTypes` (empty means all), `parent`. `supports` is merged over the defaults `['align' => false, 'mode' => true, 'multiple' => true]`. Use `'jsx' => true` for InnerBlocks. A custom `category` must exist: declare it with `#[AsBlockCategory]` from the core package. Full reference: [#[AsAcfBlock]](https://studiometa.github.io/foehn-framework/api/as-acf-block.md), [AcfBlockInterface](https://studiometa.github.io/foehn-framework/api/acf-block-interface.md), [ACF blocks guide](https://studiometa.github.io/foehn-framework/guide/acf-blocks.md).
 
 ### Field transformation
 
@@ -282,7 +282,7 @@ Run them with WP-CLI. Each accepts `--force` and `--dry-run`. Files go in the th
 
 ```bash
 wp foehn make:acf-block hero --title="Hero Banner" --fields=wysiwyg,image,cta   # app/Blocks/HeroBlock.php
-wp foehn make:acf-block contact-form --mode=edit --category=layout --class=ContactBlock
+wp foehn make:acf-block contact-form --mode=edit --category=design --class=ContactBlock
 wp foehn make:field-group ProductFields --post-type=product                     # app/Fields/PostType/
 wp foehn make:field-group FrontPageFields --page-template=front-page             # app/Fields/Page/
 wp foehn make:field-group CategoryFields --taxonomy=category                    # app/Fields/Taxonomy/

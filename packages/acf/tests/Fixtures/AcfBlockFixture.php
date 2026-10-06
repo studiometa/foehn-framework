@@ -12,7 +12,7 @@ use Studiometa\Foehn\Contracts\AcfBlockInterface;
     name: 'testimonial',
     title: 'Testimonial',
     description: 'A testimonial block.',
-    category: 'formatting',
+    category: 'text',
     icon: 'format-quote',
     keywords: ['quote', 'testimonial'],
 )]

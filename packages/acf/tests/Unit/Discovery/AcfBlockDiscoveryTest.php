@@ -23,7 +23,7 @@ describe('AcfBlockDiscovery', function () {
         expect($items[0]['attribute']->name)->toBe('testimonial');
         expect($items[0]['attribute']->title)->toBe('Testimonial');
         expect($items[0]['attribute']->description)->toBe('A testimonial block.');
-        expect($items[0]['attribute']->category)->toBe('formatting');
+        expect($items[0]['attribute']->category)->toBe('text');
         expect($items[0]['attribute']->icon)->toBe('format-quote');
         expect($items[0]['attribute']->keywords)->toBe(['quote', 'testimonial']);
     });

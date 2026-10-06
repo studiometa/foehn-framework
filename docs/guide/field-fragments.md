@@ -90,7 +90,7 @@ use StoutLogic\AcfBuilder\FieldsBuilder;
 #[AsAcfBlock(
     name: 'hero',
     title: 'Hero Banner',
-    category: 'layout',
+    category: 'design',
 )]
 final readonly class HeroBlock implements AcfBlockInterface
 {

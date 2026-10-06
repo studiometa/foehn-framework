@@ -8,38 +8,38 @@ Føhn replaces wp-toolkit's Manager pattern with attribute-based auto-discovery 
 
 ### Concept Mapping
 
-| wp-toolkit                           | Føhn                                  | Notes                                      |
-| ------------------------------------ | ------------------------------------- | ------------------------------------------ |
-| `ThemeManager::init()`               | `Kernel::boot()`                      | Single entry point                         |
-| `PostTypeManager`                    | `#[AsPostType]` on Timber\Post class  | Auto-registers Timber classmap             |
-| `TaxonomyManager`                    | `#[AsTaxonomy]` on Timber\Term class  | Auto-registers Timber classmap             |
-| `BlockManager`                       | `#[AsAcfBlock]` + `AcfBlockInterface` | Fields, compose, render in one class       |
-| `ManagerInterface::run()`            | Attribute + auto-discovery            | No manual registration needed              |
-| Manual `add_action()`/`add_filter()` | `#[AsAction]`/`#[AsFilter]`           | On class methods                           |
-| Manual `register_nav_menus()`        | `#[AsMenu]`                           | Auto-adds to Timber context                |
-| Manual `add_image_size()`            | `#[AsImageSize]`                      | Auto-enables `post-thumbnails`             |
-| Repository classes                   | Use Timber directly                   | Timber is the data layer                   |
-| `timber/context` filter              | `#[AsContextProvider]`                | Scoped to specific templates               |
-| Manual `template_include` filter     | `#[AsTemplateController]`             | WordPress template hierarchy support       |
-| Manual `register_rest_route()`       | `#[AsRestRoute]`                      | DI + permission management                 |
-| Manual `add_shortcode()`             | `#[AsShortcode]`                      | DI support                                 |
-| Manual `register_block_pattern()`    | `#[AsBlockPattern]`                   | Twig templates for patterns                |
-| Manual Twig extension registration   | `#[AsTwigExtension]`                  | Priority-based ordering                    |
-| No equivalent                        | `#[AsBlock]`                           | Native Gutenberg + Interactivity API       |
-| No equivalent                        | `#[AsCliCommand]`                      | WP-CLI commands with DI                    |
-| No equivalent                        | `#[AsAcfFieldGroup]`                   | Standalone ACF field groups                |
-| No equivalent                        | `#[AsAcfOptionsPage]`                  | ACF options pages with fields              |
+| wp-toolkit                           | Føhn                                  | Notes                                |
+| ------------------------------------ | ------------------------------------- | ------------------------------------ |
+| `ThemeManager::init()`               | `Kernel::boot()`                      | Single entry point                   |
+| `PostTypeManager`                    | `#[AsPostType]` on Timber\Post class  | Auto-registers Timber classmap       |
+| `TaxonomyManager`                    | `#[AsTaxonomy]` on Timber\Term class  | Auto-registers Timber classmap       |
+| `BlockManager`                       | `#[AsAcfBlock]` + `AcfBlockInterface` | Fields, compose, render in one class |
+| `ManagerInterface::run()`            | Attribute + auto-discovery            | No manual registration needed        |
+| Manual `add_action()`/`add_filter()` | `#[AsAction]`/`#[AsFilter]`           | On class methods                     |
+| Manual `register_nav_menus()`        | `#[AsMenu]`                           | Auto-adds to Timber context          |
+| Manual `add_image_size()`            | `#[AsImageSize]`                      | Auto-enables `post-thumbnails`       |
+| Repository classes                   | Use Timber directly                   | Timber is the data layer             |
+| `timber/context` filter              | `#[AsContextProvider]`                | Scoped to specific templates         |
+| Manual `template_include` filter     | `#[AsTemplateController]`             | WordPress template hierarchy support |
+| Manual `register_rest_route()`       | `#[AsRestRoute]`                      | DI + permission management           |
+| Manual `add_shortcode()`             | `#[AsShortcode]`                      | DI support                           |
+| Manual `register_block_pattern()`    | `#[AsBlockPattern]`                   | Twig templates for patterns          |
+| Manual Twig extension registration   | `#[AsTwigExtension]`                  | Priority-based ordering              |
+| No equivalent                        | `#[AsBlock]`                          | Native Gutenberg + Interactivity API |
+| No equivalent                        | `#[AsCliCommand]`                     | WP-CLI commands with DI              |
+| No equivalent                        | `#[AsAcfFieldGroup]`                  | Standalone ACF field groups          |
+| No equivalent                        | `#[AsAcfOptionsPage]`                 | ACF options pages with fields        |
 
 ### What's Removed
 
 These wp-toolkit patterns are intentionally not carried over:
 
-| Deprecated Pattern     | Replacement                                      |
-| ---------------------- | ------------------------------------------------ |
+| Deprecated Pattern     | Replacement                                               |
+| ---------------------- | --------------------------------------------------------- |
 | Repository classes     | Use `Timber::get_posts()` / `Timber::get_post()` directly |
-| `BaseModel` classes    | Extend `Timber\Post` or `Timber\Term` directly   |
-| Manual service locator | Tempest's DI container (constructor injection)   |
-| `$theme->register()`  | Auto-discovery (no registration needed)          |
+| `BaseModel` classes    | Extend `Timber\Post` or `Timber\Term` directly            |
+| Manual service locator | Tempest's DI container (constructor injection)            |
+| `$theme->register()`   | Auto-discovery (no registration needed)                   |
 
 ## Step 1: Install Føhn
 
@@ -140,6 +140,7 @@ final class Product extends Post
 ```
 
 **Key changes:**
+
 - Class extends `Timber\Post` directly (auto-registered in Timber's classmap)
 - No manual `register_post_type()` call
 - Labels are auto-generated from `singular`/`plural`
@@ -200,6 +201,7 @@ final class ProductCategory extends Term
 ```
 
 **Key changes:**
+
 - Class extends `Timber\Term` (auto-registered in Timber's classmap)
 - `postTypes` links the taxonomy to post types declaratively
 
@@ -254,7 +256,7 @@ use StoutLogic\AcfBuilder\FieldsBuilder;
 #[AsAcfBlock(
     name: 'hero',
     title: 'Hero',
-    category: 'layout',
+    category: 'design',
 )]
 final readonly class HeroBlock implements AcfBlockInterface
 {
@@ -285,6 +287,7 @@ final readonly class HeroBlock implements AcfBlockInterface
 ```
 
 **Key changes:**
+
 - `data()` is split into `compose()` (prepare data) and `render()` (output HTML)
 - Fields are passed to `compose()` directly — no more `get_field()` calls
 - Constructor injection for services (ViewEngine, etc.)
@@ -367,6 +370,7 @@ final class AssetHooks
 ```
 
 **Key changes:**
+
 - Hooks are organized in dedicated classes by concern
 - Priority and accepted args can be set via attribute parameters: `#[AsAction('init', priority: 5)]`
 - Hook classes support constructor injection
@@ -761,40 +765,47 @@ Føhn registers the classmap automatically when using `#[AsPostType]` or `#[AsTi
 ## Migration Checklist
 
 ### Phase 1: Setup
+
 - [ ] Install `studiometa/foehn`
 - [ ] Update `functions.php` to use `Kernel::boot()`
 - [ ] Create `app/foehn.config.php` if needed
 - [ ] Verify autoloading works
 
 ### Phase 2: Content Types
+
 - [ ] Migrate post types to `#[AsPostType]` on `Timber\Post` subclasses
 - [ ] Migrate taxonomies to `#[AsTaxonomy]` on `Timber\Term` subclasses
 - [ ] Remove old PostType/Taxonomy Manager classes
 - [ ] Remove manual Timber classmap filters
 
 ### Phase 3: Blocks
+
 - [ ] Migrate ACF blocks to `#[AsAcfBlock]` + `AcfBlockInterface`
 - [ ] Update `data()` → `compose()` + `render()`
 - [ ] Remove `get_field()` calls (fields are passed to `compose()`)
 - [ ] Verify block templates still render correctly
 
 ### Phase 4: Hooks & Features
+
 - [ ] Consolidate scattered hooks into hook classes
 - [ ] Migrate menus to `#[AsMenu]`
 - [ ] Migrate image sizes to `#[AsImageSize]` (if applicable)
 - [ ] Migrate shortcodes to `#[AsShortcode]` (if applicable)
 
 ### Phase 5: Views & Templates
+
 - [ ] Migrate `timber/context` filters to `#[AsContextProvider]`
 - [ ] Migrate template routing to `#[AsTemplateController]`
 - [ ] Update Twig templates for new context variables (e.g. <code v-pre>{{ menus.primary }}</code>)
 
 ### Phase 6: API & Services
+
 - [ ] Migrate REST endpoints to `#[AsRestRoute]`
 - [ ] Convert Repository classes to Service classes (or remove them)
 - [ ] Use constructor injection instead of service locators
 
 ### Phase 7: Cleanup
+
 - [ ] Remove `studiometa/wp-toolkit` dependency
 - [ ] Remove unused Manager base classes
 - [ ] Remove manual registration code from `functions.php`

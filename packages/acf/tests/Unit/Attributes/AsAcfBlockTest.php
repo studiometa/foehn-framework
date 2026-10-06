@@ -10,7 +10,7 @@ describe('AsAcfBlock', function () {
 
         expect($attribute->name)->toBe('hero');
         expect($attribute->title)->toBe('Hero Block');
-        expect($attribute->category)->toBe('common');
+        expect($attribute->category)->toBe('widgets');
         expect($attribute->icon)->toBeNull();
         expect($attribute->description)->toBeNull();
         expect($attribute->keywords)->toBe([]);
@@ -25,7 +25,7 @@ describe('AsAcfBlock', function () {
         $attribute = new AsAcfBlock(
             name: 'hero',
             title: 'Hero Block',
-            category: 'layout',
+            category: 'design',
             icon: 'cover-image',
             description: 'A hero banner block',
             keywords: ['banner', 'header'],
@@ -38,7 +38,7 @@ describe('AsAcfBlock', function () {
 
         expect($attribute->name)->toBe('hero');
         expect($attribute->title)->toBe('Hero Block');
-        expect($attribute->category)->toBe('layout');
+        expect($attribute->category)->toBe('design');
         expect($attribute->icon)->toBe('cover-image');
         expect($attribute->description)->toBe('A hero banner block');
         expect($attribute->keywords)->toBe(['banner', 'header']);
