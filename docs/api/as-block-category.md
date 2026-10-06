@@ -69,6 +69,16 @@ Reference the category in `#[AsBlock]` or `#[AsAcfBlock]`:
 final class HeroBlock implements BlockInterface {}
 ```
 
+## Registration
+
+`BlockCategoryDiscovery` reads the attribute on any class and adds each category through the `block_categories_all` filter, at `init`. The class needs no interface or body.
+
+- The categories go before the ones WordPress and plugins provide, so they lead the inserter.
+- Categories are ordered by class name. Categories on one class keep the order of their attributes, so put them on one class to control the order.
+- A slug that is already registered is skipped. A core slug such as `theme` keeps its core title. When two classes declare the same slug, the class whose name sorts first wins.
+
+To rename or reorder an existing category, use your own `#[AsFilter('block_categories_all')]` instead.
+
 ## Related
 
 - [Guide: Native Blocks](/guide/native-blocks)

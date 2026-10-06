@@ -103,6 +103,7 @@ $results->containsAll(
 $results->containsAll(
     'every framework discovery is found by scanning',
     [
+        Discovery\BlockCategoryDiscovery::class,
         Discovery\BlockDiscovery::class,
         Discovery\BlockPatternDiscovery::class,
         Discovery\CliCommandDiscovery::class,
@@ -192,6 +193,23 @@ $results->containsAll(
     'demo blocks are registered',
     ['theme/section', 'theme/callout', 'theme/hero'],
     array_keys(WP_Block_Type_Registry::get_instance()->get_all_registered()),
+);
+
+// The unit tests run the filter against a stub. This reads the list the editor
+// gets from WordPress itself: the demo's `layout` goes first, and core keeps its
+// own `theme` category, which the demo does not declare.
+$blockCategories = get_block_categories(new WP_Block_Editor_Context());
+
+$results->same(
+    'the demo block category leads the inserter',
+    ['slug' => 'layout', 'title' => 'Layout', 'icon' => 'layout'],
+    $blockCategories[0] ?? null,
+);
+
+$results->same(
+    'every block category slug is registered once',
+    array_values(array_unique(array_column($blockCategories, 'slug'))),
+    array_column($blockCategories, 'slug'),
 );
 
 $results->containsAll(

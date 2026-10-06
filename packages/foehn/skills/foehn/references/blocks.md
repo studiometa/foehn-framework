@@ -267,17 +267,22 @@ Return `null` to keep the block's own value.
 
 ## Block categories
 
-`#[AsBlockCategory]` exists in `Studiometa\Foehn\Attributes`, but no discovery registers it. To add a category, use a filter:
+Declare a category with `#[AsBlockCategory(slug: 'acme', title: 'Acme', icon: null)]` from `Studiometa\Foehn\Attributes` on any class. The attribute is repeatable. `BlockCategoryDiscovery` adds the categories through `block_categories_all`, before the existing ones, ordered by class name (attribute order within one class). It skips a slug that is already registered: a core slug keeps its core title, and between two classes the one whose name sorts first wins. Reference: [#[AsBlockCategory]](https://studiometa.github.io/foehn-framework/api/as-block-category.md).
+
+To rename, remove or reorder existing categories, use the filter directly:
 
 ```php
 #[AsFilter('block_categories_all')]
 public function blockCategories(array $categories): array
 {
-    return [['slug' => 'acme', 'title' => 'Acme', 'icon' => null], ...$categories];
+    return array_map(
+        static fn(array $category): array => $category['slug'] === 'theme' ? [...$category, 'title' => 'Site'] : $category,
+        $categories,
+    );
 }
 ```
 
-`wp foehn make:block` writes `category: 'theme'` (change it with `--category=`). `theme` is a core WordPress category (since 5.8), with `text`, `media`, `design`, `widgets`, `embed` and `reusable`, so a generated block needs no extra registration. Register a category with this filter only when you need a slug that core does not provide.
+`wp foehn make:block` writes `category: 'theme'` (change it with `--category=`). `theme` is a core WordPress category (since 5.8), with `text`, `media`, `design`, `widgets`, `embed` and `reusable`, so a generated block needs no extra registration. Declare a slug that core does not provide with `#[AsBlockCategory]`.
 
 ## Troubleshooting
 
