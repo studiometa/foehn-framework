@@ -33,7 +33,7 @@ final readonly class PageController implements TemplateControllerInterface
         $post = $context->post;
 
         if ($post && post_password_required($post->ID)) {
-            return $this->view->renderFirst(['pages/password', 'pages/page'], $context);
+            return $this->view->render('pages/password', $context);
         }
 
         return $this->view->renderFirst([

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Controllers\PageController;
+use Demo\Controllers\PageController;
 use Studiometa\Foehn\Attributes\AsTemplateController;
 use Studiometa\Foehn\Contracts\TemplateControllerInterface;
 use Studiometa\Foehn\Contracts\ViewEngineInterface;
@@ -18,18 +18,12 @@ describe('PageController', function () {
         expect(is_subclass_of(PageController::class, TemplateControllerInterface::class))->toBeTrue();
     });
 
-    // Sans ce contrôleur, les pages retombaient sur le rendu par défaut de
-    // WordPress et `pages/page.twig` n'était jamais lu.
-    it('has AsTemplateController attribute for page templates', function () {
+    it('has AsTemplateController attribute for the page template', function () {
         $ref = new ReflectionClass(PageController::class);
         $attrs = $ref->getAttributes(AsTemplateController::class);
 
         expect($attrs)->toHaveCount(1);
-
-        $templates = $attrs[0]->newInstance()->templates;
-
-        expect($templates)->toContain('page');
-        expect($templates)->toContain('page-*');
+        expect($attrs[0]->newInstance()->templates)->toBe(['page']);
     });
 
     it('requires ViewEngineInterface via constructor', function () {
@@ -55,8 +49,8 @@ describe('PageController', function () {
         expect($rendered)->toBe(['pages/password']);
     });
 
-    // Sans `pages/password`, ce contrôleur retombait sur `pages/page`, qui affiche
-    // `post.content` : Timber le rend en entier, mot de passe ou non.
+    // The demo had no `pages/password`: a password-protected page threw
+    // "Failed to render template: pages/password" and answered 500.
     it('ships the template it renders for a password-protected page', function () {
         expect(dirname(__DIR__, 4) . '/theme/templates/pages/password.twig')->toBeFile();
     });

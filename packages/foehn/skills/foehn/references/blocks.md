@@ -273,11 +273,11 @@ Return `null` to keep the block's own value.
 #[AsFilter('block_categories_all')]
 public function blockCategories(array $categories): array
 {
-    return [['slug' => 'theme', 'title' => 'Theme', 'icon' => null], ...$categories];
+    return [['slug' => 'acme', 'title' => 'Acme', 'icon' => null], ...$categories];
 }
 ```
 
-`wp foehn make:block` writes `category: 'theme'` (change it with `--category=`). WordPress has no `theme` category, so register it with this filter or pick a core category such as `widgets`, `design`, `text` or `media`.
+`wp foehn make:block` writes `category: 'theme'` (change it with `--category=`). `theme` is a core WordPress category (since 5.8), with `text`, `media`, `design`, `widgets`, `embed` and `reusable`, so a generated block needs no extra registration. Register a category with this filter only when you need a slug that core does not provide.
 
 ## Troubleshooting
 

@@ -436,6 +436,45 @@ final class SearchController implements TemplateControllerInterface
 }
 ```
 
+### Password-Protected Posts
+
+A controller that takes over `single` or `page` also takes over password-protected posts. WordPress does not swap in its password form for you, and neither does Timber: `post.content` returns the full content of a protected post unless the `timber/post/content/show_password_form_for_protected` filter returns `true`. Test `post_password_required()` first and render a template that prints the form instead of the content:
+
+```php
+public function handle(TemplateContext $context): string
+{
+    $post = $context->post;
+
+    if ($post && post_password_required($post->ID)) {
+        return $this->view->render('pages/password', $context);
+    }
+
+    return $this->view->renderFirst(["pages/page-{$post?->slug}", 'pages/page'], $context);
+}
+```
+
+```twig
+{# templates/pages/password.twig #}
+{% extends 'layouts/base.twig' %}
+
+{% block content %}
+  <h1>{{ post.title }}</h1>
+  {{ function('get_the_password_form', post.ID) }}
+{% endblock %}
+```
+
+The form posts to `wp-login.php?action=postpass`, which sets the password cookie and sends the visitor back to the post. On the next request `post_password_required()` is `false` and the controller renders the normal template. The starter and the demo ship `pages/password.twig`, and their `SingleController` and `PageController` both render it.
+
+`render()` throws a `RuntimeException` when the template does not exist, so a controller that names `pages/password` needs the file in the theme. Do not use `renderFirst(['pages/password', 'pages/page'])` as a fallback: `pages/page` prints `post.content`, which is the protected content.
+
+Listings need the same care. Timber builds `post.excerpt` from the full content and does not check the password, so an archive or a search result that prints excerpts shows the start of a protected post. Test `post.password_required` before you print the excerpt, as the starter's `components/card-post.twig` does:
+
+```twig
+{% if not post.password_required and post.excerpt %}
+  <p>{{ post.excerpt }}</p>
+{% endif %}
+```
+
 ## Context Providers vs Template Controllers
 
 | Feature      | Context Provider             | Template Controller          |

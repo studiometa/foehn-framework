@@ -1,4 +1,8 @@
-import { resolve } from "node:path";
+import { statSync } from "node:fs";
+import type { IncomingMessage } from "node:http";
+import type { AddressInfo } from "node:net";
+import { constants } from "node:os";
+import { join, resolve } from "node:path";
 import type { Plugin, ResolvedConfig, ViteDevServer } from "vite";
 import type { FoehnPluginOptions, ResolvedFoehnPluginOptions } from "./options.js";
 import { resolveOptions } from "./options.js";
@@ -10,11 +14,17 @@ import {
     removeHotFile,
 } from "./utils/index.js";
 
+/** Signals that end the process without Vite closing the server first. */
+const EXIT_SIGNALS = ["SIGINT", "SIGHUP"] as const;
+
 /**
  * Creates the Føhn Vite plugin.
  */
 export function foehn(options: FoehnPluginOptions): Plugin[] {
     const resolvedOptions = resolveOptions(options);
+    const outDir = resolve(resolvedOptions.themeDir, resolvedOptions.outDir);
+    // Inside the build output, where `ViteManifest` looks for it.
+    const hotPath = resolve(outDir, resolvedOptions.hotFile);
     let config: ResolvedConfig;
 
     const mainPlugin: Plugin = {
@@ -34,7 +44,7 @@ export function foehn(options: FoehnPluginOptions): Plugin[] {
             return {
                 build: {
                     manifest: true,
-                    outDir: resolve(resolvedOptions.themeDir, resolvedOptions.outDir),
+                    outDir,
                     rollupOptions: {
                         input: entries,
                     },
@@ -42,11 +52,13 @@ export function foehn(options: FoehnPluginOptions): Plugin[] {
                 server: proxyTarget
                     ? {
                           proxy: {
-                              // Proxy all non-asset requests to DDEV
-                              "^(?!/@|/node_modules|/src)": {
+                              // Vite answers what it can serve, DDEV the rest
+                              "/": {
                                   target: proxyTarget,
                                   changeOrigin: true,
                                   secure: false,
+                                  bypass: (req) =>
+                                      isServedByVite(req, config) ? req.url : undefined,
                               },
                           },
                       }
@@ -58,25 +70,44 @@ export function foehn(options: FoehnPluginOptions): Plugin[] {
             config = resolvedConfig;
         },
 
-        async configureServer(server: ViteDevServer) {
-            const serverUrl = getServerUrl(server, config);
+        configureServer(server: ViteDevServer) {
+            const httpServer = server.httpServer;
+            if (!httpServer) {
+                return;
+            }
 
-            // Write hot file when server starts
-            server.httpServer?.once("listening", async () => {
-                const url = serverUrl ?? `http://localhost:${config.server.port}`;
-                await writeHotFile(resolvedOptions.themeDir, resolvedOptions.hotFile, url);
+            // Write hot file when server starts, with the address it listens on
+            httpServer.once("listening", async () => {
+                const address = httpServer.address();
+                if (typeof address === "object" && address) {
+                    await writeHotFile(hotPath, getServerUrl(address, config));
+                }
             });
 
+            // Vite closes the server on SIGTERM only. Ctrl+C (SIGINT) and a
+            // closed terminal (SIGHUP) kill the process, and a hot file left
+            // behind points every WordPress page at a dead server.
+            const onSignal = (signal: NodeJS.Signals) => {
+                removeHotFile(hotPath);
+                process.exit(128 + constants.signals[signal]);
+            };
+            for (const signal of EXIT_SIGNALS) {
+                process.on(signal, onSignal);
+            }
+
             // Remove hot file when server closes
-            server.httpServer?.on("close", async () => {
-                await removeHotFile(resolvedOptions.themeDir, resolvedOptions.hotFile);
+            httpServer.on("close", () => {
+                removeHotFile(hotPath);
+                for (const signal of EXIT_SIGNALS) {
+                    process.off(signal, onSignal);
+                }
             });
         },
 
-        async buildEnd() {
+        buildEnd() {
             // Ensure hot file is removed after build
             if (config.command === "build") {
-                await removeHotFile(resolvedOptions.themeDir, resolvedOptions.hotFile);
+                removeHotFile(hotPath);
             }
         },
     };
@@ -131,17 +162,42 @@ function matchPattern(file: string, pattern: string): boolean {
 }
 
 /**
- * Get the dev server URL.
+ * Whether the dev server answers a request itself: its internal routes
+ * (`/@vite/client`, `/@fs/`, `/@id/`, `/__open-in-editor`), dependencies, the
+ * HMR ping, and every file under the root or the public directory, whatever
+ * the query (`?import`, `?direct`, `?v=`).
  */
-function getServerUrl(server: ViteDevServer, config: ResolvedConfig): string | undefined {
-    const address = server.httpServer?.address();
-    if (typeof address === "object" && address) {
-        const protocol = config.server.https ? "https" : "http";
-        const host =
-            address.address === "::" || address.address === "0.0.0.0"
-                ? "localhost"
-                : address.address;
-        return `${protocol}://${host}:${address.port}`;
+function isServedByVite(req: IncomingMessage, config: ResolvedConfig): boolean {
+    if (req.headers.accept === "text/x-vite-ping") {
+        return true;
     }
-    return undefined;
+
+    let path: string;
+    try {
+        path = decodeURIComponent((req.url ?? "/").split(/[?#]/)[0]);
+    } catch {
+        // A malformed URL is not a module, let WordPress answer it
+        return false;
+    }
+
+    if (path.startsWith("/@") || path.startsWith("/__") || path.startsWith("/node_modules/")) {
+        return true;
+    }
+
+    return [config.root, config.publicDir].some(
+        (dir) => dir !== "" && statSync(join(dir, path), { throwIfNoEntry: false })?.isFile(),
+    );
+}
+
+/**
+ * Get the URL a browser reaches the dev server at.
+ */
+function getServerUrl(address: AddressInfo, config: ResolvedConfig): string {
+    const protocol = config.server.https ? "https" : "http";
+    const host = ["::", "0.0.0.0", "::1", "127.0.0.1"].includes(address.address)
+        ? "localhost"
+        : address.family === "IPv6"
+          ? `[${address.address}]`
+          : address.address;
+    return `${protocol}://${host}:${address.port}`;
 }

@@ -199,11 +199,11 @@ The DTO is automatically flattened to a snake_case array before reaching `render
 
 **Built-in DTOs:**
 
-| DTO           | Description             | Factory                                  |
-| ------------- | ----------------------- | ---------------------------------------- |
-| `LinkData`    | Link/button fields      | `LinkData::fromAcf($acfLink)`            |
-| `ImageData`   | Image/attachment fields | `ImageData::fromAttachmentId($id)`       |
-| `SpacingData` | Spacing fields          | `SpacingData::fromAcf($fields, $prefix)` |
+| DTO           | Description             | Factory                                    |
+| ------------- | ----------------------- | ------------------------------------------ |
+| `LinkData`    | Link/button fields      | `LinkData::fromAcf($acfLink)`              |
+| `ImageData`   | Image/attachment fields | `ImageData::fromAttachmentId($id)`         |
+| `SpacingData` | Spacing fields          | `SpacingData::fromAcf($fields['spacing'])` |
 
 All `compose()` methods on `AcfBlockInterface`, `BlockInterface` and `BlockPatternInterface` accept either `array` or `Arrayable` return types.
 

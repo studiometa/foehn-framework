@@ -255,7 +255,9 @@ Configure block features:
 
 ## Block Categories
 
-Register custom categories:
+WordPress core registers the categories `text`, `media`, `design`, `widgets`, `theme`, `embed` and `reusable`. A block in one of them needs no extra registration. `wp foehn make:block` uses `theme`.
+
+Register a custom category only for a slug that core does not provide:
 
 ```php
 <?php
@@ -264,8 +266,8 @@ namespace App\Blocks;
 
 use Studiometa\Foehn\Attributes\AsBlockCategory;
 
-#[AsBlockCategory(slug: 'theme', title: 'Theme Blocks', icon: 'star-filled')]
-final class ThemeBlocks {}
+#[AsBlockCategory(slug: 'acme', title: 'Acme Blocks', icon: 'star-filled')]
+final class AcmeBlocks {}
 ```
 
 ## Full Configuration Example

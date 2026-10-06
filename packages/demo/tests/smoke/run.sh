@@ -207,6 +207,40 @@ check_page "/projects/page/2/" "<html" "project pagination keeps a full-page fal
 check_page "/projects/corridors/" "plate--" "a project page shows its photographs"
 check_page "/about/" "prose" "the about page renders its copy"
 
+# A password-protected post has to answer with WordPress's password form and with
+# nothing the password guards. Both controllers send it to pages/password, which
+# the demo did not ship, so either one threw "Failed to render template" and
+# answered 500. The template must not print `post.content` either: Timber prints
+# it in full, password or not.
+check_protected() {
+	local type="$1" id link status
+
+	id="$(ddev exec "cd /var/www/html && wp post create --post_type=$type --post_status=publish --post_title='Protected $type' --post_password=smoke --post_content=protected-content-marker --porcelain" 2>/dev/null | tr -d '\r' | grep -xE '[0-9]+' | tail -n1 || true)"
+	[ -n "$id" ] || fail "could not create a password-protected $type"
+
+	link="$(ddev exec "cd /var/www/html && wp eval 'echo get_permalink($id);'" 2>/dev/null | tr -d '\r' | tail -n1)"
+	status="$(curl -sk -o "$body" -w '%{http_code}' "$link")"
+
+	# Removed before any check can fail, so the second run in CI starts from the
+	# same site, and the restored dump keeps no trace of the test.
+	ddev exec "cd /var/www/html && wp post delete $id --force" >/dev/null 2>&1 || true
+
+	[ "$status" = "200" ] || fail "a password-protected $type returned HTTP $status
+$(grep -iE -m3 'Fatal error|Uncaught' "$body" | head -c 800)"
+
+	grep -q 'name="post_password"' "$body" || fail "a password-protected $type rendered without the password form
+$(head -c 400 "$body")"
+
+	if grep -q 'protected-content-marker' "$body"; then
+		fail "a password-protected $type printed the content its password guards"
+	fi
+
+	printf '✓ a password-protected %s shows the password form and nothing else\n' "$type"
+}
+
+check_protected post
+check_protected page
+
 home="$(curl -sk "$url/")"
 grep -q 'data-foehn-lazy-section' <<<"$home" || fail "the homepage does not demonstrate a lazy section"
 grep -q 'data-option-src="/?foehn_sections=testimonials"' <<<"$home" || fail "the lazy testimonial section has no section request URL"
