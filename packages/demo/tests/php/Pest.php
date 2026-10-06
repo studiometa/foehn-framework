@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Contracts\ViewEngineInterface;
+use Timber\Post;
 
 /*
  |--------------------------------------------------------------------------
@@ -49,6 +50,23 @@ function createFakeViewEngine(?Closure $renderCallback = null): ViewEngineInterf
         public function getShared(): array
         {
             return $this->shared;
+        }
+    };
+}
+
+/**
+ * Create a Timber post without WordPress behind it.
+ *
+ * Timber's constructor is protected and its factory queries the database, so the
+ * subclass only sets the ID a controller passes to WordPress functions.
+ */
+function createFakePost(int $id = 1): Post
+{
+    return new class($id) extends Post {
+        public function __construct(int $id)
+        {
+            $this->ID = $id;
+            $this->id = $id;
         }
     };
 }
