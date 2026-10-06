@@ -10,16 +10,19 @@ use StoutLogic\AcfBuilder\FieldsBuilder;
  * Background settings fragment with color, image, and overlay options.
  *
  * Creates the following fields:
- * - {$name}_type (button_group)
- * - {$name}_color (color_picker) - conditional on type=color
- * - {$name}_image (image) - conditional on type=image
- * - {$name}_overlay (true_false) - conditional on type=image
- * - {$name}_overlay_opacity (range) - conditional on overlay=true
+ * - type (button_group)
+ * - color (color_picker) - conditional on type=color
+ * - image (image) - conditional on type=image
+ * - overlay (true_false) - conditional on type=image
+ * - overlay_opacity (range) - conditional on overlay=true
+ *
+ * The name does not prefix them: add the fragment inside a group, for example
+ * `addGroup('background')->addFields(new BackgroundBuilder())`.
  */
 final class BackgroundBuilder extends FieldsBuilder
 {
     /**
-     * @param string $name Field name prefix
+     * @param string $name Name of the fragment's own builder. It does not prefix the field names
      * @param string $label Field group label
      * @param array<string, string> $types Available background types
      * @param string $default Default background type

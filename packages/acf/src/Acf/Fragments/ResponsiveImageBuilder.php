@@ -10,13 +10,16 @@ use StoutLogic\AcfBuilder\FieldsBuilder;
  * Responsive image fragment with desktop/mobile variants.
  *
  * Creates the following fields:
- * - {$name}_desktop (image)
- * - {$name}_mobile (image)
+ * - desktop (image)
+ * - mobile (image)
+ *
+ * The name does not prefix them: add the fragment inside a group, for example
+ * `addGroup('image')->addFields(new ResponsiveImageBuilder())`.
  */
 final class ResponsiveImageBuilder extends FieldsBuilder
 {
     /**
-     * @param string $name Field name prefix
+     * @param string $name Name of the fragment's own builder. It does not prefix the field names
      * @param string $label Field group label
      * @param bool $required Whether the desktop image is required
      * @param string $desktopInstructions Instructions for desktop image
