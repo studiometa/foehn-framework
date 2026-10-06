@@ -24,7 +24,7 @@ describe('HeroBlock', function () {
         // slash for a block registered through register_block_type().
         expect($attr->name)->toBe('theme/hero');
         expect($attr->title)->toBe('Hero Banner');
-        expect($attr->category)->toBe('design');
+        expect($attr->category)->toBe('layout');
         expect($attr->icon)->toBe('cover-image');
         expect($attr->keywords)->toContain('hero', 'banner', 'header');
     });

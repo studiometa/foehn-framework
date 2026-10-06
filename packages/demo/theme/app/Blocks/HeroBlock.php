@@ -26,7 +26,7 @@ use WP_Block;
 #[AsBlock(
     name: 'theme/hero',
     title: 'Hero Banner',
-    category: 'design',
+    category: 'layout',
     icon: 'cover-image',
     description: 'A full-width hero banner with title, background image and CTA.',
     keywords: ['hero', 'banner', 'header'],
