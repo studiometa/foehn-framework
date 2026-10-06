@@ -9,7 +9,7 @@
             "url": "packages/foehn",
             "options": {
                 "versions": {
-                    "studiometa/foehn": "0.6.2"
+                    "studiometa/foehn": "0.6.3"
                 }
             }
         },
