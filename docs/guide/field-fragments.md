@@ -341,6 +341,7 @@ Fragments do not prefix field names, so document the names that a fragment creat
  * Creates the following fields:
  * - link (link)
  * - style (select)
+ * - size (select) - optional
  */
 final class ButtonLinkBuilder extends FieldsBuilder
 ```
