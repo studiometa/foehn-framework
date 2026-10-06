@@ -15,11 +15,13 @@ final class AcfBlockRenderer
 {
     public function __construct(
         private readonly ?AcfConfig $config = null,
-        private readonly ?AcfFieldTransformer $transformer = null,
     ) {}
 
     /**
      * Render an ACF block.
+     *
+     * Runs inside ACF's render callback, after ACF has loaded the block's values
+     * as its meta.
      *
      * @param AcfBlockInterface $block The block instance
      * @param array<string, mixed> $blockData Block data from ACF
@@ -28,18 +30,10 @@ final class AcfBlockRenderer
      */
     public function render(AcfBlockInterface $block, array $blockData, bool $isPreview = false): string
     {
-        // Get field values
-        $fields = $this->getFields($blockData);
-
-        // Transform fields if enabled
-        if ($this->shouldTransformFields()) {
-            $blockId = $blockData['id'] ?? null;
-
-            if ($blockId !== null) {
-                $transformer = $this->transformer ?? new AcfFieldTransformer();
-                $fields = $transformer->transformFields($fields, $blockId);
-            }
-        }
+        $blockId = $blockData['id'] ?? null;
+        $fields = is_string($blockId) && $blockId !== ''
+            ? new AcfBlockFields($this->config->transformFields ?? true)->get($blockId)
+            : [];
 
         // Compose the context
         $context = $block->compose($blockData, $fields);
@@ -53,71 +47,6 @@ final class AcfBlockRenderer
 
         // Render the block
         return $block->render($context, $isPreview);
-    }
-
-    /**
-     * Get field values for the block.
-     *
-     * @param array<string, mixed> $blockData Block data from ACF
-     * @return array<string, mixed> Field values
-     */
-    private function getFields(array $blockData): array
-    {
-        // In ACF, fields are stored in the block data
-        if (is_array($blockData['data'] ?? null)) {
-            return $this->parseAcfData($blockData['data']);
-        }
-
-        // Fallback to get_fields() if available
-        if (function_exists('get_fields') && !empty($blockData['id'])) {
-            $fields = get_fields($blockData['id']);
-
-            return is_array($fields) ? $fields : [];
-        }
-
-        return [];
-    }
-
-    /**
-     * Parse ACF block data format to clean field values.
-     *
-     * ACF stores field values with prefixed keys (e.g., 'field_xxx' => 'value').
-     * This method extracts the clean field names and values.
-     *
-     * @param array<string, mixed> $data Raw ACF data
-     * @return array<string, mixed> Clean field values
-     */
-    private function parseAcfData(array $data): array
-    {
-        $fields = [];
-
-        foreach ($data as $key => $value) {
-            // Skip field key references (start with '_')
-            if (str_starts_with($key, '_')) {
-                continue;
-            }
-
-            // Skip field_xxx keys
-            if (str_starts_with($key, 'field_')) {
-                continue;
-            }
-
-            $fields[$key] = $value;
-        }
-
-        return $fields;
-    }
-
-    /**
-     * Check if field transformation is enabled.
-     */
-    private function shouldTransformFields(): bool
-    {
-        if ($this->config === null) {
-            return true;
-        }
-
-        return $this->config->transformFields;
     }
 
     /**

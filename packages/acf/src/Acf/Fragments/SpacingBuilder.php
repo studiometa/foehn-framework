@@ -10,13 +10,16 @@ use StoutLogic\AcfBuilder\FieldsBuilder;
  * Spacing controls fragment for consistent padding/margin.
  *
  * Creates the following fields:
- * - {$name}_top (select)
- * - {$name}_bottom (select)
+ * - top (select)
+ * - bottom (select)
+ *
+ * The name does not prefix them: add the fragment inside a group, for example
+ * `addGroup('spacing')->addFields(new SpacingBuilder())`.
  */
 final class SpacingBuilder extends FieldsBuilder
 {
     /**
-     * @param string $name Field name prefix
+     * @param string $name Name of the fragment's own builder. It does not prefix the field names
      * @param string $label Field group label
      * @param array<string, string> $sizes Available spacing sizes
      * @param string $default Default spacing value

@@ -61,10 +61,11 @@ WORKDIR /app
 COPY composer.json ./
 COPY theme/ ./theme/
 
-# No lockfile, on purpose: the demo resolves `studiometa/foehn: ^0.5` from
-# Packagist, so the deployed site shows the last released framework — which is
-# what a real project starting today would get. Pinning it here would make the
-# demo a record of the day it was built.
+# No lockfile, on purpose: the demo installs from Packagist the exact
+# `studiometa/foehn` release its composer.json pins, which the last release commit
+# moved, and resolves everything else on the day of the build — which is what a
+# real project starting today would get. A lockfile would make the demo a record
+# of the day it was locked.
 #
 # `--no-dev`, because the test suites are not served; `--optimize-autoloader`,
 # because a classmap is one file read instead of a directory walk per class, and

@@ -27,7 +27,9 @@ export interface FoehnPluginOptions {
     themeDir?: string;
 
     /**
-     * Name of the hot file generated during development.
+     * Name of the hot file generated during development, written inside
+     * `outDir`. Pass the same name to `ViteManifest::fromTheme()` when you
+     * change it.
      * @default "hot"
      */
     hotFile?: string;

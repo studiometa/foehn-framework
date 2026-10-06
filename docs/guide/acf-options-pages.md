@@ -11,7 +11,7 @@ composer require studiometa/foehn-acf
 ```
 
 - [ACF Pro](https://www.advancedcustomfields.com/pro/) installed and active
-- `studiometa/foehn-acf`, which brings `stoutlogic/acf-builder` with it
+- `studiometa/foehn-acf`, which brings `stoutlogic/acf-builder` with it. It requires the exact version of `studiometa/foehn` you have: upgrade the two packages together
 
 Nothing registers when ACF is absent: each discovery guards on the function it needs. The classes keep their `Studiometa\Foehn\` namespaces, so a project upgrading from 0.4 changes one Composer requirement and no imports.
 

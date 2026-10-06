@@ -35,24 +35,24 @@ describe('SpacingData', function () {
     });
 
     describe('fromAcf', function () {
-        it('creates from ACF fields with default prefix', function () {
+        it('creates from the value of the group holding the fragment', function () {
             $spacing = SpacingData::fromAcf([
-                'spacing_top' => 'large',
-                'spacing_bottom' => 'small',
+                'top' => 'large',
+                'bottom' => 'small',
             ]);
 
             expect($spacing->top)->toBe('large');
             expect($spacing->bottom)->toBe('small');
         });
 
-        it('creates from ACF fields with custom prefix', function () {
+        it('ignores the flat keys ACF stores in block data', function () {
             $spacing = SpacingData::fromAcf([
-                'padding_top' => 'none',
-                'padding_bottom' => 'xlarge',
-            ], 'padding');
+                'spacing_top' => 'large',
+                'spacing_bottom' => 'small',
+            ]);
 
-            expect($spacing->top)->toBe('none');
-            expect($spacing->bottom)->toBe('xlarge');
+            expect($spacing->top)->toBe('medium');
+            expect($spacing->bottom)->toBe('medium');
         });
 
         it('defaults to medium when fields are missing', function () {
@@ -70,7 +70,7 @@ describe('SpacingData', function () {
         });
 
         it('handles partial fields', function () {
-            $spacing = SpacingData::fromAcf(['spacing_top' => 'large']);
+            $spacing = SpacingData::fromAcf(['top' => 'large']);
 
             expect($spacing->top)->toBe('large');
             expect($spacing->bottom)->toBe('medium');
