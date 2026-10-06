@@ -16,10 +16,10 @@ The plugin writes one of two things. `ViteManifest` reads whichever one exists:
 | Command         | Plugin writes                                 | `ViteManifest` then                                               |
 | --------------- | --------------------------------------------- | ----------------------------------------------------------------- |
 | `npm run build` | `<outDir>/.vite/manifest.json` (hashed files) | enqueues the hashed files, plus the CSS each JS chunk imported    |
-| `npm run dev`   | a `hot` file holding the dev server URL       | enqueues `/@vite/client` and each entry from the dev server (HMR) |
+| `npm run dev`   | `<outDir>/hot` holding the dev server URL     | enqueues `/@vite/client` and each entry from the dev server (HMR) |
 | neither         | nothing                                       | enqueues nothing, no error                                        |
 
-The hot file wins: when it exists and is not empty, the manifest is not read. The plugin removes the hot file when the dev server closes and at the end of a build.
+The hot file wins: when it exists and is not empty, the manifest is not read. The plugin removes the hot file when the dev server closes, on Ctrl+C, when the terminal closes, and at the end of a build.
 
 The **entry name** is the key that joins the two halves. It is the path given to `input`, relative to the Vite project root (the directory that holds `vite.config.js`, usually the project root, not the theme). In the starter, that is `theme/assets/js/app.js`, not `assets/js/app.js`.
 
@@ -72,7 +72,7 @@ The package has a default export and a named export (`import { foehn } from '@st
 | `reload`   | `string \| string[]` | `["templates/**/*.twig"]` | Globs watched by the dev server. A change sends a full page reload.                         |
 | `outDir`   | `string`             | `"dist"`                  | Build output, resolved against `themeDir`. Becomes `build.outDir`.                          |
 | `themeDir` | `string`             | `process.cwd()`           | Base directory for `input` globs, `reload`, `outDir`, the hot file and the `.ddev/` lookup. |
-| `hotFile`  | `string`             | `"hot"`                   | Hot file path, resolved against `themeDir`.                                                 |
+| `hotFile`  | `string`             | `"hot"`                   | Hot file name, written inside `outDir`.                                                     |
 
 The plugin also sets `build.manifest: true`. Do not set `build.outDir`, `build.manifest` or `build.rollupOptions.input` yourself; the plugin owns them.
 
@@ -178,14 +178,14 @@ To add a component, add a file in `theme/assets/js/components/` and put `data-co
 
 - **Wrong entry name.** `enqueue('assets/js/app.js', ...)` when `input` says `theme/assets/js/app.js` enqueues nothing, with no error. With the default `themeDir`, copy the exact string from `input`. Open `theme/dist/.vite/manifest.json` to see the keys.
 - **Build outside the theme.** `outDir` must be inside the served theme directory (`theme/dist` in the starter). The default `dist` is relative to `themeDir`, which is the project root by default.
-- **Hot file location.** The plugin writes the hot file at `<themeDir>/<hotFile>`. `ViteManifest::fromTheme()` reads `<theme>/<distPath>/<hotFile>`. With the starter configuration these are `hot` at the project root and `theme/dist/hot`, which are different files. If `isDevServer()` stays `false` while `npm run dev` runs, make the two paths the same, for example `hotFile: 'theme/dist/hot'` (the plugin does not create the directory, so `theme/dist/` must exist). See [references/dev-server.md](references/dev-server.md).
-- **Stale hot file.** The hot file wins over the manifest. If the page loads from `localhost:5173` after you stop the dev server, a hot file was left behind: delete it.
+- **Custom hot file name.** The plugin writes the hot file at `<outDir>/<hotFile>`, which is where `ViteManifest::fromTheme()` reads it. If you change `hotFile`, pass the same name as the second argument of `fromTheme()` / `fromChildTheme()`, or `isDevServer()` stays `false`. See [references/dev-server.md](references/dev-server.md).
+- **Stale hot file.** The hot file wins over the manifest. If the page loads from `localhost:5173` after you stop the dev server, a hot file was left behind, for example by a killed or crashed process: delete it.
 - **No assets at all.** No manifest and no hot file means nothing is enqueued. Run `npm run build`, then check `ViteManifest::fromTheme()->exists()`.
 - **Do not add `type="module"` yourself.** `wp_script_add_data($handle, 'type', 'module')` has no effect in WordPress. `ViteManifest` already rewrites the tag.
 - **Do not enqueue the imported CSS by hand.** A JS entry's imported CSS is enqueued by `enqueue()`. A separate CSS `input` (like `app.css`) is its own entry and needs its own `enqueue()` call.
 - **`reload` globs are relative to `themeDir`.** The default `templates/**/*.twig` does not match the starter's `theme/templates/`. Set `reload` explicitly, as the starter does.
 - **`reload` matching is simple.** Changed files are matched with `**`, `*` and `?` only. Brace patterns like `{php,twig}` are watched but never trigger a reload; write one glob per extension.
-- **DDEV proxy.** When `<themeDir>/.ddev/config.yaml` exists, the dev server proxies requests to the DDEV site. See [references/dev-server.md](references/dev-server.md).
+- **DDEV proxy.** When `<themeDir>/.ddev/config.yaml` exists, the dev server serves its own routes and every file under the Vite root, and proxies the other requests to the DDEV site. See [references/dev-server.md](references/dev-server.md).
 
 ## Related
 

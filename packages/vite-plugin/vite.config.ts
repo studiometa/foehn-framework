@@ -10,7 +10,9 @@ export default defineConfig({
       fileName: "index",
     },
     rollupOptions: {
-      external: ["node:fs", "node:path", "node:fs/promises", "vite", "fast-glob"],
+      // Every Node built-in: one missing from a list is bundled as a browser
+      // stub and fails only at run time.
+      external: [/^node:/, "vite", "fast-glob"],
     },
     minify: false,
     sourcemap: true,

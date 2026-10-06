@@ -10,7 +10,7 @@ vi.mock("../src/utils/index.js", () => ({
     detectDdev: vi.fn().mockResolvedValue(null),
     getDdevSiteUrl: vi.fn().mockReturnValue("https://test.ddev.site"),
     writeHotFile: vi.fn().mockResolvedValue(undefined),
-    removeHotFile: vi.fn().mockResolvedValue(undefined),
+    removeHotFile: vi.fn(),
 }));
 
 describe("foehn", () => {
