@@ -5,13 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.6.3] - 2026-10-06
+
+Agents get the framework's manual, and dev mode reaches WordPress.
 
 ### Added
 
 - Agent Skills for coding agents: `foehn`, `foehn-acf` and `foehn-vite-plugin`, one in each package. `npx skills add studiometa/foehn-framework#<version>` installs them at the release in `composer.lock`, and the [AI Agents](https://studiometa.github.io/foehn-framework/guide/ai-agents) guide documents the install, the pin and `llms.txt` ([#196])
+- `#[AsBlockCategory]` registers its categories: a discovery adds them to `block_categories_all`, ahead of the existing ones, and skips a slug that is already registered. The attribute existed and was documented, but nothing read it ([#205])
+
+### Fixed
+
+- `npm run dev` never reached WordPress. The Vite plugin wrote the hot file at the project root while `ViteManifest::fromTheme()` reads it in the build directory, and the DDEV proxy forwarded entry requests to WordPress before Vite could serve them. The hot file now lives in `outDir` (a file name, matching `ViteManifest`'s argument), carries the address the server really listens on, and is removed on Ctrl+C and on a closed terminal; the proxy forwards only what Vite cannot serve ([#199])
+- A password-protected post answered with a 500, and a protected page or a post card showed the protected content. The starter and the demo ship `pages/password.twig`, and the starter's card hides the excerpt of a protected post. Projects made from an earlier starter must add both ([#200])
+- ACF blocks received ACF's raw, flat storage (`items_0_heading`, attachment IDs, unformatted values), and an empty array for field-key data in the editor preview, patterns and templates. `$fields` now holds the nested, formatted values of `get_fields()` in block context. Code that read flat keys must read the nested values, and `SpacingData::fromAcf()` takes the group value: `SpacingData::fromAcf($fields['spacing'] ?? null)` ([#201])
+- `foehn-acf` required `studiometa/foehn` `^0.5`, so it could not be installed with the 0.6 framework. Every inter-package dependency now requires the exact release, and the release workflow refuses a tag that any package version or inter-package constraint does not match ([#204])
+
+### Changed
+
+- ACF blocks without a `category` default to `widgets`, like `#[AsBlock]`, instead of the legacy `common` that WordPress maps to `text` ([#202])
+- The block docs say that `theme` is a core block category ([#198]), and the field fragments guide composes fragments with `addGroup()->addFields()` instead of an `appendFields()` acf-builder does not have ([#203])
+- Pull requests are reviewed by `weareikko/code-review`, with each setting named in the workflow rather than every secret dumped, which GitHub holds as a potentially malicious workflow ([#197])
 
 [#196]: https://github.com/studiometa/foehn-framework/pull/196
+[#197]: https://github.com/studiometa/foehn-framework/pull/197
+[#198]: https://github.com/studiometa/foehn-framework/pull/198
+[#199]: https://github.com/studiometa/foehn-framework/pull/199
+[#200]: https://github.com/studiometa/foehn-framework/pull/200
+[#201]: https://github.com/studiometa/foehn-framework/pull/201
+[#202]: https://github.com/studiometa/foehn-framework/pull/202
+[#203]: https://github.com/studiometa/foehn-framework/pull/203
+[#204]: https://github.com/studiometa/foehn-framework/pull/204
+[#205]: https://github.com/studiometa/foehn-framework/pull/205
+[0.6.3]: https://github.com/studiometa/foehn-framework/releases/tag/0.6.3
 
 ## [0.6.2] - 2026-09-24
 
