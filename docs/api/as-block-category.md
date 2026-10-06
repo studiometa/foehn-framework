@@ -2,6 +2,8 @@
 
 Register a custom block category.
 
+WordPress core already registers `text`, `media`, `design`, `widgets`, `theme`, `embed` and `reusable`. Use this attribute only for a slug that core does not provide.
+
 ## Signature
 
 ```php
@@ -36,11 +38,11 @@ namespace App\Blocks;
 use Studiometa\Foehn\Attributes\AsBlockCategory;
 
 #[AsBlockCategory(
-    slug: 'theme',
-    title: 'Theme Blocks',
+    slug: 'acme',
+    title: 'Acme Blocks',
     icon: 'star-filled',
 )]
-final class ThemeBlocks {}
+final class AcmeBlocks {}
 ```
 
 ### Multiple Categories

@@ -16,6 +16,8 @@ For AI agents, this package ships the `foehn-acf` [Agent Skill](https://agentski
 composer require studiometa/foehn-acf
 ```
 
+`studiometa/foehn-acf` requires the exact same version of `studiometa/foehn`. Upgrade the two packages together, for example `composer require studiometa/foehn:<version> studiometa/foehn-acf:<version>`.
+
 ACF Pro is a WordPress plugin and is not a Composer dependency of this package. Nothing here registers anything when ACF is absent: each discovery guards on the function it needs.
 
 ## Why it is a package
