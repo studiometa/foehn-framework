@@ -27,7 +27,7 @@
     "require": {
         "php": "^8.5",
         "stoutlogic/acf-builder": "^1.12",
-        "studiometa/foehn": "^0.5",
+        "studiometa/foehn": "0.6.2",
         "tempest/container": "^3.18",
         "tempest/discovery": "^3.18",
         "tempest/generation": "^3.18",

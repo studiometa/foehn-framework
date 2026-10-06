@@ -21,6 +21,8 @@ Install:
 composer require studiometa/foehn-acf
 ```
 
+`studiometa/foehn-acf` requires the exact same version of `studiometa/foehn`. Upgrade the two packages together, for example `composer require studiometa/foehn:<version> studiometa/foehn-acf:<version>`.
+
 ACF Pro is a WordPress plugin. It is not a Composer dependency of this package.
 
 ## ACF block
