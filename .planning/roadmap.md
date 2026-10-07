@@ -4,10 +4,10 @@ Current and proposed Føhn work, in one place. Detail lives in the linked active
 
 ## Active and proposed work
 
-| #   | Evolution                      | Status        | Spec                                           | Est.  |
-| --- | ------------------------------ | ------------- | ---------------------------------------------- | ----- |
-| 11  | `#[AsAbility]` + AI guardrails | **Undecided** | [abilities_spec.md](abilities_spec.md)         | 4–7 d |
-| 23  | Store locator package          | **Proposed**  | [store_locator_spec.md](store_locator_spec.md) | 6–9 d |
+| #   | Evolution                      | Status        | Spec                                           | Est.   |
+| --- | ------------------------------ | ------------- | ---------------------------------------------- | ------ |
+| 11  | `#[AsAbility]` + AI guardrails | **Undecided** | [abilities_spec.md](abilities_spec.md)         | 4–7 d  |
+| 23  | Store locator package          | **Proposed**  | [store_locator_spec.md](store_locator_spec.md) | 7–10 d |
 
 ## Shipped foundation
 
