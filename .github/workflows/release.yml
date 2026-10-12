@@ -12,6 +12,11 @@ name: Release
 # Publishing the Vite plugin stays in this file. npm trusted publishing names this
 # repository and `release.yml`: moving `npm publish` to another file, or into a
 # reusable workflow, revokes the job's ability to publish.
+#
+# A version with a prerelease part (`0.7.0-rc.1`: anything with a `-`) publishes
+# the plugin under the `next` dist-tag and creates a GitHub prerelease that is not
+# marked as latest; any other version goes to `latest`. The publish skips a version
+# npm already has, so "Re-run failed jobs" replays a run that failed after it.
 
 on:
   workflow_dispatch:
@@ -36,7 +41,9 @@ jobs:
       pull-requests: read
     outputs:
       version: ${{ steps.version.outputs.version }}
-      body: ${{ steps.changelog.outputs.body }}
+      prerelease: ${{ steps.version.outputs.prerelease }}
+      dist-tag: ${{ steps.version.outputs.dist-tag }}
+      body: ${{ steps.body.outputs.body }}
     steps:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -44,6 +51,10 @@ jobs:
           # The changelog action reads the commit that added each fragment.
           fetch-depth: 0
 
+      # The dist-tag and the prerelease flag are computed once, here, and every
+      # later job reads them. A prerelease published as `latest` is what every
+      # fresh install would then get. `previous` is the version of the last
+      # release, which every pin holds until the bump below.
       - name: Check the version
         id: version
         env:
@@ -53,7 +64,19 @@ jobs:
             echo "::error::\"$VERSION\" is not a version: use 0.6.4 or 0.7.0-rc.1, without a v."
             exit 1
           fi
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if [[ "$VERSION" == *-* ]]; then
+            PRERELEASE=true
+            DIST_TAG=next
+          else
+            PRERELEASE=false
+            DIST_TAG=latest
+          fi
+          {
+            echo "version=$VERSION"
+            echo "previous=$(jq -r .version package.json)"
+            echo "prerelease=$PRERELEASE"
+            echo "dist-tag=$DIST_TAG"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Setup PHP
         uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
@@ -189,11 +212,32 @@ jobs:
           command: release
           version: ${{ steps.version.outputs.version }}
 
-      - name: Fail when there is nothing to release
-        if: steps.changelog.outputs.changed != 'true'
+      # A prerelease folds the fragments like any release, so promoting it (0.7.0
+      # after 0.7.0-rc.1) can find none. That release gets no new changelog section,
+      # and its GitHub release says which prerelease it promotes. Any other release
+      # without a fragment has nothing to release.
+      - name: Write the release notes
+        id: body
+        env:
+          CHANGED: ${{ steps.changelog.outputs.changed }}
+          CHANGELOG_BODY: ${{ steps.changelog.outputs.body }}
+          PRERELEASE: ${{ steps.version.outputs.prerelease }}
+          PREVIOUS: ${{ steps.version.outputs.previous }}
         run: |
-          echo "::error::No fragment in .changelog/: nothing to release."
-          exit 1
+          if [[ "$CHANGED" == "true" ]]; then
+            BODY=$CHANGELOG_BODY
+          elif [[ "$PREVIOUS" == *-* && "$PRERELEASE" == "false" ]]; then
+            BODY="Stable release of $PREVIOUS."
+          else
+            echo "::error::No fragment in .changelog/: nothing to release."
+            exit 1
+          fi
+          DELIMITER="EOF_$(openssl rand -hex 16)"
+          {
+            echo "body<<$DELIMITER"
+            echo "$BODY"
+            echo "$DELIMITER"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Commit, tag and push
         env:
@@ -261,7 +305,6 @@ jobs:
         with:
           node-version: "24"
           cache: "npm"
-          registry-url: "https://registry.npmjs.org"
 
       # Node 24 ships an npm older than 11.5.1, the first release that recognises an
       # OIDC environment. On anything older the publish looks for a token instead,
@@ -293,19 +336,19 @@ jobs:
       - name: Build
         run: npm run -w @studiometa/foehn-vite-plugin build
 
-      # A prerelease published as `latest` is what every fresh install would then get.
-      - name: Resolve the dist-tag
-        env:
-          TAG: ${{ needs.prepare.outputs.version }}
-        run: |
-          NPM_TAG=latest
-          if [[ $TAG =~ (alpha|beta|rc) ]]; then
-            NPM_TAG=next
-          fi
-          echo "NPM_TAG=$NPM_TAG" >> "$GITHUB_ENV"
-
-      - name: Publish
-        run: npm publish -w @studiometa/foehn-vite-plugin --tag "$NPM_TAG"
+      # The action publishes only a version npm does not have yet, and skips it
+      # otherwise, so "Re-run failed jobs" can replay this job after a failure past
+      # the publish. With no `token`, it authenticates through trusted publishing.
+      # It runs `npm publish --ignore-scripts`: the plugin has no lifecycle script,
+      # and the build step above writes dist/. The dist-tag is `next` for a
+      # prerelease and `latest` otherwise, computed in `prepare`.
+      - name: Publish @studiometa/foehn-vite-plugin
+        uses: JS-DevTools/npm-publish@0fd2f4369c5d6bcfcde6091a7c527d810b9b5c3f # v4.1.5
+        with:
+          package: packages/vite-plugin
+          access: public
+          provenance: true
+          tag: ${{ needs.prepare.outputs.dist-tag }}
 
   release:
     name: Create the GitHub release
@@ -338,7 +381,9 @@ jobs:
             composer create-project studiometa/foehn-starter my-project
             ```
           draft: false
-          prerelease: false
+          # `latest` on GitHub follows `latest` on npm: a prerelease is not it.
+          prerelease: ${{ needs.prepare.outputs.prerelease }}
+          make_latest: ${{ needs.prepare.outputs.prerelease == 'true' && 'false' || 'true' }}
           generate_release_notes: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
