@@ -4,29 +4,31 @@ name: Deploy the demo
 #
 # Not triggered by the tag, and that is the whole design of this file.
 # `packages/demo/Dockerfile` builds `FROM ghcr.io/studiometa/foehn-wordpress:
-# <version>-db`, and docker.yml is what publishes that image — on the same tag
-# push. A workflow started by the tag would race an image that does not exist
-# yet and fail on a `manifest unknown` a rerun happens to fix, which is the worst
-# kind of green.
-#
-# So it waits on docker.yml instead, and takes the tag from the run it waited
-# on: the demo then deploys on the runtime image of the release it belongs to,
-# passed as `--build-arg FOEHN_IMAGE=…`. The alternative was to leave the
-# Dockerfile's pinned `ARG` alone and accept a demo that always runs the
-# *previous* release's image — simpler, and wrong for a site whose only job is to
-# show what the current release does.
+# <version>-db`, and docker.yml is what publishes that image. release.yml calls
+# this after docker.yml has finished, with the tag: the demo then deploys on the
+# runtime image of the release it belongs to, passed as `--build-arg
+# FOEHN_IMAGE=…`. The alternative was to leave the Dockerfile's pinned `ARG`
+# alone and accept a demo that always runs the *previous* release's image —
+# simpler, and wrong for a site whose only job is to show what the current
+# release does.
 #
 # The pinned `ARG` still means what it says: it is what a local `docker build`
 # gets, and what a manual dispatch below deploys.
 #
+# @see .github/workflows/release.yml
 # @see .github/workflows/docker.yml
 # @see docs/guide/deployment-fly.md
 
 on:
-  workflow_run:
-    workflows: ["Docker"]
-    types:
-      - completed
+  workflow_call:
+    inputs:
+      tag:
+        description: "Release tag to deploy, on its -db runtime image"
+        type: string
+        required: true
+    secrets:
+      FLY_API_TOKEN:
+        required: true
 
   # The only way to run this without cutting a release. It deploys the checked
   # out ref on the image the Dockerfile pins.
@@ -35,43 +37,31 @@ on:
 permissions:
   contents: read
 
-# One deploy at a time, and none of them cancelled: a `fly deploy` interrupted
-# part way is a machine in whatever state the release left it.
-concurrency:
-  group: deploy-demo
-  cancel-in-progress: false
-
 jobs:
   deploy:
     name: Deploy to Fly
     runs-on: ubuntu-latest
 
-    # docker.yml runs on tags, on `main` and on pull requests, and `workflow_run`
-    # fires for all three. Only a tag should deploy — which here is a successful
-    # `push` run whose ref is not `main`, since those are the only two branches
-    # of that trigger.
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (github.event.workflow_run.conclusion == 'success' &&
-       github.event.workflow_run.event == 'push' &&
-       github.event.workflow_run.head_branch != 'main')
+    # One deploy at a time, and none of them cancelled: a `fly deploy` interrupted
+    # part way is a machine in whatever state the release left it.
+    concurrency:
+      group: deploy-demo
+      cancel-in-progress: false
 
     steps:
-      # `workflow_run` checks out the default branch by default, not the commit
-      # that triggered the run it is reacting to. Without this the tag would
-      # publish an image and deploy whatever `main` happened to hold.
+      # On a release, the tag: the run itself started on `main` before the release
+      # commit existed, and would otherwise deploy what `main` held then.
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.ref }}
+          ref: ${{ inputs.tag }}
 
-      # Through the environment rather than into the command line: `head_branch`
-      # is attacker-controlled input in the general case, and a workflow that
-      # interpolates it into a shell is a workflow that runs it.
+      # Through the environment rather than into the command line: a workflow
+      # that interpolates an input into a shell is a workflow that runs it.
       - name: Work out which runtime image to build on
         id: image
         env:
-          TAG: ${{ github.event.workflow_run.head_branch }}
+          TAG: ${{ inputs.tag }}
           OWNER: ${{ github.repository_owner }}
         run: |
           set -euo pipefail
@@ -117,4 +107,6 @@ jobs:
           # shell fragment the runner evaluates; read from a variable it is only
           # ever split into words, which is all the splitting this needs.
           BUILD_ARGS: ${{ steps.image.outputs.build_args }}
-        run: flyctl deploy --ha=false $BUILD_ARGS
+        run: |
+          # shellcheck disable=SC2086 # split into words on purpose
+          flyctl deploy --ha=false $BUILD_ARGS

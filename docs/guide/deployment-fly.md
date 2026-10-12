@@ -123,7 +123,7 @@ This one generalises past the demo. **Any container that provisions itself needs
 
 `.github/workflows/deploy-demo.yml` deploys the demo after a release, and `workflow_dispatch` runs it by hand. It needs one repository secret, `FLY_API_TOKEN` — an app-scoped deploy token, so it can deploy this app and nothing else.
 
-The ordering is the interesting part. `packages/demo/Dockerfile` builds `FROM ghcr.io/studiometa/foehn-wordpress:<version>-db`, and that image is published by `docker.yml` on the same tag push. A deploy triggered directly by the tag would race an image that does not exist yet, so the workflow waits on `workflow_run` instead: it starts when the Docker workflow has finished successfully, checks out the commit that run built, and passes the tag through as a build argument. The pinned `ARG FOEHN_IMAGE` in the Dockerfile stays what a local `docker build` and a manual dispatch get.
+The ordering is the interesting part. `packages/demo/Dockerfile` builds `FROM ghcr.io/studiometa/foehn-wordpress:<version>-db`, and that image is published by `docker.yml` during the release. The `Release` workflow calls `deploy-demo.yml` only after `docker.yml` has finished successfully: it checks out the tag and passes it through as a build argument. A prerelease is not deployed. The pinned `ARG FOEHN_IMAGE` in the Dockerfile stays what a local `docker build` and a manual dispatch get.
 
 ```sh
 # By hand, from packages/demo, with flyctl authenticated:
