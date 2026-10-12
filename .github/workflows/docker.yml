@@ -124,8 +124,10 @@ jobs:
       # Every check below that something must NOT happen is written
       # `if …; then …; exit 1; fi`, never `! …`: bash ignores `set -e` for a
       # negated command, so a `!` line that fails lets the step carry on and
-      # pass (shellcheck SC2251). Its `grep` drops `-q` too, so a failure
-      # prints what it found.
+      # pass (shellcheck SC2251). The output is captured before it is searched,
+      # so the command that produces it still fails the step on its own: piped
+      # into `grep`, its failure would read as "nothing found". And `grep` drops
+      # `-q`, so a failure prints what it found.
       - name: Check what the image provides
         run: |
           set -euo pipefail
@@ -143,7 +145,8 @@ jobs:
           # the Dockerfile builds its own: one per colourised fragment from
           # `php-cli-tools`, one per process from `react/promise`. `colorize()`
           # exercises the first; any command at all exercises the second.
-          if run 'wp --allow-root --skip-wordpress eval "echo WP_CLI::colorize(\"%Gok%n\");" 2>&1' | grep 'Deprecated'; then
+          out="$(run 'wp --allow-root --skip-wordpress eval "echo WP_CLI::colorize(\"%Gok%n\");" 2>&1')"
+          if grep 'Deprecated' <<<"$out"; then
             echo "::error::WP-CLI raised a deprecation"; exit 1
           fi
 
@@ -157,7 +160,8 @@ jobs:
           run 'cat /etc/nginx/fastcgi_params' | grep -q 'HTTPS .*\$fcgi_https'
 
           echo "Every entrypoint is executable"
-          if run 'ls -l /opt/docker/provision/entrypoint.d/*.sh' | grep -- '-rw-'; then
+          out="$(run 'ls -l /opt/docker/provision/entrypoint.d/*.sh')"
+          if grep -- '-rw-' <<<"$out"; then
             echo "::error::An entrypoint is not executable"; exit 1
           fi
 
@@ -166,7 +170,9 @@ jobs:
           # form named `[567]0-` and so stopped covering `40-` the day it landed.
           # A check that has to be edited to keep working is one that quietly
           # stops working.
-          if run 'grep -hE "^(set |exit )" /opt/docker/provision/entrypoint.d/*.sh' | grep .; then
+          # `grep` exits 1 when nothing matches, which is the pass; 2 is an error.
+          out="$(run 'grep -hE "^(set |exit )" /opt/docker/provision/entrypoint.d/*.sh; test $? -le 1')"
+          if grep . <<<"$out"; then
             echo "::error::An entrypoint exits or sets shell options"; exit 1
           fi
 
@@ -210,7 +216,8 @@ jobs:
           curl -fsS -o /dev/null http://localhost:8080/healthcheck
 
           echo "NGINX started without an emergency"
-          if docker logs check 2>&1 | grep 'emerg'; then
+          logs="$(docker logs check 2>&1)"
+          if grep 'emerg' <<<"$logs"; then
             echo "::error::NGINX logged an emergency"; exit 1
           fi
 
@@ -391,7 +398,8 @@ jobs:
             chown -R application:application /app/web'
           docker exec cronsite wp cron event schedule foehn_ci_event now --path=/app/web/wp --allow-root
           docker exec cronsite run-parts /etc/periodic/15min | grep -q 'Executed a total of'
-          if docker exec cronsite wp cron event list --path=/app/web/wp --allow-root --fields=hook | grep foehn_ci_event; then
+          queued="$(docker exec cronsite wp cron event list --path=/app/web/wp --allow-root --fields=hook)"
+          if grep foehn_ci_event <<<"$queued"; then
             echo "::error::The due event is still queued"; exit 1
           fi
 
@@ -559,7 +567,8 @@ jobs:
 
           echo "The provisioning database was handed over exactly once, before supervisord"
           test "$(docker logs variant 2>&1 | grep -c 'provisioning database stopped')" = "1"
-          if docker logs variant 2>&1 | grep 'already listening, stopping it first'; then
+          logs="$(docker logs variant 2>&1)"
+          if grep 'already listening, stopping it first' <<<"$logs"; then
             echo "::error::The provisioning database was still listening"; exit 1
           fi
 
@@ -586,7 +595,8 @@ jobs:
           done
 
           test "$(docker exec variant mariadb --no-defaults -u wp -psecret -N -B -e 'SELECT id FROM persisted' wordpress)" = "42"
-          if docker logs --since 2m variant 2>&1 | grep -i 'crash recovery'; then
+          logs="$(docker logs --since 2m variant 2>&1)"
+          if grep -i 'crash recovery' <<<"$logs"; then
             echo "::error::The database ran crash recovery after a clean restart"; exit 1
           fi
 
