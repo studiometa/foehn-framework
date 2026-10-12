@@ -52,7 +52,7 @@ jobs:
       # On a release, the tag: the run itself started on `main` before the release
       # commit existed, and would otherwise deploy what `main` held then.
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           ref: ${{ inputs.tag }}
 
@@ -89,7 +89,7 @@ jobs:
       # Fly publishes no `v`-prefixed major tag for this action; `1` is the one
       # that moves.
       - name: Set up flyctl
-        uses: superfly/flyctl-actions/setup-flyctl@1
+        uses: superfly/flyctl-actions/setup-flyctl@ed8efb33836e8b2096c7fd3ba1c8afe303ebbff1 # v1
 
       # An app-scoped deploy token, so this can deploy foehn-demo and nothing
       # else. It expires — a year from when it was issued — and the failure then

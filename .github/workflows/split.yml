@@ -59,14 +59,14 @@ jobs:
     steps:
       # On a release, the tag: the run itself started on `main` before the release
       # commit existed.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           ref: ${{ inputs.tag }}
           fetch-depth: 0
 
       - name: Split (tag)
         if: inputs.tag != ''
-        uses: symplify/monorepo-split-github-action@v2.4.4
+        uses: symplify/monorepo-split-github-action@f10477258c88013cc5902388ec47fe9457837041 # v2.4.4
         with:
           package_directory: ${{ matrix.package.local }}
           repository_organization: studiometa
@@ -79,7 +79,7 @@ jobs:
 
       - name: Split (branch)
         if: inputs.tag == ''
-        uses: symplify/monorepo-split-github-action@v2.4.4
+        uses: symplify/monorepo-split-github-action@f10477258c88013cc5902388ec47fe9457837041 # v2.4.4
         with:
           package_directory: ${{ matrix.package.local }}
           repository_organization: studiometa
