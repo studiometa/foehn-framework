@@ -151,13 +151,18 @@ jobs:
           fi
 
           echo "The extensions a WordPress site needs are present"
+          # Captured once and searched after, not piped into `grep -q`: `-q`
+          # exits on the first match, the rest of the output then hits a closed
+          # pipe, and `pipefail` fails the step on a check that passed.
+          modules="$(run 'php -m')"
           for ext in mysqli gd exif intl; do
-            run "php -m" | grep -qx "$ext"
+            grep -qx "$ext" <<<"$modules"
           done
 
           echo "HTTPS is derived from the forwarded scheme, not from \$https alone"
+          params="$(run 'cat /etc/nginx/fastcgi_params')"
           # shellcheck disable=SC2016 # `$fcgi_https` is the literal NGINX variable
-          run 'cat /etc/nginx/fastcgi_params' | grep -q 'HTTPS .*\$fcgi_https'
+          grep -q 'HTTPS .*\$fcgi_https' <<<"$params"
 
           echo "Every entrypoint is executable"
           out="$(run 'ls -l /opt/docker/provision/entrypoint.d/*.sh')"
@@ -186,7 +191,8 @@ jobs:
 
           echo "The backup jobs are run, not sourced, so they must fail loudly"
           for job in foehn-backup foehn-backup-maintenance foehn-backup-verify; do
-            run "head -n 30 /opt/docker/bin/$job" | grep -q 'set -eu'
+            head="$(run "head -n 30 /opt/docker/bin/$job")"
+            grep -q 'set -eu' <<<"$head"
           done
 
           echo "What a backup needs is installed"
