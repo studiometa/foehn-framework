@@ -1,0 +1,16 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["github>studiometa/renovate"],
+  "packageRules": [
+    {
+      "description": "The Release workflow moves the pins between the packages of this repository and the demo's default foehn-wordpress image",
+      "matchPackageNames": [
+        "studiometa/foehn",
+        "studiometa/foehn-*",
+        "@studiometa/foehn-*",
+        "ghcr.io/studiometa/foehn-wordpress"
+      ],
+      "enabled": false
+    }
+  ]
+}
