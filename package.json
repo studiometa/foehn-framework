@@ -15,7 +15,8 @@
     "docs:dev": "npm run --prefix docs dev",
     "docs:build": "npm run --prefix docs build",
     "docs:preview": "npm run --prefix docs preview",
-    "prepare": "husky"
+    "prepare": "husky",
+    "version": "node scripts/move-pins.mjs"
   },
   "devDependencies": {
     "husky": "^9.1.0",
