@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file. Each pull r
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.6.4 - 2026-10-13
+
+### Changed
+
+- Each merge into `main` releases with the `Release` workflow: it folds the `.changelog/` fragments into `CHANGELOG.md` with the version that they give, moves every package version and inter-package pin, commits, tags and creates the GitHub release, then publishes the Vite plugin, splits the packages, builds the runtime image and deploys the demo. Pull requests add a fragment in `.changelog/` instead of editing `CHANGELOG.md`, and a `Changelog` check asks for one when `packages/` or `docker/` change ([#208])
+
+[#208]: https://github.com/studiometa/foehn-framework/pull/208
+
 ## [0.6.3] - 2026-10-06
 
 Agents get the framework's manual, and dev mode reaches WordPress.
