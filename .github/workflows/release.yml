@@ -1,155 +1,78 @@
 name: Release
 
-# One button cuts a release: `gh workflow run release.yml -f version=0.6.4`.
+# Each merge into main releases what its fragments describe. A manual run
+# (`gh workflow run release.yml -f version=major`) forces a bump.
 #
-# The `prepare` job moves every version and inter-package pin to the new version,
-# folds the `.changelog/` fragments into CHANGELOG.md, commits `Release <version>`
-# on `main`, tags it and pushes both. Everything that used to start on a tag push
-# runs here instead, on the tag: a tag pushed with GITHUB_TOKEN starts no other
+# The release job folds `.changelog/` into CHANGELOG.md, runs `npm version`
+# (the root `version` script, scripts/move-pins.mjs, moves the inter-package
+# pins and the demo's runtime image), commits `Release <version>`, tags, pushes
+# and creates the GitHub release. A tag pushed with GITHUB_TOKEN starts no
 # workflow, so the split, the runtime image and the demo deploy are called from
 # this run rather than triggered by the tag.
 #
-# Publishing the Vite plugin stays in this file. npm trusted publishing names this
-# repository and `release.yml`: moving `npm publish` to another file, or into a
-# reusable workflow, revokes the job's ability to publish.
-#
-# A version with a prerelease part (`0.7.0-rc.1`: anything with a `-`) publishes
-# the plugin under the `next` dist-tag and creates a GitHub prerelease that is not
-# marked as latest; any other version goes to `latest`. The publish skips a version
-# npm already has, so "Re-run failed jobs" replays a run that failed after it.
-
+# npm trusted publishing is bound to this file name: keep the publish job here,
+# not in a reusable workflow.
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
     inputs:
       version:
-        description: "Version to release, without a `v` (e.g. 0.6.4, or 0.7.0-rc.1 for a prerelease)"
-        type: string
-        required: true
+        description: "Version: `auto` follows the fragments; `patch`, `minor` or `major` forces that bump"
+        type: choice
+        options: [auto, patch, minor, major]
+        default: auto
 
-concurrency: release
+# One release at a time. GitHub keeps only the newest pending run: it
+# releases everything that main has at that point.
+concurrency:
+  group: release
+  cancel-in-progress: false
 
-permissions: {}
+permissions:
+  contents: read
 
 jobs:
-  prepare:
-    name: Bump versions and changelog
+  test:
+    name: Test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    permissions:
-      contents: write
-      # The changelog action finds the pull request that added each fragment.
-      pull-requests: read
-    outputs:
-      version: ${{ steps.version.outputs.version }}
-      prerelease: ${{ steps.version.outputs.prerelease }}
-      dist-tag: ${{ steps.version.outputs.dist-tag }}
-      body: ${{ steps.body.outputs.body }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-        with:
-          # The changelog action reads the commit that added each fragment.
-          fetch-depth: 0
-
-      # The dist-tag and the prerelease flag are computed once, here, and every
-      # later job reads them. A prerelease published as `latest` is what every
-      # fresh install would then get. `previous` is the version of the last
-      # release, which every pin holds until the bump below.
-      - name: Check the version
-        id: version
-        env:
-          VERSION: ${{ inputs.version }}
-        run: |
-          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]; then
-            echo "::error::\"$VERSION\" is not a version: use 0.6.4 or 0.7.0-rc.1, without a v."
-            exit 1
-          fi
-          if [[ "$VERSION" == *-* ]]; then
-            PRERELEASE=true
-            DIST_TAG=next
-          else
-            PRERELEASE=false
-            DIST_TAG=latest
-          fi
-          {
-            echo "version=$VERSION"
-            echo "previous=$(jq -r .version package.json)"
-            echo "prerelease=$PRERELEASE"
-            echo "dist-tag=$DIST_TAG"
-          } >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Setup PHP
         uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
+          # Every package requires ^8.5: on 8.4 composer install fails the
+          # platform check.
           php-version: "8.5"
-
-      - name: Setup Node.js
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
-        with:
-          node-version: "24"
-          cache: "npm"
-
-      # Every pin below holds the current version (the check that follows refuses
-      # a release otherwise), so the bump replaces that exact value and nothing
-      # else. The demo's default runtime image moves to the current version too:
-      # it is the newest `-db` variant that exists, as the image of this release
-      # is only built once the tag is pushed.
-      - name: Move every version and inter-package pin
-        env:
-          VERSION: ${{ steps.version.outputs.version }}
-        run: |
-          node --input-type=module <<'JS'
-          import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
-
-          const version = process.env.VERSION;
-          const current = JSON.parse(readFileSync("package.json", "utf8")).version;
-          const escaped = current.replaceAll(".", "\\.");
-          const pin = new RegExp(`("(?:version|@?studiometa/foehn(?:-[a-z-]+)?)"\\s*:\\s*")${escaped}"`, "g");
-
-          const files = ["package.json", "composer.json"];
-          for (const pkg of readdirSync("packages")) {
-            for (const name of ["composer.json", "package.json"]) {
-              if (existsSync(`packages/${pkg}/${name}`)) files.push(`packages/${pkg}/${name}`);
-            }
-          }
-          for (const file of files) {
-            writeFileSync(file, readFileSync(file, "utf8").replace(pin, `$1${version}"`));
-          }
-
-          const dockerfile = "packages/demo/Dockerfile";
-          writeFileSync(
-            dockerfile,
-            readFileSync(dockerfile, "utf8").replace(/(foehn-wordpress:)\S+-db/, `$1${current}-db`),
-          );
-          JS
-          npm install --package-lock-only --ignore-scripts
+          coverage: pcov
 
       # Every package carries the same version, and a package that depends on
-      # another package of this repository requires that exact version: no caret,
-      # no range. So `composer create-project` and `npm install` get a combination
-      # somebody has run. The cost is that every release has to move every pin,
-      # and a pin is easy to forget: 0.6.0 shipped a starter requiring `^0.5`,
-      # which a caret on a 0.x resolves to the *previous* minor, so create-project
-      # kept building 0.5.10 projects while the tag said 0.6.0. foehn-acf kept
-      # `^0.5` through 0.6.2, so it could not be installed next to the framework
-      # it extends. The step above moves the pins; this one proves it moved all of
-      # them, including any a new package adds.
+      # another package of this repository requires that exact version: no
+      # caret, no range. So `composer create-project` and `npm install` get a
+      # combination somebody has run. 0.6.0 shipped a starter requiring `^0.5`,
+      # which a caret on a 0.x resolves to the *previous* minor; foehn-acf kept
+      # `^0.5` through 0.6.2. scripts/move-pins.mjs moves every pin that holds
+      # the current version; this proves they all hold it, including any a new
+      # package adds, so the bump moves all of them.
       #
-      # It reads the composer.json and package.json of every package, the version
-      # the root composer.json gives the framework path repository, and the
-      # `version` of every package.json that has one (the Vite plugin and the
-      # unpublished root). It refuses the release when one of these, or a
-      # constraint on a studiometa/foehn* or @studiometa/foehn-* package, is not
-      # the version. The pins in $required must also exist, so that removing one is
-      # not a way to pass. It runs before the commit, so nothing is tagged.
-      - name: Check every package version and inter-package constraint is the version
-        env:
-          VERSION: ${{ steps.version.outputs.version }}
+      # It reads the composer.json and package.json of every package, the
+      # version the root composer.json gives the framework path repository, and
+      # the `version` of every package.json that has one. It refuses the release
+      # when one of these, or a constraint on a studiometa/foehn* or
+      # @studiometa/foehn-* package, is not the version of the root
+      # package.json. The pins in $required must also exist, so that removing
+      # one is not a way to pass.
+      #
+      # It runs here and not in the `version` script: `npm version --workspaces
+      # --include-workspace-root` runs the root script before it bumps the
+      # workspaces, and no script runs after them.
+      - name: Check every package version and inter-package constraint
         run: |
           # The PHP is in single quotes on purpose: the shell must not expand it.
           # shellcheck disable=SC2016
           php -r '
-            $tag = $argv[1];
+            $current = json_decode(file_get_contents("package.json"), true, flags: JSON_THROW_ON_ERROR)["version"];
             $required = [
               "packages/acf/composer.json studiometa/foehn",
               "packages/starter/composer.json studiometa/foehn",
@@ -197,78 +120,13 @@ jobs:
               }
             }
             foreach ($pins as $pin => $constraint) {
-              if ($constraint !== $tag) {
-                echo "::error::$pin is $constraint, not the exact version $tag\n";
+              if ($constraint !== $current) {
+                echo "::error::$pin is $constraint, not the exact version $current\n";
                 $failed = true;
               }
             }
             exit($failed ? 1 : 0);
-          ' "$VERSION"
-
-      - name: Fold changelog fragments
-        id: changelog
-        uses: weareikko/changelog@c25888e03ad7c8bbaee897b84e778ebce9e9301c # 1.0.3
-        with:
-          command: release
-          version: ${{ steps.version.outputs.version }}
-
-      # A prerelease folds the fragments like any release, so promoting it (0.7.0
-      # after 0.7.0-rc.1) can find none. That release gets no new changelog section,
-      # and its GitHub release says which prerelease it promotes. Any other release
-      # without a fragment has nothing to release.
-      - name: Write the release notes
-        id: body
-        env:
-          CHANGED: ${{ steps.changelog.outputs.changed }}
-          CHANGELOG_BODY: ${{ steps.changelog.outputs.body }}
-          PRERELEASE: ${{ steps.version.outputs.prerelease }}
-          PREVIOUS: ${{ steps.version.outputs.previous }}
-        run: |
-          if [[ "$CHANGED" == "true" ]]; then
-            BODY=$CHANGELOG_BODY
-          elif [[ "$PREVIOUS" == *-* && "$PRERELEASE" == "false" ]]; then
-            BODY="Stable release of $PREVIOUS."
-          else
-            echo "::error::No fragment in .changelog/: nothing to release."
-            exit 1
-          fi
-          DELIMITER="EOF_$(openssl rand -hex 16)"
-          {
-            echo "body<<$DELIMITER"
-            echo "$BODY"
-            echo "$DELIMITER"
-          } >> "$GITHUB_OUTPUT"
-
-      - name: Commit, tag and push
-        env:
-          VERSION: ${{ steps.version.outputs.version }}
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add CHANGELOG.md .changelog package.json package-lock.json composer.json \
-            packages/*/composer.json packages/*/package.json packages/demo/Dockerfile
-          git commit -m "Release $VERSION"
-          git tag "$VERSION"
-          git push origin HEAD:main "$VERSION"
-
-  test:
-    needs: prepare
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-        with:
-          ref: ${{ needs.prepare.outputs.version }}
-
-      - name: Setup PHP
-        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
-        with:
-          # Every package requires ^8.5; on 8.4 composer install fails the platform
-          # check, the test job never passes, and the tag produces no release at all.
-          php-version: "8.5"
-          coverage: pcov
+          '
 
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress
@@ -279,26 +137,60 @@ jobs:
       - name: Run static analysis
         run: composer analyse
 
-  # The Vite plugin is the one package that ships through npm rather than Packagist,
-  # and for its first four releases it shipped nowhere at all: split.yml mirrors the
-  # PHP packages only, so `npm install` in a project created from the starter got a
-  # 404 on a dependency its own vite.config.js imports.
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "24"
+          cache: "npm"
+
+      # The release does not wait for ci.yml: the plugin's suite runs here too,
+      # so a failure stops the release before the tag.
+      - name: Test the Vite plugin
+        run: |
+          npm ci
+          npm run -w @studiometa/foehn-vite-plugin test
+
+  # Folds the fragments, runs `npm version` (which moves the pins),
+  # commits `Release <version>`, tags, pushes and creates the GitHub release.
+  # The starter and the demo get a `version` too: `npm version --workspaces`
+  # writes one in every workspace.
+  release:
+    name: Release
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+      pull-requests: read
+    outputs:
+      version: ${{ steps.release.outputs.version }}
+      prerelease: ${{ steps.release.outputs.prerelease }}
+      dist-tag: ${{ steps.release.outputs.dist-tag }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Release
+        id: release
+        uses: weareikko/changelog@9d93346df9858eaa29007bd8530aad8f4c5b539a # 0.1.0
+        with:
+          command: release
+          version: ${{ inputs.version || 'auto' }}
+
+  # The Vite plugin is the one package that ships through npm rather than
+  # Packagist. "Re-run failed jobs" on this job publishes what a failed run
+  # left: npm skips a version that it already has.
   publish-npm:
     name: Publish the Vite plugin
-    needs: [prepare, test]
+    needs: release
+    if: needs.release.outputs.version != ''
     runs-on: ubuntu-latest
     permissions:
-      # Trusted publishing authenticates with this OIDC token, which is why no
-      # NPM_TOKEN appears below. Its other half is configured on npmjs.com: a trusted
-      # publisher that names this repository and this workflow file by name, so
-      # renaming this file revokes the job's ability to publish.
-      id-token: write
       contents: read
+      id-token: write
     steps:
-      - name: Checkout
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
-          ref: ${{ needs.prepare.outputs.version }}
+          ref: refs/tags/${{ needs.release.outputs.version }}
 
       - name: Setup Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
@@ -306,120 +198,56 @@ jobs:
           node-version: "24"
           cache: "npm"
 
-      # Node 24 ships an npm older than 11.5.1, the first release that recognises an
-      # OIDC environment. On anything older the publish looks for a token instead,
-      # finds none, and fails as unauthenticated.
-      - name: Install an npm that speaks OIDC
-        run: npm install -g npm@latest
-
-      - name: Install dependencies
-        run: npm ci
-
-      # npm takes the published version from package.json, not from the tag, so the
-      # two drifting apart would put out a version nobody tagged.
-      - name: Check the version matches the tag
-        env:
-          TAG: ${{ needs.prepare.outputs.version }}
+      # The action publishes with --ignore-scripts, and the `files` list is just
+      # dist/: this step builds it, and the test job ran the checks.
+      - name: Install and build
         run: |
-          VERSION=$(node -p "require('./packages/vite-plugin/package.json').version")
-          if [[ "$TAG" != "$VERSION" ]]; then
-            echo "::error::tag $TAG does not match packages/vite-plugin/package.json version $VERSION"
-            exit 1
-          fi
+          npm ci
+          npm run -w @studiometa/foehn-vite-plugin build
 
-      # ci.yml runs the plugin's own suite on branches and pull requests only. Without
-      # these two steps a release would publish a build that nothing had tested, from
-      # a dist/ that does not exist - it is generated, and the `files` list is just dist.
-      - name: Run tests
-        run: npm run -w @studiometa/foehn-vite-plugin test
-
-      - name: Build
-        run: npm run -w @studiometa/foehn-vite-plugin build
-
-      # The action publishes only a version npm does not have yet, and skips it
-      # otherwise, so "Re-run failed jobs" can replay this job after a failure past
-      # the publish. With no `token`, it authenticates through trusted publishing.
-      # It runs `npm publish --ignore-scripts`: the plugin has no lifecycle script,
-      # and the build step above writes dist/. The dist-tag is `next` for a
-      # prerelease and `latest` otherwise, computed in `prepare`.
+      # Trusted publishing (OIDC): no npm token. A prerelease goes to `next`.
       - name: Publish @studiometa/foehn-vite-plugin
         uses: JS-DevTools/npm-publish@0fd2f4369c5d6bcfcde6091a7c527d810b9b5c3f # v4.1.5
         with:
           package: packages/vite-plugin
           access: public
           provenance: true
-          tag: ${{ needs.prepare.outputs.dist-tag }}
-
-  release:
-    name: Create the GitHub release
-    needs: [prepare, test]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
-        with:
-          tag_name: ${{ needs.prepare.outputs.version }}
-          name: ${{ needs.prepare.outputs.version }}
-          body: |
-            ## What's Changed
-
-            ${{ needs.prepare.outputs.body }}
-
-            ---
-
-            **Full Changelog**: https://github.com/studiometa/foehn-framework/blob/${{ needs.prepare.outputs.version }}/CHANGELOG.md
-
-            ## Installation
-
-            ```bash
-            # Core framework
-            composer require studiometa/foehn:^${{ needs.prepare.outputs.version }}
-
-            # New project from starter
-            composer create-project studiometa/foehn-starter my-project
-            ```
-          draft: false
-          # `latest` on GitHub follows `latest` on npm: a prerelease is not it.
-          prerelease: ${{ needs.prepare.outputs.prerelease }}
-          make_latest: ${{ needs.prepare.outputs.prerelease == 'true' && 'false' || 'true' }}
-          generate_release_notes: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ needs.release.outputs.dist-tag }}
 
   # Packagist reads the mirrors, so the PHP packages are published by this split.
   split:
     name: Split
-    needs: prepare
+    needs: release
+    if: needs.release.outputs.version != ''
     permissions:
       contents: read
     uses: ./.github/workflows/split.yml
     with:
-      tag: ${{ needs.prepare.outputs.version }}
+      tag: ${{ needs.release.outputs.version }}
     secrets:
       MONOREPO_SPLIT_TOKEN: ${{ secrets.MONOREPO_SPLIT_TOKEN }}
 
   docker:
     name: Runtime image
-    needs: prepare
+    needs: release
+    if: needs.release.outputs.version != ''
     permissions:
       contents: read
       packages: write
     uses: ./.github/workflows/docker.yml
     with:
-      tag: ${{ needs.prepare.outputs.version }}
+      tag: ${{ needs.release.outputs.version }}
 
   # After the image: the demo builds on the `-db` image of this release.
   # A prerelease is not deployed: the demo shows the current release.
   deploy-demo:
     name: Deploy the demo
-    needs: [prepare, docker]
-    if: ${{ !contains(needs.prepare.outputs.version, '-') }}
+    needs: [release, docker]
+    if: needs.release.outputs.prerelease == 'false'
     permissions:
       contents: read
     uses: ./.github/workflows/deploy-demo.yml
     with:
-      tag: ${{ needs.prepare.outputs.version }}
+      tag: ${{ needs.release.outputs.version }}
     secrets:
       FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
