@@ -121,6 +121,13 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      # Every check below that something must NOT happen is written
+      # `if …; then …; exit 1; fi`, never `! …`: bash ignores `set -e` for a
+      # negated command, so a `!` line that fails lets the step carry on and
+      # pass (shellcheck SC2251). The output is captured before it is searched,
+      # so the command that produces it still fails the step on its own: piped
+      # into `grep`, its failure would read as "nothing found". And `grep` drops
+      # `-q`, so a failure prints what it found.
       - name: Check what the image provides
         run: |
           set -euo pipefail
@@ -138,35 +145,54 @@ jobs:
           # the Dockerfile builds its own: one per colourised fragment from
           # `php-cli-tools`, one per process from `react/promise`. `colorize()`
           # exercises the first; any command at all exercises the second.
-          ! run 'wp --allow-root --skip-wordpress eval "echo WP_CLI::colorize(\"%Gok%n\");" 2>&1' | grep -q 'Deprecated'
+          out="$(run 'wp --allow-root --skip-wordpress eval "echo WP_CLI::colorize(\"%Gok%n\");" 2>&1')"
+          if grep 'Deprecated' <<<"$out"; then
+            echo "::error::WP-CLI raised a deprecation"; exit 1
+          fi
 
           echo "The extensions a WordPress site needs are present"
+          # Captured once and searched after, not piped into `grep -q`: `-q`
+          # exits on the first match, the rest of the output then hits a closed
+          # pipe, and `pipefail` fails the step on a check that passed.
+          modules="$(run 'php -m')"
           for ext in mysqli gd exif intl; do
-            run "php -m" | grep -qx "$ext"
+            grep -qx "$ext" <<<"$modules"
           done
 
           echo "HTTPS is derived from the forwarded scheme, not from \$https alone"
-          run 'cat /etc/nginx/fastcgi_params' | grep -q 'HTTPS .*\$fcgi_https'
+          params="$(run 'cat /etc/nginx/fastcgi_params')"
+          # shellcheck disable=SC2016 # `$fcgi_https` is the literal NGINX variable
+          grep -q 'HTTPS .*\$fcgi_https' <<<"$params"
 
           echo "Every entrypoint is executable"
-          ! run 'ls -l /opt/docker/provision/entrypoint.d/*.sh' | grep -q -- '-rw-'
+          out="$(run 'ls -l /opt/docker/provision/entrypoint.d/*.sh')"
+          if grep -- '-rw-' <<<"$out"; then
+            echo "::error::An entrypoint is not executable"; exit 1
+          fi
 
           echo "The entrypoints are sourced, so none of them may exit or set shell options"
           # Every `*.sh` in the directory, not a list of prefixes: the previous
           # form named `[567]0-` and so stopped covering `40-` the day it landed.
           # A check that has to be edited to keep working is one that quietly
           # stops working.
-          ! run 'grep -hE "^(set |exit )" /opt/docker/provision/entrypoint.d/*.sh' | grep -q .
+          # `grep` exits 1 when nothing matches, which is the pass; 2 is an error.
+          out="$(run 'grep -hE "^(set |exit )" /opt/docker/provision/entrypoint.d/*.sh; test $? -le 1')"
+          if grep . <<<"$out"; then
+            echo "::error::An entrypoint exits or sets shell options"; exit 1
+          fi
 
           echo "The backup jobs are executable, and the file they source is not"
           for job in foehn-backup foehn-backup-maintenance foehn-backup-verify; do
             run "test -x /opt/docker/bin/$job"
           done
-          ! run 'test -x /opt/docker/bin/foehn-backup-common.sh'
+          if run 'test -x /opt/docker/bin/foehn-backup-common.sh'; then
+            echo "::error::foehn-backup-common.sh is executable"; exit 1
+          fi
 
           echo "The backup jobs are run, not sourced, so they must fail loudly"
           for job in foehn-backup foehn-backup-maintenance foehn-backup-verify; do
-            run "head -n 30 /opt/docker/bin/$job" | grep -q 'set -eu'
+            head="$(run "head -n 30 /opt/docker/bin/$job")"
+            grep -q 'set -eu' <<<"$head"
           done
 
           echo "What a backup needs is installed"
@@ -196,7 +222,10 @@ jobs:
           curl -fsS -o /dev/null http://localhost:8080/healthcheck
 
           echo "NGINX started without an emergency"
-          ! docker logs check 2>&1 | grep -q 'emerg'
+          logs="$(docker logs check 2>&1)"
+          if grep 'emerg' <<<"$logs"; then
+            echo "::error::NGINX logged an emergency"; exit 1
+          fi
 
           docker rm -f check
 
@@ -244,9 +273,11 @@ jobs:
           docker rm -f backup-on
 
           echo "An unusable configuration stops the container instead of shipping without backups"
-          ! docker run --name backup-broken \
+          if docker run --name backup-broken \
               -e BACKUP_ENABLED=true -e BACKUP_SCHEDULE=fortnightly \
-              foehn-wordpress:check >/dev/null 2>&1
+              foehn-wordpress:check >/dev/null 2>&1; then
+            echo "::error::The container accepted an unusable backup configuration"; exit 1
+          fi
           docker logs backup-broken 2>&1 | grep -q 'BACKUP_SCHEDULE="fortnightly" is not one of'
           docker rm -f backup-broken
 
@@ -303,7 +334,9 @@ jobs:
 
           echo "The second run finds the repository and does not claim to create it"
           timeout 120 docker exec backupsite /opt/docker/bin/foehn-backup | tee /tmp/second.log
-          ! grep -q 'created one' /tmp/second.log
+          if grep 'created one' /tmp/second.log; then
+            echo "::error::The second run claimed to create the repository"; exit 1
+          fi
 
           echo "The restore drill agrees the snapshot is a database"
           docker exec backupsite /opt/docker/bin/foehn-backup-verify | grep -q 'restores and is recognisable'
@@ -311,14 +344,18 @@ jobs:
           echo "A broken dump stores no snapshot — the reason for --stdin-from-command"
           before=$(docker exec backupsite restic snapshots --json | grep -o short_id | wc -l)
           docker exec backupsite sh -c 'printf "#!/bin/sh\necho \"-- partial\"\nexit 1\n" > /usr/local/bin/mariadb-dump && chmod +x /usr/local/bin/mariadb-dump'
-          ! docker exec backupsite /opt/docker/bin/foehn-backup
+          if docker exec backupsite /opt/docker/bin/foehn-backup; then
+            echo "::error::The backup succeeded with a broken dump"; exit 1
+          fi
           after=$(docker exec backupsite restic snapshots --json | grep -o short_id | wc -l)
           test "$before" = "$after"
           docker exec backupsite rm -f /usr/local/bin/mariadb-dump
 
           echo "Credentials that cannot open the repository fail fast and loudly"
           site wrongkey wrongsecret
-          ! timeout 120 docker exec backupsite /opt/docker/bin/foehn-backup 2>/tmp/bad.log
+          if timeout 120 docker exec backupsite /opt/docker/bin/foehn-backup 2>/tmp/bad.log; then
+            echo "::error::The backup succeeded with credentials that cannot open the repository"; exit 1
+          fi
           grep -q 'could not be opened or created' /tmp/bad.log
 
           docker rm -f backupsite backupdb rustfs
@@ -367,7 +404,10 @@ jobs:
             chown -R application:application /app/web'
           docker exec cronsite wp cron event schedule foehn_ci_event now --path=/app/web/wp --allow-root
           docker exec cronsite run-parts /etc/periodic/15min | grep -q 'Executed a total of'
-          ! docker exec cronsite wp cron event list --path=/app/web/wp --allow-root --fields=hook | grep -q foehn_ci_event
+          queued="$(docker exec cronsite wp cron event list --path=/app/web/wp --allow-root --fields=hook)"
+          if grep foehn_ci_event <<<"$queued"; then
+            echo "::error::The due event is still queued"; exit 1
+          fi
 
           # `foehn_cron_last_run` is the liveness signal `wp foehn verify
           # --profile=production` reads. Read straight out of the column rather
@@ -381,7 +421,7 @@ jobs:
           echo "That successful tick recorded a fresh, numeric heartbeat"
           first="$(beat)"
           echo "$first" | grep -qE '^[0-9]+$'
-          test "$(( $(date -u '+%s') - $first ))" -lt 300
+          test "$(( $(date -u '+%s') - first ))" -lt 300
 
           # A value nothing but a deployment script ever reads has no business
           # being fetched on every page load of the site. WordPress 6.6 spells
@@ -423,7 +463,9 @@ jobs:
           docker exec cronsite chown -R application:application /app/web/wp/wp-content/mu-plugins
           docker exec cronsite wp cron event schedule foehn_ci_fatal now --path=/app/web/wp --allow-root
           sleep 2
-          ! docker exec cronsite /opt/docker/bin/foehn-cron
+          if docker exec cronsite /opt/docker/bin/foehn-cron; then
+            echo "::error::foehn-cron succeeded although an event failed"; exit 1
+          fi
           test "$(beat)" = "$second"
           docker exec cronsite rm /app/web/wp/wp-content/mu-plugins/foehn-ci-fatal.php
 
@@ -464,7 +506,9 @@ jobs:
           test "$(docker exec cronsite sh -c 'ls -1 /etc/periodic/*/ | grep -c foehn-cron || true')" = "0"
 
           echo "A cadence busybox never calls stops the boot rather than pretending"
-          ! docker run --name cronbad -e FOEHN_CRON_SCHEDULE=every-5-minutes foehn-wordpress:check >/dev/null 2>&1
+          if docker run --name cronbad -e FOEHN_CRON_SCHEDULE=every-5-minutes foehn-wordpress:check >/dev/null 2>&1; then
+            echo "::error::The container accepted a cron cadence busybox never calls"; exit 1
+          fi
           docker logs cronbad 2>&1 | grep -q 'is not one of'
 
           docker rm -f cronsite crondb cronbad
@@ -480,15 +524,23 @@ jobs:
           run() { docker run --rm --entrypoint sh foehn-wordpress:check -c "$1"; }
 
           echo "No server binary, no service, no provisioning hook"
-          ! run 'command -v mariadbd'
-          ! run 'test -e /opt/docker/etc/supervisor.d/mariadb.conf'
-          ! run 'test -e /opt/docker/provision/entrypoint.d/30-mariadb.sh'
+          if run 'command -v mariadbd'; then
+            echo "::error::The plain image has a database server"; exit 1
+          fi
+          if run 'test -e /opt/docker/etc/supervisor.d/mariadb.conf'; then
+            echo "::error::The plain image has a database service"; exit 1
+          fi
+          if run 'test -e /opt/docker/provision/entrypoint.d/30-mariadb.sh'; then
+            echo "::error::The plain image has a database provisioning hook"; exit 1
+          fi
 
           echo "And nothing starts one at boot"
           docker run -d --name plain-nodb foehn-wordpress:check >/dev/null
           sleep 12
           docker exec plain-nodb curl -fsS -o /dev/null http://localhost/healthcheck
-          ! docker exec plain-nodb pidof mariadbd >/dev/null
+          if docker exec plain-nodb pidof mariadbd; then
+            echo "::error::The plain image started a database"; exit 1
+          fi
           docker rm -f plain-nodb
 
       - name: Check the -db variant runs its own database
@@ -521,11 +573,16 @@ jobs:
 
           echo "The provisioning database was handed over exactly once, before supervisord"
           test "$(docker logs variant 2>&1 | grep -c 'provisioning database stopped')" = "1"
-          ! docker logs variant 2>&1 | grep -q 'already listening, stopping it first'
+          logs="$(docker logs variant 2>&1)"
+          if grep 'already listening, stopping it first' <<<"$logs"; then
+            echo "::error::The provisioning database was still listening"; exit 1
+          fi
 
           echo "It listens on a socket and on no port at all"
           docker exec variant test -S /run/mysqld/mysqld.sock
-          ! docker exec variant mariadb --no-defaults --protocol=tcp -h 127.0.0.1 -u wp -psecret -e 'SELECT 1' >/dev/null 2>&1
+          if docker exec variant mariadb --no-defaults --protocol=tcp -h 127.0.0.1 -u wp -psecret -e 'SELECT 1' >/dev/null 2>&1; then
+            echo "::error::The database answers on a TCP port"; exit 1
+          fi
 
           echo "The legacy client name WP-CLI shells out to reaches it too"
           docker exec variant mysql --no-defaults -u wp -psecret -N -B -e 'SELECT 1' wordpress | grep -qx 1
@@ -544,7 +601,10 @@ jobs:
           done
 
           test "$(docker exec variant mariadb --no-defaults -u wp -psecret -N -B -e 'SELECT id FROM persisted' wordpress)" = "42"
-          ! docker logs --since 2m variant 2>&1 | grep -qi 'crash recovery'
+          logs="$(docker logs --since 2m variant 2>&1)"
+          if grep -i 'crash recovery' <<<"$logs"; then
+            echo "::error::The database ran crash recovery after a clean restart"; exit 1
+          fi
 
           echo "And it initialised once, on the first boot only"
           test "$(docker logs variant 2>&1 | grep -c 'empty data directory, initialising')" = "1"
