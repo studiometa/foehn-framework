@@ -14,6 +14,16 @@ This guide covers installing Føhn manually into an existing theme. For new proj
 composer require studiometa/foehn
 ```
 
+::: warning Add the `nette/php-generator` alias first
+Every release of `tempest/generation` requires `nette/php-generator` at exactly `4.2.1`, a version that is no longer on Packagist ([tempestphp/tempest-framework#2313](https://github.com/tempestphp/tempest-framework/issues/2313)). Until Tempest releases a fix, Composer cannot install Føhn unless your project's root `composer.json` installs `4.2.3` in its place:
+
+```bash
+composer require "nette/php-generator:4.2.3 as 4.2.1" studiometa/foehn
+```
+
+The alias works only in the root `composer.json`, which is why Føhn cannot carry it for you. The starter theme already has it.
+:::
+
 ## Theme Setup
 
 ### 1. Create the app directory

@@ -1,0 +1,3 @@
+### Fixed
+
+- A project without a lock file could not install Føhn: every `tempest/generation` release requires `nette/php-generator` at exactly `4.2.1`, which is no longer on Packagist ([tempestphp/tempest-framework#2313](https://github.com/tempestphp/tempest-framework/issues/2313)). The starter and the demo now install `4.2.3` in its place with the root alias `"nette/php-generator": "4.2.3 as 4.2.1"`, and the [installation guide](https://studiometa.github.io/foehn-framework/guide/installation) tells existing projects to add it. The code generation of the `make` commands gives the same files with `4.2.3`
