@@ -31,6 +31,7 @@
         }
     ],
     "require": {
+        "nette/php-generator": "4.2.3 as 4.2.1",
         "studiometa/foehn": "@dev",
         "studiometa/foehn-acf": "@dev",
         "studiometa/foehn-installer": "@dev"
