@@ -23,8 +23,8 @@
         "johnpbloch/wordpress": "^7.0",
         "nette/php-generator": "4.2.3 as 4.2.1",
         "studiometa/ui": "^1.10",
-        "studiometa/foehn": "0.6.4",
-        "studiometa/foehn-installer": "0.6.4"
+        "studiometa/foehn": "0.6.5",
+        "studiometa/foehn-installer": "0.6.5"
     },
     "repositories": [
         {
