@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file. Each pull r
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.7.0 - 2026-11-11
+
+### Changed
+
+- **Breaking:** the generated `wp-config.php` reads `DISABLE_WP_CRON` from the environment and turns the pseudo-cron off by default. A host must run `wp cron event run --due-now` on a schedule (the runtime image does), or set `DISABLE_WP_CRON=false` to get the pseudo-cron back. Run `composer install` to regenerate `wp-config.php`. See [The real cron](https://studiometa.github.io/foehn-framework/guide/verification#the-real-cron) ([#216])
+- Føhn writes the cron heartbeat itself: a `foehn_cron_heartbeat` event, scheduled every minute on a new `foehn_every_minute` recurrence, writes `foehn_cron_last_run` each time a real cron runs it. Any host that runs `wp cron event run --due-now` (a Forge scheduled job, a system crontab) now passes `cron-heartbeat`, not only the runtime image ([#216])
+- The `real-cron` check of `wp foehn verify --profile=production` passes when `DISABLE_WP_CRON` is on. `cron-heartbeat` proves that a real cron runs ([#216])
+- The runtime image's cron runs only `wp cron event run --due-now`, and logs nothing when only the heartbeat event ran ([#216])
+
+### Removed
+
+- **Breaking:** `FOEHN_CRON_ENABLED`. The generated `wp-config.php`, the runtime image and production verification no longer read it, and the image's cron can no longer be turned off. Use `DISABLE_WP_CRON=false` for the pseudo-cron ([#216])
+
+[#216]: https://github.com/studiometa/foehn-framework/pull/216
+
 ## 0.6.5 - 2026-10-22
 
 ### Fixed
