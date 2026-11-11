@@ -19,17 +19,21 @@ final readonly class AsContextProvider
 
 ## Parameters
 
-| Parameter   | Type            | Default | Description                             |
-| ----------- | --------------- | ------- | --------------------------------------- |
-| `templates` | `string\|array` | —       | Template pattern(s) to match (required) |
-| `priority`  | `int`           | `10`    | Execution priority (lower = earlier)    |
+| Parameter   | Type            | Default | Description                              |
+| ----------- | --------------- | ------- | ---------------------------------------- |
+| `templates` | `string\|array` | —       | View name pattern(s) to match (required) |
+| `priority`  | `int`           | `10`    | Execution priority (lower = earlier)     |
 
 ## Template Patterns
 
-- `'single'` — Exact match
-- `'single-*'` — Wildcard (matches `single-post`, `single-product`, etc.)
-- `'*'` — Global (all templates)
-- `['home', 'front-page']` — Multiple templates
+A pattern matches the view name passed to `ViewEngine::render()`, which is the path of the Twig file without `.twig`. It does not match WordPress template names such as `single-product`: those are what `#[AsTemplateController]` claims.
+
+- `'pages/single'` — Exact match
+- `'pages/single*'` — Wildcard (matches `pages/single`, `pages/single-product`, etc.)
+- `'*'` — Global (every view, blocks and patterns included)
+- `['pages/home', 'pages/front-page']` — Multiple views
+
+`wp foehn inspect views` shows which providers match each Twig file of the theme.
 
 ## Usage
 
@@ -61,7 +65,7 @@ final class GlobalContextProvider implements ContextProviderInterface
 ```php
 use App\Models\Product;
 
-#[AsContextProvider('single-product')]
+#[AsContextProvider('pages/single-product')]
 final class ProductContextProvider implements ContextProviderInterface
 {
     public function provide(TemplateContext $context): TemplateContext
@@ -80,7 +84,7 @@ final class ProductContextProvider implements ContextProviderInterface
 ### Wildcard Pattern
 
 ```php
-#[AsContextProvider('archive-*')]
+#[AsContextProvider('pages/archive*')]
 final class ArchiveContextProvider implements ContextProviderInterface
 {
     public function provide(TemplateContext $context): TemplateContext
@@ -97,7 +101,7 @@ final class ArchiveContextProvider implements ContextProviderInterface
 ### Multiple Templates
 
 ```php
-#[AsContextProvider(['home', 'front-page'])]
+#[AsContextProvider(['pages/home', 'pages/front-page'])]
 final class HomeContextProvider implements ContextProviderInterface
 {
     public function provide(TemplateContext $context): TemplateContext
