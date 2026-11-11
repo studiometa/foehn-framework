@@ -78,6 +78,12 @@ Indexing protection is not opt-in: outside `production`, Føhn always adds `noin
 - `make:post-type <name> --rewrite-slug=<slug> --meta=<key>[:<type>],…` writes the model with `#[AsPostType]`, one `#[AsPostMeta]` per field and a typed accessor for each (`start_date` gives `startDate(): ?string`). Types: `string` (default), `integer`, `number`, `boolean`. Store dates as `Y-m-d` strings. With `--meta`, `supports` includes `custom-fields`, so the block editor reads and saves the fields. The class extends `Studiometa\Foehn\Models\Post` unless the project's post types share another parent. No accessor is written for a key whose method the parent has (`date`, `link`, `title`…): read it with `post.meta('<key>')`.
 - The `make:post-type` notes give, for `single-<name>` and `archive-<name>`, the controller that claims it and the Twig file to create, next to the theme's views of the same kind (`templates/pages/single-<name>.twig` in the starter). The controller picks the view at runtime: check its `render()`/`renderFirst()` call.
 
+## Agent skills
+
+- `wp foehn skill --format=json` lists the skills of the installed packages: `name`, `description`, `package`, installed `version`, and `path` relative to the project root. The sources are every Composer package with a `skills/<name>/SKILL.md` (third-party packages too) and `node_modules/@studiometa/foehn-vite-plugin/skills`.
+- `wp foehn skill <name>` prints its `SKILL.md`. `--list-references` lists its reference files, and `--reference=<file>` prints one (`blocks`, `blocks.md` or `references/blocks.md`). An unknown skill or reference is an error that lists the valid names.
+- The command reads files only. When WordPress cannot boot, read the same files directly: `vendor/studiometa/*/skills/*/SKILL.md` and `node_modules/@studiometa/foehn-vite-plugin/skills/*/SKILL.md`.
+
 ## Discovery cache
 
 - `NONE`: scan on every request. `PARTIAL`: cache vendor packages, scan the app. `FULL`: cache everything.

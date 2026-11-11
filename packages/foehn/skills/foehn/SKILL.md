@@ -1,6 +1,6 @@
 ---
 name: foehn
-description: 'Build WordPress themes with studiometa/foehn, the attribute-based framework on Tempest discovery and Timber/Twig. Load it when code in a theme made from studiometa/foehn-starter uses Studiometa\Foehn classes or attributes such as #[AsAction], #[AsFilter], #[AsPostType], #[AsTaxonomy], #[AsPostMeta], #[AsBlock], #[AsBlockPattern], #[AsBlockBinding], #[AsTemplateController], #[AsContextProvider], #[AsMenu], #[AsImageSize], #[AsSettingsPage], #[AsRewriteRule], #[AsRestRoute], #[AsShortcode], #[AsCliCommand], #[AsJob], #[AsCron] or #[AsTwigExtension]; TemplateContext, ViewEngineInterface, BlockInterface, FoehnConfig, PageCacheConfig, ViteManifest or foehn_section(); or the wp foehn inspect, make:*, discovery:*, cache:*, verify and salts:generate commands.'
+description: 'Build WordPress themes with studiometa/foehn, the attribute-based framework on Tempest discovery and Timber/Twig. Load it when code in a theme made from studiometa/foehn-starter uses Studiometa\Foehn classes or attributes such as #[AsAction], #[AsFilter], #[AsPostType], #[AsTaxonomy], #[AsPostMeta], #[AsBlock], #[AsBlockPattern], #[AsBlockBinding], #[AsTemplateController], #[AsContextProvider], #[AsMenu], #[AsImageSize], #[AsSettingsPage], #[AsRewriteRule], #[AsRestRoute], #[AsShortcode], #[AsCliCommand], #[AsJob], #[AsCron] or #[AsTwigExtension]; TemplateContext, ViewEngineInterface, BlockInterface, FoehnConfig, PageCacheConfig, ViteManifest or foehn_section(); or the wp foehn inspect, skill, make:*, discovery:*, cache:*, verify and salts:generate commands.'
 ---
 
 # Føhn
@@ -10,6 +10,14 @@ Føhn is a WordPress framework for classic (PHP and Twig) themes. You declare Wo
 ACF blocks, ACF field groups and ACF options pages are not in this package. They are in `studiometa/foehn-acf`, with its own `foehn-acf` skill. The Vite build is in `@studiometa/foehn-vite-plugin`, with the `foehn-vite-plugin` skill.
 
 Documentation index (one Markdown file per page): https://studiometa.github.io/foehn-framework/llms.txt
+
+## Before you write code
+
+1. Run `wp foehn inspect --format=json` (`ddev wp …` in a DDEV project). It reports what the project already declares: post types and their meta keys, taxonomies, settings options, blocks and their attributes, templates and the controller that renders each one, Twig views and the context keys they receive, menus, routes, plugins and Vite entries. Read it before you add a class, so you reuse a post type, a meta key or a context key that exists instead of declaring it again. `wp foehn inspect <section>` reads one section.
+2. Create classes with a `make:*` command, not by hand. Run it with `--dry-run --format=json` first: it writes nothing and prints the `path`, `status` and `contents` of the file it would write. Run it again without `--dry-run` to write the file, then do what its `notes` say (the Twig template to create, for example).
+3. After you add a class or change an attribute, run `wp foehn discovery:clear`, then `wp foehn inspect` again to check that Føhn found it.
+
+`wp foehn skill` lists the skills of the installed packages at their installed versions, and `wp foehn skill <name>` prints one. Prefer it to a copy of this skill from another release.
 
 ## Mental model
 
@@ -326,4 +334,4 @@ Run `wp help foehn <command>` for the options of one command. See https://studio
 - [references/views.md](references/views.md): `TemplateContext`, controllers, context providers, DTOs, sections, Twig functions.
 - [references/blocks.md](references/blocks.md): native blocks, sidebar controls, containers, Interactivity API, patterns, bindings, categories.
 - [references/routes-and-commands.md](references/routes-and-commands.md): REST routes, rewrite rules, shortcodes, CLI commands, jobs and cron, Twig extensions, custom discoveries.
-- [references/operations.md](references/operations.md): config files, opt-in hooks, project model (`inspect`), generators (`make:*` without prompts, as JSON), discovery cache, page cache, query filters, images, verification.
+- [references/operations.md](references/operations.md): config files, opt-in hooks, project model (`inspect`), generators (`make:*` without prompts, as JSON), agent skills (`skill`), discovery cache, page cache, query filters, images, verification.
