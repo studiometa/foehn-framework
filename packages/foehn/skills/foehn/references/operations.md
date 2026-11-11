@@ -1,8 +1,8 @@
 # Operations
 
-Config files, opt-in hooks, the discovery cache, the page cache, query filters, images, the object cache, verification and security keys.
+Config files, opt-in hooks, the project model, the discovery cache, the page cache, query filters, images, the object cache, verification and security keys.
 
-Docs: [Configuration](https://studiometa.github.io/foehn-framework/guide/configuration.md), [Hooks](https://studiometa.github.io/foehn-framework/guide/hooks.md#built-in-hooks), [Discovery cache](https://studiometa.github.io/foehn-framework/guide/discovery-cache.md), [Page cache](https://studiometa.github.io/foehn-framework/guide/page-cache.md), [Query filters](https://studiometa.github.io/foehn-framework/guide/query-filters.md), [Images](https://studiometa.github.io/foehn-framework/guide/images.md), [Caching](https://studiometa.github.io/foehn-framework/guide/caching.md), [Verification](https://studiometa.github.io/foehn-framework/guide/verification.md), [Security](https://studiometa.github.io/foehn-framework/guide/security.md).
+Docs: [Configuration](https://studiometa.github.io/foehn-framework/guide/configuration.md), [CLI commands](https://studiometa.github.io/foehn-framework/guide/cli-commands.md#project-inspection), [Hooks](https://studiometa.github.io/foehn-framework/guide/hooks.md#built-in-hooks), [Discovery cache](https://studiometa.github.io/foehn-framework/guide/discovery-cache.md), [Page cache](https://studiometa.github.io/foehn-framework/guide/page-cache.md), [Query filters](https://studiometa.github.io/foehn-framework/guide/query-filters.md), [Images](https://studiometa.github.io/foehn-framework/guide/images.md), [Caching](https://studiometa.github.io/foehn-framework/guide/caching.md), [Verification](https://studiometa.github.io/foehn-framework/guide/verification.md), [Security](https://studiometa.github.io/foehn-framework/guide/security.md).
 
 ## Config files
 
@@ -51,6 +51,15 @@ These classes are in the framework, but discovery skips them until `FoehnConfig:
 All are under `Studiometa\Foehn\`. Do not copy their code into the theme. Add the class to `hooks`.
 
 Indexing protection is not opt-in: outside `production`, Føhn always adds `noindex, nofollow`, an `X-Robots-Tag` header, a `Disallow: /` robots.txt and turns off core sitemaps.
+
+## Project model
+
+- `wp foehn inspect --format=json` reports what the project declares, from the discovery items: `post-types`, `taxonomies`, `blocks`, `patterns`, `bindings`, `templates`, `context-providers`, `menus`, `image-sizes`, `rewrite-rules`, `rest-routes`, `cli-commands`, `plugins`, `theme-supports`, `vite`. It registers and writes nothing.
+- `wp foehn inspect <section> --format=json` reads one section. The JSON keeps the section name as its key. An unknown section is an error that lists the valid names.
+- `post-types` gives each type's Timber model class, its `#[AsPostMeta]` fields and its taxonomies, from either side of the link. A core type such as `post` is listed when a `#[AsTimberModel]` maps it, with `declared: false`.
+- `templates` lists each controller with the WordPress template names it handles. `context-providers` lists the view names each provider matches. `menus` gives the Twig variable of each location (`menus.<location>`).
+- `vite` lists the entry names `ViteManifest::enqueue()` takes, read from `dist/.vite/manifest.json`, and the dev server URL while `npm run dev` runs.
+- With the `FULL` discovery cache, a class added since the cache was written is missing from the report until `wp foehn discovery:clear`.
 
 ## Discovery cache
 
