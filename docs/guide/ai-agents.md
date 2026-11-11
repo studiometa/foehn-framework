@@ -13,7 +13,7 @@ Føhn ships [Agent Skills](https://agentskills.io/): reference files that teach 
 Every Føhn package ships its skill in the package itself: `vendor/studiometa/foehn/skills/`, `vendor/studiometa/foehn-acf/skills/` and `node_modules/@studiometa/foehn-vite-plugin/skills/`. An agent that runs in the project can read them with WP-CLI, at the versions in `composer.lock` and `package-lock.json`, with nothing to install or pin:
 
 ```bash
-wp foehn skill                           # list the skills: name, package, version, description, path
+wp foehn skill                           # list the skills: name, package, version, description
 wp foehn skill foehn                     # print SKILL.md
 wp foehn skill foehn --list-references   # list its reference files
 wp foehn skill foehn --reference=blocks  # print one

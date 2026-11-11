@@ -310,7 +310,7 @@ The skills come from two places:
 | `--list-references`  | List the reference files of the skill.                                                                                            |
 | `--format=json`      | Print a list as JSON.                                                                                                             |
 
-A list gives the skill `name` and `description` (from the `SKILL.md` frontmatter), the `package`, its installed `version`, and the `path` of the file relative to the project root, such as `vendor/studiometa/foehn/skills/foehn/SKILL.md`. An agent can read that path directly when WordPress cannot boot. The table shows the first sentence of each description; the JSON has all of it.
+The table gives the skill `name`, the `package`, its installed `version` and the first sentence of the `description` (from the `SKILL.md` frontmatter). The JSON gives the full `description` and also the `path` of the file relative to the project root, such as `vendor/studiometa/foehn/skills/foehn/SKILL.md`. An agent can read that path directly when WordPress cannot boot.
 
 When two packages ship a skill with the same name, both are listed and `wp foehn skill <name>` prints the first: Composer packages come before the Vite plugin, in package name order. An unknown skill or reference stops with an error that lists the valid names.
 
