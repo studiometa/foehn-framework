@@ -160,6 +160,17 @@ describe('Kernel block editor assets', function () {
         expect($actions)->toHaveCount(1);
     });
 
+    it('always registers the cron heartbeat event', function () {
+        Kernel::boot(dirname(__DIR__, 2) . '/src', []);
+
+        $actions = array_filter(
+            wp_stub_get_calls('add_action'),
+            fn(array $call) => $call['args']['hook'] === \Studiometa\Foehn\Cron\HeartbeatEvent::HOOK,
+        );
+
+        expect($actions)->toHaveCount(1);
+    });
+
     it('resolves and runs BlockEditorAssets from the registered callback', function () {
         Kernel::boot(dirname(__DIR__, 2) . '/src', []);
 

@@ -9,7 +9,7 @@ use Studiometa\Foehn\Smoke\Support\Site;
  *
  * The unit suite proves each check's judgement. What it cannot prove is that the profile
  * reads the site correctly: `WP_ENVIRONMENT_TYPE` arrives through a generated
- * `wp-config.php`, `DISABLE_WP_CRON` is derived from an environment variable, the salts
+ * `wp-config.php`, `DISABLE_WP_CRON` is read from an environment variable, the salts
  * are constants defined from `.env`, and `blog_public` and the heartbeat are database
  * rows. Every one of those is a way for a check that tests green to be reading the wrong
  * thing.
@@ -29,7 +29,7 @@ use Studiometa\Foehn\Smoke\Support\Site;
 const PRODUCTION_ENV = [
     'WP_ENVIRONMENT_TYPE' => 'production',
     'WP_DEBUG' => 'false',
-    'FOEHN_CRON_ENABLED' => 'true',
+    'DISABLE_WP_CRON' => 'true',
 ];
 
 /**
@@ -104,7 +104,7 @@ function productionFailedChecks(string $output): array
 }
 
 /**
- * Put a heartbeat in the database as the Docker cron runner would.
+ * Put a heartbeat in the database as the `foehn_cron_heartbeat` event would.
  */
 function productionHeartbeat(string $value): void
 {
@@ -125,9 +125,9 @@ afterAll(function () {
         return;
     }
 
-    // The heartbeat is deleted rather than restored: nothing on a local site writes it,
-    // so its real value is "absent" and leaving one behind would make the dashboard of
-    // a developer's own site claim a cron runner it does not have.
+    // The heartbeat is deleted rather than restored: a local site with no real cron never
+    // writes it, so its real value is "absent" and leaving one behind would make the
+    // dashboard of a developer's own site claim a cron runner it does not have.
     Site::run('wp option delete foehn_cron_last_run');
 
     $public = $GLOBALS['foehn_production_blog_public'] ?? null;
@@ -179,11 +179,10 @@ describe('verify --profile=production: one unsafe thing at a time', function () 
         expect($run['status'])->toBe(1);
     });
 
-    it('fails only the real-cron check when nothing runs the scheduler', function () {
-        // FOEHN_CRON_ENABLED is what the generated wp-config reads to decide
-        // DISABLE_WP_CRON, so turning it off leaves the site on visitor-driven cron —
-        // which a page cache removes.
-        expect(productionVerify(['FOEHN_CRON_ENABLED' => 'false'])['failed'])->toBe(['real-cron']);
+    it('fails only the real-cron check when the pseudo-cron is back on', function () {
+        // The generated wp-config reads DISABLE_WP_CRON from the environment, so
+        // `false` leaves the site on visitor-driven cron — which a page cache removes.
+        expect(productionVerify(['DISABLE_WP_CRON' => 'false'])['failed'])->toBe(['real-cron']);
     });
 
     it('fails only the indexing check when WordPress is discouraging search engines', function () {
@@ -227,10 +226,11 @@ describe('verify --profile=production: the cron heartbeat', function () {
         expect(productionVerify()['failed'])->toBe(['cron-heartbeat']);
     });
 
-    it('accepts the heartbeat the Docker runner writes, not autoloaded', function () {
-        // The contract between the runner and this profile: one option name, one shape.
-        // Written here the way `docker/wordpress/bin/foehn-cron` writes it.
-        productionHeartbeat((string) time());
+    it('accepts the heartbeat the cron event writes, not autoloaded', function () {
+        // The contract between the event and this profile: one option name, one shape.
+        // Written by running the event, the way `wp cron event run --due-now` does.
+        Site::run('wp option delete foehn_cron_last_run');
+        Site::run('wp cron event run foehn_cron_heartbeat');
 
         $autoload = Site::wp(
             'wp eval '

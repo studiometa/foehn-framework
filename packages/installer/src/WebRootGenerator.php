@@ -316,16 +316,12 @@ final class WebRootGenerator
             // WordPress's pseudo-cron runs scheduled events on page loads, which
             // stops working precisely where this stack is going: a page cache
             // serves hits without reaching PHP, so the busier the cache, the less
-            // often cron fires. The runtime image runs `wp cron event run` on a
-            // real schedule instead, and sets FOEHN_CRON_ENABLED so this knows to
-            // stand down rather than have both spawn loopback requests.
-            //
-            // Left on when nothing says otherwise: a site not served by that image
-            // has only the pseudo-cron, and turning it off here would leave it
-            // with no cron at all.
+            // often cron fires. So it is off unless DISABLE_WP_CRON=false, and the
+            // host runs `wp cron event run --due-now` on a real schedule instead:
+            // the runtime image's crontab, a Forge scheduled job, a system crontab.
             define(
                 'DISABLE_WP_CRON',
-                filter_var(\$env('FOEHN_CRON_ENABLED', false), FILTER_VALIDATE_BOOLEAN),
+                filter_var(\$env('DISABLE_WP_CRON', true), FILTER_VALIDATE_BOOLEAN),
             );
 
             // Load wp-content/advanced-cache.php, which is Foehn's page cache drop-in.

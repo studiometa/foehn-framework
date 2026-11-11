@@ -11,7 +11,7 @@ beforeEach(function () {
 });
 
 describe('Heartbeat', function () {
-    it('reads the timestamp the cron runner recorded', function () {
+    it('reads the timestamp the heartbeat event recorded', function () {
         $GLOBALS['wp_stub_options'][Heartbeat::OPTION] = 1_760_000_000;
 
         expect($this->heartbeat->recordedAt())->toBe(1_760_000_000);
@@ -27,8 +27,8 @@ describe('Heartbeat', function () {
     });
 
     it('has no timestamp when nothing has ever recorded one', function () {
-        // The state of every site until the Docker cron runner ships, and of every site
-        // whose runner is broken. Both have to read as "never" rather than as a number.
+        // The state of every site with no real cron, and of every site whose cron is
+        // broken. Both have to read as "never" rather than as a number.
         expect($this->heartbeat->recordedAt())->toBeNull();
         expect($this->heartbeat->age())->toBeNull();
     });

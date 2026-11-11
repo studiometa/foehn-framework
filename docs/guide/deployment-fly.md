@@ -159,17 +159,14 @@ This is the shape for a small, read-dominated, single-machine site. A larger pro
 
 A deployment that does scale to zero cannot keep the promise the previous section relies on. The container's cron is inside the container, so a stopped machine runs no scheduled events and — the part that bites later — records no heartbeat.
 
-`wp foehn verify --profile=production` reads [`foehn_cron_last_run`](./docker-image#the-heartbeat) and **fails a deploy whose heartbeat is missing or stale**. This is not decoration you can leave for later: a scale-to-zero site with nothing arranged will not pass production verification, and the correct reading of that failure is that the site's scheduled events are genuinely not running.
+`wp foehn verify --profile=production` reads [`foehn_cron_last_run`](./verification#the-real-cron) and **fails a deploy whose heartbeat is missing or stale**. This is not decoration you can leave for later: a scale-to-zero site with nothing arranged will not pass production verification, and the correct reading of that failure is that the site's scheduled events are genuinely not running.
 
-So a scale-to-zero deployment has to arrange an external scheduler — a Fly Machines cron, a GitHub Actions schedule, an external cron host, whatever the project already has — and that scheduler owes the site the same contract the in-container runner keeps:
+So a scale-to-zero deployment has to arrange an external scheduler — a Fly Machines cron, a GitHub Actions schedule, an external cron host, whatever the project already has. It owes the site one command, on a schedule that fits the [cron window](./verification#the-cron-window):
 
 - run `wp cron event run --due-now` against the same WordPress path;
-- record `foehn_cron_last_run` as a **non-autoloaded** option holding a Unix timestamp, and only after that command succeeded;
-- refresh it on a run where **zero events were due**, because that is the normal case and a heartbeat that only moves when work happens is useless as a liveness signal;
-- leave the previous value alone when WordPress or the database is unavailable, when event execution failed, or when the run overlapped one still in progress;
-- run as the site's application user rather than as root, so nothing under `wp-content` ends up owned by a user PHP is not.
+- run it as the site's application user rather than as root, so nothing under `wp-content` ends up owned by a user PHP is not.
 
-`docker/wordpress/bin/foehn-cron` in this repository is the reference implementation of exactly that, down to why it writes the option with `wp eval` instead of `wp option update`. An external scheduler that runs the events but skips the heartbeat produces the worst of both: events that fire, and a deploy gate that says they do not.
+The heartbeat needs nothing more. Føhn's `foehn_cron_heartbeat` event is due on every pass and writes `foehn_cron_last_run` itself. `docker/wordpress/bin/foehn-cron` in this repository is the reference runner.
 
 ## See Also
 

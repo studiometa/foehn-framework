@@ -2,41 +2,17 @@
 
 Current and proposed Føhn work, in one place. Detail lives in the linked active specifications; status lives here.
 
-Latest release: `0.6.3`.
-
 ## Active and proposed work
 
-| #   | Evolution                      | Status        | Spec                                                          | Est.  |
-| --- | ------------------------------ | ------------- | ------------------------------------------------------------- | ----- |
-| 11  | `#[AsAbility]` + AI guardrails | **Undecided** | [abilities_spec.md](abilities_spec.md)                        | 4–7 d |
-| 15  | Unified cache invalidation     | **Done**      | [operations_spec.md](operations_spec.md) §3                   | 2–3 d |
-| 16  | Production verification        | **Done**      | [diagnostics-command-spec.md](diagnostics-command-spec.md) §4 | 2–3 d |
-| 17  | Non-production indexing guard  | **Done**      | [operations_spec.md](operations_spec.md) §4                   | 1–2 d |
-| 18  | Real WP-Cron heartbeat         | **Done**      | [operations_spec.md](operations_spec.md) §5                   | 1–2 d |
-| 19  | Føhn admin cache controls      | **Done**      | [operations_spec.md](operations_spec.md) §§6–8                | 2–3 d |
-| 20  | Update verification            | **Done**      | [diagnostics-command-spec.md](diagnostics-command-spec.md) §3 | 2–3 d |
+| #   | Evolution                      | Status        | Spec                                   | Est.  |
+| --- | ------------------------------ | ------------- | -------------------------------------- | ----- |
+| 11  | `#[AsAbility]` + AI guardrails | **Undecided** | [abilities_spec.md](abilities_spec.md) | 4–7 d |
 
 ## Shipped foundation
 
-Items 1–10 and 12–14 are done. They include the static page cache, discovery introspection, post meta, the ACF package split, rewrite rules, settings pages, block bindings, the starter/demo split, object-storage integration, and releases from `0.5.0` through `0.6.3`.
+Items 1–10 and 12–20 are done. They include the static page cache, discovery introspection, post meta, the ACF package split, rewrite rules, settings pages, block bindings, the starter/demo split, object-storage integration, unified cache invalidation, the non-production indexing guard, the real-cron heartbeat, the Føhn admin cache controls, and `wp foehn verify` with its `updates` and `production` profiles.
 
 Current behavior is documented in `docs/` and demonstrated in `packages/starter/` and `packages/demo/`. The [page-cache architecture](page_cache_spec.md) and [object-storage decision](uploads_object_storage_spec.md) remain as design references.
-
-## Delivery order
-
-```text
-15 ──→ 19
-17 ─┬→ 16
-18 ─┘
-15 ───→ 16
-20      (independent after the shared verification report exists)
-```
-
-**15 precedes 19** because the dashboard, admin bar and WP-CLI must call one invalidation service instead of implementing three deletion paths.
-
-**17 and 18 precede the complete production profile in 16** because indexing activation and the cron heartbeat are the state that deployment verification reads. The shared verification result and command shell can land earlier, but `--profile=production` must not pass while planned checks are absent.
-
-**20 shares the command and report with 16 but not its policy.** `wp foehn verify --profile=updates` is a CI update gate that reports process-local PHP and WordPress diagnostics. `--profile=production` is a deployment gate that rejects unsafe production configuration. There is no separate `diagnostics`, `doctor`, or public health-check command.
 
 ## Undecided
 

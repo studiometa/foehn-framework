@@ -125,8 +125,8 @@ Eight checks, and the profile exists only because all eight do — a gate shippe
 | `debug`              | `WP_DEBUG` and `WP_DEBUG_DISPLAY` are both off.                                                                                  |
 | `indexing`           | WordPress indexing is enabled (`blog_public`) and Føhn's [non-production guard](./security#non-production-indexing) is inactive. |
 | `salts`              | All eight keys and salts exist, are unique, are long enough, and are not generated placeholders.                                 |
-| `real-cron`          | `DISABLE_WP_CRON` is on **and** a real cron runner is configured.                                                                |
-| `cron-heartbeat`     | [`foehn_cron_last_run`](./docker-image#the-heartbeat) is a timestamp inside the window this cadence allows.                      |
+| `real-cron`          | `DISABLE_WP_CRON` is on, so scheduled events do not depend on uncached traffic.                                                  |
+| `cron-heartbeat`     | [`foehn_cron_last_run`](#the-real-cron) is a timestamp inside the window this cadence allows.                                    |
 | `cron-backlog`       | No scheduled event is overdue past that same window.                                                                             |
 | `page-cache-storage` | If caching is on for production, its root resolves inside itself and is writable.                                                |
 
@@ -134,18 +134,39 @@ Eight checks, and the profile exists only because all eight do — a gate shippe
 
 `--output` is optional here. A deployment script wants a verdict, and its verdict is the exit status.
 
+### The real cron
+
+Føhn assumes a real cron runs WordPress's scheduled events. The pseudo-cron fires on page loads, and a page cache answers most of them without PHP, so on a quiet site behind a warm cache it stops.
+
+The generated `wp-config.php` reads `DISABLE_WP_CRON` from the environment, and it defaults to `true`. The host must then run this command on a schedule, as the site's application user:
+
+```bash
+wp cron event run --due-now
+```
+
+| Host           | How                                                                                           |
+| -------------- | --------------------------------------------------------------------------------------------- |
+| Runtime image  | Built in. See [Scheduled events](./docker-image#scheduled-events).                            |
+| Laravel Forge  | A scheduled job, every minute: `wp cron event run --due-now --path=/home/forge/<site>/web/wp` |
+| System crontab | `* * * * * cd /path/to/project && wp cron event run --due-now --quiet`                        |
+| ddev, locally  | `ddev exec wp cron event run --due-now` when you need it, or a `web_extra_daemons` loop       |
+
+Føhn schedules its own `foehn_cron_heartbeat` event every minute, on a `foehn_every_minute` recurrence. Each pass of the real cron finds it due and runs it, and it writes the current time to the `foehn_cron_last_run` option, not autoloaded. That option is the heartbeat `cron-heartbeat` reads, and the admin dashboard shows as **Last real run**. Nothing else writes it: a host without a real cron has no heartbeat.
+
+`DISABLE_WP_CRON=false` gives the pseudo-cron back, for a site that cannot have a real cron. Production verification then fails `real-cron`.
+
 ### The cron window
 
 `cron-heartbeat` and `cron-backlog` are judged against one number: twice the configured cadence plus five minutes. `FOEHN_CRON_SCHEDULE` sets the cadence and defaults to `15min`, so the default window is 35 minutes.
 
-Two intervals rather than one, because busybox's `run-parts` fires on a fixed period and a pass takes as long as its events take — a deploy landing between two ticks can legitimately see one interval of silence. One number for both checks, because if the runner has been passing on schedule then nothing can be overdue by longer than the window in which it should have run: a stale heartbeat and a backlog are two symptoms of one fault.
+A host that runs its cron every minute, as above, can keep that default: the window is a maximum, not an expected age. Two intervals rather than one, because a cron fires on a fixed period and a pass takes as long as its events take — a deploy landing between two ticks can legitimately see one interval of silence. One number for both checks, because if the runner has been passing on schedule then nothing can be overdue by longer than the window in which it should have run: a stale heartbeat and a backlog are two symptoms of one fault.
 
-**Scale-to-zero deployments must arrange an external scheduler.** A stopped machine records no heartbeat, so this check fails — correctly, because its scheduled events genuinely are not running. See [the scheduler contract](./deployment-fly#scale-to-zero-and-the-scheduler-you-then-owe-the-site).
+**Scale-to-zero deployments must arrange an external scheduler.** A stopped machine runs no event and records no heartbeat, so this check fails — correctly, because its scheduled events genuinely are not running. See [the scheduler contract](./deployment-fly#scale-to-zero-and-the-scheduler-you-then-owe-the-site).
 
 ### What it cannot prove
 
 - **That no CDN or web server adds an `X-Robots-Tag`.** `indexing` reads WordPress and Føhn. A deployment that needs the end-to-end guarantee has to inspect the public HTTP response.
-- **That every scheduled callback succeeded.** The heartbeat says the runner completed a pass. A job that throws on every run leaves a fresh heartbeat behind it; Action Scheduler monitoring is a separate concern.
+- **That every scheduled callback succeeded.** The heartbeat says a real cron ran the heartbeat event. A job that throws on every run can leave a fresh heartbeat behind it; Action Scheduler monitoring is a separate concern.
 - **That the keys are secret.** `salts` checks that they exist, differ and are not placeholders. It cannot know whether one was committed to a repository.
 
 ### Secrets

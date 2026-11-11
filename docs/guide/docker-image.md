@@ -76,32 +76,19 @@ Leave `S3_UPLOADS_BUCKET` unset and neither rule is written: uploads stay on loc
 
 ## Scheduled events
 
-WordPress's pseudo-cron fires on page loads. This image serves cache hits from NGINX without reaching PHP, so the better the cache works the less often cron runs — on a quiet site behind a warm cache, it stops. That failure is caused by the image, so the image fixes it: a real schedule in the container's crontab, on by default, and `DISABLE_WP_CRON` defined so the two mechanisms do not both run.
+WordPress's pseudo-cron fires on page loads. This image serves cache hits from NGINX without reaching PHP, so the better the cache works the less often cron runs — on a quiet site behind a warm cache, it stops. The generated `wp-config.php` turns the pseudo-cron off by default (`DISABLE_WP_CRON=true`), and the image runs `wp cron event run --due-now` from the container's crontab, always, as the application user.
 
 | Variable              | Default | Role                                                                             |
 | --------------------- | ------- | -------------------------------------------------------------------------------- |
-| `FOEHN_CRON_ENABLED`  | `true`  | `false` gives WordPress its pseudo-cron back                                     |
 | `FOEHN_CRON_SCHEDULE` | `15min` | `15min`, `hourly`, `daily`, `weekly` or `monthly`. Anything else refuses to boot |
 
 Cron cannot fire on a machine that is stopped, so a site using scale-to-zero gets no scheduled events and no error about it.
 
 ### The heartbeat
 
-A cron job that stops working is silent by nature: nothing is due, nothing complains, and the site looks fine until somebody notices the newsletter has not gone out since March. So each successful tick records a timestamp:
+A cron job that stops working is silent by nature: nothing is due, nothing complains, and the site looks fine until somebody notices the newsletter has not gone out since March. Føhn's `foehn_cron_heartbeat` event is due on every tick, and it writes the time to the `foehn_cron_last_run` option. `wp foehn verify --profile=production` reads it and fails a deploy whose heartbeat is missing or older than the cadence allows. See [The real cron](./verification#the-real-cron).
 
-| Option                | Value          | Autoload |
-| --------------------- | -------------- | -------- |
-| `foehn_cron_last_run` | Unix timestamp | off      |
-
-Not autoloaded, because a value only a deployment script reads should not be fetched on every page load. `wp foehn verify --profile=production` reads it and fails a deploy whose heartbeat is missing or older than the configured cadence allows.
-
-**A tick that found nothing due still refreshes it.** Nothing being due is the normal case on a site behind a warm cache, so a heartbeat that only moved when work happened would go stale on the quietest, healthiest sites and get them rejected for it. What the heartbeat claims is that the runner completed, not that it had something to do.
-
-If the option write itself fails, the tick fails with it. A run whose events fired but whose heartbeat never landed is a working site that verification declares dead, and that is worth a visible failure rather than a quiet one.
-
-Four cases deliberately leave the previous value alone, which is what makes a stale heartbeat mean something: no WordPress in the container, an unreachable database, failed event execution, and a tick that could not take the overlap lock because the previous one was still running. The first, second and fourth exit `0` — they are ordinary — and only failed execution exits non-zero.
-
-The heartbeat does not prove that every scheduled callback succeeded internally. It proves the runner reached the end of a run. An event whose callback throws makes the tick fail and is caught; an event whose callback quietly does the wrong thing is not this mechanism's job.
+A tick that cannot reach WordPress or the database exits `0` and runs nothing, so the heartbeat stays where it was. A tick that finds the previous one still holding the overlap lock does the same. A tick whose events fail exits non-zero. A tick that ran only the heartbeat event logs nothing.
 
 ## Database backups
 
@@ -272,7 +259,6 @@ Read from the same variables WordPress and `humanmade/s3-uploads` already read.
 | `S3_UPLOADS_PROXY_HOST`     | derived             | To go through a CDN, or an endpoint that follows neither style       |
 | `S3_UPLOADS_PROXY_RESOLVER` | `1.1.1.1 8.8.8.8`   | The resolver NGINX uses for the bucket's host                        |
 | `FOEHN_PAGE_CACHE_CONFIG`   | —                   | `false` generates no page cache rules and leaves it to the drop-in   |
-| `FOEHN_CRON_ENABLED`        | `true`              | `false` gives WordPress its pseudo-cron back                         |
 | `FOEHN_CRON_SCHEDULE`       | `15min`             | How often scheduled events run                                       |
 | `FOEHN_NGINX_CONF_DIR`      | `/app/config/nginx` | Where the project's own NGINX rules are read from                    |
 

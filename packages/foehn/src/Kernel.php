@@ -23,6 +23,7 @@ use Studiometa\Foehn\Contracts\ImageTransformer;
 use Studiometa\Foehn\Contracts\JobDispatcher;
 use Studiometa\Foehn\Contracts\ViewEngineInterface;
 use Studiometa\Foehn\Cron\Heartbeat;
+use Studiometa\Foehn\Cron\HeartbeatEvent;
 use Studiometa\Foehn\Discovery\DiscoveryLocations;
 use Studiometa\Foehn\Discovery\DiscoveryRunner;
 use Studiometa\Foehn\Images\NullTransformer;
@@ -500,6 +501,10 @@ final class Kernel
         // above: an indexing guard nobody remembered to opt into is a staging site in the
         // search results. It adds nothing at all in production. See IndexingProtection.
         $this->container->get(IndexingProtection::class)->register();
+
+        // Not opt-in either: production verification fails a site whose heartbeat is
+        // missing, and this event is what writes it. See HeartbeatEvent.
+        new HeartbeatEvent()->register();
 
         $this->registerAdminControls();
         $this->registerPageCache();
