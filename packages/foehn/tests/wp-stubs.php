@@ -28,6 +28,11 @@ function wp_stub_reset(): void
     $GLOBALS['wp_stub_acf_field_types'] = [];
     $GLOBALS['wp_stub_acf_stores'] = [];
     $GLOBALS['wp_stub_options'] = [];
+    $GLOBALS['wp_stub_site_options'] = [];
+    $GLOBALS['wp_stub_plugins'] = [];
+    $GLOBALS['wp_stub_mu_plugins'] = [];
+    // WordPress keeps add_theme_support() in this global, and nothing else lists it.
+    $GLOBALS['_wp_theme_features'] = [];
     $GLOBALS['wp_stub_attachments'] = [];
     $GLOBALS['wp_stub_post_meta'] = [];
     $GLOBALS['wp_stub_post_fields'] = [];
@@ -1462,6 +1467,33 @@ if (!function_exists('get_option')) {
     function get_option(string $option, mixed $default = false): mixed
     {
         return $GLOBALS['wp_stub_options'][$option] ?? $default;
+    }
+}
+
+if (!function_exists('get_site_option')) {
+    function get_site_option(string $option, mixed $default = false): mixed
+    {
+        return $GLOBALS['wp_stub_site_options'][$option] ?? $default;
+    }
+}
+
+if (!function_exists('get_plugins')) {
+    /**
+     * @return array<string, array<string, string>>
+     */
+    function get_plugins(string $plugin_folder = ''): array
+    {
+        return $GLOBALS['wp_stub_plugins'] ?? [];
+    }
+}
+
+if (!function_exists('get_mu_plugins')) {
+    /**
+     * @return array<string, array<string, string>>
+     */
+    function get_mu_plugins(): array
+    {
+        return $GLOBALS['wp_stub_mu_plugins'] ?? [];
     }
 }
 
