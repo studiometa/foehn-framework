@@ -13,3 +13,7 @@
 ### Removed
 
 - **Breaking:** `WpCli::prompt()`, `WpCli::previewGeneratedFile()` and `WpCli::reportFileExists()`. The `Scaffolder` service previews and reports generated files
+
+### Fixed
+
+- `make:block --interactive` names the view script Føhn loads, `assets/js/blocks/<name>.js`, instead of `assets/scripts/blocks/<name>/view.js`, which nothing loads

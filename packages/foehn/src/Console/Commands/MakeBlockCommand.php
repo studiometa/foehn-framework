@@ -87,7 +87,8 @@ final class MakeBlockCommand implements CliCommandInterface
         $notes = ["Create the Twig template: templates/blocks/{$name}.twig"];
 
         if ($interactive) {
-            $notes[] = "Create the Interactivity API view script: assets/scripts/blocks/{$name}/view.js";
+            // BlockAssets loads this file on the front end when the block is used.
+            $notes[] = "Create the Interactivity API view script: assets/js/blocks/{$name}.js";
         }
 
         $fullBlockName = $namespace . '/' . $name;

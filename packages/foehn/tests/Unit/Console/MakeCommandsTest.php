@@ -198,6 +198,19 @@ describe('make:block', function () {
         expect($attribute->name)->toBe('theme/counter')->and($attribute->interactivity)->toBeTrue();
         expect($contents)->toContain('InteractiveBlockInterface');
     });
+
+    it('points an interactive block to the view script BlockAssets loads', function () {
+        (new MakeBlockCommand($this->cli, $this->scaffolder))(['counter'], [
+            'class' => 'MakeCounterBlock',
+            'interactive' => true,
+            'dry-run' => true,
+            'format' => 'json',
+        ]);
+
+        $report = json_decode(wp_stub_get_calls('wp_cli_line')[0]['args']['message'], true, flags: JSON_THROW_ON_ERROR);
+
+        expect($report['notes'])->toContain('Create the Interactivity API view script: assets/js/blocks/counter.js');
+    });
 });
 
 describe('make:model', function () {
