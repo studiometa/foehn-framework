@@ -360,6 +360,14 @@ describe('ProjectInspector', function () {
         }
     });
 
+    it('passes over namespaced Timber directories instead of failing', function () {
+        mkdir($GLOBALS['wp_stub_template_directory'] . '/templates/pages', 0o777, true);
+        touch($GLOBALS['wp_stub_template_directory'] . '/templates/pages/single.twig');
+        Timber::$dirname = ['templates', 'shop' => ['shop-templates']];
+
+        expect(array_column(inspector()->section('views'), 'view'))->toBe(['pages/single']);
+    });
+
     it('reports menus with the context key each one is exposed as', function () {
         expect(inspectedRow(inspector()->section('menus'), 'location', 'primary'))->toBe([
             'location' => 'primary',

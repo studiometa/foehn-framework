@@ -200,13 +200,19 @@ final readonly class Templates
      */
     private function twigFiles(): array
     {
-        /** @var string|list<string> $dirname */
+        /** @var string|array<mixed> $dirname */
         $dirname = Timber::$dirname;
         $roots = array_unique([get_stylesheet_directory(), get_template_directory()]);
         $files = [];
 
         foreach ($roots as $root) {
             foreach ((array) $dirname as $directory) {
+                // Timber also takes `[namespace => directories]`, which Føhn does not
+                // set; its views are named `@namespace/…` and are not listed.
+                if (!is_string($directory)) {
+                    continue;
+                }
+
                 $base = rtrim($root, '/') . '/' . trim($directory, '/');
 
                 if (!is_dir($base)) {
