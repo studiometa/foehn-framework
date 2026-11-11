@@ -20,13 +20,13 @@ A top-level **Føhn** entry in the admin menu, visible to users with `manage_opt
 | Section responses     | How many of those are [section](/guide/section-rendering) fragments rather than whole pages. |
 | Total size            | What the cache directory holds on disk, headers sidecars included.                           |
 | Last full purge       | When the cache was last emptied in full. Per-URL and per-section clears are not recorded.    |
-| Last real run         | When the container's WP-Cron runner last succeeded, or **Never**.                            |
+| Last real run         | When a real cron last ran Føhn's heartbeat event, or **Never**.                              |
 
 The two environment rows are labelled with the constant names rather than with prose on purpose. When somebody reports that "it thinks it is staging", you both have to be looking at the same name.
 
 The **Effective** row is worth reading before anything else. `enabled: true` in an environment your config does not list writes nothing and serves nothing, and a page that reported only "enabled" would send you hunting a broken cache when what you have is a missing environment name.
 
-**Last real run is Never until the container's cron runner is in place.** That is the honest answer for a site with no real cron, and it is the same answer a site whose runner has broken gives — which is the reason the row exists.
+**Last real run is Never until a real cron runs `wp cron event run --due-now`.** That is the honest answer for a site with no real cron, and it is the same answer a site whose runner has broken gives — which is the reason the row exists. See [The real cron](./verification#the-real-cron).
 
 ## The two buttons on the page
 
