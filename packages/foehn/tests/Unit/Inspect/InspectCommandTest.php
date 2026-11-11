@@ -69,6 +69,16 @@ describe('wp foehn inspect', function () {
         ]);
     });
 
+    it('prints valid JSON when a plugin header is not UTF-8', function () {
+        // A Latin-1 header, as an old plugin file saved in that encoding has.
+        $GLOBALS['wp_stub_plugins'] = ['old/old.php' => ['Name' => "Caf\xE9", 'Version' => '1.0']];
+        $GLOBALS['wp_stub_options']['active_plugins'] = ['old/old.php'];
+
+        inspectCommand()(['plugins'], ['format' => 'json']);
+
+        expect(inspectJson()['plugins'][0])->toMatchArray(['name' => "Caf\u{FFFD}", 'file' => 'old/old.php']);
+    });
+
     it('prints a table by default', function () {
         inspectCommand()(['post-types'], []);
 

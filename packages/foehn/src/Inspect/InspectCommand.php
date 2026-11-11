@@ -106,9 +106,16 @@ final readonly class InspectCommand implements CliCommandInterface
         $report = $section === null ? $this->inspector->all() : [$section => $this->inspector->section($section)];
 
         if ($format === 'json') {
+            // Plugin headers and theme support arguments come from code Føhn does not
+            // control. One value json_encode() cannot take must not turn the whole
+            // report into an empty line: it is replaced, and the rest is printed.
             $this->cli->line((string) json_encode(
                 $report,
-                JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE,
+                JSON_PRETTY_PRINT
+                | JSON_UNESCAPED_SLASHES
+                | JSON_UNESCAPED_UNICODE
+                | JSON_INVALID_UTF8_SUBSTITUTE
+                | JSON_PARTIAL_OUTPUT_ON_ERROR,
             ));
 
             return;
