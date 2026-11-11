@@ -125,6 +125,27 @@ describe('ViteManifest', function () {
         expect(($this->calls)('wp_enqueue_script'))->toHaveCount(0);
     });
 
+    it('lists the entries the build declares', function () {
+        ($this->writeManifest)([
+            'assets/js/app.js' => [
+                'file' => 'assets/app-def456.js',
+                'isEntry' => true,
+                'css' => ['assets/app-imported-789.css'],
+            ],
+            // A shared chunk is in the manifest too, and is not something to enqueue.
+            '_vendor-123.js' => ['file' => 'assets/vendor-123.js'],
+        ]);
+
+        expect(($this->manifest)()->entries())->toBe([
+            ['entry' => 'assets/js/app.js', 'file' => 'assets/app-def456.js', 'css' => ['assets/app-imported-789.css']],
+        ]);
+        expect(($this->manifest)()->devServer())->toBeNull();
+    });
+
+    it('lists no entries without a build', function () {
+        expect(new ViteManifest($this->dist . '/absent', $this->uri)->entries())->toBe([]);
+    });
+
     describe('factories', function () {
         it('reads dist/ inside the active theme', function () {
             // The build has to live inside the theme: only the theme is served, so a
@@ -206,6 +227,13 @@ describe('ViteManifest', function () {
             // to the source path would 404.
             expect(($this->calls)('wp_enqueue_style'))->toHaveCount(0);
             expect(($this->calls)('wp_enqueue_script'))->toHaveCount(2);
+        });
+
+        it('reports the dev server and still lists the entries of the build', function () {
+            $manifest = ($this->manifest)();
+
+            expect($manifest->devServer())->toBe('http://localhost:5173');
+            expect(array_column($manifest->entries(), 'entry'))->toBe(['assets/css/app.css', 'assets/js/app.js']);
         });
 
         it('ignores an empty hot file', function () {

@@ -75,18 +75,21 @@ final class ImageSizeDiscovery implements Discovery
         /** @var class-string $className */
         $className = $item['className'];
 
-        $name = $attribute->name ?? self::deriveNameFromClass($className);
-
-        add_image_size($name, $attribute->width, $attribute->height, $attribute->crop);
+        add_image_size(self::sizeName($attribute, $className), $attribute->width, $attribute->height, $attribute->crop);
     }
 
     /**
-     * Derive image size name from class name (PascalCase to snake_case).
+     * The name a size registers under: its own `name`, or one derived from the class.
      *
-     * @param class-string $className Fully qualified class name
+     * Public so that a report of what is registered names a size the way WordPress
+     * knows it, rather than guessing from the class name.
      */
-    private static function deriveNameFromClass(string $className): string
+    public static function sizeName(AsImageSize $attribute, string $className): string
     {
+        if ($attribute->name !== null) {
+            return $attribute->name;
+        }
+
         $shortName = substr((string) strrchr('\\' . $className, '\\'), 1);
 
         // Remove common suffixes

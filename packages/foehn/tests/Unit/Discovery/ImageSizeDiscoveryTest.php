@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Studiometa\Foehn\Attributes\AsImageSize;
 use Studiometa\Foehn\Discovery\ImageSizeDiscovery;
 use Tests\Fixtures\ImageSizeFixture;
 use Tests\Fixtures\ImageSizeWithNameFixture;
@@ -63,23 +64,29 @@ describe('ImageSizeDiscovery', function () {
 
 describe('ImageSizeDiscovery name derivation', function () {
     it('converts PascalCase to snake_case', function () {
-        $derive = new ReflectionMethod(ImageSizeDiscovery::class, 'deriveNameFromClass');
+        $size = new AsImageSize(width: 100);
+        $derive = static fn(string $class): string => ImageSizeDiscovery::sizeName($size, $class);
 
-        expect($derive->invoke(null, 'App\\ImageSizes\\HeroImage'))
+        expect($derive('App\\ImageSizes\\HeroImage'))
             ->toBe('hero')
-            ->and($derive->invoke(null, 'App\\ImageSizes\\ThumbnailLarge'))
+            ->and($derive('App\\ImageSizes\\ThumbnailLarge'))
             ->toBe('thumbnail_large')
-            ->and($derive->invoke(null, 'App\\ImageSizes\\SocialShareImage'))
+            ->and($derive('App\\ImageSizes\\SocialShareImage'))
             ->toBe('social_share')
-            ->and($derive->invoke(null, 'App\\ImageSizes\\CardSize'))
+            ->and($derive('App\\ImageSizes\\CardSize'))
             ->toBe('card')
-            ->and($derive->invoke(null, 'App\\ImageSizes\\MyCustomImageSize'))
+            ->and($derive('App\\ImageSizes\\MyCustomImageSize'))
             ->toBe('my_custom');
     });
 
-    it('derives from a class in the global namespace', function () {
-        $derive = new ReflectionMethod(ImageSizeDiscovery::class, 'deriveNameFromClass');
+    it('keeps a name the attribute declares', function () {
+        expect(ImageSizeDiscovery::sizeName(new AsImageSize(width: 100, name: 'og'), 'App\\HeroImage'))->toBe('og');
+    });
 
-        expect($derive->invoke(null, 'HeroImage'))->toBe('hero');
+    it('derives from a class in the global namespace', function () {
+        $size = new AsImageSize(width: 100);
+        $derive = static fn(string $class): string => ImageSizeDiscovery::sizeName($size, $class);
+
+        expect($derive('HeroImage'))->toBe('hero');
     });
 });
