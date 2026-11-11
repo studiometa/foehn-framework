@@ -10,23 +10,24 @@ Current and proposed Føhn work, in one place. Detail lives in the linked active
 
 ## Shipped foundation
 
-Items 1–10 and 12–20 are done. They include the static page cache, discovery introspection, post meta, the ACF package split, rewrite rules, settings pages, block bindings, the starter/demo split, object-storage integration, unified cache invalidation, the non-production indexing guard, the real-cron heartbeat, the Føhn admin cache controls, and `wp foehn verify` with its `updates` and `production` profiles.
+Items 1–10 and 12–21 are done. They include the static page cache, discovery introspection, post meta, the ACF package split, rewrite rules, settings pages, block bindings, the starter/demo split, object-storage integration, unified cache invalidation, the non-production indexing guard, the real-cron heartbeat, the Føhn admin cache controls, `wp foehn verify` with its `updates` and `production` profiles, and the coding-agent tooling (#21): `wp foehn inspect` with the controller, providers and context keys of each template, `make:*` commands that never prompt and take `--dry-run` and `--format=json`, `wp foehn skill` to read the skills of the installed packages, and the starter's `AGENTS.md`.
 
 Current behavior is documented in `docs/` and demonstrated in `packages/starter/` and `packages/demo/`. The [page-cache architecture](page_cache_spec.md) and [object-storage decision](uploads_object_storage_spec.md) remain as design references.
 
 ## Undecided
 
-| Item                                      | Why it is not scheduled                                                                                                                                         |
-| ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `#[AsAbility]` + AI guardrails            | The differentiating item and nobody else has it, but not yet approved. See [abilities_spec.md](abilities_spec.md).                                              |
-| `#[AsAdminColumn]` / `#[AsAdminFilter]`   | WordPress 7.0 ships DataViews for content management. Confirm the classic list tables are not on the way out before automating them.                            |
-| `#[AsBlockStyle]` / `#[AsBlockVariation]` | Cheap and uncontroversial. Unscheduled, not rejected.                                                                                                           |
-| `blockHooks` on `#[AsBlock]`              | One argument on an existing attribute; `BlockJsonGenerator` does not emit it today.                                                                             |
-| Twig `{% cache %}` fragment caching       | Complements the shipped page cache by covering logged-in users and partials. Add it only when project use proves that a second cache lifecycle is worth owning. |
-| HTML API Twig filter                      | `WP_HTML_Tag_Processor` for post-processing rendered markup. Safer than regex, complements `BlockMarkupExtension`.                                              |
-| Theme-level script modules and import map | Block view scripts already use `wp_register_script_module`; the theme-wide half is missing.                                                                     |
-| Responsive block visibility (7.0)         | Expose through `ThemeJsonGenerator`.                                                                                                                            |
-| Speculative loading                       | WordPress 7.0 defaults to moderate when caching is detected. Verify that the shipped page cache is detected correctly before adding configuration.              |
+| Item                                      | Why it is not scheduled                                                                                                                                                                               |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `#[AsAbility]` + AI guardrails            | The differentiating item and nobody else has it, but not yet approved. See [abilities_spec.md](abilities_spec.md).                                                                                    |
+| `#[AsAdminColumn]` / `#[AsAdminFilter]`   | WordPress 7.0 ships DataViews for content management. Confirm the classic list tables are not on the way out before automating them.                                                                  |
+| `#[AsBlockStyle]` / `#[AsBlockVariation]` | Cheap and uncontroversial. Unscheduled, not rejected.                                                                                                                                                 |
+| `blockHooks` on `#[AsBlock]`              | One argument on an existing attribute; `BlockJsonGenerator` does not emit it today.                                                                                                                   |
+| Twig `{% cache %}` fragment caching       | Complements the shipped page cache by covering logged-in users and partials. Add it only when project use proves that a second cache lifecycle is worth owning.                                       |
+| HTML API Twig filter                      | `WP_HTML_Tag_Processor` for post-processing rendered markup. Safer than regex, complements `BlockMarkupExtension`.                                                                                    |
+| Theme-level script modules and import map | Block view scripts already use `wp_register_script_module`; the theme-wide half is missing.                                                                                                           |
+| Responsive block visibility (7.0)         | Expose through `ThemeJsonGenerator`.                                                                                                                                                                  |
+| Speculative loading                       | WordPress 7.0 defaults to moderate when caching is detected. Verify that the shipped page cache is detected correctly before adding configuration.                                                    |
+| Local dev MCP server                      | Deferred. `wp foehn inspect` covers the read side from WP-CLI, and its `ProjectInspector` service is the seam a local MCP adapter would wrap. Revisit when an agent needs what WP-CLI cannot give it. |
 
 ## Rejected, with reasons
 
