@@ -100,7 +100,7 @@ final class MakeImageSizeCommand implements CliCommandInterface
                 "Name: {$sizeName}",
                 "Dimensions: {$width}x{$height}",
                 'Crop: ' . ($crop ? 'yes' : 'no'),
-                "Use in Twig: {{ post.thumbnail.src('{$sizeName}') }} or {{ {$className}::url(image_id) }}",
+                "Use in Twig: {{ post.thumbnail.src('{$sizeName}') }}, or call {$className}::url(\$attachmentId) in PHP.",
                 'Run "wp media regenerate" to generate this size for existing images.',
             ],
         );

@@ -317,6 +317,20 @@ describe('make:image-size', function () {
         expect($attribute->crop)->toBeTrue();
         expect(file_get_contents($path))->not->toContain('DummyImageSize');
     });
+
+    it('gives a Twig hint that is valid Twig', function () {
+        (new MakeImageSizeCommand($this->cli, $this->scaffolder))(['MakeHeroWide'], [
+            'dry-run' => true,
+            'format' => 'json',
+        ]);
+
+        $report = json_decode(wp_stub_get_calls('wp_cli_line')[0]['args']['message'], true, flags: JSON_THROW_ON_ERROR);
+
+        expect($report['notes'])
+            ->toContain(
+                "Use in Twig: {{ post.thumbnail.src('make-hero-wide') }}, or call MakeHeroWide::url(\$attachmentId) in PHP.",
+            );
+    });
 });
 
 describe('make:menu and make:shortcode and make:hooks', function () {
@@ -328,6 +342,19 @@ describe('make:menu and make:shortcode and make:hooks', function () {
         expect($contents)->toContain("location: 'footer'");
         expect($contents)->toContain("Timber::get_menu('footer'");
         expect($contents)->not->toContain('DummyMenu');
+    });
+
+    it('points to the menus context key in its Twig hint', function () {
+        (new MakeMenuCommand($this->cli, $this->scaffolder))(['MainNav'], [
+            'location' => 'main-nav',
+            'dry-run' => true,
+            'format' => 'json',
+        ]);
+
+        $report = json_decode(wp_stub_get_calls('wp_cli_line')[0]['args']['message'], true, flags: JSON_THROW_ON_ERROR);
+
+        expect($report['notes'])
+            ->toContain("Use in Twig: loop over menus['main-nav'].items, or call MainNav::get() in PHP.");
     });
 
     it('generates a shortcode with the tag everywhere the stub named it', function () {

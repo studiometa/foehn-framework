@@ -17,3 +17,4 @@
 ### Fixed
 
 - `make:block --interactive` names the view script Føhn loads, `assets/js/blocks/<name>.js`, instead of `assets/scripts/blocks/<name>/view.js`, which nothing loads
+- `make:menu` and `make:image-size` give Twig hints that are valid Twig: `menus['<location>'].items` and `post.thumbnail.src('<size>')`. A class call such as `PrimaryMenu::get()` is now named as PHP

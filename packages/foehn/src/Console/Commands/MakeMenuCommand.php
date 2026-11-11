@@ -88,7 +88,8 @@ final class MakeMenuCommand implements CliCommandInterface
             [
                 "Location: {$location}",
                 "Description: {$description}",
-                "Use in Twig: {% set menu = {$className}::get() %}, then loop over menu.items.",
+                // MenuDiscovery adds every assigned location to the context under `menus`.
+                "Use in Twig: loop over menus['{$location}'].items, or call {$className}::get() in PHP.",
             ],
         );
     }
