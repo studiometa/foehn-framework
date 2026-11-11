@@ -18,8 +18,10 @@ use Studiometa\Foehn\Verification\VerificationResult;
  * has not gone out since March. It gets worse on exactly the stack Føhn is built for: a
  * cache hit is answered without PHP running, so the better the cache works the less
  * often WordPress's pseudo-cron fires, and on a quiet site behind a warm cache it stops
- * altogether. That is why the runtime image turns the pseudo-cron off and runs
- * `wp cron event run --due-now` on a real schedule instead.
+ * altogether. That is why Føhn turns the pseudo-cron off and expects a real cron to run
+ * `wp cron event run --due-now` on a schedule instead: the Docker image, a Forge
+ * scheduled job, a system crontab or a ddev daemon. Each pass runs the
+ * {@see \Studiometa\Foehn\Cron\HeartbeatEvent}, which writes the heartbeat.
  *
  * **No timestamp reaches the report.** The heartbeat is reported as a freshness *state*
  * and the window it was judged against — both the same on two runs of an unchanged site,
@@ -28,7 +30,7 @@ use Studiometa\Foehn\Verification\VerificationResult;
  * timestamps out for that reason.
  *
  * **What the heartbeat does not prove:** that every scheduled callback succeeded. It says
- * the runner completed a pass. A job that throws every time it runs leaves a fresh
+ * a runner completed a pass. A job that throws every time it runs can leave a fresh
  * heartbeat behind it, and Action Scheduler monitoring stays a separate concern.
  */
 final readonly class CronCheck implements Check
@@ -42,8 +44,8 @@ final readonly class CronCheck implements Check
     /**
      * The grace added to one missed tick before a heartbeat is called stale.
      *
-     * The window is `cadence + cadence + GRACE`: busybox's `run-parts` fires on a fixed
-     * period and a pass takes as long as the events take, so a deploy landing between
+     * The window is `cadence + cadence + GRACE`: a cron fires on a fixed period and a
+     * pass takes as long as the events take, so a deploy landing between
      * two ticks can legitimately see one interval's worth of silence. Two intervals plus
      * five minutes tolerates a single missed or slow tick and still fails a scheduler
      * that has been dead for an hour.
@@ -52,14 +54,12 @@ final readonly class CronCheck implements Check
 
     /**
      * @param bool $pseudoCronDisabled Whether `DISABLE_WP_CRON` is on
-     * @param bool $realCronEnabled Whether the runtime's real cron is configured
      * @param mixed $heartbeat The raw option value, so missing and malformed stay distinguishable
      * @param int $cadenceSeconds How often the runner is scheduled to pass
      * @param array<string, int> $overdue Hook name => seconds late, for events past their time
      */
     public function __construct(
         private bool $pseudoCronDisabled,
-        private bool $realCronEnabled,
         private mixed $heartbeat,
         private int $cadenceSeconds,
         private array $overdue = [],
@@ -83,51 +83,28 @@ final readonly class CronCheck implements Check
     }
 
     /**
-     * Both halves of "this site does not rely on visitors to run its scheduler".
+     * Whether the site leaves its scheduler to a real cron rather than to its visitors.
      *
-     * They are asserted together because either one alone is a misconfiguration.
-     * `DISABLE_WP_CRON` without a runner is a site whose events never fire at all — the
-     * worst of the three states, and silent. A runner without `DISABLE_WP_CRON` is
-     * belt-and-braces rather than broken, but it means every uncached page load still
-     * spawns a loopback request, which is the cost the runner was installed to remove.
+     * Only the constant is read. Whether a real cron actually runs is what the heartbeat
+     * proves, so `DISABLE_WP_CRON` on with nothing running fails `cron-heartbeat`, not
+     * this.
      */
     private function realCron(): VerificationResult
     {
-        $details = [
-            'disable_wp_cron' => $this->pseudoCronDisabled,
-            'real_cron_enabled' => $this->realCronEnabled,
-        ];
-
-        if (!$this->pseudoCronDisabled && !$this->realCronEnabled) {
-            return VerificationResult::fail(
-                self::REAL_CRON,
-                'Neither DISABLE_WP_CRON nor a real cron runner is enabled. Scheduled events '
-                . 'depend on visitor traffic, which a page cache removes.',
-                $details,
-            );
-        }
-
-        if (!$this->realCronEnabled) {
-            return VerificationResult::fail(
-                self::REAL_CRON,
-                'DISABLE_WP_CRON is on but no real cron runner is configured. Nothing runs the '
-                . 'scheduled events at all.',
-                $details,
-            );
-        }
+        $details = ['disable_wp_cron' => $this->pseudoCronDisabled];
 
         if (!$this->pseudoCronDisabled) {
             return VerificationResult::fail(
                 self::REAL_CRON,
-                'A real cron runner is configured but DISABLE_WP_CRON is off, so every uncached '
-                . 'page load still spawns a loopback cron request.',
+                'DISABLE_WP_CRON is off, so scheduled events depend on uncached traffic, which a '
+                . 'page cache removes, and every uncached page load spawns a loopback cron request.',
                 $details,
             );
         }
 
         return VerificationResult::pass(
             self::REAL_CRON,
-            'DISABLE_WP_CRON is on and a real cron runner is configured.',
+            'DISABLE_WP_CRON is on, so scheduled events are left to a real cron.',
             $details,
         );
     }
@@ -143,19 +120,19 @@ final readonly class CronCheck implements Check
         if ($this->heartbeat === false || $this->heartbeat === null || $this->heartbeat === '') {
             return VerificationResult::fail(
                 self::HEARTBEAT,
-                'No cron heartbeat has ever been recorded. Either the runner has never completed '
-                . 'a pass, or nothing is running it.',
+                'No cron heartbeat has ever been recorded. Nothing runs '
+                . '`wp cron event run --due-now`, or it has never completed a pass.',
                 $details,
             );
         }
 
         if (!is_numeric($this->heartbeat)) {
-            // A value that is not a timestamp means whatever wrote it was not the runner.
+            // A value that is not a timestamp means whatever wrote it was not the heartbeat event.
             // Reported as its own state rather than as "stale": the fix is different, and
             // an operator told "stale" would go looking at cron.
             return VerificationResult::fail(
                 self::HEARTBEAT,
-                'The cron heartbeat is not a timestamp, so whatever wrote it was not the runner.',
+                'The cron heartbeat is not a timestamp, so whatever wrote it was not the heartbeat event.',
                 [...$details, 'state' => 'invalid'],
             );
         }
@@ -167,7 +144,7 @@ final readonly class CronCheck implements Check
                 self::HEARTBEAT,
                 sprintf(
                     'The cron heartbeat is older than the %d seconds this cadence allows. '
-                    . 'A scale-to-zero deployment needs an external scheduler recording the same option.',
+                    . 'A real cron must run `wp cron event run --due-now` at least that often.',
                     $window,
                 ),
                 [...$details, 'state' => 'stale'],

@@ -218,36 +218,23 @@ describe('salts', function () {
 });
 
 describe('real cron', function () {
-    $cron = static fn(bool $disabled, bool $real): CronCheck => new CronCheck($disabled, $real, time(), 900);
+    it('passes when the pseudo-cron is off', function () {
+        $result = new CronCheck(true, time(), 900)->run()[0];
 
-    it('passes when the pseudo-cron is off and a runner is configured', function () use ($cron) {
-        expect($cron(true, true)->run()[0]->status)->toBe(VerificationStatus::Pass);
+        expect($result->status)->toBe(VerificationStatus::Pass);
+        expect($result->details)->toBe(['disable_wp_cron' => true]);
     });
 
-    it('fails hardest when the pseudo-cron is off and nothing runs the events', function () use ($cron) {
-        // The worst of the three states, and silent: DISABLE_WP_CRON with no runner
-        // means the events never fire at all.
-        $result = $cron(true, false)->run()[0];
+    it('fails when the pseudo-cron is on, because it depends on uncached traffic', function () {
+        $result = new CronCheck(false, time(), 900)->run()[0];
 
         expect($result->status)->toBe(VerificationStatus::Fail);
-        expect($result->summary)->toContain('Nothing runs the');
-    });
-
-    it('fails when a runner exists but the pseudo-cron was left on', function () use ($cron) {
-        $result = $cron(false, true)->run()[0];
-
-        expect($result->status)->toBe(VerificationStatus::Fail);
-        expect($result->summary)->toContain('loopback');
-    });
-
-    it('fails when neither is configured', function () use ($cron) {
-        expect($cron(false, false)->run()[0]->summary)->toContain('Neither');
+        expect($result->summary)->toContain('uncached traffic');
     });
 });
 
 describe('cron heartbeat', function () {
     $heartbeat = static fn(mixed $value): \Studiometa\Foehn\Verification\VerificationResult => new CronCheck(
-        true,
         true,
         $value,
         900,
@@ -271,7 +258,7 @@ describe('cron heartbeat', function () {
 
         expect($result->status)->toBe(VerificationStatus::Fail);
         expect($result->details['state'])->toBe('stale');
-        expect($result->summary)->toContain('scale-to-zero');
+        expect($result->summary)->toContain('wp cron event run --due-now');
     });
 
     it('fails a heartbeat that was never written', function () use ($heartbeat) {
@@ -300,7 +287,7 @@ describe('cron heartbeat', function () {
         // diffed against the last good one. The specification rules out timestamps for
         // the same reason.
         $recorded = time() - 60;
-        $result = new CronCheck(true, true, $recorded, 900)->run()[1];
+        $result = new CronCheck(true, $recorded, 900)->run()[1];
 
         expect(array_keys($result->details))->toBe(['state', 'maximum_age_seconds']);
         expect(json_encode($result->toArray(), JSON_THROW_ON_ERROR))->not->toContain((string) $recorded);
@@ -309,9 +296,9 @@ describe('cron heartbeat', function () {
     it('widens the window with the configured cadence', function () {
         $stale = time() - 7200;
 
-        expect(new CronCheck(true, true, $stale, 900)->run()[1]->details['state'])->toBe('stale');
+        expect(new CronCheck(true, $stale, 900)->run()[1]->details['state'])->toBe('stale');
         // Hourly: two hours plus the grace, so the same value is still fresh.
-        expect(new CronCheck(true, true, $stale, 3600)->run()[1]->details['state'])->toBe('fresh');
+        expect(new CronCheck(true, $stale, 3600)->run()[1]->details['state'])->toBe('fresh');
     });
 });
 
@@ -319,7 +306,7 @@ describe('cron backlog', function () {
     it('passes when nothing is late beyond the threshold', function () {
         // Every site between two ticks has something a little late. Lateness alone says
         // nothing, which is why the threshold exists.
-        $result = new CronCheck(true, true, time(), 900, ['wp_version_check' => 120])->run()[2];
+        $result = new CronCheck(true, time(), 900, ['wp_version_check' => 120])->run()[2];
 
         expect($result->status)->toBe(VerificationStatus::Pass);
         expect($result->details['overdue'])->toBe(0);
@@ -328,7 +315,7 @@ describe('cron backlog', function () {
     it('fails when an event is overdue past the threshold, and names the hooks', function () {
         // What the heartbeat cannot tell you: a runner passing promptly while one slow
         // job blocks everything behind it looks perfectly alive.
-        $result = new CronCheck(true, true, time(), 900, [
+        $result = new CronCheck(true, time(), 900, [
             'action_scheduler_run_queue' => 86400,
             'wp_version_check' => 60,
             'foehn_sweep' => 90000,
@@ -340,13 +327,13 @@ describe('cron backlog', function () {
     });
 
     it('reports the hooks sorted, so two runs of one site produce one report', function () {
-        $result = new CronCheck(true, true, time(), 900, ['zzz' => 90000, 'aaa' => 90000])->run()[2];
+        $result = new CronCheck(true, time(), 900, ['zzz' => 90000, 'aaa' => 90000])->run()[2];
 
         expect($result->details['hooks'])->toBe(['aaa', 'zzz']);
     });
 
     it('puts no lateness in seconds in the report', function () {
-        $result = new CronCheck(true, true, time(), 900, ['slow' => 86400])->run()[2];
+        $result = new CronCheck(true, time(), 900, ['slow' => 86400])->run()[2];
 
         expect(json_encode($result->toArray(), JSON_THROW_ON_ERROR))->not->toContain('86400');
     });
@@ -436,8 +423,8 @@ describe('page cache storage', function () {
 });
 
 describe('the heartbeat option both halves read', function () {
-    it('is the one name the runner writes and verification reads', function () {
-        // Stated once, in Cron\Heartbeat, so the Docker runner and this profile cannot
+    it('is the one name the heartbeat event writes and verification reads', function () {
+        // Stated once, in Cron\Heartbeat, so the event and this profile cannot
         // drift onto two option names — which would make a healthy site fail the gate.
         expect(Heartbeat::OPTION)->toBe('foehn_cron_last_run');
     });

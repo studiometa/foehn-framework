@@ -32,12 +32,13 @@ use Studiometa\Foehn\Verification\VerificationReport;
 final readonly class ProductionChecks
 {
     /**
-     * How often the runtime image's cron passes, per `FOEHN_CRON_SCHEDULE`.
+     * How often the real cron passes, per `FOEHN_CRON_SCHEDULE`.
      *
      * The names are busybox's `/etc/periodic/*` directories, which is what
      * `docker/wordpress/entrypoint.d/85-wp-cron.sh` validates against and symlinks into.
      * A value that is not one of these never gets scheduled at all, so the default here
-     * matches the entrypoint's rather than guessing something safer.
+     * matches the entrypoint's rather than guessing something safer. A host outside the
+     * image that runs its cron every minute keeps the default: the window is a maximum.
      *
      * @var array<string, int>
      */
@@ -66,7 +67,6 @@ final readonly class ProductionChecks
             new SaltsCheck(self::salts()),
             new CronCheck(
                 self::flag('DISABLE_WP_CRON'),
-                self::realCronEnabled(),
                 self::rawHeartbeat(),
                 self::cadenceSeconds(),
                 self::overdueEvents(),
@@ -123,20 +123,6 @@ final readonly class ProductionChecks
         }
 
         return $values;
-    }
-
-    /**
-     * Whether the runtime image's real cron is switched on.
-     *
-     * The same environment variable the entrypoint exports and the generated
-     * `wp-config.php` reads to decide `DISABLE_WP_CRON`, so the two halves of
-     * {@see CronCheck}'s first finding come from the same source the runtime uses.
-     */
-    private static function realCronEnabled(): bool
-    {
-        $value = getenv('FOEHN_CRON_ENABLED');
-
-        return is_string($value) && filter_var($value, FILTER_VALIDATE_BOOLEAN);
     }
 
     /**
