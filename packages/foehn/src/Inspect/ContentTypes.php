@@ -26,7 +26,8 @@ final readonly class ContentTypes
     ) {}
 
     /**
-     * Post types Føhn registers, and core types a #[AsTimberModel] maps to a class.
+     * Post types Føhn registers, and the ones it does not register but the project
+     * names: a #[AsTimberModel] maps it, or a #[AsPostMeta] gives it fields.
      *
      * A post type's taxonomies are the ones it names plus every #[AsTaxonomy] that
      * names it: either side can declare the link.
@@ -59,7 +60,7 @@ final readonly class ContentTypes
 
         // A type registered outside Føhn has the same keys, so a reader never tests for
         // one: what only the registering code knows is null.
-        foreach ($this->timberModels('post') as $name => $className) {
+        foreach ($this->namedTypes('post') as $name => $className) {
             $rows[$name] ??= [
                 'name' => $name,
                 'model' => $className,
@@ -98,7 +99,8 @@ final readonly class ContentTypes
     }
 
     /**
-     * Taxonomies Føhn registers, and core ones a #[AsTimberModel] maps to a class.
+     * Taxonomies Føhn registers, and the ones it does not register but the project
+     * names: a #[AsTimberModel] maps it, or a #[AsPostMeta] gives it fields.
      *
      * @return list<array<string, mixed>>
      */
@@ -124,7 +126,7 @@ final readonly class ContentTypes
             ];
         }
 
-        foreach ($this->timberModels('term') as $name => $className) {
+        foreach ($this->namedTypes('term') as $name => $className) {
             $rows[$name] ??= [
                 'name' => $name,
                 'model' => $className,
@@ -161,14 +163,26 @@ final readonly class ContentTypes
     }
 
     /**
-     * The #[AsTimberModel] classes of one object type, by type name.
+     * The types of one object type the project names, by type name: the
+     * #[AsTimberModel] class that maps each one, or null when only a #[AsPostMeta]
+     * subtype names it.
      *
      * @param 'post'|'term' $type
-     * @return array<string, string>
+     * @return array<string, ?string>
      */
-    private function timberModels(string $type): array
+    private function namedTypes(string $type): array
     {
-        $models = [];
+        $types = [];
+
+        foreach ($this->items->of(PostMetaDiscovery::class) as $item) {
+            /** @var AsPostMeta $attribute */
+            $attribute = $item['attribute'];
+            $subtype = (string) $item['objectSubtype'];
+
+            if ($attribute->objectType === $type && $subtype !== '') {
+                $types[$subtype] = null;
+            }
+        }
 
         foreach ($this->items->of(TimberModelDiscovery::class) as $item) {
             if ($item['type'] !== $type) {
@@ -178,17 +192,17 @@ final readonly class ContentTypes
             /** @var AsTimberModel $attribute */
             $attribute = $item['attribute'];
 
-            $models[$attribute->name] = (string) $item['className'];
+            $types[$attribute->name] = (string) $item['className'];
         }
 
-        return $models;
+        return $types;
     }
 
     /**
      * The #[AsPostMeta] fields registered for one post type or taxonomy.
      *
-     * A field registered without a subtype applies to every object of its type, so
-     * it is listed on each of them.
+     * A field whose subtype discovery could not resolve is registered without one,
+     * and so applies to every object of its type: it is listed on each of them.
      *
      * @param 'post'|'term' $objectType
      * @return list<array<string, mixed>>
@@ -205,7 +219,9 @@ final readonly class ContentTypes
                 continue;
             }
 
-            if ($item['objectSubtype'] !== null && $item['objectSubtype'] !== $subtype) {
+            $itemSubtype = (string) $item['objectSubtype'];
+
+            if ($itemSubtype !== '' && $itemSubtype !== $subtype) {
                 continue;
             }
 

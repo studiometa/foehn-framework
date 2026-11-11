@@ -101,8 +101,9 @@ describe('ProjectInspector', function () {
             // Named by the post type, and by #[AsTaxonomy(postTypes:)] on the other side.
             'taxonomies' => ['category', 'brand'],
         ]);
-        expect(array_column($product['meta'], 'key'))->toBe(['price', 'sku']);
-        expect($product['meta'][0])->toBe([
+        // `featured` has no subtype, so WordPress registers it for every post type.
+        expect(array_column($product['meta'], 'key'))->toBe(['featured', 'price', 'sku']);
+        expect($product['meta'][1])->toBe([
             'key' => 'price',
             'type' => 'number',
             'single' => true,
@@ -116,7 +117,14 @@ describe('ProjectInspector', function () {
         $post = inspectedRow(inspector()->section('post-types'), 'name', 'post');
 
         expect($post)->toMatchArray(['model' => Article::class, 'declared' => false, 'singular' => null]);
-        expect(array_column($post['meta'], 'key'))->toBe(['subtitle']);
+        expect(array_column($post['meta'], 'key'))->toBe(['featured', 'subtitle']);
+    });
+
+    it('reports a post type that only a meta field names', function () {
+        $variation = inspectedRow(inspector()->section('post-types'), 'name', 'product_variation');
+
+        expect($variation)->toMatchArray(['model' => null, 'declared' => false, 'taxonomies' => []]);
+        expect(array_column($variation['meta'], 'key'))->toBe(['featured', 'gtin']);
     });
 
     it('gives a declared and an undeclared post type the same keys', function () {

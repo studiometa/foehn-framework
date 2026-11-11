@@ -84,10 +84,13 @@ describe('wp foehn inspect', function () {
 
         $output = inspectOutput();
 
-        // product, core post through its Timber model, and the framework's own page model.
-        expect($output)->toContain('post-types — 3');
+        // product, core post through its Timber model, the framework's own page model,
+        // and product_variation through a meta field.
+        expect($output)->toContain('post-types — 4');
         expect($output)->toMatch('/name\s+model\s+taxonomies\s+meta/');
-        expect($output)->toMatch('/product\s+' . preg_quote(Product::class, '/') . '\s+category, brand\s+price, sku/');
+        expect($output)->toMatch(
+            '/product\s+' . preg_quote(Product::class, '/') . '\s+category, brand\s+featured, price, sku/',
+        );
         expect(wp_stub_get_calls('wp_cli_error'))->toBe([]);
     });
 

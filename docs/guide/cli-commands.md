@@ -110,7 +110,7 @@ wp foehn inspect post-types --format=json
 | `theme-supports`    | Every `add_theme_support()` feature, with its arguments                                                             |
 | `vite`              | The entry points of the theme build (`dist/.vite/manifest.json`), and the dev server URL while `npm run dev` runs   |
 
-A post type or taxonomy that WordPress registers, such as `post` or `category`, is listed when a `#[AsTimberModel]` maps it to a class. Its `declared` field is then `false`, and the arguments only the registering code knows are `null`.
+A post type or taxonomy that Føhn does not register, such as `post`, `category` or a plugin's post type, is listed when a `#[AsTimberModel]` maps it to a class or a `#[AsPostMeta]` names it as its subtype. Its `declared` field is then `false`, `model` is `null` when no Timber model maps it, and the arguments only the registering code knows are `null`. A `#[AsPostMeta]` field with no subtype applies to every post type or taxonomy, so it is listed on each of them.
 
 With the `FULL` discovery cache, a class added after the cache was written is missing from the report until you run `wp foehn discovery:clear`.
 
