@@ -64,11 +64,12 @@ wp foehn make:image-size HeroImage --width=1920 --height=0
 
 ### Global Options
 
-All scaffolding commands support these options:
+All scaffolding commands, the `foehn-acf` ones included, support these options:
 
 ```bash
---force      # Overwrite existing files
---dry-run    # Preview what would be created without creating
+--force          # Overwrite an existing file
+--dry-run        # Write nothing: show the file that would be written
+--format=json    # Print the result as JSON (default: text)
 ```
 
 Example with dry-run:
@@ -76,6 +77,38 @@ Example with dry-run:
 ```bash
 wp foehn make:model Product --post-type --dry-run
 ```
+
+### Scripts and Coding Agents
+
+A scaffolding command never asks a question. Every value has a default or comes from an option, so a script or a coding agent can run it without a terminal:
+
+- A missing name is an error. The command writes nothing and exits with status `1`.
+- A file that already exists is an error, unless you give `--force`. The command leaves the file as it is and exits with status `1`. A `--dry-run` reports the same error, because the real run would refuse.
+- An unknown `--format` is an error, before anything is generated.
+
+With `--format=json`, the command prints one JSON object on standard output. Errors go to standard error.
+
+```bash
+wp foehn make:block hero --format=json
+```
+
+```json
+{
+  "dryRun": false,
+  "files": [{ "path": "/var/www/html/theme/app/Blocks/HeroBlock.php", "status": "created" }],
+  "notes": ["Create the Twig template: templates/blocks/hero.twig"]
+}
+```
+
+| Key                | Value                                                                                                                  |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| `dryRun`           | `true` when `--dry-run` was given.                                                                                     |
+| `files[].path`     | The absolute path of the file.                                                                                         |
+| `files[].status`   | `created`, `overwritten` or `exists` (left as it is). With `--dry-run`: `would-create`, `would-overwrite` or `exists`. |
+| `files[].contents` | With `--dry-run` only: the contents the command would write.                                                           |
+| `notes`            | The next steps, for example the Twig template to create. Can be empty.                                                 |
+
+When the status is `exists`, the JSON is printed and the command then fails with status `1`.
 
 ### Project Inspection
 
