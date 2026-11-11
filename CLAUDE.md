@@ -93,8 +93,6 @@ npm run fmt:check          # Check markdown formatting
 See `.planning/` for current and proposed work:
 
 - `roadmap.md` - Current status, delivery order, and recorded decisions
-- `operations_spec.md` - Approved operational safeguards and cache controls
-- `diagnostics-command-spec.md` - Approved update and production verification
 - `abilities_spec.md` - Undecided WordPress Abilities API proposal
 
 Implemented behavior is documented in `docs/`. Maintained examples live in `packages/starter/` and `packages/demo/`.
