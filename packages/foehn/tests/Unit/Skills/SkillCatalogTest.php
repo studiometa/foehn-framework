@@ -197,6 +197,22 @@ describe('Frontmatter', function () {
         ]);
     });
 
+    it('folds a plain or quoted value that goes on over indented lines', function () {
+        expect(Frontmatter::parse(<<<'MD'
+            ---
+            name: widgets
+            description: Build widgets
+              with acme/widgets.
+            quoted: 'one
+              two'
+            ---
+            MD))->toBe([
+            'name' => 'widgets',
+            'description' => 'Build widgets with acme/widgets.',
+            'quoted' => 'one two',
+        ]);
+    });
+
     it('reads nothing without a frontmatter block', function () {
         expect(Frontmatter::parse("# Title\n\nname: not a field\n"))->toBe([]);
     });

@@ -40,6 +40,13 @@ final class Frontmatter
             $block = [];
 
             if (preg_match('/^([>|])[+-]?$/', $value, $block) !== 1) {
+                // A plain or quoted value can go on over indented lines, which
+                // fold into one line. An empty value starts a nested mapping or
+                // list instead, which is skipped.
+                while ($value !== '' && ($index + 1) < $count && preg_match('/^[ \t]+\S/', $lines[$index + 1]) === 1) {
+                    $value .= ' ' . trim($lines[++$index]);
+                }
+
                 $fields[$field[1]] = self::scalar($value);
 
                 continue;
