@@ -8,7 +8,35 @@ Føhn ships [Agent Skills](https://agentskills.io/): reference files that teach 
 | `foehn-acf`         | `studiometa/foehn-acf`          | `packages/acf/skills/foehn-acf/SKILL.md`                 |
 | `foehn-vite-plugin` | `@studiometa/foehn-vite-plugin` | `packages/vite-plugin/skills/foehn-vite-plugin/SKILL.md` |
 
-## Install
+## Read the installed skills
+
+Every Føhn package ships its skill in the package itself: `vendor/studiometa/foehn/skills/`, `vendor/studiometa/foehn-acf/skills/` and `node_modules/@studiometa/foehn-vite-plugin/skills/`. An agent that runs in the project can read them with WP-CLI, at the versions in `composer.lock` and `package-lock.json`, with nothing to install or pin:
+
+```bash
+wp foehn skill                           # list the skills: name, package, version, description, path
+wp foehn skill foehn                     # print SKILL.md
+wp foehn skill foehn --list-references   # list its reference files
+wp foehn skill foehn --reference=blocks  # print one
+```
+
+The command lists every installed Composer package that has a `skills/<name>/SKILL.md`, so a third-party package that ships a skill is listed too. The Vite plugin skill is listed when `node_modules/@studiometa/foehn-vite-plugin/skills` exists; versions of the plugin up to 0.7.0 do not publish it. See [CLI Commands](./cli-commands.md#agent-skills) for the options.
+
+When WordPress cannot boot, `wp foehn skill` cannot run. The agent then reads the same files: `vendor/studiometa/*/skills/*/SKILL.md` and `node_modules/@studiometa/foehn-vite-plugin/skills/*/SKILL.md`.
+
+### Project instructions
+
+The starter ships an `AGENTS.md` at the project root, and a `CLAUDE.md` that imports it for Claude Code. It tells the agent to:
+
+1. read the skills with `wp foehn skill`, or from `vendor/` and `node_modules/` when WordPress cannot boot;
+2. run `wp foehn inspect --format=json` to read what the project already declares: post types and their meta keys, settings, blocks and their attributes, templates and their controllers, Twig views and their context keys, menus, routes, plugins and Vite entries;
+3. create classes with the `make:*` commands, first with `--dry-run --format=json`, which writes nothing and prints the file it would write;
+4. run `wp foehn discovery:clear` after it adds a class or changes an attribute.
+
+A project made before this file existed can copy [`AGENTS.md` from the starter](https://github.com/studiometa/foehn-framework/blob/main/packages/starter/AGENTS.md).
+
+## Install in the agent
+
+Agents that do not run commands in the project, or that load skills only from their own skill directory, can install the skills with a CLI.
 
 The [`skills` CLI](https://github.com/vercel-labs/skills) installs the skills from the GitHub repository for Claude Code, Cursor, Codex, Copilot and more than 40 other agents:
 
