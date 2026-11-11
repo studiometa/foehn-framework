@@ -41,18 +41,37 @@ it('prints a summary of the project model as JSON', function () {
 
     expect($result['status'])->toBe(0, $result['output']);
     expect($result['report'])->toBeArray($result['output']);
-    expect(array_keys($result['report']['summary']))->toContain('post-types', 'templates', 'menus', 'plugins', 'vite');
-    expect($result['report']['summary']['menus'])->toContain('header');
+    expect(array_keys($result['report']['summary']))
+        ->toContain('post-types', 'settings', 'templates', 'views', 'menus', 'plugins', 'vite');
 });
 
 it('reports what the starter declares', function () {
     $report = inspectSite('--all')['report'];
 
-    expect(array_column($report['templates'], 'class'))->toContain('App\\Controllers\\SingleController');
+    expect(array_column($report['templates'], 'controller'))->toContain('App\\Controllers\\SingleController');
     expect(array_column($report['context-providers'], 'class'))
         ->toContain('App\\ContextProviders\\GlobalContextProvider');
     expect(array_column($report['menus'], 'location'))->toContain('header');
     expect(array_column($report['cli-commands'], 'command'))->toContain('foehn inspect');
+});
+
+it('reports the controller of a template and the context of a Twig view', function () {
+    $report = inspectSite('templates views')['report'];
+
+    $single = array_values(array_filter(
+        $report['templates'],
+        static fn(array $row): bool => $row['template'] === 'single',
+    ));
+    $view = array_values(array_filter(
+        $report['views'],
+        static fn(array $row): bool => $row['view'] === 'pages/single',
+    ));
+
+    expect($single[0]['controller'])->toBe('App\\Controllers\\SingleController');
+    expect($single[0]['context']['base'])->toContain('post', 'site', 'menus');
+    expect($view[0]['file'])->toBe('templates/pages/single.twig');
+    expect($view[0]['providers'])->toContain('App\\ContextProviders\\GlobalContextProvider');
+    expect(array_column($view[0]['context']['declared'], 'key'))->toContain('current_year');
 });
 
 it('prints the named sections on their own', function () {

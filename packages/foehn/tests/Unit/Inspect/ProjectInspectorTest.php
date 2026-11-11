@@ -7,17 +7,22 @@ use Studiometa\Foehn\Discovery\DiscoveryPhase;
 use Studiometa\Foehn\Discovery\DiscoveryRunner;
 use Studiometa\Foehn\Discovery\SettingsPageDiscovery;
 use Studiometa\Foehn\Inspect\ProjectInspector;
+use Studiometa\Foehn\Views\ContextProviderRegistry;
+use Studiometa\Foehn\Views\TemplateContext;
 use Symfony\Component\Cache\Adapter\PhpFilesAdapter;
 use Tempest\Discovery\DiscoveryCache;
 use Tempest\Discovery\DiscoveryCacheStrategy;
 use Tests\Fixtures\InspectApp\Article;
 use Tests\Fixtures\InspectApp\Brand;
+use Tests\Fixtures\InspectApp\BrandController;
 use Tests\Fixtures\InspectApp\CallToActionPattern;
 use Tests\Fixtures\InspectApp\CardImageSize;
 use Tests\Fixtures\InspectApp\GlobalContext;
 use Tests\Fixtures\InspectApp\HeroBlock;
+use Tests\Fixtures\InspectApp\LegacyProductController;
 use Tests\Fixtures\InspectApp\PrimaryMenu;
 use Tests\Fixtures\InspectApp\Product;
+use Tests\Fixtures\InspectApp\ProductCardContext;
 use Tests\Fixtures\InspectApp\ProductController;
 use Tests\Fixtures\InspectApp\ProductsEndpoint;
 use Tests\Fixtures\InspectApp\ShopSettings;
@@ -25,6 +30,8 @@ use Tests\Fixtures\InspectApp\StockBinding;
 use Tests\Fixtures\InspectApp\StripeWebhook;
 use Tests\Fixtures\InspectApp\SyncCommand;
 use Tests\Fixtures\InspectApp\Topic;
+use Timber\Site;
+use Timber\Timber;
 
 /**
  * An inspector over tests/Fixtures/InspectApp, which declares one of everything.
@@ -53,11 +60,14 @@ function inspectedRow(array $rows, string $key, mixed $value): ?array
 beforeEach(function () {
     wp_stub_reset();
     $GLOBALS['wp_stub_template_directory'] = sys_get_temp_dir() . '/foehn-inspect-theme-' . uniqid();
+    $this->dirname = Timber::$dirname;
+    Timber::$dirname = ['templates'];
 });
 
 afterEach(function () {
     removeTestDirectory($GLOBALS['wp_stub_template_directory']);
     unset($GLOBALS['wp_stub_template_directory']);
+    Timber::$dirname = $this->dirname;
     tearDownTestContainer();
 });
 
@@ -72,7 +82,7 @@ describe('ProjectInspector', function () {
         expect(array_keys($summary))->toBe(ProjectInspector::SECTIONS);
         expect($summary['post-types'])->toContain('product');
         expect($summary['menus'])->toBe(['primary']);
-        expect($summary['templates'])->toBe([ProductController::class]);
+        expect($summary['templates'])->toContain('single-product');
         expect($summary['cli-commands'])->toContain('foehn inspect');
     });
 
@@ -240,20 +250,114 @@ describe('ProjectInspector', function () {
         ]);
     });
 
-    it('reports template controllers with their templates', function () {
-        expect(inspectedRow(inspector()->section('templates'), 'class', ProductController::class))->toBe([
-            'class' => ProductController::class,
-            'templates' => ['single-product', 'archive-product'],
+    it('reports the controller of each template and the context keys it receives and adds', function () {
+        expect(inspectedRow(inspector()->section('templates'), 'template', 'single-product'))->toBe([
+            'template' => 'single-product',
+            'controller' => ProductController::class,
             'priority' => 10,
+            // Claims it too, with priority 20: the lower priority wins.
+            'overridden' => [LegacyProductController::class],
+            'context' => [
+                'base' => [
+                    'body_class',
+                    'http_host',
+                    'menus',
+                    'post',
+                    'posts',
+                    'site',
+                    'theme',
+                    'user',
+                    'wp_title',
+                ],
+                'declared' => [
+                    ['key' => 'in_stock', 'by' => ProductController::class],
+                    ['key' => 'related', 'by' => ProductController::class],
+                ],
+                'partial' => false,
+            ],
         ]);
     });
 
-    it('reports context providers with the view names they match', function () {
+    it('adds the queried term to a term archive, and says when a controller sets keys at runtime', function () {
+        $brand = inspectedRow(inspector()->section('templates'), 'template', 'taxonomy-brand');
+
+        expect($brand['controller'])->toBe(BrandController::class);
+        expect($brand['context']['base'])->toContain('term');
+        expect($brand['context']['declared'])->toBe([['key' => 'brand_count', 'by' => BrandController::class]]);
+        expect($brand['context']['partial'])->toBeTrue();
+    });
+
+    it('reports context providers with the view names they match and the keys they add', function () {
         expect(inspectedRow(inspector()->section('context-providers'), 'class', GlobalContext::class))->toBe([
             'class' => GlobalContext::class,
             'templates' => ['*'],
             'priority' => 1,
+            'keys' => ['current_year'],
+            'partial' => false,
         ]);
+    });
+
+    it('reports each Twig file with the providers its view name matches, in the order they run', function () {
+        $theme = $GLOBALS['wp_stub_template_directory'];
+        mkdir($theme . '/templates/pages', 0o777, true);
+        mkdir($theme . '/templates/components', 0o777, true);
+        touch($theme . '/templates/pages/single.twig');
+        touch($theme . '/templates/components/card-product.twig');
+        touch($theme . '/templates/pages/notes.txt');
+
+        $views = inspector()->section('views');
+
+        expect(array_column($views, 'view'))->toBe(['components/card-product', 'pages/single']);
+        expect(inspectedRow($views, 'view', 'pages/single'))->toBe([
+            'view' => 'pages/single',
+            'file' => 'templates/pages/single.twig',
+            'providers' => [GlobalContext::class, ProductCardContext::class],
+            'context' => [
+                'base' => ['body_class', 'http_host', 'menus', 'post', 'posts', 'site', 'theme', 'user', 'wp_title'],
+                'declared' => [
+                    ['key' => 'current_year', 'by' => GlobalContext::class],
+                    ['key' => 'price_label', 'by' => ProductCardContext::class],
+                ],
+                'partial' => false,
+            ],
+        ]);
+    });
+
+    it('runs providers for a view in the order the registry runs them', function () {
+        $theme = $GLOBALS['wp_stub_template_directory'];
+        mkdir($theme . '/templates/pages', 0o777, true);
+        touch($theme . '/templates/pages/single.twig');
+
+        $registry = new ContextProviderRegistry();
+        // Registered in the reverse order of their priorities: the order must come from
+        // the priorities, as it does in the registry.
+        $registry->register(['pages/single'], new ProductCardContext(), 5);
+        $registry->register(['*'], new GlobalContext(), 1);
+
+        $site = new ReflectionClass(Site::class)->newInstanceWithoutConstructor();
+        $context = $registry->provide('pages/single', new TemplateContext(null, null, $site, null));
+        $added = array_values(array_diff(array_keys($context->toArray()), ['post', 'posts', 'site', 'user']));
+
+        $view = inspectedRow(inspector()->section('views'), 'view', 'pages/single');
+
+        expect(array_column($view['context']['declared'], 'key'))->toBe($added);
+    });
+
+    it('lists a view a child theme overrides once, with the child file', function () {
+        $child = sys_get_temp_dir() . '/foehn-inspect-child-' . uniqid();
+        $GLOBALS['wp_stub_stylesheet_directory'] = $child;
+        mkdir($child . '/templates/pages', 0o777, true);
+        mkdir($GLOBALS['wp_stub_template_directory'] . '/templates/pages', 0o777, true);
+        touch($child . '/templates/pages/single.twig');
+        touch($GLOBALS['wp_stub_template_directory'] . '/templates/pages/single.twig');
+        touch($GLOBALS['wp_stub_template_directory'] . '/templates/pages/page.twig');
+
+        try {
+            expect(array_column(inspector()->section('views'), 'view'))->toBe(['pages/page', 'pages/single']);
+        } finally {
+            removeTestDirectory($child);
+            unset($GLOBALS['wp_stub_stylesheet_directory']);
+        }
     });
 
     it('reports menus with the context key each one is exposed as', function () {

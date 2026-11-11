@@ -11,9 +11,10 @@ use Studiometa\Foehn\Discovery\DiscoveryRunner;
  * The project model: what a Føhn project declares, as plain data.
  *
  * Built from the items discovery already collected, so it reads the attributes the
- * code declares rather than parsing source, and it registers nothing. Only plugins,
- * theme supports and the Vite build come from WordPress or the filesystem, because
- * no attribute declares them.
+ * code declares, and it registers nothing. Only plugins, theme supports, the Twig
+ * files and the Vite build come from WordPress or the filesystem, because no
+ * attribute declares them, and the context keys a class adds are read from its
+ * source (see ContextKeys).
  *
  * `wp foehn inspect` renders it. It holds no WP-CLI code so that another adapter can
  * hand the same model to a coding agent by other means.
@@ -29,6 +30,7 @@ final readonly class ProjectInspector
         'patterns',
         'bindings',
         'templates',
+        'views',
         'context-providers',
         'menus',
         'image-sizes',
@@ -44,6 +46,8 @@ final readonly class ProjectInspector
 
     private Registrations $registrations;
 
+    private Templates $templates;
+
     private Environment $environment;
 
     public function __construct(DiscoveryRunner $runner)
@@ -52,6 +56,7 @@ final readonly class ProjectInspector
 
         $this->contentTypes = new ContentTypes($items);
         $this->registrations = new Registrations($items);
+        $this->templates = new Templates($items);
         $this->environment = new Environment();
     }
 
@@ -105,8 +110,9 @@ final readonly class ProjectInspector
             'blocks' => $this->registrations->blocks(),
             'patterns' => $this->registrations->patterns(),
             'bindings' => $this->registrations->bindings(),
-            'templates' => $this->registrations->templates(),
-            'context-providers' => $this->registrations->contextProviders(),
+            'templates' => $this->templates->templates(),
+            'views' => $this->templates->views(),
+            'context-providers' => $this->templates->contextProviders(),
             'menus' => $this->registrations->menus(),
             'image-sizes' => $this->registrations->imageSizes(),
             'rewrite-rules' => $this->registrations->rewriteRules(),
@@ -141,7 +147,9 @@ final readonly class ProjectInspector
 
             $names[] = (string) match ($section) {
                 'settings' => $row['page'],
-                'templates', 'context-providers' => $row['class'],
+                'templates' => $row['template'],
+                'views' => $row['view'],
+                'context-providers' => $row['class'],
                 'menus' => $row['location'],
                 'rewrite-rules' => $row['regex'],
                 'rest-routes' => $row['method'] . ' ' . $row['path'],

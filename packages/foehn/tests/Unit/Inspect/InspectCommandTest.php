@@ -149,6 +149,15 @@ describe('wp foehn inspect', function () {
             ->toMatch('/shop-settings\s+\S+ShopSettings\s+shop_contact_email, shop_show_banner, shop_currency/');
     });
 
+    it('shows the controller and the declared context keys of each template', function () {
+        inspectCommand()(['templates'], []);
+
+        $output = inspectOutput();
+
+        expect($output)->toMatch('/template\s+controller\s+declared/');
+        expect($output)->toMatch('/single-product\s+\S+ProductController\s+in_stock, related/');
+    });
+
     it('prints every section as a table with --all', function () {
         inspectCommand()([], ['all' => true]);
 

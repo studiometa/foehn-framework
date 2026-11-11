@@ -7,7 +7,7 @@ Docs: [Template controllers](https://studiometa.github.io/foehn-framework/guide/
 ## Request flow
 
 1. On `template_include`, Føhn computes one template name for the request, in this order: `404`, `search`, `front-page`, `home`; for a singular request `single-{type}-{slug}`, `single-{type}`, `single`, `page-{slug}`, `page-{id}`, `page`, `attachment`, `singular`; for an archive `archive-{type}` (post type archive), `category-{slug}`, `category`, `tag-{slug}`, `tag`, `taxonomy-{tax}-{term}`, `taxonomy-{tax}`, `taxonomy`, `author`, `date`, `archive`; else `index`. The slug, id and term variants (`single-{type}-{slug}`, `single-{type}`, `page-{slug}`, `page-{id}`, `category-{slug}`, `tag-{slug}`, `taxonomy-{tax}-{term}`, `taxonomy-{tax}`) are used only when a controller declares them (exactly or through a wildcard); otherwise the next, more general name is used. The other names are used as they are, even when no controller declares them: a post type archive is always `archive-{type}`, so `archive` alone does not cover it (declare `archive-*`).
-2. Føhn takes the controller that declares that exact name. If there is none, it takes the first controller whose wildcard (`single-*`) matches. Declare each exact name in one controller only.
+2. Føhn takes the controller that declares that exact name. If there is none, it tries the wildcards (`single-*`) in `priority` order and takes the first that matches. When several controllers declare the same name or wildcard, the lowest `priority` wins, and on a tie the one discovered last. Declare each exact name in one controller only.
 3. Føhn builds a `TemplateContext` from `Timber::context()`. The controller's `handle()` returns HTML, which Føhn prints, or `null` to let WordPress load its own template.
 4. Each `ViewEngineInterface::render()` call runs the context providers that match **the template name given to `render()`** (for example `pages/single`), in `priority` order, lowest first.
 
@@ -104,6 +104,7 @@ final readonly class RelatedProjectsProvider implements ContextProviderInterface
 
 - The patterns match the template name passed to `render()` or `renderFirst()`, not the WordPress hierarchy name. In the starter layout that is `pages/single`, `pages/archive`, `sections/posts`, `blocks/hero`, `settings/theme-settings`. `*` matches any characters, `/` included, so `'*'` runs for every render, blocks and sections too.
 - A provider for `'single'` does not run when the controller renders `pages/single`. This is the most common reason a provider "does nothing".
+- `wp foehn inspect views --format=json` lists each Twig file with the providers that match it and the context keys known without rendering. `wp foehn inspect templates --format=json` gives the controller of each WordPress template. When two controllers claim the same template, the lowest `priority` wins.
 - Use a context provider for data many templates share. Use a controller for data one page owns, and to choose the template.
 - `menus` is filled by `#[AsMenu]`. Read `menus.header.items` in Twig.
 

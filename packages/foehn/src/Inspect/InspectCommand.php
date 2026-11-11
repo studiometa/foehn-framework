@@ -13,9 +13,15 @@ use Studiometa\Foehn\Console\WpCli;
 
     Reports the project model: post types with their meta fields, taxonomies and
     Timber model classes, taxonomies, settings pages with their options, blocks with
-    their attributes, patterns, block bindings, template controllers, context
+    their attributes, patterns, block bindings, templates, Twig views, context
     providers, menus, image sizes, rewrite rules, REST routes, `wp foehn` commands,
     active plugins, theme supports and the Vite entry points.
+
+    `templates` gives the controller that renders each WordPress template. `views`
+    gives, for each Twig file, the context providers its name matches. Both list
+    the context keys: `base` keys are always set, `declared` keys come from literal
+    `with()` calls in the source and can depend on runtime conditions, and
+    `partial` says that a class also sets keys only known at runtime.
 
     The post meta keys, the options and the block attributes are where content is
     stored, so an agent can write it with core commands such as `wp post meta
@@ -35,7 +41,7 @@ use Studiometa\Foehn\Console\WpCli;
 
     [<section>...]
     : The sections to print in full. Any of post-types, taxonomies, settings,
-      blocks, patterns, bindings, templates, context-providers, menus,
+      blocks, patterns, bindings, templates, views, context-providers, menus,
       image-sizes, rewrite-rules, rest-routes, cli-commands, plugins,
       theme-supports, vite.
 
@@ -74,8 +80,9 @@ final readonly class InspectCommand implements CliCommandInterface
         'blocks' => ['name', 'title', 'attributes'],
         'patterns' => ['name', 'title', 'template'],
         'bindings' => ['name', 'label', 'class'],
-        'templates' => ['class', 'templates', 'priority'],
-        'context-providers' => ['class', 'templates', 'priority'],
+        'templates' => ['template', 'controller', 'context.declared'],
+        'views' => ['view', 'providers', 'context.declared'],
+        'context-providers' => ['class', 'templates', 'keys'],
         'menus' => ['location', 'contextKey', 'class'],
         'image-sizes' => ['name', 'width', 'height', 'crop'],
         'rewrite-rules' => ['regex', 'query', 'class'],
@@ -226,12 +233,11 @@ final readonly class InspectCommand implements CliCommandInterface
         }
 
         $columns = self::TABLE_COLUMNS[$name];
-        $lines = [$columns];
+        // A nested column is headed by its last segment: `context.declared` is `declared`.
+        $lines = [array_map(static fn(string $column): string => array_last(explode('.', $column)), $columns)];
 
         foreach ($rows as $row) {
-            $lines[] = array_map(static fn(string $column): string => self::cell(
-                is_array($row) ? $row[$column] ?? null : null,
-            ), $columns);
+            $lines[] = array_map(static fn(string $column): string => self::cell(self::field($row, $column)), $columns);
         }
 
         $widths = [];
@@ -251,6 +257,22 @@ final readonly class InspectCommand implements CliCommandInterface
 
             $this->cli->log('  ' . rtrim(implode('  ', $cells)));
         }
+    }
+
+    /**
+     * A field of a row, following a dotted column into nested records.
+     */
+    private static function field(mixed $row, string $column): mixed
+    {
+        foreach (explode('.', $column) as $segment) {
+            if (!is_array($row)) {
+                return null;
+            }
+
+            $row = $row[$segment] ?? null;
+        }
+
+        return $row;
     }
 
     /**

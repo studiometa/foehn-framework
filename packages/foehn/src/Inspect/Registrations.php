@@ -8,24 +8,20 @@ use Studiometa\Foehn\Attributes\AsBlock;
 use Studiometa\Foehn\Attributes\AsBlockBinding;
 use Studiometa\Foehn\Attributes\AsBlockPattern;
 use Studiometa\Foehn\Attributes\AsCliCommand;
-use Studiometa\Foehn\Attributes\AsContextProvider;
 use Studiometa\Foehn\Attributes\AsImageSize;
 use Studiometa\Foehn\Attributes\AsMenu;
 use Studiometa\Foehn\Attributes\AsRestRoute;
 use Studiometa\Foehn\Attributes\AsRewriteRule;
 use Studiometa\Foehn\Attributes\AsSettingsPage;
-use Studiometa\Foehn\Attributes\AsTemplateController;
 use Studiometa\Foehn\Discovery\BlockBindingDiscovery;
 use Studiometa\Foehn\Discovery\BlockDiscovery;
 use Studiometa\Foehn\Discovery\BlockPatternDiscovery;
 use Studiometa\Foehn\Discovery\CliCommandDiscovery;
-use Studiometa\Foehn\Discovery\ContextProviderDiscovery;
 use Studiometa\Foehn\Discovery\ImageSizeDiscovery;
 use Studiometa\Foehn\Discovery\MenuDiscovery;
 use Studiometa\Foehn\Discovery\RestRouteDiscovery;
 use Studiometa\Foehn\Discovery\RewriteRuleDiscovery;
 use Studiometa\Foehn\Discovery\SettingsPageDiscovery;
-use Studiometa\Foehn\Discovery\TemplateControllerDiscovery;
 use Studiometa\Foehn\Settings\Setting;
 
 /**
@@ -186,52 +182,6 @@ final readonly class Registrations
         }
 
         return Rows::sorted($rows);
-    }
-
-    /**
-     * Template controllers and the WordPress templates each one handles.
-     *
-     * @return list<array<string, mixed>>
-     */
-    public function templates(): array
-    {
-        $rows = [];
-
-        foreach ($this->items->of(TemplateControllerDiscovery::class) as $item) {
-            /** @var AsTemplateController $attribute */
-            $attribute = $item['attribute'];
-
-            $rows[] = [
-                'class' => $item['className'],
-                'templates' => $attribute->getTemplates(),
-                'priority' => $attribute->priority,
-            ];
-        }
-
-        return Rows::sortedBy($rows, 'class');
-    }
-
-    /**
-     * Context providers and the view names they match.
-     *
-     * @return list<array<string, mixed>>
-     */
-    public function contextProviders(): array
-    {
-        $rows = [];
-
-        foreach ($this->items->of(ContextProviderDiscovery::class) as $item) {
-            /** @var AsContextProvider $attribute */
-            $attribute = $item['attribute'];
-
-            $rows[] = [
-                'class' => $item['className'],
-                'templates' => $attribute->getTemplates(),
-                'priority' => $attribute->priority,
-            ];
-        }
-
-        return Rows::sortedBy($rows, 'class');
     }
 
     /**

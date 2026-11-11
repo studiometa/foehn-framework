@@ -102,8 +102,9 @@ With no section, `inspect` prints a summary: each section with the names of its 
 | `blocks`            | `#[AsBlock]` blocks: name, title, class, category, and each attribute with its type, default and allowed values     |
 | `patterns`          | `#[AsBlockPattern]` patterns: name, title, class and Twig template                                                  |
 | `bindings`          | `#[AsBlockBinding]` sources: name, label, class and the block context they use                                      |
-| `templates`         | Template controllers and the WordPress templates each one handles                                                   |
-| `context-providers` | Context providers and the view names they match                                                                     |
+| `templates`         | Each WordPress template a controller claims: the controller that renders it, and its context keys                   |
+| `views`             | Each Twig file of the theme: the context providers its view name matches, and its context keys                      |
+| `context-providers` | Context providers, the view names they match, and the keys each one adds                                            |
 | `menus`             | Menu locations and the Twig variable of each one (`menus.<location>`)                                               |
 | `image-sizes`       | Image sizes, with the name WordPress registers them under                                                           |
 | `rewrite-rules`     | `#[AsRewriteRule]` rules: regex, query, query vars and class                                                        |
@@ -122,6 +123,25 @@ Three sections say where content goes, so you can write it with core WP-CLI comm
 - `post-types` and `taxonomies`: each `#[AsPostMeta]` field gives its `key`, `type`, `default` and `single` (`false` means one row per value). Write it with `wp post meta update <id> <key> <value>` or `wp term meta update`.
 - `settings`: each setting gives its `option` name, `type`, `default` and `sanitize` callback. Write it with `wp option update <option> <value>`. Every setting has a sanitizer: the one the page declares (`sanitizeDeclared: true`) or the one its type implies, such as `sanitize_text_field` for a string. Føhn calls `register_setting()` on `init`, and WP-CLI fires `init` before it runs a command, so `wp option update` saves through the same sanitizer as the admin form (`sanitizeOnWpCli: true`). A command run with `--skip-themes` does not load Føhn, and then no sanitizer runs.
 - `blocks`: each attribute gives its `name`, `type`, `default` and `enum`, which is what a block comment such as `<!-- wp:theme/hero {"align":"center"} /-->` in `post_content` may hold. The editor-only keys (`control`, `label`, …) are left out.
+
+#### Template context
+
+Two kinds of names meet in a template, and `inspect` reports them apart:
+
+- `templates` has one row per WordPress template a `#[AsTemplateController]` claims, such as `single-product` or `archive-*`. `controller` is the class that renders it. When several controllers claim the same template, the lowest `priority` wins (on a tie, the one discovered last), and `overridden` lists the others.
+- `views` has one row per Twig file in the theme's template directories (`TimberConfig::templatesDir`), named as `render()` names it: `templates/pages/single.twig` is `pages/single`. `providers` lists the context providers whose pattern matches that name, in the order they run. A child theme's file replaces the parent's file with the same name.
+
+Context providers match view names, not WordPress templates. Which view a controller renders is decided at runtime (the starter's `SingleController` renders the first of `pages/single-{post-type}-{slug}`, `pages/single-{post-type}` and `pages/single` that exists), so `inspect` does not link a template to a view.
+
+Each row has a `context` record with the Twig variables that can be known without rendering:
+
+| Field      | What it holds                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `base`     | Keys that are always set. In a view: `post`, `posts`, `site`, `user`, the Timber global context (`theme`, `http_host`, `wp_title`, `body_class`), and `menus` when the project declares a `#[AsMenu]`. In a template, the keys the controller receives also hold what `Timber::context()` adds for that request: `term` on a category, tag or taxonomy archive, `search_query` on `search`, `author` on `author`. A value can be `null` (`post` on an archive, `user` for a visitor) |
+| `declared` | Keys read from the source of the controller (`templates`) or of the matching providers (`views`): each literal `->with('key', …)` call, with the class that makes it. A call can sit in a condition, so a declared key is not guaranteed at runtime                                                                                                                                                                                                                                  |
+| `partial`  | `true` when one of these classes also sets keys that only exist at runtime: `with($name, …)`, `merge()` or `withDto()`. The `declared` list is then incomplete                                                                                                                                                                                                                                                                                                                       |
+
+Keys added elsewhere are not listed: a `timber/context` filter from a plugin, `ViewEngine::share()`, a helper class that a controller calls, and the keys a block's `compose()` returns. The controller's keys reach only the views it renders, and a Twig file included with `{% include %}` gets the context of the file that includes it.
 
 With the `FULL` discovery cache, a class added after the cache was written is missing from the report until you run `wp foehn discovery:clear`.
 
