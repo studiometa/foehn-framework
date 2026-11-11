@@ -2,7 +2,12 @@
 
 declare(strict_types=1);
 
+use Studiometa\Foehn\Discovery\DiscoveryLocations;
+use Studiometa\Foehn\Discovery\DiscoveryRunner;
 use Studiometa\Foehn\Inspect\ProjectInspector;
+use Symfony\Component\Cache\Adapter\PhpFilesAdapter;
+use Tempest\Discovery\DiscoveryCache;
+use Tempest\Discovery\DiscoveryCacheStrategy;
 use Tests\Fixtures\InspectApp\Article;
 use Tests\Fixtures\InspectApp\Brand;
 use Tests\Fixtures\InspectApp\CallToActionPattern;
@@ -56,6 +61,29 @@ afterEach(function () {
 describe('ProjectInspector', function () {
     it('reports every section, in order', function () {
         expect(array_keys(inspector()->all()))->toBe(ProjectInspector::SECTIONS);
+    });
+
+    it('reports the same model from a warm discovery cache', function () {
+        $directory = sys_get_temp_dir() . '/foehn-tests/inspect-cache-' . uniqid('', true);
+        $pool = new PhpFilesAdapter(directory: $directory);
+        $cache = new DiscoveryCache(DiscoveryCacheStrategy::FULL, $pool);
+        $locations = new DiscoveryLocations(testFixturePath('InspectApp'));
+        $runner = static fn(): DiscoveryRunner => new DiscoveryRunner(bootTestContainer(), $cache, $pool, $locations);
+
+        try {
+            // The first runner scans and writes the cache; the second restores from it,
+            // through the same var_export() files production reads.
+            $cold = new ProjectInspector($runner())->all();
+            $warmRunner = $runner();
+            $warm = new ProjectInspector($warmRunner)->all();
+            $restored = $warmRunner->wasRestoredFromCache($locations->app());
+        } finally {
+            removeTestDirectory($directory);
+        }
+
+        expect($restored)->toBeTrue();
+        expect($warm)->toBe($cold);
+        expect($warm)->toBe(inspector()->all());
     });
 
     it('refuses a section that does not exist', function () {
