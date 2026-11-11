@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Studiometa\Foehn\Console\Commands;
 
 use Studiometa\Foehn\Attributes\AsCliCommand;
-use Studiometa\Foehn\Console\ClassFileGenerator;
 use Studiometa\Foehn\Console\CliCommandInterface;
 use Studiometa\Foehn\Console\GenerationRequest;
+use Studiometa\Foehn\Console\Scaffolder;
 use Studiometa\Foehn\Console\Stubs\BlockStub;
 use Studiometa\Foehn\Console\Stubs\InteractiveBlockStub;
 use Studiometa\Foehn\Console\WpCli;
@@ -39,7 +39,10 @@ use function Tempest\Support\str;
     : Overwrite existing file
 
     [--dry-run]
-    : Show what would be created without creating
+    : Write nothing. Show the file that would be written, or report that it exists
+
+    [--format=<format>]
+    : Output format. text (default) or json. json prints the written files, their status and the next steps
 
     ## EXAMPLES
 
@@ -62,7 +65,7 @@ final class MakeBlockCommand implements CliCommandInterface
 {
     public function __construct(
         private readonly WpCli $cli,
-        private readonly ClassFileGenerator $generator,
+        private readonly Scaffolder $scaffolder,
     ) {}
 
     public function __invoke(array $args, array $assocArgs): void
@@ -80,42 +83,28 @@ final class MakeBlockCommand implements CliCommandInterface
         $category = $assocArgs['category'] ?? 'theme';
         $namespace = $assocArgs['namespace'] ?? 'theme';
         $interactive = ($assocArgs['interactive'] ?? null) !== null;
-        $force = ($assocArgs['force'] ?? null) !== null;
-        $dryRun = ($assocArgs['dry-run'] ?? null) !== null;
 
-        $fullBlockName = $namespace . '/' . $name;
-        $file = $this->generator->generate(new GenerationRequest(
-            stub: $interactive ? InteractiveBlockStub::class : BlockStub::class,
-            subdirectory: 'Blocks',
-            className: $className,
-            attributeArguments: [
-                'name' => $fullBlockName,
-                'title' => $title,
-                'category' => $category,
-            ],
-        ));
-
-        if ($dryRun) {
-            $this->cli->previewGeneratedFile($file);
-
-            return;
-        }
-
-        if (!$this->generator->write($file, $force)) {
-            $this->cli->reportFileExists($file);
-
-            return;
-        }
-
-        $this->cli->success("Block created: {$this->cli->getRelativePath($file->path)}");
-        $this->cli->line('');
-        $this->cli->log("Don't forget to create your Twig template at:");
-        $this->cli->log("  templates/blocks/{$name}.twig");
+        $notes = ["Create the Twig template: templates/blocks/{$name}.twig"];
 
         if ($interactive) {
-            $this->cli->line('');
-            $this->cli->log('For the Interactivity API, create your view script at:');
-            $this->cli->log("  assets/scripts/blocks/{$name}/view.js");
+            $notes[] = "Create the Interactivity API view script: assets/scripts/blocks/{$name}/view.js";
         }
+
+        $fullBlockName = $namespace . '/' . $name;
+        $this->scaffolder->scaffold(
+            new GenerationRequest(
+                stub: $interactive ? InteractiveBlockStub::class : BlockStub::class,
+                subdirectory: 'Blocks',
+                className: $className,
+                attributeArguments: [
+                    'name' => $fullBlockName,
+                    'title' => $title,
+                    'category' => $category,
+                ],
+            ),
+            $assocArgs,
+            'Block created',
+            $notes,
+        );
     }
 }

@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Studiometa\Foehn\Console\Commands;
 
 use Studiometa\Foehn\Attributes\AsCliCommand;
-use Studiometa\Foehn\Console\ClassFileGenerator;
 use Studiometa\Foehn\Console\CliCommandInterface;
 use Studiometa\Foehn\Console\GenerationRequest;
+use Studiometa\Foehn\Console\Scaffolder;
 use Studiometa\Foehn\Console\Stubs\HooksStub;
 use Studiometa\Foehn\Console\WpCli;
 
@@ -26,7 +26,10 @@ use function Tempest\Support\str;
     : Overwrite existing file
 
     [--dry-run]
-    : Show what would be created without creating
+    : Write nothing. Show the file that would be written, or report that it exists
+
+    [--format=<format>]
+    : Output format. text (default) or json. json prints the written files, their status and the next steps
 
     ## EXAMPLES
 
@@ -46,7 +49,7 @@ final class MakeHooksCommand implements CliCommandInterface
 {
     public function __construct(
         private readonly WpCli $cli,
-        private readonly ClassFileGenerator $generator,
+        private readonly Scaffolder $scaffolder,
     ) {}
 
     public function __invoke(array $args, array $assocArgs): void
@@ -60,32 +63,16 @@ final class MakeHooksCommand implements CliCommandInterface
         }
 
         $className = $assocArgs['class'] ?? str($name)->pascal()->toString() . 'Hooks';
-        $force = ($assocArgs['force'] ?? null) !== null;
-        $dryRun = ($assocArgs['dry-run'] ?? null) !== null;
 
-        $file = $this->generator->generate(new GenerationRequest(
-            stub: HooksStub::class,
-            subdirectory: 'Hooks',
-            className: $className,
-            replacements: ['DummyHooks' => $className],
-        ));
-
-        if ($dryRun) {
-            $this->cli->previewGeneratedFile($file);
-
-            return;
-        }
-
-        if (!$this->generator->write($file, $force)) {
-            $this->cli->reportFileExists($file);
-
-            return;
-        }
-
-        $this->cli->success("Hooks class created: {$this->cli->getRelativePath($file->path)}");
-        $this->cli->line('');
-        $this->cli->log('Add your hooks using:');
-        $this->cli->log('  #[AsAction(\'hook_name\')] for actions');
-        $this->cli->log('  #[AsFilter(\'hook_name\')] for filters');
+        $this->scaffolder->scaffold(
+            new GenerationRequest(stub: HooksStub::class, subdirectory: 'Hooks', className: $className, replacements: [
+                'DummyHooks' => $className,
+            ]),
+            $assocArgs,
+            'Hooks class created',
+            [
+                "Add hooks with #[AsAction('hook_name')] and #[AsFilter('hook_name')] methods.",
+            ],
+        );
     }
 }

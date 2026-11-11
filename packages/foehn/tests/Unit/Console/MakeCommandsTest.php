@@ -19,6 +19,7 @@ use Studiometa\Foehn\Console\Commands\MakeModelCommand;
 use Studiometa\Foehn\Console\Commands\MakePostTypeCommand;
 use Studiometa\Foehn\Console\Commands\MakeShortcodeCommand;
 use Studiometa\Foehn\Console\Commands\MakeTaxonomyCommand;
+use Studiometa\Foehn\Console\Scaffolder;
 use Studiometa\Foehn\Console\WpCli;
 
 beforeEach(function () {
@@ -32,6 +33,7 @@ beforeEach(function () {
 
     $this->cli = new WpCli();
     $this->generator = new ClassFileGenerator($this->appPath);
+    $this->scaffolder = new Scaffolder($this->cli, $this->generator);
 
     /**
      * Read the attribute of a class the command just generated.
@@ -66,7 +68,7 @@ afterEach(function () {
 
 describe('make:post-type', function () {
     it('generates a post type carrying the requested configuration', function () {
-        (new MakePostTypeCommand($this->cli, $this->generator))(['product'], ['class' => 'MakeProductPost']);
+        (new MakePostTypeCommand($this->cli, $this->scaffolder))(['product'], ['class' => 'MakeProductPost']);
 
         /** @var AsPostType $attribute */
         $attribute = ($this->generatedAttribute)(($this->path)('PostTypes', 'MakeProductPost'), AsPostType::class);
@@ -80,7 +82,7 @@ describe('make:post-type', function () {
     });
 
     it('honours explicit singular and plural', function () {
-        (new MakePostTypeCommand($this->cli, $this->generator))(['person'], [
+        (new MakePostTypeCommand($this->cli, $this->scaffolder))(['person'], [
             'class' => 'MakePersonPost',
             'singular' => 'Person',
             'plural' => 'People',
@@ -93,21 +95,21 @@ describe('make:post-type', function () {
     });
 
     it('reports the missing name instead of generating', function () {
-        (new MakePostTypeCommand($this->cli, $this->generator))([], []);
+        (new MakePostTypeCommand($this->cli, $this->scaffolder))([], []);
 
         expect(wp_stub_get_calls('wp_cli_error'))->toHaveCount(1);
         expect(glob($this->appPath . '/PostTypes/*.php'))->toBeEmpty();
     });
 
     it('writes nothing on a dry run', function () {
-        (new MakePostTypeCommand($this->cli, $this->generator))(['product'], ['dry-run' => true]);
+        (new MakePostTypeCommand($this->cli, $this->scaffolder))(['product'], ['dry-run' => true]);
 
         expect(glob($this->appPath . '/PostTypes/*.php'))->toBeEmpty();
         expect(wp_stub_get_calls('wp_cli_log'))->not->toBeEmpty();
     });
 
     it('refuses to overwrite without --force', function () {
-        $command = new MakePostTypeCommand($this->cli, $this->generator);
+        $command = new MakePostTypeCommand($this->cli, $this->scaffolder);
         $command(['product'], ['class' => 'GuardedPost']);
 
         $path = ($this->path)('PostTypes', 'GuardedPost');
@@ -120,7 +122,7 @@ describe('make:post-type', function () {
     });
 
     it('overwrites with --force', function () {
-        $command = new MakePostTypeCommand($this->cli, $this->generator);
+        $command = new MakePostTypeCommand($this->cli, $this->scaffolder);
         $command(['product'], ['class' => 'ForcedPost']);
 
         $path = ($this->path)('PostTypes', 'ForcedPost');
@@ -134,7 +136,7 @@ describe('make:post-type', function () {
 
 describe('make:taxonomy', function () {
     it('generates a taxonomy with post types and hierarchy', function () {
-        (new MakeTaxonomyCommand($this->cli, $this->generator))(['genre'], [
+        (new MakeTaxonomyCommand($this->cli, $this->scaffolder))(['genre'], [
             'class' => 'MakeGenreTerm',
             'post-types' => 'book,film',
             'hierarchical' => true,
@@ -152,7 +154,7 @@ describe('make:taxonomy', function () {
     });
 
     it('defaults to the post type and a flat taxonomy', function () {
-        (new MakeTaxonomyCommand($this->cli, $this->generator))(['mood'], ['class' => 'MakeMoodTerm']);
+        (new MakeTaxonomyCommand($this->cli, $this->scaffolder))(['mood'], ['class' => 'MakeMoodTerm']);
 
         /** @var AsTaxonomy $attribute */
         $attribute = ($this->generatedAttribute)(($this->path)('Taxonomies', 'MakeMoodTerm'), AsTaxonomy::class);
@@ -163,7 +165,7 @@ describe('make:taxonomy', function () {
 
 describe('make:block', function () {
     it('generates a block with the namespaced name and category', function () {
-        (new MakeBlockCommand($this->cli, $this->generator))(['hero'], [
+        (new MakeBlockCommand($this->cli, $this->scaffolder))(['hero'], [
             'class' => 'MakeHeroBlock',
             'namespace' => 'my-theme',
             'category' => 'layout',
@@ -183,7 +185,7 @@ describe('make:block', function () {
     });
 
     it('generates an interactive block from the interactive stub', function () {
-        (new MakeBlockCommand($this->cli, $this->generator))(['counter'], [
+        (new MakeBlockCommand($this->cli, $this->scaffolder))(['counter'], [
             'class' => 'MakeCounterBlock',
             'interactive' => true,
         ]);
@@ -200,7 +202,7 @@ describe('make:block', function () {
 
 describe('make:model', function () {
     it('generates a plain Timber model by default', function () {
-        (new MakeModelCommand($this->cli, $this->generator))(['MakeWidget'], []);
+        (new MakeModelCommand($this->cli, $this->scaffolder))(['MakeWidget'], []);
 
         $path = ($this->path)('Models', 'MakeWidget');
         $contents = file_get_contents($path);
@@ -211,7 +213,7 @@ describe('make:model', function () {
     });
 
     it('registers a post type when asked for one', function () {
-        (new MakeModelCommand($this->cli, $this->generator))(['MakeDoohickey'], [
+        (new MakeModelCommand($this->cli, $this->scaffolder))(['MakeDoohickey'], [
             'post-type' => true,
             'singular' => 'Doohickey',
             'plural' => 'Doohickeys',
@@ -226,7 +228,7 @@ describe('make:model', function () {
     });
 
     it('honours an explicit post type slug', function () {
-        (new MakeModelCommand($this->cli, $this->generator))(['MakeThingamajig'], [
+        (new MakeModelCommand($this->cli, $this->scaffolder))(['MakeThingamajig'], [
             'post-type' => true,
             'slug' => 'thingy',
         ]);
@@ -240,7 +242,7 @@ describe('make:model', function () {
 
 describe('make:controller', function () {
     it('keeps a single template a string and renders it', function () {
-        (new MakeControllerCommand($this->cli, $this->generator))(['MakeSingleProduct'], [
+        (new MakeControllerCommand($this->cli, $this->scaffolder))(['MakeSingleProduct'], [
             'templates' => 'single-product',
         ]);
 
@@ -254,7 +256,7 @@ describe('make:controller', function () {
     });
 
     it('keeps several templates an array and renders the first', function () {
-        (new MakeControllerCommand($this->cli, $this->generator))(['MakeArchives'], [
+        (new MakeControllerCommand($this->cli, $this->scaffolder))(['MakeArchives'], [
             'templates' => 'archive-product,archive-service',
         ]);
 
@@ -270,7 +272,7 @@ describe('make:controller', function () {
 
 describe('make:context-provider', function () {
     it('generates a provider for the requested templates', function () {
-        (new MakeContextProviderCommand($this->cli, $this->generator))(['MakeGlobal'], [
+        (new MakeContextProviderCommand($this->cli, $this->scaffolder))(['MakeGlobal'], [
             'templates' => 'single,archive-*',
         ]);
 
@@ -286,7 +288,7 @@ describe('make:context-provider', function () {
 
 describe('make:image-size', function () {
     it('generates an image size with dimensions and crop', function () {
-        (new MakeImageSizeCommand($this->cli, $this->generator))(['MakeHeroWide'], [
+        (new MakeImageSizeCommand($this->cli, $this->scaffolder))(['MakeHeroWide'], [
             'width' => '1600',
             'height' => '900',
             'crop' => true,
@@ -306,7 +308,7 @@ describe('make:image-size', function () {
 
 describe('make:menu and make:shortcode and make:hooks', function () {
     it('generates a menu whose helper reads the new location', function () {
-        (new MakeMenuCommand($this->cli, $this->generator))(['FooterMenu'], ['location' => 'footer']);
+        (new MakeMenuCommand($this->cli, $this->scaffolder))(['FooterMenu'], ['location' => 'footer']);
 
         $contents = file_get_contents(($this->path)('Menus', 'FooterMenu'));
 
@@ -316,7 +318,7 @@ describe('make:menu and make:shortcode and make:hooks', function () {
     });
 
     it('generates a shortcode with the tag everywhere the stub named it', function () {
-        (new MakeShortcodeCommand($this->cli, $this->generator))(['gallery'], ['class' => 'MakeGalleryShortcode']);
+        (new MakeShortcodeCommand($this->cli, $this->scaffolder))(['gallery'], ['class' => 'MakeGalleryShortcode']);
 
         $contents = file_get_contents(($this->path)('Shortcodes', 'MakeGalleryShortcode'));
 
@@ -325,7 +327,7 @@ describe('make:menu and make:shortcode and make:hooks', function () {
     });
 
     it('generates a hooks class named after the request', function () {
-        (new MakeHooksCommand($this->cli, $this->generator))(['Theme'], []);
+        (new MakeHooksCommand($this->cli, $this->scaffolder))(['Theme'], []);
 
         $contents = file_get_contents(($this->path)('Hooks', 'ThemeHooks'));
 
@@ -336,19 +338,19 @@ describe('make:menu and make:shortcode and make:hooks', function () {
 
 describe('generated files', function () {
     it('are valid PHP for every make command', function () {
-        (new MakePostTypeCommand($this->cli, $this->generator))(['lint-product'], ['class' => 'LintPost']);
-        (new MakeTaxonomyCommand($this->cli, $this->generator))(['lint-genre'], ['class' => 'LintTerm']);
-        (new MakeBlockCommand($this->cli, $this->generator))(['lint-hero'], ['class' => 'LintBlock']);
-        (new MakeBlockCommand($this->cli, $this->generator))(['lint-counter'], [
+        (new MakePostTypeCommand($this->cli, $this->scaffolder))(['lint-product'], ['class' => 'LintPost']);
+        (new MakeTaxonomyCommand($this->cli, $this->scaffolder))(['lint-genre'], ['class' => 'LintTerm']);
+        (new MakeBlockCommand($this->cli, $this->scaffolder))(['lint-hero'], ['class' => 'LintBlock']);
+        (new MakeBlockCommand($this->cli, $this->scaffolder))(['lint-counter'], [
             'class' => 'LintInteractiveBlock',
             'interactive' => true,
         ]);
-        (new MakeControllerCommand($this->cli, $this->generator))(['LintController'], ['templates' => 'single,page']);
-        (new MakeContextProviderCommand($this->cli, $this->generator))(['LintProvider'], ['templates' => 'single']);
-        (new MakeImageSizeCommand($this->cli, $this->generator))(['LintImageSize'], []);
-        (new MakeMenuCommand($this->cli, $this->generator))(['LintMenu'], []);
-        (new MakeShortcodeCommand($this->cli, $this->generator))(['lint-tag'], ['class' => 'LintShortcode']);
-        (new MakeHooksCommand($this->cli, $this->generator))(['Lint'], []);
+        (new MakeControllerCommand($this->cli, $this->scaffolder))(['LintController'], ['templates' => 'single,page']);
+        (new MakeContextProviderCommand($this->cli, $this->scaffolder))(['LintProvider'], ['templates' => 'single']);
+        (new MakeImageSizeCommand($this->cli, $this->scaffolder))(['LintImageSize'], []);
+        (new MakeMenuCommand($this->cli, $this->scaffolder))(['LintMenu'], []);
+        (new MakeShortcodeCommand($this->cli, $this->scaffolder))(['lint-tag'], ['class' => 'LintShortcode']);
+        (new MakeHooksCommand($this->cli, $this->scaffolder))(['Lint'], []);
 
         $generated = [];
         $directory = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($this->appPath));
@@ -372,12 +374,12 @@ describe('generated files', function () {
     });
 
     it('leave no dummy placeholder behind', function () {
-        (new MakePostTypeCommand($this->cli, $this->generator))(['clean-product'], ['class' => 'CleanPost']);
-        (new MakeTaxonomyCommand($this->cli, $this->generator))(['clean-genre'], ['class' => 'CleanTerm']);
-        (new MakeBlockCommand($this->cli, $this->generator))(['clean-hero'], ['class' => 'CleanBlock']);
-        (new MakeMenuCommand($this->cli, $this->generator))(['CleanMenu'], []);
-        (new MakeShortcodeCommand($this->cli, $this->generator))(['clean-tag'], ['class' => 'CleanShortcode']);
-        (new MakeHooksCommand($this->cli, $this->generator))(['Clean'], []);
+        (new MakePostTypeCommand($this->cli, $this->scaffolder))(['clean-product'], ['class' => 'CleanPost']);
+        (new MakeTaxonomyCommand($this->cli, $this->scaffolder))(['clean-genre'], ['class' => 'CleanTerm']);
+        (new MakeBlockCommand($this->cli, $this->scaffolder))(['clean-hero'], ['class' => 'CleanBlock']);
+        (new MakeMenuCommand($this->cli, $this->scaffolder))(['CleanMenu'], []);
+        (new MakeShortcodeCommand($this->cli, $this->scaffolder))(['clean-tag'], ['class' => 'CleanShortcode']);
+        (new MakeHooksCommand($this->cli, $this->scaffolder))(['Clean'], []);
 
         $directory = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($this->appPath));
 

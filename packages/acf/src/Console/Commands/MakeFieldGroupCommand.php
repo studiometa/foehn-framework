@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Studiometa\Foehn\Console\Commands;
 
 use Studiometa\Foehn\Attributes\AsCliCommand;
-use Studiometa\Foehn\Console\ClassFileGenerator;
 use Studiometa\Foehn\Console\CliCommandInterface;
 use Studiometa\Foehn\Console\GenerationRequest;
+use Studiometa\Foehn\Console\Scaffolder;
 use Studiometa\Foehn\Console\Stubs\FieldGroupStub;
 use Studiometa\Foehn\Console\WpCli;
 
@@ -35,7 +35,10 @@ use function Tempest\Support\str;
     : Overwrite existing file
 
     [--dry-run]
-    : Show what would be created without creating
+    : Write nothing. Show the file that would be written, or report that it exists
+
+    [--format=<format>]
+    : Output format. text (default) or json. json prints the written files, their status and the next steps
 
     ## EXAMPLES
 
@@ -55,7 +58,7 @@ final class MakeFieldGroupCommand implements CliCommandInterface
 {
     public function __construct(
         private readonly WpCli $cli,
-        private readonly ClassFileGenerator $generator,
+        private readonly Scaffolder $scaffolder,
     ) {}
 
     public function __invoke(array $args, array $assocArgs): void
@@ -74,39 +77,26 @@ final class MakeFieldGroupCommand implements CliCommandInterface
         $postType = $assocArgs['post-type'] ?? null;
         $pageTemplate = $assocArgs['page-template'] ?? null;
         $taxonomy = $assocArgs['taxonomy'] ?? null;
-        $force = ($assocArgs['force'] ?? null) !== null;
-        $dryRun = ($assocArgs['dry-run'] ?? null) !== null;
 
-        $file = $this->generator->generate(new GenerationRequest(
-            stub: FieldGroupStub::class,
-            subdirectory: $this->getSubdirectory($postType, $pageTemplate, $taxonomy),
-            className: $className,
-            attributeArguments: [
-                'name' => $key,
-                'title' => $title,
-                'location' => $this->buildLocation($postType, $pageTemplate, $taxonomy),
-            ],
-            // The builder is seeded with the group key inside fields()
-            bodyReplacements: [
-                'fields' => ["'dummy_field_group'" => "'{$key}'"],
-            ],
-        ));
-
-        if ($dryRun) {
-            $this->cli->previewGeneratedFile($file);
-
-            return;
-        }
-
-        if (!$this->generator->write($file, $force)) {
-            $this->cli->reportFileExists($file);
-
-            return;
-        }
-
-        $this->cli->success("Field group created: {$this->cli->getRelativePath($file->path)}");
-        $this->cli->line('');
-        $this->cli->log('Edit the fields() method to define your ACF fields using FieldsBuilder.');
+        $this->scaffolder->scaffold(
+            new GenerationRequest(
+                stub: FieldGroupStub::class,
+                subdirectory: $this->getSubdirectory($postType, $pageTemplate, $taxonomy),
+                className: $className,
+                attributeArguments: [
+                    'name' => $key,
+                    'title' => $title,
+                    'location' => $this->buildLocation($postType, $pageTemplate, $taxonomy),
+                ],
+                // The builder is seeded with the group key inside fields()
+                bodyReplacements: [
+                    'fields' => ["'dummy_field_group'" => "'{$key}'"],
+                ],
+            ),
+            $assocArgs,
+            'Field group created',
+            ['Define the ACF fields in fields() with FieldsBuilder.'],
+        );
     }
 
     /**

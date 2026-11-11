@@ -7,6 +7,7 @@ use Studiometa\Foehn\Console\CliCommandInterface;
 use Studiometa\Foehn\Console\Commands\MakeAcfBlockCommand;
 use Studiometa\Foehn\Console\Commands\MakeFieldGroupCommand;
 use Studiometa\Foehn\Console\Commands\MakeOptionsPageCommand;
+use Studiometa\Foehn\Console\Scaffolder;
 use Studiometa\Foehn\Console\WpCli;
 
 /**
@@ -46,7 +47,10 @@ beforeEach(function () {
     file_put_contents($this->root . '/composer.json', json_encode(['autoload' => ['psr-4' => ['Theme\\' => 'app/']]]));
 
     $this->generator = new ClassFileGenerator($this->appPath);
-    $this->make = fn(string $class): CliCommandInterface => new $class(new WpCli(), $this->generator);
+    $this->make = fn(string $class): CliCommandInterface => new $class(
+        new WpCli(),
+        new Scaffolder(new WpCli(), $this->generator),
+    );
 });
 
 afterEach(function () {

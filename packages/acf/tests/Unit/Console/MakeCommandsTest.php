@@ -9,6 +9,7 @@ use Studiometa\Foehn\Console\ClassFileGenerator;
 use Studiometa\Foehn\Console\Commands\MakeAcfBlockCommand;
 use Studiometa\Foehn\Console\Commands\MakeFieldGroupCommand;
 use Studiometa\Foehn\Console\Commands\MakeOptionsPageCommand;
+use Studiometa\Foehn\Console\Scaffolder;
 use Studiometa\Foehn\Console\WpCli;
 
 beforeEach(function () {
@@ -22,6 +23,7 @@ beforeEach(function () {
 
     $this->cli = new WpCli();
     $this->generator = new ClassFileGenerator($this->appPath);
+    $this->scaffolder = new Scaffolder($this->cli, $this->generator);
 
     /**
      * Read the attribute of a class the command just generated.
@@ -56,7 +58,7 @@ afterEach(function () {
 
 describe('make:acf-block', function () {
     it('generates an ACF block with the requested mode and category', function () {
-        (new MakeAcfBlockCommand($this->cli, $this->generator))(['testimonial'], [
+        (new MakeAcfBlockCommand($this->cli, $this->scaffolder))(['testimonial'], [
             'class' => 'MakeTestimonialBlock',
             'category' => 'text',
             'mode' => 'edit',
@@ -74,7 +76,7 @@ describe('make:acf-block', function () {
     });
 
     it('defaults to the widgets category, like #[AsBlock]', function () {
-        (new MakeAcfBlockCommand($this->cli, $this->generator))(['banner'], ['class' => 'MakeBannerBlock']);
+        (new MakeAcfBlockCommand($this->cli, $this->scaffolder))(['banner'], ['class' => 'MakeBannerBlock']);
 
         /** @var AsAcfBlock $attribute */
         $attribute = ($this->generatedAttribute)(($this->path)('Blocks', 'MakeBannerBlock'), AsAcfBlock::class);
@@ -83,7 +85,7 @@ describe('make:acf-block', function () {
     });
 
     it('seeds the field builder with the block key', function () {
-        (new MakeAcfBlockCommand($this->cli, $this->generator))(['call-to-action'], ['class' => 'MakeCtaBlock']);
+        (new MakeAcfBlockCommand($this->cli, $this->scaffolder))(['call-to-action'], ['class' => 'MakeCtaBlock']);
 
         $contents = file_get_contents(($this->path)('Blocks', 'MakeCtaBlock'));
 
@@ -92,7 +94,7 @@ describe('make:acf-block', function () {
     });
 
     it('generates the requested fields', function () {
-        (new MakeAcfBlockCommand($this->cli, $this->generator))(['gallery'], [
+        (new MakeAcfBlockCommand($this->cli, $this->scaffolder))(['gallery'], [
             'class' => 'MakeGalleryBlock',
             'fields' => 'text,image',
         ]);
@@ -104,14 +106,14 @@ describe('make:acf-block', function () {
     });
 
     it('rejects an invalid mode without generating', function () {
-        (new MakeAcfBlockCommand($this->cli, $this->generator))(['x'], ['mode' => 'nonsense']);
+        (new MakeAcfBlockCommand($this->cli, $this->scaffolder))(['x'], ['mode' => 'nonsense']);
 
         expect(wp_stub_get_calls('wp_cli_error'))->toHaveCount(1);
         expect(glob($this->appPath . '/Blocks/*.php'))->toBeEmpty();
     });
 
     it('rejects an unknown field type without generating', function () {
-        (new MakeAcfBlockCommand($this->cli, $this->generator))(['x'], ['fields' => 'text,nonsense']);
+        (new MakeAcfBlockCommand($this->cli, $this->scaffolder))(['x'], ['fields' => 'text,nonsense']);
 
         expect(wp_stub_get_calls('wp_cli_error'))->toHaveCount(1);
         expect(glob($this->appPath . '/Blocks/*.php'))->toBeEmpty();
@@ -120,7 +122,7 @@ describe('make:acf-block', function () {
 
 describe('make:field-group', function () {
     it('locates the field group on the requested post type', function () {
-        (new MakeFieldGroupCommand($this->cli, $this->generator))(['MakePropertyFields'], ['post-type' => 'property']);
+        (new MakeFieldGroupCommand($this->cli, $this->scaffolder))(['MakePropertyFields'], ['post-type' => 'property']);
 
         $path = ($this->path)('Fields/PostType', 'MakePropertyFields');
 
@@ -131,7 +133,7 @@ describe('make:field-group', function () {
     });
 
     it('locates the field group on the requested taxonomy', function () {
-        (new MakeFieldGroupCommand($this->cli, $this->generator))(['MakeGenreFields'], ['taxonomy' => 'genre']);
+        (new MakeFieldGroupCommand($this->cli, $this->scaffolder))(['MakeGenreFields'], ['taxonomy' => 'genre']);
 
         /** @var AsAcfFieldGroup $attribute */
         $attribute = ($this->generatedAttribute)(
@@ -143,7 +145,7 @@ describe('make:field-group', function () {
     });
 
     it('locates the field group on the requested page template', function () {
-        (new MakeFieldGroupCommand($this->cli, $this->generator))(['MakeLandingFields'], [
+        (new MakeFieldGroupCommand($this->cli, $this->scaffolder))(['MakeLandingFields'], [
             'page-template' => 'landing',
         ]);
 
@@ -157,7 +159,7 @@ describe('make:field-group', function () {
     });
 
     it('seeds the field builder with the group key', function () {
-        (new MakeFieldGroupCommand($this->cli, $this->generator))(['MakeSeoFields'], ['post-type' => 'page']);
+        (new MakeFieldGroupCommand($this->cli, $this->scaffolder))(['MakeSeoFields'], ['post-type' => 'page']);
 
         $contents = file_get_contents(($this->path)('Fields/PostType', 'MakeSeoFields'));
 
@@ -168,7 +170,7 @@ describe('make:field-group', function () {
 
 describe('make:options-page', function () {
     it('generates a top level options page', function () {
-        (new MakeOptionsPageCommand($this->cli, $this->generator))(['make-theme-settings'], []);
+        (new MakeOptionsPageCommand($this->cli, $this->scaffolder))(['make-theme-settings'], []);
 
         /** @var AsAcfOptionsPage $attribute */
         $attribute = ($this->generatedAttribute)(
@@ -182,7 +184,7 @@ describe('make:options-page', function () {
     });
 
     it('generates a sub page under the requested parent', function () {
-        (new MakeOptionsPageCommand($this->cli, $this->generator))(['make-footer-settings'], [
+        (new MakeOptionsPageCommand($this->cli, $this->scaffolder))(['make-footer-settings'], [
             'parent' => 'make-theme-settings',
             'icon' => 'dashicons-menu',
         ]);

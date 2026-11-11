@@ -6,6 +6,7 @@ use Studiometa\Foehn\Attributes\AsBlock;
 use Studiometa\Foehn\Attributes\AsMenu;
 use Studiometa\Foehn\Console\ClassFileGenerator;
 use Studiometa\Foehn\Console\GenerationRequest;
+use Studiometa\Foehn\Console\GenerationStatus;
 use Studiometa\Foehn\Console\Stubs\BlockStub;
 use Studiometa\Foehn\Console\Stubs\HooksStub;
 use Studiometa\Foehn\Console\Stubs\MenuStub;
@@ -199,7 +200,7 @@ describe('ClassFileGenerator attribute rewriting', function () {
             replacements: ['DummyMenu' => 'GeneratedFooterMenu'],
         ));
 
-        expect($this->generator->write($file))->toBeTrue();
+        expect($this->generator->write($file))->toBe(GenerationStatus::Created);
 
         require $file->path;
 
@@ -334,7 +335,7 @@ describe('ClassFileGenerator writing', function () {
             className: 'Product',
         ));
 
-        expect($this->generator->write($file))->toBeTrue();
+        expect($this->generator->write($file))->toBe(GenerationStatus::Created);
         expect(file_get_contents($file->path))->toBe($file->contents);
     });
 
@@ -348,7 +349,7 @@ describe('ClassFileGenerator writing', function () {
         $this->generator->write($file);
         file_put_contents($file->path, '<?php // hand-edited');
 
-        expect($this->generator->write($file))->toBeFalse();
+        expect($this->generator->write($file))->toBe(GenerationStatus::Exists);
         expect(file_get_contents($file->path))->toBe('<?php // hand-edited');
     });
 
@@ -362,8 +363,26 @@ describe('ClassFileGenerator writing', function () {
         $this->generator->write($file);
         file_put_contents($file->path, '<?php // hand-edited');
 
-        expect($this->generator->write($file, force: true))->toBeTrue();
+        expect($this->generator->write($file, force: true))->toBe(GenerationStatus::Overwritten);
         expect(file_get_contents($file->path))->toBe($file->contents);
+    });
+
+    it('plans a file without writing it', function () {
+        $file = $this->generator->generate(new GenerationRequest(
+            stub: ModelStub::class,
+            subdirectory: 'Models',
+            className: 'Product',
+        ));
+
+        expect($this->generator->plan($file))->toBe(GenerationStatus::WouldCreate);
+        expect(file_exists($file->path))->toBeFalse();
+
+        $this->generator->write($file);
+        file_put_contents($file->path, '<?php // hand-edited');
+
+        expect($this->generator->plan($file))->toBe(GenerationStatus::Exists);
+        expect($this->generator->plan($file, force: true))->toBe(GenerationStatus::WouldOverwrite);
+        expect(file_get_contents($file->path))->toBe('<?php // hand-edited');
     });
 
     it('does not touch the disk when only generating', function () {

@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Studiometa\Foehn\Console\Commands;
 
 use Studiometa\Foehn\Attributes\AsCliCommand;
-use Studiometa\Foehn\Console\ClassFileGenerator;
 use Studiometa\Foehn\Console\CliCommandInterface;
 use Studiometa\Foehn\Console\GenerationRequest;
+use Studiometa\Foehn\Console\Scaffolder;
 use Studiometa\Foehn\Console\Stubs\ModelStub;
 use Studiometa\Foehn\Console\Stubs\PostTypeStub;
 use Studiometa\Foehn\Console\WpCli;
@@ -36,7 +36,10 @@ use function Tempest\Support\str;
     : Overwrite existing file
 
     [--dry-run]
-    : Show what would be created without creating
+    : Write nothing. Show the file that would be written, or report that it exists
+
+    [--format=<format>]
+    : Output format. text (default) or json. json prints the written files, their status and the next steps
 
     ## EXAMPLES
 
@@ -56,7 +59,7 @@ final class MakeModelCommand implements CliCommandInterface
 {
     public function __construct(
         private readonly WpCli $cli,
-        private readonly ClassFileGenerator $generator,
+        private readonly Scaffolder $scaffolder,
     ) {}
 
     public function __invoke(array $args, array $assocArgs): void
@@ -74,8 +77,6 @@ final class MakeModelCommand implements CliCommandInterface
         $slug = $assocArgs['slug'] ?? str($name)->kebab()->toString();
         $singular = $assocArgs['singular'] ?? str($name)->replace('-', ' ')->title()->toString();
         $plural = $assocArgs['plural'] ?? $singular . 's';
-        $force = ($assocArgs['force'] ?? null) !== null;
-        $dryRun = ($assocArgs['dry-run'] ?? null) !== null;
 
         // A model that registers its own post type starts from the post type stub
         $request = $withPostType
@@ -96,27 +97,15 @@ final class MakeModelCommand implements CliCommandInterface
                 replacements: ['DummyModel' => $className],
             );
 
-        $file = $this->generator->generate($request);
-
-        if ($dryRun) {
-            $this->cli->previewGeneratedFile($file);
-
-            return;
-        }
-
-        if (!$this->generator->write($file, $force)) {
-            $this->cli->reportFileExists($file);
-
-            return;
-        }
-
-        $this->cli->success("Model created: {$this->cli->getRelativePath($file->path)}");
-
-        if ($withPostType) {
-            $this->cli->line('');
-            $this->cli->log("Don't forget to create your Twig template at:");
-            $this->cli->log("  templates/single-{$slug}.twig");
-            $this->cli->log("  templates/archive-{$slug}.twig (if archive is enabled)");
-        }
+        $this->scaffolder->scaffold(
+            $request,
+            $assocArgs,
+            'Model created',
+            $withPostType
+                ? [
+                    "Create the Twig templates: templates/single-{$slug}.twig, templates/archive-{$slug}.twig (if the archive is enabled)",
+                ]
+                : [],
+        );
     }
 }

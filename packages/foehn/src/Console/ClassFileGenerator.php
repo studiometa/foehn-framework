@@ -22,7 +22,8 @@ use function Tempest\Support\str;
  *
  * Namespace resolution, attribute rewriting and stub substitution all live behind
  * generate(), which returns the file rather than writing it. Writing is a separate
- * call, so a command that only wants to show its output never touches the disk.
+ * call, so a command that only wants to show its output never touches the disk:
+ * plan() tells what write() would do instead.
  */
 final class ClassFileGenerator
 {
@@ -54,13 +55,13 @@ final class ClassFileGenerator
 
     /**
      * Write a generated file, unless it already exists and $force is false.
-     *
-     * @return bool Whether the file was written
      */
-    public function write(GeneratedFile $file, bool $force = false): bool
+    public function write(GeneratedFile $file, bool $force = false): GenerationStatus
     {
-        if (Filesystem\is_file($file->path) && !$force) {
-            return false;
+        $exists = Filesystem\is_file($file->path);
+
+        if ($exists && !$force) {
+            return GenerationStatus::Exists;
         }
 
         $directory = dirname($file->path);
@@ -71,7 +72,19 @@ final class ClassFileGenerator
 
         Filesystem\write_file($file->path, $file->contents);
 
-        return true;
+        return $exists ? GenerationStatus::Overwritten : GenerationStatus::Created;
+    }
+
+    /**
+     * Tell what write() would do with a generated file, without touching the disk.
+     */
+    public function plan(GeneratedFile $file, bool $force = false): GenerationStatus
+    {
+        if (!Filesystem\is_file($file->path)) {
+            return GenerationStatus::WouldCreate;
+        }
+
+        return $force ? GenerationStatus::WouldOverwrite : GenerationStatus::Exists;
     }
 
     /**
