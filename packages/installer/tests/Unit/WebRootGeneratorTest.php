@@ -535,6 +535,32 @@ describe('WebRootGenerator', function () {
         expect($output)->toContain('S3_UPLOADS_BUCKET_URL=https://cdn.example.com');
     });
 
+    it('turns the pseudo-cron off unless the environment says otherwise', function () {
+        // Føhn assumes a real cron runs `wp cron event run --due-now`: a page cache
+        // serves hits without PHP, so the pseudo-cron stops on a quiet, cached site.
+        linkRealAutoloader($this->root);
+
+        ($this->generate)();
+
+        stubWordPress($this->root, "echo 'CRON=', var_export(DISABLE_WP_CRON, true), PHP_EOL;");
+
+        expect(runWpConfig($this->root))->toContain('CRON=true');
+    });
+
+    it('gives the pseudo-cron back with DISABLE_WP_CRON=false', function () {
+        linkRealAutoloader($this->root);
+
+        ($this->generate)();
+
+        stubWordPress($this->root, "echo 'CRON=', var_export(DISABLE_WP_CRON, true), PHP_EOL;");
+
+        expect(runWpConfig($this->root, ['DISABLE_WP_CRON' => 'false']))->toContain('CRON=false');
+
+        file_put_contents($this->root . '/.env', "DISABLE_WP_CRON=false\n", FILE_APPEND);
+
+        expect(runWpConfig($this->root))->toContain('CRON=false');
+    });
+
     it('defines the switch that keeps uploads on the site\'s own URLs', function () {
         linkRealAutoloader($this->root);
 
