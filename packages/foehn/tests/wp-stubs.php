@@ -1815,6 +1815,39 @@ if (!function_exists('_get_cron_array')) {
     }
 }
 
+/**
+ * The next time a hook is queued for, read from the same queue `_get_cron_array()` answers.
+ */
+if (!function_exists('wp_next_scheduled')) {
+    function wp_next_scheduled(string $hook, array $args = []): int|false
+    {
+        foreach ($GLOBALS['wp_stub_cron_events'] ?? [] as $timestamp => $hooks) {
+            if (isset($hooks[$hook])) {
+                return (int) $timestamp;
+            }
+        }
+
+        return false;
+    }
+}
+
+/**
+ * Queue a recurring event, in core's shape, so `wp_next_scheduled()` then finds it.
+ */
+if (!function_exists('wp_schedule_event')) {
+    function wp_schedule_event(int $timestamp, string $recurrence, string $hook, array $args = []): bool
+    {
+        wp_stub_record('wp_schedule_event', compact('timestamp', 'recurrence', 'hook', 'args'));
+
+        $GLOBALS['wp_stub_cron_events'][$timestamp][$hook][md5(serialize($args))] = [
+            'schedule' => $recurrence,
+            'args' => $args,
+        ];
+
+        return true;
+    }
+}
+
 if (!function_exists('is_feed')) {
     function is_feed(mixed $feeds = ''): bool
     {

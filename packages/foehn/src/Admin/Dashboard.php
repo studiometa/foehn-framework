@@ -109,9 +109,8 @@ final readonly class Dashboard
 
         echo '<h2>' . esc_html__('WP-Cron', 'foehn') . '</h2>';
         echo '<table class="widefat striped"><tbody>';
-        // "Never" until the Docker cron runner ships and writes the option — see
-        // {@see Heartbeat}. That is the same answer a broken runner gives, which is the
-        // point of showing it at all.
+        // "Never" until a real cron runs the heartbeat event — see {@see Heartbeat}. That
+        // is the same answer a broken runner gives, which is the point of showing it.
         $this->renderRow(__('Last real run', 'foehn'), $this->ago($this->heartbeat->recordedAt()));
         echo '</tbody></table>';
 
