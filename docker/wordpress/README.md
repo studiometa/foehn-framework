@@ -76,25 +76,15 @@ by all three and is deliberately not executable. CI checks both halves of this.
 
 ## The cron heartbeat
 
-`bin/foehn-cron` records one WordPress option after each successful tick:
+`bin/foehn-cron` runs `wp cron event run --due-now` and nothing else. The heartbeat that `wp foehn verify --profile=production` reads, the `foehn_cron_last_run` option, is written by Føhn's own `foehn_cron_heartbeat` event, which is due on every tick. See [Verification](../../docs/guide/verification.md#the-real-cron).
 
-| Option                | Value          | Autoload |
-| --------------------- | -------------- | -------- |
-| `foehn_cron_last_run` | Unix timestamp | off      |
+How a tick ends. Only a tick that reaches WordPress can run the event and move the heartbeat:
 
-It is not autoloaded, because nothing but a deployment script ever reads it and an autoloaded option is fetched on every page load of the site. WordPress 6.6 spells that column `on`/`off` rather than the `yes`/`no` older code expects, which is what the CI assertion checks against.
+| Case                          | Exit | Why                                                                    |
+| ----------------------------- | ---- | ---------------------------------------------------------------------- |
+| No WordPress in the container | `0`  | Ordinary during boot or on an image with no site yet, not an emergency |
+| Database unreachable          | `0`  | The next tick will do the work                                         |
+| Event execution failed        | `1`  | Worth a visible failure in the log                                     |
+| Overlap `flock` not acquired  | `0`  | This tick did no work at all — the previous one is still doing it      |
 
-**Success means the tick completed, not that it did work.** Nothing being due is the normal case on a site behind a warm cache, so a tick that ran zero events refreshes the heartbeat too. An option that only moved when work happened would go stale on precisely the quietest, healthiest site, and `wp foehn verify --profile=production` would reject it for being healthy.
-
-Persistence is part of success: if the option write fails, the runner logs and exits non-zero. A run whose events fired but whose heartbeat never landed is a site verification would declare dead while it works, which is worth failing the tick over rather than hiding.
-
-These runs deliberately leave the previous value alone, which is what makes a stale heartbeat mean something:
-
-| Case                          | Exit | Why it does not advance                                                                                  |
-| ----------------------------- | ---- | -------------------------------------------------------------------------------------------------------- |
-| No WordPress in the container | `0`  | Ordinary during boot or on an image with no site yet, not an emergency                                   |
-| Database unreachable          | `0`  | The next tick will do the work; a heartbeat here would report a site that cannot run anything as running |
-| Event execution failed        | `1`  | The events did not run, so nothing should say they did                                                   |
-| Overlap `flock` not acquired  | `0`  | This tick did no work at all — the previous one is still doing it                                        |
-
-The write uses `wp eval` calling `update_option($key, $value, false)` rather than `wp option update --autoload=no`, although the WP-CLI in this image (2.12) understands that flag. `wp option update` exits `1` when the value it is given is the one already stored, reporting `Could not update option` — the same message and the same exit code as a database that refused the write. Two ticks inside one second would therefore report a healthy run as a broken one, with no way to tell the two apart from outside. Reading the option back is also a stronger claim than `update_option()`'s return value: it says the timestamp is in the database, not merely that nothing objected on the way there.
+A tick that ran only the heartbeat event logs nothing. A tick that ran other events logs WP-CLI's last line.

@@ -351,15 +351,12 @@ jobs:
           echo "It is on without being asked, and scheduled where busybox looks"
           docker exec cronsite test -L /etc/periodic/15min/foehn-cron
 
-          echo "PHP-FPM sees the flag, which is what turns WordPress's own cron off"
-          docker exec cronsite sh -c 'mkdir -p /app/web && printf "<?php echo getenv(\"FOEHN_CRON_ENABLED\");" > /app/web/c.php'
-          test "$(docker exec cronsite curl -fsS http://localhost/c.php)" = "true"
-
           echo "With no site in the container it is a silent no-op, not an error"
           test -z "$(docker exec cronsite run-parts /etc/periodic/15min)"
 
           echo "Against a real WordPress, a due event actually executes"
           docker exec cronsite sh -c '
+            mkdir -p /app/web
             wp core download --path=/app/web/wp --allow-root --quiet
             wp config create --path=/app/web/wp --dbname=wp --dbuser=wp --dbpass=secret --dbhost=crondb --allow-root --quiet
             wp core install --path=/app/web/wp --url=http://localhost --title=CI \
@@ -369,47 +366,20 @@ jobs:
           docker exec cronsite run-parts /etc/periodic/15min | grep -q 'Executed a total of'
           ! docker exec cronsite wp cron event list --path=/app/web/wp --allow-root --fields=hook | grep -q foehn_ci_event
 
-          # `foehn_cron_last_run` is the liveness signal `wp foehn verify
-          # --profile=production` reads. Read straight out of the column rather
-          # than through WP-CLI, because what the assertions below are about is
-          # what is on disk, not what a command is willing to say about it.
-          beat() {
-            docker exec crondb mariadb -uwp -psecret -N -B \
-              -e "SELECT option_value FROM wp_options WHERE option_name = 'foehn_cron_last_run'" wp
-          }
-
-          echo "That successful tick recorded a fresh, numeric heartbeat"
-          first="$(beat)"
-          echo "$first" | grep -qE '^[0-9]+$'
-          test "$(( $(date -u '+%s') - $first ))" -lt 300
-
-          # A value nothing but a deployment script ever reads has no business
-          # being fetched on every page load of the site. WordPress 6.6 spells
-          # this column `on`/`off` rather than the `yes`/`no` older code expects,
-          # which is the other reason to assert on the column itself.
-          echo "And recorded it not autoloaded"
-          test "$(docker exec crondb mariadb -uwp -psecret -N -B \
-            -e "SELECT autoload FROM wp_options WHERE option_name = 'foehn_cron_last_run'" wp)" = "off"
-
-          # The case the heartbeat exists for. Nothing being due is normal on a
-          # healthy site, so a heartbeat that only moved when work happened would
-          # go stale on the quietest sites and verification would reject them for
-          # being healthy. `sleep 2` because the value is a whole-second Unix
-          # timestamp: two ticks inside one second would write the same number and
-          # `-gt` would fail on a runner that had done nothing wrong.
-          echo "A tick with nothing due advances it, and still says nothing"
-          sleep 2
+          # Føhn schedules `foehn_cron_heartbeat` every minute, so it is due on
+          # every tick. Nobody listens to it on this bare WordPress, which is
+          # enough: the log only cares about the hook name.
+          echo "A tick that only ran the heartbeat event says nothing"
+          docker exec cronsite wp cron event schedule foehn_cron_heartbeat now --path=/app/web/wp --allow-root
           test -z "$(docker exec cronsite run-parts /etc/periodic/15min)"
-          second="$(beat)"
-          test "$second" -gt "$first"
 
           # An event whose callback does not exist is not a failure: WP-CLI fires
           # the hook, nothing listens, and the queue is legitimately empty
-          # afterwards. Proving the heartbeat stands still on failure therefore
-          # needs a callback that really fails. Written from here and copied in,
-          # because escaping PHP through two shells is how a fixture stops saying
-          # what it looks like it says.
-          echo "A run whose events fail leaves it alone"
+          # afterwards. Proving a failed run fails the tick therefore needs a
+          # callback that really fails. Written from here and copied in, because
+          # escaping PHP through two shells is how a fixture stops saying what it
+          # looks like it says.
+          echo "A run whose events fail fails the tick"
           cat > /tmp/foehn-ci-fatal.php <<'PHP'
           <?php
           add_action('foehn_ci_fatal', static function (): void {
@@ -422,14 +392,11 @@ jobs:
           # one to satisfy by exempting the test's own fixture.
           docker exec cronsite chown -R application:application /app/web/wp/wp-content/mu-plugins
           docker exec cronsite wp cron event schedule foehn_ci_fatal now --path=/app/web/wp --allow-root
-          sleep 2
           ! docker exec cronsite /opt/docker/bin/foehn-cron
-          test "$(beat)" = "$second"
           docker exec cronsite rm /app/web/wp/wp-content/mu-plugins/foehn-ci-fatal.php
 
           # `flock -n`: a tick that finds the previous one still working leaves it
-          # alone — and, having done no work, leaves the heartbeat alone too.
-          # The holder touches a sentinel once it has the lock, so this waits for
+          # alone. The holder touches a sentinel once it has the lock, so this waits for
           # the lock to be held rather than for a guess at how long that takes.
           echo "A tick that cannot take the overlap lock leaves it alone"
           docker exec -d cronsite sh -c 'flock /run/foehn/cron.lock sh -c "touch /run/foehn/held; sleep 300"'
@@ -439,7 +406,6 @@ jobs:
           done
           docker exec cronsite test -e /run/foehn/held
           docker exec cronsite /opt/docker/bin/foehn-cron | grep -q 'skipping this tick'
-          test "$(beat)" = "$second"
           # The `sleep` inherits the locked descriptor, so killing `flock` alone
           # would leave the lock held for another five minutes. `-f` matches the
           # whole command line, which is every process in that chain.
@@ -449,19 +415,9 @@ jobs:
           # The trap the page cache hook documents: WP-CLI as root leaves
           # root-owned files under wp-content, after which PHP cannot write
           # there and the cache silently stops working. Cron writes more than
-          # the cache does, so it runs as `application` or not at all — the
-          # heartbeat's own WP-CLI call included, which is why this comes after
-          # it rather than before.
+          # the cache does, so it runs as `application` or not at all.
           echo "And it left nothing owned by root behind"
           test -z "$(docker exec cronsite find /app/web/wp/wp-content ! -user application)"
-
-          echo "Opting out removes the job and leaves WordPress its own cron"
-          docker rm -f cronsite
-          docker run -d --name cronsite --network cronnet -e FOEHN_CRON_ENABLED=false \
-            -e DB_HOST=crondb -e DB_NAME=wp -e DB_USER=wp -e DB_PASSWORD=secret \
-            foehn-wordpress:check
-          sleep 12
-          test "$(docker exec cronsite sh -c 'ls -1 /etc/periodic/*/ | grep -c foehn-cron || true')" = "0"
 
           echo "A cadence busybox never calls stops the boot rather than pretending"
           ! docker run --name cronbad -e FOEHN_CRON_SCHEDULE=every-5-minutes foehn-wordpress:check >/dev/null 2>&1

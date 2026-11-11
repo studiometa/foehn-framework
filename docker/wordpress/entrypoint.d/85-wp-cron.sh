@@ -8,15 +8,14 @@
 # problem to leave to each project: it is caused by the image, so the image
 # fixes it.
 #
-# On unless a site says otherwise, unlike the backups beside it. Backups need a
-# bucket, credentials and a password that does not exist yet, so they cannot
-# work until someone sets them up; this needs nothing, and a site that does not
-# get it is quietly worse off. `FOEHN_CRON_ENABLED=false` opts out.
+# Always on, unlike the backups beside it. Backups need a bucket, credentials
+# and a password that does not exist yet, so they cannot work until someone sets
+# them up; this needs nothing, and the generated `wp-config.php` turns the
+# pseudo-cron off by default, so a site without it runs no scheduled events.
 #
 # The same mechanism as the backups: a symlink into `/etc/periodic/`, which is
 # already called by busybox's stock crontab under the `crond` the base image
-# already supervises. Nothing to write, and switching it off is an empty
-# directory rather than a flag some script has to remember to honour.
+# already supervises. Nothing to write.
 #
 # `85-`, after `80-backup.sh`, so the two read in the order they run.
 #
@@ -34,16 +33,11 @@ foehn_wp_cron() {
 
     schedules="15min hourly daily weekly monthly"
 
-    # A clean slate: a site that turns this off, or moves its cadence, must not
-    # keep the job it had before.
+    # A clean slate: a site that moves its cadence must not keep the job it had
+    # before.
     for period in $schedules; do
         rm -f "/etc/periodic/$period/foehn-cron"
     done
-
-    if [ "${FOEHN_CRON_ENABLED:-true}" != "true" ]; then
-        echo "ℹ️ NOTICE ($script_name): FOEHN_CRON_ENABLED=false, WordPress runs its own cron on page loads."
-        return 0
-    fi
 
     schedule="${FOEHN_CRON_SCHEDULE:-15min}"
 
@@ -60,16 +54,7 @@ foehn_wp_cron() {
 
     ln -sf /opt/docker/bin/foehn-cron "/etc/periodic/$schedule/foehn-cron"
 
-    # Exported, not merely defaulted. `wp-config.php` reads this to decide
-    # whether to set `DISABLE_WP_CRON`, and it is PHP-FPM that reads it — so the
-    # value has to reach PHP, not just this script. This shell goes on to exec
-    # supervisord, which is PHP-FPM's parent, so exporting here is what carries
-    # it. Without this the default is on in the image and off in wp-config, and
-    # both mechanisms run: the scheduled job doing the work and the pseudo-cron
-    # still spawning a loopback request on every uncached page load.
-    export FOEHN_CRON_ENABLED=true
-
-    echo "ℹ️ NOTICE ($script_name): scheduled events run every $schedule, and WordPress's own cron is off."
+    echo "ℹ️ NOTICE ($script_name): scheduled events run every $schedule."
 }
 
 foehn_wp_cron
