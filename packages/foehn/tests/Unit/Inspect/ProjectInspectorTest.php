@@ -3,7 +3,9 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Discovery\DiscoveryLocations;
+use Studiometa\Foehn\Discovery\DiscoveryPhase;
 use Studiometa\Foehn\Discovery\DiscoveryRunner;
+use Studiometa\Foehn\Discovery\SettingsPageDiscovery;
 use Studiometa\Foehn\Inspect\ProjectInspector;
 use Symfony\Component\Cache\Adapter\PhpFilesAdapter;
 use Tempest\Discovery\DiscoveryCache;
@@ -18,6 +20,7 @@ use Tests\Fixtures\InspectApp\PrimaryMenu;
 use Tests\Fixtures\InspectApp\Product;
 use Tests\Fixtures\InspectApp\ProductController;
 use Tests\Fixtures\InspectApp\ProductsEndpoint;
+use Tests\Fixtures\InspectApp\ShopSettings;
 use Tests\Fixtures\InspectApp\StockBinding;
 use Tests\Fixtures\InspectApp\StripeWebhook;
 use Tests\Fixtures\InspectApp\SyncCommand;
@@ -162,6 +165,61 @@ describe('ProjectInspector', function () {
         ]);
         expect(array_keys(inspectedRow($rows, 'name', 'category')))
             ->toBe(array_keys(inspectedRow($rows, 'name', 'brand')));
+    });
+
+    it('reports settings pages with the option, type, default and sanitizer of each setting', function () {
+        expect(inspector()->section('settings'))->toBe([
+            [
+                'page' => 'shop-settings',
+                'title' => 'Shop settings',
+                'class' => ShopSettings::class,
+                'optionGroup' => 'shop-settings',
+                'settings' => [
+                    [
+                        'option' => 'shop_contact_email',
+                        'type' => 'string',
+                        'default' => '',
+                        'sanitize' => 'sanitize_email',
+                        'sanitizeDeclared' => true,
+                        'sanitizeOnWpCli' => true,
+                        'showInRest' => false,
+                    ],
+                    [
+                        'option' => 'shop_show_banner',
+                        'type' => 'boolean',
+                        'default' => true,
+                        // None declared: the type's own sanitizer still runs.
+                        'sanitize' => 'rest_sanitize_boolean',
+                        'sanitizeDeclared' => false,
+                        'sanitizeOnWpCli' => true,
+                        'showInRest' => false,
+                    ],
+                    [
+                        'option' => 'shop_currency',
+                        'type' => 'string',
+                        'default' => 'EUR',
+                        'sanitize' => ShopSettings::class . '::normalizeCurrency',
+                        'sanitizeDeclared' => true,
+                        'sanitizeOnWpCli' => true,
+                        'showInRest' => false,
+                    ],
+                ],
+            ],
+        ]);
+    });
+
+    it('registers settings on init, so their sanitizers run under WP-CLI', function () {
+        // `sanitizeOnWpCli` holds because WP-CLI fires `init` before a command runs. A
+        // move to a hook WP-CLI does not fire, such as `admin_init`, must change it.
+        expect(DiscoveryRunner::phaseOf(SettingsPageDiscovery::class))->toBe(DiscoveryPhase::Main);
+    });
+
+    it('reports the attributes a block stores, without the editor-only keys', function () {
+        expect(inspectedRow(inspector()->section('blocks'), 'name', 'theme/hero')['attributes'])->toBe([
+            ['name' => 'title', 'type' => 'string', 'default' => '', 'enum' => null],
+            ['name' => 'align', 'type' => 'string', 'default' => 'left', 'enum' => ['left', 'center']],
+            ['name' => 'imageId', 'type' => 'integer', 'default' => null, 'enum' => null],
+        ]);
     });
 
     it('reports blocks, patterns and bindings', function () {

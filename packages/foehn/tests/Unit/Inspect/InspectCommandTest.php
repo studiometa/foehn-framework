@@ -142,6 +142,13 @@ describe('wp foehn inspect', function () {
         expect(wp_stub_get_calls('wp_cli_error'))->toBe([]);
     });
 
+    it('names the options of each settings page in the table', function () {
+        inspectCommand()(['settings'], []);
+
+        expect(inspectOutput())
+            ->toMatch('/shop-settings\s+\S+ShopSettings\s+shop_contact_email, shop_show_banner, shop_currency/');
+    });
+
     it('prints every section as a table with --all', function () {
         inspectCommand()([], ['all' => true]);
 

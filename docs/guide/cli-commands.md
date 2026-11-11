@@ -98,7 +98,8 @@ With no section, `inspect` prints a summary: each section with the names of its 
 | ------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | `post-types`        | Post types: the Timber model class, the arguments of `#[AsPostType]`, the taxonomies and the `#[AsPostMeta]` fields |
 | `taxonomies`        | Taxonomies: the Timber model class, the arguments of `#[AsTaxonomy]`, the post types and the term meta fields       |
-| `blocks`            | `#[AsBlock]` blocks: name, title, class, category                                                                   |
+| `settings`          | `#[AsSettingsPage]` pages and the options they store: option name, type, default and sanitizer                      |
+| `blocks`            | `#[AsBlock]` blocks: name, title, class, category, and each attribute with its type, default and allowed values     |
 | `patterns`          | `#[AsBlockPattern]` patterns: name, title, class and Twig template                                                  |
 | `bindings`          | `#[AsBlockBinding]` sources: name, label, class and the block context they use                                      |
 | `templates`         | Template controllers and the WordPress templates each one handles                                                   |
@@ -113,6 +114,14 @@ With no section, `inspect` prints a summary: each section with the names of its 
 | `vite`              | The entry points of the theme build (`dist/.vite/manifest.json`), and the dev server URL while `npm run dev` runs   |
 
 A post type or taxonomy that Føhn does not register, such as `post`, `category` or a plugin's post type, is listed when a `#[AsTimberModel]` maps it to a class or a `#[AsPostMeta]` names it as its subtype. Its `declared` field is then `false`, `model` is `null` when no Timber model maps it, and the arguments only the registering code knows are `null`. A `#[AsPostMeta]` field with no subtype applies to every post type or taxonomy, so it is listed on each of them.
+
+#### Where content is stored
+
+Three sections say where content goes, so you can write it with core WP-CLI commands instead of guessing keys:
+
+- `post-types` and `taxonomies`: each `#[AsPostMeta]` field gives its `key`, `type`, `default` and `single` (`false` means one row per value). Write it with `wp post meta update <id> <key> <value>` or `wp term meta update`.
+- `settings`: each setting gives its `option` name, `type`, `default` and `sanitize` callback. Write it with `wp option update <option> <value>`. Every setting has a sanitizer: the one the page declares (`sanitizeDeclared: true`) or the one its type implies, such as `sanitize_text_field` for a string. Føhn calls `register_setting()` on `init`, and WP-CLI fires `init` before it runs a command, so `wp option update` saves through the same sanitizer as the admin form (`sanitizeOnWpCli: true`). A command run with `--skip-themes` does not load Føhn, and then no sanitizer runs.
+- `blocks`: each attribute gives its `name`, `type`, `default` and `enum`, which is what a block comment such as `<!-- wp:theme/hero {"align":"center"} /-->` in `post_content` may hold. The editor-only keys (`control`, `label`, …) are left out.
 
 With the `FULL` discovery cache, a class added after the cache was written is missing from the report until you run `wp foehn discovery:clear`.
 

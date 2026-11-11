@@ -13,6 +13,7 @@ use Studiometa\Foehn\Attributes\AsImageSize;
 use Studiometa\Foehn\Attributes\AsMenu;
 use Studiometa\Foehn\Attributes\AsRestRoute;
 use Studiometa\Foehn\Attributes\AsRewriteRule;
+use Studiometa\Foehn\Attributes\AsSettingsPage;
 use Studiometa\Foehn\Attributes\AsTemplateController;
 use Studiometa\Foehn\Discovery\BlockBindingDiscovery;
 use Studiometa\Foehn\Discovery\BlockDiscovery;
@@ -23,7 +24,9 @@ use Studiometa\Foehn\Discovery\ImageSizeDiscovery;
 use Studiometa\Foehn\Discovery\MenuDiscovery;
 use Studiometa\Foehn\Discovery\RestRouteDiscovery;
 use Studiometa\Foehn\Discovery\RewriteRuleDiscovery;
+use Studiometa\Foehn\Discovery\SettingsPageDiscovery;
 use Studiometa\Foehn\Discovery\TemplateControllerDiscovery;
+use Studiometa\Foehn\Settings\Setting;
 
 /**
  * What one attribute registers on its own: one row per discovered item.
@@ -53,10 +56,91 @@ final readonly class Registrations
                 'description' => $attribute->description,
                 'parent' => $attribute->parent,
                 'interactivity' => $attribute->interactivity,
+                'attributes' => self::blockAttributes($item['className']),
             ];
         }
 
         return Rows::sorted($rows);
+    }
+
+    /**
+     * What a block stores in its comment delimiter, as WordPress validates it.
+     *
+     * The editor-only keys (control, label, ...) are left out: they say how the
+     * sidebar renders an attribute, not what a post's content may hold.
+     *
+     * @param class-string $className
+     * @return list<array{name: string, type: mixed, default: mixed, enum: mixed}>
+     */
+    private static function blockAttributes(string $className): array
+    {
+        if (!method_exists($className, 'attributes')) {
+            return [];
+        }
+
+        /** @var array<string, array<string, mixed>> $schema */
+        $schema = $className::attributes();
+        $attributes = [];
+
+        foreach ($schema as $name => $definition) {
+            $attributes[] = [
+                'name' => $name,
+                'type' => $definition['type'] ?? null,
+                'default' => $definition['default'] ?? null,
+                'enum' => $definition['enum'] ?? null,
+            ];
+        }
+
+        return $attributes;
+    }
+
+    /**
+     * Settings pages and the options each one stores.
+     *
+     * Every setting is saved through a sanitizer: the one the page declares, or the
+     * one its type implies. `register_setting()` runs in the main discovery phase, on
+     * `init`, which WordPress fires under WP-CLI too, so `wp option update` saves
+     * through the same sanitizer as the admin form.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function settings(): array
+    {
+        $rows = [];
+
+        foreach ($this->items->of(SettingsPageDiscovery::class) as $item) {
+            /** @var AsSettingsPage $attribute */
+            $attribute = $item['attribute'];
+            /** @var class-string $className */
+            $className = $item['className'];
+            /** @var array<string, Setting> $settings */
+            $settings = $item['settings'];
+            $options = [];
+
+            foreach ($settings as $name => $setting) {
+                $sanitizer = $setting->sanitizer($className);
+
+                $options[] = [
+                    'option' => $name,
+                    'type' => $setting->type,
+                    'default' => $setting->default,
+                    'sanitize' => is_array($sanitizer) ? implode('::', $sanitizer) : $sanitizer,
+                    'sanitizeDeclared' => $setting->sanitize !== null,
+                    'sanitizeOnWpCli' => true,
+                    'showInRest' => $setting->showInRest,
+                ];
+            }
+
+            $rows[] = [
+                'page' => $attribute->slug,
+                'title' => $attribute->title,
+                'class' => $className,
+                'optionGroup' => $attribute->slug,
+                'settings' => $options,
+            ];
+        }
+
+        return Rows::sortedBy($rows, 'page');
     }
 
     /**

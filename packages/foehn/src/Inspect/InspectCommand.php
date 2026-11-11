@@ -12,9 +12,14 @@ use Studiometa\Foehn\Console\WpCli;
     ## DESCRIPTION
 
     Reports the project model: post types with their meta fields, taxonomies and
-    Timber model classes, taxonomies, blocks, patterns, block bindings, template
-    controllers, context providers, menus, image sizes, rewrite rules, REST routes,
-    `wp foehn` commands, active plugins, theme supports and the Vite entry points.
+    Timber model classes, taxonomies, settings pages with their options, blocks with
+    their attributes, patterns, block bindings, template controllers, context
+    providers, menus, image sizes, rewrite rules, REST routes, `wp foehn` commands,
+    active plugins, theme supports and the Vite entry points.
+
+    The post meta keys, the options and the block attributes are where content is
+    stored, so an agent can write it with core commands such as `wp post meta
+    update` and `wp option update`.
 
     The report is built from what discovery found, so it reads the attributes the
     code declares. Run it before writing code in a project you do not know, and use
@@ -29,9 +34,10 @@ use Studiometa\Foehn\Console\WpCli;
     ## OPTIONS
 
     [<section>...]
-    : The sections to print in full. Any of post-types, taxonomies, blocks,
-      patterns, bindings, templates, context-providers, menus, image-sizes,
-      rewrite-rules, rest-routes, cli-commands, plugins, theme-supports, vite.
+    : The sections to print in full. Any of post-types, taxonomies, settings,
+      blocks, patterns, bindings, templates, context-providers, menus,
+      image-sizes, rewrite-rules, rest-routes, cli-commands, plugins,
+      theme-supports, vite.
 
     [--all]
     : Print every section in full.
@@ -64,7 +70,8 @@ final readonly class InspectCommand implements CliCommandInterface
     private const array TABLE_COLUMNS = [
         'post-types' => ['name', 'model', 'taxonomies', 'meta'],
         'taxonomies' => ['name', 'model', 'postTypes', 'meta'],
-        'blocks' => ['name', 'title', 'class'],
+        'settings' => ['page', 'class', 'settings'],
+        'blocks' => ['name', 'title', 'attributes'],
         'patterns' => ['name', 'title', 'template'],
         'bindings' => ['name', 'label', 'class'],
         'templates' => ['class', 'templates', 'priority'],

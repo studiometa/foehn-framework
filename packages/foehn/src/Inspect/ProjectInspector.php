@@ -24,6 +24,7 @@ final readonly class ProjectInspector
     public const array SECTIONS = [
         'post-types',
         'taxonomies',
+        'settings',
         'blocks',
         'patterns',
         'bindings',
@@ -100,6 +101,7 @@ final readonly class ProjectInspector
         return match ($name) {
             'post-types' => $this->contentTypes->postTypes(),
             'taxonomies' => $this->contentTypes->taxonomies(),
+            'settings' => $this->registrations->settings(),
             'blocks' => $this->registrations->blocks(),
             'patterns' => $this->registrations->patterns(),
             'bindings' => $this->registrations->bindings(),
@@ -138,6 +140,7 @@ final readonly class ProjectInspector
             }
 
             $names[] = (string) match ($section) {
+                'settings' => $row['page'],
                 'templates', 'context-providers' => $row['class'],
                 'menus' => $row['location'],
                 'rewrite-rules' => $row['regex'],
