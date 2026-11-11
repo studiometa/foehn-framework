@@ -31,21 +31,15 @@ final class TemplateControllerDiscovery implements Discovery
 {
     use IsWpDiscovery;
 
-    /**
-     * @var array<string, array{className: class-string, priority: int}>
-     */
-    private array $controllers = [];
-
-    /**
-     * @var array<string, array{className: class-string, priority: int}>
-     */
-    private array $wildcardControllers = [];
+    private TemplateControllerMap $controllers;
 
     public function __construct(
         private readonly SectionRequest $sectionRequest,
         private readonly SectionCollector $sectionCollector,
         private readonly SectionResponse $sectionResponse,
-    ) {}
+    ) {
+        $this->controllers = TemplateControllerMap::fromItems([]);
+    }
 
     /**
      * Discover template controller attributes on classes.
@@ -85,37 +79,10 @@ final class TemplateControllerDiscovery implements Discovery
      */
     public function apply(): void
     {
-        // Build controller maps
-        foreach ($this->getItems() as $item) {
-            /** @var AsTemplateController $attribute */
-            $attribute = $item['attribute'];
-
-            $this->addController($attribute->getTemplates(), $item['className'], $attribute->priority);
-        }
+        $this->controllers = TemplateControllerMap::fromItems($this->getItems());
 
         // Hook into WordPress template_include filter
         add_filter('template_include', [$this, 'handleTemplateInclude'], 5);
-    }
-
-    /**
-     * Add a controller to the maps.
-     *
-     * @param array<string> $templates
-     * @param class-string $className
-     */
-    private function addController(array $templates, string $className, int $priority): void
-    {
-        foreach ($templates as $template) {
-            $entry = ['className' => $className, 'priority' => $priority];
-
-            if (str_contains($template, '*')) {
-                $this->wildcardControllers[$template] = $entry;
-
-                continue;
-            }
-
-            $this->controllers[$template] = $entry;
-        }
     }
 
     /**
@@ -131,7 +98,7 @@ final class TemplateControllerDiscovery implements Discovery
         }
 
         $templateType = $this->getTemplateType();
-        $controller = $this->findController($templateType);
+        $controller = $this->controllers->find($templateType);
 
         if ($controller === null) {
             return $this->sectionRequest->isSelected() ? $this->sectionResponse->error(404) : $template;
@@ -378,51 +345,9 @@ final class TemplateControllerDiscovery implements Discovery
 
     /**
      * Check if a controller exists for a template.
-     *
-     * @param string $template Template name
-     * @return bool
      */
     private function hasController(string $template): bool
     {
-        return $this->findController($template) !== null;
-    }
-
-    /**
-     * Find the controller for a template.
-     *
-     * @param string $template Template name
-     * @return array<string, mixed>|null
-     */
-    private function findController(string $template): ?array
-    {
-        // Exact match
-        if (($this->controllers[$template] ?? null) !== null) {
-            return $this->controllers[$template];
-        }
-
-        // Wildcard matches
-        foreach ($this->wildcardControllers as $pattern => $controller) {
-            if (!$this->matchesPattern($template, $pattern)) {
-                continue;
-            }
-
-            return $controller;
-        }
-
-        return null;
-    }
-
-    /**
-     * Check if a template matches a wildcard pattern.
-     *
-     * @param string $template Template name
-     * @param string $pattern Pattern with * wildcards
-     * @return bool
-     */
-    private function matchesPattern(string $template, string $pattern): bool
-    {
-        $regex = '/^' . str_replace('\*', '.*', preg_quote($pattern, '/')) . '$/';
-
-        return (bool) preg_match($regex, $template);
+        return $this->controllers->find($template) !== null;
     }
 }

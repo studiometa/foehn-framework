@@ -477,12 +477,15 @@ Listings need the same care. Timber builds `post.excerpt` from the full content 
 
 ## Context Providers vs Template Controllers
 
-| Feature      | Context Provider             | Template Controller          |
-| ------------ | ---------------------------- | ---------------------------- |
-| **Purpose**  | Add data to existing context | Full control over rendering  |
-| **Returns**  | Modified context array       | Rendered HTML string or null |
-| **Multiple** | Can stack multiple providers | One controller per template  |
-| **Use case** | Shared data (menus, etc.)    | Complex page logic           |
+| Feature      | Context Provider             | Template Controller            |
+| ------------ | ---------------------------- | ------------------------------ |
+| **Purpose**  | Add data to existing context | Full control over rendering    |
+| **Returns**  | Modified context array       | Rendered HTML string or null   |
+| **Matches**  | View names (`pages/single`)  | WordPress templates (`single`) |
+| **Multiple** | Can stack multiple providers | One controller per template    |
+| **Use case** | Shared data (menus, etc.)    | Complex page logic             |
+
+When two controllers claim the same template, the lowest `priority` wins, and on a tie the one discovered last. `wp foehn inspect templates` shows which controller renders each template.
 
 Use **Context Providers** for:
 
