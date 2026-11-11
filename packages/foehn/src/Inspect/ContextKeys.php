@@ -14,7 +14,8 @@ use ReflectionClass;
  * Two kinds, kept apart because they promise different things. Base keys are set
  * by Føhn and Timber on every render, whatever the project code does. Declared keys
  * are read from the source of a controller or a context provider: each literal
- * `->with('key', …)` call in the class. Such a call can sit in a branch, so a
+ * `->with('key', …)` call in the class, its parent classes and the traits they
+ * use. Such a call can sit in a branch, so a
  * declared key is not guaranteed at runtime, and a key the class names at runtime
  * (`with($name, …)`, `merge()`, `withDto()`) cannot be listed at all: the class is
  * then reported as partial.
@@ -82,61 +83,97 @@ final class ContextKeys
      */
     public static function declaredBy(string $className): array
     {
-        $class = new ReflectionClass($className);
-        $file = $class->getFileName();
-
-        if ($file === false || !is_readable($file)) {
-            return ['keys' => [], 'partial' => true];
-        }
-
-        $start = (int) $class->getStartLine();
-        $end = (int) $class->getEndLine();
-        $tokens = array_values(array_filter(
-            PhpToken::tokenize((string) file_get_contents($file)),
-            static fn(PhpToken $piece): bool => (
-                !$piece->isIgnorable()
-                && $piece->line >= $start
-                && $piece->line <= $end
-            ),
-        ));
-
         $keys = [];
         $partial = false;
 
-        foreach ($tokens as $index => $token) {
-            if (!$token->is([T_OBJECT_OPERATOR, T_NULLSAFE_OBJECT_OPERATOR])) {
-                continue;
-            }
+        foreach (self::declaringClasses(new ReflectionClass($className)) as $class) {
+            $file = $class->getFileName();
 
-            $method = $tokens[$index + 1] ?? null;
-
-            if (
-                $method === null
-                || !$method->is(T_STRING)
-                || !in_array($method->text, self::ADDING_METHODS, true)
-                || ($tokens[$index + 2] ?? null)?->text !== '('
-            ) {
-                continue;
-            }
-
-            $argument = $tokens[$index + 3] ?? null;
-            $next = $tokens[$index + 4] ?? null;
-
-            if (
-                $method->text === 'with'
-                && $argument !== null
-                && $argument->is(T_CONSTANT_ENCAPSED_STRING)
-                && $next?->text === ','
-            ) {
-                $keys[] = self::unquote($argument->text);
+            if ($file === false || !is_readable($file)) {
+                $partial = true;
 
                 continue;
             }
 
-            $partial = true;
+            $start = (int) $class->getStartLine();
+            $end = (int) $class->getEndLine();
+            $tokens = array_values(array_filter(
+                PhpToken::tokenize((string) file_get_contents($file)),
+                static fn(PhpToken $piece): bool => (
+                    !$piece->isIgnorable()
+                    && $piece->line >= $start
+                    && $piece->line <= $end
+                ),
+            ));
+
+            foreach ($tokens as $index => $token) {
+                if (!$token->is([T_OBJECT_OPERATOR, T_NULLSAFE_OBJECT_OPERATOR])) {
+                    continue;
+                }
+
+                $method = $tokens[$index + 1] ?? null;
+
+                if (
+                    $method === null
+                    || !$method->is(T_STRING)
+                    || !in_array($method->text, self::ADDING_METHODS, true)
+                    || ($tokens[$index + 2] ?? null)?->text !== '('
+                ) {
+                    continue;
+                }
+
+                $argument = $tokens[$index + 3] ?? null;
+                $next = $tokens[$index + 4] ?? null;
+
+                if (
+                    $method->text === 'with'
+                    && $argument !== null
+                    && $argument->is(T_CONSTANT_ENCAPSED_STRING)
+                    && $next?->text === ','
+                ) {
+                    $keys[] = self::unquote($argument->text);
+
+                    continue;
+                }
+
+                $partial = true;
+            }
         }
 
         return ['keys' => self::sorted($keys), 'partial' => $partial];
+    }
+
+    /**
+     * The class and every class whose code it runs as its own: its parents and the
+     * traits any of them use. A base controller that adds keys is read too.
+     *
+     * @param ReflectionClass<object> $class
+     * @return list<ReflectionClass<object>>
+     */
+    private static function declaringClasses(ReflectionClass $class): array
+    {
+        $classes = [];
+
+        for ($current = $class; $current !== false; $current = $current->getParentClass()) {
+            $classes = [...$classes, $current, ...self::traitsOf($current)];
+        }
+
+        return $classes;
+    }
+
+    /**
+     * @param ReflectionClass<object> $class
+     * @return list<ReflectionClass<object>>
+     */
+    private static function traitsOf(ReflectionClass $class): array
+    {
+        $traits = [];
+
+        foreach ($class->getTraits() as $trait) {
+            $traits = [...$traits, $trait, ...self::traitsOf($trait)];
+        }
+
+        return $traits;
     }
 
     /**

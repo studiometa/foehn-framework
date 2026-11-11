@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Studiometa\Foehn\Inspect\ContextKeys;
 use Tests\Fixtures\InspectApp\BrandController;
+use Tests\Fixtures\InspectApp\OutletController;
 use Tests\Fixtures\InspectApp\ProductController;
 use Tests\Fixtures\InspectApp\SharedMeta;
 
@@ -52,6 +53,13 @@ describe('ContextKeys', function () {
 
     it('calls a class partial when it sets keys only known at runtime', function () {
         expect(ContextKeys::declaredBy(BrandController::class))->toBe(['keys' => ['brand_count'], 'partial' => true]);
+    });
+
+    it('reads the keys a parent class and its traits add', function () {
+        expect(ContextKeys::declaredBy(OutletController::class))->toBe([
+            'keys' => ['breadcrumbs', 'outlet', 'shop_name'],
+            'partial' => false,
+        ]);
     });
 
     it('finds nothing in a class that adds no keys', function () {
