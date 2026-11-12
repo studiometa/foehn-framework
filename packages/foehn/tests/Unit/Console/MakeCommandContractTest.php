@@ -14,6 +14,7 @@ use Studiometa\Foehn\Console\Commands\MakeMenuCommand;
 use Studiometa\Foehn\Console\Commands\MakeModelCommand;
 use Studiometa\Foehn\Console\Commands\MakePatternCommand;
 use Studiometa\Foehn\Console\Commands\MakePostTypeCommand;
+use Studiometa\Foehn\Console\Commands\MakeSeederCommand;
 use Studiometa\Foehn\Console\Commands\MakeShortcodeCommand;
 use Studiometa\Foehn\Console\Commands\MakeTaxonomyCommand;
 use Studiometa\Foehn\Console\ProjectConventions;
@@ -69,6 +70,7 @@ function makeCommandContracts(): array
         ],
         'make:menu' => ['class' => MakeMenuCommand::class, 'args' => ['SocialMenu'], 'path' => 'Menus/SocialMenu'],
         'make:model' => ['class' => MakeModelCommand::class, 'args' => ['Gizmo'], 'path' => 'Models/Gizmo'],
+        'make:seeder' => ['class' => MakeSeederCommand::class, 'args' => ['events'], 'path' => 'Seeders/EventsSeeder'],
         'make:shortcode' => [
             'class' => MakeShortcodeCommand::class,
             'args' => ['embed'],
