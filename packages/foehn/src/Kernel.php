@@ -31,7 +31,6 @@ use Studiometa\Foehn\Discovery\DiscoveryRunner;
 use Studiometa\Foehn\Errors\EntryBuilder;
 use Studiometa\Foehn\Errors\ErrorLog;
 use Studiometa\Foehn\Errors\ErrorRecorder;
-use Studiometa\Foehn\Errors\RequestContext;
 use Studiometa\Foehn\Errors\SourcePaths;
 use Studiometa\Foehn\Images\NullTransformer;
 use Studiometa\Foehn\Indexing\IndexingProtection;
@@ -43,6 +42,7 @@ use Studiometa\Foehn\PageCache\Invalidator;
 use Studiometa\Foehn\PageCache\Purger;
 use Studiometa\Foehn\PageCache\Recorder;
 use Studiometa\Foehn\PageCache\Store;
+use Studiometa\Foehn\Trace\RequestTrace;
 use Studiometa\Foehn\Verification\Updates\DiagnosticsCollector;
 use Studiometa\Foehn\Views\ContextProviderRegistry;
 use Studiometa\Foehn\Views\Sections\SectionCollector;
@@ -341,9 +341,11 @@ final class Kernel
         $this->container->singleton(ErrorLog::class, static fn() => ErrorLog::inContentDirectory());
 
         // The theme's own code is the directory that holds the app directory.
+        $this->container->singleton(SourcePaths::class, fn() => new SourcePaths(dirname($this->appPath)));
+
         $this->container->singleton(ErrorRecorder::class, function (): ErrorRecorder {
-            $paths = new SourcePaths(dirname($this->appPath));
-            $request = $this->container->get(RequestContext::class);
+            $paths = $this->container->get(SourcePaths::class);
+            $request = $this->container->get(RequestTrace::class);
 
             return new ErrorRecorder(
                 $this->container->get(ErrorLog::class),
@@ -364,7 +366,10 @@ final class Kernel
 
         $this->container->singleton(
             ViewEngineInterface::class,
-            fn() => new TimberViewEngine($this->container->get(ContextProviderRegistry::class)),
+            fn() => new TimberViewEngine(
+                $this->container->get(ContextProviderRegistry::class),
+                $this->container->get(RequestTrace::class),
+            ),
         );
 
         // SectionRequest and SectionCollector are request-scoped by the PHP process.

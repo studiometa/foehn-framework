@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Studiometa\Foehn\Errors;
 
 use Closure;
+use Studiometa\Foehn\Trace\RequestTrace;
 use Throwable;
 
 /**
@@ -60,7 +61,7 @@ final class ErrorRecorder
         private readonly ErrorLog $log,
         private readonly EntryBuilder $entries,
         private readonly SourcePaths $paths,
-        private readonly RequestContext $request,
+        private readonly RequestTrace $request,
     ) {}
 
     /**
@@ -84,7 +85,8 @@ final class ErrorRecorder
 
         register_shutdown_function($this->shutdown(...));
 
-        add_filter('timber/loader/render_data', $this->onRenderData(...), PHP_INT_MAX, 2);
+        // The view and its context keys an entry gives.
+        $this->request->listen();
     }
 
     /**
@@ -193,20 +195,6 @@ final class ErrorRecorder
             $error['file'],
             $error['line'],
         ));
-    }
-
-    /**
-     * `timber/loader/render_data`: remember the view Timber renders and its context keys.
-     *
-     * The data goes back unchanged.
-     */
-    public function onRenderData(mixed $data, mixed $file = ''): mixed
-    {
-        if (is_array($data) && is_string($file)) {
-            $this->request->renderView($file, array_map(strval(...), array_keys($data)));
-        }
-
-        return $data;
     }
 
     private function recordError(string $level, int $type, string $message, string $file, int $line): void

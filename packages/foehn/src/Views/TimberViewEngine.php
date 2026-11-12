@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Studiometa\Foehn\Views;
 
 use Studiometa\Foehn\Contracts\ViewEngineInterface;
+use Studiometa\Foehn\Trace\RequestTrace;
 use Timber\Loader;
 use Timber\Site;
 use Timber\Timber;
@@ -19,6 +20,9 @@ use Twig\Error\Error as TwigError;
  * A failure names the view that was asked for. A Twig error keeps its message,
  * its template and its line, and a missing template lists the directories
  * Timber searched: see ViewRenderingFailed.
+ *
+ * A traced request keeps the context providers that ran for each view, and the
+ * views `renderFirst()` tried: see RequestTrace.
  */
 final class TimberViewEngine implements ViewEngineInterface
 {
@@ -27,6 +31,7 @@ final class TimberViewEngine implements ViewEngineInterface
 
     public function __construct(
         private readonly ContextProviderRegistry $contextProviders,
+        private readonly RequestTrace $trace,
     ) {}
 
     /**
@@ -38,6 +43,13 @@ final class TimberViewEngine implements ViewEngineInterface
 
         // Convert to TemplateContext if needed
         $templateContext = $this->toTemplateContext($context);
+
+        if ($this->trace->isTracing()) {
+            $this->trace->provideContext($template, array_map(
+                static fn(object $provider): string => $provider::class,
+                $this->contextProviders->providersFor($template),
+            ));
+        }
 
         // Apply context providers
         $templateContext = $this->contextProviders->provide($template, $templateContext);
@@ -68,6 +80,8 @@ final class TimberViewEngine implements ViewEngineInterface
             if (!$this->exists($template)) {
                 continue;
             }
+
+            $this->trace->renderFirst(array_values($templates), $template);
 
             return $this->render($template, $context);
         }

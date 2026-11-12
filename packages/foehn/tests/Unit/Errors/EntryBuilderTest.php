@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Errors\EntryBuilder;
-use Studiometa\Foehn\Errors\RequestContext;
 use Studiometa\Foehn\Errors\SourcePaths;
+use Studiometa\Foehn\Trace\RequestTrace;
 use Studiometa\Foehn\Views\ViewRenderingFailed;
 use Twig\Environment;
 use Twig\Error\RuntimeError;
@@ -34,7 +34,7 @@ describe('SourcePaths', function () {
 describe('EntryBuilder', function () {
     beforeEach(function () {
         $this->root = dirname(__DIR__, 2);
-        $this->request = new RequestContext();
+        $this->request = new RequestTrace();
         $this->builder = new EntryBuilder(new SourcePaths($this->root), $this->request);
     });
 

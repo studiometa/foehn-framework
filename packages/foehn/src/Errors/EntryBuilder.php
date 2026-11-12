@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Studiometa\Foehn\Errors;
 
 use ReflectionObject;
+use Studiometa\Foehn\Trace\RequestTrace;
 use Throwable;
 use Twig\Error\Error as TwigError;
 use Twig\Template;
@@ -37,7 +38,7 @@ final readonly class EntryBuilder
 
     public function __construct(
         private SourcePaths $paths,
-        private RequestContext $request,
+        private RequestTrace $request,
     ) {}
 
     /**
@@ -172,9 +173,7 @@ final readonly class EntryBuilder
             'previous' => $previous,
             'stack' => $this->stack($trace),
             ...self::request(),
-            ...$this->request->toArray(),
-            // Reserved for the id a request trace gives each request.
-            'requestId' => null,
+            ...$this->request->errorFields(),
         ];
     }
 

@@ -55,17 +55,27 @@ final class ContextProviderRegistry
      */
     public function provide(string $template, TemplateContext $context): TemplateContext
     {
+        foreach ($this->providersFor($template) as $provider) {
+            $context = $provider->provide($context);
+        }
+
+        return $context;
+    }
+
+    /**
+     * The providers that run for a template, in the order provide() runs them.
+     *
+     * @param string $template Template name
+     * @return list<ContextProviderInterface>
+     */
+    public function providersFor(string $template): array
+    {
         $matchingProviders = $this->getMatchingProviders($template);
 
         // Sort by priority
         usort($matchingProviders, static fn($a, $b) => $a['priority'] <=> $b['priority']);
 
-        // Run each provider
-        foreach ($matchingProviders as $entry) {
-            $context = $entry['provider']->provide($context);
-        }
-
-        return $context;
+        return array_column($matchingProviders, 'provider');
     }
 
     /**

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Contracts\ContextProviderInterface;
+use Studiometa\Foehn\Trace\RequestTrace;
 use Studiometa\Foehn\Views\ContextProviderRegistry;
 use Studiometa\Foehn\Views\TemplateContext;
 use Studiometa\Foehn\Views\TimberViewEngine;
@@ -12,7 +13,7 @@ use Timber\Timber;
 describe('TimberViewEngine', function () {
     beforeEach(function () {
         $this->contextProviders = new ContextProviderRegistry();
-        $this->engine = new TimberViewEngine($this->contextProviders);
+        $this->engine = new TimberViewEngine($this->contextProviders, new RequestTrace());
     });
 
     it('starts with no shared data', function () {
@@ -64,7 +65,7 @@ describe('TimberViewEngine', function () {
 describe('TimberViewEngine template resolution', function () {
     beforeEach(function () {
         $this->contextProviders = new ContextProviderRegistry();
-        $this->engine = new TimberViewEngine($this->contextProviders);
+        $this->engine = new TimberViewEngine($this->contextProviders, new RequestTrace());
     });
 
     it('adds twig extension when missing', function () {
@@ -113,7 +114,7 @@ describe('TimberViewEngine context providers', function () {
         $registry = new ContextProviderRegistry();
         $registry->register(['*'], $capturingProvider, 0);
 
-        $engine = new TimberViewEngine($registry);
+        $engine = new TimberViewEngine($registry, new RequestTrace());
 
         try {
             $engine->render('test-template', ['custom' => 'value']);
@@ -152,7 +153,7 @@ describe('TimberViewEngine context providers', function () {
         $registry->register(['*'], $modifyingProvider, 5);
         $registry->register(['*'], $capturingProvider, 10);
 
-        $engine = new TimberViewEngine($registry);
+        $engine = new TimberViewEngine($registry, new RequestTrace());
 
         try {
             $engine->render('test-template', []);
@@ -173,7 +174,7 @@ describe('TimberViewEngine errors', function () {
         $GLOBALS['wp_stub_stylesheet_directory'] = $this->theme;
         Timber::$dirname = 'templates';
 
-        $this->engine = new TimberViewEngine(new ContextProviderRegistry());
+        $this->engine = new TimberViewEngine(new ContextProviderRegistry(), new RequestTrace());
     });
 
     afterEach(function () {
@@ -203,6 +204,43 @@ describe('TimberViewEngine errors', function () {
                 "No template found for the views 'single-product', 'single'. Searched single-product.twig, single.twig in: {$this->theme}, {$this->theme}/templates."
                 . " Fix: create one of single-product.twig, single.twig in {$this->theme}/templates.",
             );
+    });
+
+    it('tells a traced request the view renderFirst chose and the views it was asked to try', function () {
+        $trace = new RequestTrace();
+        $trace->begin('a1b2c3');
+        $engine = new TimberViewEngine(new ContextProviderRegistry(), $trace);
+
+        $engine->renderFirst(['missing', 'hello'], ['title' => 'Hi']);
+
+        expect($trace->toArray()['candidates'])->toBe([['view' => 'hello', 'candidates' => ['missing', 'hello']]]);
+    });
+
+    it('tells a traced request the context providers that ran, in the order they ran', function () {
+        $late = new class implements ContextProviderInterface {
+            public function provide(TemplateContext $context): TemplateContext
+            {
+                return $context;
+            }
+        };
+        $early = new class implements ContextProviderInterface {
+            public function provide(TemplateContext $context): TemplateContext
+            {
+                return $context->with('title', 'Hi');
+            }
+        };
+        $registry = new ContextProviderRegistry();
+        $registry->register(['hel*'], $late, 20);
+        $registry->register(['hello'], $early, 5);
+        $trace = new RequestTrace();
+        $trace->begin('a1b2c3');
+
+        new TimberViewEngine($registry, $trace)->render('hello');
+
+        expect($trace->toArray()['providers'])->toBe([
+            ['view' => 'hello', 'class' => $early::class],
+            ['view' => 'hello', 'class' => $late::class],
+        ]);
     });
 
     it('keeps the Twig error, its template and its line, and the view that was asked for', function () {

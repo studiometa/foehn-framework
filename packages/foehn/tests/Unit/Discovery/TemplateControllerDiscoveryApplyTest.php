@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Studiometa\Foehn\Errors\RequestContext;
+use Studiometa\Foehn\Trace\RequestTrace;
 use Tests\Fixtures\TemplateControllerFixture;
 
 beforeEach(function () {
@@ -54,8 +54,8 @@ describe('TemplateControllerDiscovery apply', function () {
     });
 
     it('tells the request context the template it matched and the controller that handles it', function () {
-        $context = new RequestContext();
-        $discovery = testTemplateControllerDiscovery(requestContext: $context);
+        $context = new RequestTrace();
+        $discovery = testTemplateControllerDiscovery(requestTrace: $context);
         $discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(TemplateControllerFixture::class));
         $discovery->apply();
 
