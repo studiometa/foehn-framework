@@ -48,6 +48,45 @@ $debug = config('app.debug', false);
 function config(string $key, mixed $default = null): mixed
 ```
 
+## dispatch()
+
+Queue a job. Action Scheduler stores it and runs it later, on a cron pass. The job is an object that holds data only. A class with `#[AsJob]` handles it: its `__invoke()` takes one parameter, typed with the class of the job.
+
+```php
+use Studiometa\Foehn\Attributes\AsJob;
+
+use function Studiometa\Foehn\dispatch;
+
+final readonly class ProcessImport
+{
+    public function __construct(
+        public int $importId,
+    ) {}
+}
+
+#[AsJob(group: 'imports')]
+final class ProcessImportHandler
+{
+    public function __invoke(ProcessImport $job): void
+    {
+        // The work, in the background
+    }
+}
+
+dispatch(new ProcessImport(42));
+
+// Not before 5 minutes from now
+dispatch(new ProcessImport(42), delay: 300);
+```
+
+Action Scheduler stores the public properties of the job. They must be scalar values or arrays: give an ID, not a post or a service. `dispatch()` throws a `RuntimeException` when Action Scheduler is not active, or when no `#[AsJob]` class handles the job. See [Cron Jobs](/guide/cron) for the jobs that run on a schedule.
+
+### Signature
+
+```php
+function dispatch(object $job, ?int $delay = null): void
+```
+
 ## Usage Examples
 
 ### Getting Services
