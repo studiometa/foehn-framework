@@ -48,6 +48,7 @@ describe('HeroBlock', function () {
         expect($result->title)->toBe('Hello');
         expect($result->subtitle)->toBe('World');
         expect($result->height)->toBe('full');
+        expect($result->headingLevel)->toBe('h1');
     });
 
     it('composes a call to action from the three attributes that replace the link field', function () {

@@ -19,7 +19,10 @@
   {% endif %}
 
   <div class="hero__content">
-    <h1 class="hero__title">{{ title }}</h1>
+    {# twig-toolkit's html_element tag: the heading level is an attribute of the block. #}
+    {% html_element heading_level with { class: 'hero__title' } %}
+      {{ title }}
+    {% end_html_element %}
 
     {% if subtitle %}
       <p class="hero__subtitle">
