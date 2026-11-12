@@ -109,6 +109,16 @@ describe('starter packaging', function () {
         expect((string) file_get_contents($racine . '/CLAUDE.md'))->toBe("@AGENTS.md\n");
     });
 
+    // L'installeur copie `public/` dans la racine web. Le répertoire part vide
+    // dans l'archive, pour qu'un projet sache où mettre `robots.txt` ou
+    // `.well-known/` sans lire la documentation.
+    it('livre un répertoire public/ vide', function () use ($racine) {
+        $attributs = (string) file_get_contents($racine . '/.gitattributes');
+
+        expect($racine . '/public/.gitkeep')->toBeFile();
+        expect($attributs)->not->toContain('/public');
+    });
+
     // Les hooks du monorepo supposent des dépôts `path` absents d'un projet.
     it('ne livre pas les hooks ddev du monorepo', function () use ($racine) {
         expect((string) file_get_contents($racine . '/.ddev/config.yaml'))->not->toContain('hooks:');
