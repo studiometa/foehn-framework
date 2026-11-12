@@ -5,3 +5,7 @@
 - `wp_context()` and the `wp_context` filter encode `<`, `>` and `&` like WordPress does. A `>` in a value made `wptexturize` rewrite the rest of a block rendered in post content, and the block broke.
 - The view script of a block with `interactivity: true` depends on `@wordpress/interactivity`, so WordPress puts that module in the import map. Before, `import { store } from '@wordpress/interactivity'` failed on a page with no core interactive block.
 - The Twig extensions guide and the `foehn` skill name the twig-toolkit tag `{% html_element %}` … `{% end_html_element %}`. They said `{% element %}`, which Twig does not know.
+
+### Changed
+
+- The demo requires `studiometa/foehn-acf` and the free ACF plugin. Its projects have a `#[AsAcfFieldGroup]` with the `ButtonLinkBuilder` fragment, and the release moves and checks the demo's `studiometa/foehn-acf` pin with the other ones.

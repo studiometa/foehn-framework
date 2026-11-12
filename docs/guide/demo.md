@@ -45,7 +45,7 @@ The theme's namespace is `Demo\` rather than `App\`, which is the only thing in 
 
 ## What is not here
 
-**ACF.** It needs ACF Pro, a paid plugin CI cannot install, so an ACF block here would be a path nothing ever runs — which is exactly what it was before the integration moved out. [`studiometa/foehn-acf`](/guide/acf-blocks) carries its own examples.
+**ACF blocks and options pages.** They need ACF Pro, a paid plugin CI cannot install, so they would be a path nothing ever runs. The demo runs the free ACF plugin instead: `theme/app/Fields/ProjectPressFields.php` is an [`#[AsAcfFieldGroup]`](/guide/acf-blocks) on projects with the `ButtonLinkBuilder` fragment.
 
 ## The tests are the point
 

@@ -142,16 +142,16 @@ $results->containsAll(
     array_keys(Kernel::get(DiscoveryRunner::class)->getDiscoveries()),
 );
 
-// Nothing here needs ACF. The demo's only ACF block was the one thing that
-// needed a paid plugin to run, so that path was never exercised: ACF Pro is not
-// installed in CI. `studiometa/foehn-acf` carries its own examples instead.
-$results->same(
-    'the demo needs no ACF package',
-    [],
-    array_values(array_filter(
-        array_keys(Kernel::get(DiscoveryRunner::class)->getDiscoveries()),
-        static fn(string $discovery): bool => str_contains($discovery, 'Acf'),
-    )),
+// studiometa/foehn-acf runs on the free ACF plugin: a field group and its fragments
+// need no Pro feature, so this path runs in CI like every other.
+$results->true('ACF is active', function_exists('acf_get_field_group'));
+$results->true(
+    'the #[AsAcfFieldGroup] on projects is registered with ACF',
+    function_exists('acf_get_field_group') && is_array(acf_get_field_group('group_project_press')),
+);
+$results->true(
+    'the ButtonLinkBuilder fragment adds its link field inside the group',
+    function_exists('acf_get_field') && is_array(acf_get_field('field_project_press_press_link_link')),
 );
 
 // The framework's #[AsCliCommand] classes live in the same vendor package. WP-CLI

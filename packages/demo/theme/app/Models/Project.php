@@ -7,6 +7,7 @@ namespace Demo\Models;
 use Studiometa\Foehn\Attributes\AsPostMeta;
 use Studiometa\Foehn\Attributes\AsPostType;
 use Studiometa\Foehn\Contracts\ConfiguresPostType;
+use Studiometa\Foehn\Data\LinkData;
 use Studiometa\Foehn\Models\Post;
 use Studiometa\Foehn\PostTypes\PostTypeBuilder;
 use Timber\Timber;
@@ -80,6 +81,37 @@ final class Project extends Post implements ConfiguresPostType
         $film = $this->meta('film');
 
         return is_string($film) && $film !== '' ? $film : null;
+    }
+
+    /**
+     * What the press said, from the ACF field group Demo\Fields\ProjectPressFields.
+     *
+     * Null when ACF is not active or the quote is empty, so the page prints nothing
+     * rather than an empty quote.
+     *
+     * @return array{quote: string, source: string, link: ?LinkData, style: string}|null
+     */
+    public function press(): ?array
+    {
+        if (!function_exists('get_field')) {
+            return null;
+        }
+
+        $quote = get_field('press_quote', $this->ID);
+
+        if (!is_string($quote) || $quote === '') {
+            return null;
+        }
+
+        $link = get_field('press_link', $this->ID);
+        $link = is_array($link) ? $link : [];
+
+        return [
+            'quote' => $quote,
+            'source' => (string) get_field('press_source', $this->ID),
+            'link' => LinkData::fromAcf(is_array($link['link'] ?? null) ? $link['link'] : null),
+            'style' => (string) ($link['style'] ?? 'link'),
+        ];
     }
 
     /**

@@ -38,17 +38,19 @@ cp .ddev/config.local.example.yaml .ddev/config.local.yaml
 ddev restart
 ```
 
-The hook mirrors `packages/foehn` and `packages/installer` into `vendor/`, regenerates the editor entry, and clears the full discovery cache. Run `ddev restart` after framework source changes. Without the hook, the demo can run an older released framework even while its theme uses code from the current branch.
+The hook mirrors `packages/foehn`, `packages/installer` and `packages/acf` into `vendor/`, regenerates the editor entry, and clears the full discovery cache. Run `ddev restart` after framework source changes. Without the hook, the demo can run an older released framework even while its theme uses code from the current branch.
 
-The hook copies source only. If a package changes its Composer dependencies, resolve them through temporary path repositories before restarting. These commands need PHP 8.5 and Composer on the host because DDEV mounts `packages/demo` without its sibling packages:
+The hook copies source only. If a package changes its Composer dependencies, resolve them through temporary path repositories before restarting. Each path repository gives its package the version the demo pins, the version of the root `package.json`: `studiometa/foehn-acf` requires that exact framework version, which a `@dev` branch is not. These commands need PHP 8.5 and Composer on the host because DDEV mounts `packages/demo` without its sibling packages:
 
 ```bash
 cp composer.json composer.monorepo.json
 cp composer.lock composer.monorepo.lock
-COMPOSER=composer.monorepo.json composer config repositories.foehn '{"type":"path","url":"../foehn","options":{"symlink":false}}'
-COMPOSER=composer.monorepo.json composer config repositories.foehn-installer '{"type":"path","url":"../installer","options":{"symlink":false}}'
-COMPOSER=composer.monorepo.json composer require --no-update studiometa/foehn:@dev studiometa/foehn-installer:@dev
-COMPOSER=composer.monorepo.json composer update studiometa/foehn studiometa/foehn-installer --with-dependencies
+version="$(node -p 'require("../../package.json").version')"
+for package in foehn:foehn foehn-installer:installer foehn-acf:acf; do
+  COMPOSER=composer.monorepo.json composer config "repositories.${package%%:*}" \
+    "{\"type\":\"path\",\"url\":\"../${package##*:}\",\"options\":{\"symlink\":false,\"versions\":{\"studiometa/${package%%:*}\":\"$version\"}}}"
+done
+COMPOSER=composer.monorepo.json composer update 'studiometa/*' --with-dependencies
 rm composer.monorepo.json composer.monorepo.lock
 ```
 
@@ -94,7 +96,7 @@ Uploads are offloaded to object storage, because `web/wp-content/uploads/` is th
 
 Both ways of sizing an image are here, because they answer different questions. The homepage cards use a registered `#[AsImageSize]`: one shape, known up front, generated at upload. The plates on a project page cannot — they crop to 3:4 standing and 3:2 lying down, and a size registered today would apply to nothing already uploaded — so `photograph.twig` asks for the crop it wants with `image_url()` and `GlideTransformer` produces it. Measured here, a plate is 356ms the first time and 24ms every time after, because `.ddev/nginx/image-cache.conf` serves the cached result straight from the bucket and WordPress never boots. See [the guide](https://studiometa.github.io/foehn-framework/guide/images).
 
-ACF is **not** demonstrated here. It needs ACF Pro, a paid plugin CI cannot install, so anything relying on it would be a path nothing ever runs — which is the reason the demo has no ACF block. [`studiometa/foehn-acf`](https://github.com/studiometa/foehn-acf) carries its own examples.
+ACF runs on the free plugin, `wpackagist-plugin/advanced-custom-fields`, which CI can install. `theme/app/Fields/ProjectPressFields.php` is a `#[AsAcfFieldGroup]` on projects, with the `ButtonLinkBuilder` fragment of [`studiometa/foehn-acf`](https://github.com/studiometa/foehn-acf), and a project page prints its press quote. ACF blocks and options pages need ACF Pro, so they are not here.
 
 ## Tests
 

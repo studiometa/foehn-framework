@@ -128,7 +128,7 @@ Check `.planning/roadmap.md` for current implementation status.
 - The release moves each of these to the new version:
   - every `package.json` (the root, the Vite plugin, the starter and the demo): `version`, set by `npm version`
   - `packages/acf/composer.json`: `studiometa/foehn`
-  - `packages/starter/composer.json` and `packages/demo/composer.json`: `studiometa/foehn` and `studiometa/foehn-installer`
+  - `packages/starter/composer.json` and `packages/demo/composer.json`: `studiometa/foehn` and `studiometa/foehn-installer`, and `studiometa/foehn-acf` in the demo
   - `packages/starter/package.json` and `packages/demo/package.json`: `@studiometa/foehn-vite-plugin`
   - the root `composer.json`: the `studiometa/foehn` version of the `packages/foehn` path repository, which the `foehn-acf` pin resolves against in the monorepo
   - `packages/demo/Dockerfile`: `ARG FOEHN_IMAGE`, to the previous release's `-db` variant (the image of the new release is built after the tag)

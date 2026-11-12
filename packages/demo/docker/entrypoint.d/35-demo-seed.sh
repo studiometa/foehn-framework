@@ -93,6 +93,12 @@ foehn_demo_seed() {
         su -s /bin/sh "${APPLICATION_USER:-application}" -c "cd /app && $1"
     }
 
+    # The revision of the content the seeders write. Bump it when they write
+    # something new: a volume seeded at an older revision runs them again, which
+    # the seeders allow because they find what they wrote by slug or by meta. A
+    # deploy that adds a page then reaches the volume already serving the site.
+    foehn_demo_revision=2
+
     # The marker, and not `wp core is-installed`. The two answer different
     # questions, and the difference is a state this script reached on its first
     # real deployment: `wp core install` succeeds, a later step fails, the machine
@@ -102,7 +108,9 @@ foehn_demo_seed() {
     # over a site that never got its portfolio. The marker is written after the
     # last step and nowhere else, so it means what this script needs to ask:
     # not "is there a WordPress" but "did this finish".
-    if foehn_demo_run 'wp option get foehn_demo_seeded' >/dev/null 2>&1; then
+    foehn_demo_seeded="$(foehn_demo_run 'wp option get foehn_demo_seeded' 2>/dev/null | tail -n1)"
+
+    if [ "$foehn_demo_seeded" = "$foehn_demo_revision" ]; then
         echo "ℹ️ NOTICE ($script_name): the volume already holds the portfolio, seeding nothing."
         return 0
     fi
@@ -112,7 +120,7 @@ foehn_demo_seed() {
     # their Unsplash id — so the way out is to run them again rather than to demand a
     # clean volume from somebody who cannot easily produce one.
     if foehn_demo_run 'wp core is-installed' >/dev/null 2>&1; then
-        echo "ℹ️ NOTICE ($script_name): WordPress is installed but the portfolio is not, so an earlier boot stopped part way. Building the rest."
+        echo "ℹ️ NOTICE ($script_name): WordPress is installed but the portfolio is not at revision $foehn_demo_revision: an earlier boot stopped part way, or the seeders write more since. Seeding again."
     else
         # No password, no site. Inventing one would put an admin account with a
         # guessable password on a public demo, and defaulting to something printed
@@ -151,6 +159,13 @@ foehn_demo_seed() {
     # type, no block and no rewrite rule, and `wp foehn` is not a command.
     if ! foehn_demo_run 'wp theme activate demo-theme'; then
         echo "🛑 ERROR ($script_name): the demo theme could not be activated. The container will not start." >&2
+        return 1
+    fi
+
+    # The free ACF plugin, which the project field group needs. Before the seeders:
+    # PressSeeder writes its values with update_field().
+    if ! foehn_demo_run 'wp plugin activate advanced-custom-fields'; then
+        echo "🛑 ERROR ($script_name): the ACF plugin could not be activated. The container will not start." >&2
         return 1
     fi
 
@@ -195,7 +210,7 @@ foehn_demo_seed() {
     # Last, and only here: everything above has to have succeeded for this to mean
     # what the guard at the top reads it as. `--autoload=no` because nothing on a
     # front-end request asks for it.
-    if ! foehn_demo_run 'wp option update foehn_demo_seeded 1 --autoload=no'; then
+    if ! foehn_demo_run "wp option update foehn_demo_seeded $foehn_demo_revision --autoload=no"; then
         echo "🛑 ERROR ($script_name): the portfolio was built but could not be marked as built, so the next boot would build it again. The container will not start." >&2
         return 1
     fi

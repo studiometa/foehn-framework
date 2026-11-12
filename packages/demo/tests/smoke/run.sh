@@ -220,6 +220,7 @@ check_page "/projects/editions/" 'src="https://www.youtube-nocookie.com/embed/aq
 check_page "/projects/corridors/" "plate--" "a project page shows its photographs"
 # The theme's own js-toolkit components are mounted by file name, from app.js.
 check_page "/projects/corridors/" 'data-component="CopyLink"' "a project page mounts a component of the theme"
+check_page "/projects/corridors/" 'href="https://example.com/contrejour/corridors"' "a project page shows its press quote from the ACF field group"
 check_page "/about/" "prose" "the about page renders its copy"
 # The blocks, the binding and the pattern are only worth registering if a visitor
 # sees them: PageSeeder writes the About page as block markup.

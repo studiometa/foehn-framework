@@ -7,6 +7,7 @@ use Demo\Seeders\MediaSeeder;
 use Demo\Seeders\MenuSeeder;
 use Demo\Seeders\PageSeeder;
 use Demo\Seeders\Photographs;
+use Demo\Seeders\PressSeeder;
 use Demo\Seeders\ProjectSeeder;
 use Demo\Seeders\SettingsSeeder;
 use Demo\Seeders\TestimonialSeeder;
@@ -39,6 +40,7 @@ describe('Seeders', function () {
         $seeders = [
             MediaSeeder::class,
             ProjectSeeder::class,
+            PressSeeder::class,
             PageSeeder::class,
             JournalSeeder::class,
             TestimonialSeeder::class,

@@ -57,6 +57,19 @@
       </figure>
     {% endif %}
 
+    {# From the ACF field group Demo\Fields\ProjectPressFields. #}
+    {% set press = post.press %}
+    {% if press %}
+      <blockquote class="shell quote press" style="margin-top: clamp(3rem, 8vw, 6rem)">
+        <p class="quote__text">{{ press.quote }}</p>
+        <footer class="quote__source label">
+          {{- press.source -}}
+          {%- if press.link %} — <a class="press__link press__link--{{ press.style }}" href="{{ press.link.url }}"{% if press.link.target %} target="{{ press.link.target }}" rel="noopener"{% endif %}>{{ press.link.title }}</a>
+          {%- endif -%}
+        </footer>
+      </blockquote>
+    {% endif %}
+
     {% if post.content|striptags|trim %}
       <div class="shell prose" style="margin-top: clamp(3rem, 8vw, 6rem)">
         {{ post.content }}
