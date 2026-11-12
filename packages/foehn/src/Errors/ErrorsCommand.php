@@ -45,6 +45,10 @@ use Studiometa\Foehn\Helpers\Env;
         : Only entries recorded at or after this date. A date or a relative date
           such as `-10 minutes`.
 
+        [--request=<id>]
+        : Only the entries of one traced request: the id in its X-Foehn-Trace
+          header, as `wp foehn trace` prints it.
+
         [--format=<format>]
         : Output format. text (default) or json.
 
@@ -91,6 +95,7 @@ final readonly class ErrorsCommand implements CliCommandInterface
         $limit = $assocArgs['limit'] ?? '1';
         $levels = $assocArgs['level'] ?? null;
         $since = $assocArgs['since'] ?? null;
+        $request = $assocArgs['request'] ?? null;
 
         if (!is_string($format) || !in_array($format, self::FORMATS, true)) {
             $this->cli->error('Unknown format. Use text or json.');
@@ -136,6 +141,7 @@ final readonly class ErrorsCommand implements CliCommandInterface
             static fn(array $entry): bool => (
                 ($levels === [] || in_array($entry['level'] ?? null, $levels, true))
                 && ($from === null || is_string($entry['time'] ?? null) && $entry['time'] >= $from)
+                && ($request === null || ($entry['requestId'] ?? null) === $request)
             ),
         ));
         $shown = array_slice($entries, 0, (int) $limit);

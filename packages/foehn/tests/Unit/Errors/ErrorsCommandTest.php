@@ -146,6 +146,20 @@ describe('wp foehn errors', function () {
         ]);
     });
 
+    it('filters by the id of a traced request', function () {
+        $this->log->append(errorEntry(['message' => 'Other request', 'requestId' => 'bbbbbb']));
+        $this->log->append(errorEntry(['message' => 'Traced request', 'requestId' => 'aaaaaa']));
+        $this->log->append(errorEntry(['message' => 'Not traced']));
+
+        ($this->command)([], ['format' => 'json', 'limit' => '10', 'request' => 'aaaaaa']);
+
+        $lines = array_column(array_column(wp_stub_get_calls('wp_cli_line'), 'args'), 'message');
+
+        expect(array_column(json_decode($lines[0], true, flags: JSON_THROW_ON_ERROR), 'message'))->toBe([
+            'Traced request',
+        ]);
+    });
+
     it('refuses an unknown level, format, limit or date', function (array $options, string $message) {
         ($this->command)([], $options);
 
