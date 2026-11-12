@@ -213,6 +213,9 @@ check_page "/projects/page/2/" "<html" "project pagination keeps a full-page fal
 # /projects/series/<slug>/ was taken by the rule WordPress adds for the attachments
 # of a project, so a series archive was a 404. It lives at /series/<slug>/ now.
 check_page "/series/architecture/" "index-row__title" "a series archive lists its projects"
+check_page "/project-tags/commission/" "index-row__title" "a project tag archive lists its projects"
+# video_embed() turns the watch URL in the `film` meta into a no-cookie embed.
+check_page "/projects/editions/" 'src="https://www.youtube-nocookie.com/embed/aqz-KE-bpKQ' "a project's film is embedded with video_embed()"
 check_page "/projects/corridors/" "plate--" "a project page shows its photographs"
 # The theme's own js-toolkit components are mounted by file name, from app.js.
 check_page "/projects/corridors/" 'data-component="CopyLink"' "a project page mounts a component of the theme"

@@ -33,6 +33,7 @@ use Timber\Image;
 #[AsPostMeta(key: 'year', type: 'integer', description: 'Year the series was shot')]
 #[AsPostMeta(key: 'location', type: 'string', description: 'Where it was shot')]
 #[AsPostMeta(key: 'camera', type: 'string', description: 'Camera body and film stock')]
+#[AsPostMeta(key: 'film', type: 'string', description: 'YouTube or Vimeo URL of a film shown with the series')]
 final class Project extends Post implements ConfiguresPostType
 {
     public static function configurePostType(PostTypeBuilder $builder): PostTypeBuilder
@@ -66,6 +67,27 @@ final class Project extends Post implements ConfiguresPostType
         $camera = $this->meta('camera');
 
         return is_string($camera) && $camera !== '' ? $camera : null;
+    }
+
+    /**
+     * The URL of the film shown with the series, as an editor pastes it.
+     *
+     * Stored as the watch URL, not the embed URL: the template turns it into a
+     * privacy-friendly embed with `video_embed()`, and a Vimeo URL works the same way.
+     */
+    public function film(): ?string
+    {
+        $film = $this->meta('film');
+
+        return is_string($film) && $film !== '' ? $film : null;
+    }
+
+    /**
+     * @return list<\Timber\Term>
+     */
+    public function projectTags(): array
+    {
+        return $this->terms('project_tag');
     }
 
     /**

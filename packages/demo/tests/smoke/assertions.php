@@ -273,7 +273,7 @@ $results->containsAll(
 // than the key alone.
 $results->containsAll(
     'demo post meta is registered against its post type',
-    ['client', 'year', 'location', 'camera'],
+    ['client', 'year', 'location', 'camera', 'film'],
     array_keys(get_registered_meta_keys('post', 'project')),
 );
 

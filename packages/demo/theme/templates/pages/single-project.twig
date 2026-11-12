@@ -42,10 +42,33 @@
       {% endfor %}
     </div>
 
+    {#
+      `video_embed()` turns the watch URL an editor pasted into an embed URL, on
+      youtube-nocookie.com for YouTube. `video_platform()` names the player.
+    #}
+    {% if post.film and video_is_supported(post.film) %}
+      <figure class="shell film" style="margin-top: clamp(3rem, 8vw, 6rem)">
+        <iframe
+          src="{{ video_embed(post.film) }}"
+          title="{{ post.title }} — film on {{ video_platform(post.film)|capitalize }}"
+          loading="lazy"
+          allow="fullscreen; picture-in-picture"
+          allowfullscreen></iframe>
+      </figure>
+    {% endif %}
+
     {% if post.content|striptags|trim %}
       <div class="shell prose" style="margin-top: clamp(3rem, 8vw, 6rem)">
         {{ post.content }}
       </div>
+    {% endif %}
+
+    {% if post.projectTags %}
+      <p class="shell label" style="margin-top: 2rem">
+        {% for term in post.projectTags %}
+          <a href="{{ term.link }}">#{{ term.name }}</a>
+        {% endfor %}
+      </p>
     {% endif %}
 
     <nav class="shell" style="margin-top: clamp(3rem, 8vw, 6rem)" aria-label="Projects">

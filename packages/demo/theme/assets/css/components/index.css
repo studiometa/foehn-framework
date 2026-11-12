@@ -709,3 +709,12 @@
 .blocks .section__inner > * + * {
   margin-top: 1rem;
 }
+
+/* ── Film ───────────────────────────────────────────────── */
+
+.film iframe {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 0;
+}
