@@ -7,6 +7,7 @@ namespace Studiometa\Foehn\Console\Commands;
 use InvalidArgumentException;
 use Studiometa\Foehn\Attributes\AsCliCommand;
 use Studiometa\Foehn\Config\PageCacheConfig;
+use Studiometa\Foehn\Config\PageCacheStorage;
 use Studiometa\Foehn\Console\CliCommandInterface;
 use Studiometa\Foehn\Console\WpCli;
 use Studiometa\Foehn\PageCache\ServerConfig\ApacheSnippet;
@@ -41,6 +42,10 @@ use Studiometa\Foehn\PageCache\ServerConfig\SnippetPolicy;
 
         Re-run it after changing app/page-cache*.config.php. `wp foehn cache:status`
         reports when an installed snippet was generated from a different policy.
+
+        With `storage: PageCacheStorage::Bucket`, the nginx snippet proxies hits from the
+        s3-uploads bucket, from the same S3_UPLOADS_* variables as the uploads proxy.
+        Apache is not supported in that mode.
 
         ## EXAMPLES
 
@@ -78,20 +83,28 @@ final class PageCacheConfigCommand implements CliCommandInterface
             return;
         }
 
+        // mod_rewrite can only serve a file, and the drop-in does not read a bucket.
+        if ($server === 'apache' && $this->config->storage === PageCacheStorage::Bucket) {
+            $this->cli->error('Bucket storage is served by nginx only. Apache is not supported: use --server=nginx, '
+            . 'or store the pages on disk.');
+
+            return;
+        }
+
         // Checked for Apache too: the drop-in sends these headers on every setup, and a
         // value it refuses stops it from serving hits without a word.
         try {
             $this->config->getCacheControl();
             $this->config->getResponseHeaders();
+
+            $snippet = $server === 'nginx'
+                ? new NginxSnippet($this->config)->render()
+                : new ApacheSnippet($this->config)->render();
         } catch (InvalidArgumentException $exception) {
             $this->cli->error($exception->getMessage());
 
             return;
         }
-
-        $snippet = $server === 'nginx'
-            ? new NginxSnippet($this->config)->render()
-            : new ApacheSnippet($this->config)->render();
 
         if ($snippet === null) {
             $this->cli->error(

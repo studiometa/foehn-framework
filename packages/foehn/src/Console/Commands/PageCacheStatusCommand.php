@@ -7,10 +7,13 @@ namespace Studiometa\Foehn\Console\Commands;
 use InvalidArgumentException;
 use Studiometa\Foehn\Attributes\AsCliCommand;
 use Studiometa\Foehn\Config\PageCacheConfig;
+use Studiometa\Foehn\Config\PageCacheStorage;
 use Studiometa\Foehn\Console\CliCommandInterface;
 use Studiometa\Foehn\Console\WpCli;
+use Studiometa\Foehn\Helpers\UploadsBucket;
 use Studiometa\Foehn\PageCache\PageStore;
 use Studiometa\Foehn\PageCache\ServerConfig\ApacheSnippet;
+use Studiometa\Foehn\PageCache\ServerConfig\BucketOrigin;
 use Studiometa\Foehn\PageCache\ServerConfig\NginxSnippet;
 use Studiometa\Foehn\PageCache\ServerConfig\SnippetPolicy;
 
@@ -50,6 +53,7 @@ final class PageCacheStatusCommand implements CliCommandInterface
             $environment,
             implode(', ', $this->config->environments),
         ));
+        $this->cli->log('Storage: ' . $this->config->storage->value);
         $this->cli->log('Cache path: ' . $this->store->root());
         $this->cli->log('TTL: ' . ($this->config->ttl > 0 ? $this->config->ttl . 's' : 'none — purge-driven'));
         $this->cli->log('Debug headers: ' . ($this->config->wantsDebugHeaders() ? 'Yes' : 'No'));
@@ -88,7 +92,24 @@ final class PageCacheStatusCommand implements CliCommandInterface
             return;
         }
 
+        if ($this->config->storage === PageCacheStorage::Bucket && !$this->bucketIsReachable()) {
+            $this->cli->warning(
+                'Bucket storage needs S3_UPLOADS_BUCKET, and S3_UPLOADS_ENDPOINT or S3_UPLOADS_PROXY_HOST: '
+                . 'nothing is stored or served.',
+            );
+
+            return;
+        }
+
         $this->cli->success('The page cache is active.');
+    }
+
+    /**
+     * Whether pages can be written to the bucket and nginx can read them from it.
+     */
+    private function bucketIsReachable(): bool
+    {
+        return UploadsBucket::name() !== null && BucketOrigin::fromEnvironment() !== null;
     }
 
     /**
@@ -103,15 +124,21 @@ final class PageCacheStatusCommand implements CliCommandInterface
     {
         $this->cli->log('Read paths:');
 
+        $bucket = $this->config->storage === PageCacheStorage::Bucket;
         $dropIn = defined('WP_CONTENT_DIR') ? constant('WP_CONTENT_DIR') . '/advanced-cache.php' : null;
         $hasDropIn = is_string($dropIn) && is_file($dropIn);
         $wpCache = defined('WP_CACHE') && (bool) constant('WP_CACHE');
 
-        $this->cli->log(sprintf(
-            '  %s drop-in (advanced-cache.php%s)',
-            $hasDropIn && $wpCache ? '✓' : '·',
-            $hasDropIn && !$wpCache ? ', but WP_CACHE is not true' : '',
-        ));
+        // Reading a bucket before WordPress loads costs about what a render does.
+        $this->cli->log(
+            $bucket
+                ? '  · drop-in (does not read in bucket storage)'
+                : sprintf(
+                    '  %s drop-in (advanced-cache.php%s)',
+                    $hasDropIn && $wpCache ? '✓' : '·',
+                    $hasDropIn && !$wpCache ? ', but WP_CACHE is not true' : '',
+                ),
+        );
 
         $root = SnippetPolicy::documentRoot();
         $project = $root === null ? null : dirname($root);
@@ -128,6 +155,12 @@ final class PageCacheStatusCommand implements CliCommandInterface
                     $project . '/.ddev/nginx/foehn-page-cache.conf',
                 ],
         );
+
+        if ($bucket) {
+            $this->cli->log('  · apache (not supported in bucket storage)');
+
+            return;
+        }
 
         $apache = $this->reportSnippet(
             'apache',
