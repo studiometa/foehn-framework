@@ -298,6 +298,12 @@ jobs:
         working-directory: packages/demo
         run: ./tests/smoke/run.sh
 
+      # Bucket storage of the page cache needs the RustFS service, which only the demo
+      # has. The script turns it on for its own run and puts the demo back after.
+      - name: Run the page cache bucket smoke test
+        working-directory: packages/demo
+        run: ./tests/smoke/page-cache-bucket.sh
+
       # The cache is a deployment step, and a warm cache is a different code path:
       # items are restored rather than scanned. The site has to serve either way.
       - name: Generate the discovery cache and test again
