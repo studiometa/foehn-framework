@@ -2,7 +2,7 @@
     "name": "studiometa/foehn-monorepo",
     "description": "Foehn monorepo \u2014 development workspace",
     "type": "project",
-    "license": "MIT",
+    "license": "GPL-3.0-or-later",
     "repositories": [
         {
             "type": "path",

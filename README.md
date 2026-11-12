@@ -5,7 +5,7 @@ A modern WordPress framework powered by [Tempest](https://github.com/tempestphp/
 [![Latest Version](https://img.shields.io/github/v/release/studiometa/foehn-framework)](https://github.com/studiometa/foehn-framework/releases)
 [![PHP Version](https://img.shields.io/badge/php-%5E8.5-blue)](https://php.net)
 [![Tests](https://github.com/studiometa/foehn-framework/actions/workflows/ci.yml/badge.svg)](https://github.com/studiometa/foehn-framework/actions/workflows/ci.yml)
-[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![License](https://img.shields.io/badge/license-GPL--3.0--or--later-blue)](LICENSE)
 
 > [!WARNING]
 > **AI-Generated Project** — This project was primarily built by AI coding agents (Claude). While functional and tested, it may contain bugs, security issues, or unexpected behavior. Use at your own risk, especially in production environments.
@@ -138,7 +138,9 @@ Contributions are welcome! Please read our contributing guidelines before submit
 
 ## License
 
-MIT License — see [LICENSE](LICENSE) for details.
+`studiometa/foehn` and `studiometa/foehn-acf` are released under the GNU General Public License v3.0 or later. See [LICENSE](LICENSE).
+
+`studiometa/foehn-starter`, `studiometa/foehn-installer`, `@studiometa/foehn-vite-plugin` and the demo are released under the MIT License, so the code that `composer create-project` copies into a project stays MIT.
 
 ## Credits
 

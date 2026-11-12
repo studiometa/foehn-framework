@@ -464,4 +464,4 @@ For AI agents, this package ships the `foehn` [Agent Skill](https://agentskills.
 
 ## License
 
-MIT License. See [LICENSE](LICENSE) for details.
+GNU General Public License v3.0 or later. See [LICENSE](LICENSE) for details.
