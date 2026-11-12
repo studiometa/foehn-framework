@@ -13,7 +13,7 @@ It is the worked example rather than a template. Everything below is in the repo
 | One bucket      | `foehn-demo-media` on Tigris, public read               | `web/wp-content/uploads/` is the one directory a generated web root cannot rebuild |
 | Sixteen secrets | database, admin, bucket credentials, the eight WP salts | Everything a leak would matter for. Everything else is `[env]` in `fly.toml`       |
 
-The machine builds the site itself. A boot that finds an empty volume installs WordPress, runs `database/seed.php`, restores the thirty photographs and flushes the rewrite rules; a boot that finds a volume already holding the portfolio does nothing. There is no import step, no first-run wizard and no state anybody has to carry from one deploy to the next.
+The machine builds the site itself. A boot that finds an empty volume installs WordPress, runs `wp foehn seed`, restores the thirty photographs and flushes the rewrite rules; a boot that finds a volume already holding the portfolio does nothing. There is no import step, no first-run wizard and no state anybody has to carry from one deploy to the next.
 
 ## Creating it
 
@@ -69,7 +69,7 @@ The sixteen secrets:
 
 ## Backups are off here
 
-`BACKUP_ENABLED` is not set, so no dump is scheduled. That is a decision about this site and not a default worth copying: the demo's content is reproducible from the repository — `database/seed.php` writes it and the photographs are committed — so the worst a lost volume costs is one boot spent seeding. The fourteen days of volume snapshots cover the machine layer.
+`BACKUP_ENABLED` is not set, so no dump is scheduled. That is a decision about this site and not a default worth copying: the demo's content is reproducible from the repository — the seeders in `theme/app/Seeders/` write it with `wp foehn seed` and the photographs are committed — so the worst a lost volume costs is one boot spent seeding. The fourteen days of volume snapshots cover the machine layer.
 
 For a site whose database is the only copy of anything, turn them on: [Database backups](./docker-image#database-backups) is one `BACKUP_ENABLED=true` and a second bucket, and the guide's own warning applies — the media bucket is public and a database dump must never share it.
 

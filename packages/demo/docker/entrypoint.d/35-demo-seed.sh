@@ -3,10 +3,10 @@
 # Builds the demo site on a volume that does not have one yet.
 #
 # The demo is a portfolio — six series, thirty photographs, four pages, three
-# menus — and all of it is in this repository: `database/seed.php` writes the
-# content, `database/restore-media.php` puts the photographs where the database
-# says they are, and a rewrite flush is what makes the registered rules answer a
-# URL. So there is nothing to import from anywhere, and no first-run wizard for
+# menus — and all of it is in this repository: `wp foehn seed` runs the seeders
+# in `theme/app/Seeders/`, which write the content, `database/restore-media.php`
+# puts the photographs where the database says they are, and a rewrite flush is
+# what makes the registered rules answer a URL. So there is nothing to import from anywhere, and no first-run wizard for
 # anyone to click through: a machine with an empty volume becomes the site by
 # itself, and a machine whose volume already holds it does nothing at all.
 #
@@ -108,8 +108,8 @@ foehn_demo_seed() {
     fi
 
     # Installed but unmarked is the interrupted case above. The content steps are
-    # idempotent — the seed finds its posts by slug and its photographs by their
-    # Unsplash id — so the way out is to run them again rather than to demand a
+    # idempotent — the seeders find their posts by slug and their photographs by
+    # their Unsplash id — so the way out is to run them again rather than to demand a
     # clean volume from somebody who cannot easily produce one.
     if foehn_demo_run 'wp core is-installed' >/dev/null 2>&1; then
         echo "ℹ️ NOTICE ($script_name): WordPress is installed but the portfolio is not, so an earlier boot stopped part way. Building the rest."
@@ -167,14 +167,14 @@ foehn_demo_seed() {
     fi
 
     # The content. Idempotent by slug, though nothing here runs it twice.
-    if ! foehn_demo_run 'wp eval-file database/seed.php'; then
+    if ! foehn_demo_run 'wp foehn seed'; then
         echo "🛑 ERROR ($script_name): the demo content could not be seeded. The container will not start." >&2
         return 1
     fi
 
     # The photographs, put back at the path each attachment claims and their
     # sub-sizes rebuilt from the original — which is also what proves the original
-    # arrived. On this path the seed has just written them, so what this really
+    # arrived. On this path the seeders have just written them, so what this really
     # checks is that they are readable through whatever the uploads directory
     # turned out to be.
     if ! foehn_demo_run 'wp eval-file database/restore-media.php'; then

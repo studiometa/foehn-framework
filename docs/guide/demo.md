@@ -39,6 +39,7 @@ A normal install uses released Føhn packages. In a monorepo checkout, run `ddev
 | [`#[AsMenu]`](/api/as-menu)                                       | `theme/app/Menus/`                                                                                                             |
 | [`#[AsAction]`](/api/as-action) / [`#[AsFilter]`](/api/as-filter) | `theme/app/Hooks/ThemeHooks.php`                                                                                               |
 | [Arrayable DTOs](/guide/arrayable-dtos)                           | `theme/app/Data/HeroContext.php`                                                                                               |
+| [`#[AsSeeder]`](/guide/seeders)                                   | `theme/app/Seeders/` — the whole portfolio, written by `wp foehn seed`                                                         |
 
 The theme's namespace is `Demo\` rather than `App\`, which is the only thing in it you would not copy: `App\` is what the starter uses and what a project of your own should.
 

@@ -14,11 +14,12 @@ ddev start
 | ------------------- | ------------------------------------------------------------------ |
 | `demo.sql.gz`       | Posts, meta, options, menus, settings — the whole database, ~23 KB |
 | `media/`            | The 30 photographs as originals, plus `credits.json`               |
-| `seed.php`          | Builds the same site from nothing. Idempotent                      |
 | `restore-media.php` | Puts the photographs back where the database says they are         |
 | `fix-urls.php`      | Moves the site onto the URL this ddev project serves. Idempotent   |
 | `restore.sh`        | The steps, in order                                                |
 | `fetch-media.py`    | How `media/` was produced, so the set is reproducible              |
+
+The content itself is written by the seeders in `theme/app/Seeders/` — photographs, projects, pages, testimonials, settings and menus, in that order. `wp foehn seed` runs them and builds the same site from nothing; they find what they write by slug or by Unsplash id, so a second run updates the content instead of duplicating it. `wp foehn seed --dry-run` lists them.
 
 ## Why three steps and not one
 
@@ -73,7 +74,7 @@ argument for the cases where `DDEV_PRIMARY_URL` is not the answer.
 
 ```bash
 ddev exec 'cd /var/www/html && wp site empty --yes'
-ddev exec 'cd /var/www/html && wp eval-file database/seed.php'
+ddev exec 'cd /var/www/html && wp foehn seed'
 ddev exec 'cd /var/www/html && wp foehn rewrite:flush'
 ```
 
@@ -88,7 +89,7 @@ series. One collection on purpose: a portfolio has to look like one body of work
 and the Swiss layout depends on the images sharing a treatment.
 
 `credits.json` carries the photographer's name and profile URL for every file.
-`seed.php` writes both onto the attachment as post meta, and
+`MediaSeeder` writes both onto the attachment as post meta, and
 `templates/components/photograph.twig` prints them under every plate. That is a
 licence requirement, not decoration — the smoke test asserts that the number of
 credits on a project page equals the number of photographs, so a template that drops
