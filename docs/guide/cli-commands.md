@@ -71,7 +71,7 @@ wp foehn make:seeder events --description="Sample events" --order=20
 All scaffolding commands, the `foehn-acf` ones included, support these options:
 
 ```bash
---force          # Overwrite an existing file
+--force          # Overwrite an existing file, and run in production
 --dry-run        # Write nothing: show the file that would be written
 --format=json    # Print the result as JSON (default: text)
 ```
@@ -81,6 +81,22 @@ Example with dry-run:
 ```bash
 wp foehn make:post-type product --dry-run
 ```
+
+### Production Environment
+
+A command that changes content or files does not run when `wp_get_environment_type()` is `production`. It writes nothing, says why and how to continue, and exits with status `1`:
+
+```
+Error: `wp foehn seed` changes content or files, and wp_get_environment_type() is 'production', so it did not run. Run it on a local or staging copy, add --dry-run to see what it would do, or add --force to run it here.
+```
+
+These commands are guarded: `seed`, every `make:` command (the `foehn-acf` ones included) and `salts:generate`. Each one also takes `--dry-run`, which writes nothing and runs in production without `--force`.
+
+`--force` lets the command run. On a `make:` command it also overwrites a file that exists, and on `salts:generate` it also replaces keys that are set. So run it with `--dry-run` first, to see what it would write.
+
+The other commands are not guarded. `db:export`, `inspect`, `errors`, `log`, `trace`, `verify`, `skill` and the `discovery:list`, `discovery:status` and `cache:status` commands only read. `cache:clear`, `cache:config --write`, `cache:warm`, `discovery:clear`, `discovery:generate` and `rewrite:flush` are deploy steps: they rebuild what WordPress or Føhn derives from the code, and a deploy script runs them in production.
+
+Check the environment before you run a command on a server: `wp eval 'echo wp_get_environment_type();'`.
 
 ### Where a Generated Class Goes
 
@@ -355,7 +371,7 @@ wp foehn seed --class=EventsSeeder
 wp foehn seed --dry-run
 ```
 
-`seed` runs the classes with `#[AsSeeder]`, which write the sample content of the site. It stops with exit status 1 at the first seeder that throws an exception. A project with no seeder prints how to create one and exits with status 0. See [Seeders](/guide/seeders).
+`seed` runs the classes with `#[AsSeeder]`, which write the sample content of the site. It stops with exit status 1 at the first seeder that throws an exception. A project with no seeder prints how to create one and exits with status 0. In production, it runs only with `--force` or `--dry-run` (see [Production Environment](#production-environment)). See [Seeders](/guide/seeders).
 
 ### Discovery Commands
 
@@ -470,9 +486,12 @@ wp foehn salts:generate
 
 # Rotate them — this logs every user out
 wp foehn salts:generate --force
+
+# Say where the keys would go, and which keys would be replaced
+wp foehn salts:generate --dry-run
 ```
 
-Rotating replaces the keys the current cookies were signed with, so every session ends.
+Rotating replaces the keys the current cookies were signed with, so every session ends. In production, the command runs only with `--force` or `--dry-run`. A dry run never prints a key.
 
 #### Where the keys come from
 
@@ -587,6 +606,36 @@ final class ImportProductsCommand
 ```bash
 wp foehn import:products /path/to/products.csv
 wp foehn import:products /path/to/products.csv --dry-run
+```
+
+## Command that Writes
+
+Give `writes: true` to a command that changes content or files. In production, it then runs only with `--force` or `--dry-run`, like the commands of Føhn (see [Production Environment](#production-environment)). The command itself does not check the environment.
+
+WP-CLI refuses an option the long description does not declare, so declare `[--force]` in `longDescription`. The refusal names `--dry-run` only when the long description declares `[--dry-run]`.
+
+```php
+#[AsCliCommand(
+    name: 'import:products',
+    description: 'Import products from a CSV file',
+    longDescription: <<<'DOC'
+        ## OPTIONS
+
+        <file>
+        : Path to the CSV file
+
+        [--dry-run]
+        : Import nothing. List the products that would be imported
+
+        [--force]
+        : Run in the production environment
+        DOC,
+    writes: true,
+)]
+final class ImportProductsCommand implements CliCommandInterface
+{
+    // ...
+}
 ```
 
 ## Command with Progress Bar
@@ -847,11 +896,12 @@ final class SyncInventoryCommand {}
 
 ## Attribute Parameters
 
-| Parameter         | Type      | Default    | Description              |
-| ----------------- | --------- | ---------- | ------------------------ |
-| `name`            | `string`  | _required_ | Command name             |
-| `description`     | `string`  | _required_ | Short description        |
-| `longDescription` | `?string` | `null`     | Detailed help (docblock) |
+| Parameter         | Type      | Default    | Description                                                                                     |
+| ----------------- | --------- | ---------- | ----------------------------------------------------------------------------------------------- |
+| `name`            | `string`  | _required_ | Command name                                                                                    |
+| `description`     | `string`  | _required_ | Short description                                                                               |
+| `longDescription` | `?string` | `null`     | Detailed help (docblock)                                                                        |
+| `writes`          | `bool`    | `false`    | The command changes content or files: in production, it runs only with `--force` or `--dry-run` |
 
 ## See Also
 

@@ -163,6 +163,7 @@ final readonly class ImportProjectsCommand implements CliCommandInterface
 ```
 
 - `longDescription` uses the WP-CLI docblock format. WP-CLI reads the `## OPTIONS` synopsis from it to validate arguments.
+- Give `writes: true` to a command that changes content or files. When `wp_get_environment_type()` is `production`, Føhn then stops it before it runs, unless `--force` or `--dry-run` is given. Declare `[--force]` (and `[--dry-run]` when the command has it) in `longDescription`, or WP-CLI rejects the option. The command does not check the environment itself.
 - `Studiometa\Foehn\Console\WpCli` wraps `WP_CLI`: `log`, `line`, `success`, `warning`, `error`, `halt`, `confirm`, `prompt`, `table`, `colorize`, `withSpinner`. You can also call `WP_CLI` directly.
 
 ## Background jobs: `#[AsJob]`

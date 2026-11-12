@@ -278,7 +278,7 @@ Conditional logic inside a fragment keeps working in a group. Constructor option
 
 ## Scaffolding commands
 
-Run them with WP-CLI. Each accepts `--force`, `--dry-run` and `--format=json`, never prompts, and exits with status 1 when the file exists without `--force`. Files go in the theme's `app/` directory, and the namespace comes from the theme's PSR-4 map.
+Run them with WP-CLI. Each accepts `--force`, `--dry-run` and `--format=json`, never prompts, and exits with status 1 when the file exists without `--force`. When `wp_get_environment_type()` is `production`, it also refuses to run without `--force` or `--dry-run`. Files go in the theme's `app/` directory, and the namespace comes from the theme's PSR-4 map.
 
 Run a command with `--dry-run --format=json` first: it writes nothing and prints the `path`, `status` and `contents` of the file it would write. Then run it without `--dry-run`, and do what its `notes` say.
 
