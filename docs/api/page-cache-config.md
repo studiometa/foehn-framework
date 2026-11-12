@@ -29,6 +29,9 @@ final readonly class PageCacheConfig
         public array $excludeWhenBodyContains = [],
         public bool $cacheNotFound = false,
         public ?bool $debugHeaders = null,
+        public bool $warmAfterPurge = false,
+        public ?string $warmSitemap = null,
+        public array $warmExclude = [],
     );
 }
 ```
@@ -49,6 +52,9 @@ final readonly class PageCacheConfig
 | `excludeWhenBodyContains` | `list<string>`                        | `[]`                     | Response bodies containing one of these substrings are not stored.          |
 | `cacheNotFound`           | `bool`                                | `false`                  | Store 404s as well as 200s.                                                 |
 | `debugHeaders`            | `bool\|null`                          | `null`                   | Emit the `X-Foehn-Cache` headers. `null` follows `WP_DEBUG`.                |
+| `warmAfterPurge`          | `bool`                                | `false`                  | Queue the warm-up of the pages a purge removed.                             |
+| `warmSitemap`             | `string\|null`                        | `null`                   | Sitemap or sitemap index URL to warm from. `null` reads the core sitemap.   |
+| `warmExclude`             | `list<string>`                        | `[]`                     | Regular expressions, matched in the full URL, of URLs never warmed.         |
 
 ## Usage
 
@@ -137,6 +143,16 @@ Substrings of the rendered HTML, checked before the page is stored. Catches what
 excludeWhenBodyContains: ['name="_wpnonce"'],
 ```
 
+### `warmAfterPurge`, `warmSitemap`, `warmExclude`
+
+The warm-up settings. See [Warming](/guide/page-cache#warming) in the guide.
+
+```php
+warmAfterPurge: true,
+warmSitemap: 'https://example.com/sitemap_index.xml',
+warmExclude: ['/test-form/'],
+```
+
 ### `debugHeaders`
 
 Left at `null` this follows `WP_DEBUG`, which is the right default: the headers are how the feature is debugged, and there is nothing secret in them. Set it to `true` in production while you are diagnosing something.
@@ -149,6 +165,8 @@ Left at `null` this follows `WP_DEBUG`, which is the right default: the headers 
 | `wantsDebugHeaders()`                     | `bool`   | Whether the `X-Foehn-Cache` headers are emitted.                           |
 | `allowsEnvironment(?string $environment)` | `bool`   | Whether caching is allowed in an environment. Defaults to the current one. |
 | `PageCacheConfig::environment()`          | `string` | The environment, resolved without needing WordPress loaded.                |
+| `excludesPath(string $path)`              | `bool`   | Whether a cache key path is under one of the `excludedPaths` prefixes.     |
+| `excludesFromWarmup(string $url)`         | `bool`   | Whether a URL matches one of the `warmExclude` patterns.                   |
 
 `environment()` is static and deliberately does not depend on WordPress being booted: the drop-in has to answer the same question before `wp-settings.php` has finished. It prefers `wp_get_environment_type()`, falls back to the `WP_ENVIRONMENT_TYPE` constant, then the environment variable, then `production` — as WordPress does.
 

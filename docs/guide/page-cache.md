@@ -333,6 +333,52 @@ composer install && wp foehn cache:config --write && wp foehn cache:clear
 
 `composer install` already removes `wp-content/cache/foehn/` through the installer plugin, so `cache:clear` is belt and braces on a deploy that ran it. Traffic refills the cache; `wp foehn cache:warm` fills it up front if you would rather the first visitor did not pay for a render.
 
+## Warming
+
+A warm request is a real HTTP request, with no cookies and an `X-Foehn-Warm: 1` header. The cache stores the response as it stores any anonymous visit.
+
+### The URL list
+
+`wp foehn cache:warm` and the warm-up after a full flush read the home page and the sitemap. By default this is the core WordPress sitemap. Rank Math and Yoast turn the core sitemap off, so set `warmSitemap` to the sitemap that the plugin publishes:
+
+```php
+return new PageCacheConfig(
+    enabled: true,
+    warmSitemap: 'https://example.com/sitemap_index.xml',
+);
+```
+
+Føhn reads that URL with the WordPress HTTP API. It follows a sitemap index to its sitemaps, at most two levels down, and reads the `<loc>` of each page. It stops at 50,000 URLs. A sitemap that does not answer `200` adds no URLs.
+
+Two rules remove URLs from the list:
+
+- **`warmExclude`**: regular expressions without delimiters, matched anywhere in the full URL. `'/test-form/'` excludes `https://example.com/test-form/` and `https://example.com/en/test-form/thanks/`. A pattern that does not compile, or that contains `#`, matches nothing.
+- **What the cache does not store**: a URL on another host, a query string that the cache does not key, or a path under `excludedPaths`. A warm request for these URLs costs a render and stores nothing.
+
+```php
+return new PageCacheConfig(
+    enabled: true,
+    excludedPaths: ['/account/'],
+    warmExclude: ['/test-form/', '^https://example\.com/print/'],
+);
+```
+
+### Warming after a purge
+
+With `warmAfterPurge` on, a purge queues the warm-up of the pages that it removed. A site that migrates from WP Rocket gets the same behaviour as its preload:
+
+```php
+return new PageCacheConfig(
+    enabled: true,
+    warmAfterPurge: true,
+);
+```
+
+- **A content change**: on `shutdown`, after the purge, Føhn queues one `WarmUrl` job for each purged URL. The `page/**` pages of an archive are not warmed; traffic fills them again.
+- **A full flush**: Føhn queues one `WarmSitemap` job and no job for each URL. That job reads the sitemap later and queues one `WarmUrl` job for each URL. The sitemap is not read during the request that flushed the cache.
+
+The jobs go through Action Scheduler, in the `foehn-page-cache` group. Each URL is queued once for each request, and the same `warmExclude` and storage rules apply. Without Action Scheduler, nothing is queued: Føhn does not make warm requests during the request that saved the post.
+
 ## Commands
 
 | Command                                        | What it does                                                                                                |
@@ -340,7 +386,7 @@ composer install && wp foehn cache:config --write && wp foehn cache:clear
 | `wp foehn cache:clear [--url=<url>]`           | Empty the cache, or drop one URL along with its `page/**` subtree. Reports pages, not files.                |
 | `wp foehn cache:status`                        | Whether it is on, whether it is on _here_, where it writes, what is in it, and which readers are installed. |
 | `wp foehn cache:config --server=nginx\|apache` | Print the server config, or write it with `--write`.                                                        |
-| `wp foehn cache:warm [--sync] [--limit=<n>]`   | Request every URL in the sitemap. Queued through Action Scheduler unless `--sync`.                          |
+| `wp foehn cache:warm [--sync] [--limit=<n>]`   | Request every URL in the sitemap. Queued through Action Scheduler unless `--sync`. See [Warming](#warming). |
 
 The same operations are available from the browser, on the Føhn admin page and in the admin bar — see [Admin Cache Controls](/guide/admin-cache-controls).
 
