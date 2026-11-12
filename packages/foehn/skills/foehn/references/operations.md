@@ -246,6 +246,7 @@ The `production` profile has a `public-files` check: each file of `public/` (`ex
 - The installer does not copy to `index.php`, `wp-config.php`, `wp/` or `wp-content/`, and does not copy symlinks. It shows a warning.
 - A file removed from `public/` is removed from `web/` on the next `composer install`.
 - Uploads, caches and secrets do not go in `public/`.
+- A `robots.txt` in `public/` is served in each environment, so on staging it replaces the `Disallow: /` of the indexing protection.
 
 `wp foehn salts:generate` writes the eight WordPress keys to `.env` when they are missing. `--force` rotates them and logs out every user. `--dry-run` names the file and the keys it would replace, and prints no key. The generated `wp-config.php` refuses a production request without keys.
 

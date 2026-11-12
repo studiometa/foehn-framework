@@ -21,7 +21,7 @@ Files that must be at the document root, and that you keep in the repository:
 
 - `.user.ini`, for PHP-FPM settings of the site, for example `auto_prepend_file`.
 - The file a firewall plugin prepends with `.user.ini`, for example `wordfence-waf.php` for Wordfence extended protection. Copy the file the plugin writes into `public/`, and commit it.
-- `robots.txt`, to replace the virtual one of WordPress.
+- `robots.txt`, to replace the virtual one of WordPress. Each environment gets the same file. On staging, it replaces the `Disallow: /` of the [non-production indexing protection](./security#non-production-indexing). The `noindex` meta tag stays.
 - `favicon.ico`.
 - `.well-known/` files: `security.txt`, app site association files, ACME challenge files.
 - `ads.txt` and `app-ads.txt`.
