@@ -37,7 +37,7 @@
         "studiometa/foehn-installer": "@dev"
     },
     "require-dev": {
-        "carthage-software/mago": "~1.46.0",
+        "carthage-software/mago": "~1.59.0",
         "composer/composer": "^2.10",
         "league/flysystem-aws-s3-v3": "^3.0",
         "league/glide": "^4.1",
