@@ -22,6 +22,6 @@
   </div>
 
   {% if project.location %}
-    <p class="label">{{ project.location }} — {{ project.photographCount }} images</p>
+    <p class="label">{{ project.location }} — {{ project.photographCount|plural('image') }}</p>
   {% endif %}
 </a>

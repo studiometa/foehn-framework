@@ -5,7 +5,7 @@
     <p class="label label--ink">Search</p>
     <h1 class="title" style="margin-top: 0.75rem">« {{ search_query }} »</h1>
     <p class="label" style="margin-top: 1.5rem">
-      {{ found_posts }} result{{ found_posts > 1 ? 's' : '' }}
+      {{ found_posts|plural('result') }}
     </p>
   </section>
 

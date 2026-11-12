@@ -8,5 +8,5 @@
   masthead's flex row.
 #}
 <p class="label">
-  {{ posts|length }} series
+  {{ posts|length|plural('series', 'series') }}
 </p>

@@ -108,6 +108,12 @@ $results->containsAll(
     array_map(static fn(Twig\TwigFunction $function): string => $function->getName(), $twig->getFunctions()),
 );
 
+// The theme's own #[AsTwigExtension], found in theme/app like any other class.
+$results->containsAll('the theme Twig filter is registered', ['plural'], array_map(
+    static fn(Twig\TwigFilter $filter): string => $filter->getName(),
+    $twig->getFilters(),
+));
+
 // Nothing lists the discovery classes any more: each is found because it
 // implements Discovery inside a scanned location. A location that stops being
 // scanned — or a cache entry restored without them — leaves the framework
