@@ -567,6 +567,21 @@ order_after="$(ddev exec "cd /var/www/html && wp post list --post_type=project -
 [ "$order_before" = "$order_after" ] || fail "a refused run or a dry run of projects:reorder changed the order"
 printf '✓ %s\n' "a command that writes stops in production, and runs there with --dry-run"
 
+# Discovery reports every class it skips, and the reason. The demo has none.
+problems="$(ddev exec 'cd /var/www/html && wp foehn inspect problems --format=json' 2>/dev/null | tr -d '\r' | tail -n1)"
+[ "$problems" = '{"problems":[]}' ] || fail "wp foehn inspect problems is not empty
+$problems"
+printf '✓ %s\n' "wp foehn inspect problems reports nothing"
+
+# foehn.local.config.php traces every request: the response names its trace, and the
+# trace names the controller that rendered the page.
+trace_id="$(curl -sk -D- -o /dev/null "$url/about/" | tr -d '\r' | grep -i '^x-foehn-trace:' | cut -d' ' -f2)"
+[ -n "$trace_id" ] || fail "GET /about/ has no X-Foehn-Trace header"
+trace="$(ddev exec "cd /var/www/html && wp foehn trace $trace_id --format=json" 2>/dev/null | tr -d '\r' | tail -n1)"
+grep -q '"controller":"Demo\\\\Controllers\\\\PageController"' <<<"$trace" || fail "wp foehn trace $trace_id does not name PageController
+$(head -c 400 <<<"$trace")"
+printf '✓ %s\n' "a request trace names the controller that rendered the page"
+
 # The seeders in theme/app/Seeders write the whole portfolio, and they must be
 # idempotent: on a site that already holds it, they find every post by slug and
 # every photograph by its Unsplash id, and write no copy. The site here came from
