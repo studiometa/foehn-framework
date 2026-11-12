@@ -19,9 +19,9 @@
     "version": "node scripts/move-pins.mjs"
   },
   "devDependencies": {
-    "husky": "^9.1.0",
-    "lint-staged": "^17.3.0",
-    "oxfmt": "^0.63.0"
+    "husky": "9.1.7",
+    "lint-staged": "17.3.0",
+    "oxfmt": "0.63.0"
   },
   "lint-staged": {
     "*.php": [
