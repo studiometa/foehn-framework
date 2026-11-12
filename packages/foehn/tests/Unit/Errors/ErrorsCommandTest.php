@@ -160,7 +160,7 @@ describe('wp foehn errors', function () {
         ]);
     });
 
-    it('refuses an unknown level, format, limit or date', function (array $options, string $message) {
+    it('refuses an unknown level, format, limit, date or request id', function (array $options, string $message) {
         ($this->command)([], $options);
 
         expect(wp_stub_get_calls('wp_cli_error')[0]['args']['message'])->toBe($message);
@@ -169,6 +169,10 @@ describe('wp foehn errors', function () {
         'format' => [['format' => 'yaml'], 'Unknown format. Use text or json.'],
         'limit' => [['limit' => '0'], '--limit must be a number of 1 or more.'],
         'date' => [['since' => 'not a date'], "'not a date' is not a date."],
+        'request' => [
+            ['request' => 'about'],
+            '--request must be the id of a traced request: 6 characters such as 3fa2c1.',
+        ],
     ]);
 
     it('clears the log', function () {

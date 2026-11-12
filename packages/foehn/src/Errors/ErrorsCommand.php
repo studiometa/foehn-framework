@@ -12,6 +12,7 @@ use Studiometa\Foehn\Config\FoehnConfig;
 use Studiometa\Foehn\Console\CliCommandInterface;
 use Studiometa\Foehn\Console\WpCli;
 use Studiometa\Foehn\Helpers\Env;
+use Studiometa\Foehn\Trace\TraceStore;
 
 #[AsCliCommand(
     name: 'errors',
@@ -105,6 +106,12 @@ final readonly class ErrorsCommand implements CliCommandInterface
 
         if (!is_string($limit) || !ctype_digit($limit) || (int) $limit < 1) {
             $this->cli->error('--limit must be a number of 1 or more.');
+
+            return;
+        }
+
+        if ($request !== null && (!is_string($request) || preg_match(TraceStore::ID_PATTERN, $request) !== 1)) {
+            $this->cli->error('--request must be the id of a traced request: 6 characters such as 3fa2c1.');
 
             return;
         }
