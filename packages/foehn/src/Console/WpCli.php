@@ -30,6 +30,17 @@ final class WpCli
     }
 
     /**
+     * Write a line to standard error.
+     *
+     * For a command whose standard output is data, such as `db:export -`:
+     * `log()` and `success()` write to standard output.
+     */
+    public function stderr(string $message): void
+    {
+        fwrite(STDERR, $message . PHP_EOL);
+    }
+
+    /**
      * Display a success message.
      */
     public function success(string $message): void
