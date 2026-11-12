@@ -33,7 +33,7 @@ The starter ships an `AGENTS.md` at the project root, and a `CLAUDE.md` that imp
 4. run `wp foehn discovery:clear` after it adds a class or changes an attribute;
 5. put sample content and menus in a seeder made with `make:seeder` and run with `wp foehn seed`, never only in the database. See [Seeders](/guide/seeders).
 
-Its **Project conventions** section is for the project to fill in: where sample content and menu items are created, how editors edit post meta, and which checks to run. Keep it current, because the agent follows what it says.
+Its **Project conventions** section says that sample content and menus go in seeders. The project fills in the rest: how editors edit post meta, and which checks to run. Keep it current, because the agent follows what it says.
 
 A project made before this file existed can copy [`AGENTS.md` from the starter](https://github.com/studiometa/foehn-framework/blob/main/packages/starter/AGENTS.md).
 
