@@ -41,6 +41,21 @@ describe('ThemeHooks', function () {
         expect($query->get('posts_per_page'))->toBe(3);
     });
 
+    it('takes the default page size from the theme setting', function () {
+        $GLOBALS['wp_stub_options']['demo_posts_per_archive'] = 6;
+
+        $query = new class extends WP_Query {
+            public function is_post_type_archive(string $postType = ''): bool
+            {
+                return $postType === 'project';
+            }
+        };
+
+        new ThemeHooks()->orderProjects($query);
+
+        expect($query->get('posts_per_page'))->toBe(6);
+    });
+
     it('does not change a secondary project query', function () {
         $query = new class extends WP_Query {
             public function is_post_type_archive(string $postType = ''): bool

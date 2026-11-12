@@ -81,6 +81,15 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* ── Banner ─────────────────────────────────────────────── */
+
+/* The announcement from Appearance > Theme settings. Tint, not colour: the
+   photographs are the only thing here allowed to carry tone. */
+.banner {
+  padding: 0.625rem var(--gutter);
+  background: var(--color-tint);
+}
+
 /* ── Header ─────────────────────────────────────────────── */
 
 .site-header {

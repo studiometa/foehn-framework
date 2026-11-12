@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Demo\Hooks;
 
+use Demo\Settings\ThemeSettings;
 use Studiometa\Foehn\Attributes\AsAction;
 use Studiometa\Foehn\Attributes\AsFilter;
+use Studiometa\Foehn\Settings\Settings;
 
 final class ThemeHooks
 {
@@ -39,7 +41,8 @@ final class ThemeHooks
      *
      * At priority 20 so `QueryFiltersHook` has already run: it empties a `posts_per_page`
      * outside the allowlist, and this then supplies the default rather than leaving
-     * WordPress to fall back to the site option.
+     * WordPress to fall back to the site option. The default is the "Posts per archive"
+     * theme setting, under Appearance.
      */
     #[AsAction('pre_get_posts', priority: 20)]
     public function orderProjects(\WP_Query $query): void
@@ -62,7 +65,10 @@ final class ThemeHooks
         }
 
         if (!$query->get('posts_per_page')) {
-            $query->set('posts_per_page', 3);
+            $query->set(
+                'posts_per_page',
+                ThemeSettings::sanitizePostsPerArchive(Settings::get('demo_posts_per_archive')),
+            );
         }
     }
 

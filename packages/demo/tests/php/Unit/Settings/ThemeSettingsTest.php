@@ -38,6 +38,7 @@ describe('ThemeSettings', function () {
         expect(array_keys($settings))->toBe([
             'demo_contact_email',
             'demo_show_banner',
+            'demo_banner_text',
             'demo_posts_per_archive',
         ]);
         expect($settings['demo_contact_email'])->toBeInstanceOf(Setting::class);
@@ -56,8 +57,19 @@ describe('ThemeSettings', function () {
 
         expect($settings['demo_show_banner']->type)->toBe('boolean');
         expect($settings['demo_posts_per_archive']->type)->toBe('integer');
-        expect($settings['demo_posts_per_archive']->default)->toBe(12);
+        expect($settings['demo_posts_per_archive']->default)->toBe(3);
         expect($settings['demo_contact_email']->sanitizer())->toBe('sanitize_email');
+    });
+
+    it('keeps the page size to the sizes the archive offers', function () {
+        expect(ThemeSettings::sanitizePostsPerArchive('6'))->toBe(6);
+        expect(ThemeSettings::sanitizePostsPerArchive(12))->toBe(12);
+        expect(ThemeSettings::sanitizePostsPerArchive('999'))->toBe(3);
+        expect(ThemeSettings::sanitizePostsPerArchive(''))->toBe(3);
+        expect(ThemeSettings::settings()['demo_posts_per_archive']->sanitizer(ThemeSettings::class))->toBe([
+            ThemeSettings::class,
+            'sanitizePostsPerArchive',
+        ]);
     });
 
     it('keeps every setting out of REST', function () {

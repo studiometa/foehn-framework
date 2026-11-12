@@ -41,15 +41,30 @@
 
   <tr>
     <th scope="row">
-      <label for="demo_posts_per_archive">{{ __('Posts per archive', 'demo-theme') }}</label>
+      <label for="demo_banner_text">{{ __('Banner text', 'demo-theme') }}</label>
     </th>
     <td>
       <input
-        type="number"
-        id="demo_posts_per_archive"
-        name="demo_posts_per_archive"
-        min="1"
-        value="{{ settings.demo_posts_per_archive }}" />
+        type="text"
+        id="demo_banner_text"
+        name="demo_banner_text"
+        class="large-text"
+        value="{{ settings.demo_banner_text }}" />
+    </td>
+  </tr>
+
+  {# A select and not a number field: the archive offers these sizes and no other,
+     and ThemeSettings::sanitizePostsPerArchive() refuses anything else. #}
+  <tr>
+    <th scope="row">
+      <label for="demo_posts_per_archive">{{ __('Projects per page', 'demo-theme') }}</label>
+    </th>
+    <td>
+      <select id="demo_posts_per_archive" name="demo_posts_per_archive">
+        {% for size in constant('Demo\\Settings\\ThemeSettings::PAGE_SIZES') %}
+          <option value="{{ size }}" {{ settings.demo_posts_per_archive == size ? 'selected' }}>{{ size }}</option>
+        {% endfor %}
+      </select>
     </td>
   </tr>
 </table>

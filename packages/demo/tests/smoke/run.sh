@@ -202,6 +202,8 @@ $head"
 }
 
 check_page "/" "card__title" "the homepage lists a selection of projects"
+# SettingsSeeder turns the banner on, so the public demo says it is one.
+check_page "/" 'class="banner' "the banner from the theme settings is on every page"
 check_page "/projects/" "index-row__title" "the projects index lists the series"
 check_page "/projects/page/2/" "<html" "project pagination keeps a full-page fallback"
 check_page "/projects/corridors/" "plate--" "a project page shows its photographs"

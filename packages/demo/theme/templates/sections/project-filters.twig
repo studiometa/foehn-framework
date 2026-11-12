@@ -133,7 +133,7 @@
     <span class="label label--ink">Per page</span>
     <select name="posts_per_page">
       {% for size in [3, 6, 12] %}
-        <option value="{{ size }}" {{ query_get('posts_per_page', 3) == size ? 'selected' }}>{{ size }}</option>
+        <option value="{{ size }}" {{ query_get('posts_per_page', posts_per_archive) == size ? 'selected' }}>{{ size }}</option>
       {% endfor %}
     </select>
   </label>

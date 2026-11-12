@@ -23,12 +23,14 @@ final class GlobalContextProvider implements ContextProviderInterface
     {
         // Settings::get() answers with the declared default before the option has
         // ever been saved, which get_option() does not, and with the declared type
-        // — so the footer can test `show_banner` as a boolean rather than against
+        // — so the layout can test `show_banner` as a boolean rather than against
         // the empty string WordPress stores for an unchecked box.
         return $context
             ->with('current_year', date('Y'))
             ->with('is_home', is_front_page())
             ->with('contact_email', Settings::get('demo_contact_email'))
-            ->with('show_banner', Settings::get('demo_show_banner'));
+            ->with('show_banner', Settings::get('demo_show_banner'))
+            ->with('banner_text', Settings::get('demo_banner_text'))
+            ->with('posts_per_archive', Settings::get('demo_posts_per_archive'));
     }
 }

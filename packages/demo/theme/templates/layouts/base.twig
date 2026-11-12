@@ -11,6 +11,11 @@
 
     <a class="skip-link screen-reader-text" href="#main">Skip to content</a>
 
+    {# Appearance > Theme settings turns it on and gives its text. #}
+    {% if show_banner and banner_text %}
+      <p class="banner label label--ink" role="note">{{ banner_text }}</p>
+    {% endif %}
+
     {% block header %}
       {% include 'components/header.twig' %}
     {% endblock %}

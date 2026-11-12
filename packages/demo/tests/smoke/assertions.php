@@ -245,7 +245,7 @@ $registered = get_registered_settings();
 
 $results->containsAll(
     'demo settings are registered',
-    ['demo_contact_email', 'demo_show_banner', 'demo_posts_per_archive'],
+    ['demo_contact_email', 'demo_show_banner', 'demo_banner_text', 'demo_posts_per_archive'],
     array_keys($registered),
 );
 
@@ -257,7 +257,15 @@ $results->same(
 
 // The declared default, which get_option() alone does not answer with until the
 // option has been saved once.
-$results->same('a declared default is readable before any save', 12, Settings::get('demo_posts_per_archive'));
+$results->same('a declared default is readable before any save', 3, Settings::get('demo_posts_per_archive'));
+
+// A sanitizer named as a method of the page class is that method: a page size the
+// archive does not offer is refused on save, not stored.
+$results->same(
+    'a page size outside the list is refused on save',
+    3,
+    apply_filters('sanitize_option_demo_posts_per_archive', '999', 'demo_posts_per_archive', '999'),
+);
 
 // Settings are configuration, sometimes credentials. Exposure is opt-in, which
 // is the opposite of what #[AsPostMeta] does.
@@ -265,7 +273,7 @@ $results->same(
     'demo settings are not exposed through REST',
     [],
     array_values(array_filter(
-        ['demo_contact_email', 'demo_show_banner', 'demo_posts_per_archive'],
+        ['demo_contact_email', 'demo_show_banner', 'demo_banner_text', 'demo_posts_per_archive'],
         static fn(string $name): bool => ($registered[$name]['show_in_rest'] ?? false) !== false,
     )),
 );

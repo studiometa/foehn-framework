@@ -30,8 +30,13 @@ final class SettingsSeeder implements SeederInterface
         update_option('page_on_front', $home->ID);
         update_option('permalink_structure', '/%postname%/');
         update_option('demo_contact_email', 'studio@foehn.test');
-        update_option('demo_show_banner', false);
-        update_option('demo_posts_per_archive', 12);
+        // On, because the public demo has to say that it is one.
+        update_option('demo_show_banner', true);
+        update_option(
+            'demo_banner_text',
+            'A demonstration of the Føhn framework. The photographer, the clients and the testimonials are invented.',
+        );
+        update_option('demo_posts_per_archive', 3);
 
         flush_rewrite_rules(false);
     }
