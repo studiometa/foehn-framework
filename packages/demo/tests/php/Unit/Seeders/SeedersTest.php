@@ -33,6 +33,14 @@ if (!class_exists(WP_Block_Patterns_Registry::class)) {
     }
 }
 
+// PageSeeder looks for the sample page of `wp core install`, which a stub site has not.
+if (!function_exists('get_page_by_path')) {
+    function get_page_by_path(string $path, string $output = 'OBJECT', string|array $postType = 'page'): ?WP_Post
+    {
+        return null;
+    }
+}
+
 beforeEach(fn() => wp_stub_reset());
 
 describe('Seeders', function () {

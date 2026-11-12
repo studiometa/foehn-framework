@@ -22,6 +22,13 @@ final class PageSeeder implements SeederInterface
 
     public function run(): void
     {
+        // The sample page `wp core install` writes is not part of the site.
+        $sample = get_page_by_path('sample-page');
+
+        if ($sample !== null) {
+            wp_delete_post($sample->ID, true);
+        }
+
         Upsert::post('page', 'home', [
             'post_title' => 'Home',
             'post_content' => '',
