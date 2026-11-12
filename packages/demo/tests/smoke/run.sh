@@ -537,6 +537,17 @@ ddev exec 'cd /var/www/html && wp action-scheduler run --hooks=foehn/demo/jobs/w
 	fail "a WarmPlates job failed: see Tools > Scheduled Actions"
 printf '✓ %s\n' "saving a project queues a job that warms its plates, and the job runs"
 
+# public/ is copied into web/ by the installer, and served from the site's root.
+check_page "/robots.txt" '^Sitemap: https://' "robots.txt from public/ names the sitemap"
+check_page "/.well-known/security.txt" '^Contact: ' "security.txt from public/ is served"
+favicon_type="$(curl -sk -o /dev/null -w '%{http_code} %{content_type}' "$url/favicon.ico")"
+[ "$favicon_type" = "200 image/x-icon" ] || fail "GET /favicon.ico answered $favicon_type"
+# The other checks of the profile fail here on purpose: this is not production.
+verify="$(ddev exec 'cd /var/www/html && wp foehn verify --profile=production' 2>/dev/null | tr -d '\r' || true)"
+grep -qE '^pass +public-files ' <<<"$verify" || fail "wp foehn verify finds the web root out of step with public/
+$(grep -E 'public-files' <<<"$verify")"
+printf '✓ %s\n' "the web root holds the files of public/, as verify checks"
+
 # The project's own commands go under `wp app`, the default cliNamespace.
 stats="$(ddev exec 'cd /var/www/html && wp app projects:stats' 2>/dev/null | tr -d '\r' || true)"
 grep -q '^6 series, [0-9]* photographs\.$' <<<"$stats" || fail "wp app projects:stats did not list the six series

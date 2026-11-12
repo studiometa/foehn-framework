@@ -7,6 +7,7 @@
 - The demo turns on `SecurityHeaders`, `DisableFileEditor`, `RestApiAuth` and `CleanContent`.
 - The demo has a `foehn.local.config.php` that starts from `foehn.config.php` and turns on `debug`, `recordErrors` and `traceRequests`, and its footer prints the environment from `Env::get()`.
 - The demo's page cache sets `cacheControl`, repeats the `SecurityHeaders` headers in `responseHeaders`, and warms the pages a purge removes with `warmAfterPurge` and `warmExclude`. `examples/page-cache.production.config.php` shows bucket storage, and the bucket smoke test runs that file and checks that editing a project purges its page.
+- The demo has a `public/` directory with `robots.txt`, `favicon.ico` and `.well-known/security.txt`. Its Docker image copies it before `composer install` and into the final stage, so `wp foehn verify --profile=production` passes its `public-files` check. Its ddev nginx serves `/.well-known/`.
 
 ### Changed
 

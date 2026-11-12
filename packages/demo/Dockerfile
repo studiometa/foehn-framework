@@ -58,8 +58,11 @@ WORKDIR /app
 # `theme/` before the install, because the installer symlinks
 # `web/wp-content/themes/demo-theme` at it and a symlink to a directory that is
 # not there yet is one the installer skips with a warning and a working build.
+# `public/` too: the installer copies its files into `web/` — robots.txt, the
+# favicon, `.well-known/security.txt` — and copies nothing it cannot see.
 COPY composer.json ./
 COPY theme/ ./theme/
+COPY public/ ./public/
 
 # No lockfile, on purpose: the demo installs from Packagist the exact
 # `studiometa/foehn` release its composer.json pins, which the last release commit
@@ -99,6 +102,10 @@ COPY --from=vendor /app/web ./web
 # entrypoint be written without repeating it.
 COPY composer.json wp-cli.yml ./
 COPY theme/ ./theme/
+# Served from `web/`, where the vendor stage copied it. This copy is what
+# `wp foehn verify --profile=production` compares the web root with: its
+# `public-files` check reads `public/` on the machine.
+COPY public/ ./public/
 COPY --from=assets /app/theme/dist ./theme/dist
 
 # The portfolio itself: the SQL dump, the thirty photographs and the scripts that

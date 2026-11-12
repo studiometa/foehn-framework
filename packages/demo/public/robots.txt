@@ -1,0 +1,7 @@
+# Copied into web/ by studiometa/foehn-installer on each composer install.
+# See docs/guide/public-files.md.
+User-agent: *
+Disallow: /wp/wp-admin/
+Allow: /wp/wp-admin/admin-ajax.php
+
+Sitemap: https://foehn-demo.fly.dev/wp-sitemap.xml
