@@ -1971,6 +1971,13 @@ if (!function_exists('is_robots')) {
     }
 }
 
+if (!function_exists('is_favicon')) {
+    function is_favicon(): bool
+    {
+        return wp_stub_conditional('is_favicon');
+    }
+}
+
 if (!function_exists('is_embed')) {
     function is_embed(): bool
     {

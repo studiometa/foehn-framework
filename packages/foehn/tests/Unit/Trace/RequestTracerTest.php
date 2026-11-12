@@ -119,6 +119,14 @@ describe('RequestTracer', function () {
         expect($this->store->find('a1b2c3')['id'] ?? null)->toBe('a1b2c3');
     });
 
+    it('stores no trace for the favicon or robots.txt, so the page before stays the last one', function (string $conditional) {
+        wp_stub_set_conditional($conditional, true);
+        $this->trace->begin('a1b2c3');
+        $this->tracer->shutdown();
+
+        expect($this->store->last())->toBeNull();
+    })->with(['is_favicon', 'is_robots']);
+
     it('stays silent when it cannot write the store', function () {
         $file = tempnam(sys_get_temp_dir(), 'foehn-trace-');
         $tracer = new RequestTracer($this->trace, new TraceStore($file . '/traces'), new SourcePaths('/srv'));

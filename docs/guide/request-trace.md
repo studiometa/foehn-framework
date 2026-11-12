@@ -63,7 +63,7 @@ Each list keeps at most 30 items.
 
 ## Which requests are traced
 
-A request is traced when WordPress sends the headers of a front-end page (the `send_headers` action of `WP::main()`). The admin, `admin-ajax.php`, WP-Cron, REST requests and WP-CLI do not send it, so they are not traced. A file the web server serves and a page the page cache serves run no PHP, so they have no trace either: the command says so, and gives the `wp foehn cache:clear --url=` command to run.
+A request is traced when WordPress sends the headers of a front-end page (the `send_headers` action of `WP::main()`). The admin, `admin-ajax.php`, WP-Cron, REST requests and WP-CLI do not send it, so they are not traced. `/favicon.ico` and `/robots.txt`, which a browser asks for after a page, get an id but no stored trace, so `last` stays the page. A file the web server serves and a page the page cache serves run no PHP, so they have no trace either: the command says so, and gives the `wp foehn cache:clear --url=` command to run.
 
 The id is given when the headers are sent. An error raised before, during `init` for example, has no `requestId`. An error raised after has the id, and the trace lists it.
 

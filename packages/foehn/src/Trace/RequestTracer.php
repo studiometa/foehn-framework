@@ -17,7 +17,8 @@ use Throwable;
  * is written to the store with the status, the time and the number of queries.
  *
  * `send_headers` runs only in `WP::main()`: the admin, admin-ajax, WP-Cron, a REST
- * request and WP-CLI never send it, so they are not traced. The errors the error
+ * request and WP-CLI never send it, so they are not traced. `/favicon.ico` and
+ * `/robots.txt` get an id but no stored trace. The errors the error
  * recorder writes after it carry the id, and `wp foehn trace` shows them with the
  * trace.
  */
@@ -156,7 +157,7 @@ final class RequestTracer
     {
         $id = $this->trace->id();
 
-        if ($id === null) {
+        if ($id === null || self::isBrowserFile()) {
             return;
         }
 
@@ -193,6 +194,15 @@ final class RequestTracer
             'queries' => function_exists('get_num_queries') ? (int) get_num_queries() : null,
             ...$this->trace->toArray(),
         ];
+    }
+
+    /**
+     * Whether WordPress answered `/favicon.ico` or `/robots.txt`. A browser asks for
+     * them after a page: stored, they would hide the page from `wp foehn trace last`.
+     */
+    private static function isBrowserFile(): bool
+    {
+        return function_exists('is_favicon') && is_favicon() || function_exists('is_robots') && is_robots();
     }
 
     /**
