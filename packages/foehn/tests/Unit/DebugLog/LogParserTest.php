@@ -109,6 +109,15 @@ describe('LogParser', function () {
         ]);
     });
 
+    it('reads a log written with Windows line endings', function () {
+        $log = "[12-Nov-2026 10:00:00 UTC] PHP Notice:  A in /srv/site/theme/a.php on line 1\r\n[12-Nov-2026 10:00:01 UTC] B\r\n";
+
+        expect(array_map(
+            static fn(array $entry): array => [$entry['message'], $entry['line']],
+            parsedLog($log, $this->paths),
+        ))->toBe([['A', 1], ['B', null]]);
+    });
+
     it('keeps a message of several lines whole', function () {
         $log = "[12-Nov-2026 10:01:00 UTC] Array\n(\n    [a] => 1\n)\n";
 

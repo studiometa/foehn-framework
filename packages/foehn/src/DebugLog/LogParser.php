@@ -58,8 +58,7 @@ final class LogParser
         /** @var array{time: string, lines: list<string>}|null $raw */
         $raw = null;
 
-        foreach (explode("\n", $text) as $line) {
-            $line = rtrim($line, "\r");
+        foreach (self::lines($text) as $line) {
             $match = [];
 
             if (preg_match(self::HEADER, $line, $match) !== 1) {
@@ -86,6 +85,27 @@ final class LogParser
 
         if ($raw !== null) {
             yield self::entry($raw, $paths);
+        }
+    }
+
+    /**
+     * The lines of a text, one by one: an array of every line of a few megabytes would
+     * double the memory the command uses.
+     *
+     * @return Generator<int, string>
+     */
+    private static function lines(string $text): Generator
+    {
+        $offset = 0;
+        $length = strlen($text);
+
+        while ($offset < $length) {
+            $end = strpos($text, "\n", $offset);
+            $end = $end === false ? $length : $end;
+
+            yield rtrim(substr($text, $offset, $end - $offset), "\r");
+
+            $offset = $end + 1;
         }
     }
 
