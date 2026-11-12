@@ -46,6 +46,8 @@ return new FoehnConfig(
         // Removes /wp/v2/users for visitors, which would list the admin login. The
         // other routes stay public, the demo's own /demo/v1/projects included.
         RestApiAuth::class,
+        // Sent by PHP. A page that nginx serves from the page cache does not reach PHP,
+        // so page-cache.config.php repeats them in `responseHeaders`.
         SecurityHeaders::class,
         // A transform is keyed on the path and the parameters, never on the pixels, so
         // a crop in the media library would go on serving the old ones forever. This

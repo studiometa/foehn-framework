@@ -10,6 +10,10 @@ use Studiometa\Foehn\Config\PageCacheConfig;
  * A portfolio is the case the page cache is made for: the pages change when a series
  * is published and not otherwise, and every visitor gets the same HTML.
  *
+ * Disk storage: the demo is one machine on Fly, which is where disk is the faster
+ * choice. `examples/page-cache.production.config.php` shows bucket storage, for a site
+ * on more than one instance, and tests/smoke/page-cache-bucket.sh runs it.
+ *
  * Configured and allowed in production only, which is the pair a project wants by
  * default — the feature is ready, and editing a Twig template locally still shows up
  * on the next reload rather than in eight hours. To watch it work here, add an
@@ -41,6 +45,25 @@ return new PageCacheConfig(
     enabled: true,
     ttl: 8 * HOUR_IN_SECONDS,
     environments: ['production'],
+    // A browser may keep a page for a minute, so a visitor who clicks back and forth
+    // asks nothing of the server. A purge then reaches a browser a minute late at most.
+    // Without it, a hit says `public, max-age=0, must-revalidate`.
+    cacheControl: 'public, max-age=60',
+    // The headers SecurityHeaders sends from PHP. A page that nginx serves from the
+    // cache never reaches PHP, so without these a hit would not have them.
+    responseHeaders: [
+        'X-Content-Type-Options' => 'nosniff',
+        'X-Frame-Options' => 'SAMEORIGIN',
+        'Referrer-Policy' => 'strict-origin-when-cross-origin',
+        'Permissions-Policy' => 'camera=(), microphone=(), geolocation=(), payment=()',
+    ],
+    // A purge queues the warm-up of the pages it removed, through Action Scheduler, so
+    // the first visitor after an edit gets a stored page. A full flush warms the
+    // sitemap: every URL in it, and the home page.
+    warmAfterPurge: true,
+    // The author archive is in the core sitemap, and nobody visits it. Traffic fills
+    // it if somebody does.
+    warmExclude: ['/author/'],
     cacheQueryArgs: [
         // Term slugs, one or several. The pattern is the floor the cache imposes on a
         // value that becomes part of a filename; a slug outside it bypasses.
