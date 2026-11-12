@@ -253,13 +253,64 @@ final readonly class EntryBuilder
             /** @var list<string> $argv */
             $argv = is_array($_SERVER['argv'] ?? null) ? $_SERVER['argv'] : [];
 
-            return ['method' => 'CLI', 'url' => self::shorten(implode(' ', ['wp', ...array_slice($argv, 1)]))];
+            return ['method' => 'CLI', 'url' => self::shorten(self::redactCommand(array_slice($argv, 1)))];
         }
 
         return [
             'method' => is_string($_SERVER['REQUEST_METHOD'] ?? null) ? $_SERVER['REQUEST_METHOD'] : null,
-            'url' => is_string($_SERVER['REQUEST_URI'] ?? null) ? self::shorten($_SERVER['REQUEST_URI']) : null,
+            'url' => is_string($_SERVER['REQUEST_URI'] ?? null)
+                ? self::shorten(self::redactUrl($_SERVER['REQUEST_URI']))
+                : null,
         ];
+    }
+
+    /**
+     * The URL with the value of each query argument removed.
+     *
+     * The log is a file under wp-content, which the web server can serve: a token, an
+     * email or a password in a query string must not go into it. The names stay, so
+     * the entry still shows which arguments the request had.
+     */
+    public static function redactUrl(string $url): string
+    {
+        $position = strpos($url, '?');
+
+        if ($position === false) {
+            return $url;
+        }
+
+        $names = [];
+
+        foreach (explode('&', substr($url, $position + 1)) as $pair) {
+            if ($pair === '') {
+                continue;
+            }
+
+            $names[] = explode('=', $pair, 2)[0];
+        }
+
+        return substr($url, 0, $position) . ($names === [] ? '' : '?' . implode('&', $names));
+    }
+
+    /**
+     * The WP-CLI command with the value of each `--option=value` removed.
+     *
+     * Options such as `--user_pass=` hold secrets. Positional arguments stay, because
+     * they name the command and its subject.
+     *
+     * @param list<string> $arguments The arguments after the `wp` binary.
+     */
+    public static function redactCommand(array $arguments): string
+    {
+        $words = ['wp'];
+
+        foreach ($arguments as $argument) {
+            $words[] = str_starts_with($argument, '--') && str_contains($argument, '=')
+                ? explode('=', $argument, 2)[0] . '=…'
+                : $argument;
+        }
+
+        return implode(' ', $words);
     }
 
     private static function shorten(string $text): string

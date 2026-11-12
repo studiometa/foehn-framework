@@ -155,3 +155,23 @@ describe('EntryBuilder', function () {
         expect(mb_strlen($entry['message']))->toBe(2001);
     });
 });
+
+describe('EntryBuilder redaction', function () {
+    it('keeps the query argument names of a URL and drops their values', function () {
+        expect(EntryBuilder::redactUrl('/reset/?key=secret&login=a@example.com&flag'))->toBe('/reset/?key&login&flag');
+        expect(EntryBuilder::redactUrl('/about/'))->toBe('/about/');
+        expect(EntryBuilder::redactUrl('/search/?'))->toBe('/search/');
+    });
+
+    it('drops the value of each --option=value of a WP-CLI command', function () {
+        expect(EntryBuilder::redactCommand([
+            'user',
+            'create',
+            'bob',
+            '--user_pass=secret',
+            '--role=editor',
+            '--porcelain',
+        ]))
+            ->toBe('wp user create bob --user_pass=… --role=… --porcelain');
+    });
+});
