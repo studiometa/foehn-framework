@@ -1,8 +1,8 @@
 # Operations
 
-Config files, opt-in hooks, the project model, the discovery cache, the page cache, query filters, images, the object cache, verification and security keys.
+Config files, opt-in hooks, the project model, the discovery cache, the page cache, query filters, images, the object cache, verification, security keys and the database export.
 
-Docs: [Configuration](https://studiometa.github.io/foehn-framework/guide/configuration.md), [CLI commands](https://studiometa.github.io/foehn-framework/guide/cli-commands.md#project-inspection), [Hooks](https://studiometa.github.io/foehn-framework/guide/hooks.md#built-in-hooks), [Discovery cache](https://studiometa.github.io/foehn-framework/guide/discovery-cache.md), [Page cache](https://studiometa.github.io/foehn-framework/guide/page-cache.md), [Query filters](https://studiometa.github.io/foehn-framework/guide/query-filters.md), [Images](https://studiometa.github.io/foehn-framework/guide/images.md), [Caching](https://studiometa.github.io/foehn-framework/guide/caching.md), [Verification](https://studiometa.github.io/foehn-framework/guide/verification.md), [Security](https://studiometa.github.io/foehn-framework/guide/security.md).
+Docs: [Configuration](https://studiometa.github.io/foehn-framework/guide/configuration.md), [CLI commands](https://studiometa.github.io/foehn-framework/guide/cli-commands.md#project-inspection), [Hooks](https://studiometa.github.io/foehn-framework/guide/hooks.md#built-in-hooks), [Discovery cache](https://studiometa.github.io/foehn-framework/guide/discovery-cache.md), [Page cache](https://studiometa.github.io/foehn-framework/guide/page-cache.md), [Query filters](https://studiometa.github.io/foehn-framework/guide/query-filters.md), [Images](https://studiometa.github.io/foehn-framework/guide/images.md), [Caching](https://studiometa.github.io/foehn-framework/guide/caching.md), [Verification](https://studiometa.github.io/foehn-framework/guide/verification.md), [Security](https://studiometa.github.io/foehn-framework/guide/security.md), [Database export](https://studiometa.github.io/foehn-framework/guide/database-export.md).
 
 ## Config files
 
@@ -12,6 +12,7 @@ Each `theme/app/<name>.config.php` returns one object. Føhn registers it in the
 | -------------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `foehn.config.php`         | `FoehnConfig`                       | `discoveryCacheStrategy` (`DiscoveryCacheStrategy::NONE`), `discoveryCachePath`, `hooks` (`[]`), `imageTransformer` (`null`), `debug` (`false`)                                                                    |
 | `page-cache.config.php`    | `PageCacheConfig`                   | `enabled` (`false`), `ttl`, `environments` (`['production']`), `cacheQueryArgs`, `excludedPaths`, `excludeWhenBodyContains`, `ignoredQueryArgs`, `bypassCookies`, `cacheNotFound`, `browserMaxAge`, `debugHeaders` |
+| `db-export.config.php`     | `DatabaseExportConfig`              | `window` (`'-2 months'`), `safeTables`, `structureOnlyTables`, `columns` (table => column => `Anonymizer`), `allowedEmailDomains`                                                                                  |
 | `query-filters.config.php` | `QueryFiltersConfig`                | `taxonomies`, `publicVars`                                                                                                                                                                                         |
 | `rest.config.php`          | `RestConfig`                        | `defaultCapability` (`'edit_posts'`; `null` = any logged-in user)                                                                                                                                                  |
 | `timber.config.php`        | `TimberConfig`                      | `templatesDir` (`['templates']`)                                                                                                                                                                                   |
@@ -175,3 +176,16 @@ wp foehn verify --profile=production                                       # dep
 Exit status: `0` pass, `1` something to fix, `2` the gate could not run.
 
 `wp foehn salts:generate` writes the eight WordPress keys to `.env` when they are missing. `--force` rotates them and logs out every user. The generated `wp-config.php` refuses a production request without keys.
+
+## Database export
+
+```bash
+ssh production 'wp foehn db:export -' > db.sql.gz   # dump to stdout, report to stderr
+ddev import-db --file=db.sql.gz
+ddev wp user update user-1 --user_pass=password      # no password hash is exported
+```
+
+- Core tables are kept. `users` and `comments` are anonymized (`user-<ID>@example.invalid`, `user-<ID>`), personal `usermeta` keys and transients are removed, revisions older than the window (`--from`, default `-2 months`) are removed.
+- Presets for WooCommerce (orders in the window, anonymized), Gravity Forms (entries structure only) and logs or indexes apply when their tables exist.
+- **Fail-closed:** a table no rule covers is exported without rows and listed in a warning. Declare it in `db-export.config.php`: `safeTables`, `structureOnlyTables`, or `columns` with `Studiometa\Foehn\DatabaseExport\Anonymizer` cases (`Email`, `Username`, `Name`, `Ip`, `Empty`). Names are without the table prefix; a trailing `*` matches a prefix.
+- Not anonymized: post content, options (`admin_email`, plugin API keys), comment text.

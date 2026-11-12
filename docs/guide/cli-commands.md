@@ -372,6 +372,21 @@ wp foehn verify --profile=production
 
 Runs one named release gate and writes a deterministic JSON report. It exits `0` on a pass, `1` on actionable diagnostics or a failed check, and `2` when the gate could not run at all — so a CI job can tell a regression from a broken step. The profile is required and there is no flag to select individual checks. See [Verification](/guide/verification) for both profiles, the report schema, and what each gate cannot observe.
 
+### Database Export
+
+```bash
+# Write a light, anonymized dump of the database
+wp foehn db:export
+
+# Stream it from production to a local file
+ssh production 'wp foehn db:export -' > db.sql.gz
+
+# Keep one year of revisions and orders
+wp foehn db:export db.sql.gz --from=-1year
+```
+
+Writes a gzipped SQL dump to import locally. Users, user meta, comments and WooCommerce orders are anonymized, transients are left out, and revisions and orders older than the window are left out. A table no rule covers is exported without rows and listed at the end. See [Database Export](/guide/database-export) for every rule, the config file, and what is not anonymized.
+
 ### Security Keys
 
 WordPress signs authentication cookies and nonces with eight keys. They live in the environment, so a project keeps them wherever it keeps its other secrets. `composer install` fills them into `.env` on a first install, and the generated `wp-config.php` refuses to serve a production request without them.
