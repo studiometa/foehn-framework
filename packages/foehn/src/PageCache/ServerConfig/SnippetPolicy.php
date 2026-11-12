@@ -399,6 +399,8 @@ final readonly class SnippetPolicy
                 $this->config->getCacheQueryArgs(),
                 $this->config->cacheNotFound,
                 $this->config->browserMaxAge,
+                $this->config->cacheControl,
+                $this->config->responseHeaders,
             ])),
             0,
             12,

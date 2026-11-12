@@ -178,3 +178,78 @@ describe('values instead of patterns', function () {
         expect(QueryKey::canonical('page=2&lang=fr', $config))->toBe('lang=fr&page=2&');
     });
 });
+
+describe('the headers of a hit', function () {
+    it('builds Cache-Control from browserMaxAge unless the project set one', function () {
+        expect(new PageCacheConfig()->getCacheControl())->toBe('public, max-age=0, must-revalidate');
+        expect(new PageCacheConfig(browserMaxAge: 60)->getCacheControl())->toBe('public, max-age=60, must-revalidate');
+        expect(new PageCacheConfig(browserMaxAge: -5)->getCacheControl())->toBe('public, max-age=0, must-revalidate');
+        expect(
+            new PageCacheConfig(
+                browserMaxAge: 60,
+                cacheControl: 'no-cache, no-store, must-revalidate',
+            )->getCacheControl(),
+        )
+            ->toBe('no-cache, no-store, must-revalidate');
+    });
+
+    it('sends no extra header by default', function () {
+        expect(new PageCacheConfig()->getResponseHeaders())->toBe([]);
+    });
+
+    it('takes the headers a server sets at server level', function () {
+        $headers = [
+            'X-Frame-Options' => 'SAMEORIGIN',
+            'X-XSS-Protection' => '1; mode=block',
+            'X-Content-Type-Options' => 'nosniff',
+            'Content-Security-Policy' => "default-src 'self'; img-src * data:",
+        ];
+
+        expect(new PageCacheConfig(responseHeaders: $headers)->getResponseHeaders())->toBe($headers);
+    });
+
+    it('refuses a Cache-Control value that could break out of the nginx string or the header', function (string $value) {
+        expect(fn() => new PageCacheConfig(cacheControl: $value)->getCacheControl())
+            ->toThrow(InvalidArgumentException::class, 'cacheControl');
+    })->with([
+        'a double quote' => ['no-cache"; add_header X-Evil "1'],
+        'a line break' => ["no-cache\r\nX-Evil: 1"],
+        'a trailing newline' => ["no-cache\n"],
+        'an nginx variable' => ['max-age=$arg_x'],
+        'a backslash' => ['no-cache\\'],
+        'a non-ASCII character' => ['no-cache, max-âge=0'],
+        'an empty value' => [''],
+        'a leading space' => [' no-cache'],
+    ]);
+
+    it('refuses a header name nginx would have to quote, or a list instead of a map', function (array $headers) {
+        expect(fn() => new PageCacheConfig(responseHeaders: $headers)->getResponseHeaders())
+            ->toThrow(InvalidArgumentException::class, 'is not a header name');
+    })->with([
+        'a list of lines' => [['X-Frame-Options: SAMEORIGIN']],
+        'a space' => [['X Frame' => 'SAMEORIGIN']],
+        'a colon' => [['X-Frame-Options:' => 'SAMEORIGIN']],
+        'a semicolon' => [['X-A;add_header' => 'b']],
+        'a trailing newline' => [["X-A\n" => 'b']],
+    ]);
+
+    it('refuses a header value that could break out of the nginx string or the header', function (string $value) {
+        expect(fn() => new PageCacheConfig(responseHeaders: ['X-Frame-Options' => $value])->getResponseHeaders())
+            ->toThrow(InvalidArgumentException::class, 'responseHeaders: X-Frame-Options');
+    })->with([
+        'a double quote' => ['SAMEORIGIN"; add_header X-Evil "1'],
+        'a line break' => ["SAMEORIGIN\r\nSet-Cookie: a=b"],
+        'an nginx variable' => ['$http_host'],
+        'an empty value' => [''],
+    ]);
+
+    it('refuses a header the cache sets itself', function (string $name) {
+        expect(fn() => new PageCacheConfig(responseHeaders: [$name => 'x'])->getResponseHeaders())
+            ->toThrow(InvalidArgumentException::class, 'the page cache sets');
+    })->with(['Cache-Control', 'vary', 'ETag', 'Content-Type', 'Set-Cookie', 'X-Foehn-Cache', 'X-Robots-Tag']);
+
+    it('points a Cache-Control header to cacheControl', function () {
+        expect(fn() => new PageCacheConfig(responseHeaders: ['Cache-Control' => 'no-store'])->getResponseHeaders())
+            ->toThrow(InvalidArgumentException::class, 'Use cacheControl.');
+    });
+});

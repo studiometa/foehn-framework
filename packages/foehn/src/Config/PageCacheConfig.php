@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Config;
 
+use InvalidArgumentException;
 use Studiometa\Foehn\Helpers\Env;
+use Studiometa\Foehn\PageCache\StoredHeaders;
 use Studiometa\Foehn\Views\Sections\SectionRequest;
 
 /**
@@ -72,6 +74,25 @@ final readonly class PageCacheConfig
 
         /** max-age sent to the browser for cached HTML. 0 + must-revalidate keeps purges instant. */
         public int $browserMaxAge = 0,
+
+        /**
+         * The whole `Cache-Control` value of a hit, in place of the one built from `browserMaxAge`.
+         *
+         * Null keeps `public, max-age=<browserMaxAge>, must-revalidate`. Sent by the drop-in
+         * and written into the nginx snippet, so the two readers cannot disagree.
+         */
+        public ?string $cacheControl = null,
+
+        /**
+         * Static headers sent on every hit, by the drop-in and by nginx.
+         *
+         * For the headers a server sets at server level: an nginx `location` with its own
+         * `add_header` drops every `add_header` of the `server`, and the cache location has
+         * its own. Not sent on a page PHP renders, which already gets them from the server.
+         *
+         * @var array<string, string>
+         */
+        public array $responseHeaders = [],
 
         /**
          * Environments where caching is allowed at all.
@@ -233,6 +254,99 @@ final readonly class PageCacheConfig
         }
 
         return false;
+    }
+
+    /**
+     * The headers a project may not set through `responseHeaders`.
+     *
+     * The ones the cache computes for the file it sends, or never sends from a stored page
+     * ({@see StoredHeaders::DENIED}), and `X-Robots-Tag`, which nginx derives for a section
+     * response: a configured one would remove the `noindex` of a cached fragment.
+     *
+     * @var list<string>
+     */
+    public const OWNED_RESPONSE_HEADERS = [...StoredHeaders::DENIED, 'x-robots-tag'];
+
+    /**
+     * A header name nginx can write without quotes.
+     */
+    private const RESPONSE_HEADER_NAME = '/^[A-Za-z0-9-]+$/D';
+
+    /**
+     * A header value nginx can write between double quotes, and PHP can send as it is.
+     *
+     * Printable ASCII without `"`, which ends the nginx string, `\\`, which escapes in it,
+     * and `$`, which nginx reads as a variable. No control character, so no line break
+     * can start a second header or a second nginx directive. A `;` stays allowed: it ends
+     * a directive only outside quotes, and `X-XSS-Protection: 1; mode=block` needs it.
+     */
+    private const RESPONSE_HEADER_VALUE = '/^[\x20\x21\x23\x25-\x5B\x5D-\x7E]+$/D';
+
+    /**
+     * The `Cache-Control` value of a hit.
+     *
+     * @throws InvalidArgumentException When `cacheControl` cannot be written safely into
+     *     the nginx snippet or sent by the drop-in.
+     */
+    public function getCacheControl(): string
+    {
+        if ($this->cacheControl === null) {
+            return sprintf('public, max-age=%d, must-revalidate', max(0, $this->browserMaxAge));
+        }
+
+        self::assertHeaderValue('cacheControl', $this->cacheControl);
+
+        return $this->cacheControl;
+    }
+
+    /**
+     * The static headers of a hit, validated.
+     *
+     * Validated here and not in the constructor, so that a bad value fails
+     * `wp foehn cache:config` and stops the drop-in from serving, but never stops
+     * WordPress from booting.
+     *
+     * @return array<string, string>
+     * @throws InvalidArgumentException When a name or a value cannot be written safely
+     *     into the nginx snippet or sent by the drop-in, or names a header the cache owns.
+     */
+    public function getResponseHeaders(): array
+    {
+        foreach ($this->responseHeaders as $name => $value) {
+            // A config file can give a list of `Name: value` lines, whose keys are integers.
+            // @mago-expect analysis:redundant-logical-operation
+            if (!is_string($name) || preg_match(self::RESPONSE_HEADER_NAME, $name) !== 1) {
+                throw new InvalidArgumentException(sprintf(
+                    'responseHeaders: "%s" is not a header name. Use [\'Name\' => \'value\'], with letters, digits and hyphens in the name.',
+                    $name,
+                ));
+            }
+
+            if (in_array(strtolower($name), self::OWNED_RESPONSE_HEADERS, true)) {
+                throw new InvalidArgumentException(sprintf(
+                    'responseHeaders: the page cache sets "%s" itself.%s',
+                    $name,
+                    strtolower($name) === 'cache-control' ? ' Use cacheControl.' : '',
+                ));
+            }
+
+            self::assertHeaderValue('responseHeaders: ' . $name, $value);
+        }
+
+        return $this->responseHeaders;
+    }
+
+    /**
+     * @throws InvalidArgumentException When the value is not one {@see self::RESPONSE_HEADER_VALUE} accepts.
+     */
+    private static function assertHeaderValue(string $option, mixed $value): void
+    {
+        if (!is_string($value) || trim($value) !== $value || preg_match(self::RESPONSE_HEADER_VALUE, $value) !== 1) {
+            throw new InvalidArgumentException(sprintf(
+                '%s: the value must be printable ASCII without ", \\ or $, and without spaces at the start or the end.',
+                $option,
+            ));
+        }
     }
 
     /**
