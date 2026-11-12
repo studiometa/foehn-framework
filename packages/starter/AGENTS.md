@@ -1,6 +1,6 @@
 # Agent instructions
 
-This project is a WordPress site built with [Føhn](https://github.com/studiometa/foehn-framework) (`studiometa/foehn`). The theme is in `theme/`: PHP classes with attributes in `theme/app/` (namespace `App\`), Twig templates in `theme/templates/`, and the Vite build in `theme/assets/`. Composer generates `web/`: do not edit it.
+This project is a WordPress site built with [Føhn](https://github.com/studiometa/foehn-framework) (`studiometa/foehn`). The theme is in `theme/`: PHP classes with attributes in `theme/app/` (namespace `App\`), Twig templates in `theme/templates/`, and the Vite build in `theme/assets/`. Composer generates `web/`: do not edit it. Put the files that must be at the document root (`robots.txt`, `.well-known/`) in `public/`: `composer install` copies them into `web/`.
 
 The project runs in DDEV. Run WP-CLI as `ddev wp …`. Without DDEV, run `wp …` from the project root.
 
@@ -60,6 +60,7 @@ Each line gives the command that prints the file. When WordPress cannot boot, re
 
 ```bash
 composer test       # PHP unit tests
+composer test:smoke # the site in ddev: needs a started ddev (`ddev start`)
 npm run lint        # JS, CSS and Twig
 npm run build       # front-end build
 ```

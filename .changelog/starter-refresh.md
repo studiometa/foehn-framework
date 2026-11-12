@@ -4,6 +4,7 @@
 
 ### Changed
 
+- The starter `AGENTS.md` lists `composer test:smoke` in its checks, and tells a coding agent to put the files of the document root in `public/`.
 - The starter guide has a release checklist for production: `WP_ENVIRONMENT_TYPE=production`, `composer install --no-dev`, `npm run build`, `wp foehn cache:config --server=nginx --write`, `wp foehn cache:clear` (necessary with bucket storage), a real cron and `wp foehn verify --profile=production`. It also lists every place of the theme name to change when you rename the theme.
 - The starter `.env.example` sets `DISABLE_WP_CRON=false`, so WordPress cron, `#[AsCron]`, `#[AsJob]` and the page-cache warm-up run in a new local project. Production keeps the default (`true`) and a real cron. Add the line to the `.env` of a local project created from an earlier starter.
 - The starter `theme/app/page-cache.config.php` names the page cache options a project may need, with links to the guide: `browserMaxAge`, `cacheControl`, `responseHeaders`, `warmAfterPurge`, `warmSitemap`, `warmExclude` and bucket `storage`. The active values do not change.
