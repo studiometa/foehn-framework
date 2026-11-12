@@ -44,9 +44,9 @@ The plugin sets `server.forwardConsole: true` when `vite.config.js` does not set
 - The Vite client in the page wraps `console.error` and `console.warn` and listens for `error` and `unhandledrejection`. It sends each event over the HMR websocket. The server prints it in its terminal as `[vite] (client) [console.error] …`.
 - The plugin listens for the same `vite:forward-console` event and appends one JSON line to `<outDir>/browser-errors.jsonl`: `time`, `level` (`error`, `rejection`, `console`), `class` (`TypeError`, `console.warn`), `message` (2000 characters), `file` and `line` of the first own frame, `stack` (own frames, 8 at most, then `+N other frames`). Own frames are modules under the Vite root outside `node_modules`. Their line is mapped through the module's source map, so a TypeScript file gives the source line. The file is rotated at 256 KB, 3 files at most. `vite build` empties `outDir`, and the log with it.
 - `wp foehn errors --browser` reads `<parent theme>/dist/browser-errors.jsonl`. It has the same options as `wp foehn errors`, with `--level=error,rejection,console`.
-- Other `logLevels` (`server.forwardConsole: { logLevels: ['error', 'warn', 'log'] }`) are written as `console.log`. `server.forwardConsole: false` turns off the terminal output and the file.
+- Other `logLevels` (`server.forwardConsole: { logLevels: ['error', 'warn', 'log'] }`) are written with the class `console.<level>`, such as `console.log`. `server.forwardConsole: false` turns off the terminal output and the file.
 - With Vite 6 or 7 the option does not exist: nothing is sent, and the file is not written.
-- Nothing is written when the page does not load the Vite client: a page from the build, or a page on the DDEV URL whose browser blocks the client (see the CORS line below).
+- Nothing is written when the page does not load the Vite client: a page from the build, or a page on the DDEV URL whose browser blocks the client (see the `server.cors` line in [DDEV proxy](#ddev-proxy)).
 
 ## Checklist when the page has no assets in dev
 
