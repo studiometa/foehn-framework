@@ -304,7 +304,7 @@ Entry names are the `input` paths from `vite.config.js`, relative to the project
 
 ## CLI
 
-All commands are under `wp foehn` (`ddev wp foehn …` in a DDEV project).
+The commands of Føhn are under `wp foehn` (`ddev wp foehn …` in a DDEV project). The `#[AsCliCommand]` classes of the project are under `wp app` (`cliNamespace` in `FoehnConfig`).
 
 | Command                                                                                                                                                                                                                                    | Purpose                                                                                                                                                                                                              |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

@@ -1,6 +1,6 @@
 # CLI Commands
 
-Føhn provides `#[AsCliCommand]` for creating WP-CLI commands and includes built-in scaffolding commands.
+Føhn provides `#[AsCliCommand]` for creating WP-CLI commands and includes built-in scaffolding commands. The built-in commands run as `wp foehn <name>`, and the commands of your project as `wp app <name>` (see [Custom Commands](#custom-commands)).
 
 ## Built-in Commands
 
@@ -553,7 +553,33 @@ The command warns when that file exists and you rotate `.env`, since the file is
 
 ## Custom Commands
 
-Create custom WP-CLI commands with `#[AsCliCommand]`:
+Create custom WP-CLI commands with `#[AsCliCommand]`. The commands of your project go under `wp app`, and the commands of Føhn stay under `wp foehn`:
+
+```bash
+wp app import:products products.csv   # A command of your project
+wp foehn inspect                      # A command of Føhn
+```
+
+A command of your project then cannot collide with a command that a later Føhn release adds, and `wp app` lists only the commands of your site. `wp foehn inspect cli-commands` gives the line that runs each command.
+
+### Command Namespace
+
+A command declared in a package (a class under `vendor/`, or under the `Studiometa\Foehn\` namespace) goes under `wp foehn`. Every other command goes under `wp app`. To use another name, set `cliNamespace` in `app/foehn.config.php`:
+
+```php
+<?php
+// app/foehn.config.php
+
+use Studiometa\Foehn\Config\FoehnConfig;
+
+return new FoehnConfig(
+    cliNamespace: 'site',
+);
+```
+
+The command of the example below is then `wp site import:products`. Change the cron jobs, deploy scripts and runbooks that call a command when you change the name.
+
+### A Command Class
 
 ```php
 <?php
@@ -583,8 +609,8 @@ final class ImportProductsCommand
      *
      * ## EXAMPLES
      *
-     *     wp foehn import:products products.csv
-     *     wp foehn import:products products.csv --dry-run
+     *     wp app import:products products.csv
+     *     wp app import:products products.csv --dry-run
      *
      * @param array $args Positional arguments
      * @param array $assocArgs Named arguments
@@ -641,8 +667,8 @@ final class ImportProductsCommand
 **Usage:**
 
 ```bash
-wp foehn import:products /path/to/products.csv
-wp foehn import:products /path/to/products.csv --dry-run
+wp app import:products /path/to/products.csv
+wp app import:products /path/to/products.csv --dry-run
 ```
 
 ## Command that Writes
@@ -752,7 +778,7 @@ final class CacheCommand
      *
      * ## EXAMPLES
      *
-     *     wp foehn cache clear
+     *     wp app cache clear
      */
     public function clear(): void
     {
@@ -765,7 +791,7 @@ final class CacheCommand
      *
      * ## EXAMPLES
      *
-     *     wp foehn cache stats
+     *     wp app cache stats
      */
     public function stats(): void
     {
@@ -786,8 +812,8 @@ final class CacheCommand
      *
      * ## EXAMPLES
      *
-     *     wp foehn cache warm
-     *     wp foehn cache warm --post-types=post,page,product
+     *     wp app cache warm
+     *     wp app cache warm --post-types=post,page,product
      */
     public function warm(array $args, array $assocArgs): void
     {
@@ -818,9 +844,9 @@ final class CacheCommand
 **Usage:**
 
 ```bash
-wp foehn cache clear
-wp foehn cache stats
-wp foehn cache warm --post-types=product
+wp app cache clear
+wp app cache stats
+wp app cache warm --post-types=product
 ```
 
 ## Command with Tables
@@ -916,10 +942,10 @@ management system.
 ## EXAMPLES
 
     # Sync all products
-    wp foehn sync:inventory
+    wp app sync:inventory
 
     # Force sync specific products
-    wp foehn sync:inventory --products=123,456 --force
+    wp app sync:inventory --products=123,456 --force
 
 ## NOTES
 

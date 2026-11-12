@@ -28,7 +28,7 @@ final readonly class AsCliCommand
 
 ## Namespace
 
-Commands are registered under `wp foehn <name>`.
+A command of your project is registered as `wp app <name>`. A command of Føhn, or of another package, is registered as `wp foehn <name>`. `FoehnConfig::$cliNamespace` changes `app` to another name. See [Command Namespace](/guide/cli-commands#command-namespace).
 
 ## Usage
 
@@ -56,7 +56,7 @@ final class HelloCommand
 }
 ```
 
-**Usage:** `wp foehn hello John`
+**Usage:** `wp app hello John`
 
 ### With Options
 
@@ -86,7 +86,7 @@ final class ImportCommand
 }
 ```
 
-**Usage:** `wp foehn import:products data.csv --dry-run`
+**Usage:** `wp app import:products data.csv --dry-run`
 
 ### With Subcommands
 
@@ -113,8 +113,8 @@ final class CacheCommand
 
 **Usage:**
 
-- `wp foehn cache clear`
-- `wp foehn cache warm`
+- `wp app cache clear`
+- `wp app cache warm`
 
 ### With Long Description
 
@@ -134,8 +134,8 @@ Synchronizes data from the external API.
 
 ## EXAMPLES
 
-    wp foehn sync
-    wp foehn sync --force
+    wp app sync
+    wp app sync --force
 DOC,
 )]
 ```

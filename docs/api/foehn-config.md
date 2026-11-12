@@ -21,6 +21,7 @@ final readonly class FoehnConfig
         public bool $debug = false,
         public ?bool $recordErrors = null,
         public ?bool $traceRequests = null,
+        public string $cliNamespace = 'app',
     );
 
     public static function fromArray(array $config): self;
@@ -42,6 +43,7 @@ final readonly class FoehnConfig
 | `debug`                  | `bool`                   | `WP_DEBUG` value | Raise PHP warnings: each class discovery skips, a discovery cache it cannot write, a missing block editor registrar |
 | `recordErrors`           | `bool\|null`             | `null`           | Write errors to the log `wp foehn errors` reads. `null` records them in the `local` and `development` environments  |
 | `traceRequests`          | `bool\|null`             | `null`           | Store a trace of each front-end request for `wp foehn trace`. `null` traces them in `local` and `development`       |
+| `cliNamespace`           | `string`                 | `'app'`          | The WP-CLI command the project's `#[AsCliCommand]` classes go under: `wp app <name>`                                |
 
 ## Usage
 
@@ -134,6 +136,10 @@ Defaults to the value of `WP_DEBUG` when not explicitly set.
 ### Request Trace
 
 `traceRequests` decides when each front-end request sends its id in the `X-Foehn-Trace` header and stores what it ran for `wp foehn trace`. `null`, the default, traces them when the environment is `local` or `development`; `tracesRequests()` gives the answer. The array config takes `'trace_requests' => true`. See [Request Trace](/guide/request-trace).
+
+### CLI Namespace
+
+`cliNamespace` is the WP-CLI command the `#[AsCliCommand]` classes of the project go under: `wp app <name>` by default. The commands of Føhn and of the other packages stay under `wp foehn <name>`. The array config takes `'cli_namespace' => 'site'`. See [Command Namespace](/guide/cli-commands#command-namespace).
 
 ## All Config Classes
 

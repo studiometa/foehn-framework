@@ -9,8 +9,9 @@ use Attribute;
 /**
  * Register a class as a WP-CLI command.
  *
- * Commands are registered under the 'foehn' namespace:
- * `wp foehn <name>`
+ * A command of the project is registered as `wp app <name>`, or under the name
+ * FoehnConfig::$cliNamespace gives. A command of Foehn, or of another package,
+ * is registered as `wp foehn <name>`.
  */
 #[Attribute(Attribute::TARGET_CLASS)]
 final readonly class AsCliCommand
