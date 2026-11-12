@@ -106,15 +106,31 @@ final readonly class TraceStore
      */
     public function last(): ?array
     {
+        return $this->latest(1)[0] ?? null;
+    }
+
+    /**
+     * The traces of the requests that ended last, the newest first.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function latest(int $limit): array
+    {
+        $traces = [];
+
         foreach (array_reverse($this->files()) as $file) {
+            if (count($traces) >= $limit) {
+                break;
+            }
+
             $trace = $this->read($file);
 
             if ($trace !== null) {
-                return $trace;
+                $traces[] = $trace;
             }
         }
 
-        return null;
+        return $traces;
     }
 
     /**

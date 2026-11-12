@@ -27,6 +27,17 @@ describe('TraceStore', function () {
         expect($this->store->last())->toBe(['id' => 'bbbbbb', 'url' => '/second/']);
     });
 
+    it('gives the last traces, the newest first', function () {
+        $this->store->save(['id' => 'aaaaaa']);
+        usleep(2000);
+        $this->store->save(['id' => 'bbbbbb']);
+        usleep(2000);
+        $this->store->save(['id' => 'cccccc']);
+
+        expect(array_column($this->store->latest(2), 'id'))->toBe(['cccccc', 'bbbbbb']);
+        expect($this->store->latest(10))->toHaveCount(3);
+    });
+
     it('refuses an id that is not one, so a glob pattern cannot reach another file', function () {
         $this->store->save(['id' => 'aaaaaa']);
         $this->store->save(['id' => '../../etc']);

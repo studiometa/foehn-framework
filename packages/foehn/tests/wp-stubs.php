@@ -74,6 +74,7 @@ function wp_stub_reset(): void
         $GLOBALS['wp_stub_sitemap_providers'],
         $GLOBALS['wp_stub_remote_status'],
         $GLOBALS['wp_stub_remote_error'],
+        $GLOBALS['wp_stub_remote_headers'],
         $GLOBALS['wp_stub_num_queries'],
     );
 
@@ -2131,7 +2132,10 @@ if (!function_exists('wp_remote_get')) {
             return new WP_Error('http_request_failed', 'stubbed failure');
         }
 
-        return ['response' => ['code' => $GLOBALS['wp_stub_remote_status'] ?? 200]];
+        return [
+            'response' => ['code' => $GLOBALS['wp_stub_remote_status'] ?? 200],
+            'headers' => array_change_key_case($GLOBALS['wp_stub_remote_headers'] ?? []),
+        ];
     }
 }
 
@@ -2139,6 +2143,13 @@ if (!function_exists('get_num_queries')) {
     function get_num_queries(): int
     {
         return $GLOBALS['wp_stub_num_queries'] ?? 0;
+    }
+}
+
+if (!function_exists('wp_remote_retrieve_header')) {
+    function wp_remote_retrieve_header(mixed $response, string $header): array|string
+    {
+        return is_array($response) ? $response['headers'][strtolower($header)] ?? '' : '';
     }
 }
 
