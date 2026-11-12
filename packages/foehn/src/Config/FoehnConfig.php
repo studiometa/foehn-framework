@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Config;
 
+use Studiometa\Foehn\Helpers\Env;
 use Tempest\Discovery\DiscoveryCacheStrategy;
 
 /**
@@ -70,6 +71,12 @@ final readonly class FoehnConfig
          * Defaults to WP_DEBUG constant value.
          */
         public bool $debug = false,
+
+        /**
+         * Record errors to the log `wp foehn errors` reads.
+         * Null records them when the environment is `local` or `development`.
+         */
+        public ?bool $recordErrors = null,
     ) {}
 
     /**
@@ -100,6 +107,7 @@ final readonly class FoehnConfig
             hooks: $hooks,
             imageTransformer: $transformer,
             debug: (bool) $debug,
+            recordErrors: ($config['record_errors'] ?? null) === null ? null : (bool) $config['record_errors'],
         );
     }
 
@@ -109,6 +117,17 @@ final readonly class FoehnConfig
     public function isDebugEnabled(): bool
     {
         return $this->debug;
+    }
+
+    /**
+     * Whether errors are recorded to the log `wp foehn errors` reads.
+     *
+     * Off in production unless a project turns it on: an entry holds paths, messages
+     * and URLs, and writing it costs a file write per error.
+     */
+    public function recordsErrors(): bool
+    {
+        return $this->recordErrors ?? in_array(Env::get(), ['local', 'development'], true);
     }
 
     /**

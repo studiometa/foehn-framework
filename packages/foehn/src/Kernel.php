@@ -28,6 +28,11 @@ use Studiometa\Foehn\Cron\Heartbeat;
 use Studiometa\Foehn\Cron\HeartbeatEvent;
 use Studiometa\Foehn\Discovery\DiscoveryLocations;
 use Studiometa\Foehn\Discovery\DiscoveryRunner;
+use Studiometa\Foehn\Errors\EntryBuilder;
+use Studiometa\Foehn\Errors\ErrorLog;
+use Studiometa\Foehn\Errors\ErrorRecorder;
+use Studiometa\Foehn\Errors\RequestContext;
+use Studiometa\Foehn\Errors\SourcePaths;
 use Studiometa\Foehn\Images\NullTransformer;
 use Studiometa\Foehn\Indexing\IndexingProtection;
 use Studiometa\Foehn\Jobs\ActionSchedulerJobDispatcher;
@@ -193,6 +198,9 @@ final class Kernel
         // Start recording diagnostics, before anything else Foehn does can raise one
         $this->startDiagnostics();
 
+        // Same reason: an error in Timber or in a lifecycle hook belongs in the error log
+        $this->startErrorRecorder();
+
         // Initialize Timber
         $this->initializeTimber();
 
@@ -328,6 +336,23 @@ final class Kernel
         // has to be the collector `wp foehn verify` reads back.
         $this->container->singleton(DiagnosticsCollector::class, static fn() => new DiagnosticsCollector());
 
+        // Registered whether or not errors are recorded: `wp foehn errors` reads and
+        // clears the log on a site that has just turned recording off.
+        $this->container->singleton(ErrorLog::class, static fn() => ErrorLog::inContentDirectory());
+
+        // The theme's own code is the directory that holds the app directory.
+        $this->container->singleton(ErrorRecorder::class, function (): ErrorRecorder {
+            $paths = new SourcePaths(dirname($this->appPath));
+            $request = $this->container->get(RequestContext::class);
+
+            return new ErrorRecorder(
+                $this->container->get(ErrorLog::class),
+                new EntryBuilder($paths, $request),
+                $paths,
+                $request,
+            );
+        });
+
         $this->container->singleton(JobRegistry::class, static fn() => new JobRegistry());
 
         $this->container->singleton(
@@ -419,6 +444,19 @@ final class Kernel
         }
 
         $this->container->get(DiagnosticsCollector::class)->start();
+    }
+
+    /**
+     * Start writing errors to the log `wp foehn errors` reads, when the config asks
+     * for it: by default in the `local` and `development` environments only.
+     */
+    private function startErrorRecorder(): void
+    {
+        if (!$this->foehnConfig->recordsErrors()) {
+            return;
+        }
+
+        $this->container->get(ErrorRecorder::class)->start();
     }
 
     /**
