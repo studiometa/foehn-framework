@@ -409,7 +409,39 @@ Neither nginx's `try_files` nor `mod_rewrite` can look at a file's age, so on th
 composer install && wp foehn cache:config --write && wp foehn cache:clear
 ```
 
-`composer install` already removes `wp-content/cache/foehn/` through the installer plugin, so `cache:clear` is belt and braces on a deploy that ran it. Traffic refills the cache; `wp foehn cache:warm` fills it up front if you would rather the first visitor did not pay for a render.
+`composer install` already removes `wp-content/cache/foehn/` through the installer plugin, so `cache:clear` is belt and braces on a deploy that ran it. With [bucket storage](#storing-pages-in-the-bucket), `cache:clear` is necessary: the bucket keeps the pages through a deploy. Traffic refills the cache; `wp foehn cache:warm` fills it up front if you would rather the first visitor did not pay for a render.
+
+## Storing pages in the bucket
+
+By default, each instance of a site stores pages on its own disk. On a site with more than one instance, for example several containers behind a load balancer, a purge runs on one instance only. The other instances serve stale pages until the sweep removes them.
+
+Bucket storage keeps one cache for all instances. Pages go to the bucket that [`humanmade/s3-uploads`](/guide/uploads) already uses, under the `cache/pages/` prefix, and nginx serves hits from the bucket:
+
+```php
+// app/page-cache.production.config.php
+use Studiometa\Foehn\Config\PageCacheConfig;
+use Studiometa\Foehn\Config\PageCacheStorage;
+
+return new PageCacheConfig(
+    enabled: true,
+    storage: PageCacheStorage::Bucket,
+);
+```
+
+Use it only when the site runs on more than one instance. On one instance, disk storage is faster and has fewer conditions.
+
+What changes:
+
+- **nginx only.** `wp foehn cache:config --server=nginx` writes a variant that sends each accepted request to the object, and a missing object (`403` or `404`) to PHP. The bypass rules do not change. The drop-in does not read a bucket, and Apache is not supported: `cache:config --server=apache` refuses, and `cache:status` says so.
+- **The same variables as the uploads.** The snippet reads `S3_UPLOADS_BUCKET`, `S3_UPLOADS_ENDPOINT`, `S3_UPLOADS_PATH_STYLE`, `S3_UPLOADS_PROXY_HOST`, `S3_UPLOADS_PROXY_SCHEME` and `S3_UPLOADS_PROXY_RESOLVER`, as the [Docker image](/guide/docker-image) does for `/wp-content/uploads/`. They are in the policy hash, so `cache:status` reports an include written for another bucket. The Docker image generates the snippet at boot, as for disk storage.
+- **Slower hits.** A hit is a round trip from nginx to the bucket, about 10 to 50 ms in the same region, against about 1 ms from disk.
+- **The write comes after the response.** On a miss, PHP sends the page, then writes the object.
+- **Deploys must clear the cache.** On disk, `composer install` removes the cache. A bucket keeps pages rendered by the old templates, so the release step must run `wp foehn cache:clear`.
+- **The objects are public-read.** nginx reads the bucket without credentials, like the uploads. Anybody can read a cached page from the bucket host. This is the HTML the site sends to anonymous visitors, but it is duplicate content, and a section fragment read from the bucket host has no `noindex` header.
+- **No headers sidecar and no stored 404.** Only the drop-in replays recorded headers and serves a stored 404, and it does not read a bucket. `cacheNotFound` has no effect.
+- **The sweep lists the bucket.** With a `ttl`, the hourly sweep reads the age of each object from a listing: one request for each 1,000 objects.
+
+A missing bucket configuration never stops the site: nothing is stored, and every page is rendered. `wp foehn cache:status` shows a warning in place of "The page cache is active".
 
 ## Warming
 
