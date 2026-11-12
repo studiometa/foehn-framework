@@ -172,6 +172,69 @@ The recorder adds a PHP error handler, a PHP exception handler and a shutdown fu
 - The exception handler records the exception, then gives it to the handler that was there before. With none, it throws the exception again, so PHP ends the request with its own fatal error.
 - The shutdown function reads `error_get_last()`. WordPress's fatal error handler (`WP_Fatal_Error_Handler`) reads the same value in its own shutdown function, which runs first, and shows its error page as usual.
 
+## The debug log
+
+The error log holds the errors of the theme's own code. A warning of WordPress, a plugin or a package, an `error_log()` message and an error raised before the theme boots go to the debug log of WordPress. `wp foehn log` reads it as entries, and groups the entries that repeat.
+
+```bash
+wp foehn log
+```
+
+```
+Undefined variable $price
+  warning ×12 at 2026-11-12 10:42:13 UTC in theme/app/Controllers/ProductController.php:24, first at 2026-11-12 10:00:00 UTC
+
+Uncaught RuntimeException: Boom
+  fatal at 2026-11-12 10:00:05 UTC in theme/app/Foo.php:12
+    #0 web/wp/wp-includes/class-wp-hook.php(324): App\Foo->run()
+    #1 web/wp/wp-includes/plugin.php(517): WP_Hook->do_action()
+    #2 theme/functions.php(8): do_action()
+    +2 more lines
+```
+
+### Which file it reads
+
+WordPress writes the log when `WP_DEBUG` and `WP_DEBUG_LOG` are on: `wp_debug_mode()` points PHP's `error_log` setting at `wp-content/debug.log`, or at the path `WP_DEBUG_LOG` holds. So the file holds PHP's warnings, notices, deprecations and fatal errors, and the `error_log()` messages of WordPress, plugins and the theme. The `wp-config.php` of a Føhn project sets `WP_DEBUG_LOG` to the value of `WP_DEBUG`: set `WP_DEBUG=true` in `.env` to turn the log on.
+
+When `WP_DEBUG_LOG` is off, the command says how to turn it on and exits with an error. When `WP_DEBUG` is off and the file exists, it prints the entries and says that WordPress writes nothing new to the file.
+
+### Entries and groups
+
+An entry starts with the date PHP writes, such as `[12-Nov-2026 10:00:00 UTC]`. The lines without a date that follow belong to it: the stack trace of an uncaught exception, or a message of several lines such as an `error_log(print_r($value, true))`. Xdebug writes each frame of its stack trace with a date of its own; these frames go to the trace of the entry above.
+
+| Level        | Entries                                                             |
+| ------------ | ------------------------------------------------------------------- |
+| `fatal`      | `PHP Fatal error`, `PHP Parse error`, `PHP Recoverable fatal error` |
+| `warning`    | `PHP Warning`                                                       |
+| `notice`     | `PHP Notice`, such as `_doing_it_wrong()`                           |
+| `deprecated` | `PHP Deprecated`                                                    |
+| `log`        | A message without a PHP error type, such as an `error_log()` call   |
+
+Entries with the same level, message, file and line are one group. The groups seen last come first.
+
+| Field           | Content                                                                    |
+| --------------- | -------------------------------------------------------------------------- |
+| `level`         | One of the levels above                                                    |
+| `message`       | The message, without the file and line PHP adds, cut after 2000 characters |
+| `file`, `line`  | Where PHP raised it, relative to the Composer project or to WordPress      |
+| `count`         | How many entries the group has                                             |
+| `first`, `last` | When the first and the last entry were written, UTC, ISO 8601              |
+| `trace`         | The stack trace of the last entry, up to 50 lines                          |
+
+### The command
+
+| Option             | Effect                                                                                   |
+| ------------------ | ---------------------------------------------------------------------------------------- |
+| `--limit=<n>`      | Print `n` groups. Defaults to 20                                                         |
+| `--level=<levels>` | Only these levels, separated by commas: `fatal,warning`                                  |
+| `--since=<date>`   | Only entries written at or after this date: `2026-11-12 10:00`, `-10 minutes`, `-1 hour` |
+| `--grep=<text>`    | Only entries whose message, file or stack trace contains this text. Case does not matter |
+| `--format=json`    | Every field of each group, as a JSON array on one line                                   |
+
+The filters apply to the entries before they are grouped, so `count`, `first` and `last` count only the entries they keep. The text cuts a message after 300 characters and gives the first 3 lines of a trace.
+
+A debug log can grow to gigabytes. The command reads only the last 8 MB of the file, and says so when it cuts it: in the text, or on standard error with `--format=json`. Nothing deletes or rotates the file: it belongs to WordPress.
+
 ## Related
 
 - [Request Trace](/guide/request-trace)
