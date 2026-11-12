@@ -55,6 +55,11 @@ if [ -f "$dump" ]; then
 	printf '→ importing %s\n' "$dump"
 	ddev import-db --file="$dump" >/dev/null
 	printf '✓ database imported\n'
+
+	# `wp foehn db:export` made the dump, and no password hash leaves an export. The
+	# admin keeps its login, so it gets back the password of every ddev site.
+	ddev exec 'cd /var/www/html && wp user update admin --user_pass=admin --skip-email' >/dev/null
+	printf '✓ admin password set to admin\n'
 else
 	printf '→ no dump found, seeding from scratch\n'
 	ddev exec 'cd /var/www/html && wp foehn seed'
