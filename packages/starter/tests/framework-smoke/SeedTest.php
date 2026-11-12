@@ -9,18 +9,26 @@ use Studiometa\Foehn\Smoke\Support\Site;
  *
  * The unit suite runs seeders from fixture classes. What only a real site can show is
  * that both commands are registered and end with the right exit status. The starter
- * ships no seeder, and `make:seeder` runs with `--dry-run`, so nothing is written.
+ * ships one seeder, MenusSeeder, and `make:seeder` runs with `--dry-run`, so it writes
+ * no file.
  */
 
 beforeEach(
     fn() => Site::isRunning() || $this->markTestSkipped('ddev is not running — run `ddev start` and try again.'),
 );
 
-it('says how to create a seeder when the project has none', function () {
-    $result = Site::run('wp foehn seed < /dev/null');
+it('runs the starter seeder twice and creates nothing the second time', function () {
+    $first = Site::run('wp foehn seed < /dev/null');
+    $menus = Site::wp('wp menu list --format=count');
+    $items = Site::wp('wp menu item list Header --format=count');
+    $second = Site::run('wp foehn seed < /dev/null');
 
-    expect($result['status'])->toBe(0, $result['output']);
-    expect($result['output'])->toContain('No seeders found. Create one with: wp foehn make:seeder <name>');
+    expect($first['status'])->toBe(0, $first['output']);
+    expect($first['output'])->toContain('App\\Seeders\\MenusSeeder');
+    expect($second['status'])->toBe(0, $second['output']);
+    expect((int) $items)->toBeGreaterThan(0);
+    expect(Site::wp('wp menu list --format=count'))->toBe($menus);
+    expect(Site::wp('wp menu item list Header --format=count'))->toBe($items);
 });
 
 it('reports the seeder make:seeder would write, and writes nothing', function () {
