@@ -61,7 +61,11 @@ A cron expression sets the minute, the hour, the day of the month, the month and
 
 Each field accepts `*`, a number, a range (`1-5`), a list (`0,30`) and a step (`*/15`, `8-18/2`). Sunday is `0` or `7`. Names (`MON`, `JAN`), macros (`@daily`) and the `L`, `W` and `#` modifiers are not accepted.
 
-Føhn checks the expression when it reads the attribute. When the expression is not valid, Føhn does not schedule the class and records a [problem](/guide/troubleshooting) that tells why. The other classes are not affected.
+::: warning
+The cron library of Action Scheduler reads a step on `*` as "every value that the step divides". In the minute and the hour, this is the usual result: `*/15` runs at minutes 0, 15, 30 and 45. In the day of the month and the month, it is not: `*/2` in the day of the month runs on days 2, 4, 6 and so on, not on days 1, 3, 5. Use a range with a step, such as `1-31/2`, to start from the first day.
+:::
+
+Føhn checks the expression when it reads the attribute. An expression that never matches a date, such as `0 0 31 2 *` (31 February), is not valid. When the expression is not valid, Føhn does not schedule the class and records a [problem](/guide/troubleshooting) that tells why. The other classes are not affected.
 
 ### Timezone
 
