@@ -70,9 +70,12 @@ $results = new class {
 
 $config = Kernel::get(FoehnConfig::class);
 
-// theme/app/foehn.config.php opts into 10 hook classes. Before config files were
-// loaded this was 0, and every security hook in the theme was silently inert.
-$results->same('foehn.config.php is loaded (opt-in hooks)', 11, count($config->hooks));
+// The hooks the kernel runs are the ones theme/app/foehn.config.php names. Before
+// config files were loaded this list was empty, and every security hook in the theme
+// was silently inert.
+$declared = require get_template_directory() . '/app/foehn.config.php';
+
+$results->same('foehn.config.php is loaded (opt-in hooks)', $declared->hooks, $config->hooks);
 
 $results->true('opt-in security hooks are applied', has_filter('xmlrpc_enabled') !== false);
 

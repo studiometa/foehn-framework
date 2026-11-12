@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Studiometa\Foehn\Config\FoehnConfig;
 use Studiometa\Foehn\Hooks\Cleanup\CleanHeadTags;
 use Studiometa\Foehn\Hooks\Cleanup\DisableEmoji;
+use Studiometa\Foehn\Hooks\Cleanup\DisableGlobalStyles;
 use Studiometa\Foehn\Hooks\Cleanup\DisableOembed;
 use Studiometa\Foehn\Hooks\QueryFiltersHook;
 use Studiometa\Foehn\Hooks\S3UploadsEndpoint;
@@ -23,6 +24,9 @@ return new FoehnConfig(
     hooks: [
         CleanHeadTags::class,
         DisableEmoji::class,
+        // The theme ships no theme.json, so the inline global styles WordPress prints
+        // from its defaults style nothing of ours.
+        DisableGlobalStyles::class,
         DisableOembed::class,
         DisableVersionDisclosure::class,
         DisableXmlRpc::class,

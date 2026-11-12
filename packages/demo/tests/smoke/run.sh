@@ -202,6 +202,10 @@ $head"
 }
 
 check_page "/" "card__title" "the homepage lists a selection of projects"
+if curl -sk "$url/" | grep -q 'global-styles-inline-css'; then
+	fail "the homepage prints the theme.json global styles DisableGlobalStyles removes"
+fi
+printf '✓ %s\n' "DisableGlobalStyles removes the global styles of a theme with no theme.json"
 # SettingsSeeder turns the banner on, so the public demo says it is one.
 check_page "/" 'class="banner' "the banner from the theme settings is on every page"
 check_page "/projects/" "index-row__title" "the projects index lists the series"
