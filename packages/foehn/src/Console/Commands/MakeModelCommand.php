@@ -37,7 +37,7 @@ use function Tempest\Support\str;
     : Plural label (defaults to singular + 's')
 
     [--force]
-    : Overwrite existing file
+    : Overwrite an existing file. Also lets the command run in the production environment
 
     [--dry-run]
     : Write nothing. Show the file that would be written, or report that it exists
@@ -58,7 +58,7 @@ use function Tempest\Support\str;
 
         # Preview what would be created
         wp foehn make:model Product --post-type --dry-run
-    DOC)]
+    DOC, writes: true)]
 final class MakeModelCommand implements CliCommandInterface
 {
     public function __construct(

@@ -49,7 +49,7 @@ use function Tempest\Support\str;
     : Meta fields, comma-separated, each `key` or `key:type`. The type is string (default), integer, number or boolean. Store a date as a string in Y-m-d, or Y-m-d H:i:s, so a meta_query can compare it with type DATE or DATETIME. The post type then supports custom-fields, so the block editor reads and saves them
 
     [--force]
-    : Overwrite existing file
+    : Overwrite an existing file. Also lets the command run in the production environment
 
     [--dry-run]
     : Write nothing. Show the file that would be written, or report that it exists
@@ -70,7 +70,7 @@ use function Tempest\Support\str;
 
         # Preview what would be created, as a coding agent reads it
         wp foehn make:post-type project --dry-run --format=json
-    DOC)]
+    DOC, writes: true)]
 final class MakePostTypeCommand implements CliCommandInterface
 {
     /**

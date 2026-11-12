@@ -27,7 +27,7 @@ use function Tempest\Support\str;
     : Menu description shown in admin (defaults to humanized name)
 
     [--force]
-    : Overwrite existing file
+    : Overwrite an existing file. Also lets the command run in the production environment
 
     [--dry-run]
     : Write nothing. Show the file that would be written, or report that it exists
@@ -48,7 +48,7 @@ use function Tempest\Support\str;
 
         # Preview what would be created
         wp foehn make:menu HeaderMenu --dry-run
-    DOC)]
+    DOC, writes: true)]
 final class MakeMenuCommand implements CliCommandInterface
 {
     public function __construct(

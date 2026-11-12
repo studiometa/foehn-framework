@@ -24,7 +24,7 @@ use function Tempest\Support\str;
     : Custom class name (defaults to PascalCase of tag + Shortcode)
 
     [--force]
-    : Overwrite existing file
+    : Overwrite an existing file. Also lets the command run in the production environment
 
     [--dry-run]
     : Write nothing. Show the file that would be written, or report that it exists
@@ -42,7 +42,7 @@ use function Tempest\Support\str;
 
         # Preview what would be created
         wp foehn make:shortcode button --dry-run
-    DOC)]
+    DOC, writes: true)]
 final class MakeShortcodeCommand implements CliCommandInterface
 {
     public function __construct(

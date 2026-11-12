@@ -31,7 +31,7 @@ use function Tempest\Support\str;
         : Shorthand for --templates=* (applies to all templates)
 
         [--force]
-        : Overwrite existing file
+        : Overwrite an existing file. Also lets the command run in the production environment
 
         [--dry-run]
         : Write nothing. Show the file that would be written, or report that it exists
@@ -53,6 +53,7 @@ use function Tempest\Support\str;
             # Preview what would be created
             wp foehn make:context GlobalContext --global --dry-run
         DOC,
+    writes: true,
 )]
 final class MakeContextCommand implements CliCommandInterface
 {

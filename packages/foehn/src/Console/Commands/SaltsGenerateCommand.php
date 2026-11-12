@@ -36,7 +36,8 @@ use Studiometa\Foehn\Security\Salts;
     file of define() calls, the shape wp-config.php requires.
 
     [--force]
-    : Replace keys that are already set.
+    : Replace keys that are already set. Also lets the command run in the production
+    environment.
 
     [--dry-run]
     : Write nothing. Say which file would get the keys, and which keys it would replace.
@@ -57,7 +58,7 @@ use Studiometa\Foehn\Security\Salts;
 
         # See where the keys would go
         wp foehn salts:generate --dry-run
-    DOC)]
+    DOC, writes: true)]
 final readonly class SaltsGenerateCommand implements CliCommandInterface
 {
     public function __construct(

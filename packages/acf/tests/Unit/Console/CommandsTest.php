@@ -10,6 +10,8 @@ use Studiometa\Foehn\Console\CliCommandInterface;
 use Studiometa\Foehn\Console\Commands\MakeAcfBlockCommand;
 use Studiometa\Foehn\Console\Commands\MakeFieldGroupCommand;
 use Studiometa\Foehn\Console\Commands\MakeOptionsPageCommand;
+use Studiometa\Foehn\Console\ProductionGuard;
+use Studiometa\Foehn\Console\WpCli;
 
 describe('ACF commands', function (): void {
     $commands = [
@@ -31,6 +33,25 @@ describe('ACF commands', function (): void {
             $attribute = $attributes[0]->newInstance();
 
             expect($attribute->name)->toBe($data['name'])->and($attribute->description)->not->toBeEmpty();
+        });
+
+        it("{$label} does not run in production without --force or --dry-run", function () use ($data): void {
+            wp_stub_reset();
+            $GLOBALS['wp_stub_environment_type'] = 'production';
+            $attribute = new ReflectionClass($data['class'])->getAttributes(AsCliCommand::class)[0]->newInstance();
+            $guard = new ProductionGuard(new WpCli());
+
+            try {
+                expect($attribute->writes)->toBeTrue();
+                expect($attribute->longDescription)->toContain('[--force]')->toContain('[--dry-run]');
+                expect($guard->allows($attribute, []))->toBeFalse();
+                expect(wp_stub_get_calls('wp_cli_error')[0]['args']['message'])
+                    ->toStartWith("`wp foehn {$data['name']}` changes content or files");
+                expect($guard->allows($attribute, ['force' => true]))->toBeTrue();
+                expect($guard->allows($attribute, ['dry-run' => true]))->toBeTrue();
+            } finally {
+                unset($GLOBALS['wp_stub_environment_type']);
+            }
         });
     }
 });
