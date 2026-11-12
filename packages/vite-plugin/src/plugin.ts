@@ -2,8 +2,9 @@ import { statSync } from "node:fs";
 import type { IncomingMessage } from "node:http";
 import type { AddressInfo } from "node:net";
 import { constants } from "node:os";
-import { join, resolve } from "node:path";
-import type { Plugin, ResolvedConfig, ViteDevServer } from "vite";
+import { isAbsolute, join, relative, resolve } from "node:path";
+import { originalPositionFor, TraceMap, type SourceMapInput } from "@jridgewell/trace-mapping";
+import type { DevEnvironment, Plugin, ResolvedConfig, ViteDevServer } from "vite";
 import type { FoehnPluginOptions, ResolvedFoehnPluginOptions } from "./options.js";
 import { resolveOptions } from "./options.js";
 import {
@@ -12,6 +13,10 @@ import {
     getDdevSiteUrl,
     writeHotFile,
     removeHotFile,
+    appendBrowserEntry,
+    browserEntry,
+    type ForwardConsolePayload,
+    type SourcePosition,
 } from "./utils/index.js";
 
 /** Signals that end the process without Vite closing the server first. */
@@ -31,7 +36,7 @@ export function foehn(options: FoehnPluginOptions): Plugin[] {
         name: "foehn",
         enforce: "pre",
 
-        async config(_userConfig, { command: _command }) {
+        async config(userConfig) {
             const entries = await resolveGlobPatterns(
                 resolvedOptions.input,
                 resolvedOptions.themeDir,
@@ -49,9 +54,13 @@ export function foehn(options: FoehnPluginOptions): Plugin[] {
                         input: entries,
                     },
                 },
-                server: proxyTarget
-                    ? {
-                          proxy: {
+                server: {
+                    // Vite 8 turns it on only when it runs inside a coding agent. On,
+                    // the page sends its console errors and uncaught errors to the
+                    // server, which writes them to the browser log for any agent.
+                    forwardConsole: userConfig.server?.forwardConsole ?? true,
+                    proxy: proxyTarget
+                        ? {
                               // Vite answers what it can serve, DDEV the rest
                               "/": {
                                   target: proxyTarget,
@@ -60,9 +69,9 @@ export function foehn(options: FoehnPluginOptions): Plugin[] {
                                   bypass: (req) =>
                                       isServedByVite(req, config) ? req.url : undefined,
                               },
-                          },
-                      }
-                    : undefined,
+                          }
+                        : undefined,
+                },
             };
         },
 
@@ -71,6 +80,20 @@ export function foehn(options: FoehnPluginOptions): Plugin[] {
         },
 
         configureServer(server: ViteDevServer) {
+            // Beside the hot file, where `wp foehn errors --browser` reads it
+            const client = server.environments.client;
+            client.hot.on("vite:forward-console", (payload: ForwardConsolePayload) => {
+                browserEntry(payload, (url, line, column) =>
+                    findSource(client, config.root, url, line, column),
+                )
+                    .then((entry) => appendBrowserEntry(outDir, entry))
+                    .catch((error: Error) =>
+                        config.logger.warn(
+                            `[foehn] Cannot write the browser log: ${error.message}`,
+                        ),
+                    );
+            });
+
             const httpServer = server.httpServer;
             if (!httpServer) {
                 return;
@@ -187,6 +210,50 @@ function isServedByVite(req: IncomingMessage, config: ResolvedConfig): boolean {
     return [config.root, config.publicDir].some(
         (dir) => dir !== "" && statSync(join(dir, path), { throwIfNoEntry: false })?.isFile(),
     );
+}
+
+/**
+ * The place in the project's source of a position in a module the browser loaded:
+ * the module's file relative to the Vite root, and the line mapped back through
+ * the module's source map (TypeScript, JSX and Vue change the line numbers).
+ * `null` for a module of a dependency, a URL of another server, or a module the
+ * dev server has not served.
+ */
+async function findSource(
+    environment: DevEnvironment,
+    root: string,
+    url: string,
+    line: number,
+    column: number,
+): Promise<SourcePosition | null> {
+    let path: string;
+    try {
+        path = decodeURIComponent(new URL(url).pathname);
+    } catch {
+        return null;
+    }
+
+    const module = await environment.moduleGraph.getModuleByUrl(path);
+    const file = module?.file ? relative(root, module.file) : "";
+
+    if (file === "" || file.startsWith("..") || isAbsolute(file) || file.includes("node_modules")) {
+        return null;
+    }
+
+    const map = module?.transformResult?.map;
+
+    if (map && map.mappings !== "") {
+        const original = originalPositionFor(new TraceMap(map as SourceMapInput), {
+            line,
+            column: Math.max(column - 1, 0),
+        });
+
+        if (original.line !== null) {
+            return { file, line: original.line };
+        }
+    }
+
+    return { file, line };
 }
 
 /**

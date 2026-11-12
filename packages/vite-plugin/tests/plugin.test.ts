@@ -123,6 +123,27 @@ describe("foehn config hook", () => {
 
         const result = await configHook({}, { command: "serve" });
 
-        expect(result.server).toBeUndefined();
+        expect(result.server.proxy).toBeUndefined();
+    });
+
+    it("turns on forwardConsole", async () => {
+        const plugins = foehn({ input: "src/app.js" });
+        const configHook = (plugins[0] as Plugin).config as Function;
+
+        const result = await configHook({}, { command: "serve" });
+
+        expect(result.server.forwardConsole).toBe(true);
+    });
+
+    it("keeps the forwardConsole of the project", async () => {
+        const plugins = foehn({ input: "src/app.js" });
+        const configHook = (plugins[0] as Plugin).config as Function;
+
+        const result = await configHook(
+            { server: { forwardConsole: false } },
+            { command: "serve" },
+        );
+
+        expect(result.server.forwardConsole).toBe(false);
     });
 });

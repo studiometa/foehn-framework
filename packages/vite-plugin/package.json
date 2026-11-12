@@ -48,6 +48,7 @@
   },
   "homepage": "https://github.com/studiometa/foehn-framework/tree/main/packages/vite-plugin#readme",
   "dependencies": {
+    "@jridgewell/trace-mapping": "^0.3.31",
     "fast-glob": "^3.3.0"
   },
   "peerDependencies": {

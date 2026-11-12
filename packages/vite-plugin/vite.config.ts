@@ -12,7 +12,7 @@ export default defineConfig({
     rollupOptions: {
       // Every Node built-in: one missing from a list is bundled as a browser
       // stub and fails only at run time.
-      external: [/^node:/, "vite", "fast-glob"],
+      external: [/^node:/, "vite", "fast-glob", "@jridgewell/trace-mapping"],
     },
     minify: false,
     sourcemap: true,
