@@ -213,6 +213,38 @@ describe('make:post-type', function () {
         expect(glob($this->appPath . '/Models/*.php'))->toBeEmpty();
     })->with(['venue:array', 'venue:date', 'bad key', 'venue,venue']);
 
+    it('rejects --meta and --rewrite-slug written without a value', function (array $assocArgs) {
+        // WP-CLI passes `true` for `--meta` written without `=<value>`.
+        (new MakePostTypeCommand($this->cli, $this->scaffolder, $this->conventions))(['concert'], $assocArgs);
+
+        expect(wp_stub_get_calls('wp_cli_error'))->toHaveCount(1);
+        expect(wp_stub_get_calls('wp_cli_error')[0]['args']['message'])->toContain('Give --meta and --rewrite-slug');
+        expect(glob($this->appPath . '/Models/*.php'))->toBeEmpty();
+    })->with([
+        'meta' => [['meta' => true]],
+        'rewrite-slug' => [['rewrite-slug' => true]],
+        'empty rewrite-slug' => [['rewrite-slug' => '']],
+    ]);
+
+    it('gives one accessor to two keys with the same method name', function () {
+        (new MakePostTypeCommand($this->cli, $this->scaffolder, $this->conventions))(['fair'], [
+            'class' => 'MakeFairPost',
+            'meta' => 'start_date,start-date,startdate',
+            'format' => 'json',
+        ]);
+
+        ($this->generatedAttribute)(($this->path)('Models', 'MakeFairPost'), AsPostType::class);
+
+        $report = json_decode(wp_stub_get_calls('wp_cli_line')[0]['args']['message'], true);
+
+        expect(file_get_contents(($this->path)('Models', 'MakeFairPost')))
+            ->toContain("\$value = \$this->meta('start_date');");
+        expect(count(new ReflectionClass('Theme\\Models\\MakeFairPost')->getAttributes(AsPostMeta::class)))->toBe(3);
+        expect(implode("\n", $report['notes']))
+            ->toContain("No accessor for 'start-date': startDate() is already the accessor of 'start_date'")
+            ->toContain("No accessor for 'startdate': startdate() is already the accessor of 'start_date'");
+    });
+
     it('names the views the controllers render, and the next steps', function () {
         (new MakePostTypeCommand($this->cli, $this->scaffolder, $this->conventions))(['festival'], [
             'meta' => 'venue',

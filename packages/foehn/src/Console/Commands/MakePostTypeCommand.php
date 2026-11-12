@@ -102,7 +102,19 @@ final class MakePostTypeCommand implements CliCommandInterface
             return;
         }
 
-        $fields = self::parseMeta($assocArgs['meta'] ?? '');
+        $meta = $assocArgs['meta'] ?? '';
+        $rewriteSlug = $assocArgs['rewrite-slug'] ?? null;
+
+        // WP-CLI gives `true` for an option written without `=<value>`.
+        if (!is_string($meta) || $rewriteSlug === true || $rewriteSlug === '') {
+            $this->cli->error(
+                'Give --meta and --rewrite-slug a value, e.g. --meta=start_date,venue --rewrite-slug=events.',
+            );
+
+            return;
+        }
+
+        $fields = self::parseMeta($meta);
 
         if (is_string($fields)) {
             $this->cli->error($fields);
@@ -115,8 +127,8 @@ final class MakePostTypeCommand implements CliCommandInterface
         $plural = $assocArgs['plural'] ?? $singular . 's';
         $attributeArguments = ['name' => $name, 'singular' => $singular, 'plural' => $plural];
 
-        if (($assocArgs['rewrite-slug'] ?? null) !== null) {
-            $attributeArguments['rewriteSlug'] = $assocArgs['rewrite-slug'];
+        if (is_string($rewriteSlug)) {
+            $attributeArguments['rewriteSlug'] = $rewriteSlug;
         }
 
         $request = static fn(array $methods): GenerationRequest => new GenerationRequest(
@@ -137,6 +149,7 @@ final class MakePostTypeCommand implements CliCommandInterface
             $this->conventions->view('archive', $name)->note(),
         ];
         $methods = [];
+        $accessorOf = [];
         $parent = $this->conventions->place($request([]))->parent ?? (string) get_parent_class(PostTypeStub::class);
 
         foreach ($fields as $field) {
@@ -144,12 +157,22 @@ final class MakePostTypeCommand implements CliCommandInterface
 
             // A method the parent has would replace it for every caller, Timber's
             // own templates included: date() or link() under another meaning breaks them.
-            if (preg_match('/^[a-z_][a-zA-Z0-9_]*$/', $method) !== 1 || method_exists($parent, $method)) {
+            $conflict = match (true) {
+                preg_match('/^[a-z_][a-zA-Z0-9_]*$/', $method) !== 1 => 'is not a valid method name',
+                method_exists($parent, $method) => "would replace {$parent}::{$method}()",
+                array_key_exists(strtolower($method), $accessorOf) => sprintf(
+                    "is already the accessor of '%s'",
+                    $accessorOf[strtolower($method)],
+                ),
+                default => null,
+            };
+
+            if ($conflict !== null) {
                 $notes[] = sprintf(
-                    "No accessor for '%s': %s is not free on %s. Read it with post.meta('%s'), or add an accessor under another name.",
+                    "No accessor for '%s': %s() %s. Read it with post.meta('%s'), or add an accessor under another name.",
                     $field['key'],
-                    $method . '()',
-                    $parent,
+                    $method,
+                    $conflict,
                     $field['key'],
                 );
 
@@ -157,6 +180,8 @@ final class MakePostTypeCommand implements CliCommandInterface
             }
 
             [$returnType, $expression] = self::ACCESSORS[$field['type']];
+            // PHP method names ignore case: startDate() and startdate() are one method.
+            $accessorOf[strtolower($method)] = $field['key'];
             $methods[$method] = [
                 'returnType' => $returnType,
                 'body' => "\$value = \$this->meta('{$field['key']}');\n\nreturn {$expression};",
