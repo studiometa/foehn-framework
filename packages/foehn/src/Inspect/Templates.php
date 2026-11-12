@@ -9,6 +9,7 @@ use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use SplFileInfo;
 use Studiometa\Foehn\Attributes\AsContextProvider;
+use Studiometa\Foehn\Attributes\AsTemplateController;
 use Studiometa\Foehn\Discovery\ContextProviderDiscovery;
 use Studiometa\Foehn\Discovery\MenuDiscovery;
 use Studiometa\Foehn\Discovery\TemplateControllerDiscovery;
@@ -31,75 +32,123 @@ final readonly class Templates
     ) {}
 
     /**
-     * Each WordPress template a controller claims: the controller that renders it,
-     * the ones it overrides, and the context keys the controller receives and adds.
+     * Each WordPress template a controller claims, the controller that renders it and
+     * the ones it overrides.
      *
-     * @return list<array<string, mixed>>
+     * What repeats from row to row is given once: `base`, the keys every controller
+     * receives, and `controllers`, the priority and the declared keys of each class.
+     * A row keeps only `request`, the keys `Timber::context()` adds for that template.
+     *
+     * @return array{
+     *     base: list<string>,
+     *     controllers: array<class-string, array{priority: int, keys: list<string>, partial: bool}>,
+     *     templates: list<array<string, mixed>>
+     * }
      */
     public function templates(): array
     {
-        $map = TemplateControllerMap::fromItems($this->items->of(TemplateControllerDiscovery::class));
-        $hasMenus = $this->hasMenus();
+        $items = $this->items->of(TemplateControllerDiscovery::class);
+        $controllers = [];
+
+        foreach ($items as $item) {
+            /** @var AsTemplateController $attribute */
+            $attribute = $item['attribute'];
+            /** @var class-string $className */
+            $className = $item['className'];
+
+            $controllers[$className] = ['priority' => $attribute->priority, ...ContextKeys::declaredBy($className)];
+        }
+
+        ksort($controllers);
         $rows = [];
 
-        foreach ($map->claims() as $claim) {
-            $template = $claim['template'];
-            $className = $claim['controller']['className'];
-            $declared = ContextKeys::declaredBy($className);
-
+        foreach (TemplateControllerMap::fromItems($items)->claims() as $claim) {
             $rows[] = [
-                'template' => $template,
-                'controller' => $className,
-                'priority' => $claim['controller']['priority'],
+                'template' => $claim['template'],
+                'controller' => $claim['controller']['className'],
                 'overridden' => $claim['overridden'],
-                'context' => [
-                    'base' => ContextKeys::controller($template, $hasMenus),
-                    'declared' => array_map(static fn(string $key): array => [
-                        'key' => $key,
-                        'by' => $className,
-                    ], $declared['keys']),
-                    'partial' => $declared['partial'],
-                ],
+                'request' => ContextKeys::request($claim['template']),
             ];
         }
 
-        return Rows::sortedBy($rows, 'template');
+        return [
+            'base' => ContextKeys::render($this->hasMenus()),
+            'controllers' => $controllers,
+            'templates' => Rows::sortedBy($rows, 'template'),
+        ];
     }
 
     /**
-     * Each Twig file of the theme: the context providers its view name matches, in
-     * the order they run, and the context keys it receives through `render()`.
+     * Each Twig file of the theme, and the context providers its view name matches.
      *
-     * @return list<array<string, mixed>>
+     * What repeats from row to row is given once: `base`, the keys every view
+     * receives, `providers`, the keys each matching provider adds, and `everyView`,
+     * the providers that match every view. A row keeps only the other providers, in
+     * the order they run.
+     *
+     * @return array{
+     *     base: list<string>,
+     *     providers: array<class-string, array{priority: int, keys: list<string>, partial: bool}>,
+     *     everyView: list<class-string>,
+     *     views: list<array<string, mixed>>
+     * }
      */
     public function views(): array
     {
         $providers = $this->providers();
-        $base = ContextKeys::render($this->hasMenus());
-        $rows = [];
+        /** @var array<string, array{file: string, providers: list<class-string>}> $matched */
+        $matched = [];
 
         foreach ($this->twigFiles() as $view => $file) {
-            $matching = self::matchingProviders($view, $providers);
-            $declared = [];
-            $partial = false;
-
-            foreach ($matching as $provider) {
-                foreach ($provider['keys'] as $key) {
-                    $declared[] = ['key' => $key, 'by' => $provider['class']];
-                }
-
-                $partial = $partial || $provider['partial'];
-            }
-
-            $rows[] = [
-                'view' => $view,
+            $matched[$view] = [
                 'file' => $file,
-                'providers' => array_column($matching, 'class'),
-                'context' => ['base' => $base, 'declared' => $declared, 'partial' => $partial],
+                'providers' => array_column(self::matchingProviders($view, $providers), 'class'),
             ];
         }
 
-        return Rows::sortedBy($rows, 'view');
+        $everyView = null;
+
+        foreach ($matched as $entry) {
+            $everyView = $everyView === null
+                ? $entry['providers']
+                : array_values(array_intersect($everyView, $entry['providers']));
+        }
+
+        $everyView ??= [];
+        $used = [];
+        $rows = [];
+
+        foreach ($matched as $view => $entry) {
+            $used = [...$used, ...$entry['providers']];
+            $rows[] = [
+                'view' => $view,
+                'file' => $entry['file'],
+                'providers' => array_values(array_diff($entry['providers'], $everyView)),
+            ];
+        }
+
+        $byClass = [];
+
+        foreach ($providers as $provider) {
+            if (!in_array($provider['class'], $used, true)) {
+                continue;
+            }
+
+            $byClass[$provider['class']] = [
+                'priority' => $provider['priority'],
+                'keys' => $provider['keys'],
+                'partial' => $provider['partial'],
+            ];
+        }
+
+        ksort($byClass);
+
+        return [
+            'base' => ContextKeys::render($this->hasMenus()),
+            'providers' => $byClass,
+            'everyView' => $everyView,
+            'views' => Rows::sortedBy($rows, 'view'),
+        ];
     }
 
     /**

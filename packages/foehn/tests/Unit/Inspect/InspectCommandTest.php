@@ -152,15 +152,15 @@ describe('wp foehn inspect', function () {
             ->toMatch('/shop-settings\s+\S+ShopSettings\s+shop_contact_email, shop_show_banner, shop_currency/');
     });
 
-    it('shows the controller and the base and declared context keys of each template', function () {
+    it('shows the base keys once, and the controller and context keys of each template', function () {
         inspectCommand()(['templates'], []);
 
         $output = inspectOutput();
 
-        expect($output)->toMatch('/template\s+controller\s+base\s+declared/');
-        expect($output)->toMatch(
-            '/single-product\s+\S+ProductController\s+[a-z_, ]*\bpost\b[a-z_, ]*\s+in_stock, related/',
-        );
+        expect($output)->toContain('  every template: body_class, http_host');
+        expect($output)->toMatch('/template\s+controller\s+request\s+keys/');
+        expect($output)->toMatch('/single-product\s+\S+ProductController\s+in_stock, related/');
+        expect($output)->toMatch('/taxonomy-brand\s+\S+BrandController\s+term\s+brand_count/');
     });
 
     it('prints what every view receives once, and only what differs on each row', function () {
@@ -189,28 +189,6 @@ describe('wp foehn inspect', function () {
         // The provider on `*` is above the table, not on each row.
         expect($output)->toMatch('/components\/footer\s*$/m');
         expect(substr_count($output, GlobalContext::class))->toBe(1);
-    });
-
-    it('keeps the shared view context on every row in JSON', function () {
-        $theme = sys_get_temp_dir() . '/foehn-inspect-command-theme-' . uniqid();
-        mkdir($theme . '/templates/components', 0o777, true);
-        touch($theme . '/templates/components/footer.twig');
-        $GLOBALS['wp_stub_template_directory'] = $theme;
-        $dirname = Timber::$dirname;
-        Timber::$dirname = ['templates'];
-
-        try {
-            inspectCommand()(['views'], ['format' => 'json']);
-        } finally {
-            Timber::$dirname = $dirname;
-            unset($GLOBALS['wp_stub_template_directory']);
-            removeTestDirectory($theme);
-        }
-
-        $view = inspectJson()['views'][0];
-
-        expect($view['providers'])->toBe([GlobalContext::class]);
-        expect($view['context']['base'])->toContain('post');
     });
 
     it('prints every section as a table with --all', function () {

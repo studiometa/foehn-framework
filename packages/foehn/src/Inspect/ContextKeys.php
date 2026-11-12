@@ -50,18 +50,16 @@ final class ContextKeys
     }
 
     /**
-     * Keys the TemplateContext holds when a controller receives it for a template.
-     *
-     * The render keys, plus what `Timber::context()` adds for the request that
+     * Keys `Timber::context()` adds, on top of the render keys, for the request a
      * template answers: the queried term on a term archive, the search string on a
      * search page, the author on an author archive. A wildcard that reaches several
      * kinds of request adds none of them.
      *
      * @return list<string>
      */
-    public static function controller(string $template, bool $hasMenus): array
+    public static function request(string $template): array
     {
-        $request = match (true) {
+        return match (true) {
             self::answers($template, 'category'),
             self::answers($template, 'tag'),
             self::answers($template, 'taxonomy'),
@@ -70,8 +68,6 @@ final class ContextKeys
             self::answers($template, 'author') => ['author'],
             default => [],
         };
-
-        return self::sorted([...self::render($hasMenus), ...$request]);
     }
 
     /**

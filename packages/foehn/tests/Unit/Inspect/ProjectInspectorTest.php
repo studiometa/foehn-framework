@@ -250,41 +250,46 @@ describe('ProjectInspector', function () {
         ]);
     });
 
-    it('reports the controller of each template and the context keys it receives and adds', function () {
-        expect(inspectedRow(inspector()->section('templates'), 'template', 'single-product'))->toBe([
+    it('reports the controller of each template, and the context keys once per controller', function () {
+        $templates = inspector()->section('templates');
+
+        expect($templates['base'])->toBe([
+            'body_class',
+            'http_host',
+            'menus',
+            'post',
+            'posts',
+            'site',
+            'theme',
+            'user',
+            'wp_title',
+        ]);
+        expect(inspectedRow($templates['templates'], 'template', 'single-product'))->toBe([
             'template' => 'single-product',
             'controller' => ProductController::class,
-            'priority' => 10,
             // Claims it too, with priority 20: the lower priority wins.
             'overridden' => [LegacyProductController::class],
-            'context' => [
-                'base' => [
-                    'body_class',
-                    'http_host',
-                    'menus',
-                    'post',
-                    'posts',
-                    'site',
-                    'theme',
-                    'user',
-                    'wp_title',
-                ],
-                'declared' => [
-                    ['key' => 'in_stock', 'by' => ProductController::class],
-                    ['key' => 'related', 'by' => ProductController::class],
-                ],
-                'partial' => false,
-            ],
+            'request' => [],
         ]);
+        expect($templates['controllers'][ProductController::class])->toBe([
+            'priority' => 10,
+            'keys' => ['in_stock', 'related'],
+            'partial' => false,
+        ]);
+        expect($templates['controllers'][LegacyProductController::class]['priority'])->toBe(20);
     });
 
     it('adds the queried term to a term archive, and says when a controller sets keys at runtime', function () {
-        $brand = inspectedRow(inspector()->section('templates'), 'template', 'taxonomy-brand');
+        $templates = inspector()->section('templates');
+        $brand = inspectedRow($templates['templates'], 'template', 'taxonomy-brand');
 
         expect($brand['controller'])->toBe(BrandController::class);
-        expect($brand['context']['base'])->toContain('term');
-        expect($brand['context']['declared'])->toBe([['key' => 'brand_count', 'by' => BrandController::class]]);
-        expect($brand['context']['partial'])->toBeTrue();
+        expect($brand['request'])->toBe(['term']);
+        expect($templates['controllers'][BrandController::class])->toBe([
+            'priority' => 10,
+            'keys' => ['brand_count'],
+            'partial' => true,
+        ]);
     });
 
     it('reports context providers with the view names they match and the keys they add', function () {
@@ -297,28 +302,28 @@ describe('ProjectInspector', function () {
         ]);
     });
 
-    it('reports each Twig file with the providers its view name matches, in the order they run', function () {
+    it('reports each Twig file with the providers its view name matches, and what every view shares once', function () {
         $theme = $GLOBALS['wp_stub_template_directory'];
         mkdir($theme . '/templates/pages', 0o777, true);
         mkdir($theme . '/templates/components', 0o777, true);
         touch($theme . '/templates/pages/single.twig');
-        touch($theme . '/templates/components/card-product.twig');
+        touch($theme . '/templates/components/footer.twig');
         touch($theme . '/templates/pages/notes.txt');
 
-        $views = inspector()->section('views');
-
-        expect(array_column($views, 'view'))->toBe(['components/card-product', 'pages/single']);
-        expect(inspectedRow($views, 'view', 'pages/single'))->toBe([
-            'view' => 'pages/single',
-            'file' => 'templates/pages/single.twig',
-            'providers' => [GlobalContext::class, ProductCardContext::class],
-            'context' => [
-                'base' => ['body_class', 'http_host', 'menus', 'post', 'posts', 'site', 'theme', 'user', 'wp_title'],
-                'declared' => [
-                    ['key' => 'current_year', 'by' => GlobalContext::class],
-                    ['key' => 'price_label', 'by' => ProductCardContext::class],
+        expect(inspector()->section('views'))->toBe([
+            'base' => ['body_class', 'http_host', 'menus', 'post', 'posts', 'site', 'theme', 'user', 'wp_title'],
+            'providers' => [
+                GlobalContext::class => ['priority' => 1, 'keys' => ['current_year'], 'partial' => false],
+                ProductCardContext::class => ['priority' => 5, 'keys' => ['price_label'], 'partial' => false],
+            ],
+            'everyView' => [GlobalContext::class],
+            'views' => [
+                ['view' => 'components/footer', 'file' => 'templates/components/footer.twig', 'providers' => []],
+                [
+                    'view' => 'pages/single',
+                    'file' => 'templates/pages/single.twig',
+                    'providers' => [ProductCardContext::class],
                 ],
-                'partial' => false,
             ],
         ]);
     });
@@ -326,7 +331,11 @@ describe('ProjectInspector', function () {
     it('runs providers for a view in the order the registry runs them', function () {
         $theme = $GLOBALS['wp_stub_template_directory'];
         mkdir($theme . '/templates/pages', 0o777, true);
+        mkdir($theme . '/templates/components', 0o777, true);
         touch($theme . '/templates/pages/single.twig');
+        // A second view that only the provider on `*` matches, so that the view above
+        // lists the other provider on its row.
+        touch($theme . '/templates/components/footer.twig');
 
         $registry = new ContextProviderRegistry();
         // Registered in the reverse order of their priorities: the order must come from
@@ -338,9 +347,22 @@ describe('ProjectInspector', function () {
         $context = $registry->provide('pages/single', new TemplateContext(null, null, $site, null));
         $added = array_values(array_diff(array_keys($context->toArray()), ['post', 'posts', 'site', 'user']));
 
-        $view = inspectedRow(inspector()->section('views'), 'view', 'pages/single');
+        $views = inspector()->section('views');
+        $view = inspectedRow($views['views'], 'view', 'pages/single');
+        $classes = [...$views['everyView'], ...$view['providers']];
+        // Every provider of a view runs in priority order.
+        usort(
+            $classes,
+            static fn(string $a, string $b): int => (
+                $views['providers'][$a]['priority'] <=> $views['providers'][$b]['priority']
+            ),
+        );
+        $keys = array_merge(...array_map(
+            static fn(string $class): array => $views['providers'][$class]['keys'],
+            $classes,
+        ));
 
-        expect(array_column($view['context']['declared'], 'key'))->toBe($added);
+        expect($keys)->toBe($added);
     });
 
     it('lists a view a child theme overrides once, with the child file', function () {
@@ -353,7 +375,7 @@ describe('ProjectInspector', function () {
         touch($GLOBALS['wp_stub_template_directory'] . '/templates/pages/page.twig');
 
         try {
-            expect(array_column(inspector()->section('views'), 'view'))->toBe(['pages/page', 'pages/single']);
+            expect(array_column(inspector()->section('views')['views'], 'view'))->toBe(['pages/page', 'pages/single']);
         } finally {
             removeTestDirectory($child);
             unset($GLOBALS['wp_stub_stylesheet_directory']);
@@ -365,7 +387,7 @@ describe('ProjectInspector', function () {
         touch($GLOBALS['wp_stub_template_directory'] . '/templates/pages/single.twig');
         Timber::$dirname = ['templates', 'shop' => ['shop-templates']];
 
-        expect(array_column(inspector()->section('views'), 'view'))->toBe(['pages/single']);
+        expect(array_column(inspector()->section('views')['views'], 'view'))->toBe(['pages/single']);
     });
 
     it('reports menus with the context key each one is exposed as', function () {

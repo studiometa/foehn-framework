@@ -96,7 +96,8 @@ final readonly class ProjectInspector
     }
 
     /**
-     * One section: a list of rows, or for `vite` a single record.
+     * One section: a list of rows, or for `templates`, `views` and `vite` a record
+     * that holds its rows next to what they share.
      *
      * @return array<mixed>
      * @throws InvalidArgumentException When the section does not exist
@@ -137,7 +138,13 @@ final readonly class ProjectInspector
      */
     private static function names(string $section, array $data): array
     {
-        $rows = $section === 'vite' ? $data['entries'] ?? [] : $data;
+        // The sections that are records hold their rows under one key.
+        $rows = match ($section) {
+            'templates' => $data['templates'] ?? [],
+            'views' => $data['views'] ?? [],
+            'vite' => $data['entries'] ?? [],
+            default => $data,
+        };
         $names = [];
 
         foreach (is_array($rows) ? $rows : [] as $row) {

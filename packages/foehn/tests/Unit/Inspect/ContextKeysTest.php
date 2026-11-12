@@ -27,9 +27,7 @@ describe('ContextKeys', function () {
         string $template,
         array $added,
     ) {
-        $base = ContextKeys::render(hasMenus: false);
-
-        expect(array_values(array_diff(ContextKeys::controller($template, hasMenus: false), $base)))->toBe($added);
+        expect(ContextKeys::request($template))->toBe($added);
     })->with([
         ['category', ['term']],
         ['category-news', ['term']],

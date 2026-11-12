@@ -48,7 +48,8 @@ it('prints a summary of the project model as JSON', function () {
 it('reports what the starter declares', function () {
     $report = inspectSite('--all')['report'];
 
-    expect(array_column($report['templates'], 'controller'))->toContain('App\\Controllers\\SingleController');
+    expect(array_column($report['templates']['templates'], 'controller'))
+        ->toContain('App\\Controllers\\SingleController');
     expect(array_column($report['context-providers'], 'class'))
         ->toContain('App\\ContextProviders\\GlobalContextProvider');
     expect(array_column($report['menus'], 'location'))->toContain('header');
@@ -59,19 +60,21 @@ it('reports the controller of a template and the context of a Twig view', functi
     $report = inspectSite('templates views')['report'];
 
     $single = array_values(array_filter(
-        $report['templates'],
+        $report['templates']['templates'],
         static fn(array $row): bool => $row['template'] === 'single',
     ));
     $view = array_values(array_filter(
-        $report['views'],
+        $report['views']['views'],
         static fn(array $row): bool => $row['view'] === 'pages/single',
     ));
 
     expect($single[0]['controller'])->toBe('App\\Controllers\\SingleController');
-    expect($single[0]['context']['base'])->toContain('post', 'site', 'menus');
+    expect($report['templates']['base'])->toContain('post', 'site', 'menus');
     expect($view[0]['file'])->toBe('templates/pages/single.twig');
-    expect($view[0]['providers'])->toContain('App\\ContextProviders\\GlobalContextProvider');
-    expect(array_column($view[0]['context']['declared'], 'key'))->toContain('current_year');
+    // The starter's global provider matches every view, so it is listed once.
+    expect($report['views']['everyView'])->toContain('App\\ContextProviders\\GlobalContextProvider');
+    expect($report['views']['providers']['App\\ContextProviders\\GlobalContextProvider']['keys'])
+        ->toContain('current_year');
 });
 
 it('prints the named sections on their own', function () {
