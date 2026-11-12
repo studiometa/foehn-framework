@@ -520,6 +520,25 @@ ddev exec 'cd /var/www/html && wp action-scheduler run --hooks=foehn/demo/jobs/w
 	fail "a WarmPlates job failed: see Tools > Scheduled Actions"
 printf '✓ %s\n' "saving a project queues a job that warms its plates, and the job runs"
 
+# The project's own commands go under `wp app`, the default cliNamespace.
+stats="$(ddev exec 'cd /var/www/html && wp app projects:stats' 2>/dev/null | tr -d '\r' || true)"
+grep -q '^6 series, [0-9]* photographs\.$' <<<"$stats" || fail "wp app projects:stats did not list the six series
+$stats"
+printf '✓ %s\n' "a project command runs under wp app"
+
+# A command that writes stops in production unless it is asked for a dry run. The
+# environment variable wins over .env, which Dotenv does not let overwrite it.
+order_before="$(ddev exec "cd /var/www/html && wp post list --post_type=project --orderby=ID --order=ASC --field=menu_order" 2>/dev/null | tr -d '\r' | tr '\n' ' ')"
+refused="$(ddev exec 'cd /var/www/html && WP_ENVIRONMENT_TYPE=production wp app projects:reorder' 2>&1 | tr -d '\r' || true)"
+grep -q '`wp app projects:reorder` changes content or files' <<<"$refused" || fail "wp app projects:reorder ran in production without --force or --dry-run
+$(tail -5 <<<"$refused")"
+dry_run="$(ddev exec 'cd /var/www/html && WP_ENVIRONMENT_TYPE=production wp app projects:reorder --dry-run' 2>&1 | tr -d '\r' || true)"
+grep -q 'Nothing was written' <<<"$dry_run" || fail "wp app projects:reorder --dry-run did not run in production
+$(tail -5 <<<"$dry_run")"
+order_after="$(ddev exec "cd /var/www/html && wp post list --post_type=project --orderby=ID --order=ASC --field=menu_order" 2>/dev/null | tr -d '\r' | tr '\n' ' ')"
+[ "$order_before" = "$order_after" ] || fail "a refused run or a dry run of projects:reorder changed the order"
+printf '✓ %s\n' "a command that writes stops in production, and runs there with --dry-run"
+
 # The seeders in theme/app/Seeders write the whole portfolio, and they must be
 # idempotent: on a site that already holds it, they find every post by slug and
 # every photograph by its Unsplash id, and write no copy. The site here came from
