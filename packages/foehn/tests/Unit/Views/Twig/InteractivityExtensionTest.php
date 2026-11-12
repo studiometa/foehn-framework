@@ -63,6 +63,12 @@ describe('InteractivityExtension', function () {
             expect($result)->toContain('\u0027'); // Escaped single quote
             expect($result)->toContain('\u0022'); // Escaped double quote
         });
+
+        it('escapes the characters that end a tag or start an entity, as WordPress does', function () {
+            $result = $this->extension->wpContext(['text' => 'a > b < c & d']);
+
+            expect($result)->toBe("data-wp-context='{\"text\":\"a \\u003E b \\u003C c \\u0026 d\"}'");
+        });
     });
 
     describe('wpDirective', function () {

@@ -68,7 +68,10 @@ final class InteractivityExtension extends AbstractExtension
      */
     public function wpContext(array $context): string
     {
-        $json = json_encode($context, JSON_HEX_APOS | JSON_HEX_QUOT);
+        // The flags WordPress uses for this attribute. Without JSON_HEX_TAG, a `>` in a
+        // value ends the tag for wptexturize and kses, which then rewrite the rest of
+        // the markup when the block renders inside post content.
+        $json = json_encode($context, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
 
         return sprintf("data-wp-context='%s'", $json);
     }
@@ -140,7 +143,7 @@ final class InteractivityExtension extends AbstractExtension
      */
     public function filterWpContext(array $context): string
     {
-        return json_encode($context, JSON_HEX_APOS | JSON_HEX_QUOT) ?: '{}';
+        return json_encode($context, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?: '{}';
     }
 
     /**
