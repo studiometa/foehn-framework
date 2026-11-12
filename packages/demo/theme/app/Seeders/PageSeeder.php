@@ -110,6 +110,8 @@ final class PageSeeder implements SeederInterface
             BlockMarkup::paragraph(
                 'Architectural reportage, editorial portraiture, still life and artwork reproduction. Prints available on request, in numbered limited editions.',
             ),
+            // The theme's #[AsShortcode], in the block editor's own shortcode block.
+            BlockMarkup::block('shortcode', [], '[edition size="15" paper="baryta" format="40x50 cm"]'),
             BlockMarkup::block('heading', ['level' => 2], '<h2 class="wp-block-heading">Selected clients</h2>'),
             BlockMarkup::paragraph(
                 'Water Journal, Grille Editions, Contrejour Review, and several architecture practices across the Rhine valley.',
