@@ -212,8 +212,13 @@ final class CliCommandDiscovery implements Discovery
 
         // Create wrapper callback for WP-CLI. A command that writes is checked against
         // the environment before it is built, so no command repeats the check.
-        $callback = static function (array $args, array $assocArgs) use ($container, $className, $attribute): void {
-            if (!$container->get(ProductionGuard::class)->allows($attribute, $assocArgs)) {
+        $callback = static function (array $args, array $assocArgs) use (
+            $container,
+            $className,
+            $attribute,
+            $commandName,
+        ): void {
+            if (!$container->get(ProductionGuard::class)->allows($commandName, $attribute, $assocArgs)) {
                 return;
             }
 

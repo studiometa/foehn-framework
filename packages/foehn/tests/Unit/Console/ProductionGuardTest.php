@@ -136,7 +136,11 @@ describe('ProductionGuard', function (): void {
         if (!$writes) {
             it("lets {$name} run in production", function () use ($class): void {
                 expect(commandAttribute($class)->writes)->toBeFalse();
-                expect($this->guard->allows(commandAttribute($class), []))->toBeTrue();
+                expect($this->guard->allows(
+                    'foehn ' . commandAttribute($class)->name,
+                    commandAttribute($class),
+                    [],
+                ))->toBeTrue();
                 expect(guardRefusal())->toBeNull();
             });
 
@@ -144,7 +148,11 @@ describe('ProductionGuard', function (): void {
         }
 
         it("stops {$name} in production and says why and how", function () use ($class, $name): void {
-            expect($this->guard->allows(commandAttribute($class), []))->toBeFalse();
+            expect($this->guard->allows(
+                'foehn ' . commandAttribute($class)->name,
+                commandAttribute($class),
+                [],
+            ))->toBeFalse();
             expect(guardRefusal())
                 ->toBe(
                     "`wp foehn {$name}` changes content or files, and wp_get_environment_type() is 'production', "
@@ -157,8 +165,12 @@ describe('ProductionGuard', function (): void {
             // WP-CLI rejects an option the long description does not declare, so
             // the way out the refusal names has to be one the command takes.
             expect(commandAttribute($class)->longDescription)->toContain('[--force]')->toContain('[--dry-run]');
-            expect($this->guard->allows(commandAttribute($class), ['force' => true]))->toBeTrue();
-            expect($this->guard->allows(commandAttribute($class), ['dry-run' => true]))->toBeTrue();
+            expect($this->guard->allows('foehn ' . commandAttribute($class)->name, commandAttribute($class), [
+                'force' => true,
+            ]))->toBeTrue();
+            expect($this->guard->allows('foehn ' . commandAttribute($class)->name, commandAttribute($class), [
+                'dry-run' => true,
+            ]))->toBeTrue();
             expect(guardRefusal())->toBeNull();
         });
 
@@ -166,7 +178,11 @@ describe('ProductionGuard', function (): void {
             foreach (['local', 'development', 'staging'] as $environment) {
                 $GLOBALS['wp_stub_environment_type'] = $environment;
 
-                expect($this->guard->allows(commandAttribute($class), []))->toBeTrue();
+                expect($this->guard->allows(
+                    'foehn ' . commandAttribute($class)->name,
+                    commandAttribute($class),
+                    [],
+                ))->toBeTrue();
             }
 
             expect(guardRefusal())->toBeNull();
@@ -181,8 +197,9 @@ describe('ProductionGuard', function (): void {
             writes: true,
         );
 
-        expect($this->guard->allows($command, []))->toBeFalse();
+        expect($this->guard->allows('app import', $command, []))->toBeFalse();
         expect(guardRefusal())
+            ->toStartWith('`wp app import` changes content or files')
             ->toEndWith('so it did not run. Run it on a local or staging copy, or add --force to run it here.');
     });
 });

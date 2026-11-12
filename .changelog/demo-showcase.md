@@ -14,4 +14,5 @@
 - `wp_context()` and the `wp_context` filter encode `<`, `>` and `&` like WordPress does. A `>` in a value made `wptexturize` rewrite the rest of a block rendered in post content, and the block broke.
 - The view script of a block with `interactivity: true` depends on `@wordpress/interactivity`, so WordPress puts that module in the import map. Before, `import { store } from '@wordpress/interactivity'` failed on a page with no core interactive block.
 - The Twig extensions guide and the `foehn` skill name the twig-toolkit tag `{% html_element %}` … `{% end_html_element %}`. They said `{% element %}`, which Twig does not know.
+- A command with `writes: true` that does not run in production names itself as WP-CLI registers it: `` `wp app import:products` `` for a project command and `` `wp foehn-acf make:acf-block` `` for a command of foehn-acf. It said `wp foehn <name>` for each command.
 - The demo's footer links to a Legal page that exists, its banner and page-size settings change the site, and it removes the inline global styles like the starter.
