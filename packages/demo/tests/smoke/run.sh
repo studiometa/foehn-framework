@@ -202,7 +202,7 @@ $head"
 }
 
 check_page "/" "card__title" "the homepage lists a selection of projects"
-check_page "/" "All 6 series" "the homepage counts the series with Project::count()"
+check_page "/" "All 6 series, " "the homepage counts the series with Project::count()"
 if curl -sk "$url/" | grep -q 'global-styles-inline-css'; then
 	fail "the homepage prints the theme.json global styles DisableGlobalStyles removes"
 fi
@@ -483,6 +483,19 @@ plates="$(curl -sk "$url/projects/corridors/" | grep -c 'class="plate ')"
   credits: $credits"
 
 printf '✓ every photograph is credited\n'
+
+# The counts on the homepage are cached under a tag, and saving a project flushes it.
+# shellcheck disable=SC2016  # the container expands it, not this shell
+cached_stats() {
+	ddev exec 'cd /var/www/html && wp eval "echo Studiometa\\Foehn\\Kernel::get(Studiometa\\Foehn\\Contracts\\CacheInterface::class)->has(Demo\\Controllers\\FrontPageController::STATS_KEY) ? \"yes\" : \"no\";"' 2>/dev/null | tr -d '\r' | tail -n1
+}
+
+curl -sk -o /dev/null "$url/"
+[ "$(cached_stats)" = "yes" ] || fail "the homepage did not cache its counts under the projects tag"
+corridors_id="$(ddev exec "cd /var/www/html && wp eval 'echo get_page_by_path(\"corridors\", OBJECT, \"project\")->ID;'" 2>/dev/null | tr -d '\r' | tail -n1)"
+ddev exec "cd /var/www/html && wp post update $corridors_id --menu_order=1" >/dev/null 2>&1
+[ "$(cached_stats)" = "no" ] || fail "saving a project did not flush the projects cache tag"
+printf '✓ %s\n' "a tagged cache entry is flushed when a project is saved"
 
 # The seeders in theme/app/Seeders write the whole portfolio, and they must be
 # idempotent: on a site that already holds it, they find every post by slug and
