@@ -10,8 +10,9 @@ use Attribute;
  * Register a class as a WP-CLI command.
  *
  * A command of the project is registered as `wp app <name>`, or under the name
- * FoehnConfig::$cliNamespace gives. A command of Foehn, or of another package,
- * is registered as `wp foehn <name>`.
+ * FoehnConfig::$cliNamespace gives. A command of Foehn is registered as
+ * `wp foehn <name>`, and a command of another package under the namespace of that
+ * package: `wp foehn-acf <name>` for studiometa/foehn-acf.
  */
 #[Attribute(Attribute::TARGET_CLASS)]
 final readonly class AsCliCommand

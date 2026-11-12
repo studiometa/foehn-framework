@@ -280,7 +280,8 @@ final readonly class Registrations
     }
 
     /**
-     * The project's commands and the framework's, each with the line that runs it.
+     * The commands of the project, the framework and the packages, each with the
+     * line that runs it.
      *
      * @return list<array<string, mixed>>
      */

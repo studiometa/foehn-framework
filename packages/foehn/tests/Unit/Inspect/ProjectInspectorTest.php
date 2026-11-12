@@ -96,7 +96,12 @@ describe('ProjectInspector', function () {
         $pool = new PhpFilesAdapter(directory: $directory);
         $cache = new DiscoveryCache(DiscoveryCacheStrategy::FULL, $pool);
         $locations = new DiscoveryLocations(testFixturePath('InspectApp'));
-        $runner = static fn(): DiscoveryRunner => new DiscoveryRunner(bootTestContainer(), $cache, $pool, $locations);
+        $runner = static function () use ($cache, $pool, $locations): DiscoveryRunner {
+            $container = bootTestContainer();
+            $container->singleton(DiscoveryLocations::class, fn() => $locations);
+
+            return new DiscoveryRunner($container, $cache, $pool, $locations);
+        };
 
         try {
             // The first runner scans and writes the cache; the second restores from it,

@@ -39,11 +39,6 @@ final class HookDiscovery implements Discovery
             return;
         }
 
-        // The framework ships hook classes of its own — DisableXmlRpc, CleanHeadTags
-        // and the rest. Registering them because they happen to sit in a scanned
-        // package would change what a site does on a `composer update`, so they stay
-        // opt-in: DiscoveryRunner hands the classes named in FoehnConfig::hooks back
-        // to this discovery against the app location.
         if ($this->isPackageLocation($location)) {
             return;
         }
@@ -57,6 +52,23 @@ final class HookDiscovery implements Discovery
             $this->discoverHooks($location, $method, AsAction::class);
             $this->discoverHooks($location, $method, AsFilter::class);
         }
+    }
+
+    /**
+     * Whether a location belongs to an installed package rather than to the project.
+     *
+     * The framework ships hook classes of its own — DisableXmlRpc, CleanHeadTags and
+     * the rest. Registering them because they happen to sit in a scanned package
+     * would change what a site does on a `composer update`, so they stay opt-in:
+     * DiscoveryRunner hands the classes named in FoehnConfig::hooks back to this
+     * discovery against the app location.
+     *
+     * The namespace is checked as well as the path, because a package installed
+     * from a path repository with symlinks resolves to a path outside vendor/.
+     */
+    private function isPackageLocation(DiscoveryLocation $location): bool
+    {
+        return $location->isVendor() || str_starts_with($location->namespace, 'Studiometa\\Foehn\\');
     }
 
     /**
