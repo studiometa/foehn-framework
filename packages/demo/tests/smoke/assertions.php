@@ -203,8 +203,37 @@ $results->containsAll(
 
 $results->containsAll(
     'demo blocks are registered',
-    ['theme/section', 'theme/callout', 'theme/hero'],
+    [
+        'theme/section',
+        'theme/callout',
+        'theme/hero',
+        'theme/contact-sheet',
+        'theme/related-projects',
+        'theme/press-kit',
+        'theme/facts',
+        'theme/fact',
+    ],
     array_keys(WP_Block_Type_Registry::get_instance()->get_all_registered()),
+);
+
+$blockTypes = WP_Block_Type_Registry::get_instance();
+
+// `parent` keeps a fact out of the inserter everywhere but inside a facts block.
+$results->same(
+    'a fact goes in a facts block only',
+    ['theme/facts'],
+    $blockTypes->get_registered('theme/fact')?->parent,
+);
+
+$results->true(
+    'the contact sheet declares interactivity support',
+    ($blockTypes->get_registered('theme/contact-sheet')?->supports['interactivity'] ?? false) === true,
+);
+
+$results->same(
+    'the contact sheet loads its own view script module',
+    ['theme/contact-sheet/view'],
+    $blockTypes->get_registered('theme/contact-sheet')?->view_script_module_ids,
 );
 
 // The unit tests run the filter against a stub. This reads the list the editor

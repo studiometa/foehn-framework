@@ -1,0 +1,10 @@
+{% if url %}
+  <p class="press-kit">
+    <a class="label label--ink" href="{{ url }}" download>
+      {{ label }}
+      {% if size %}
+        <span class="index-number">(PDF, {{ size }})</span>
+      {% endif %}
+    </a>
+  </p>
+{% endif %}
