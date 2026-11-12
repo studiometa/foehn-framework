@@ -192,6 +192,33 @@ describe('PublicFiles', function () {
         expect(is_link($this->root . '/web/.well-known'))->toBeTrue();
     });
 
+    it('never creates a directory through a symlink of the web root', function () {
+        ($this->generate)();
+
+        mkdir($this->root . '/elsewhere');
+        symlink($this->root . '/elsewhere', $this->root . '/web/.well-known');
+        writeProjectFile($this->root, 'public/.well-known/acme/token', 'token');
+
+        ($this->generate)();
+
+        expect(is_dir($this->root . '/elsewhere/acme'))->toBeFalse();
+        expect($this->io->getOutput())
+            ->toContain('public/.well-known/acme/token — a directory, a file or a symlink is in the way');
+    });
+
+    it('skips a file whose directory is a file of the web root', function () {
+        ($this->generate)();
+
+        file_put_contents($this->root . '/web/ads', 'a file');
+        writeProjectFile($this->root, 'public/ads/ads.txt', 'ads');
+
+        ($this->generate)();
+
+        expect(file_get_contents($this->root . '/web/ads'))->toBe('a file');
+        expect($this->io->getOutput())
+            ->toContain('public/ads/ads.txt — a directory, a file or a symlink is in the way');
+    });
+
     it('never removes a symlink it finds in place of a copied file', function () {
         writeProjectFile($this->root, 'public/robots.txt', 'robots');
 

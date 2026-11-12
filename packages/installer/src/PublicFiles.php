@@ -140,21 +140,27 @@ final class PublicFiles
             $target = $webRoot . '/' . $relative;
             $directory = dirname($target);
 
-            if (!is_dir($directory)) {
+            // The closest directory that exists must resolve inside the web root before
+            // anything is created below it: a symlink on the way would create the
+            // directories somewhere else.
+            $existing = $directory;
+
+            while (!file_exists($existing)) {
+                $existing = dirname($existing);
+            }
+
+            $realDirectory = realpath($existing);
+            $inWebRoot =
+                $realDirectory !== false && ($realDirectory === $webRoot || self::isInside($realDirectory, $webRoot));
+
+            if ($inWebRoot && is_dir($existing) && !is_dir($directory)) {
                 mkdir($directory, 0o755, true);
             }
 
-            $realDirectory = realpath($directory);
-
-            if (
-                $realDirectory === false
-                || $realDirectory !== $webRoot && !self::isInside($realDirectory, $webRoot)
-                || is_link($target)
-                || is_dir($target)
-            ) {
+            if (!$inWebRoot || !is_dir($directory) || is_link($target) || is_dir($target)) {
                 $this->io->write(
                     "  <warning>Skipped public file:</warning> {$label} — "
-                    . "{$this->config->webDir}/{$relative} is a directory or a symlink",
+                    . "a directory, a file or a symlink is in the way of {$this->config->webDir}/{$relative}",
                 );
 
                 continue;
