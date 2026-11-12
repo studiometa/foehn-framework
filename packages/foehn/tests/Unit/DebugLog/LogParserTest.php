@@ -91,6 +91,24 @@ describe('LogParser', function () {
         expect($entry['line'])->toBe(7);
     });
 
+    it('finds a file whose name has spaces, such as the code of wp eval', function () {
+        $log = implode("\n", [
+            "[12-Nov-2026 10:00:00 UTC] PHP Warning:  Value in array in /srv/site/Eval.php(42) : eval()'d code on line 1",
+            "[12-Nov-2026 10:00:01 UTC] PHP Fatal error:  Uncaught Exception: Boom in /srv/site/Eval.php(42) : eval()'d code:1",
+            'Stack trace:',
+            '#0 {main}',
+            "  thrown in /srv/site/Eval.php(42) : eval()'d code on line 1",
+        ]);
+
+        expect(array_map(
+            static fn(array $entry): array => [$entry['message'], $entry['file'], $entry['line']],
+            parsedLog($log, $this->paths),
+        ))->toBe([
+            ['Value in array',           "Eval.php(42) : eval()'d code", 1],
+            ['Uncaught Exception: Boom', "Eval.php(42) : eval()'d code", 1],
+        ]);
+    });
+
     it('keeps a message of several lines whole', function () {
         $log = "[12-Nov-2026 10:01:00 UTC] Array\n(\n    [a] => 1\n)\n";
 

@@ -154,7 +154,7 @@ final class LogParser
                 continue;
             }
 
-            if (preg_match('/^\s+thrown in (\S+) on line (\d+)$/', $line, $match) === 1) {
+            if (preg_match('/^\s+thrown in (.+?) on line (\d+)$/', $line, $match) === 1) {
                 $thrown = [$match[1], (int) $match[2]];
 
                 continue;
@@ -197,7 +197,7 @@ final class LogParser
      */
     private static function location(string $message): ?array
     {
-        foreach (['/^(.*) in (\S+) on line (\d+)$/s', '/^(.*) in (\S+\.\w+):(\d+)$/s'] as $pattern) {
+        foreach (['/^(.*) in ([^\n]+?) on line (\d+)$/s', '/^(.*) in ([^\n]+?):(\d+)$/s'] as $pattern) {
             $match = [];
 
             if (preg_match($pattern, $message, $match) === 1) {
