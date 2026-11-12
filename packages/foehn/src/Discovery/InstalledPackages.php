@@ -13,7 +13,9 @@ use Tempest\Discovery\DiscoveryLocation;
  * one location for each PSR-4 directory, with its real path. This reads the same
  * file and maps the same real paths back to the package. A package installed from
  * a path repository with symlinks resolves outside vendor/, and still maps back.
- * The project's own directories are in no package, so they map to nothing.
+ * The project's own directories are in no package, so they map to nothing. The app
+ * directory is the project's too, even when the site's composer.json requires the
+ * theme as a package: installed.json then lists it, but it is not a dependency.
  *
  * The root is the one DiscoveryLocations found, so both read the same file. The
  * loaded Composer\InstalledVersions is no help here: under WP-CLI it can be the one
@@ -35,6 +37,10 @@ final class InstalledPackages
      */
     public function at(DiscoveryLocation $location): ?array
     {
+        if ($location->path === $this->locations->app()?->path) {
+            return null;
+        }
+
         $this->byPath ??= $this->load();
 
         return $this->byPath[$location->path] ?? null;

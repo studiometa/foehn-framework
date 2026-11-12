@@ -577,7 +577,7 @@ The namespace is the first word after `wp`. Each source of commands has its own:
 | Føhn (`studiometa/foehn`) | `foehn`                                                                                          | `wp foehn inspect`            |
 | Another package           | `extra.foehn.cli-namespace` of its `composer.json`. Default: the package name without its vendor | `wp foehn-acf make:acf-block` |
 
-A class belongs to a package when it is in a PSR-4 directory of a package in `vendor/composer/installed.json`. This includes a package that Composer installs from a path repository with a symlink. Every other class belongs to your project.
+A class belongs to a package when it is in a PSR-4 directory of a package in `vendor/composer/installed.json`. This includes a package that Composer installs from a path repository with a symlink. The classes of the `app` directory of your theme belong to your project, also when your `composer.json` requires the theme as a package. Every other class belongs to your project.
 
 #### The namespace of your project
 

@@ -227,6 +227,37 @@ describe('CliCommandDiscovery command names', function () {
         expect(commandNames($this->discovery))->toBe(['app test:run']);
     });
 
+    it('treats the app directory as the project, even when a package installs the theme', function () {
+        // A theme that the site's composer.json requires, and Composer installs
+        // outside vendor/: its app directory is in installed.json, but its
+        // commands are the project's.
+        $root = testComposerRoot([]);
+        $app = $root . '/web/themes/theme/app';
+        mkdir($app, 0o777, true);
+        file_put_contents($root . '/vendor/composer/installed.json', json_encode([
+            'packages' => [[
+                'name' => 'acme/theme',
+                'autoload' => ['psr-4' => ['App\\' => 'app/']],
+                'install-path' => '../../web/themes/theme',
+            ]],
+        ]));
+
+        $discovery = new CliCommandDiscovery(
+            new \Tempest\Container\GenericContainer(),
+            new DiscoveryProblems(),
+            new FoehnConfig(),
+            new \Studiometa\Foehn\Discovery\InstalledPackages(new \Studiometa\Foehn\Discovery\DiscoveryLocations($app)),
+        );
+
+        try {
+            discoverFixture($discovery, CliCommandFixture::class, new DiscoveryLocation('App\\', $app));
+
+            expect(commandNames($discovery))->toBe(['app test:run']);
+        } finally {
+            removeTestComposerRoot($root);
+        }
+    });
+
     it('registers each command with WP-CLI under its namespace, and none of a clash', function () {
         // `WP_CLI` is a constant: defined here, it would leave every later test in
         // the run believing it was under WP-CLI, so the case runs in a subprocess.
