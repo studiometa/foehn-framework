@@ -235,6 +235,21 @@ describe('DiscoveryRunner problems', function () {
         expect($runner->problems())->toHaveCount(1);
     });
 
+    it('records each problem once when discovery:generate scans again in the same process', function () {
+        $pool = new ArrayAdapter();
+        $cache = new DiscoveryCache(DiscoveryCacheStrategy::FULL, $pool);
+        $locations = new DiscoveryLocations(testFixturePath('ProblemApp'));
+        $runner = new DiscoveryRunner($this->container, $cache, $pool, $locations);
+
+        $runner->getDiscoveries();
+        $runner->warmCache($cache);
+
+        // DiscoveryProblems is one instance per container: a second build must
+        // start it empty, or the cache it writes holds every problem twice.
+        expect($runner->problems())->toHaveCount(1);
+        expect($pool->getItem($locations->app()->key)->get()[DiscoveryProblems::class])->toHaveCount(1);
+    });
+
     it('records an opt-in hook class that does not exist', function () {
         $runner = testDiscoveryRunner(
             $this->container,
