@@ -10,16 +10,16 @@ ddev start
 
 ## What is here
 
-| File                | What it holds                                                      |
-| ------------------- | ------------------------------------------------------------------ |
-| `demo.sql.gz`       | Posts, meta, options, menus, settings — the whole database, ~23 KB |
-| `media/`            | The 30 photographs as originals, plus `credits.json`               |
-| `restore-media.php` | Puts the photographs back where the database says they are         |
-| `fix-urls.php`      | Moves the site onto the URL this ddev project serves. Idempotent   |
-| `restore.sh`        | The steps, in order                                                |
-| `fetch-media.py`    | How `media/` was produced, so the set is reproducible              |
+| File                | What it holds                                                          |
+| ------------------- | ---------------------------------------------------------------------- |
+| `demo.sql.gz`       | Posts, meta, options, menus, settings — the whole database, ~25 KB     |
+| `media/`            | The 30 photographs as originals, `credits.json`, and the press kit PDF |
+| `restore-media.php` | Puts the photographs back where the database says they are             |
+| `fix-urls.php`      | Moves the site onto the URL this ddev project serves. Idempotent       |
+| `restore.sh`        | The steps, in order                                                    |
+| `fetch-media.py`    | How `media/` was produced, so the set is reproducible                  |
 
-The content itself is written by the seeders in `theme/app/Seeders/` — photographs, projects, pages, testimonials, settings and menus, in that order. `wp foehn seed` runs them and builds the same site from nothing; they find what they write by slug or by Unsplash id, so a second run updates the content instead of duplicating it. `wp foehn seed --dry-run` lists them.
+The content itself is written by the seeders in `theme/app/Seeders/` — photographs, projects, press quotes (in ACF fields), pages, journal posts, testimonials, settings and menus, in that order. `wp foehn seed` runs them and builds the same site from nothing; they find what they write by slug or by Unsplash id, so a second run updates the content instead of duplicating it. `wp foehn seed --dry-run` lists them.
 
 ## Why three steps and not one
 
