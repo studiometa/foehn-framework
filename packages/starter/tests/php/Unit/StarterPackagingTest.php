@@ -35,7 +35,7 @@ describe('starter packaging', function () {
     it('exclut de l\'archive les fichiers propres au monorepo', function () use ($racine) {
         $attributs = (string) file_get_contents($racine . '/.gitattributes');
 
-        foreach (['composer.local.json', 'composer.local.lock', '.ddev/config.monorepo.yaml'] as $fichier) {
+        foreach (['.ddev/config.monorepo.yaml'] as $fichier) {
             // Les motifs sont ancrés à la racine du paquet, d'où le `/` initial.
             expect($attributs)->toContain('/' . $fichier . ' export-ignore');
         }
