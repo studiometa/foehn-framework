@@ -57,7 +57,7 @@ it('exports a dump that imports and holds no original email', function () {
 
     expect($export['status'])->toBe(0, $export['output']);
 
-    $found = Site::run(sprintf('zcat %s | grep -c %s', DB_EXPORT_FILE, escapeshellarg(DB_EXPORT_EMAIL)));
+    $found = Site::run(sprintf('zcat %s | grep -c %s || true', DB_EXPORT_FILE, escapeshellarg(DB_EXPORT_EMAIL)));
     expect(trim($found['output']))->toEndWith('0');
 
     dbExportQuery('DROP DATABASE IF EXISTS ' . DB_EXPORT_DATABASE . '; CREATE DATABASE ' . DB_EXPORT_DATABASE);
