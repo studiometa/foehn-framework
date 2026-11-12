@@ -160,16 +160,16 @@ Generate a field group with the CLI:
 
 ```bash
 # For a post type
-wp foehn make:field-group ProductFields --post-type=product
+wp foehn-acf make:field-group ProductFields --post-type=product
 
 # For a page template
-wp foehn make:field-group FrontPageFields --page-template=front-page
+wp foehn-acf make:field-group FrontPageFields --page-template=front-page
 
 # For a taxonomy
-wp foehn make:field-group CategoryFields --taxonomy=category
+wp foehn-acf make:field-group CategoryFields --taxonomy=category
 
 # Preview without creating
-wp foehn make:field-group ProductFields --post-type=product --dry-run
+wp foehn-acf make:field-group ProductFields --post-type=product --dry-run
 ```
 
 ## Related

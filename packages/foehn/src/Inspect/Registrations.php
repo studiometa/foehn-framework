@@ -280,12 +280,19 @@ final readonly class Registrations
     }
 
     /**
-     * Commands registered under `wp foehn`, the framework's own included.
+     * The commands of the project, the framework and the packages, each with the
+     * line that runs it.
      *
      * @return list<array<string, mixed>>
      */
     public function cliCommands(): array
     {
+        $discovery = $this->items->discovery(CliCommandDiscovery::class);
+
+        if ($discovery === null) {
+            return [];
+        }
+
         $rows = [];
 
         foreach ($this->items->of(CliCommandDiscovery::class) as $item) {
@@ -293,7 +300,7 @@ final readonly class Registrations
             $attribute = $item['attribute'];
 
             $rows[] = [
-                'command' => 'foehn ' . $attribute->name,
+                'command' => 'wp ' . $discovery->commandName($item),
                 'description' => $attribute->description,
                 'class' => $item['className'],
             ];

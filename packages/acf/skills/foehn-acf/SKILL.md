@@ -1,6 +1,6 @@
 ---
 name: foehn-acf
-description: 'Build ACF blocks, ACF field groups and ACF options pages in a Føhn theme with studiometa/foehn-acf. Load it when code uses #[AsAcfBlock], #[AsAcfFieldGroup], #[AsAcfOptionsPage], AcfBlockInterface, AcfFieldGroupInterface, AcfOptionsPageInterface, StoutLogic\AcfBuilder\FieldsBuilder, AcfOptionsService, AcfConfig, the field fragments (ButtonLinkBuilder, ResponsiveImageBuilder, SpacingBuilder, BackgroundBuilder), or the wp foehn make:acf-block, make:field-group and make:options-page commands.'
+description: 'Build ACF blocks, ACF field groups and ACF options pages in a Føhn theme with studiometa/foehn-acf. Load it when code uses #[AsAcfBlock], #[AsAcfFieldGroup], #[AsAcfOptionsPage], AcfBlockInterface, AcfFieldGroupInterface, AcfOptionsPageInterface, StoutLogic\AcfBuilder\FieldsBuilder, AcfOptionsService, AcfConfig, the field fragments (ButtonLinkBuilder, ResponsiveImageBuilder, SpacingBuilder, BackgroundBuilder), or the wp foehn-acf make:acf-block, make:field-group and make:options-page commands.'
 ---
 
 # Føhn ACF
@@ -285,14 +285,14 @@ Run a command with `--dry-run --format=json` first: it writes nothing and prints
 `wp foehn inspect` does not report ACF blocks, field groups or options pages. To see which ones Føhn found, run `wp foehn discovery:list --discovery=AcfBlock` (or `AcfFieldGroup`, `AcfOptionsPage`) with `--format=json`.
 
 ```bash
-wp foehn make:acf-block hero --title="Hero Banner" --fields=wysiwyg,image,cta   # app/Blocks/HeroBlock.php
-wp foehn make:acf-block contact-form --mode=edit --category=design --class=ContactBlock
-wp foehn make:field-group ProductFields --post-type=product                     # app/Fields/PostType/
-wp foehn make:field-group FrontPageFields --page-template=front-page             # app/Fields/Page/
-wp foehn make:field-group CategoryFields --taxonomy=category                    # app/Fields/Taxonomy/
-wp foehn make:field-group SharedFields                                          # app/Fields/, location post_type == post
-wp foehn make:options-page ThemeSettings --menu-title=Theme --icon=dashicons-admin-generic
-wp foehn make:options-page FooterSettings --parent=theme-settings              # app/Fields/Options/
+wp foehn-acf make:acf-block hero --title="Hero Banner" --fields=wysiwyg,image,cta   # app/Blocks/HeroBlock.php
+wp foehn-acf make:acf-block contact-form --mode=edit --category=design --class=ContactBlock
+wp foehn-acf make:field-group ProductFields --post-type=product                     # app/Fields/PostType/
+wp foehn-acf make:field-group FrontPageFields --page-template=front-page             # app/Fields/Page/
+wp foehn-acf make:field-group CategoryFields --taxonomy=category                    # app/Fields/Taxonomy/
+wp foehn-acf make:field-group SharedFields                                          # app/Fields/, location post_type == post
+wp foehn-acf make:options-page ThemeSettings --menu-title=Theme --icon=dashicons-admin-generic
+wp foehn-acf make:options-page FooterSettings --parent=theme-settings              # app/Fields/Options/
 ```
 
 `--fields` shortcuts for `make:acf-block`: `text`, `wysiwyg`, `image`, `gallery`, `url`, `cta`, `select`, `repeater`. The generated files need edits before they work; see the gotchas.

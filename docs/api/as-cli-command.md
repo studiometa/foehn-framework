@@ -26,9 +26,13 @@ final readonly class AsCliCommand
 | `longDescription` | `?string` | `null`  | Detailed help (docblock format)                                                                                                                                                                                                                                         |
 | `writes`          | `bool`    | `false` | The command changes content or files. When `wp_get_environment_type()` is `production`, it runs only with `--force` or `--dry-run`. Declare `[--force]` in `longDescription`, so WP-CLI accepts it. See [Command that Writes](/guide/cli-commands#command-that-writes). |
 
+## Requirements
+
+The class must implement `Studiometa\Foehn\Console\CliCommandInterface`, which declares `__invoke(array $args, array $assocArgs): void`. Discovery skips a class without it and reports it in `wp foehn discovery:status`.
+
 ## Namespace
 
-Commands are registered under `wp foehn <name>`.
+A command of your project is registered as `wp app <name>`. A command of Føhn is registered as `wp foehn <name>`. A command of another package is registered under the namespace of that package: `wp foehn-acf <name>` for `studiometa/foehn-acf`. `FoehnConfig::$cliNamespace` changes `app` to another name, and `extra.foehn.cli-namespace` in the `composer.json` of a package changes the name of that package. See [Command Namespace](/guide/cli-commands#command-namespace).
 
 ## Usage
 
@@ -40,13 +44,14 @@ Commands are registered under `wp foehn <name>`.
 namespace App\Console;
 
 use Studiometa\Foehn\Attributes\AsCliCommand;
+use Studiometa\Foehn\Console\CliCommandInterface;
 use WP_CLI;
 
 #[AsCliCommand(
     name: 'hello',
     description: 'Say hello',
 )]
-final class HelloCommand
+final class HelloCommand implements CliCommandInterface
 {
     public function __invoke(array $args, array $assocArgs): void
     {
@@ -56,7 +61,7 @@ final class HelloCommand
 }
 ```
 
-**Usage:** `wp foehn hello John`
+**Usage:** `wp app hello John`
 
 ### With Options
 
@@ -65,7 +70,7 @@ final class HelloCommand
     name: 'import:products',
     description: 'Import products from CSV',
 )]
-final class ImportCommand
+final class ImportCommand implements CliCommandInterface
 {
     /**
      * ## OPTIONS
@@ -86,7 +91,7 @@ final class ImportCommand
 }
 ```
 
-**Usage:** `wp foehn import:products data.csv --dry-run`
+**Usage:** `wp app import:products data.csv --dry-run`
 
 ### With Subcommands
 
@@ -113,8 +118,8 @@ final class CacheCommand
 
 **Usage:**
 
-- `wp foehn cache clear`
-- `wp foehn cache warm`
+- `wp app cache clear`
+- `wp app cache warm`
 
 ### With Long Description
 
@@ -134,8 +139,8 @@ Synchronizes data from the external API.
 
 ## EXAMPLES
 
-    wp foehn sync
-    wp foehn sync --force
+    wp app sync
+    wp app sync --force
 DOC,
 )]
 ```

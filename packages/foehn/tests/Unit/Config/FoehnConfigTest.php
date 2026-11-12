@@ -147,6 +147,15 @@ describe('FoehnConfig', function () {
             expect($config->debug)->toBeFalse();
             expect($config->isDebugEnabled())->toBeFalse();
         });
+        it('creates config with the cli namespace of the project', function () {
+            expect(FoehnConfig::fromArray([])->cliNamespace)->toBe('app');
+            expect(FoehnConfig::fromArray(['cli_namespace' => 'site'])->cliNamespace)->toBe('site');
+        });
+
+        it('refuses a cli namespace that WP-CLI cannot reach or that is the framework one', function (string $namespace) {
+            expect(fn() => new FoehnConfig(cliNamespace: $namespace))
+                ->toThrow(InvalidArgumentException::class, sprintf('"%s" is not a valid cliNamespace', $namespace));
+        })->with(['empty' => [''], 'space' => ['my site'], 'uppercase' => ['App'], 'framework' => ['foehn']]);
     });
     describe('recordsErrors', function () {
         afterEach(fn() => wp_stub_reset());

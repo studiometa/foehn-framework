@@ -1,6 +1,6 @@
 # CLI Commands
 
-Føhn provides `#[AsCliCommand]` for creating WP-CLI commands and includes built-in scaffolding commands.
+Føhn provides `#[AsCliCommand]` for creating WP-CLI commands and includes built-in scaffolding commands. The built-in commands run as `wp foehn <name>`, the commands of your project as `wp app <name>`, and the commands of another package under the name of that package, such as `wp foehn-acf <name>` (see [Command Namespace](#command-namespace)).
 
 ## Built-in Commands
 
@@ -19,9 +19,6 @@ wp foehn make:post-type event --rewrite-slug=events --meta=start_date,venue,capa
 
 # Generate a taxonomy
 wp foehn make:taxonomy ProductCategory --post-types=product
-
-# Generate an ACF block
-wp foehn make:acf-block Hero
 
 # Generate a native block
 wp foehn make:block Counter --interactive
@@ -45,15 +42,6 @@ wp foehn make:pattern HeroWithCta
 # Generate a shortcode
 wp foehn make:shortcode Button
 
-# Generate an ACF field group
-wp foehn make:field-group ProductFields --post-type=product
-wp foehn make:field-group PageFields --page-template=front-page
-wp foehn make:field-group CategoryFields --taxonomy=category
-
-# Generate an ACF options page
-wp foehn make:options-page ThemeSettings
-wp foehn make:options-page FooterSettings --parent=theme-settings
-
 # Generate a navigation menu
 wp foehn make:menu HeaderMenu --location=header
 wp foehn make:menu FooterMenu --description="Footer Navigation"
@@ -64,6 +52,22 @@ wp foehn make:image-size HeroImage --width=1920 --height=0
 
 # Generate a seeder
 wp foehn make:seeder events --description="Sample events" --order=20
+```
+
+With [`studiometa/foehn-acf`](/guide/acf-blocks), the ACF commands go under `wp foehn-acf`:
+
+```bash
+# Generate an ACF block
+wp foehn-acf make:acf-block Hero
+
+# Generate an ACF field group
+wp foehn-acf make:field-group ProductFields --post-type=product
+wp foehn-acf make:field-group PageFields --page-template=front-page
+wp foehn-acf make:field-group CategoryFields --taxonomy=category
+
+# Generate an ACF options page
+wp foehn-acf make:options-page ThemeSettings
+wp foehn-acf make:options-page FooterSettings --parent=theme-settings
 ```
 
 ### Global Options
@@ -553,7 +557,67 @@ The command warns when that file exists and you rotate `.env`, since the file is
 
 ## Custom Commands
 
-Create custom WP-CLI commands with `#[AsCliCommand]`:
+Create custom WP-CLI commands with `#[AsCliCommand]`. The commands of your project go under `wp app`, the commands of Føhn stay under `wp foehn`, and the commands of each other package go under a namespace of their own:
+
+```bash
+wp app import:products products.csv   # A command of your project
+wp foehn inspect                      # A command of Føhn
+wp foehn-acf make:acf-block hero      # A command of studiometa/foehn-acf
+```
+
+A command of your project then cannot collide with a command that a later release of Føhn or of a package adds, and `wp app` lists only the commands of your site. `wp foehn inspect cli-commands` gives the line that runs each command.
+
+### Command Namespace
+
+The namespace is the first word after `wp`. Each source of commands has its own:
+
+| Source                    | Namespace                                                                                        | Example                       |
+| ------------------------- | ------------------------------------------------------------------------------------------------ | ----------------------------- |
+| Your project              | `cliNamespace` of `FoehnConfig`. Default: `app`                                                  | `wp app import:products`      |
+| Føhn (`studiometa/foehn`) | `foehn`                                                                                          | `wp foehn inspect`            |
+| Another package           | `extra.foehn.cli-namespace` of its `composer.json`. Default: the package name without its vendor | `wp foehn-acf make:acf-block` |
+
+A class belongs to a package when it is in a PSR-4 directory of a package in `vendor/composer/installed.json`. This includes a package that Composer installs from a path repository with a symlink. The classes of the `app` directory of your theme belong to your project, also when your `composer.json` requires the theme as a package. Every other class belongs to your project.
+
+#### The namespace of your project
+
+To use another name than `app`, set `cliNamespace` in `app/foehn.config.php`:
+
+```php
+<?php
+// app/foehn.config.php
+
+use Studiometa\Foehn\Config\FoehnConfig;
+
+return new FoehnConfig(
+    cliNamespace: 'site',
+);
+```
+
+The name is one word of lowercase letters, digits, `-` and `_`. It cannot be `foehn`, because that namespace is for the commands of Føhn. The command of the example below is then `wp site import:products`. Change the cron jobs, deploy scripts and runbooks that call a command when you change the name.
+
+#### The namespace of a package
+
+The commands of a package go under its package name without the vendor: `acme/shop-tools` gives `wp shop-tools <name>`. To use another name, declare it in the `composer.json` of the package:
+
+```json
+{
+  "name": "acme/shop-tools",
+  "extra": {
+    "foehn": {
+      "cli-namespace": "shop"
+    }
+  }
+}
+```
+
+The commands of the package are then `wp shop <name>`. The rule is the same as for `cliNamespace`: one word of lowercase letters, digits, `-` and `_`, and not `foehn`. When the namespace of a package does not follow it, Føhn does not register the commands of the package and reports a problem in `wp foehn inspect problems`. This applies also to a package name that does not give a valid word, such as `acme/foehn`: declare a namespace for it.
+
+#### Two classes for one command
+
+When two classes declare the same command, for example a package and your project that both use the namespace `shop` and the name `sync`, Føhn registers neither of them. Each `wp` run prints a warning that names the two classes. Give one of them another name, or change the namespace of your project.
+
+### A Command Class
 
 ```php
 <?php
@@ -562,13 +626,14 @@ Create custom WP-CLI commands with `#[AsCliCommand]`:
 namespace App\Console;
 
 use Studiometa\Foehn\Attributes\AsCliCommand;
+use Studiometa\Foehn\Console\CliCommandInterface;
 use WP_CLI;
 
 #[AsCliCommand(
     name: 'import:products',
     description: 'Import products from CSV file',
 )]
-final class ImportProductsCommand
+final class ImportProductsCommand implements CliCommandInterface
 {
     /**
      * Import products from a CSV file.
@@ -583,8 +648,8 @@ final class ImportProductsCommand
      *
      * ## EXAMPLES
      *
-     *     wp foehn import:products products.csv
-     *     wp foehn import:products products.csv --dry-run
+     *     wp app import:products products.csv
+     *     wp app import:products products.csv --dry-run
      *
      * @param array $args Positional arguments
      * @param array $assocArgs Named arguments
@@ -641,8 +706,8 @@ final class ImportProductsCommand
 **Usage:**
 
 ```bash
-wp foehn import:products /path/to/products.csv
-wp foehn import:products /path/to/products.csv --dry-run
+wp app import:products /path/to/products.csv
+wp app import:products /path/to/products.csv --dry-run
 ```
 
 ## Command that Writes
@@ -683,13 +748,14 @@ final class ImportProductsCommand implements CliCommandInterface
 namespace App\Console;
 
 use Studiometa\Foehn\Attributes\AsCliCommand;
+use Studiometa\Foehn\Console\CliCommandInterface;
 use WP_CLI;
 
 #[AsCliCommand(
     name: 'images:optimize',
     description: 'Optimize all media library images',
 )]
-final class OptimizeImagesCommand
+final class OptimizeImagesCommand implements CliCommandInterface
 {
     public function __invoke(array $args, array $assocArgs): void
     {
@@ -752,7 +818,7 @@ final class CacheCommand
      *
      * ## EXAMPLES
      *
-     *     wp foehn cache clear
+     *     wp app cache clear
      */
     public function clear(): void
     {
@@ -765,7 +831,7 @@ final class CacheCommand
      *
      * ## EXAMPLES
      *
-     *     wp foehn cache stats
+     *     wp app cache stats
      */
     public function stats(): void
     {
@@ -786,8 +852,8 @@ final class CacheCommand
      *
      * ## EXAMPLES
      *
-     *     wp foehn cache warm
-     *     wp foehn cache warm --post-types=post,page,product
+     *     wp app cache warm
+     *     wp app cache warm --post-types=post,page,product
      */
     public function warm(array $args, array $assocArgs): void
     {
@@ -818,9 +884,9 @@ final class CacheCommand
 **Usage:**
 
 ```bash
-wp foehn cache clear
-wp foehn cache stats
-wp foehn cache warm --post-types=product
+wp app cache clear
+wp app cache stats
+wp app cache warm --post-types=product
 ```
 
 ## Command with Tables
@@ -830,7 +896,7 @@ wp foehn cache warm --post-types=product
     name: 'products:list',
     description: 'List all products',
 )]
-final class ListProductsCommand
+final class ListProductsCommand implements CliCommandInterface
 {
     public function __invoke(array $args, array $assocArgs): void
     {
@@ -871,13 +937,14 @@ namespace App\Console;
 
 use App\Services\ExportService;
 use Studiometa\Foehn\Attributes\AsCliCommand;
+use Studiometa\Foehn\Console\CliCommandInterface;
 use WP_CLI;
 
 #[AsCliCommand(
     name: 'export:orders',
     description: 'Export orders to CSV',
 )]
-final class ExportOrdersCommand
+final class ExportOrdersCommand implements CliCommandInterface
 {
     public function __construct(
         private readonly ExportService $export,
@@ -916,10 +983,10 @@ management system.
 ## EXAMPLES
 
     # Sync all products
-    wp foehn sync:inventory
+    wp app sync:inventory
 
     # Force sync specific products
-    wp foehn sync:inventory --products=123,456 --force
+    wp app sync:inventory --products=123,456 --force
 
 ## NOTES
 

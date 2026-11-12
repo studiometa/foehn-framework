@@ -67,7 +67,7 @@ it('reports what the starter declares', function () {
     expect(array_column($report['context-providers'], 'class'))
         ->toContain('App\\ContextProviders\\GlobalContextProvider');
     expect(array_column($report['menus'], 'location'))->toContain('header');
-    expect(array_column($report['cli-commands'], 'command'))->toContain('foehn inspect');
+    expect(array_column($report['cli-commands'], 'command'))->toContain('wp foehn inspect');
 });
 
 it('reports the controller of a template and the context of a Twig view', function () {

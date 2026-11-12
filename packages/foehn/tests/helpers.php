@@ -220,12 +220,17 @@ function testDiscoveryRunner(
     ?\Studiometa\Foehn\Config\FoehnConfig $config = null,
 ): \Studiometa\Foehn\Discovery\DiscoveryRunner {
     $pool = new \Symfony\Component\Cache\Adapter\ArrayAdapter();
+    $locations = new \Studiometa\Foehn\Discovery\DiscoveryLocations($appPath);
+
+    // As the Kernel does: a discovery that needs the locations, such as
+    // CliCommandDiscovery through InstalledPackages, gets the runner's.
+    $container->singleton(\Studiometa\Foehn\Discovery\DiscoveryLocations::class, fn() => $locations);
 
     return new \Studiometa\Foehn\Discovery\DiscoveryRunner(
         $container,
         new \Tempest\Discovery\DiscoveryCache(\Tempest\Discovery\DiscoveryCacheStrategy::NONE, $pool),
         $pool,
-        new \Studiometa\Foehn\Discovery\DiscoveryLocations($appPath),
+        $locations,
         $config,
     );
 }
@@ -244,6 +249,83 @@ function testProjectConventions(
     $runner->getDiscoveries();
 
     return new \Studiometa\Foehn\Console\ProjectConventions($appPath, $runner);
+}
+
+/**
+ * A CLI command discovery with the namespaces of the packages a Composer root installs.
+ *
+ * With no root, no location is in a package: every command is the project's.
+ */
+function testCliCommandDiscovery(
+    ?\Studiometa\Foehn\Config\FoehnConfig $config = null,
+    ?string $composerRoot = null,
+    ?\Studiometa\Foehn\Discovery\DiscoveryProblems $problems = null,
+): \Studiometa\Foehn\Discovery\CliCommandDiscovery {
+    return new \Studiometa\Foehn\Discovery\CliCommandDiscovery(
+        new \Tempest\Container\GenericContainer(),
+        $problems ?? new \Studiometa\Foehn\Discovery\DiscoveryProblems(),
+        $config ?? new \Studiometa\Foehn\Config\FoehnConfig(),
+        new \Studiometa\Foehn\Discovery\InstalledPackages(
+            new \Studiometa\Foehn\Discovery\DiscoveryLocations($composerRoot === null ? null : $composerRoot . '/app'),
+        ),
+    );
+}
+
+/**
+ * A Composer root in a temporary directory, with an `app` directory and packages.
+ *
+ * Each package is installed at `vendor/<name>` with its classes in `src/`, and its
+ * extra written to installed.json. A package with `'symlink' => true` is installed
+ * as a path repository with symlinks: its files are in `packages/<name>`, outside
+ * vendor/, and `vendor/<name>` links to them.
+ *
+ * @param array<string, array{extra?: array<string, mixed>, symlink?: bool}> $packages
+ */
+function testComposerRoot(array $packages): string
+{
+    $root = sys_get_temp_dir() . '/foehn-composer-root-' . uniqid();
+    mkdir($root . '/app', 0o777, true);
+    mkdir($root . '/vendor/composer', 0o777, true);
+    file_put_contents($root . '/composer.json', '{}');
+
+    $installed = [];
+
+    foreach ($packages as $name => $package) {
+        $vendorPath = $root . '/vendor/' . $name;
+
+        if ($package['symlink'] ?? false) {
+            mkdir($root . '/packages/' . $name . '/src', 0o777, true);
+            mkdir(dirname($vendorPath), 0o777, true);
+            symlink($root . '/packages/' . $name, $vendorPath);
+        } else {
+            mkdir($vendorPath . '/src', 0o777, true);
+        }
+
+        $installed[] = [
+            'name' => $name,
+            'autoload' => ['psr-4' => ['Acme\\' => 'src/']],
+            'extra' => $package['extra'] ?? [],
+            'install-path' => '../' . $name,
+        ];
+    }
+
+    file_put_contents($root . '/vendor/composer/installed.json', json_encode(['packages' => $installed]));
+
+    return $root;
+}
+
+/**
+ * Delete a Composer root testComposerRoot() made, its symlinks first.
+ */
+function removeTestComposerRoot(string $root): void
+{
+    foreach (glob($root . '/vendor/*/*') ?: [] as $path) {
+        if (is_link($path)) {
+            unlink($path);
+        }
+    }
+
+    removeTestDirectory($root);
 }
 
 /**
