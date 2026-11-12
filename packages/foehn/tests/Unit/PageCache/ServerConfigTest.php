@@ -821,8 +821,14 @@ describe('BucketOrigin', function () {
         expect(BucketOrigin::fromEnvironment())->toBeNull();
     })->with([
         'a semicolon in the host' => [['S3_UPLOADS_PROXY_HOST' => 'cdn.example.com; return 200']],
-        'a variable in the resolver' => [['S3_UPLOADS_ENDPOINT' => 'https://s3.example.com', 'S3_UPLOADS_PROXY_RESOLVER' => '$host']],
-        'a scheme nginx cannot proxy to' => [['S3_UPLOADS_PROXY_HOST' => 'cdn.example.com', 'S3_UPLOADS_PROXY_SCHEME' => 'ftp']],
+        'a variable in the resolver' => [[
+            'S3_UPLOADS_ENDPOINT' => 'https://s3.example.com',
+            'S3_UPLOADS_PROXY_RESOLVER' => '$host',
+        ]],
+        'a scheme nginx cannot proxy to' => [[
+            'S3_UPLOADS_PROXY_HOST' => 'cdn.example.com',
+            'S3_UPLOADS_PROXY_SCHEME' => 'ftp',
+        ]],
     ]);
 });
 
@@ -853,10 +859,10 @@ describe('NginxSnippet in bucket storage', function () {
             ->toContain('proxy_set_header Host rustfs:9000;');
     });
 
-    it('sends a missing object to PHP, which renders and stores it', function () {
+    it('sends a missing object or a failing bucket to PHP, which renders the page', function () {
         expect($this->snippet)
             ->toContain('proxy_intercept_errors on;')
-            ->toContain('error_page 403 404 = @foehn_page_miss;')
+            ->toContain('error_page 403 404 500 502 503 504 = @foehn_page_miss;')
             ->toContain("location @foehn_page_miss {\n    rewrite ^ /index.php last;\n}");
     });
 

@@ -144,6 +144,9 @@ final readonly class NginxSnippet
      * refuses anonymous listing, 404 from one that allows it — goes to PHP through
      * `error_page`, as `/_image/` does. PHP renders the page and stores it.
      *
+     * A bucket that fails or cannot be reached also goes to PHP. PHP renders a page
+     * without the bucket, so a storage outage makes the site slower, not down.
+     *
      * @throws InvalidArgumentException When the bucket cannot be reached from the
      *     `S3_UPLOADS_*` variables.
      */
@@ -215,9 +218,10 @@ final readonly class NginxSnippet
                 proxy_hide_header Cache-Control;
                 proxy_hide_header Set-Cookie;
 
-                # A page not stored yet is a miss, not an error.
+                # A page not stored yet is a miss, not an error. A bucket that fails or
+                # does not answer is a miss too: PHP can render the page without it.
                 proxy_intercept_errors on;
-                error_page 403 404 = @foehn_page_miss;
+                error_page 403 404 500 502 503 504 = @foehn_page_miss;
 
                 add_header X-Foehn-Cache HIT;
                 add_header X-Foehn-Cache-Via nginx;

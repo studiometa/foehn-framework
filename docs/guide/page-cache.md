@@ -432,7 +432,7 @@ Use it only when the site runs on more than one instance. On one instance, disk 
 
 What changes:
 
-- **nginx only.** `wp foehn cache:config --server=nginx` writes a variant that sends each accepted request to the object, and a missing object (`403` or `404`) to PHP. The bypass rules do not change. The drop-in does not read a bucket, and Apache is not supported: `cache:config --server=apache` refuses, and `cache:status` says so.
+- **nginx only.** `wp foehn cache:config --server=nginx` writes a variant that sends each accepted request to the object, and a missing object (`403` or `404`) to PHP. A bucket that fails or does not answer (`500`, `502`, `503` or `504`) also sends the request to PHP, so the site stays up when the bucket is down. The bypass rules do not change. The drop-in does not read a bucket, and Apache is not supported: `cache:config --server=apache` refuses, and `cache:status` says so.
 - **The same variables as the uploads.** The snippet reads `S3_UPLOADS_BUCKET`, `S3_UPLOADS_ENDPOINT`, `S3_UPLOADS_PATH_STYLE`, `S3_UPLOADS_PROXY_HOST`, `S3_UPLOADS_PROXY_SCHEME` and `S3_UPLOADS_PROXY_RESOLVER`, as the [Docker image](/guide/docker-image) does for `/wp-content/uploads/`. They are in the policy hash, so `cache:status` reports an include written for another bucket. The Docker image generates the snippet at boot, as for disk storage.
 - **Slower hits.** A hit is a round trip from nginx to the bucket, about 10 to 50 ms in the same region, against about 1 ms from disk.
 - **The write comes after the response.** On a miss, PHP sends the page, then writes the object.
