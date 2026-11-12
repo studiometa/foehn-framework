@@ -277,6 +277,18 @@ $results->containsAll(
     array_keys(get_registered_meta_keys('post', 'project')),
 );
 
+$results->containsAll(
+    'testimonial meta is registered against its post type',
+    ['author_name', 'author_role', 'company', 'rating'],
+    array_keys(get_registered_meta_keys('post', 'testimonial')),
+);
+
+$results->same(
+    'the testimonial rating is an integer meta',
+    'integer',
+    get_registered_meta_keys('post', 'testimonial')['rating']['type'] ?? null,
+);
+
 // The point of registering it: without show_in_rest the key is invisible to the
 // block editor and cannot be bound through core/post-meta.
 $results->true(

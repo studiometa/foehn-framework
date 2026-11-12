@@ -289,6 +289,7 @@ grep -q 'data-option-src="/?foehn_sections=testimonials"' <<<"$home" || fail "th
 testimonials_section="$(curl -sk "$url/?foehn_sections=testimonials")"
 grep -q 'id="foehn-section-testimonials"' <<<"$testimonials_section" || fail "the testimonial section request returned no wrapper"
 grep -q '>Words<' <<<"$testimonials_section" || fail "the testimonial section request returned no testimonials"
+grep -q 'Rated 5 out of 5' <<<"$testimonials_section" || fail "the testimonial section does not show the rating meta"
 printf '✓ %s\n' "the homepage lazy-loads its testimonial section"
 
 projects_index="$(curl -sk "$url/projects/")"
