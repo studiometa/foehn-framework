@@ -95,7 +95,7 @@ describe('TestUrls', function () {
 
         expect(testUrls(['App\\Event' => 'single-event'])->of('single-event'))->toBe([
             'url' => null,
-            'noUrl' => 'No published post renders it.',
+            'noUrl' => 'The newest published post of each type does not render it.',
         ]);
     });
 
@@ -150,7 +150,10 @@ describe('TestUrls', function () {
 
         expect($urls->of('category')['url'])->toBe('http://example.com/category/news/');
         expect($urls->of('taxonomy-brand')['url'])->toBe('http://example.com/brand/acme/');
-        expect($urls->of('tag'))->toBe(['url' => null, 'noUrl' => 'No term with posts renders it.']);
+        expect($urls->of('tag'))->toBe([
+            'url' => null,
+            'noUrl' => 'The term with the most posts of each taxonomy does not render it.',
+        ]);
     });
 
     it('gives the author and the month of the newest post', function () {
@@ -163,6 +166,19 @@ describe('TestUrls', function () {
 
         expect($urls->of('author')['url'])->toBe('http://example.com/author/5/');
         expect($urls->of('date')['url'])->toBe('http://example.com/2026/03/');
+    });
+
+    it('says when only an older post has the slug a template names', function () {
+        newestPosts(['page' => samplePost(4, 'about', 'page')]);
+
+        expect(testUrls(['App\\Contact' => 'page-contact'])->of('page-contact'))->toBe([
+            'url' => null,
+            'noUrl' => 'The newest published post of each type does not render it.',
+        ]);
+    });
+
+    it('does not call a pattern with a wildcard in its first segment unknown', function () {
+        expect(testUrls(['App\\Singles' => 'sing*'])->of('sing*')['noUrl'])->toBe('No sample URL renders it.');
     });
 
     it('says when Føhn gives no request a template name', function () {

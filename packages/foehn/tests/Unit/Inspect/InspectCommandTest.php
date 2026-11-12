@@ -225,7 +225,7 @@ describe('wp foehn inspect', function () {
         );
         // No term has posts: the reason takes the place of the URL.
         expect($output)->toMatch(
-            '/taxonomy-brand\s+\S+BrandController\s+none: No term with posts renders it\.\s+term\s+brand_count/',
+            '/taxonomy-brand\s+\S+BrandController\s+none: The term with the most posts of each taxonomy does not render it\.\s+term\s+brand_count/',
         );
     });
 

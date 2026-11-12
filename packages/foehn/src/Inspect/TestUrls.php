@@ -122,17 +122,17 @@ final readonly class TestUrls
 
         $first = explode('-', $pattern)[0];
 
-        if (!str_starts_with($pattern, '*') && !in_array($first, self::KNOWN_NAMES, true)) {
+        if (!str_contains($first, '*') && !in_array($first, self::KNOWN_NAMES, true)) {
             return 'Føhn gives no request a template name like this.';
         }
 
         return match ($first) {
             'home' => 'The front page lists the posts and renders front-page. Set a posts page in Settings > Reading.',
-            'single', 'page', 'author', 'date' => 'No published post renders it.',
+            'single', 'page', 'author', 'date' => 'The newest published post of each type does not render it.',
             'archive' => $pattern === 'archive'
                 ? 'No sample URL renders it.'
                 : 'No public post type with an archive renders it.',
-            'category', 'tag', 'taxonomy' => 'No term with posts renders it.',
+            'category', 'tag', 'taxonomy' => 'The term with the most posts of each taxonomy does not render it.',
             default => 'No sample URL renders it.',
         };
     }

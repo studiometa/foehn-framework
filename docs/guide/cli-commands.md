@@ -299,6 +299,8 @@ Each row of `templates` gives `url`, a real URL of the site that renders that te
 
 A template gets the first sample that it renders, not only one that its name matches: when `single-*` and `single` are both claimed, `single-*` takes every post (it claims `single-post-hello-world`, which comes before `single`), so `single` gets no URL and `noUrl` says `Its sample URLs render 'single-*' instead.` A name that Føhn gives to no request, such as `tax-*` (taxonomy archives are named `taxonomy-…`), gets `Føhn gives no request a template name like this.`
 
+`inspect` reads one post of each type and one term of each taxonomy. A template that names a slug, such as `page-contact`, gets a URL only when that post is the newest one of its type; otherwise `noUrl` says `The newest published post of each type does not render it.`
+
 `wp foehn trace <url>` then shows what the request ran. Reading the samples makes a few database queries and writes nothing.
 
 Keys added elsewhere are not listed: a `timber/context` filter from a plugin, `ViewEngine::share()`, a helper class that a controller calls, and the keys a block's `compose()` returns. The controller's keys reach only the views it renders, and a Twig file included with `{% include %}` gets the context of the file that includes it.

@@ -318,7 +318,7 @@ describe('ProjectInspector', function () {
             'overridden' => [LegacyProductController::class],
             'request' => [],
             'url' => null,
-            'noUrl' => 'No published post renders it.',
+            'noUrl' => 'The newest published post of each type does not render it.',
         ]);
         expect($templates['controllers'][ProductController::class])->toBe([
             'priority' => 10,
