@@ -18,7 +18,8 @@ namespace Studiometa\FoehnInstaller;
  *             "theme-dir": "theme",
  *             "theme-name": "my-theme",
  *             "mu-plugins-dir": "mu-plugins",
- *             "config-dir": "config"
+ *             "config-dir": "config",
+ *             "public-dir": "public"
  *         }
  *     }
  * }
@@ -41,6 +42,8 @@ final readonly class InstallerConfig
         public string $muPluginsDir = 'mu-plugins',
         /** Relative path to the config directory. */
         public string $configDir = 'config',
+        /** Relative path to the directory whose files are copied into the web root. */
+        public string $publicDir = 'public',
     ) {}
 
     /**
@@ -61,6 +64,7 @@ final readonly class InstallerConfig
             themeName: $config['theme-name'] ?? 'theme',
             muPluginsDir: $config['mu-plugins-dir'] ?? 'mu-plugins',
             configDir: $config['config-dir'] ?? 'config',
+            publicDir: $config['public-dir'] ?? 'public',
         );
     }
 }

@@ -22,6 +22,7 @@ use Composer\Script\ScriptEvents;
  * 5. Generates `index.php`
  * 6. Generates the mu-plugin loader
  * 7. Copies the editor registrar script into the web root
+ * 8. Copies the project's public directory into the web root
  */
 final class Plugin implements PluginInterface, EventSubscriberInterface
 {
