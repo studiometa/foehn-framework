@@ -19,6 +19,12 @@ import {
     type SourcePosition,
 } from "./utils/index.js";
 
+/**
+ * The origins Vite allows by default (`defaultAllowedOrigins`, exported by Vite
+ * 6.0.9 and later only).
+ */
+const LOCALHOST_ORIGINS = /^https?:\/\/(?:(?:[^:]+\.)?localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/;
+
 /** Signals that end the process without Vite closing the server first. */
 const EXIT_SIGNALS = ["SIGINT", "SIGHUP"] as const;
 
@@ -59,6 +65,13 @@ export function foehn(options: FoehnPluginOptions): Plugin[] {
                     // the page sends its console errors and uncaught errors to the
                     // server, which writes them to the browser log for any agent.
                     forwardConsole: userConfig.server?.forwardConsole ?? true,
+                    // A page opened on the DDEV URL loads `/@vite/client` from the dev
+                    // server, which Vite allows only for localhost pages by default.
+                    cors:
+                        userConfig.server?.cors ??
+                        (proxyTarget
+                            ? { origin: [LOCALHOST_ORIGINS, new URL(proxyTarget).origin] }
+                            : undefined),
                     proxy: proxyTarget
                         ? {
                               // Vite answers what it can serve, DDEV the rest

@@ -169,6 +169,13 @@ describe("dev server", () => {
         expect(body).toContain(expected);
     });
 
+    it("lets a page of the DDEV site load the Vite client", async () => {
+        const response = await fetch(`${origin()}/@vite/client`, {
+            headers: { Origin: upstream.url },
+        });
+        expect(response.headers.get("access-control-allow-origin")).toBe(upstream.url);
+    });
+
     it("answers the HMR ping from Vite", async () => {
         const response = await fetch(`${origin()}/`, {
             headers: { Accept: "text/x-vite-ping" },

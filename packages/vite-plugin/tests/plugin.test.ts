@@ -113,6 +113,34 @@ describe("foehn config hook", () => {
         expect(result.server?.proxy).toBeDefined();
     });
 
+    it("allows the DDEV site to load the Vite client", async () => {
+        const { detectDdev, getDdevSiteUrl } = await import("../src/utils/index.js");
+        vi.mocked(detectDdev).mockResolvedValue({ name: "my-project" });
+        vi.mocked(getDdevSiteUrl).mockReturnValue("https://my-project.ddev.site:8443");
+
+        const plugins = foehn({ input: "src/app.js" });
+        const configHook = (plugins[0] as Plugin).config as Function;
+
+        const { origin } = (await configHook({}, { command: "serve" })).server.cors;
+
+        expect(origin[1]).toBe("https://my-project.ddev.site:8443");
+        expect(origin[0].test("http://localhost:5173")).toBe(true);
+        expect(origin[0].test("https://evil.example")).toBe(false);
+    });
+
+    it("keeps the cors of the project", async () => {
+        const { detectDdev, getDdevSiteUrl } = await import("../src/utils/index.js");
+        vi.mocked(detectDdev).mockResolvedValue({ name: "my-project" });
+        vi.mocked(getDdevSiteUrl).mockReturnValue("https://my-project.ddev.site");
+
+        const plugins = foehn({ input: "src/app.js" });
+        const configHook = (plugins[0] as Plugin).config as Function;
+
+        const result = await configHook({ server: { cors: true } }, { command: "serve" });
+
+        expect(result.server.cors).toBe(true);
+    });
+
     it("does not configure proxy when DDEV is not detected", async () => {
         const { detectDdev } = await import("../src/utils/index.js");
         vi.mocked(detectDdev).mockResolvedValue(null);
@@ -124,6 +152,7 @@ describe("foehn config hook", () => {
         const result = await configHook({}, { command: "serve" });
 
         expect(result.server.proxy).toBeUndefined();
+        expect(result.server.cors).toBeUndefined();
     });
 
     it("turns on forwardConsole", async () => {
