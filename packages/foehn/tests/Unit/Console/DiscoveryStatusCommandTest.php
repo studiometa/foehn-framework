@@ -8,6 +8,7 @@ use Studiometa\Foehn\Console\WpCli;
 use Studiometa\Foehn\Discovery\DiscoveryLocations;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use Tempest\Discovery\DiscoveryCacheStrategy;
+use Tests\Fixtures\ProblemApp\Gallery;
 
 /**
  * Everything the command wrote, as one string.
@@ -26,15 +27,43 @@ beforeEach(function () {
     $this->pool = new ArrayAdapter();
     $this->locations = new DiscoveryLocations(testFixturePath('App'));
 
-    $this->status = fn(DiscoveryCacheStrategy $strategy): DiscoveryStatusCommand => new DiscoveryStatusCommand(
+    $this->status = fn(
+        DiscoveryCacheStrategy $strategy,
+        string $app = 'App',
+    ): DiscoveryStatusCommand => new DiscoveryStatusCommand(
         new WpCli(),
         $this->pool,
         $this->locations,
         new FoehnConfig(discoveryCacheStrategy: $strategy),
+        testDiscoveryRunner(bootTestContainer(), testFixturePath($app)),
     );
 });
 
+afterEach(fn() => tearDownTestContainer());
+
 describe('discovery:status', function () {
+    it('reports no problems when every class registers', function () {
+        ($this->status)(DiscoveryCacheStrategy::FULL)([], []);
+
+        expect(statusOutput())->toContain('Problems: 0');
+    });
+
+    it('lists each class discovery skipped, with the reason and the fix', function () {
+        ($this->status)(DiscoveryCacheStrategy::FULL, 'ProblemApp')([], []);
+
+        $output = statusOutput();
+
+        expect($output)->toContain('Problems: 1');
+        expect($output)->toContain(
+            '  '
+            . Gallery::class
+            . ' has #[AsPostType] but does not extend Timber\\Post, so the post type is not registered.'
+            . ' Fix: Declare '
+            . Gallery::class
+            . ' with `extends \\Timber\\Post`.',
+        );
+    });
+
     it('reports the strategy and the cache path', function () {
         ($this->status)(DiscoveryCacheStrategy::FULL)([], []);
 

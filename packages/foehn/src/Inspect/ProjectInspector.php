@@ -24,6 +24,7 @@ final readonly class ProjectInspector
 {
     /** @var list<string> Section names, in report order */
     public const array SECTIONS = [
+        'problems',
         'post-types',
         'taxonomies',
         'settings',
@@ -54,8 +55,9 @@ final readonly class ProjectInspector
 
     private SeederCatalog $seeders;
 
-    public function __construct(DiscoveryRunner $runner)
-    {
+    public function __construct(
+        private DiscoveryRunner $runner,
+    ) {
         $items = new DiscoveredItems($runner);
 
         $this->contentTypes = new ContentTypes($items);
@@ -110,6 +112,7 @@ final readonly class ProjectInspector
     public function section(string $name): array
     {
         return match ($name) {
+            'problems' => $this->problems(),
             'post-types' => $this->contentTypes->postTypes(),
             'taxonomies' => $this->contentTypes->taxonomies(),
             'settings' => $this->registrations->settings(),
@@ -159,6 +162,7 @@ final readonly class ProjectInspector
             }
 
             $names[] = (string) match ($section) {
+                'problems' => $row['class'] . ' ' . $row['attribute'],
                 'settings' => $row['page'],
                 'templates' => $row['template'],
                 'views' => $row['view'],
@@ -175,6 +179,19 @@ final readonly class ProjectInspector
         }
 
         return $names;
+    }
+
+    /**
+     * What the project declares and WordPress will not register: the classes
+     * discovery skipped, then the post type and taxonomy links that point at
+     * nothing. Each row gives the class, the attribute, the reason and, when the
+     * cause is known, the fix.
+     *
+     * @return list<array{class: string, attribute: string, reason: string, fix: string|null}>
+     */
+    private function problems(): array
+    {
+        return [...$this->runner->problems(), ...$this->contentTypes->problems()];
     }
 
     /**

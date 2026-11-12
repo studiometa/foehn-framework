@@ -163,6 +163,85 @@ final readonly class ContentTypes
     }
 
     /**
+     * The links between post types and taxonomies that point at nothing.
+     *
+     * WordPress ignores a taxonomy a post type names when the taxonomy is not
+     * registered, and the other way round, without a word: the archive or the
+     * editor panel is simply not there. A name counts as known when a Føhn
+     * attribute declares it or WordPress registers it, so core's `category` and a
+     * plugin's types are known. Without `taxonomy_exists()` and
+     * `post_type_exists()` nothing can be checked, and nothing is reported.
+     *
+     * @return list<array{class: string, attribute: string, reason: string, fix: string}>
+     */
+    public function problems(): array
+    {
+        if (!function_exists('taxonomy_exists') || !function_exists('post_type_exists')) {
+            return [];
+        }
+
+        $postTypes = $this->items->of(PostTypeDiscovery::class);
+        $taxonomies = $this->items->of(TaxonomyDiscovery::class);
+        $declaredPostTypes = array_map(static fn(array $item): string => $item['attribute']->name, $postTypes);
+        $declaredTaxonomies = array_map(static fn(array $item): string => $item['attribute']->name, $taxonomies);
+        $problems = [];
+
+        foreach ($postTypes as $item) {
+            /** @var AsPostType $attribute */
+            $attribute = $item['attribute'];
+
+            foreach ($attribute->taxonomies as $taxonomy) {
+                if (in_array($taxonomy, $declaredTaxonomies, true) || taxonomy_exists($taxonomy)) {
+                    continue;
+                }
+
+                $problems[] = [
+                    'class' => (string) $item['className'],
+                    'attribute' => '#[AsPostType]',
+                    'reason' => sprintf(
+                        "Post type '%s' names the taxonomy '%s', which no #[AsTaxonomy] declares and WordPress does not register, so WordPress ignores it.",
+                        $attribute->name,
+                        $taxonomy,
+                    ),
+                    'fix' => sprintf(
+                        "Declare the taxonomy '%s' with #[AsTaxonomy], or remove it from taxonomies on #[AsPostType] of %s.",
+                        $taxonomy,
+                        (string) $item['className'],
+                    ),
+                ];
+            }
+        }
+
+        foreach ($taxonomies as $item) {
+            /** @var AsTaxonomy $attribute */
+            $attribute = $item['attribute'];
+
+            foreach ($attribute->postTypes as $postType) {
+                if (in_array($postType, $declaredPostTypes, true) || post_type_exists($postType)) {
+                    continue;
+                }
+
+                $problems[] = [
+                    'class' => (string) $item['className'],
+                    'attribute' => '#[AsTaxonomy]',
+                    'reason' => sprintf(
+                        "Taxonomy '%s' names the post type '%s', which no #[AsPostType] declares and WordPress does not register, so WordPress ignores it.",
+                        $attribute->name,
+                        $postType,
+                    ),
+                    'fix' => sprintf(
+                        "Declare the post type '%s' with #[AsPostType], or remove it from postTypes on #[AsTaxonomy] of %s.",
+                        $postType,
+                        (string) $item['className'],
+                    ),
+                ];
+            }
+        }
+
+        return $problems;
+    }
+
+    /**
      * The types of one object type the project names, by type name: the
      * #[AsTimberModel] class that maps each one, or null when only a #[AsPostMeta]
      * subtype names it.

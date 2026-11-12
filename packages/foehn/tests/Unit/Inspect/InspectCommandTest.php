@@ -8,13 +8,16 @@ use Studiometa\Foehn\Inspect\ProjectInspector;
 use Tests\Fixtures\InspectApp\GlobalContext;
 use Tests\Fixtures\InspectApp\Product;
 use Tests\Fixtures\InspectApp\ProductCardContext;
+use Tests\Fixtures\ProblemApp\Article;
+use Tests\Fixtures\ProblemApp\Gallery;
+use Tests\Fixtures\ProblemApp\Shelf;
 use Timber\Timber;
 
-function inspectCommand(): InspectCommand
+function inspectCommand(string $app = 'InspectApp'): InspectCommand
 {
     return new InspectCommand(
         new WpCli(),
-        new ProjectInspector(testDiscoveryRunner(bootTestContainer(), testFixturePath('InspectApp'))),
+        new ProjectInspector(testDiscoveryRunner(bootTestContainer(), testFixturePath($app))),
     );
 }
 
@@ -56,7 +59,9 @@ describe('wp foehn inspect', function () {
         expect(array_keys($summary))->toBe(['summary', 'commands']);
         expect(array_keys($summary['summary']))->toBe(ProjectInspector::SECTIONS);
         expect($summary['summary']['menus'])->toBe(['primary']);
+        expect($summary['summary']['problems'])->toBe([]);
         expect($summary['commands'])->toBe([
+            'problems' => 'wp foehn inspect problems --format=json',
             'sections' => 'wp foehn inspect <section>... --format=json',
             'all' => 'wp foehn inspect --all --format=json',
         ]);
@@ -71,6 +76,43 @@ describe('wp foehn inspect', function () {
         expect($output)->toContain('wp foehn inspect <section>...');
         expect($output)->toContain('wp foehn inspect --all');
         expect($output)->not->toMatch('/location\s+contextKey/');
+    });
+
+    it('names the problems first in the summary, and the command that gives their fix', function () {
+        inspectCommand('ProblemApp')([], []);
+
+        $output = inspectOutput();
+
+        expect($output)->toStartWith(
+            'problems — 3: '
+            . Gallery::class
+            . ' #[AsPostType], '
+            . Article::class
+            . ' #[AsPostType], '
+            . Shelf::class
+            . ' #[AsTaxonomy]',
+        );
+        expect($output)->toContain('Problems with their fix: wp foehn inspect problems');
+    });
+
+    it('leaves the problems command out of a summary without problems', function () {
+        inspectCommand()([], []);
+
+        expect(inspectOutput())->toContain('problems — 0')->not->toContain('Problems with their fix');
+    });
+
+    it('prints each problem with its reason and its fix', function () {
+        inspectCommand('ProblemApp')(['problems'], []);
+
+        $output = inspectOutput();
+
+        expect($output)->toContain('problems — 3');
+        expect($output)->toMatch('/reason\s+fix/');
+        expect($output)->toContain(
+            "Declare the taxonomy 'genre' with #[AsTaxonomy], or remove it from taxonomies on #[AsPostType] of "
+            . Article::class
+            . '.',
+        );
     });
 
     it('prints every section as JSON with --all', function () {

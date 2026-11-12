@@ -10,6 +10,8 @@ use Studiometa\Foehn\Config\FoehnConfig;
 use Studiometa\Foehn\Console\CliCommandInterface;
 use Studiometa\Foehn\Console\WpCli;
 use Studiometa\Foehn\Discovery\DiscoveryLocations;
+use Studiometa\Foehn\Discovery\DiscoveryProblems;
+use Studiometa\Foehn\Discovery\DiscoveryRunner;
 
 #[AsCliCommand(name: 'discovery:status', description: 'Show discovery cache status', longDescription: <<<'DOC'
     ## DESCRIPTION
@@ -19,6 +21,7 @@ use Studiometa\Foehn\Discovery\DiscoveryLocations;
     - The cache strategy in use
     - Cache file location
     - Whether cache is valid
+    - The classes discovery skipped, with the reason and the fix
 
     ## EXAMPLES
 
@@ -32,6 +35,7 @@ final class DiscoveryStatusCommand implements CliCommandInterface
         private readonly CacheItemPoolInterface $pool,
         private readonly DiscoveryLocations $locations,
         private readonly FoehnConfig $config,
+        private readonly DiscoveryRunner $runner,
     ) {}
 
     /**
@@ -72,6 +76,8 @@ final class DiscoveryStatusCommand implements CliCommandInterface
         $this->cli->log(sprintf('Locations cached: %d/%d', $cached, count($locations)));
         $this->cli->line('');
 
+        $this->reportProblems();
+
         if (!$enabled) {
             $this->cli->log('Discovery cache is disabled. Discoveries run at runtime.');
 
@@ -85,5 +91,22 @@ final class DiscoveryStatusCommand implements CliCommandInterface
         }
 
         $this->cli->success('Discovery cache is active and valid.');
+    }
+
+    /**
+     * The classes discovery skipped. Each one is something the project declares
+     * that WordPress does not have, so it is printed whatever the cache state.
+     */
+    private function reportProblems(): void
+    {
+        $problems = $this->runner->problems();
+
+        $this->cli->log(sprintf('Problems: %d', count($problems)));
+
+        foreach ($problems as $problem) {
+            $this->cli->log('  ' . DiscoveryProblems::format($problem));
+        }
+
+        $this->cli->line('');
     }
 }

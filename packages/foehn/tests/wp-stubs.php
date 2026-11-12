@@ -28,6 +28,8 @@ function wp_stub_reset(): void
     $GLOBALS['wp_stub_acf_field_types'] = [];
     $GLOBALS['wp_stub_acf_stores'] = [];
     $GLOBALS['wp_stub_options'] = [];
+    $GLOBALS['wp_stub_taxonomies'] = [];
+    $GLOBALS['wp_stub_post_types'] = [];
     $GLOBALS['wp_stub_site_options'] = [];
     $GLOBALS['wp_stub_plugins'] = [];
     $GLOBALS['wp_stub_mu_plugins'] = [];
@@ -536,6 +538,26 @@ if (!function_exists('register_taxonomy')) {
         wp_stub_record('register_taxonomy', compact('taxonomy', 'objectType', 'args'));
 
         return new WP_Taxonomy($taxonomy);
+    }
+}
+
+if (!function_exists('taxonomy_exists')) {
+    /**
+     * Core's own taxonomies, and the ones a test adds to $GLOBALS['wp_stub_taxonomies'].
+     */
+    function taxonomy_exists(string $taxonomy): bool
+    {
+        return in_array($taxonomy, ['category', 'post_tag', ...($GLOBALS['wp_stub_taxonomies'] ?? [])], true);
+    }
+}
+
+if (!function_exists('post_type_exists')) {
+    /**
+     * Core's own post types, and the ones a test adds to $GLOBALS['wp_stub_post_types'].
+     */
+    function post_type_exists(string $postType): bool
+    {
+        return in_array($postType, ['post', 'page', 'attachment', ...($GLOBALS['wp_stub_post_types'] ?? [])], true);
     }
 }
 

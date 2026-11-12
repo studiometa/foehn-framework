@@ -42,7 +42,20 @@ it('prints a summary of the project model as JSON', function () {
     expect($result['status'])->toBe(0, $result['output']);
     expect($result['report'])->toBeArray($result['output']);
     expect(array_keys($result['report']['summary']))
-        ->toContain('post-types', 'settings', 'templates', 'views', 'menus', 'plugins', 'vite');
+        ->toContain('problems', 'post-types', 'settings', 'templates', 'views', 'menus', 'plugins', 'vite');
+});
+
+it('reports no problems: every class the starter declares registers', function () {
+    $report = inspectSite('problems')['report'];
+
+    expect($report['problems'])->toBe([]);
+});
+
+it('reports no problems in discovery:status either', function () {
+    $result = Site::run('wp foehn discovery:status');
+
+    expect($result['status'])->toBe(0, $result['output']);
+    expect($result['output'])->toContain('Problems: 0');
 });
 
 it('reports what the starter declares', function () {
