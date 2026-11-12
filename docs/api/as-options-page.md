@@ -171,16 +171,16 @@ Generate an options page with the CLI:
 
 ```bash
 # Top-level options page
-wp foehn make:options-page ThemeSettings
+wp foehn-acf make:options-page ThemeSettings
 
 # Submenu options page
-wp foehn make:options-page FooterSettings --parent=theme-settings
+wp foehn-acf make:options-page FooterSettings --parent=theme-settings
 
 # With custom icon
-wp foehn make:options-page SocialSettings --icon=dashicons-share
+wp foehn-acf make:options-page SocialSettings --icon=dashicons-share
 
 # Preview without creating
-wp foehn make:options-page ThemeSettings --dry-run
+wp foehn-acf make:options-page ThemeSettings --dry-run
 ```
 
 ## Related

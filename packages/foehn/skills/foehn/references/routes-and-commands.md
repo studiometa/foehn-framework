@@ -115,7 +115,7 @@ WordPress passes `''` as `$atts` when the shortcode has no attributes. Føhn tur
 
 ## `#[AsCliCommand]`
 
-On a class that implements `Studiometa\Foehn\Console\CliCommandInterface`. Without the interface, the command is not registered. A command of the project is `wp app <name>`: the commands of Føhn and of the other packages are `wp foehn <name>`. `cliNamespace` in `app/foehn.config.php` changes `app`. `wp foehn inspect cli-commands` gives the line that runs each command.
+On a class that implements `Studiometa\Foehn\Console\CliCommandInterface`. Without the interface, the command is not registered. A command of the project is `wp app <name>`, a command of Føhn is `wp foehn <name>`, and a command of another package is under the namespace of that package: `wp foehn-acf <name>`. `cliNamespace` in `app/foehn.config.php` changes `app`. A package changes its own with `"extra": {"foehn": {"cli-namespace": "<name>"}}` in its `composer.json`. `wp foehn inspect cli-commands` gives the line that runs each command.
 
 ```php
 namespace App\Console;

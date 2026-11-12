@@ -32,7 +32,7 @@ The class must implement `Studiometa\Foehn\Console\CliCommandInterface`, which d
 
 ## Namespace
 
-A command of your project is registered as `wp app <name>`. A command of Føhn, or of another package, is registered as `wp foehn <name>`. `FoehnConfig::$cliNamespace` changes `app` to another name. See [Command Namespace](/guide/cli-commands#command-namespace).
+A command of your project is registered as `wp app <name>`. A command of Føhn is registered as `wp foehn <name>`. A command of another package is registered under the namespace of that package: `wp foehn-acf <name>` for `studiometa/foehn-acf`. `FoehnConfig::$cliNamespace` changes `app` to another name, and `extra.foehn.cli-namespace` in the `composer.json` of a package changes the name of that package. See [Command Namespace](/guide/cli-commands#command-namespace).
 
 ## Usage
 

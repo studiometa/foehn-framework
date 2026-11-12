@@ -71,7 +71,7 @@ Indexing protection is not opt-in: outside `production`, Føhn always adds `noin
 
 ## Generators
 
-- Every `make:*` command (and `make:acf-block`, `make:field-group`, `make:options-page` from `foehn-acf`) runs without a prompt. Give the values as options: a missing value takes its default, and a missing name is an error.
+- Every `make:*` command (and `wp foehn-acf make:acf-block`, `make:field-group`, `make:options-page` from `foehn-acf`) runs without a prompt. Give the values as options: a missing value takes its default, and a missing name is an error.
 - `--dry-run --format=json` writes nothing and prints `{"dryRun": true, "files": [{"path", "status", "contents"}], "notes": [...]}`. Read `contents` before you write the file.
 - `--format=json` prints the same object for the real run, without `contents`. `status` is `created`, `overwritten` or `exists` (`would-create` or `would-overwrite` on a dry run). `notes` lists the next steps, for example the Twig template to create. `path` is absolute.
 - A file that exists without `--force` is an error with exit status 1, on a dry run too. The file is left as it is. Use `--force` only for a file you mean to replace.

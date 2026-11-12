@@ -1,6 +1,6 @@
 # CLI Commands
 
-Føhn provides `#[AsCliCommand]` for creating WP-CLI commands and includes built-in scaffolding commands. The built-in commands run as `wp foehn <name>`, and the commands of your project as `wp app <name>` (see [Custom Commands](#custom-commands)).
+Føhn provides `#[AsCliCommand]` for creating WP-CLI commands and includes built-in scaffolding commands. The built-in commands run as `wp foehn <name>`, the commands of your project as `wp app <name>`, and the commands of another package under the name of that package, such as `wp foehn-acf <name>` (see [Command Namespace](#command-namespace)).
 
 ## Built-in Commands
 
@@ -19,9 +19,6 @@ wp foehn make:post-type event --rewrite-slug=events --meta=start_date,venue,capa
 
 # Generate a taxonomy
 wp foehn make:taxonomy ProductCategory --post-types=product
-
-# Generate an ACF block
-wp foehn make:acf-block Hero
 
 # Generate a native block
 wp foehn make:block Counter --interactive
@@ -45,15 +42,6 @@ wp foehn make:pattern HeroWithCta
 # Generate a shortcode
 wp foehn make:shortcode Button
 
-# Generate an ACF field group
-wp foehn make:field-group ProductFields --post-type=product
-wp foehn make:field-group PageFields --page-template=front-page
-wp foehn make:field-group CategoryFields --taxonomy=category
-
-# Generate an ACF options page
-wp foehn make:options-page ThemeSettings
-wp foehn make:options-page FooterSettings --parent=theme-settings
-
 # Generate a navigation menu
 wp foehn make:menu HeaderMenu --location=header
 wp foehn make:menu FooterMenu --description="Footer Navigation"
@@ -64,6 +52,22 @@ wp foehn make:image-size HeroImage --width=1920 --height=0
 
 # Generate a seeder
 wp foehn make:seeder events --description="Sample events" --order=20
+```
+
+With [`studiometa/foehn-acf`](/guide/acf-blocks), the ACF commands go under `wp foehn-acf`:
+
+```bash
+# Generate an ACF block
+wp foehn-acf make:acf-block Hero
+
+# Generate an ACF field group
+wp foehn-acf make:field-group ProductFields --post-type=product
+wp foehn-acf make:field-group PageFields --page-template=front-page
+wp foehn-acf make:field-group CategoryFields --taxonomy=category
+
+# Generate an ACF options page
+wp foehn-acf make:options-page ThemeSettings
+wp foehn-acf make:options-page FooterSettings --parent=theme-settings
 ```
 
 ### Global Options
@@ -553,18 +557,31 @@ The command warns when that file exists and you rotate `.env`, since the file is
 
 ## Custom Commands
 
-Create custom WP-CLI commands with `#[AsCliCommand]`. The commands of your project go under `wp app`, and the commands of Føhn stay under `wp foehn`:
+Create custom WP-CLI commands with `#[AsCliCommand]`. The commands of your project go under `wp app`, the commands of Føhn stay under `wp foehn`, and the commands of each other package go under a namespace of their own:
 
 ```bash
 wp app import:products products.csv   # A command of your project
 wp foehn inspect                      # A command of Føhn
+wp foehn-acf make:acf-block hero      # A command of studiometa/foehn-acf
 ```
 
-A command of your project then cannot collide with a command that a later Føhn release adds, and `wp app` lists only the commands of your site. `wp foehn inspect cli-commands` gives the line that runs each command.
+A command of your project then cannot collide with a command that a later release of Føhn or of a package adds, and `wp app` lists only the commands of your site. `wp foehn inspect cli-commands` gives the line that runs each command.
 
 ### Command Namespace
 
-A command declared in a package (a class under `vendor/`, or under the `Studiometa\Foehn\` namespace) goes under `wp foehn`. Every other command goes under `wp app`. To use another name, set `cliNamespace` in `app/foehn.config.php`:
+The namespace is the first word after `wp`. Each source of commands has its own:
+
+| Source                    | Namespace                                                                                        | Example                       |
+| ------------------------- | ------------------------------------------------------------------------------------------------ | ----------------------------- |
+| Your project              | `cliNamespace` of `FoehnConfig`. Default: `app`                                                  | `wp app import:products`      |
+| Føhn (`studiometa/foehn`) | `foehn`                                                                                          | `wp foehn inspect`            |
+| Another package           | `extra.foehn.cli-namespace` of its `composer.json`. Default: the package name without its vendor | `wp foehn-acf make:acf-block` |
+
+A class belongs to a package when it is in a PSR-4 directory of a package in `vendor/composer/installed.json`. This includes a package that Composer installs from a path repository with a symlink. Every other class belongs to your project.
+
+#### The namespace of your project
+
+To use another name than `app`, set `cliNamespace` in `app/foehn.config.php`:
 
 ```php
 <?php
@@ -577,7 +594,28 @@ return new FoehnConfig(
 );
 ```
 
-The name is one word of lowercase letters, digits, `-` and `_`. It cannot be `foehn`, because a command of your project would then replace a command of Føhn with the same name. The command of the example below is then `wp site import:products`. Change the cron jobs, deploy scripts and runbooks that call a command when you change the name.
+The name is one word of lowercase letters, digits, `-` and `_`. It cannot be `foehn`, because that namespace is for the commands of Føhn. The command of the example below is then `wp site import:products`. Change the cron jobs, deploy scripts and runbooks that call a command when you change the name.
+
+#### The namespace of a package
+
+The commands of a package go under its package name without the vendor: `acme/shop-tools` gives `wp shop-tools <name>`. To use another name, declare it in the `composer.json` of the package:
+
+```json
+{
+  "name": "acme/shop-tools",
+  "extra": {
+    "foehn": {
+      "cli-namespace": "shop"
+    }
+  }
+}
+```
+
+The commands of the package are then `wp shop <name>`. The rule is the same as for `cliNamespace`: one word of lowercase letters, digits, `-` and `_`, and not `foehn`. When the namespace of a package does not follow it, Føhn does not register the commands of the package and reports a problem in `wp foehn inspect problems`. This applies also to a package name that does not give a valid word, such as `acme/foehn`: declare a namespace for it.
+
+#### Two classes for one command
+
+When two classes declare the same command, for example a package and your project that both use the namespace `shop` and the name `sync`, Føhn registers neither of them. Each `wp` run prints a warning that names the two classes. Give one of them another name, or change the namespace of your project.
 
 ### A Command Class
 

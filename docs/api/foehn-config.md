@@ -139,7 +139,7 @@ Defaults to the value of `WP_DEBUG` when not explicitly set.
 
 ### CLI Namespace
 
-`cliNamespace` is the WP-CLI command the `#[AsCliCommand]` classes of the project go under: `wp app <name>` by default. The commands of Føhn and of the other packages stay under `wp foehn <name>`. It is one word of lowercase letters, digits, `-` and `_`, and not `foehn`: another value throws an `InvalidArgumentException`. The array config takes `'cli_namespace' => 'site'`. See [Command Namespace](/guide/cli-commands#command-namespace).
+`cliNamespace` is the WP-CLI command the `#[AsCliCommand]` classes of the project go under: `wp app <name>` by default. The commands of Føhn stay under `wp foehn <name>`, and the commands of each other package go under the namespace of that package. It is one word of lowercase letters, digits, `-` and `_`, and not `foehn`: another value throws an `InvalidArgumentException`. The array config takes `'cli_namespace' => 'site'`. See [Command Namespace](/guide/cli-commands#command-namespace).
 
 ## All Config Classes
 

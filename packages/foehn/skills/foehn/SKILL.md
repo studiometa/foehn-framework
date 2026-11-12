@@ -304,7 +304,7 @@ Entry names are the `input` paths from `vite.config.js`, relative to the project
 
 ## CLI
 
-The commands of Føhn are under `wp foehn` (`ddev wp foehn …` in a DDEV project). The `#[AsCliCommand]` classes of the project are under `wp app` (`cliNamespace` in `FoehnConfig`).
+The commands of Føhn are under `wp foehn` (`ddev wp foehn …` in a DDEV project). The `#[AsCliCommand]` classes of the project are under `wp app` (`cliNamespace` in `FoehnConfig`). The commands of another package are under its own namespace: `wp foehn-acf` for `studiometa/foehn-acf`.
 
 | Command                                                                                                                                                                                                                                    | Purpose                                                                                                                                                                                                              |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

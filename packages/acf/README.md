@@ -36,7 +36,7 @@ The two do not conflict at the storage layer. ACF stores its values in ordinary 
 | `#[AsAcfFieldGroup]`  | A field group   |
 | `#[AsAcfOptionsPage]` | An options page |
 
-Plus `make:acf-block`, `make:field-group` and `make:options-page`, the four field fragment builders, and `AcfOptionsService`.
+Plus the `wp foehn-acf make:acf-block`, `make:field-group` and `make:options-page` commands, the four field fragment builders, and `AcfOptionsService`.
 
 ## Upgrading from Føhn 0.4
 
