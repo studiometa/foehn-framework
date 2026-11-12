@@ -129,7 +129,8 @@ final class Project extends Post implements ConfiguresPostType
 ```
 
 - Extend `Studiometa\Foehn\Models\Post`. Føhn registers the class in Timber's class map, so Twig receives `Project` objects, and the model gets query methods: `Project::query()->limit(6)->whereTax('project_category', 'osaka')->get()`, `Project::find(42)`, `Project::all()`, `Project::first()`, `Project::count()`, `Project::exists()`.
-- `#[AsPostMeta]` registers a meta key with a REST schema. The key then shows in the block editor and binds through core's `core/post-meta` source with no PHP.
+- `#[AsPostMeta]` registers a meta key with a REST schema, which core's `core/post-meta` block binding source reads with no PHP. It adds no form to the admin. The block editor reads and saves the key only when the post type supports `custom-fields`. See [Editing meta values](references/content.md#editing-meta-values).
+- Store a date as a `Y-m-d` string. For an archive of upcoming items, see [Dates and an archive of upcoming items](references/content.md#dates-and-an-archive-of-upcoming-items).
 - Taxonomies: `#[AsTaxonomy(name: 'project_category', postTypes: ['project'], singular: 'Series', plural: 'Series', hierarchical: true)]` on a class that extends `Timber\Term`. Implement `ConfiguresTaxonomy` for the `TaxonomyBuilder`.
 
 Details: [references/content.md](references/content.md).
@@ -167,6 +168,7 @@ final readonly class SingleController implements TemplateControllerInterface
 }
 ```
 
+- The starter's and the demo's `SingleController` and `ArchiveController` serve every post type: they render `pages/single-<type>` and `pages/archive-<type>` when the file exists, else `pages/single` and `pages/archive`. A new post type needs these Twig files, not a controller. See [Generic controllers](references/views.md#generic-controllers).
 - `TemplateContext` is immutable. `with()`, `merge()` and `withDto()` return a new instance. Typed properties: `post`, `posts`, `site`, `user`. Read other keys with `get()`.
 - Return `null` to let WordPress continue with its own template.
 - `render()` throws when the template does not exist. Use `renderFirst()` with a fallback list.
@@ -322,6 +324,8 @@ Run `wp help foehn <command>` for the options of one command. See https://studio
 - **Template lookup.** `render()` throws on a missing template. Use `renderFirst()` with a generic last entry.
 - **Context provider patterns match render names.** A provider runs when `render('pages/single', …)` is called with a matching name. `#[AsContextProvider('single')]` never runs for a controller that renders `pages/single`. Use `'pages/single'`, `'pages/*'` or `'*'`.
 - **Controller names.** Føhn resolves one name per request: custom taxonomy pages are `taxonomy` / `taxonomy-{tax}`, not `tax-*`; author and date pages are `author` and `date`, not `archive`. A request no controller declares falls back to WordPress. See [references/views.md](references/views.md#request-flow).
+- **Timber method names.** A model method named like a `Timber\Post` method (`date`, `link`, `title`, `type`, `name`, `content`, `meta`, `path`, `time`, …) replaces it for Twig and for Timber. A `private` or `protected` one is a fatal error. Name the accessor of a `date` meta key `eventDate()`. The list and the command that prints it: [content.md](references/content.md#method-names-a-model-must-not-reuse).
+- **A menu location is not a menu.** `#[AsMenu('header')]` declares a location. `wp menu item add-*` takes a menu name, slug or ID: find the menu of the location with `wp menu list --fields=term_id,slug,locations`. See [content.md](references/content.md#sample-content-and-menus-with-wp-cli).
 - **Timber uses `false`, not `null`.** Read context values through `TemplateContext` typed properties, or test the type. `$context['user'] ?? null` can give `false`.
 - **Blocks are dynamic.** There is no `save` output. Do not write block JavaScript or `block.json` by hand. If no Føhn block shows in the inserter, `wp-content/foehn/editor.js` is missing: run `composer install`.
 - **Page cache.** It is on only in `production` in the starter. A purge runs on content changes, not on template edits. `composer install` clears the page cache and the discovery cache at their default location. Without it, run `wp foehn cache:clear` after a deploy that changes templates. A nonce in a cached page expires: exclude pages with forms that post.
@@ -330,8 +334,8 @@ Run `wp help foehn <command>` for the options of one command. See https://studio
 
 ## References
 
-- [references/content.md](references/content.md): post types, taxonomies, post meta, models and queries, settings pages.
-- [references/views.md](references/views.md): `TemplateContext`, controllers, context providers, DTOs, sections, Twig functions.
+- [references/content.md](references/content.md): post types, taxonomies, post meta and how editors edit it, dates and an upcoming-items archive, method names a model must not reuse, models and queries, sample content and menus with WP-CLI, settings pages.
+- [references/views.md](references/views.md): `TemplateContext`, controllers and the generic single and archive controllers, context providers, DTOs, sections, Twig functions.
 - [references/blocks.md](references/blocks.md): native blocks, sidebar controls, containers, Interactivity API, patterns, bindings, categories.
 - [references/routes-and-commands.md](references/routes-and-commands.md): REST routes, rewrite rules, shortcodes, CLI commands, jobs and cron, Twig extensions, custom discoveries.
 - [references/operations.md](references/operations.md): config files, opt-in hooks, project model (`inspect`), generators (`make:*` without prompts, as JSON), agent skills (`skill`), discovery cache, page cache, query filters, images, verification.

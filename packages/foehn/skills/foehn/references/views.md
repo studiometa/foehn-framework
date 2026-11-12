@@ -51,6 +51,20 @@ The starter's `ArchiveController` also declares `front-page` and `home`, and dec
 
 Password-protected posts: test `post_password_required($post->ID)` first and `render('pages/password', $context)`. The starter and the demo ship `templates/pages/password.twig`, which prints `{{ function('get_the_password_form', post.ID) }}` inside the base layout. A controller that takes over `single` or `page` must do this itself: Timber's `post.content` returns the full content of a protected post unless the `timber/post/content/show_password_form_for_protected` filter returns `true`, so falling back to the normal template (for example `renderFirst(['pages/password', 'pages/page'])`) prints the content the password guards. `render()` throws a `RuntimeException` when the template file is missing, and the request fails with a 500. Timber builds `post.excerpt` from the full content too, so a listing must test `{% if not post.password_required and post.excerpt %}` before it prints an excerpt. See [Password-protected posts](https://studiometa.github.io/foehn-framework/guide/template-controllers.md#password-protected-posts).
 
+### Generic controllers
+
+The starter and the demo ship one `SingleController` (`single`, `single-*`) and one `ArchiveController` (`archive`, `archive-*`, …) for every post type. Each calls `renderFirst()` with a list that starts with the most specific view:
+
+| Request                       | Views tried, first that exists wins                               |
+| ----------------------------- | ----------------------------------------------------------------- |
+| a single `event`              | `pages/single-event-<slug>`, `pages/single-event`, `pages/single` |
+| the `event` post type archive | `pages/archive-event`, `pages/archive`                            |
+| a category, a tag             | `pages/category` or `pages/tag`, then `pages/archive`             |
+
+A custom taxonomy term page resolves to `taxonomy`, which neither controller declares: `tax-*` matches no name (see above).
+
+So a new post type needs no controller: create `templates/pages/single-event.twig` and `templates/pages/archive-event.twig`, which extend `layouts/base.twig` like the other files in `pages/`. Without them, the generic views render the new type. The single view receives the post as `post` (an `Event` when the model is registered), the archive the posts as `posts` and `pagination`, `archive_title`, `archive_description`. Data for one type goes in a provider on that view: `#[AsContextProvider('pages/single-event')]`. Write a controller of its own (`#[AsTemplateController('single-event')]`) only when the type needs a different flow. These controllers are project code: read the project's copy, it can differ.
+
 ## `TemplateContext`
 
 `Studiometa\Foehn\Views\TemplateContext` is a `final readonly` class.
