@@ -213,17 +213,20 @@ describe('make:post-type', function () {
         expect(glob($this->appPath . '/Models/*.php'))->toBeEmpty();
     })->with(['venue:array', 'venue:date', 'bad key', 'venue,venue']);
 
-    it('rejects --meta and --rewrite-slug written without a value', function (array $assocArgs) {
+    it('rejects an option written without a value', function (string $option, string|bool $value) {
         // WP-CLI passes `true` for `--meta` written without `=<value>`.
-        (new MakePostTypeCommand($this->cli, $this->scaffolder, $this->conventions))(['concert'], $assocArgs);
+        (new MakePostTypeCommand($this->cli, $this->scaffolder, $this->conventions))(['concert'], [$option => $value]);
 
         expect(wp_stub_get_calls('wp_cli_error'))->toHaveCount(1);
-        expect(wp_stub_get_calls('wp_cli_error')[0]['args']['message'])->toContain('Give --meta and --rewrite-slug');
+        expect(wp_stub_get_calls('wp_cli_error')[0]['args']['message'])->toStartWith("Give --{$option} a value");
         expect(glob($this->appPath . '/Models/*.php'))->toBeEmpty();
     })->with([
-        'meta' => [['meta' => true]],
-        'rewrite-slug' => [['rewrite-slug' => true]],
-        'empty rewrite-slug' => [['rewrite-slug' => '']],
+        ['meta',         true],
+        ['meta',         ''],
+        ['rewrite-slug', true],
+        ['class',        true],
+        ['singular',     true],
+        ['plural',       ''],
     ]);
 
     it('gives one accessor to two keys with the same method name', function () {

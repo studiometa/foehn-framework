@@ -92,6 +92,10 @@ final class MakePostTypeCommand implements CliCommandInterface
         private readonly ProjectConventions $conventions,
     ) {}
 
+    /**
+     * @param array<int, string> $args
+     * @param array<string, string|true> $assocArgs WP-CLI gives `true` for an option without `=<value>`
+     */
     public function __invoke(array $args, array $assocArgs): void
     {
         $name = $args[0] ?? null;
@@ -102,19 +106,21 @@ final class MakePostTypeCommand implements CliCommandInterface
             return;
         }
 
-        $meta = $assocArgs['meta'] ?? '';
-        $rewriteSlug = $assocArgs['rewrite-slug'] ?? null;
+        $options = [];
 
-        // WP-CLI gives `true` for an option written without `=<value>`.
-        if (!is_string($meta) || $rewriteSlug === true || $rewriteSlug === '') {
-            $this->cli->error(
-                'Give --meta and --rewrite-slug a value, e.g. --meta=start_date,venue --rewrite-slug=events.',
-            );
+        foreach (['class', 'singular', 'plural', 'rewrite-slug', 'meta'] as $option) {
+            $value = $assocArgs[$option] ?? null;
 
-            return;
+            if ($value === true || $value === '') {
+                $this->cli->error("Give --{$option} a value: --{$option}=<value>.");
+
+                return;
+            }
+
+            $options[$option] = $value;
         }
 
-        $fields = self::parseMeta($meta);
+        $fields = self::parseMeta($options['meta'] ?? '');
 
         if (is_string($fields)) {
             $this->cli->error($fields);
@@ -122,13 +128,13 @@ final class MakePostTypeCommand implements CliCommandInterface
             return;
         }
 
-        $className = $assocArgs['class'] ?? str($name)->pascal()->toString();
-        $singular = $assocArgs['singular'] ?? str($name)->replace(['-', '_'], ' ')->title()->toString();
-        $plural = $assocArgs['plural'] ?? $singular . 's';
+        $className = $options['class'] ?? str($name)->pascal()->toString();
+        $singular = $options['singular'] ?? str($name)->replace(['-', '_'], ' ')->title()->toString();
+        $plural = $options['plural'] ?? $singular . 's';
         $attributeArguments = ['name' => $name, 'singular' => $singular, 'plural' => $plural];
 
-        if (is_string($rewriteSlug)) {
-            $attributeArguments['rewriteSlug'] = $rewriteSlug;
+        if ($options['rewrite-slug'] !== null) {
+            $attributeArguments['rewriteSlug'] = $options['rewrite-slug'];
         }
 
         $request = static fn(array $methods): GenerationRequest => new GenerationRequest(
