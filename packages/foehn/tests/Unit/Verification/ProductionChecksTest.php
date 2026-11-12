@@ -3,7 +3,9 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Config\PageCacheConfig;
+use Studiometa\Foehn\Config\PageCacheStorage;
 use Studiometa\Foehn\Cron\Heartbeat;
+use Studiometa\Foehn\PageCache\BucketStore;
 use Studiometa\Foehn\PageCache\CacheKey;
 use Studiometa\Foehn\PageCache\Store;
 use Studiometa\Foehn\Security\Salts;
@@ -413,6 +415,14 @@ describe('page cache storage', function () {
         $config = new PageCacheConfig(enabled: true, path: $this->root . '/not/created/yet');
 
         expect(onlyResult(new PageCacheCheck($config, new Store($config)))->status)->toBe(VerificationStatus::Pass);
+    });
+
+    it('passes an active cache in the bucket without checking a directory', function () {
+        $config = new PageCacheConfig(enabled: true, path: '/nonexistent', storage: PageCacheStorage::Bucket);
+        $result = onlyResult(new PageCacheCheck($config, BucketStore::forUploads($config)));
+
+        expect($result->status)->toBe(VerificationStatus::Pass);
+        expect($result->details['storage'])->toBe('bucket');
     });
 
     it('puts no filesystem path in the report', function () {

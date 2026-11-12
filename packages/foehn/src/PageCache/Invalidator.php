@@ -21,7 +21,7 @@ use Studiometa\Foehn\Config\PageCacheConfig;
  *
  * - **This class owns URL validation and key creation.** A caller hands over a URL, not
  *   a path and not a key.
- * - **{@see Store} owns the filesystem.** Atomic writes, containment, tree deletion,
+ * - **{@see PageStore} owns the storage.** Atomic writes, containment, tree deletion,
  *   directory pruning.
  * - **{@see Purger} owns *when*.** Which WordPress events make which URLs stale, and
  *   batching them so a bulk edit deletes once rather than forty times.
@@ -56,7 +56,7 @@ final readonly class Invalidator
 
     public function __construct(
         private PageCacheConfig $config,
-        private Store $store,
+        private PageStore $store,
     ) {}
 
     /**

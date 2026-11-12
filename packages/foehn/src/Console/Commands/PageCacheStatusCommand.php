@@ -9,10 +9,10 @@ use Studiometa\Foehn\Attributes\AsCliCommand;
 use Studiometa\Foehn\Config\PageCacheConfig;
 use Studiometa\Foehn\Console\CliCommandInterface;
 use Studiometa\Foehn\Console\WpCli;
+use Studiometa\Foehn\PageCache\PageStore;
 use Studiometa\Foehn\PageCache\ServerConfig\ApacheSnippet;
 use Studiometa\Foehn\PageCache\ServerConfig\NginxSnippet;
 use Studiometa\Foehn\PageCache\ServerConfig\SnippetPolicy;
-use Studiometa\Foehn\PageCache\Store;
 
 #[AsCliCommand(name: 'cache:status', description: 'Show static page cache status', longDescription: <<<'DOC'
     ## DESCRIPTION
@@ -29,7 +29,7 @@ final class PageCacheStatusCommand implements CliCommandInterface
     public function __construct(
         private readonly WpCli $cli,
         private readonly PageCacheConfig $config,
-        private readonly Store $store,
+        private readonly PageStore $store,
     ) {}
 
     /**

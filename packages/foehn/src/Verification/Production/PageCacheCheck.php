@@ -6,6 +6,7 @@ namespace Studiometa\Foehn\Verification\Production;
 
 use Studiometa\Foehn\Config\PageCacheConfig;
 use Studiometa\Foehn\PageCache\CacheDirectory;
+use Studiometa\Foehn\PageCache\PageStore;
 use Studiometa\Foehn\PageCache\Store;
 use Studiometa\Foehn\Verification\VerificationResult;
 
@@ -36,7 +37,7 @@ final readonly class PageCacheCheck implements Check
 
     public function __construct(
         private PageCacheConfig $config,
-        private Store $store,
+        private PageStore $store,
     ) {}
 
     public function run(): array
@@ -76,6 +77,15 @@ final readonly class PageCacheCheck implements Check
                     'environments' => $this->config->environments,
                 ],
             )];
+        }
+
+        // The checks below are about a directory. A bucket has none to resolve or write.
+        if (!$this->store instanceof Store) {
+            return [VerificationResult::pass(self::NAME, 'The page cache is active and stores pages in the bucket.', [
+                'configured' => true,
+                'effective' => true,
+                'storage' => 'bucket',
+            ])];
         }
 
         $contained = $this->rootIsContained();

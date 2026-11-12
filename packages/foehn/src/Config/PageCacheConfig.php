@@ -66,8 +66,18 @@ final readonly class PageCacheConfig
         /** Master switch. Off by default: a cache nobody asked for is a bug. */
         public bool $enabled = false,
 
-        /** Cache root. Defaults to WP_CONTENT_DIR . '/cache/foehn/pages'. */
+        /** Cache root. Defaults to WP_CONTENT_DIR . '/cache/foehn/pages'. Not used in bucket storage. */
         public ?string $path = null,
+
+        /**
+         * Where pages are stored. Local disk by default.
+         *
+         * `PageCacheStorage::Bucket` stores them in the `humanmade/s3-uploads` bucket,
+         * under `cache/pages/`, and nginx serves hits from there. Use it when the site
+         * runs on more than one instance. The drop-in does not read in this mode, and
+         * Apache is not supported.
+         */
+        public PageCacheStorage $storage = PageCacheStorage::Disk,
 
         /** Seconds a file stays servable. 0 = until something purges it. */
         public int $ttl = 0,

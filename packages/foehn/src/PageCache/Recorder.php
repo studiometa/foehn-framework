@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\PageCache;
 
+use Closure;
 use Studiometa\Foehn\Config\PageCacheConfig;
+use Studiometa\Foehn\Config\PageCacheStorage;
 
 /**
  * The write side: capture the rendered page, and store it if it may be stored.
@@ -23,9 +25,12 @@ final class Recorder
 {
     private bool $capturing = false;
 
+    /** The write a bucket store does after the response is sent. */
+    private ?Closure $pending = null;
+
     public function __construct(
         private readonly PageCacheConfig $config,
-        private readonly Store $store,
+        private readonly PageStore $store,
         private readonly Bypass $bypass,
     ) {}
 
@@ -91,11 +96,52 @@ final class Recorder
         // The status and the headers travel with the body now. A 404 stored without its
         // status came back as a 200, which is a soft 404 that nothing downstream can see
         // — and a page's own headers vanished on every hit.
-        $this->store->put($key, $body, $status, $headers);
+        $this->write(fn(): bool => $this->store->put($key, $body, $status, $headers));
 
         DebugHeaders::send($this->config, DebugHeaders::STATE_MISS);
 
         return $body;
+    }
+
+    /**
+     * Write now on disk, or after the response is sent to a bucket.
+     *
+     * A PUT is an HTTP request, and a miss must not wait for it. The buffer is flushed
+     * from WordPress's own shutdown hook, so a shutdown function registered here runs
+     * after it, when the whole response is out.
+     *
+     * @param Closure(): bool $write
+     */
+    private function write(Closure $write): void
+    {
+        if ($this->config->storage !== PageCacheStorage::Bucket) {
+            $write();
+
+            return;
+        }
+
+        $this->pending = $write;
+
+        register_shutdown_function($this->finish(...));
+    }
+
+    /**
+     * Send the response to the visitor, then do the pending write.
+     */
+    public function finish(): void
+    {
+        $write = $this->pending;
+        $this->pending = null;
+
+        if ($write === null) {
+            return;
+        }
+
+        if (function_exists('fastcgi_finish_request')) {
+            fastcgi_finish_request();
+        }
+
+        $write();
     }
 
     /**

@@ -15,6 +15,7 @@ use Studiometa\Foehn\Config\ConfigLoader;
 use Studiometa\Foehn\Config\DatabaseExportConfig;
 use Studiometa\Foehn\Config\FoehnConfig;
 use Studiometa\Foehn\Config\PageCacheConfig;
+use Studiometa\Foehn\Config\PageCacheStorage;
 use Studiometa\Foehn\Config\RestConfig;
 use Studiometa\Foehn\Config\TimberConfig;
 use Studiometa\Foehn\Console\ClassFileGenerator;
@@ -37,9 +38,11 @@ use Studiometa\Foehn\Images\NullTransformer;
 use Studiometa\Foehn\Indexing\IndexingProtection;
 use Studiometa\Foehn\Jobs\ActionSchedulerJobDispatcher;
 use Studiometa\Foehn\Jobs\JobRegistry;
+use Studiometa\Foehn\PageCache\BucketStore;
 use Studiometa\Foehn\PageCache\Bypass;
 use Studiometa\Foehn\PageCache\CanonicalRedirect;
 use Studiometa\Foehn\PageCache\Invalidator;
+use Studiometa\Foehn\PageCache\PageStore;
 use Studiometa\Foehn\PageCache\Purger;
 use Studiometa\Foehn\PageCache\Recorder;
 use Studiometa\Foehn\PageCache\Store;
@@ -407,7 +410,14 @@ final class Kernel
 
         // Registered whether or not the cache is on, because `wp foehn cache:clear`
         // and `cache:status` have to work on a site that has just turned it off.
-        $this->container->singleton(Store::class, fn() => new Store($this->container->get(PageCacheConfig::class)));
+        $this->container->singleton(PageStore::class, function (): PageStore {
+            /** @var PageCacheConfig $config */
+            $config = $this->container->get(PageCacheConfig::class);
+
+            return $config->storage === PageCacheStorage::Bucket
+                ? BucketStore::forUploads($config)
+                : new Store($config);
+        });
 
         // The single runtime entry point for deletion — WP-CLI, the WordPress
         // invalidation hooks and the admin controls all go through it. A singleton for
@@ -415,7 +425,10 @@ final class Kernel
         // removable on a site that has since turned the cache off.
         $this->container->singleton(
             Invalidator::class,
-            fn() => new Invalidator($this->container->get(PageCacheConfig::class), $this->container->get(Store::class)),
+            fn() => new Invalidator(
+                $this->container->get(PageCacheConfig::class),
+                $this->container->get(PageStore::class),
+            ),
         );
 
         // A singleton on every site, production included, so production verification can
@@ -439,7 +452,7 @@ final class Kernel
             Recorder::class,
             fn() => new Recorder(
                 $this->container->get(PageCacheConfig::class),
-                $this->container->get(Store::class),
+                $this->container->get(PageStore::class),
                 $this->container->get(Bypass::class),
             ),
         );
@@ -521,7 +534,7 @@ final class Kernel
             Dashboard::class,
             fn() => new Dashboard(
                 $this->container->get(PageCacheConfig::class),
-                $this->container->get(Store::class),
+                $this->container->get(PageStore::class),
                 $this->container->get(Heartbeat::class),
             ),
         );

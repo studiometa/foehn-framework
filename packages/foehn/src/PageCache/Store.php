@@ -7,7 +7,7 @@ namespace Studiometa\Foehn\PageCache;
 use Studiometa\Foehn\Config\PageCacheConfig;
 
 /**
- * What the page cache keeps, and the only code allowed to write it.
+ * The page cache on local disk, and the only code allowed to write it.
  *
  * Every write is atomic — a sibling temporary file, then `rename()` — because the
  * readers are three other processes and one of them is nginx, which will happily serve
@@ -17,7 +17,7 @@ use Studiometa\Foehn\Config\PageCacheConfig;
  *
  * Which paths may be touched at all is {@see CacheDirectory}'s question.
  */
-final readonly class Store
+final readonly class Store implements PageStore
 {
     public function __construct(
         private PageCacheConfig $config,

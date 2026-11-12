@@ -2,7 +2,11 @@
 
 declare(strict_types=1);
 
+use League\Flysystem\Filesystem;
+use League\Flysystem\Local\LocalFilesystemAdapter;
 use Studiometa\Foehn\Config\PageCacheConfig;
+use Studiometa\Foehn\Config\PageCacheStorage;
+use Studiometa\Foehn\PageCache\BucketStore;
 use Studiometa\Foehn\PageCache\Bypass;
 use Studiometa\Foehn\PageCache\CacheKey;
 use Studiometa\Foehn\PageCache\Recorder;
@@ -63,6 +67,33 @@ describe('Recorder', function () {
 
         expect($this->recorder->onFlush($truncated))->toBe($truncated);
         expect($this->store->stats()['files'])->toBe(0);
+    });
+
+    it('writes to a bucket after the response is sent, so a miss does not wait for the PUT', function () {
+        $config = new PageCacheConfig(
+            enabled: true,
+            storage: PageCacheStorage::Bucket,
+            debugHeaders: false,
+        );
+        $bucket = $this->root . '/bucket';
+        $store = new BucketStore(
+            $config,
+            static fn() => new Filesystem(new LocalFilesystemAdapter($bucket)),
+            'memory://cache/pages',
+        );
+        $recorder = new Recorder($config, $store, new Bypass($config));
+
+        $returned = $recorder->onFlush(pageCacheBody());
+
+        expect($store->stats()['files'])->toBe(0);
+
+        $recorder->finish();
+
+        expect(file_get_contents($bucket . '/example.com/blog/index.html'))->toBe($returned);
+
+        // Once only: the shutdown function registered by onFlush() runs it again.
+        $recorder->finish();
+        expect($store->stats()['files'])->toBe(1);
     });
 
     it('opens no buffer for a request it already knows it will not store', function () {
