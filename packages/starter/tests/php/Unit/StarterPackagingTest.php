@@ -91,6 +91,22 @@ describe('starter packaging', function () {
         expect($attributs)->not->toContain('/phpunit.smoke.xml');
     });
 
+    // Un agent de code lit AGENTS.md (Claude Code lit CLAUDE.md, qui l'importe)
+    // dans le projet créé : le fichier doit partir dans l'archive et renvoyer
+    // aux skills installés et à `wp foehn inspect`.
+    it('livre les instructions pour les agents de code', function () use ($racine) {
+        $attributs = (string) file_get_contents($racine . '/.gitattributes');
+        $agents = (string) file_get_contents($racine . '/AGENTS.md');
+
+        expect($attributs)->not->toContain('AGENTS.md')->not->toContain('CLAUDE.md');
+        expect($agents)
+            ->toContain('wp foehn skill')
+            ->toContain('wp foehn inspect')
+            ->toContain('vendor/studiometa/foehn/skills/foehn/SKILL.md')
+            ->toContain('node_modules/@studiometa/foehn-vite-plugin/skills');
+        expect((string) file_get_contents($racine . '/CLAUDE.md'))->toBe("@AGENTS.md\n");
+    });
+
     // Les hooks du monorepo supposent des dépôts `path` absents d'un projet.
     it('ne livre pas les hooks ddev du monorepo', function () use ($racine) {
         expect((string) file_get_contents($racine . '/.ddev/config.yaml'))->not->toContain('hooks:');

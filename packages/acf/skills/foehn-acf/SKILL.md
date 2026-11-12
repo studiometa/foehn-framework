@@ -280,6 +280,10 @@ Conditional logic inside a fragment keeps working in a group. Constructor option
 
 Run them with WP-CLI. Each accepts `--force`, `--dry-run` and `--format=json`, never prompts, and exits with status 1 when the file exists without `--force`. Files go in the theme's `app/` directory, and the namespace comes from the theme's PSR-4 map.
 
+Run a command with `--dry-run --format=json` first: it writes nothing and prints the `path`, `status` and `contents` of the file it would write. Then run it without `--dry-run`, and do what its `notes` say.
+
+`wp foehn inspect` does not report ACF blocks, field groups or options pages. To see which ones Føhn found, run `wp foehn discovery:list --discovery=AcfBlock` (or `AcfFieldGroup`, `AcfOptionsPage`) with `--format=json`.
+
 ```bash
 wp foehn make:acf-block hero --title="Hero Banner" --fields=wysiwyg,image,cta   # app/Blocks/HeroBlock.php
 wp foehn make:acf-block contact-form --mode=edit --category=design --class=ContactBlock

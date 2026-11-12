@@ -573,3 +573,32 @@ function adminCacheRequestReset(): void
     $_GET = [];
     unset($_SERVER['REQUEST_METHOD'], $GLOBALS['wp_stub_halted'], $GLOBALS['wp_stub_environment_type']);
 }
+
+/**
+ * A project root in a temporary directory, with an `app/` directory and the given
+ * files, for code that reads `vendor/` and `node_modules/` under the root.
+ *
+ * Built at run time rather than kept under Fixtures/: `vendor/` and `node_modules/`
+ * are ignored by many global gitignore files, so a committed copy could go missing
+ * from a contributor's tree without git saying so.
+ *
+ * @param array<string, string> $files Contents by path relative to the root
+ * @return string The root; its `app/` is the app path
+ */
+function testProjectRoot(array $files): string
+{
+    $root = sys_get_temp_dir() . '/foehn-tests/project-' . bin2hex(random_bytes(4));
+
+    mkdir($root . '/app', 0o777, true);
+    file_put_contents($root . '/composer.json', '{}');
+
+    foreach ($files as $path => $contents) {
+        if (!is_dir(dirname($root . '/' . $path))) {
+            mkdir(dirname($root . '/' . $path), 0o777, true);
+        }
+
+        file_put_contents($root . '/' . $path, $contents);
+    }
+
+    return $root;
+}

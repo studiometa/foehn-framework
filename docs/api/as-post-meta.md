@@ -1,6 +1,6 @@
 # #[AsPostMeta]
 
-Registers a meta key with WordPress through `register_meta()`, which is what puts a custom field in the REST API — and therefore in the block editor and in block bindings.
+Registers a meta key with WordPress through `register_meta()`, which is what puts a custom field in the REST API — and therefore in the block editor and in block bindings. The REST response and the block editor include the key only when the post type supports `custom-fields`; the attribute adds no form to the admin. See [Editing the values](/guide/post-types#editing-the-values).
 
 The attribute is repeatable and goes on the model that owns the field, because that model already declares its post type and already holds the accessors that read the key.
 

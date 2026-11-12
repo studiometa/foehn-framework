@@ -281,6 +281,39 @@ With the `FULL` discovery cache, a class added after the cache was written is mi
 
 JSON is printed on one line, without indentation. The full report has the section names as keys, also for one section, so a program reads `report["post-types"]` in all cases. Most sections are a list of rows; `templates`, `views` and `vite` are records that hold their rows (`templates`, `views`, `entries`) next to what the rows share. The summary has two keys: `summary`, an object with each section name as key and the list of its row names as value, and `commands`, the commands that print sections in full. An unknown section stops with an error that lists the valid names.
 
+### Agent Skills
+
+```bash
+# The skills of the installed packages
+wp foehn skill
+wp foehn skill --format=json
+
+# The main instructions of one skill
+wp foehn skill foehn
+
+# The reference files of a skill, then one of them
+wp foehn skill foehn --list-references
+wp foehn skill foehn --reference=blocks
+```
+
+`skill` prints the [Agent Skills](./ai-agents.md) that the installed packages ship, at the versions in your project. It reads files only.
+
+The skills come from two places:
+
+- every Composer package in `vendor/composer/installed.json` that has a `skills/<name>/SKILL.md` file. No package list is built in, so a third-party package that ships a skill is listed too;
+- `node_modules/@studiometa/foehn-vite-plugin/skills`, when the Vite plugin is installed.
+
+| Option               | Effect                                                                                                                            |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `<name>`             | Print the `SKILL.md` of this skill. Without it, the command lists the skills.                                                     |
+| `--reference=<file>` | Print a file of the skill's `references/` directory instead. `blocks`, `blocks.md` and `references/blocks.md` give the same file. |
+| `--list-references`  | List the reference files of the skill.                                                                                            |
+| `--format=json`      | Print a list as JSON.                                                                                                             |
+
+The table gives the skill `name`, the `package`, its installed `version` and the first sentence of the `description` (from the `SKILL.md` frontmatter). The JSON gives the full `description` and also the `path` of the file relative to the project root, such as `vendor/studiometa/foehn/skills/foehn/SKILL.md`. An agent can read that path directly when WordPress cannot boot.
+
+When two packages ship a skill with the same name, both are listed and `wp foehn skill <name>` prints the first: Composer packages come before the Vite plugin, in package name order. An unknown skill or reference stops with an error that lists the valid names.
+
 ### Discovery Commands
 
 ```bash

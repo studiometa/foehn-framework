@@ -81,14 +81,15 @@ Or read [the demo](https://github.com/studiometa/foehn-demo), which has one of e
 
 ## AI agents
 
-Føhn ships [Agent Skills](https://agentskills.io/) for Claude Code, Cursor, Codex, Copilot and other agents. Install them at the `studiometa/foehn` version in your `composer.lock`, so the skills describe the code your project runs:
+`AGENTS.md` tells a coding agent how to work in this project, and `CLAUDE.md` imports it for Claude Code. In short: read the Føhn [Agent Skills](https://agentskills.io/) at the versions the project has installed, then read what the project declares, before writing code:
 
 ```bash
-composer show studiometa/foehn | grep versions   # e.g. 0.6.2
-npx skills add studiometa/foehn-framework#0.6.2
+ddev wp foehn skill                       # the skills of the installed packages
+ddev wp foehn skill foehn                 # print one
+ddev wp foehn inspect --format=json       # post types, blocks, templates, context keys…
 ```
 
-Tags have no `v` prefix. Commit `skills-lock.json`. After a framework update, run `npx skills add` again with the new tag. See [AI Agents](https://studiometa.github.io/foehn-framework/guide/ai-agents).
+The skills are read from `vendor/` and `node_modules/`, so they follow `composer update` and `npm update` with nothing to pin. To install them in an agent's own skill directory instead, see [AI Agents](https://studiometa.github.io/foehn-framework/guide/ai-agents).
 
 ## Front-end
 
