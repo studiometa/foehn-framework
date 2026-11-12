@@ -341,6 +341,14 @@ describe('ProjectInspector', function () {
         expect($views['views'][0]['providers'])->toBe([ProductCardContext::class]);
     });
 
+    it('names a view with a numeric name as a string', function () {
+        $theme = $GLOBALS['wp_stub_template_directory'];
+        mkdir($theme . '/templates', 0o777, true);
+        touch($theme . '/templates/404.twig');
+
+        expect(inspector()->section('views')['views'][0]['view'])->toBe('404');
+    });
+
     it('lists the providers on `*` when the theme has no Twig file', function () {
         $views = inspector()->section('views');
 

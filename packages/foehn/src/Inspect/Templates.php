@@ -111,6 +111,8 @@ final readonly class Templates
         $rows = [];
 
         foreach ($this->twigFiles() as $view => $file) {
+            // PHP keys the view of a root `404.twig` as the int 404.
+            $view = (string) $view;
             $matching = array_column(self::matchingProviders($view, $providers), 'class');
             $used = [...$used, ...$matching];
             $rows[] = [
