@@ -4,7 +4,7 @@ Føhn provides `#[AsAcfBlock]` for creating ACF blocks with type-safe fields usi
 
 ## Requirements
 
-ACF is an optional package. Custom fields do not need it: [`#[AsPostMeta]`](/api/as-post-meta) registers a meta key with a REST schema, which is what puts a field in the block editor and makes it bindable. ACF is the better answer when the editing UI matters — repeaters, flexible content, conditional logic, media pickers.
+ACF is an optional package. Custom fields do not need it: [`#[AsPostMeta]`](/api/as-post-meta) registers a meta key with a REST schema, which makes it bindable, and puts it in the block editor when the post type supports `custom-fields`. ACF is the better answer when the editing UI matters — repeaters, flexible content, conditional logic, media pickers.
 
 ```bash
 composer require studiometa/foehn-acf

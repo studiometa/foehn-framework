@@ -22,12 +22,13 @@ use Timber\Image;
     hasArchive: true,
     showInRest: true,
     menuIcon: 'dashicons-camera-alt',
-    supports: ['title', 'editor', 'thumbnail', 'excerpt', 'revisions'],
+    supports: ['title', 'editor', 'thumbnail', 'excerpt', 'revisions', 'custom-fields'],
     taxonomies: ['project_category', 'project_tag'],
 )]
 // The accessors below read these keys. Declaring them gives each a REST schema,
-// which is what puts it in the block editor and makes it bindable through core's
-// `core/post-meta` source — no custom binding required.
+// which makes it bindable through core's `core/post-meta` source — no custom
+// binding required. The `custom-fields` support above puts the keys in the
+// REST response, so the block editor can read and save them.
 #[AsPostMeta(key: 'client', type: 'string', description: 'Who commissioned the series')]
 #[AsPostMeta(key: 'year', type: 'integer', description: 'Year the series was shot')]
 #[AsPostMeta(key: 'location', type: 'string', description: 'Where it was shot')]

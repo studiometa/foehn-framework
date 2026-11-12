@@ -139,7 +139,7 @@ final class Product extends Post
 
 ## Custom Fields
 
-An accessor that reads `$this->meta('price')` works whether or not the key is declared. Declaring it is what makes the field exist to everything outside your PHP: the REST API, the block editor, and block bindings.
+An accessor that reads `$this->meta('price')` works whether or not the key is declared. Declaring it is what makes the field exist to everything outside your PHP: the REST API, block bindings, and, when the post type supports `custom-fields`, the block editor.
 
 ```php
 #[AsPostType(name: 'product', singular: 'Product', plural: 'Products')]
