@@ -26,6 +26,11 @@
 # installs at `wp-content/advanced-cache.php`, which needs no webserver
 # configuration and serves the same stored files a few milliseconds slower. The
 # site is never worse than it would have been.
+#
+# With `storage: PageCacheStorage::Bucket`, the generated rules proxy hits from
+# the s3-uploads bucket. They read the same `S3_UPLOADS_*` variables as
+# `60-nginx-uploads-proxy.sh`, which `su` passes on to WP-CLI. The drop-in does
+# not read a bucket, so a failure here means every page is rendered by PHP.
 ###############################################################################
 # The upstream entrypoint *sources* these scripts (`. "$FILE"`), it does not run
 # them. So `exit` here would end the whole boot, and `set -e`/`set -u` would
@@ -80,7 +85,7 @@ foehn_nginx_page_cache() {
     # Anything other than the real thing — an error, a warning, an empty string
     # — is not written. A half-rendered file is a webserver that will not start.
     if [ -z "$generated" ] || ! printf '%s' "$generated" | grep -q 'foehn_bypass'; then
-        echo "ℹ️ NOTICE ($script_name): rules could not be generated, the drop-in serves the cache."
+        echo "ℹ️ NOTICE ($script_name): rules could not be generated, PHP serves the cache."
         return 0
     fi
 
