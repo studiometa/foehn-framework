@@ -206,6 +206,8 @@ check_page "/projects/" "index-row__title" "the projects index lists the series"
 check_page "/projects/page/2/" "<html" "project pagination keeps a full-page fallback"
 check_page "/projects/corridors/" "plate--" "a project page shows its photographs"
 check_page "/about/" "prose" "the about page renders its copy"
+# The footer links every page to it, so a missing page is a 404 on every page.
+check_page "/legal/" "Unsplash licence" "the legal page the footer links to exists"
 
 # A password-protected post has to answer with WordPress's password form and with
 # nothing the password guards. Both controllers send it to pages/password, which

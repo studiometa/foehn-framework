@@ -57,6 +57,14 @@ describe('Seeders', function () {
         }
     });
 
+    it('write the pages by slug, the Legal page the footer links to included', function () {
+        new PageSeeder()->run();
+
+        $posts = array_column(array_column(wp_stub_get_calls('wp_insert_post'), 'args'), 'postarr');
+
+        expect(array_column($posts, 'post_name'))->toBe(['home', 'about', 'legal']);
+    });
+
     it('write the testimonials by slug', function () {
         new TestimonialSeeder()->run();
 
