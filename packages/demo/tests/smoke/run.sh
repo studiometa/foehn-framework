@@ -99,6 +99,17 @@ ddev exec 'cd /var/www/html && wp foehn discovery:status' >/dev/null 2>&1 ||
 
 printf '✓ wp foehn commands are registered\n'
 
+# AGENTS.md carries the block `wp foehn agents-md` writes, and the command reads it
+# back: a block whose markers were edited away would be appended a second time.
+grep -q '<!-- foehn:begin -->' AGENTS.md || fail "AGENTS.md has no block from wp foehn agents-md"
+agents="$(ddev exec 'cd /var/www/html && wp foehn agents-md --dry-run' 2>/dev/null || true)"
+case "$agents" in
+*"Updated the Føhn block"* | *"current"*) ;;
+*) fail "wp foehn agents-md does not find the block in AGENTS.md
+$agents" ;;
+esac
+printf '✓ AGENTS.md carries the generated Føhn block\n'
+
 # discovery:list is the only thing that can say what discovery found, so a run
 # against stubs proves nothing about it. This asserts the whole path at once: the
 # command is registered, the filter matches, the item is described and the
