@@ -51,6 +51,9 @@ function wp_stub_reset(): void
     }
 
     $GLOBALS['wp_stub_as_has_scheduled'] = [];
+    // Pending actions `as_get_scheduled_actions()` answers with, by hook.
+    $GLOBALS['wp_stub_as_scheduled_actions'] = [];
+    $GLOBALS['wp_stub_timezone'] = 'UTC';
     // The scheduled-event queue `_get_cron_array()` answers with. Reset, because a
     // backlog left behind by one test would make the next one report a site in trouble.
     $GLOBALS['wp_stub_cron_events'] = [];
@@ -1827,6 +1830,13 @@ if (!function_exists('wp_get_theme')) {
     }
 }
 
+if (!function_exists('wp_timezone')) {
+    function wp_timezone(): DateTimeZone
+    {
+        return new DateTimeZone($GLOBALS['wp_stub_timezone'] ?? 'UTC');
+    }
+}
+
 if (!function_exists('is_ssl')) {
     function is_ssl(): bool
     {
@@ -1880,6 +1890,60 @@ if (!function_exists('as_has_scheduled_action')) {
         wp_stub_record('as_has_scheduled_action', compact('hook', 'args', 'group'));
 
         return $GLOBALS['wp_stub_as_has_scheduled'][$hook] ?? false;
+    }
+}
+
+if (!function_exists('as_get_scheduled_actions')) {
+    /**
+     * @param array<string, mixed> $args
+     * @return array<int, object>
+     */
+    function as_get_scheduled_actions(array $args = [], string $return_format = 'OBJECT'): array
+    {
+        wp_stub_record('as_get_scheduled_actions', compact('args', 'return_format'));
+
+        return $GLOBALS['wp_stub_as_scheduled_actions'][$args['hook'] ?? ''] ?? [];
+    }
+}
+
+if (!function_exists('as_get_datetime_object')) {
+    // Same as Action Scheduler's: every date it makes is in UTC.
+    function as_get_datetime_object(mixed $date_string = null, string $timezone = 'UTC'): DateTime
+    {
+        if ($date_string instanceof DateTime) {
+            return new ActionScheduler_DateTime($date_string->format('Y-m-d H:i:s'), new DateTimeZone($timezone));
+        }
+
+        if (is_numeric($date_string)) {
+            return new ActionScheduler_DateTime('@' . $date_string, new DateTimeZone($timezone));
+        }
+
+        return new ActionScheduler_DateTime($date_string ?? 'now', new DateTimeZone($timezone));
+    }
+}
+
+if (!class_exists('ActionScheduler', false)) {
+    /**
+     * The one Action Scheduler entry point Føhn calls outside the `as_*()` functions.
+     */
+    final class ActionScheduler
+    {
+        public static function is_initialized(?string $function_name = null): bool
+        {
+            return true;
+        }
+
+        public static function store(): object
+        {
+            return new class {
+                public function save_action(ActionScheduler_Action $action): int
+                {
+                    wp_stub_record('ActionScheduler::store()->save_action', compact('action'));
+
+                    return random_int(1, 99999);
+                }
+            };
+        }
     }
 }
 

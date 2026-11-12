@@ -728,3 +728,44 @@ function removeErrorLogDirectory(string $directory): void
         rmdir($directory);
     }
 }
+
+/**
+ * Load Action Scheduler's schedule, action and cron expression classes.
+ *
+ * Action Scheduler is a WordPress plugin with its own autoloader, which needs
+ * WordPress. Its schedule classes do not: these are the real ones, so a test can
+ * check which date a schedule gives, not what a stub says. The `as_*()` functions
+ * stay stubbed in wp-stubs.php.
+ */
+function loadActionSchedulerSchedules(): void
+{
+    if (class_exists('ActionScheduler_CronSchedule', false)) {
+        return;
+    }
+
+    $root = \Composer\InstalledVersions::getInstallPath('woocommerce/action-scheduler');
+
+    foreach ([
+        'lib/cron-expression/CronExpression_FieldInterface.php',
+        'lib/cron-expression/CronExpression_AbstractField.php',
+        'lib/cron-expression/CronExpression_MinutesField.php',
+        'lib/cron-expression/CronExpression_HoursField.php',
+        'lib/cron-expression/CronExpression_DayOfMonthField.php',
+        'lib/cron-expression/CronExpression_MonthField.php',
+        'lib/cron-expression/CronExpression_DayOfWeekField.php',
+        'lib/cron-expression/CronExpression_YearField.php',
+        'lib/cron-expression/CronExpression_FieldFactory.php',
+        'lib/cron-expression/CronExpression.php',
+        'classes/ActionScheduler_DateTime.php',
+        'classes/schedules/ActionScheduler_Schedule.php',
+        'deprecated/ActionScheduler_Schedule_Deprecated.php',
+        'classes/abstracts/ActionScheduler_Abstract_Schedule.php',
+        'classes/abstracts/ActionScheduler_Abstract_RecurringSchedule.php',
+        'classes/schedules/ActionScheduler_CronSchedule.php',
+        'classes/schedules/ActionScheduler_IntervalSchedule.php',
+        'classes/actions/ActionScheduler_Action.php',
+        'classes/ActionScheduler_ScheduleDeserializer.php',
+    ] as $file) {
+        require_once $root . '/' . $file;
+    }
+}

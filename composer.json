@@ -47,7 +47,8 @@
         "php-stubs/wp-cli-stubs": "^2.12",
         "stoutlogic/acf-builder": "^1.12",
         "studiometa/ui": "^1.10",
-        "studiometa/webpack-config": "^6.4"
+        "studiometa/webpack-config": "^6.4",
+        "woocommerce/action-scheduler": "^4.2"
     },
     "autoload-dev": {
         "psr-4": {
