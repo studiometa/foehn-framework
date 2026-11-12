@@ -34,6 +34,7 @@ use Studiometa\Foehn\DebugLog\LogCommand;
 use Studiometa\Foehn\Errors\ErrorsCommand;
 use Studiometa\Foehn\Inspect\InspectCommand;
 use Studiometa\Foehn\Seeders\SeedCommand;
+use Studiometa\Foehn\Skills\AgentsMdCommand;
 use Studiometa\Foehn\Skills\SkillCommand;
 use Studiometa\Foehn\Trace\TraceCommand;
 use Studiometa\Foehn\Verification\VerifyCommand;
@@ -65,6 +66,7 @@ function foehnCommandsWrite(): array
         MakeShortcodeCommand::class => true,
         MakeTaxonomyCommand::class => true,
         SaltsGenerateCommand::class => true,
+        AgentsMdCommand::class => true,
         DbExportCommand::class => false,
         DiscoveryClearCommand::class => false,
         DiscoveryGenerateCommand::class => false,

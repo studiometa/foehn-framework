@@ -125,27 +125,27 @@ final readonly class SkillCommand implements CliCommandInterface
 
     private function listSkills(string $format): void
     {
-        $rows = array_map(static fn(Skill $skill): array => $skill->toArray(), $this->catalog->all());
+        $skills = $this->catalog->all();
 
         if ($format === 'json') {
-            $this->json($rows);
+            $this->json(array_map(static fn(Skill $skill): array => $skill->toArray(), $skills));
 
             return;
         }
 
-        if ($rows === []) {
+        if ($skills === []) {
             $this->cli->log('No installed package ships a skill.');
 
             return;
         }
 
         $this->table(
-            array_map(static fn(array $row): array => [
-                $row['name'],
-                $row['package'],
-                $row['version'] ?? '-',
-                self::summary($row['description']),
-            ], $rows),
+            array_map(static fn(Skill $skill): array => [
+                $skill->name,
+                $skill->package,
+                $skill->version ?? '-',
+                $skill->summary(100),
+            ], $skills),
             ['name', 'package', 'version', 'description'],
         );
         $this->cli->line('');
@@ -174,19 +174,6 @@ final readonly class SkillCommand implements CliCommandInterface
         foreach ($references as $file) {
             $this->cli->log($file);
         }
-    }
-
-    /**
-     * The first sentence of a description, on one line. A skill description also
-     * lists when to load it, which is for an agent and fills a terminal.
-     */
-    private static function summary(string $description): string
-    {
-        $description = trim((string) preg_replace('/\s+/', ' ', $description));
-        $match = [];
-        $sentence = preg_match('/^(.+?\.)(?:\s|$)/', $description, $match) === 1 ? $match[1] : $description;
-
-        return mb_strlen($sentence) > 100 ? rtrim(mb_substr($sentence, 0, 99)) . '…' : $sentence;
     }
 
     private function available(): string
