@@ -171,6 +171,14 @@ final readonly class PageCacheConfig
         public ?bool $debugHeaders = null,
 
         /**
+         * Warm the pages a purge removed, through Action Scheduler.
+         *
+         * After a content change, each purged URL gets a `WarmUrl` job. After a full
+         * flush, one job warms every sitemap URL instead.
+         */
+        public bool $warmAfterPurge = false,
+
+        /**
          * The sitemap or sitemap index to warm from, as a full URL.
          *
          * `null` reads the core WordPress sitemap. Set it when a plugin replaces that

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Studiometa\Foehn\PageCache;
 
 use Studiometa\Foehn\Config\PageCacheConfig;
+use Studiometa\Foehn\Contracts\JobDispatcher;
 use WP_Post;
 use WP_Term;
 
@@ -23,6 +24,11 @@ use WP_Term;
  *
  * The deletion itself belongs to {@see Invalidator}, which every other caller uses too.
  * This class decides *when* and *what*; it does not build a cache key or touch a file.
+ *
+ * With `PageCacheConfig::$warmAfterPurge` on, the commit also queues the warm-up, after
+ * the deletion, so a warm request cannot reach a page before it is gone: one
+ * {@see WarmUrl} job for each purged URL, or one {@see WarmSitemap} job after a full
+ * flush. Nothing is queued when Action Scheduler is missing.
  *
  * Two escape hatches are actions rather than methods, so a plugin, a CDN integration or
  * a project's own code can reach them without a class reference:
@@ -65,6 +71,8 @@ final class Purger
     public function __construct(
         private readonly PageCacheConfig $config,
         private readonly Invalidator $invalidator,
+        private readonly Warmer $warmer,
+        private readonly JobDispatcher $dispatcher,
         ?PurgeTargets $resolver = null,
     ) {
         $this->resolver = $resolver ?? new PurgeTargets();
@@ -224,17 +232,43 @@ final class Purger
             $this->flushQueued = false;
             $this->invalidator->flush();
 
+            if ($this->warmsAfterPurge()) {
+                $this->dispatcher->dispatch(new WarmSitemap());
+            }
+
             return;
         }
 
-        foreach ($this->targets as $url => $paginated) {
+        $targets = $this->targets;
+        $this->targets = [];
+
+        foreach ($targets as $url => $paginated) {
             // A null answer is a URL that cannot become a cache key, which means no file
             // was ever written for it. There is nothing to purge and nobody to report it
             // to: this runs on `shutdown`, with the response already on its way out.
             $this->invalidator->forgetUrl($url, $paginated);
         }
 
-        $this->targets = [];
+        if (!$this->warmsAfterPurge()) {
+            return;
+        }
+
+        // The URL alone: its `page/**` subtree fills again from traffic.
+        foreach ($this->warmer->warmable(array_keys($targets)) as $url) {
+            $this->dispatcher->dispatch(new WarmUrl($url));
+        }
+    }
+
+    /**
+     * Whether a commit queues the warm-up of what it removed.
+     *
+     * Never a warm-up in this request without a queue: this runs on `shutdown`, and
+     * forty blocking requests there would hold the editor's save for as long as forty
+     * renders take.
+     */
+    private function warmsAfterPurge(): bool
+    {
+        return $this->config->warmAfterPurge && $this->dispatcher->isAvailable();
     }
 
     /**

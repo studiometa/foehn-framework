@@ -114,9 +114,10 @@ describe('PageCacheConfig', function () {
         expect(new PageCacheConfig(debugHeaders: false)->wantsDebugHeaders())->toBeFalse();
     });
 
-    it('warms from the core sitemap, with no exclusions, until a project says otherwise', function () {
+    it('warms nothing after a purge until a project opts in', function () {
         $config = new PageCacheConfig();
 
+        expect($config->warmAfterPurge)->toBeFalse();
         expect($config->warmSitemap)->toBeNull();
         expect($config->warmExclude)->toBe([]);
     });

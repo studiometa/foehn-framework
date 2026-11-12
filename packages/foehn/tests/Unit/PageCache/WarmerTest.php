@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 use Studiometa\Foehn\Attributes\AsJob;
 use Studiometa\Foehn\Config\PageCacheConfig;
+use Studiometa\Foehn\PageCache\SitemapWarmer;
 use Studiometa\Foehn\PageCache\Warmer;
+use Studiometa\Foehn\PageCache\WarmSitemap;
 use Studiometa\Foehn\PageCache\WarmUrl;
 
 describe('Warmer', function () {
@@ -206,5 +208,20 @@ describe('Warmer', function () {
         $GLOBALS['wp_stub_remote_bodies'] = [];
 
         expect(pageCacheWarmer($config)->urls())->toBe(['http://example.com/']);
+    });
+
+    it('queues one WarmUrl job for each sitemap URL, from the job a full flush queues', function () {
+        $GLOBALS['wp_stub_sitemap_urls'] = [['loc' => 'http://example.com/blog/']];
+        $jobs = pageCacheJobs();
+
+        (new SitemapWarmer(pageCacheWarmer($this->config), $jobs))(new WarmSitemap());
+
+        expect($jobs->jobs)->toEqual([new WarmUrl('http://example.com/'), new WarmUrl('http://example.com/blog/')]);
+    });
+
+    it('handles the WarmSitemap job in the page cache group', function () {
+        $attributes = new ReflectionClass(SitemapWarmer::class)->getAttributes(AsJob::class);
+
+        expect($attributes[0]->newInstance()->group)->toBe('foehn-page-cache');
     });
 });

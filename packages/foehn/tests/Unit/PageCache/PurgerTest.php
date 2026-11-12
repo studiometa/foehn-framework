@@ -7,6 +7,8 @@ use Studiometa\Foehn\PageCache\CacheKey;
 use Studiometa\Foehn\PageCache\Invalidator;
 use Studiometa\Foehn\PageCache\Purger;
 use Studiometa\Foehn\PageCache\Store;
+use Studiometa\Foehn\PageCache\WarmSitemap;
+use Studiometa\Foehn\PageCache\WarmUrl;
 
 describe('Purger: what a post invalidates', function () {
     beforeEach(function () {
@@ -15,7 +17,7 @@ describe('Purger: what a post invalidates', function () {
         $this->config = new PageCacheConfig(enabled: true, path: $this->root);
         $this->store = new Store($this->config);
         $this->invalidator = new Invalidator($this->config, $this->store);
-        $this->purger = new Purger($this->config, $this->invalidator);
+        $this->purger = new Purger($this->config, $this->invalidator, pageCacheWarmer($this->config), pageCacheJobs());
     });
 
     it('takes the post, the front page, the author archive and the month', function () {
@@ -163,7 +165,7 @@ describe('Purger: batching', function () {
         $this->config = new PageCacheConfig(enabled: true, path: $this->root);
         $this->store = new Store($this->config);
         $this->invalidator = new Invalidator($this->config, $this->store);
-        $this->purger = new Purger($this->config, $this->invalidator);
+        $this->purger = new Purger($this->config, $this->invalidator, pageCacheWarmer($this->config), pageCacheJobs());
     });
 
     afterEach(function () {
@@ -261,7 +263,9 @@ describe('Purger: batching', function () {
             $config = new Studiometa\Foehn\Config\PageCacheConfig(enabled: true, path: sys_get_temp_dir() . '/foehn-import');
             $store = new Studiometa\Foehn\PageCache\Store($config);
             $invalidator = new Studiometa\Foehn\PageCache\Invalidator($config, $store);
-            $purger = new Studiometa\Foehn\PageCache\Purger($config, $invalidator);
+            $warmer = new Studiometa\Foehn\PageCache\Warmer($config, new Studiometa\Foehn\PageCache\Bypass($config));
+            $jobs = new Studiometa\Foehn\Jobs\ActionSchedulerJobDispatcher(new Studiometa\Foehn\Jobs\JobRegistry());
+            $purger = new Studiometa\Foehn\PageCache\Purger($config, $invalidator, $warmer, $jobs);
             $post = new WP_Post();
             $post->ID = 12;
             $GLOBALS['wp_stub_posts'][12] = $post;
@@ -285,7 +289,7 @@ describe('Purger: batching', function () {
 
     it('does nothing at all while the cache is off', function () {
         $config = new PageCacheConfig(enabled: false, path: $this->root);
-        $purger = new Purger($config, new Invalidator($config, new Store($config)));
+        $purger = pageCachePurger($config);
 
         $purger->purgePost(pageCachePost(12)->ID);
 
@@ -298,7 +302,7 @@ describe('Purger: terms and comments', function () {
         wp_stub_reset();
         $this->root = sys_get_temp_dir() . '/foehn-tests/purger-' . uniqid('', true);
         $this->config = new PageCacheConfig(enabled: true, path: $this->root);
-        $this->purger = new Purger($this->config, new Invalidator($this->config, new Store($this->config)));
+        $this->purger = pageCachePurger($this->config);
     });
 
     it('takes a term archive and the front page when a term is edited', function () {
@@ -338,5 +342,107 @@ describe('Purger: terms and comments', function () {
         $this->purger->purgeCommentTransition('approved', 'approved', (object) ['comment_post_ID' => 12]);
 
         expect($this->purger->targets())->toBe([]);
+    });
+});
+
+describe('Purger: warming after a purge', function () {
+    beforeEach(function () {
+        wp_stub_reset();
+        $this->root = sys_get_temp_dir() . '/foehn-tests/purger-' . uniqid('', true);
+        $this->config = new PageCacheConfig(enabled: true, path: $this->root, warmAfterPurge: true);
+        $this->jobs = pageCacheJobs();
+        $this->purger = pageCachePurger($this->config, $this->jobs);
+    });
+
+    it('queues one WarmUrl job for each purged URL, once the purge has run', function () {
+        $store = new Store($this->config);
+        $key = CacheKey::create('example.com', '/hello-world/');
+        $store->put($key, pageCacheBody());
+
+        $this->purger->purgePost(pageCachePost(12)->ID);
+
+        expect($this->jobs->jobs)->toBe([]);
+
+        $this->purger->commit();
+
+        expect($store->get($key))->toBeNull();
+        expect($this->jobs->jobs)->toEqual([
+            new WarmUrl('http://example.com/hello-world/'),
+            new WarmUrl('http://example.com/'),
+            new WarmUrl('http://example.com/author/7/'),
+            new WarmUrl('http://example.com/2026/08/'),
+        ]);
+    });
+
+    it('queues each URL once, however many saves purged it', function () {
+        $this->purger->purgePost(pageCachePost(12)->ID);
+        $this->purger->purgePost(pageCachePost(13, 'post', 'another')->ID);
+        $this->purger->commit();
+
+        $urls = array_map(static fn(WarmUrl $job): string => $job->url, $this->jobs->jobs);
+
+        expect($urls)->toBe(array_values(array_unique($urls)));
+        expect($urls)->toContain('http://example.com/another/');
+    });
+
+    it('queues one sitemap warm-up after a full flush, and no URL of its own', function () {
+        $this->purger->purgePost(pageCachePost(12)->ID);
+        $this->purger->queueFlush();
+        $this->purger->commit();
+
+        expect($this->jobs->jobs)->toEqual([new WarmSitemap()]);
+    });
+
+    it('queues no URL that matches warmExclude', function () {
+        $config = new PageCacheConfig(
+            enabled: true,
+            path: $this->root,
+            warmAfterPurge: true,
+            warmExclude: [
+                '/author/',
+                '/\\d{4}/',
+            ],
+        );
+        $purger = pageCachePurger($config, $this->jobs);
+
+        $purger->purgePost(pageCachePost(12)->ID);
+        $purger->commit();
+
+        expect($this->jobs->jobs)->toEqual([
+            new WarmUrl('http://example.com/hello-world/'),
+            new WarmUrl('http://example.com/'),
+        ]);
+    });
+
+    it('queues nothing while warmAfterPurge is off', function () {
+        $purger = pageCachePurger(new PageCacheConfig(enabled: true, path: $this->root), $this->jobs);
+
+        $purger->purgePost(pageCachePost(12)->ID);
+        $purger->commit();
+        $purger->queueFlush();
+        $purger->commit();
+
+        expect($this->jobs->jobs)->toBe([]);
+    });
+
+    it('warms nothing in the request when there is no queue', function () {
+        // On `shutdown`, forty blocking requests would hold the editor's save.
+        $jobs = pageCacheJobs(available: false);
+        $purger = pageCachePurger($this->config, $jobs);
+
+        $purger->purgePost(pageCachePost(12)->ID);
+        $purger->commit();
+
+        expect($jobs->jobs)->toBe([]);
+        expect(wp_stub_get_calls('wp_remote_get'))->toBe([]);
+    });
+
+    it('queues nothing on a second commit', function () {
+        $this->purger->purgePost(pageCachePost(12)->ID);
+        $this->purger->commit();
+        $count = count($this->jobs->jobs);
+        $this->purger->commit();
+
+        expect($this->jobs->jobs)->toHaveCount($count);
     });
 });
