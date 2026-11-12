@@ -508,6 +508,18 @@ ddev exec "cd /var/www/html && wp post update $corridors_id --menu_order=1" >/de
 [ "$(cached_stats)" = "no" ] || fail "saving a project did not flush the projects cache tag"
 printf '✓ %s\n' "a tagged cache entry is flushed when a project is saved"
 
+# The same save queued a #[AsJob]: dispatch() stores it in Action Scheduler, and the
+# real cron runs it. Run here by hand, it requests the plates of the project.
+# shellcheck disable=SC2016  # the container expands it, not this shell
+queued="$(ddev exec "cd /var/www/html && wp action-scheduler action list --hook=foehn/demo/jobs/warm_plates --status=pending --format=json" 2>/dev/null | tr -d '\r' | tail -n1)"
+grep -q "\"projectId\":$corridors_id}" <<<"$queued" || fail "saving a project did not queue the WarmPlates job
+$queued"
+ddev exec 'cd /var/www/html && wp action-scheduler run --hooks=foehn/demo/jobs/warm_plates' >/dev/null 2>&1 ||
+	fail "the WarmPlates job did not run"
+[ "$(ddev exec 'cd /var/www/html && wp action-scheduler action list --hook=foehn/demo/jobs/warm_plates --status=failed --format=count' 2>/dev/null | tr -d '\r' | tail -n1)" = "0" ] ||
+	fail "a WarmPlates job failed: see Tools > Scheduled Actions"
+printf '✓ %s\n' "saving a project queues a job that warms its plates, and the job runs"
+
 # The seeders in theme/app/Seeders write the whole portfolio, and they must be
 # idempotent: on a site that already holds it, they find every post by slug and
 # every photograph by its Unsplash id, and write no copy. The site here came from

@@ -41,6 +41,26 @@ final class Photograph extends Image
     }
 
     /**
+     * The widths a plate is cut at: the `src` of photograph.twig and its wide `srcset` entry.
+     */
+    public const array PLATE_WIDTHS = [600, 1200];
+
+    /**
+     * The transform of the plate at a width: 3:4 standing, 3:2 lying down, in WebP.
+     *
+     * photograph.twig gives it to `image_url()`, and Demo\Jobs\WarmPlatesHandler requests
+     * the same URLs, so the transforms it caches are the ones the page asks for.
+     *
+     * @return array{w: int, h: int, fit: string, fm: string}
+     */
+    public function plate(int $width): array
+    {
+        $ratio = $this->orientation() === 'portrait' ? 4 / 3 : 2 / 3;
+
+        return ['w' => $width, 'h' => (int) round($width * $ratio), 'fit' => 'crop', 'fm' => 'webp'];
+    }
+
+    /**
      * Portrait or landscape, which decides the ratio of the plate.
      */
     public function orientation(): string

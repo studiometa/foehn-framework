@@ -93,11 +93,12 @@ foehn_demo_seed() {
         su -s /bin/sh "${APPLICATION_USER:-application}" -c "cd /app && $1"
     }
 
-    # The revision of the content the seeders write. Bump it when they write
-    # something new: a volume seeded at an older revision runs them again, which
-    # the seeders allow because they find what they wrote by slug or by meta. A
-    # deploy that adds a page then reaches the volume already serving the site.
-    foehn_demo_revision=2
+    # The revision of the content the seeders write and of the plugins this script
+    # activates. Bump it when they write something new or a plugin is added: a
+    # volume seeded at an older revision runs them again, which the seeders allow
+    # because they find what they wrote by slug or by meta. A deploy that adds a page
+    # then reaches the volume already serving the site.
+    foehn_demo_revision=3
 
     # The marker, and not `wp core is-installed`. The two answer different
     # questions, and the difference is a state this script reached on its first
@@ -166,6 +167,13 @@ foehn_demo_seed() {
     # PressSeeder writes its values with update_field().
     if ! foehn_demo_run 'wp plugin activate advanced-custom-fields'; then
         echo "🛑 ERROR ($script_name): the ACF plugin could not be activated. The container will not start." >&2
+        return 1
+    fi
+
+    # Action Scheduler, which runs the theme's #[AsCron] and #[AsJob] classes and the
+    # warm-up of the page cache. Before the seeders: saving a project queues a job.
+    if ! foehn_demo_run 'wp plugin activate action-scheduler'; then
+        echo "🛑 ERROR ($script_name): the Action Scheduler plugin could not be activated. The container will not start." >&2
         return 1
     fi
 

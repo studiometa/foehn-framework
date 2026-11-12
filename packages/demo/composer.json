@@ -29,6 +29,7 @@
         "studiometa/foehn-acf": "0.8.0",
         "studiometa/foehn-installer": "0.8.0",
         "studiometa/ui": "^1.10",
+        "wpackagist-plugin/action-scheduler": "^3.9",
         "wpackagist-plugin/advanced-custom-fields": "^6.7"
     },
     "repositories": [
