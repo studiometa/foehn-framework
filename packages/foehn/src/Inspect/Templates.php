@@ -238,9 +238,10 @@ final readonly class Templates
      * theme directory that holds them.
      *
      * The child theme comes first, as in Timber's loader, so a view it overrides is
-     * listed once, with the child's file.
+     * listed once, with the child's file. PHP keys a numeric view name (`404`) as an
+     * int.
      *
-     * @return array<string, string>
+     * @return array<array-key, string>
      */
     private function twigFiles(): array
     {
