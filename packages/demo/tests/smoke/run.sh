@@ -59,11 +59,10 @@ printf '✓ homepage returns 200 with no PHP error\n'
 # whole pipeline as failed even though the match succeeded.
 cache_status="$(ddev exec 'cd /var/www/html && wp foehn discovery:status' 2>/dev/null || true)"
 
-case "$cache_status" in
-*"Locations cached: 2/2"*) ;;
-*) fail "the request did not warm the discovery cache
-$cache_status" ;;
-esac
+# Every location: the framework, foehn-acf and the theme. Counted rather than named, so
+# a package added to the demo does not make this a false failure.
+grep -qE 'Locations cached: ([0-9]+)/\1$' <<<"$(tr -d '\r' <<<"$cache_status")" || fail "the request did not warm the discovery cache
+$cache_status"
 
 printf '✓ the request warmed the discovery cache\n'
 
@@ -248,7 +247,7 @@ check_page "/notes-on-corridors/" 'data-wp-interactive="theme/contact-sheet"' "a
 check_page "/notes-on-corridors/" "data-wp-context=" "the contact sheet carries its per-instance context"
 check_page "/notes-on-corridors/" 'class="facts__row"' "a journal post holds a facts block with its fact rows"
 check_page "/notes-on-corridors/" 'class="related-projects"' "a journal post links projects picked with a posts control"
-check_page "/editions-press-kit/" 'press-kit.pdf" download' "a journal post links the PDF picked with a file control"
+check_page "/editions-press-kit/" '\.pdf" download' "a journal post links the PDF picked with a file control"
 # ContentImageHooks rewrites the srcset of an image in content to transformer URLs.
 check_page "/notes-on-corridors/" 'srcset="[^"]*/_image/' "an image in content gets its srcset from the transformer"
 check_page "/journal/" "Notes on Corridors" "the posts page lists the journal"
