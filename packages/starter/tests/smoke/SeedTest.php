@@ -36,3 +36,22 @@ it('reports the seeder make:seeder would write, and writes nothing', function ()
     expect($report['files'][0]['contents'])->toContain('#[AsSeeder(');
     expect(Site::path('theme/app/Seeders/EventsSeeder.php'))->not->toBeFile();
 });
+
+it('refuses to seed or generate in production without --force', function () {
+    foreach (['wp foehn seed', 'wp foehn make:seeder events'] as $command) {
+        $result = Site::run("env WP_ENVIRONMENT_TYPE=production {$command} < /dev/null");
+
+        expect($result['status'])->toBe(1, $result['output']);
+        expect($result['output'])->toContain("changes content or files, and wp_get_environment_type() is 'production'");
+    }
+
+    expect(Site::path('theme/app/Seeders/EventsSeeder.php'))->not->toBeFile();
+});
+
+it('runs a dry run in production, and declares --force', function () {
+    $seed = Site::run('env WP_ENVIRONMENT_TYPE=production wp foehn seed --dry-run < /dev/null');
+    $help = Site::run('env WP_ENVIRONMENT_TYPE=production wp help foehn seed < /dev/null');
+
+    expect($seed['status'])->toBe(0, $seed['output']);
+    expect($help['output'])->toContain('[--force]');
+});
