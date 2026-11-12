@@ -125,11 +125,9 @@ final readonly class InspectCommand implements CliCommandInterface
             return;
         }
 
-        $report = [];
-
-        foreach ($all ? ProjectInspector::SECTIONS : $sections as $section) {
-            $report[$section] = $this->inspector->section($section);
-        }
+        $report = $all
+            ? $this->inspector->all()
+            : array_combine($sections, array_map($this->inspector->section(...), $sections));
 
         if ($format === 'json') {
             $this->renderJson($report);
