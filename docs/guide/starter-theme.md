@@ -194,7 +194,7 @@ The generated `wp-config.php` turns the WordPress pseudo-cron off unless `DISABL
 
 For each release in production:
 
-1. Set `WP_ENVIRONMENT_TYPE=production` and `WP_DEBUG=false` in the environment. Do not set `DISABLE_WP_CRON=false`: production uses a real cron.
+1. Set `WP_ENVIRONMENT_TYPE=production` and `WP_DEBUG=false` in the environment. Remove the `DISABLE_WP_CRON=false` line that `composer install` copies from `.env.example` into a new `.env`: production uses a real cron.
 2. Install the dependencies: `composer install --no-dev`. The installer generates `web/` and copies `public/` into it.
 3. Build the front-end: `npm ci && npm run build`.
 4. Write the nginx snippet of the page cache, and include it in the server block: `wp foehn cache:config --server=nginx --write`. See [Installing the fast path](./page-cache.md#installing-the-fast-path).
