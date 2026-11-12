@@ -439,6 +439,18 @@ describe('SnippetPolicy', function () {
             ->toBe($hash);
     });
 
+    it('changes its hash when the headers of a hit change', function () {
+        $hash = new SnippetPolicy($this->config)->hash();
+        $with = static fn(array $options): string => new SnippetPolicy(new PageCacheConfig(...[
+            'enabled' => true,
+            'path' => constant('WP_CONTENT_DIR') . '/cache/foehn/pages',
+            ...$options,
+        ]))->hash();
+
+        expect($with(['cacheControl' => 'no-store']))->not->toBe($hash);
+        expect($with(['responseHeaders' => ['X-Frame-Options' => 'SAMEORIGIN']]))->not->toBe($hash);
+    });
+
     it('changes its hash when the generator changes, whatever the configuration', function () {
         // The hash is what `cache:status` compares an installed include against. #193
         // rewrote how every keyed arg is read, and an include generated before it carried
@@ -467,6 +479,8 @@ describe('SnippetPolicy', function () {
                 $policy->config->getCacheQueryArgs(),
                 $policy->config->cacheNotFound,
                 $policy->config->browserMaxAge,
+                $policy->config->cacheControl,
+                $policy->config->responseHeaders,
             ])),
             0,
             12,
@@ -604,6 +618,58 @@ describe('NginxSnippet', function () {
 
         expect((string) new NginxSnippet($config)->render())
             ->toContain('add_header Cache-Control "public, max-age=60, must-revalidate";');
+    });
+
+    it('sends the Cache-Control the project set, in place of the one built from max-age', function () {
+        $config = new PageCacheConfig(
+            enabled: true,
+            path: $this->config->path,
+            browserMaxAge: 60,
+            cacheControl: 'no-cache, no-store, must-revalidate',
+        );
+
+        expect((string) new NginxSnippet($config)->render())
+            ->toContain('add_header Cache-Control "no-cache, no-store, must-revalidate";')
+            ->not->toContain('max-age=60');
+    });
+
+    it('adds no header of its own when the project lists none', function () {
+        expect($this->snippet)->toMatch('/add_header X-Robots-Tag \$foehn_robots;\n\}$/');
+    });
+
+    it('repeats the server-level headers a project lists in the cache location', function () {
+        // A location with its own `add_header` drops every `add_header` of the server, so
+        // without these a hit lost the security headers the same page has on a miss.
+        $config = new PageCacheConfig(enabled: true, path: $this->config->path, responseHeaders: [
+            'X-Frame-Options' => 'SAMEORIGIN',
+            'X-XSS-Protection' => '1; mode=block',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
+
+        expect((string) new NginxSnippet($config)->render())
+            ->toContain(implode("\n", [
+                'location ^~ /wp-content/cache/foehn/ {',
+                '    internal;',
+                '    etag on;',
+                '    add_header X-Foehn-Cache HIT;',
+                '    add_header X-Foehn-Cache-Via nginx;',
+                '    add_header Cache-Control "public, max-age=0, must-revalidate";',
+                '    add_header Vary "Cookie, Accept-Encoding";',
+                '    # Empty for a page, so nginx sends nothing. See the `set` above.',
+                '    add_header X-Robots-Tag $foehn_robots;',
+                '    add_header X-Frame-Options "SAMEORIGIN";',
+                '    add_header X-XSS-Protection "1; mode=block";',
+                '    add_header X-Content-Type-Options "nosniff";',
+                '}',
+            ]));
+    });
+
+    it('refuses to write a header that would break out of the nginx string', function () {
+        $config = new PageCacheConfig(enabled: true, path: $this->config->path, responseHeaders: [
+            'X-Frame-Options' => 'SAMEORIGIN"; return 200 "owned',
+        ]);
+
+        expect(fn() => new NginxSnippet($config)->render())->toThrow(InvalidArgumentException::class);
     });
 });
 

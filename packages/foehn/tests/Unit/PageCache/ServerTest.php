@@ -17,22 +17,32 @@ use Studiometa\Foehn\PageCache\Server;
  * @param array<string, string> $server Request superglobals to set up
  * @return array{status: int, output: string}
  */
-function pageCacheServeInProcess(string $root, array $server, string $body = '', int $ttl = 0): array
-{
+function pageCacheServeInProcess(
+    string $root,
+    array $server,
+    string $body = '',
+    int $ttl = 0,
+    string $options = '',
+): array {
     $bootstrap = var_export(dirname(__DIR__, 2) . '/bootstrap.php', true);
     $script = sprintf(
         'require %s;
         $_SERVER = array_merge($_SERVER, %s);
         $config = new Studiometa\Foehn\Config\PageCacheConfig(
-            enabled: true, path: %s, ttl: %d, debugHeaders: true,
+            enabled: true, path: %s, ttl: %d, debugHeaders: true, %s
         );
         %s
-        Studiometa\Foehn\PageCache\Server::serve($config);
+        try {
+            Studiometa\Foehn\PageCache\Server::serve($config);
+        } catch (Throwable $e) {
+            echo "THROWN ";
+        }
         echo "BOOTED";',
         $bootstrap,
         var_export($server, true),
         var_export($root, true),
         $ttl,
+        $options,
         $body === ''
             ? ''
             : sprintf(
@@ -49,7 +59,6 @@ function pageCacheServeInProcess(string $root, array $server, string $body = '',
 
     return ['status' => $status, 'output' => implode("\n", $output)];
 }
-
 
 /**
  * Serve a stored 404 in its own process and report the status the drop-in set.
@@ -181,6 +190,54 @@ describe('Server: serving', function () {
 
             expect($result['output'])->toBe('<html>stored</html>');
         }
+    });
+});
+
+describe('Server: the headers of a hit', function () {
+    it('sends the freshness headers it always sent', function () {
+        expect(Server::hitHeaders(new PageCacheConfig(), 0, '"abc"'))->toBe([
+            'Content-Type: text/html; charset=UTF-8',
+            'Last-Modified: Thu, 01 Jan 1970 00:00:00 GMT',
+            'ETag: "abc"',
+            'Cache-Control: public, max-age=0, must-revalidate',
+            'Vary: Cookie, Accept-Encoding',
+        ]);
+    });
+
+    it('sends the Cache-Control the project set, as nginx does', function () {
+        $config = new PageCacheConfig(cacheControl: 'no-cache, no-store, must-revalidate');
+
+        expect(Server::hitHeaders($config, 0, '"abc"'))
+            ->toContain('Cache-Control: no-cache, no-store, must-revalidate');
+    });
+
+    it('sends the response headers the project listed, before the ones the cache owns', function () {
+        // Sent with `header()`'s replace, after the stored headers: a configured value wins
+        // over the one the page recorded, and none can replace a freshness header, because
+        // the configuration refuses those names.
+        $config = new PageCacheConfig(responseHeaders: [
+            'X-Frame-Options' => 'SAMEORIGIN',
+            'X-XSS-Protection' => '1; mode=block',
+        ]);
+
+        expect(array_slice(Server::hitHeaders($config, 0, '"abc"'), 0, 3))->toBe([
+            'X-Frame-Options: SAMEORIGIN',
+            'X-XSS-Protection: 1; mode=block',
+            'Content-Type: text/html; charset=UTF-8',
+        ]);
+    });
+
+    it('lets WordPress render the page when a configured header is unsafe', function () {
+        // `boot()` catches the exception. What matters is that it comes before any byte
+        // of the stored page is sent.
+        $result = pageCacheServeInProcess(
+            $this->root,
+            ['REQUEST_METHOD' => 'GET', 'HTTP_HOST' => 'example.com', 'REQUEST_URI' => '/blog/'],
+            '<html>stored</html>',
+            options: 'responseHeaders: ["X-Frame-Options" => "SAMEORIGIN\\r\\nSet-Cookie: a=b"],',
+        );
+
+        expect($result['output'])->toBe('THROWN BOOTED');
     });
 });
 

@@ -141,6 +141,19 @@ describe('cache:config', function () {
         'a server nobody supports' => [['server' => 'caddy']],
     ]);
 
+    it('refuses a header of a hit it cannot write, for either server', function (string $server) {
+        // Apache writes none of them, but the drop-in sends them on every setup, and one
+        // it refuses would stop it from serving without a word.
+        $unsafe = new PageCacheConfig(enabled: true, path: $this->served->path, responseHeaders: [
+            'X-Frame-Options' => 'SAMEORIGIN"; return 200 "owned',
+        ]);
+
+        (new PageCacheConfigCommand(new WpCli(), $unsafe))([], ['server' => $server]);
+
+        expect(wp_stub_get_calls('wp_cli_error')[0]['args']['message'])->toContain('responseHeaders: X-Frame-Options');
+        expect(wp_stub_get_calls('wp_cli_line'))->toBe([]);
+    })->with(['nginx', 'apache']);
+
     it('says so rather than generating a snippet no server could use', function () {
         // A cache outside the document root has no filename a web server can reach. The
         // drop-in still serves it, which is worth saying out loud.
@@ -183,6 +196,15 @@ describe('cache:status', function () {
         (new PageCacheStatusCommand(new WpCli(), $this->config, $this->store))([], []);
 
         expect(wp_stub_get_calls('wp_cli_warning'))->toHaveCount(1);
+    });
+
+    it('warns rather than claiming it is active when the drop-in refuses a header of a hit', function () {
+        $unsafe = new PageCacheConfig(enabled: true, path: $this->root, cacheControl: 'no-cache"');
+
+        (new PageCacheStatusCommand(new WpCli(), $unsafe, new Store($unsafe)))([], []);
+
+        expect(wp_stub_get_calls('wp_cli_warning')[0]['args']['message'])->toContain('cacheControl');
+        expect(wp_stub_get_calls('wp_cli_success'))->toBe([]);
     });
 
     it('reports an empty cache without inventing an age for it', function () {

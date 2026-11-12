@@ -143,14 +143,16 @@ final readonly class Server
 
     /**
      * Send a stored file and stop.
-     */
-    /**
+     *
      * @param list<string> $stored Headers recorded with the entry, already validated.
      */
     private static function send(PageCacheConfig $config, string $file, int $status = 200, array $stored = []): void
     {
         $modified = (int) filemtime($file);
         $etag = '"' . md5($file . ':' . $modified) . '"';
+        // Built before anything is sent: a config the headers refuse throws here, and the
+        // request goes on to WordPress with no header of a hit already out.
+        $headers = self::hitHeaders($config, $modified, $etag);
 
         DebugHeaders::send($config, DebugHeaders::STATE_HIT);
 
@@ -166,14 +168,11 @@ final readonly class Server
             http_response_code($status);
         }
 
-        header('Content-Type: text/html; charset=UTF-8');
-        header('Last-Modified: ' . gmdate('D, d M Y H:i:s', $modified) . ' GMT');
-        header('ETag: ' . $etag);
-        header(sprintf('Cache-Control: public, max-age=%d, must-revalidate', max(0, $config->browserMaxAge)));
-        // Cookie, because the bypass rules turn on one. Without it a shared proxy could
-        // hand a cached anonymous page to a logged-in visitor, which is the whole
-        // failure mode this feature is built to avoid.
-        header('Vary: Cookie, Accept-Encoding');
+        // Each one replaces a stored header of the same name, so a configured
+        // `responseHeaders` value wins over the one the page recorded.
+        foreach ($headers as $header) {
+            header($header);
+        }
 
         if (self::isFresh($etag, $modified)) {
             http_response_code(304);
@@ -184,6 +183,35 @@ final readonly class Server
         readfile($file);
 
         exit();
+    }
+
+    /**
+     * The headers of a hit that do not come from the stored entry.
+     *
+     * The project's `responseHeaders`, then the ones this cache owns. The nginx snippet
+     * writes the same values; see {@see ServerConfig\NginxSnippet}.
+     *
+     * @return list<string>
+     * @throws \InvalidArgumentException When the configured headers cannot be sent safely.
+     */
+    public static function hitHeaders(PageCacheConfig $config, int $modified, string $etag): array
+    {
+        $headers = [];
+
+        foreach ($config->getResponseHeaders() as $name => $value) {
+            $headers[] = $name . ': ' . $value;
+        }
+
+        $headers[] = 'Content-Type: text/html; charset=UTF-8';
+        $headers[] = 'Last-Modified: ' . gmdate('D, d M Y H:i:s', $modified) . ' GMT';
+        $headers[] = 'ETag: ' . $etag;
+        $headers[] = 'Cache-Control: ' . $config->getCacheControl();
+        // Cookie, because the bypass rules turn on one. Without it a shared proxy could
+        // hand a cached anonymous page to a logged-in visitor, which is the whole
+        // failure mode this feature is built to avoid.
+        $headers[] = 'Vary: Cookie, Accept-Encoding';
+
+        return $headers;
     }
 
     /**

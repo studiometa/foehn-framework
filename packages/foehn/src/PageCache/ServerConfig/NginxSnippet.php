@@ -72,7 +72,8 @@ final readonly class NginxSnippet
 
         $cookies = $this->policy->cookiePattern();
         $args = $this->policy->knownQueryPattern();
-        $maxAge = max(0, $this->policy->config->browserMaxAge);
+        $cacheControl = $this->policy->config->getCacheControl();
+        $responseHeaders = $this->responseHeaders();
         $hash = $this->policy->hash();
         $cacheRoot = dirname($cache);
         $maintenance = $this->policy->maintenanceUrlPath();
@@ -163,17 +164,39 @@ final readonly class NginxSnippet
             # The headers live here rather than at server level so that a miss carries no
             # header from nginx at all: PHP emits its own MISS or BYPASS with a reason, and
             # two writers of one header name produce a response with both.
+            #
+            # A location with its own `add_header` drops every `add_header` of the server
+            # level, so a hit has these headers and no other. The `responseHeaders` of the
+            # configuration come last.
             location ^~ {$cacheRoot}/ {
                 internal;
                 etag on;
                 add_header X-Foehn-Cache HIT;
                 add_header X-Foehn-Cache-Via nginx;
-                add_header Cache-Control "public, max-age={$maxAge}, must-revalidate";
+                add_header Cache-Control "{$cacheControl}";
                 add_header Vary "Cookie, Accept-Encoding";
                 # Empty for a page, so nginx sends nothing. See the `set` above.
-                add_header X-Robots-Tag \$foehn_robots;
+                add_header X-Robots-Tag \$foehn_robots;{$responseHeaders}
             }
             NGINX;
+    }
+
+    /**
+     * The `add_header` lines of the configured `responseHeaders`, each on its own line.
+     *
+     * Empty when there are none. The values are safe between double quotes:
+     * {@see PageCacheConfig::getResponseHeaders()} refuses the characters that would end
+     * the string or start a variable.
+     */
+    private function responseHeaders(): string
+    {
+        $lines = '';
+
+        foreach ($this->policy->config->getResponseHeaders() as $name => $value) {
+            $lines .= sprintf("\n    add_header %s \"%s\";", $name, $value);
+        }
+
+        return $lines;
     }
 
     /**
