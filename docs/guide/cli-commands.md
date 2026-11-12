@@ -129,7 +129,7 @@ Three sections say where content goes, so you can write it with core WP-CLI comm
 Two kinds of names meet in a template, and `inspect` reports them apart:
 
 - `templates` has one row per WordPress template a `#[AsTemplateController]` claims, such as `single-product` or `archive-*`. `controller` is the class that renders it. When several controllers claim the same template, the lowest `priority` wins (on a tie, the one discovered last), and `overridden` lists the others.
-- `views` has one row per Twig file in the theme's template directories (`TimberConfig::templatesDir`), named as `render()` names it: `templates/pages/single.twig` is `pages/single`. `providers` lists the context providers whose pattern matches that name, in the order they run. A child theme's file replaces the parent's file with the same name.
+- `views` has one row per Twig file in the theme's template directories (`TimberConfig::templatesDir`), named as `render()` names it: `templates/pages/single.twig` is `pages/single`. `providers` lists the context providers whose pattern matches that name, in the order they run. A child theme's file replaces the parent's file with the same name. In the table, what every view receives (the base keys, and the providers on `*` with their keys) is printed once above the rows, and each row shows only the providers and keys that view adds. JSON keeps all of it on every row.
 
 Context providers match view names, not WordPress templates. Which view a controller renders is decided at runtime (the starter's `SingleController` renders the first of `pages/single-{post-type}-{slug}`, `pages/single-{post-type}` and `pages/single` that exists), so `inspect` does not link a template to a view.
 

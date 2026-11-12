@@ -21,7 +21,9 @@ use Studiometa\Foehn\Console\WpCli;
     gives, for each Twig file, the context providers its name matches. Both list
     the context keys: `base` keys are always set, `declared` keys come from literal
     `with()` calls in the source and can depend on runtime conditions, and
-    `partial` says that a class also sets keys only known at runtime.
+    `partial` says that a class also sets keys only known at runtime. The `views`
+    table prints once what every view receives, the base keys and the providers on
+    `*`, and each row shows only what that view adds; JSON keeps it on every row.
 
     The post meta keys, the options and the block attributes are where content is
     stored, so an agent can write it with core commands such as `wp post meta
@@ -80,7 +82,7 @@ final readonly class InspectCommand implements CliCommandInterface
         'blocks' => ['name', 'title', 'attributes'],
         'patterns' => ['name', 'title', 'template'],
         'bindings' => ['name', 'label', 'class'],
-        'templates' => ['template', 'controller', 'context.declared'],
+        'templates' => ['template', 'controller', 'context.base', 'context.declared'],
         'views' => ['view', 'providers', 'context.declared'],
         'context-providers' => ['class', 'templates', 'keys'],
         'menus' => ['location', 'contextKey', 'class'],
@@ -232,6 +234,10 @@ final readonly class InspectCommand implements CliCommandInterface
             return;
         }
 
+        if ($name === 'views') {
+            $rows = $this->renderSharedViewContext($rows);
+        }
+
         $columns = self::TABLE_COLUMNS[$name];
         // A nested column is headed by its last segment: `context.declared` is `declared`.
         $lines = [array_map(static fn(string $column): string => array_last(explode('.', $column)), $columns)];
@@ -257,6 +263,62 @@ final readonly class InspectCommand implements CliCommandInterface
 
             $this->cli->log('  ' . rtrim(implode('  ', $cells)));
         }
+    }
+
+    /**
+     * Print once what every view receives, and return the rows without it.
+     *
+     * Every view gets the same base keys, and a provider on `*` runs for every view:
+     * repeated on each row, they would hide the providers and keys that differ.
+     * JSON keeps them on every row.
+     *
+     * @param array<mixed> $rows
+     * @return list<mixed>
+     */
+    private function renderSharedViewContext(array $rows): array
+    {
+        $rows = array_values($rows);
+        $shared = null;
+
+        foreach ($rows as $row) {
+            $providers = self::field($row, 'providers');
+            $providers = is_array($providers) ? $providers : [];
+            $shared = $shared === null ? $providers : array_values(array_intersect($shared, $providers));
+        }
+
+        $shared ??= [];
+        $declared = self::field($rows[0], 'context.declared');
+        $declared = is_array($declared) ? $declared : [];
+
+        $this->cli->log('  every view: ' . self::cell(self::field($rows[0], 'context.base')));
+
+        foreach ($shared as $provider) {
+            $keys = array_filter($declared, static fn(mixed $entry): bool => self::field($entry, 'by') === $provider);
+            $this->cli->log(sprintf(
+                '  every view, from %s: %s',
+                self::scalar($provider),
+                self::cell(array_values($keys)),
+            ));
+        }
+
+        return array_map(static function (mixed $row) use ($shared): mixed {
+            if (!is_array($row)) {
+                return $row;
+            }
+
+            $providers = self::field($row, 'providers');
+            $declared = self::field($row, 'context.declared');
+
+            $row['providers'] = array_values(array_diff(is_array($providers) ? $providers : [], $shared));
+            $row['context'] = [
+                'declared' => array_values(array_filter(
+                    is_array($declared) ? $declared : [],
+                    static fn(mixed $entry): bool => !in_array(self::field($entry, 'by'), $shared, true),
+                )),
+            ];
+
+            return $row;
+        }, $rows);
     }
 
     /**

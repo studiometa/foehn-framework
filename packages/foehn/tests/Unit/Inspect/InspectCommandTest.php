@@ -5,7 +5,10 @@ declare(strict_types=1);
 use Studiometa\Foehn\Console\WpCli;
 use Studiometa\Foehn\Inspect\InspectCommand;
 use Studiometa\Foehn\Inspect\ProjectInspector;
+use Tests\Fixtures\InspectApp\GlobalContext;
 use Tests\Fixtures\InspectApp\Product;
+use Tests\Fixtures\InspectApp\ProductCardContext;
+use Timber\Timber;
 
 function inspectCommand(): InspectCommand
 {
@@ -149,13 +152,65 @@ describe('wp foehn inspect', function () {
             ->toMatch('/shop-settings\s+\S+ShopSettings\s+shop_contact_email, shop_show_banner, shop_currency/');
     });
 
-    it('shows the controller and the declared context keys of each template', function () {
+    it('shows the controller and the base and declared context keys of each template', function () {
         inspectCommand()(['templates'], []);
 
         $output = inspectOutput();
 
-        expect($output)->toMatch('/template\s+controller\s+declared/');
-        expect($output)->toMatch('/single-product\s+\S+ProductController\s+in_stock, related/');
+        expect($output)->toMatch('/template\s+controller\s+base\s+declared/');
+        expect($output)->toMatch(
+            '/single-product\s+\S+ProductController\s+[a-z_, ]*\bpost\b[a-z_, ]*\s+in_stock, related/',
+        );
+    });
+
+    it('prints what every view receives once, and only what differs on each row', function () {
+        $theme = sys_get_temp_dir() . '/foehn-inspect-command-theme-' . uniqid();
+        mkdir($theme . '/templates/pages', 0o777, true);
+        mkdir($theme . '/templates/components', 0o777, true);
+        touch($theme . '/templates/pages/single.twig');
+        touch($theme . '/templates/components/footer.twig');
+        $GLOBALS['wp_stub_template_directory'] = $theme;
+        $dirname = Timber::$dirname;
+        Timber::$dirname = ['templates'];
+
+        try {
+            inspectCommand()(['views'], []);
+        } finally {
+            Timber::$dirname = $dirname;
+            unset($GLOBALS['wp_stub_template_directory']);
+            removeTestDirectory($theme);
+        }
+
+        $output = inspectOutput();
+
+        expect($output)->toContain('  every view: body_class, http_host');
+        expect($output)->toContain('  every view, from ' . GlobalContext::class . ': current_year');
+        expect($output)->toMatch('/pages\/single\s+' . preg_quote(ProductCardContext::class, '/') . '\s+price_label/');
+        // The provider on `*` is above the table, not on each row.
+        expect($output)->toMatch('/components\/footer\s*$/m');
+        expect(substr_count($output, GlobalContext::class))->toBe(1);
+    });
+
+    it('keeps the shared view context on every row in JSON', function () {
+        $theme = sys_get_temp_dir() . '/foehn-inspect-command-theme-' . uniqid();
+        mkdir($theme . '/templates/components', 0o777, true);
+        touch($theme . '/templates/components/footer.twig');
+        $GLOBALS['wp_stub_template_directory'] = $theme;
+        $dirname = Timber::$dirname;
+        Timber::$dirname = ['templates'];
+
+        try {
+            inspectCommand()(['views'], ['format' => 'json']);
+        } finally {
+            Timber::$dirname = $dirname;
+            unset($GLOBALS['wp_stub_template_directory']);
+            removeTestDirectory($theme);
+        }
+
+        $view = inspectJson()['views'][0];
+
+        expect($view['providers'])->toBe([GlobalContext::class]);
+        expect($view['context']['base'])->toContain('post');
     });
 
     it('prints every section as a table with --all', function () {
