@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Errors;
 
+use Closure;
 use Throwable;
 
 /**
@@ -146,7 +147,7 @@ final class ErrorRecorder
     {
         if ($this->started && !$this->recording) {
             $this->exceptionRecorded = true;
-            $this->write($this->entries->fromThrowable($throwable));
+            $this->write(fn(): array => $this->entries->fromThrowable($throwable));
         }
 
         if ($this->previousExceptionHandler !== null) {
@@ -185,7 +186,7 @@ final class ErrorRecorder
         // PHP adds the stack trace of an uncaught exception to the message.
         $message = explode("\nStack trace:", $error['message'], 2)[0];
 
-        $this->write($this->entries->fromError(
+        $this->write(fn(): array => $this->entries->fromError(
             EntryBuilder::FATAL,
             $error['type'],
             $message,
@@ -220,7 +221,7 @@ final class ErrorRecorder
             return;
         }
 
-        $this->write($this->entries->fromError(
+        $this->write(fn(): array => $this->entries->fromError(
             $level,
             $type,
             $message,
@@ -232,22 +233,36 @@ final class ErrorRecorder
     }
 
     /**
-     * @param array<string, mixed> $entry
+     * Build an entry and add it to the log.
+     *
+     * A recorder that fails must leave the error it records as it was. While it
+     * writes, its own warnings (a cache directory it cannot create, for example) are
+     * silenced, and an exception it throws is dropped: neither may reach the page or
+     * replace the exception PHP is about to report.
+     *
+     * @param Closure(): array<string, mixed> $build
      */
-    private function write(array $entry): void
+    private function write(Closure $build): void
     {
-        $key = implode('|', [$entry['level'], $entry['class'], $entry['file'], $entry['line'], $entry['message']]);
-
-        if (($this->written[$key] ?? false) || count($this->written) >= self::MAX_PER_REQUEST) {
+        if (count($this->written) >= self::MAX_PER_REQUEST) {
             return;
         }
 
-        $this->written[$key] = true;
         $this->recording = true;
+        set_error_handler(static fn(): bool => true);
 
         try {
-            $this->log->append($entry);
+            $entry = $build();
+            $key = implode('|', [$entry['level'], $entry['class'], $entry['file'], $entry['line'], $entry['message']]);
+
+            if (!($this->written[$key] ?? false)) {
+                $this->written[$key] = true;
+                $this->log->append($entry);
+            }
+        } catch (Throwable) {
+            return;
         } finally {
+            restore_error_handler();
             $this->recording = false;
         }
     }

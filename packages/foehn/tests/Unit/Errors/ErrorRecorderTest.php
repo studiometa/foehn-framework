@@ -124,6 +124,34 @@ describe('ErrorRecorder', function () {
         expect($this->log->entries())->toHaveCount(1);
     });
 
+    it('adds no warning of its own when it cannot write the log', function () {
+        // A file where the log directory should be: mkdir() fails with a warning.
+        touch($this->directory);
+        $recorder = testErrorRecorder($this->directory . '/errors');
+
+        set_error_handler(function (int $type, string $message): bool {
+            $this->handled[] = $message;
+
+            return true;
+        });
+        set_exception_handler(function (Throwable $throwable): void {
+            $this->handled[] = $throwable->getMessage();
+        });
+
+        try {
+            $recorder->start();
+            $recorder->handleException(new LogicException('Uncaught here'));
+            $recorder->handleShutdown(['type' => E_ERROR, 'message' => 'Fatal here', 'file' => __FILE__, 'line' => 1]);
+        } finally {
+            $recorder->stop();
+            restore_exception_handler();
+            restore_error_handler();
+            unlink($this->directory);
+        }
+
+        expect($this->handled)->toBe(['Uncaught here']);
+    });
+
     it('records the fatal error that ended the request, without the stack trace in its message', function () {
         $this->recorder->start();
         $this->recorder->handleShutdown([
