@@ -90,7 +90,7 @@ A command that changes content or files does not run when `wp_get_environment_ty
 Error: `wp foehn seed` changes content or files, and wp_get_environment_type() is 'production', so it did not run. Run it on a local or staging copy, add --dry-run to see what it would do, or add --force to run it here.
 ```
 
-These commands are guarded: `seed`, every `make:` command (the `foehn-acf` ones included) and `salts:generate`. Each one also takes `--dry-run`, which writes nothing and runs in production without `--force`.
+These commands are guarded: `seed`, every `make:` command (the `foehn-acf` ones included), `salts:generate` and `agents-md`. Each one also takes `--dry-run`, which writes nothing and runs in production without `--force`.
 
 `--force` lets the command run. On a `make:` command it also overwrites a file that exists, and on `salts:generate` it also replaces keys that are set. So run it with `--dry-run` first, to see what it would write.
 
@@ -357,6 +357,43 @@ The skills come from two places:
 The table gives the skill `name`, the `package`, its installed `version` and the first sentence of the `description` (from the `SKILL.md` frontmatter). The JSON gives the full `description` and also the `path` of the file relative to the project root, such as `vendor/studiometa/foehn/skills/foehn/SKILL.md`. An agent can read that path directly when WordPress cannot boot.
 
 When two packages ship a skill with the same name, both are listed and `wp foehn skill <name>` prints the first: Composer packages come before the Vite plugin, in package name order. An unknown skill or reference stops with an error that lists the valid names.
+
+### AGENTS.md Block
+
+```bash
+# Write or refresh the Føhn block in AGENTS.md
+wp foehn agents-md
+
+# Print the block and say what the command would do
+wp foehn agents-md --dry-run
+```
+
+`agents-md` writes the Føhn block in the `AGENTS.md` file at the project root. The block holds a short list of what an agent does first in a Føhn project (inspect, the `make:` commands with `--dry-run`, seeders, `errors`, `log` and `trace`), then an index of the installed skills: one line for each skill and each reference file, with the command that prints it and the first sentence of the file. A skill line also gives the path of its `SKILL.md`, which an agent reads when WordPress cannot boot.
+
+The block is between two markers:
+
+```html
+<!-- foehn:begin -->
+…
+<!-- foehn:end -->
+```
+
+| `AGENTS.md`                               | What the command does                                                                      |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Missing                                   | Creates it with the block only.                                                            |
+| No markers                                | Adds the block at the end of the file, after a blank line.                                 |
+| One begin marker, then one end            | Replaces what is between the markers. The text before and after them does not change.      |
+| Block already current                     | Writes nothing.                                                                            |
+| Other markers (one only, reversed, twice) | Stops with an error and writes nothing. Fix the markers, or remove them, and run it again. |
+
+The index is built from the same sources as `wp foehn skill`, so it follows `composer update` and `npm update` when you run the command again. Commit the change. The block has no version numbers, so it changes only when a skill, a reference or the list of installed packages changes. A Markdown formatter such as Prettier or oxfmt leaves the block as it is.
+
+| Option      | Effect                                                                                    |
+| ----------- | ----------------------------------------------------------------------------------------- |
+| `--dry-run` | Write nothing. Print the block and say what the command would do.                         |
+| `--force`   | Run in the production environment. See [Production Environment](#production-environment). |
+
+Composer does not run the command after `composer install` or `composer update`. It needs WordPress, which Composer does not boot, and a deploy that runs `composer install` would change a committed file on the server.
 
 ### Seeders
 

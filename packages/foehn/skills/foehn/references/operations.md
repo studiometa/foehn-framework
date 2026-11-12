@@ -84,7 +84,7 @@ Indexing protection is not opt-in: outside `production`, Føhn always adds `noin
 
 Check the environment before you run a command that writes on a server: `wp eval 'echo wp_get_environment_type();'`.
 
-- When it is `production`, these commands refuse to run: `seed`, every `make:*` (with the `foehn-acf` ones) and `salts:generate`. The error says why and how, and the exit status is 1. Nothing is written.
+- When it is `production`, these commands refuse to run: `seed`, every `make:*` (with the `foehn-acf` ones), `salts:generate` and `agents-md`. The error says why and how, and the exit status is 1. Nothing is written.
 - `--dry-run` writes nothing and runs in production. Use it to see what the command would do.
 - `--force` runs the command. On `make:*` it also overwrites a file that exists, and on `salts:generate` it also replaces keys that are set. Use it in production only when the user asks for that change on that site.
 - Not guarded: the commands that only read (`db:export`, `inspect`, `errors`, `log`, `trace`, `verify`, `skill`, `discovery:list`, `discovery:status`, `cache:status`) and the deploy steps (`cache:clear`, `cache:config --write`, `cache:warm`, `discovery:clear`, `discovery:generate`, `rewrite:flush`).
@@ -95,6 +95,7 @@ Check the environment before you run a command that writes on a server: `wp eval
 - `wp foehn skill --format=json` lists the skills of the installed packages: `name`, `description`, `package`, installed `version`, and `path` relative to the project root. The sources are every Composer package with a `skills/<name>/SKILL.md` (third-party packages too) and `node_modules/@studiometa/foehn-vite-plugin/skills`.
 - `wp foehn skill <name>` prints its `SKILL.md`. `--list-references` lists its reference files, and `--reference=<file>` prints one (`blocks`, `blocks.md` or `references/blocks.md`). An unknown skill or reference is an error that lists the valid names.
 - The command reads files only. When WordPress cannot boot, read the same files directly: `vendor/studiometa/*/skills/*/SKILL.md` and `node_modules/@studiometa/foehn-vite-plugin/skills/*/SKILL.md`.
+- `wp foehn agents-md` writes the Føhn block in the project's `AGENTS.md`: the first commands to run (inspect, `make:*` with `--dry-run`, seeders, `errors`, `log`, `trace`) and one line for each installed skill and reference, with the command that prints it. It replaces only what is between `<!-- foehn:begin -->` and `<!-- foehn:end -->`, adds the block at the end of a file without markers, and creates a missing file. When the block is current, it writes nothing. Broken markers (one only, reversed, twice) stop it with an error. `--dry-run` prints the block. Run it after `composer update` or `npm update`, and commit the change. Do not edit between the markers.
 
 ## Problems and errors
 
