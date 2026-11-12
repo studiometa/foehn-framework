@@ -41,7 +41,7 @@ it('serves the home page with no PHP error', function () {
     $body = (string) file_get_contents($home . '/', false, $context);
     $status = http_get_last_response_headers()[0] ?? '';
 
-    expect($status)->toContain(' 200', "{$home}/ answered {$status}");
+    expect($status)->toMatch('#^HTTP/\S+ 200\b#', "{$home}/ answered {$status}");
     // A PHP error in a template can come with a 200, so the body is checked too.
     expect(preg_match('/Fatal error|Uncaught|Parse error/i', $body))->toBe(0, 'the home page contains a PHP error');
 });
