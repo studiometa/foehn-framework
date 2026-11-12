@@ -76,3 +76,29 @@ it('clears the log', function () {
 
     expect(recordedErrors())->toBe([]);
 });
+
+it('reads the browser log that the Vite dev server writes in the theme', function () {
+    $file = Site::path('theme/dist/browser-errors.jsonl');
+    $created = !is_dir(dirname($file)) && mkdir(dirname($file), 0o775, true);
+
+    try {
+        file_put_contents($file, json_encode([
+            'time' => gmdate('Y-m-d\TH:i:s\Z'),
+            'level' => 'error',
+            'class' => 'TypeError',
+            'message' => 'Browser smoke test',
+            'file' => 'theme/assets/js/app.js',
+            'line' => 4,
+            'stack' => ['theme/assets/js/app.js:4'],
+        ])
+            . "\n");
+
+        $output = Site::run('wp foehn errors --browser')['output'];
+
+        expect($output)->toContain('TypeError: Browser smoke test');
+        expect($output)->toContain('in theme/assets/js/app.js:4');
+    } finally {
+        unlink($file);
+        $created && rmdir(dirname($file));
+    }
+});

@@ -73,4 +73,15 @@ describe('ErrorLog', function () {
 
         expect(ErrorLog::inContentDirectory()->directory())->toBe($expected);
     });
+
+    it('reads the browser log in the dist directory of the theme', function () {
+        $GLOBALS['wp_stub_template_directory'] = '/srv/site/wp-content/themes/theme/';
+
+        $log = ErrorLog::browserInTheme();
+
+        expect($log->directory())->toBe('/srv/site/wp-content/themes/theme/dist');
+        expect($log->file())->toBe('/srv/site/wp-content/themes/theme/dist/browser-errors.jsonl');
+
+        unset($GLOBALS['wp_stub_template_directory']);
+    });
 });
