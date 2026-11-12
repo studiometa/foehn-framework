@@ -105,6 +105,15 @@ Docs: [The error log](https://studiometa.github.io/foehn-framework/guide/trouble
 - File: `wp-content/cache/foehn/errors/errors.jsonl`, rotated at 256 KB, 3 files at most.
 - PHP and WordPress handle the error as before: each handler gives the error to the one before it, an uncaught exception is thrown again so PHP ends the request with its fatal error, and `WP_Fatal_Error_Handler` still shows its page.
 
+## Browser errors
+
+Docs: [Browser errors](https://studiometa.github.io/foehn-framework/guide/troubleshooting.md#browser-errors).
+
+- `wp foehn errors --browser` reads the browser log in place of the error log: the console errors and warnings, uncaught errors and unhandled rejections of the pages the Vite dev server served. Same text and JSON as the error log; `--level=error,rejection,console`; `--request` is refused; `--clear` deletes the browser log.
+- `@studiometa/foehn-vite-plugin` turns on Vite 8's `server.forwardConsole` (unless `vite.config.js` sets it) and writes each event to `<theme>/dist/browser-errors.jsonl`, beside the `hot` file, rotated at 256 KB, 3 files at most. The command reads the `dist` directory of the parent theme. Vite 6 and 7 send nothing.
+- Fields: `time`, `level` (`error`, `rejection`, `console`), `class` (`TypeError`, `console.warn`), `message` (2000 characters), `file` and `line` (first frame of the project's own code, mapped through the source map to the source line), `stack` (own frames, 8 at most, then `+N other frames`). No page URL, no request id.
+- Works on the DDEV URL and on the Vite URL: the plugin adds the DDEV site to the CORS origins of the dev server, so the page can load `/@vite/client`.
+
 ## Debug log
 
 Docs: [The debug log](https://studiometa.github.io/foehn-framework/guide/troubleshooting.md#the-debug-log).

@@ -1,6 +1,6 @@
 ---
 name: foehn-vite-plugin
-description: 'Configure the Vite build of a Føhn theme with @studiometa/foehn-vite-plugin (the `foehn()` plugin in vite.config.js and its `input`, `reload`, `outDir`, `themeDir` and `hotFile` options) and enqueue its output on the PHP side with `Studiometa\Foehn\Assets\ViteManifest` (`fromTheme()`, `fromChildTheme()`, `enqueue()`, `exists()`, `isDevServer()`). Load it when editing vite.config.js, adding a JS or CSS entry, wiring `npm run dev` / HMR or the `hot` file, debugging missing or unstyled assets, or touching an `AssetHooks` class in a theme built from studiometa/foehn-starter.'
+description: 'Configure the Vite build of a Føhn theme with @studiometa/foehn-vite-plugin (the `foehn()` plugin in vite.config.js and its `input`, `reload`, `outDir`, `themeDir` and `hotFile` options) and enqueue its output on the PHP side with `Studiometa\Foehn\Assets\ViteManifest` (`fromTheme()`, `fromChildTheme()`, `enqueue()`, `exists()`, `isDevServer()`). Load it when editing vite.config.js, adding a JS or CSS entry, wiring `npm run dev` / HMR or the `hot` file, reading the browser console errors of the page (`wp foehn errors --browser`), debugging missing or unstyled assets, or touching an `AssetHooks` class in a theme built from studiometa/foehn-starter.'
 ---
 
 # Føhn Vite plugin
@@ -74,7 +74,7 @@ The package has a default export and a named export (`import { foehn } from '@st
 | `themeDir` | `string`             | `process.cwd()`           | Base directory for `input` globs, `reload`, `outDir`, the hot file and the `.ddev/` lookup. |
 | `hotFile`  | `string`             | `"hot"`                   | Hot file name, written inside `outDir`.                                                     |
 
-The plugin also sets `build.manifest: true`. Do not set `build.outDir`, `build.manifest` or `build.rollupOptions.input` yourself; the plugin owns them.
+The plugin also sets `build.manifest: true`. Do not set `build.outDir`, `build.manifest` or `build.rollupOptions.input` yourself; the plugin owns them. In dev it sets `server.forwardConsole: true` and, with DDEV, `server.cors` to the localhost origins and the DDEV site, unless `vite.config.js` sets them.
 
 `themeDir` does not change the Vite root. Manifest keys stay relative to the Vite root, but `input` paths are relative to `themeDir`. When you set `themeDir` to a subdirectory, the entry name in PHP is the path from the Vite root, not the string in `input`.
 
@@ -185,6 +185,7 @@ To add a component, add a file in `theme/assets/js/components/` and put `data-co
 - **Do not enqueue the imported CSS by hand.** A JS entry's imported CSS is enqueued by `enqueue()`. A separate CSS `input` (like `app.css`) is its own entry and needs its own `enqueue()` call.
 - **`reload` globs are relative to `themeDir`.** The default `templates/**/*.twig` does not match the starter's `theme/templates/`. Set `reload` explicitly, as the starter does.
 - **`reload` matching is simple.** Changed files are matched with `**`, `*` and `?` only. Brace patterns like `{php,twig}` are watched but never trigger a reload; write one glob per extension.
+- **Browser errors are in a file, not only in the Vite terminal.** With Vite 8 the page sends its console errors and warnings, uncaught errors and unhandled rejections to the dev server. The plugin writes them to `<outDir>/browser-errors.jsonl` with the source file and line. Read them with `wp foehn errors --browser` (`--format=json`, `--level=error,rejection,console`), not by asking for the terminal. `server.forwardConsole: false` turns it off. See [references/dev-server.md](references/dev-server.md#browser-errors).
 - **DDEV proxy.** When `<themeDir>/.ddev/config.yaml` exists, the dev server serves its own routes and every file under the Vite root, and proxies the other requests to the DDEV site. See [references/dev-server.md](references/dev-server.md).
 
 ## Related

@@ -35,7 +35,9 @@ Entry names are the paths given to the plugin's `input` in `vite.config.js`, bec
 
 ### What it handles for you
 
-**The dev server.** While `npm run dev` runs, the plugin writes a `hot` file into the build directory (`theme/dist/hot`), holding the server's URL. `ViteManifest` then loads the Vite client and the entries from that server instead of from the build, so hot module replacement works and a stale `dist/` cannot shadow your edits. Nothing in the theme has to branch on it. In a DDEV project, the dev server URL also shows the site: Vite answers its own routes and every file it holds, and proxies the other requests to `https://<project>.ddev.site`.
+**The dev server.** While `npm run dev` runs, the plugin writes a `hot` file into the build directory (`theme/dist/hot`), holding the server's URL. `ViteManifest` then loads the Vite client and the entries from that server instead of from the build, so hot module replacement works and a stale `dist/` cannot shadow your edits. Nothing in the theme has to branch on it. In a DDEV project, the dev server URL also shows the site: Vite answers its own routes and every file it holds, and proxies the other requests to `https://<project>.ddev.site`. It also allows the DDEV site in the CORS origins of the dev server, so a page opened on the DDEV URL can load the Vite client.
+
+**Browser errors.** With Vite 8, the plugin turns on `server.forwardConsole`: the page sends its console errors and warnings and its uncaught errors to the dev server, which prints them in its terminal and the plugin writes them to `theme/dist/browser-errors.jsonl`. `wp foehn errors --browser` prints them, with the source file and line. See [Browser errors](/guide/troubleshooting#browser-errors).
 
 **The CSS a script imported.** A Vite JavaScript chunk carries the stylesheets it imported in a `css` array, separate from its own `file`. Enqueue the script and miss that array and the page loads with no styles and no error anywhere — so `enqueue()` always registers both.
 
