@@ -202,6 +202,7 @@ $head"
 }
 
 check_page "/" "card__title" "the homepage lists a selection of projects"
+check_page "/" "All 6 series" "the homepage counts the series with Project::count()"
 if curl -sk "$url/" | grep -q 'global-styles-inline-css'; then
 	fail "the homepage prints the theme.json global styles DisableGlobalStyles removes"
 fi
