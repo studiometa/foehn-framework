@@ -180,6 +180,8 @@ describe('TimberViewEngine errors', function () {
     afterEach(function () {
         unset($GLOBALS['wp_stub_template_directory'], $GLOBALS['wp_stub_stylesheet_directory']);
         Timber::$dirname = $this->dirname;
+        // A trace that listens leaves its Timber filter behind.
+        wp_stub_reset();
     });
 
     it('renders a view it finds', function () {
@@ -209,11 +211,15 @@ describe('TimberViewEngine errors', function () {
     it('tells a traced request the view renderFirst chose and the views it was asked to try', function () {
         $trace = new RequestTrace();
         $trace->begin('a1b2c3');
+        $trace->listen();
         $engine = new TimberViewEngine(new ContextProviderRegistry(), $trace);
 
         $engine->renderFirst(['missing', 'hello'], ['title' => 'Hi']);
 
-        expect($trace->toArray()['candidates'])->toBe([['view' => 'hello', 'candidates' => ['missing', 'hello']]]);
+        expect($trace->toArray()['views'][0])->toMatchArray([
+            'view' => 'hello.twig',
+            'candidates' => ['missing.twig', 'hello.twig'],
+        ]);
     });
 
     it('tells a traced request the context providers that ran, in the order they ran', function () {
@@ -234,13 +240,11 @@ describe('TimberViewEngine errors', function () {
         $registry->register(['hello'], $early, 5);
         $trace = new RequestTrace();
         $trace->begin('a1b2c3');
+        $trace->listen();
 
         new TimberViewEngine($registry, $trace)->render('hello');
 
-        expect($trace->toArray()['providers'])->toBe([
-            ['view' => 'hello', 'class' => $early::class],
-            ['view' => 'hello', 'class' => $late::class],
-        ]);
+        expect($trace->toArray()['views'][0]['providers'])->toBe([$early::class, $late::class]);
     });
 
     it('keeps the Twig error, its template and its line, and the view that was asked for', function () {

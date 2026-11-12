@@ -99,8 +99,6 @@ describe('RequestTracer', function () {
             'template',
             'controller',
             'views',
-            'candidates',
-            'providers',
             'blocks',
         ]);
         expect($trace['id'])->toBe('a1b2c3');

@@ -35,9 +35,10 @@ describe('RequestTrace', function () {
         $this->trace->tryTemplates(['singular.php', 'single.php']);
         $this->trace->useTemplateFile('theme/index.php');
         $this->trace->matchTemplate('single', 'App\\Controllers\\SingleController');
-        $this->trace->renderFirst(['pages/single-post', 'pages/single'], 'pages/single');
-        $this->trace->provideContext('pages/single', ['App\\Context\\Site', 'App\\Context\\Menus']);
-        $this->trace->provideContext('pages/single', ['App\\Context\\Site']);
+        $this->trace->renderFirst(['pages/single-post.twig', 'pages/single.twig'], 'pages/single.twig');
+        $this->trace->renderFirst(['pages/single.twig'], 'pages/single.twig');
+        $this->trace->provideContext('pages/single.twig', ['App\\Context\\Site', 'App\\Context\\Menus']);
+        $this->trace->provideContext('pages/single.twig', ['App\\Context\\Site']);
         $this->trace->renderView('pages/single.twig', ['post', 'site']);
         $this->trace->renderView('partials/card.twig', ['card']);
         $this->trace->renderView('partials/card.twig', ['card', 'index']);
@@ -53,13 +54,20 @@ describe('RequestTrace', function () {
             'template' => 'single',
             'controller' => 'App\\Controllers\\SingleController',
             'views' => [
-                ['view' => 'pages/single.twig', 'count' => 1, 'keys' => ['post', 'site']],
-                ['view' => 'partials/card.twig', 'count' => 2, 'keys' => ['card']],
-            ],
-            'candidates' => [['view' => 'pages/single', 'candidates' => ['pages/single-post', 'pages/single']]],
-            'providers' => [
-                ['view' => 'pages/single', 'class' => 'App\\Context\\Site'],
-                ['view' => 'pages/single', 'class' => 'App\\Context\\Menus'],
+                [
+                    'view' => 'pages/single.twig',
+                    'count' => 1,
+                    'keys' => ['post', 'site'],
+                    'candidates' => ['pages/single-post.twig', 'pages/single.twig'],
+                    'providers' => ['App\\Context\\Site', 'App\\Context\\Menus'],
+                ],
+                [
+                    'view' => 'partials/card.twig',
+                    'count' => 2,
+                    'keys' => ['card'],
+                    'candidates' => [],
+                    'providers' => [],
+                ],
             ],
             'blocks' => ['core/paragraph' => 2, 'app/hero' => 1],
         ]);

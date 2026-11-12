@@ -45,7 +45,7 @@ final class TimberViewEngine implements ViewEngineInterface
         $templateContext = $this->toTemplateContext($context);
 
         if ($this->trace->isTracing()) {
-            $this->trace->provideContext($template, array_map(
+            $this->trace->provideContext($resolved, array_map(
                 static fn(object $provider): string => $provider::class,
                 $this->contextProviders->providersFor($template),
             ));
@@ -81,7 +81,10 @@ final class TimberViewEngine implements ViewEngineInterface
                 continue;
             }
 
-            $this->trace->renderFirst(array_values($templates), $template);
+            $this->trace->renderFirst(
+                array_values(array_map($this->resolveTemplate(...), $templates)),
+                $this->resolveTemplate($template),
+            );
 
             return $this->render($template, $context);
         }

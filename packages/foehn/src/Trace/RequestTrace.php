@@ -54,10 +54,10 @@ final class RequestTrace
     /** @var array<string, array{count: int, keys: list<string>}> */
     private array $views = [];
 
-    /** @var list<array{view: string, candidates: list<string>}> */
+    /** @var array<string, list<string>> The views `renderFirst()` tried, by the view it rendered */
     private array $candidates = [];
 
-    /** @var list<array{view: string, class: string}> */
+    /** @var array<string, list<string>> The context provider classes, by view */
     private array $providers = [];
 
     /** @var array<string, int> */
@@ -138,7 +138,7 @@ final class RequestTrace
             return;
         }
 
-        if (isset($this->views[$view])) {
+        if (array_key_exists($view, $this->views)) {
             $this->views[$view]['count']++;
 
             return;
@@ -182,33 +182,45 @@ final class RequestTrace
     /**
      * The view `renderFirst()` rendered, and the views it was asked to try.
      *
+     * Both are file names, as Timber gives them to renderView(): `pages/single.twig`.
+     *
      * @param list<string> $candidates
      */
     public function renderFirst(array $candidates, string $view): void
     {
-        if ($this->isTracing() && count($this->candidates) < self::MAX_ITEMS) {
-            $this->candidates[] = ['view' => $view, 'candidates' => array_slice($candidates, 0, self::MAX_ITEMS)];
+        if (
+            !$this->isTracing()
+            || array_key_exists($view, $this->candidates)
+            || count($this->candidates) >= self::MAX_ITEMS
+        ) {
+            return;
         }
+
+        $this->candidates[$view] = array_slice($candidates, 0, self::MAX_ITEMS);
     }
 
     /**
      * The context providers that ran for a view, in the order they ran.
      *
+     * The view is a file name, as Timber gives it to renderView(): `pages/single.twig`.
+     *
      * @param list<string> $classes
      */
     public function provideContext(string $view, array $classes): void
     {
-        if (!$this->isTracing()) {
+        if (!$this->isTracing() || $classes === []) {
             return;
         }
 
-        foreach ($classes as $class) {
-            $provider = ['view' => $view, 'class' => $class];
-
-            if (count($this->providers) < self::MAX_ITEMS && !in_array($provider, $this->providers, true)) {
-                $this->providers[] = $provider;
-            }
+        if (!array_key_exists($view, $this->providers) && count($this->providers) >= self::MAX_ITEMS) {
+            return;
         }
+
+        $this->providers[$view] = array_slice(
+            array_values(array_unique([...($this->providers[$view] ?? []), ...$classes])),
+            0,
+            self::MAX_ITEMS,
+        );
     }
 
     /**
@@ -220,9 +232,13 @@ final class RequestTrace
             return;
         }
 
-        if (isset($this->blocks[$name])) {
+        if (array_key_exists($name, $this->blocks)) {
             $this->blocks[$name]++;
-        } elseif (count($this->blocks) < self::MAX_ITEMS) {
+
+            return;
+        }
+
+        if (count($this->blocks) < self::MAX_ITEMS) {
             $this->blocks[$name] = 1;
         }
     }
@@ -251,9 +267,7 @@ final class RequestTrace
      *     templateFile: string|null,
      *     template: string|null,
      *     controller: string|null,
-     *     views: list<array{view: string, count: int, keys: list<string>}>,
-     *     candidates: list<array{view: string, candidates: list<string>}>,
-     *     providers: list<array{view: string, class: string}>,
+     *     views: list<array{view: string, count: int, keys: list<string>, candidates: list<string>, providers: list<string>}>,
      *     blocks: array<string, int>,
      * }
      */
@@ -262,7 +276,12 @@ final class RequestTrace
         $views = [];
 
         foreach ($this->views as $view => $rendered) {
-            $views[] = ['view' => $view, ...$rendered];
+            $views[] = [
+                'view' => $view,
+                ...$rendered,
+                'candidates' => $this->candidates[$view] ?? [],
+                'providers' => $this->providers[$view] ?? [],
+            ];
         }
 
         return [
@@ -271,8 +290,6 @@ final class RequestTrace
             'template' => $this->template,
             'controller' => $this->controller,
             'views' => $views,
-            'candidates' => $this->candidates,
-            'providers' => $this->providers,
             'blocks' => $this->blocks,
         ];
     }
