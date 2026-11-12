@@ -168,6 +168,14 @@ describe('ProjectConventions::view()', function () {
         expect($hint->exists)->toBeTrue()->and($hint->note())->toStartWith('Edit templates/pages/single-recipe.twig');
     });
 
+    it('names the Timber directory that holds the views of the same kind', function () {
+        Timber::$dirname = ['templates', 'views'];
+        // A root `404.twig` has the view name 404, which PHP keys as an int.
+        conventionsTheme($this->theme, ['templates/404.twig', 'views/pages/single.twig']);
+
+        expect($this->conventions->view('single', 'event')->file)->toBe('views/pages/single-event.twig');
+    });
+
     it('falls back to the root of the Timber directory', function () {
         expect($this->conventions->view('single', 'event')->file)->toBe('templates/single-event.twig');
     });

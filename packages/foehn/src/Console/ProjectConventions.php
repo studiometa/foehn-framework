@@ -10,7 +10,7 @@ use Studiometa\Foehn\Discovery\PostTypeDiscovery;
 use Studiometa\Foehn\Discovery\TemplateControllerDiscovery;
 use Studiometa\Foehn\Discovery\TemplateControllerMap;
 use Studiometa\Foehn\Inspect\DiscoveredItems;
-use Studiometa\Foehn\Inspect\ProjectInspector;
+use Studiometa\Foehn\Inspect\Templates;
 use Timber\Timber;
 
 /**
@@ -109,22 +109,23 @@ final readonly class ProjectConventions
             $template,
         );
 
-        /** @var list<array{view: string, file: string}> $views */
-        $views = new ProjectInspector($this->runner)->section('views')['views'] ?? [];
+        $files = new Templates($this->items)->twigFiles();
         $perType = array_map(static fn(string $type): string => "{$kind}-{$type}", $this->postTypes());
         $directories = ['perType' => [], 'generic' => []];
-        $root = null;
+        $roots = [];
 
-        foreach ($views as $row) {
-            $root ??= substr($row['file'], 0, -strlen($row['view'] . '.twig'));
-            $name = basename($row['view']);
-            $directory = dirname($row['view']) === '.' ? '' : dirname($row['view']);
+        foreach ($files as $name => $file) {
+            // PHP makes a numeric key, the view of a root `404.twig`, an int.
+            $name = (string) $name;
+            $directory = dirname($name) === '.' ? '' : dirname($name);
+            // The Timber directory that holds the file, e.g. 'templates/'.
+            $roots[$directory] ??= substr($file, 0, -strlen($name . '.twig'));
 
-            if (in_array($name, $perType, true)) {
+            if (in_array(basename($name), $perType, true)) {
                 $directories['perType'][] = $directory;
             }
 
-            if ($name === $kind) {
+            if (basename($name) === $kind) {
                 $directories['generic'][] = $directory;
             }
         }
@@ -133,14 +134,14 @@ final readonly class ProjectConventions
         // controllers fall back to comes next.
         $directory = self::mostCommon($directories['perType'])[0] ?? self::mostCommon($directories['generic'])[0] ?? '';
         $view = ltrim("{$directory}/{$template}", '/');
-        $root ??= rtrim(self::timberDirectory(), '/') . '/';
+        $root = $roots[$directory] ?? rtrim(self::timberDirectory(), '/') . '/';
 
         return new ViewHint(
             template: $template,
             view: $view,
             file: $root . $view . '.twig',
             controller: $controller['className'] ?? null,
-            exists: in_array($view, array_column($views, 'view'), true),
+            exists: array_key_exists($view, $files),
             directory: $directory,
         );
     }
