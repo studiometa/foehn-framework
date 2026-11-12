@@ -83,8 +83,12 @@ final readonly class Templates
      *
      * What repeats from row to row is given once: `base`, the keys every view
      * receives, `providers`, the keys each matching provider adds, and `everyView`,
-     * the providers that match every view. A row keeps only the other providers, in
-     * the order they run.
+     * the providers on `*`, which match every view name. A row keeps only the other
+     * providers, in the order they run.
+     *
+     * `everyView` is read from the patterns, not from the files: a provider on
+     * `pages/*` that happens to match every file listed would not reach a view added
+     * in `components/`.
      *
      * @return array{
      *     base: list<string>,
@@ -96,34 +100,23 @@ final readonly class Templates
     public function views(): array
     {
         $providers = $this->providers();
-        /** @var array<string, array{file: string, providers: list<class-string>}> $matched */
-        $matched = [];
-
-        foreach ($this->twigFiles() as $view => $file) {
-            $matched[$view] = [
-                'file' => $file,
-                'providers' => array_column(self::matchingProviders($view, $providers), 'class'),
-            ];
-        }
-
-        $everyView = null;
-
-        foreach ($matched as $entry) {
-            $everyView = $everyView === null
-                ? $entry['providers']
-                : array_values(array_intersect($everyView, $entry['providers']));
-        }
-
-        $everyView ??= [];
-        $used = [];
+        $global = array_filter($providers, static fn(array $provider): bool => in_array(
+            '*',
+            $provider['templates'],
+            true,
+        ));
+        usort($global, static fn(array $a, array $b): int => $a['priority'] <=> $b['priority']);
+        $everyView = array_column($global, 'class');
+        $used = $everyView;
         $rows = [];
 
-        foreach ($matched as $view => $entry) {
-            $used = [...$used, ...$entry['providers']];
+        foreach ($this->twigFiles() as $view => $file) {
+            $matching = array_column(self::matchingProviders($view, $providers), 'class');
+            $used = [...$used, ...$matching];
             $rows[] = [
                 'view' => $view,
-                'file' => $entry['file'],
-                'providers' => array_values(array_diff($entry['providers'], $everyView)),
+                'file' => $file,
+                'providers' => array_values(array_diff($matching, $everyView)),
             ];
         }
 

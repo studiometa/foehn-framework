@@ -174,14 +174,14 @@ Both sections give the Twig variables that can be known without rendering. What 
       "wp_title"
     ],
     "providers": {
-      "App\\ContextProviders\\GlobalContextProvider": {
-        "priority": 10,
-        "keys": ["current_year"],
-        "partial": false
-      },
       "App\\ContextProviders\\CardContextProvider": {
         "priority": 10,
         "keys": ["price_label"],
+        "partial": false
+      },
+      "App\\ContextProviders\\GlobalContextProvider": {
+        "priority": 10,
+        "keys": ["current_year"],
         "partial": false
       }
     },
@@ -203,7 +203,7 @@ Both sections give the Twig variables that can be known without rendering. What 
 | `base`                     | Keys that are always set: `post`, `posts`, `site`, `user`, the Timber global context (`theme`, `http_host`, `wp_title`, `body_class`), and `menus` when the project declares a `#[AsMenu]`. A value can be `null` (`post` on an archive, `user` for a visitor)                                                                                                                                                                                                                                              |
 | `templates[].request`      | Keys that `Timber::context()` adds for the request that template answers, on top of `base`: `term` on a category, tag or taxonomy archive, `search_query` on `search`, `author` on `author`. A wildcard that reaches several kinds of request adds none                                                                                                                                                                                                                                                     |
 | `controllers`, `providers` | Each controller that claims a template, and each provider that matches a view, by class: its `priority`, its `keys` and `partial`. `keys` are read from the source of the class: each literal `->with('key', …)` call in the class, its parent classes and their traits. A call can sit in a condition, so a key is not guaranteed at runtime. `partial` is `true` when the class also sets keys that only exist at runtime: `with($name, …)`, `merge()` or `withDto()`. Its `keys` list is then incomplete |
-| `everyView`                | The providers that match every view, such as a provider on `*`. They are not repeated on the rows                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `everyView`                | The providers on `*`, which match every view name, in the order they run. They are not repeated on the rows                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `views[].providers`        | The other providers whose pattern matches that view, in the order they run. With `everyView`, they run in `priority` order                                                                                                                                                                                                                                                                                                                                                                                  |
 
 The tables give the same data: `base` and the providers in `everyView` with their keys are printed once above the rows, and each row shows the keys of its controller or of its own providers.

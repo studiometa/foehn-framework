@@ -328,6 +328,27 @@ describe('ProjectInspector', function () {
         ]);
     });
 
+    it('lists in everyView only the providers on `*`, whatever files the theme holds', function () {
+        // ProductCardContext matches every file listed here, but not a view added in
+        // another directory: it stays on the row.
+        $theme = $GLOBALS['wp_stub_template_directory'];
+        mkdir($theme . '/templates/pages', 0o777, true);
+        touch($theme . '/templates/pages/single.twig');
+
+        $views = inspector()->section('views');
+
+        expect($views['everyView'])->toBe([GlobalContext::class]);
+        expect($views['views'][0]['providers'])->toBe([ProductCardContext::class]);
+    });
+
+    it('lists the providers on `*` when the theme has no Twig file', function () {
+        $views = inspector()->section('views');
+
+        expect($views['everyView'])->toBe([GlobalContext::class]);
+        expect(array_keys($views['providers']))->toBe([GlobalContext::class]);
+        expect($views['views'])->toBe([]);
+    });
+
     it('runs providers for a view in the order the registry runs them', function () {
         $theme = $GLOBALS['wp_stub_template_directory'];
         mkdir($theme . '/templates/pages', 0o777, true);
