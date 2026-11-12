@@ -677,3 +677,35 @@
   background: none;
   border: 0;
 }
+
+/* ── Block pages ────────────────────────────────────────── */
+
+/* A page laid out by its blocks: the hero and the sections run the full width,
+   everything else keeps the measure of the prose column. */
+.blocks > :not(.hero, .section) {
+  max-width: 62ch;
+  margin-inline: var(--gutter);
+}
+
+.blocks > * + * {
+  margin-top: 1.25rem;
+}
+
+.blocks > .hero + * {
+  margin-top: clamp(1.5rem, 4vw, 3rem);
+}
+
+.blocks h2 {
+  margin-top: 2.5rem;
+  font-size: var(--text-lead);
+  font-weight: 500;
+}
+
+.blocks .section__inner {
+  max-width: 62ch;
+  padding-inline: var(--gutter);
+}
+
+.blocks .section__inner > * + * {
+  margin-top: 1rem;
+}

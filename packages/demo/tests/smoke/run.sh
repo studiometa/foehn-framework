@@ -217,6 +217,12 @@ check_page "/projects/corridors/" "plate--" "a project page shows its photograph
 # The theme's own js-toolkit components are mounted by file name, from app.js.
 check_page "/projects/corridors/" 'data-component="CopyLink"' "a project page mounts a component of the theme"
 check_page "/about/" "prose" "the about page renders its copy"
+# The blocks, the binding and the pattern are only worth registering if a visitor
+# sees them: PageSeeder writes the About page as block markup.
+check_page "/about/" 'class="hero hero--small"' "the about page opens with the hero block"
+check_page "/about/" 'callout callout--success' "the about page holds the commission pattern, callout included"
+check_page "/about/" 'minute read' "the reading-time binding computes its value on the about page"
+check_page "/projects/corridors/" '<p class="wp-block-paragraph">Hasselblad 500C/M' "core/post-meta binds the camera meta in a project's content"
 # The footer links every page to it, so a missing page is a 404 on every page.
 check_page "/legal/" "Unsplash licence" "the legal page the footer links to exists"
 

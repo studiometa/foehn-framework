@@ -109,7 +109,9 @@ final readonly class HeroBlock implements BlockInterface
         return new HeroContext(
             title: (string) ($attributes['title'] ?? ''),
             subtitle: $subtitle === '' ? null : $subtitle,
-            background: ImageData::fromAttachmentId($attributes['backgroundId'] ?? null),
+            // The `hero` size HeroImageSize registers, 1920x1080 cropped. WordPress falls
+            // back to the original for a photograph too small to be cut to it.
+            background: ImageData::fromAttachmentId($attributes['backgroundId'] ?? null, 'hero'),
             cta: self::cta($attributes),
             height: (string) ($attributes['height'] ?? 'medium'),
         );

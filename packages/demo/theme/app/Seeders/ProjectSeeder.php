@@ -79,6 +79,14 @@ final class ProjectSeeder implements SeederInterface
         ],
     ];
 
+    /**
+     * A paragraph bound to the `camera` meta through core's `core/post-meta` source.
+     *
+     * The value is stored once, as meta, and the page prints it twice: in the facts
+     * beside the title, and here in the content, with no binding source of our own.
+     */
+    private const string CAMERA_BINDING = "\n<!-- wp:paragraph {\"className\":\"label\"} -->\n<p class=\"label\">Shot on</p>\n<!-- /wp:paragraph -->\n<!-- wp:paragraph {\"metadata\":{\"bindings\":{\"content\":{\"source\":\"core/post-meta\",\"args\":{\"key\":\"camera\"}}}}} -->\n<p></p>\n<!-- /wp:paragraph -->";
+
     public function run(): void
     {
         $order = 0;
@@ -92,7 +100,7 @@ final class ProjectSeeder implements SeederInterface
                 [
                     'post_title' => $project['title'],
                     'post_excerpt' => $project['excerpt'],
-                    'post_content' => $project['content'],
+                    'post_content' => $project['content'] . self::CAMERA_BINDING,
                     'menu_order' => ++$order,
                 ],
                 [
