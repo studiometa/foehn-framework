@@ -25,6 +25,7 @@ use Tests\Fixtures\InspectApp\Product;
 use Tests\Fixtures\InspectApp\ProductCardContext;
 use Tests\Fixtures\InspectApp\ProductController;
 use Tests\Fixtures\InspectApp\ProductsEndpoint;
+use Tests\Fixtures\InspectApp\SampleProductsSeeder;
 use Tests\Fixtures\InspectApp\ShopSettings;
 use Tests\Fixtures\InspectApp\StockBinding;
 use Tests\Fixtures\InspectApp\StripeWebhook;
@@ -84,6 +85,7 @@ describe('ProjectInspector', function () {
         expect($summary['menus'])->toBe(['primary']);
         expect($summary['templates'])->toContain('single-product');
         expect($summary['cli-commands'])->toContain('foehn inspect');
+        expect($summary['seeders'])->toBe([SampleProductsSeeder::class]);
     });
 
     it('reports the same model from a warm discovery cache', function () {
@@ -475,6 +477,12 @@ describe('ProjectInspector', function () {
         expect($commands)->toContain('foehn inspect');
         expect(inspectedRow(inspector()->section('cli-commands'), 'command', 'foehn shop:sync')['class'])
             ->toBe(SyncCommand::class);
+    });
+
+    it('reports the seeders in the order wp foehn seed runs them', function () {
+        expect(inspector()->section('seeders'))->toBe([
+            ['class' => SampleProductsSeeder::class, 'order' => 20, 'description' => 'Sample products'],
+        ]);
     });
 
     it('reports active, network-activated and must-use plugins with their versions', function () {

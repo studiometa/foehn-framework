@@ -6,6 +6,7 @@ namespace Studiometa\Foehn\Inspect;
 
 use InvalidArgumentException;
 use Studiometa\Foehn\Discovery\DiscoveryRunner;
+use Studiometa\Foehn\Seeders\SeederCatalog;
 
 /**
  * The project model: what a Føhn project declares, as plain data.
@@ -37,6 +38,7 @@ final readonly class ProjectInspector
         'rewrite-rules',
         'rest-routes',
         'cli-commands',
+        'seeders',
         'plugins',
         'theme-supports',
         'vite',
@@ -50,6 +52,8 @@ final readonly class ProjectInspector
 
     private Environment $environment;
 
+    private SeederCatalog $seeders;
+
     public function __construct(DiscoveryRunner $runner)
     {
         $items = new DiscoveredItems($runner);
@@ -58,6 +62,7 @@ final readonly class ProjectInspector
         $this->registrations = new Registrations($items);
         $this->templates = new Templates($items);
         $this->environment = new Environment();
+        $this->seeders = new SeederCatalog($runner);
     }
 
     /**
@@ -119,6 +124,7 @@ final readonly class ProjectInspector
             'rewrite-rules' => $this->registrations->rewriteRules(),
             'rest-routes' => $this->registrations->restRoutes(),
             'cli-commands' => $this->registrations->cliCommands(),
+            'seeders' => $this->seeders(),
             'plugins' => $this->environment->plugins(),
             'theme-supports' => $this->environment->themeSupports(),
             'vite' => $this->environment->vite(),
@@ -161,6 +167,7 @@ final readonly class ProjectInspector
                 'rewrite-rules' => $row['regex'],
                 'rest-routes' => $row['method'] . ' ' . $row['path'],
                 'cli-commands' => $row['command'],
+                'seeders' => $row['class'],
                 'theme-supports' => $row['feature'],
                 'vite' => $row['entry'],
                 default => $row['name'],
@@ -168,5 +175,19 @@ final readonly class ProjectInspector
         }
 
         return $names;
+    }
+
+    /**
+     * The seeders, in the order `wp foehn seed` runs them.
+     *
+     * @return list<array{class: string, order: int, description: string}>
+     */
+    private function seeders(): array
+    {
+        return array_map(static fn(array $seeder): array => [
+            'class' => $seeder['className'],
+            'order' => $seeder['attribute']->order,
+            'description' => $seeder['attribute']->description,
+        ], $this->seeders->all());
     }
 }

@@ -15,7 +15,7 @@ use Studiometa\Foehn\Console\WpCli;
     Timber model classes, taxonomies, settings pages with their options, blocks with
     their attributes, patterns, block bindings, templates, Twig views, context
     providers, menus, image sizes, rewrite rules, REST routes, `wp foehn` commands,
-    active plugins, theme supports and the Vite entry points.
+    seeders, active plugins, theme supports and the Vite entry points.
 
     `templates` gives the controller that renders each WordPress template. `views`
     gives, for each Twig file, the context providers its name matches. Both give
@@ -27,7 +27,8 @@ use Studiometa\Foehn\Console\WpCli;
 
     The post meta keys, the options and the block attributes are where content is
     stored, so an agent can write it with core commands such as `wp post meta
-    update` and `wp option update`.
+    update` and `wp option update`. Sample content goes in a seeder instead, so
+    `wp foehn seed` can write it again: `seeders` lists them in run order.
 
     The report is built from what discovery found, so it reads the attributes the
     code declares. Run it before writing code in a project you do not know, and use
@@ -44,7 +45,7 @@ use Studiometa\Foehn\Console\WpCli;
     [<section>...]
     : The sections to print in full. Any of post-types, taxonomies, settings,
       blocks, patterns, bindings, templates, views, context-providers, menus,
-      image-sizes, rewrite-rules, rest-routes, cli-commands, plugins,
+      image-sizes, rewrite-rules, rest-routes, cli-commands, seeders, plugins,
       theme-supports, vite.
 
     [--all]
@@ -90,6 +91,7 @@ final readonly class InspectCommand implements CliCommandInterface
         'rewrite-rules' => ['regex', 'query', 'class'],
         'rest-routes' => ['method', 'path', 'handler'],
         'cli-commands' => ['command', 'description'],
+        'seeders' => ['class', 'order', 'description'],
         'plugins' => ['name', 'version', 'file'],
         'theme-supports' => ['feature', 'value'],
         'vite' => ['entry', 'file', 'css'],

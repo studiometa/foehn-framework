@@ -152,6 +152,16 @@ describe('wp foehn inspect', function () {
             ->toMatch('/shop-settings\s+\S+ShopSettings\s+shop_contact_email, shop_show_banner, shop_currency/');
     });
 
+    it('shows the class, order and description of each seeder in the table', function () {
+        inspectCommand()(['seeders'], []);
+
+        $output = inspectOutput();
+
+        expect($output)->toContain('seeders — 1');
+        expect($output)->toMatch('/class\s+order\s+description/');
+        expect($output)->toMatch('/\S+SampleProductsSeeder\s+20\s+Sample products/');
+    });
+
     it('shows the base keys once, and the controller and context keys of each template', function () {
         inspectCommand()(['templates'], []);
 
