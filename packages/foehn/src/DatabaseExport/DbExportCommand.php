@@ -161,7 +161,6 @@ final readonly class DbExportCommand implements CliCommandInterface
         }
 
         if ($plan->uncovered !== []) {
-            $this->cli->stderr('');
             $this->cli->warning(sprintf(
                 'No rule covers %d tables, so they were exported without rows: %s. Declare them in app/db-export.config.php.',
                 count($plan->uncovered),
