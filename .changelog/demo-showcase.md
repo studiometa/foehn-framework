@@ -5,6 +5,7 @@
 - The demo schedules two `#[AsCron]` jobs: one on a daily interval that warms the plates of every project, and one on the cron expression `0 0 1 1 *` that empties the page cache at midnight on 1 January. Its seeded site timezone is Europe/Paris, so the expression runs at midnight in Paris.
 - The demo has two commands of its own under `wp app`: `projects:stats`, which only reads, and `projects:reorder`, which declares `writes: true` and so runs in production only with `--dry-run` or `--force`.
 - The demo turns on `SecurityHeaders`, `DisableFileEditor`, `RestApiAuth` and `CleanContent`.
+- The demo has a `foehn.local.config.php` that starts from `foehn.config.php` and turns on `debug`, `recordErrors` and `traceRequests`, and its footer prints the environment from `Env::get()`.
 
 ### Changed
 

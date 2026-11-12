@@ -232,6 +232,8 @@ users_status="$(curl -sk -o /dev/null -w '%{http_code}' "$url/wp-json/wp/v2/user
 [ "$users_status" = "404" ] || fail "GET /wp-json/wp/v2/users answered a visitor with HTTP $users_status, not 404"
 printf '✓ %s\n' "RestApiAuth removes the users route for a visitor"
 
+# The footer prints Env::get(), the environment that also picks foehn.local.config.php.
+check_page "/" '>Environment: local<' "the footer prints the environment"
 # SettingsSeeder turns the banner on, so the public demo says it is one.
 check_page "/" 'class="banner' "the banner from the theme settings is on every page"
 check_page "/projects/" "index-row__title" "the projects index lists the series"

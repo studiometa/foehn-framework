@@ -6,6 +6,7 @@ namespace Demo\ContextProviders;
 
 use Studiometa\Foehn\Attributes\AsContextProvider;
 use Studiometa\Foehn\Contracts\ContextProviderInterface;
+use Studiometa\Foehn\Helpers\Env;
 use Studiometa\Foehn\Settings\Settings;
 use Studiometa\Foehn\Views\TemplateContext;
 
@@ -27,6 +28,9 @@ final class GlobalContextProvider implements ContextProviderInterface
         // the empty string WordPress stores for an unchecked box.
         return $context
             ->with('current_year', date('Y'))
+            // wp_get_environment_type(), which also picks the config files Føhn reads:
+            // foehn.local.config.php in ddev, foehn.config.php alone in production.
+            ->with('environment', Env::get())
             ->with('is_home', is_front_page())
             ->with('contact_email', Settings::get('demo_contact_email'))
             ->with('show_banner', Settings::get('demo_show_banner'))

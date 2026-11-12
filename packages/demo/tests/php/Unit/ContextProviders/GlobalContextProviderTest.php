@@ -30,4 +30,21 @@ describe('GlobalContextProvider', function () {
         expect($result['current_year'])->toBe(date('Y'));
         expect($result)->toHaveKey('is_home');
     });
+
+    it('adds the environment the config files are chosen by', function () {
+        $GLOBALS['wp_stub_environment_type'] = 'staging';
+
+        try {
+            $result = new GlobalContextProvider()->provide(new TemplateContext(
+                post: null,
+                posts: null,
+                site: new Site(),
+                user: null,
+            ));
+        } finally {
+            unset($GLOBALS['wp_stub_environment_type']);
+        }
+
+        expect($result['environment'])->toBe('staging');
+    });
 });

@@ -77,6 +77,10 @@ $declared = require get_template_directory() . '/app/foehn.config.php';
 
 $results->same('foehn.config.php is loaded (opt-in hooks)', $declared->hooks, $config->hooks);
 
+// In ddev and CI the environment is `local`, so foehn.local.config.php replaces the
+// shared file: it starts from it and turns the developer options on.
+$results->true('foehn.local.config.php is the one loaded in local', $config->debug && $config->tracesRequests());
+
 $results->true('opt-in security hooks are applied', has_filter('xmlrpc_enabled') !== false);
 
 // DisableFileEditor defines the constant on `init`, which has run by now.
