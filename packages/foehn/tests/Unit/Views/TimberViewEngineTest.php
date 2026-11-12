@@ -6,6 +6,8 @@ use Studiometa\Foehn\Contracts\ContextProviderInterface;
 use Studiometa\Foehn\Views\ContextProviderRegistry;
 use Studiometa\Foehn\Views\TemplateContext;
 use Studiometa\Foehn\Views\TimberViewEngine;
+use Studiometa\Foehn\Views\ViewRenderingFailed;
+use Timber\Timber;
 
 describe('TimberViewEngine', function () {
     beforeEach(function () {
@@ -160,5 +162,61 @@ describe('TimberViewEngine context providers', function () {
 
         // The second provider should see data added by the first
         expect($capturedContext->get('added_by_provider'))->toBe('yes');
+    });
+});
+
+describe('TimberViewEngine errors', function () {
+    beforeEach(function () {
+        $this->theme = realpath(testFixturePath('ViewTheme'));
+        $this->dirname = Timber::$dirname;
+        $GLOBALS['wp_stub_template_directory'] = $this->theme;
+        $GLOBALS['wp_stub_stylesheet_directory'] = $this->theme;
+        Timber::$dirname = 'templates';
+
+        $this->engine = new TimberViewEngine(new ContextProviderRegistry());
+    });
+
+    afterEach(function () {
+        unset($GLOBALS['wp_stub_template_directory'], $GLOBALS['wp_stub_stylesheet_directory']);
+        Timber::$dirname = $this->dirname;
+    });
+
+    it('renders a view it finds', function () {
+        expect($this->engine->render('hello', ['title' => 'Hi']))->toContain('<h1>Hi</h1>');
+        expect($this->engine->exists('hello'))->toBeTrue();
+        expect($this->engine->exists('nowhere'))->toBeFalse();
+    });
+
+    it('names the view, the directories it searched and the file to create', function () {
+        expect(fn() => $this->engine->render('pages/single'))
+            ->toThrow(
+                ViewRenderingFailed::class,
+                "No template found for the view 'pages/single'. Searched pages/single.twig in: {$this->theme}, {$this->theme}/templates."
+                . " Fix: create {$this->theme}/templates/pages/single.twig.",
+            );
+    });
+
+    it('names every view renderFirst tried', function () {
+        expect(fn() => $this->engine->renderFirst(['single-product', 'single']))
+            ->toThrow(
+                ViewRenderingFailed::class,
+                "No template found for the views 'single-product', 'single'. Searched single-product.twig, single.twig in: {$this->theme}, {$this->theme}/templates."
+                . " Fix: create one of single-product.twig, single.twig in {$this->theme}/templates.",
+            );
+    });
+
+    it('keeps the Twig error, its template and its line, and the view that was asked for', function () {
+        try {
+            $this->engine->render('page');
+        } catch (ViewRenderingFailed $exception) {
+            expect($exception->getMessage())
+                ->toStartWith("Rendering the view 'page' failed in partials/card.twig at line 2: ");
+            expect($exception->getMessage())->toContain('Unable to find template "partials/missing.twig"');
+            expect($exception->getPrevious())->toBeInstanceOf(Twig\Error\LoaderError::class);
+
+            return;
+        }
+
+        $this->fail('Rendering a template that includes a missing one did not throw.');
     });
 });
