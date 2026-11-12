@@ -4,13 +4,17 @@ declare(strict_types=1);
 
 use Studiometa\Foehn\Discovery\CronDiscovery;
 use Studiometa\Foehn\Discovery\DiscoveryProblems;
+use Studiometa\Foehn\Jobs\SiteTimezoneCronSchedule;
 use Tests\Fixtures\CronCustomHookFixture;
+use Tests\Fixtures\CronExpressionFixture;
 use Tests\Fixtures\CronFixture;
+use Tests\Fixtures\InvalidCronExpressionFixture;
 use Tests\Fixtures\InvalidCronFixture;
 use Tests\Fixtures\NoAttributeFixture;
 
 beforeEach(function () {
     wp_stub_reset();
+    loadActionSchedulerSchedules();
     $this->location = testDiscoveryLocation();
     $this->discovery = new CronDiscovery($this->problems = new DiscoveryProblems());
 });
@@ -105,6 +109,53 @@ describe('CronDiscovery', function () {
         // But as_schedule_recurring_action should NOT be called
         $scheduleCalls = wp_stub_get_calls('as_schedule_recurring_action');
         expect($scheduleCalls)->toHaveCount(0);
+    });
+
+    it('schedules a cron expression in the site timezone', function () {
+        $GLOBALS['wp_stub_timezone'] = 'Europe/Paris';
+
+        $this->discovery->discover(
+            $this->location,
+            new \Tempest\Reflection\ClassReflector(CronExpressionFixture::class),
+        );
+        $this->discovery->apply();
+
+        expect(wp_stub_get_calls('as_schedule_recurring_action'))->toBeEmpty();
+
+        $saveCalls = wp_stub_get_calls('ActionScheduler::store()->save_action');
+        expect($saveCalls)->toHaveCount(1);
+
+        /** @var ActionScheduler_Action $action */
+        $action = $saveCalls[0]['args']['action'];
+        expect($action->get_hook())->toBe('foehn/tests/fixtures/cron_expression_fixture');
+        expect($action->get_args())->toBe([]);
+        expect($action->get_group())->toBe('foehn');
+
+        $schedule = $action->get_schedule();
+        expect($schedule)->toBeInstanceOf(SiteTimezoneCronSchedule::class);
+        expect($schedule->get_recurrence())->toBe('0 0 * * *');
+
+        // The first run is the next midnight in Paris.
+        $expected = new DateTimeImmutable('tomorrow', new DateTimeZone('Europe/Paris'));
+        expect($schedule->get_date()->getTimestamp())->toBe($expected->getTimestamp());
+    });
+
+    it('reports an invalid cron expression and skips the class', function () {
+        $this->discovery->discover(
+            $this->location,
+            new \Tempest\Reflection\ClassReflector(InvalidCronExpressionFixture::class),
+        );
+
+        expect($this->discovery->getItems())->toHaveCount(0);
+        expect($this->problems->all()[0]['attribute'])->toBe('#[AsCron]');
+        expect($this->problems->all()[0]['reason'])
+            ->toBe(
+                InvalidCronExpressionFixture::class
+                . ' has #[AsCron] with an invalid schedule, so the event is not scheduled.'
+                . ' "0 0 * *" is not a valid cron expression: it must have 5 fields'
+                . ' (minute, hour, day of month, month, day of week), it has 4.',
+            );
+        expect($this->problems->all()[0]['fix'])->toContain('`0 0 * * *`');
     });
 
     it('does nothing on apply when no items discovered', function () {
