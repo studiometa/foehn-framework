@@ -103,9 +103,8 @@ final class BlockAssets
      * `@wordpress/interactivity`, which WordPress resolves through the import map
      * it prints for registered modules. Modules are deferred and run in strict
      * mode, so nothing has to be said about load order.
-     */
-    /**
-     * @param list<array{id: string}> $dependencies
+     *
+     * @param list<array{id: string}> $dependencies The modules it imports, such as `@wordpress/interactivity`
      */
     private static function registerScriptModule(string $relativePath, string $id, array $dependencies): ?string
     {
