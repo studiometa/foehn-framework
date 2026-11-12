@@ -147,7 +147,7 @@ final class BlockDiscovery implements Discovery
         }
 
         // Per-block stylesheet and front-end script, found by convention
-        $args += BlockAssets::register($blockName);
+        $args += BlockAssets::register($blockName, $attribute->interactivity);
 
         // Register the block
         register_block_type($blockName, $args);
