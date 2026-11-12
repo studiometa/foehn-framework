@@ -52,6 +52,10 @@ COMPOSER=composer.monorepo.json composer update studiometa/foehn studiometa/foeh
 rm composer.monorepo.json composer.monorepo.lock
 ```
 
+### Seeded content
+
+`wp foehn seed` writes the whole site: thirty photographs, six projects, three testimonials, the Home, About and Legal pages, three journal posts in the Notes category, the menus and the theme settings. The journal post "Contact sheets for the studio" is protected by the password `foehn`.
+
 ## Where it runs
 
 It is up at **<https://foehn-demo.fly.dev>**, so the site can be looked at without installing anything.

@@ -1,11 +1,22 @@
 {% extends 'layouts/base.twig' %}
 
 {% block content %}
-  {# Anything that is not a project: a journal entry, mostly. #}
+  {# Anything that is not a project: a journal entry, written in blocks by JournalSeeder. #}
   <article>
     <header class="shell masthead">
       <p class="label label--ink index-number">{{ post.date('d.m.Y') }}</p>
       <h1 class="title" style="margin-top: 0.75rem">{{ post.title }}</h1>
+
+      {% if post.terms('category') or post.terms('post_tag') %}
+        <p class="label" style="margin-top: 1.5rem">
+          {% for term in post.terms('category') %}
+            <a href="{{ term.link }}">{{ term.name }}</a> /
+          {% endfor %}
+          {% for term in post.terms('post_tag') %}
+            <a href="{{ term.link }}">#{{ term.name }}</a>
+          {% endfor %}
+        </p>
+      {% endif %}
 
       {% if post.post_excerpt %}
         <p class="lead" style="margin-top: clamp(1rem, 3vw, 2rem)">{{ post.post_excerpt }}</p>

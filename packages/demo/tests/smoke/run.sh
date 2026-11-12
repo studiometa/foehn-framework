@@ -226,6 +226,25 @@ check_page "/projects/corridors/" '<p class="wp-block-paragraph">Hasselblad 500C
 # The footer links every page to it, so a missing page is a 404 on every page.
 check_page "/legal/" "Unsplash licence" "the legal page the footer links to exists"
 
+# The journal is where the content blocks are seen. Each needle is the block's own
+# markup, so a block that rendered nothing fails here.
+check_page "/notes-on-corridors/" 'data-wp-interactive="theme/contact-sheet"' "a journal post holds the interactive contact sheet"
+check_page "/notes-on-corridors/" "data-wp-context=" "the contact sheet carries its per-instance context"
+check_page "/notes-on-corridors/" 'class="facts__row"' "a journal post holds a facts block with its fact rows"
+check_page "/notes-on-corridors/" 'class="related-projects"' "a journal post links projects picked with a posts control"
+check_page "/editions-press-kit/" 'press-kit.pdf" download' "a journal post links the PDF picked with a file control"
+# ContentImageHooks rewrites the srcset of an image in content to transformer URLs.
+check_page "/notes-on-corridors/" 'srcset="[^"]*/_image/' "an image in content gets its srcset from the transformer"
+check_page "/category/notes/" "index-row__title" "the category archive lists the journal"
+check_page "/tag/film/" "index-row__title" "a tag archive lists its posts"
+check_page "/studio-contact-sheets/" 'name="post_password"' "the seeded protected post asks for its password"
+
+# The contact sheet only works if its module can import the Interactivity API, which
+# WordPress maps only for a declared dependency.
+grep -q '"@wordpress/interactivity"' <<<"$(curl -sk "$url/notes-on-corridors/")" ||
+	fail "the contact sheet's view module cannot import @wordpress/interactivity: it is not in the import map"
+printf '✓ %s\n' "the import map gives the contact sheet the Interactivity API"
+
 # A password-protected post has to answer with WordPress's password form and with
 # nothing the password guards. Both controllers send it to pages/password, which
 # the demo did not ship, so either one threw "Failed to render template" and
@@ -440,7 +459,7 @@ printf '✓ every photograph is credited\n'
 # the dump, which is a seeded site, so no count may move.
 content_counts() {
 	# shellcheck disable=SC2016  # the container expands $type, not this shell
-	ddev exec 'cd /var/www/html && for type in project testimonial page nav_menu_item; do wp post list --post_type=$type --post_status=any --format=count; done; wp post list --post_type=attachment --post_status=inherit --meta_key=unsplash_id --format=count' 2>/dev/null |
+	ddev exec 'cd /var/www/html && for type in project testimonial page post nav_menu_item; do wp post list --post_type=$type --post_status=any --format=count; done; wp post list --post_type=attachment --post_status=inherit --meta_key=unsplash_id --format=count' 2>/dev/null |
 		tr -d '\r' | grep -xE '[0-9]+' | tr '\n' ' '
 }
 
@@ -451,7 +470,7 @@ $(printf '%s\n' "$seed_output" | grep -v Deprecated | tail -12)"
 after="$(content_counts)"
 
 [ -n "$before" ] && [ "$before" = "$after" ] || fail "a second seed changed the amount of content
-  before: $before (projects, testimonials, pages, menu items, photographs)
+  before: $before (projects, testimonials, pages, posts, menu items, photographs)
   after:  $after"
 
 printf '✓ wp foehn seed runs again and duplicates nothing\n'

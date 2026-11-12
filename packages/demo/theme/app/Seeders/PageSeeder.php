@@ -78,7 +78,7 @@ final class PageSeeder implements SeederInterface
      */
     private static function aboutContent(?int $background): string
     {
-        $hero = self::block('theme/hero', [
+        $hero = BlockMarkup::block('theme/hero', [
             'title' => 'About',
             'subtitle' => self::ABOUT_EXCERPT,
             'backgroundId' => $background,
@@ -87,25 +87,25 @@ final class PageSeeder implements SeederInterface
             'ctaUrl' => '/projects/',
         ]);
 
-        $readingTime = self::block(
+        $readingTime = BlockMarkup::block(
             'paragraph',
             ['className' => 'label', 'metadata' => ['bindings' => ['content' => ['source' => 'theme/reading-time']]]],
             '<p class="label"></p>',
         );
 
         $copy = [
-            self::paragraph(
+            BlockMarkup::paragraph(
                 'I have been photographing since 2016, first for architects, now mostly for publishers and institutions. My personal work and my commissioned work look much the same: same equipment, same light, same refusal of colour.',
             ),
-            self::paragraph(
+            BlockMarkup::paragraph(
                 'Black and white is not nostalgia. It is a way of removing a variable — the colour of a wall, the colour of a sky — so that only structure and light are left. On a building site or in a studio it comes down to the same question: where is the line, and where is the light coming from?',
             ),
-            self::block('heading', ['level' => 2], '<h2 class="wp-block-heading">Services</h2>'),
-            self::paragraph(
+            BlockMarkup::block('heading', ['level' => 2], '<h2 class="wp-block-heading">Services</h2>'),
+            BlockMarkup::paragraph(
                 'Architectural reportage, editorial portraiture, still life and artwork reproduction. Prints available on request, in numbered limited editions.',
             ),
-            self::block('heading', ['level' => 2], '<h2 class="wp-block-heading">Selected clients</h2>'),
-            self::paragraph(
+            BlockMarkup::block('heading', ['level' => 2], '<h2 class="wp-block-heading">Selected clients</h2>'),
+            BlockMarkup::paragraph(
                 'Water Journal, Grille Editions, Contrejour Review, and several architecture practices across the Rhine valley.',
             ),
         ];
@@ -113,30 +113,5 @@ final class PageSeeder implements SeederInterface
         $pattern = WP_Block_Patterns_Registry::get_instance()->get_registered('theme/commission');
 
         return implode("\n\n", [$hero, $readingTime, ...$copy, is_array($pattern) ? $pattern['content'] : '']);
-    }
-
-    private static function paragraph(string $text): string
-    {
-        return self::block('paragraph', [], '<p>' . $text . '</p>');
-    }
-
-    /**
-     * Block markup: the comment delimiters around the saved HTML, or a self-closing
-     * comment for a dynamic block that saves none.
-     *
-     * @param array<string, mixed> $attributes
-     */
-    private static function block(string $name, array $attributes, string $html = ''): string
-    {
-        $attributes = array_filter($attributes, static fn(mixed $value): bool => $value !== null);
-        $json = $attributes === []
-            ? ''
-            : ' ' . wp_json_encode($attributes, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-
-        if ($html === '') {
-            return "<!-- wp:{$name}{$json} /-->";
-        }
-
-        return "<!-- wp:{$name}{$json} -->\n{$html}\n<!-- /wp:{$name} -->";
     }
 }

@@ -42,6 +42,20 @@ $regenerated = 0;
 $skipped = 0;
 
 foreach ($attachments as $id) {
+    // A file that is not a photograph, such as the press kit PDF of JournalSeeder,
+    // names its file in `demo_file`. It is copied back and has no sub-sizes.
+    $file = get_post_meta($id, 'demo_file', true);
+    $target = get_attached_file($id);
+
+    if (is_string($file) && $file !== '' && is_string($target) && is_file($mediaDir . '/' . $file)) {
+        if (!file_exists($target)) {
+            wp_mkdir_p(dirname($target));
+            copy($mediaDir . '/' . $file, $target) ? $copied++ : WP_CLI::warning("could not write {$target}");
+        }
+
+        continue;
+    }
+
     $unsplashId = get_post_meta($id, 'unsplash_id', true);
     $entry = is_string($unsplashId) ? $byId[$unsplashId] ?? null : null;
 

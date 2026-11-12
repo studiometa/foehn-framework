@@ -14,6 +14,7 @@ use Studiometa\Foehn\Hooks\Security\DisableXmlRpc;
 use Studiometa\Foehn\Hooks\Security\GenericLoginErrors;
 use Studiometa\Foehn\Hooks\StudiometaUi;
 use Studiometa\Foehn\Hooks\YouTubeNoCookieHooks;
+use Studiometa\Foehn\Images\ContentImageHooks;
 use Studiometa\Foehn\Images\GlideTransformer;
 use Studiometa\Foehn\Images\ImageCacheHooks;
 use Tempest\Discovery\DiscoveryCacheStrategy;
@@ -35,6 +36,10 @@ return new FoehnConfig(
         // a crop in the media library would go on serving the old ones forever. This
         // forgets an image's transforms when the image itself changes.
         ImageCacheHooks::class,
+        // An image an editor puts in content gets its srcset from the transformer, at
+        // the widths a layout asks for, rather than from the sizes WordPress cut at
+        // upload. See the journal posts.
+        ContentImageHooks::class,
         // Registers the @ui and @svg Twig namespaces studiometa/ui ships its
         // components under. Inert when the package is not installed.
         StudiometaUi::class,

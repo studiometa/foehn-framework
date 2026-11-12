@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Demo\Seeders\JournalSeeder;
 use Demo\Seeders\MediaSeeder;
 use Demo\Seeders\MenuSeeder;
 use Demo\Seeders\PageSeeder;
@@ -39,6 +40,7 @@ describe('Seeders', function () {
             MediaSeeder::class,
             ProjectSeeder::class,
             PageSeeder::class,
+            JournalSeeder::class,
             TestimonialSeeder::class,
             SettingsSeeder::class,
             MenuSeeder::class,
