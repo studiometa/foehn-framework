@@ -43,11 +43,27 @@ final class ClassFileGenerator
         $manipulator = new ClassManipulator($request->stub);
         $manipulator
             ->setStrictTypes()
-            ->setNamespace($this->resolveNamespace($path))
+            ->setNamespace($request->namespace ?? $this->resolveNamespace($path))
             ->setClassName($request->className)
             ->removeClassAttribute(SkipDiscovery::class);
 
+        // Imported, so the class reads `extends Post` rather than `extends \Timber\Post`.
+        $parent = $request->parent ?? get_parent_class($request->stub);
+
+        if ($parent !== false) {
+            $manipulator->addExtend($parent)->addUse($parent);
+        }
+
         $this->rewriteClassAttribute($manipulator, $request);
+
+        foreach ($request->attributes as $attribute) {
+            $manipulator->addClassAttribute($attribute['name'], $attribute['arguments']);
+        }
+
+        foreach ($request->methods as $name => $method) {
+            $manipulator->addMethod($name, $method['body'], returnType: $method['returnType']);
+        }
+
         $this->replaceInBodies($manipulator, $request);
 
         return new GeneratedFile($path, $this->applyReplacements($manipulator->print(), $request));

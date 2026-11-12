@@ -50,6 +50,31 @@ describe('ClassFileGenerator paths and namespaces', function () {
         expect($file->contents)->toContain('namespace Theme\\Models;');
     });
 
+    it('takes the namespace and the parent class a request gives', function () {
+        $file = $this->generator->generate(new GenerationRequest(
+            stub: ModelStub::class,
+            subdirectory: 'Content',
+            className: 'Product',
+            namespace: 'Shop\\Content',
+            parent: \Studiometa\Foehn\Models\Post::class,
+        ));
+
+        expect($file->contents)
+            ->toContain('namespace Shop\\Content;')
+            ->toContain('use Studiometa\\Foehn\\Models\\Post;')
+            ->toContain('final class Product extends Post');
+    });
+
+    it('imports the parent class of the stub', function () {
+        $file = $this->generator->generate(new GenerationRequest(
+            stub: ModelStub::class,
+            subdirectory: 'Models',
+            className: 'Product',
+        ));
+
+        expect($file->contents)->toContain('use Timber\\Post;')->toContain('final class Product extends Post');
+    });
+
     it('resolves a nested subdirectory into nested namespace segments', function () {
         $file = $this->generator->generate(new GenerationRequest(
             stub: ModelStub::class,
