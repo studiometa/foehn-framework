@@ -1,3 +1,7 @@
+### Added
+
+- The starter has a seeder, `App\Seeders\MenusSeeder`: `wp foehn seed` creates the header, footer and legal menus with a Home link when they are missing, and assigns them to their locations. A second run creates nothing.
+
 ### Changed
 
 - The starter `.env.example` sets `DISABLE_WP_CRON=false`, so WordPress cron, `#[AsCron]`, `#[AsJob]` and the page-cache warm-up run in a new local project. Production keeps the default (`true`) and a real cron. Add the line to the `.env` of a local project created from an earlier starter.
