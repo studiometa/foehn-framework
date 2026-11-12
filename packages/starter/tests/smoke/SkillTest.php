@@ -69,3 +69,16 @@ it('refuses an unknown skill and names the valid ones', function () {
     expect($result['status'])->not->toBe(0);
     expect($result['output'])->toContain("Unknown skill 'widgets'")->toContain('foehn');
 });
+
+it('prints the Føhn block of AGENTS.md and writes nothing with --dry-run', function () {
+    $agents = dirname(__DIR__, 2) . '/AGENTS.md';
+    $before = is_file($agents) ? file_get_contents($agents) : null;
+    $result = Site::run('wp foehn agents-md --dry-run');
+
+    expect($result['status'])->toBe(0, $result['output']);
+    expect($result['output'])
+        ->toContain('<!-- foehn:begin -->')
+        ->toContain('`wp foehn skill foehn` (`vendor/studiometa/foehn/skills/foehn/SKILL.md`)')
+        ->toContain('<!-- foehn:end -->');
+    expect(is_file($agents) ? file_get_contents($agents) : null)->toBe($before);
+});

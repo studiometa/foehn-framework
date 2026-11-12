@@ -91,6 +91,12 @@ ddev wp foehn inspect --format=json       # post types, blocks, templates, conte
 
 The skills are read from `vendor/` and `node_modules/`, so they follow `composer update` and `npm update` with nothing to pin. To install them in an agent's own skill directory instead, see [AI Agents](https://studiometa.github.io/foehn-framework/guide/ai-agents).
 
+`AGENTS.md` holds a generated Føhn block between `<!-- foehn:begin -->` and `<!-- foehn:end -->`: the first commands an agent runs, and an index of the installed skills and their references. After `composer update` or `npm update`, refresh it and commit the change. The command changes nothing outside the markers:
+
+```bash
+ddev wp foehn agents-md
+```
+
 ## Front-end
 
 ```bash
