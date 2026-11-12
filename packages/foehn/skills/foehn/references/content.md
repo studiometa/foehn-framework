@@ -90,7 +90,7 @@ Inside controllers you can also use `Timber::get_posts([...])`. The demo does th
 Store a date as a `Y-m-d` string with `type: 'string'`. Meta queries compare it with `type => 'DATE'`, and the order of the strings is the order of the dates. A time goes in `Y-m-d H:i:s` with `type => 'DATETIME'`.
 
 ```php
-#[AsPostType(name: 'event', singular: 'Event', plural: 'Events', hasArchive: true, rewriteSlug: 'events')]
+#[AsPostType(name: 'event', singular: 'Event', plural: 'Events', hasArchive: true, rewriteSlug: 'events', supports: ['title', 'editor', 'thumbnail', 'custom-fields'])]
 #[AsPostMeta(key: 'start_date', type: 'string', description: 'Start date, Y-m-d')]
 final class Event extends Post
 {
@@ -107,7 +107,7 @@ In Twig, `{% if post.startDate %}{{ post.startDate|date('j F Y') }}{% endif %}`.
 
 In a controller or provider, the next three events: `Event::query()->whereMeta('start_date', wp_date('Y-m-d'), '>=', 'DATE')->orderByMeta('start_date', 'ASC')->limit(3)->get()`. `wp_date()` gives today in the site time zone.
 
-The post type archive is the main query, so change it in `pre_get_posts`. Set defaults only: keep the `meta_query` that is there, and keep `orderby`, `order` and `posts_per_page` when the visitor or `QueryFiltersHook` set them. Priority 20 runs after `QueryFiltersHook`, which empties a refused `posts_per_page`.
+The post type archive is the main query, so change it in `pre_get_posts`. Set defaults only: keep the `meta_query` that is there, and keep `orderby`, `order` and `posts_per_page` when the visitor or `QueryFiltersHook` set them. Priority 20 runs after `QueryFiltersHook`, which empties a refused `posts_per_page`. The `custom-fields` support lets editors edit the date: see [Editing meta values](#editing-meta-values).
 
 ```php
 #[AsAction('pre_get_posts', priority: 20)]
@@ -117,18 +117,26 @@ public function upcomingEvents(\WP_Query $query): void
         return;
     }
 
-    // Add a named clause. Do not replace the meta_query.
-    $metaQuery = $query->get('meta_query') ?: [];
-    $metaQuery['upcoming'] = [
-        'key' => 'start_date',
-        'value' => wp_date('Y-m-d'),
-        'compare' => '>=',
-        'type' => 'DATE',
+    // A named clause, joined with AND to the meta_query that is there:
+    // added inside it, the clause would follow its relation, which can be OR.
+    $metaQuery = [
+        'relation' => 'AND',
+        'upcoming' => [
+            'key' => 'start_date',
+            'value' => wp_date('Y-m-d'),
+            'compare' => '>=',
+            'type' => 'DATE',
+        ],
     ];
+    $existing = $query->get('meta_query');
+    if (is_array($existing) && $existing !== []) {
+        $metaQuery[] = $existing;
+    }
     $query->set('meta_query', $metaQuery);
 
-    if (!$query->get('orderby') && !$query->get('order')) {
-        $query->set('orderby', ['upcoming' => 'ASC']); // the named clause, soonest first
+    if (!$query->get('orderby')) {
+        $query->set('orderby', 'upcoming'); // the named clause
+        $query->set('order', $query->get('order') ?: 'ASC'); // soonest first
     }
 
     if (!$query->get('posts_per_page')) {
@@ -206,7 +214,7 @@ Føhn registers the key. It adds no field, meta box or form to the admin. What a
 
 - **REST and the block editor**: WordPress puts `meta` in the REST response of a post type only when the type supports `custom-fields`. Add `'custom-fields'` to `supports`. Without it, the key is registered but the editor cannot read or save it.
 - **Custom Fields panel**: with `custom-fields` support, the editor turns on Preferences > General > Advanced > Custom fields. The panel lists keys that do not start with `_`, as text.
-- **Block bindings**: a paragraph, heading, button or image bound to the key with `core/post-meta` shows the value on the front end. With `custom-fields` support, the editor also shows the value in the block and saves an edit to the meta (WordPress 6.7 and later). A key starting with `_` or with `showInRest: false` does not bind.
+- **Block bindings**: a paragraph, heading, button or image bound to the key with `core/post-meta` shows the value on the front end. With `custom-fields` support, the editor also shows the value in the block and saves an edit to the meta. A key starting with `_` or with `showInRest: false` does not bind.
 - **ACF**: a field group (the `foehn-acf` skill) gives a real form: date picker, select, repeater. `#[AsPostMeta]` on the same key keeps the REST schema.
 - **A custom form**: an `add_meta_box()` call in an `#[AsAction('add_meta_boxes')]` method and a `save_post` action. Føhn has no helper for this.
 
