@@ -9,7 +9,7 @@ use Studiometa\Foehn\Attributes\AsPostType;
 use Studiometa\Foehn\Contracts\ConfiguresPostType;
 use Studiometa\Foehn\Models\Post;
 use Studiometa\Foehn\PostTypes\PostTypeBuilder;
-use Timber\Image;
+use Timber\Timber;
 
 /**
  * A body of work — one series of photographs, shown on its own page.
@@ -113,7 +113,7 @@ final class Project extends Post implements ConfiguresPostType
     /**
      * Every photograph in the series, the cover included.
      *
-     * @return list<Image>
+     * @return list<Photograph>
      */
     public function photographs(): array
     {
@@ -126,9 +126,10 @@ final class Project extends Post implements ConfiguresPostType
         $photographs = [];
 
         foreach ($ids as $id) {
-            $image = Image::build(get_post((int) $id));
+            // Through the class map, so each one is a Photograph.
+            $image = Timber::get_post((int) $id);
 
-            if ($image instanceof Image) {
+            if ($image instanceof Photograph) {
                 $photographs[] = $image;
             }
         }

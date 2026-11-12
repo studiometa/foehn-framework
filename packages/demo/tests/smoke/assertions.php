@@ -296,6 +296,25 @@ $results->true(
     (get_registered_meta_keys('post', 'project')['client']['show_in_rest'] ?? false) !== false,
 );
 
+// #[AsTimberModel] maps a type the theme does not register: every attachment Timber
+// builds is a Photograph, with the credit the templates print.
+$photographId = (int) (
+    get_posts([
+        'post_type' => 'attachment',
+        'post_status' => 'inherit',
+        'meta_key' => 'unsplash_id',
+        'posts_per_page' => 1,
+        'fields' => 'ids',
+    ])[0] ?? 0
+);
+$photograph = Timber\Timber::get_post($photographId);
+
+$results->true('an attachment is built as the Photograph model', $photograph instanceof Demo\Models\Photograph);
+$results->true(
+    'a photograph carries its credit',
+    $photograph instanceof Demo\Models\Photograph && $photograph->credit()?->title !== null,
+);
+
 // ──────────────────────────────────────────────
 // Settings
 // ──────────────────────────────────────────────
