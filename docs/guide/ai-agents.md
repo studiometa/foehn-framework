@@ -28,7 +28,7 @@ When WordPress cannot boot, `wp foehn skill` cannot run. The agent then reads th
 The starter ships an `AGENTS.md` at the project root, and a `CLAUDE.md` that imports it for Claude Code. It tells the agent to:
 
 1. read the skills with `wp foehn skill`, or from `vendor/` and `node_modules/` when WordPress cannot boot;
-2. run `wp foehn inspect --format=json` to read what the project already declares: post types and their meta keys, settings, blocks and their attributes, templates and their controllers, Twig views and their context keys, menus, routes, plugins and Vite entries;
+2. run `wp foehn inspect --format=json` to read the summary of what the project already declares, then `wp foehn inspect post-types templates views menus settings --format=json` to read in full the post types and their meta keys, templates and their controllers, Twig views and their context keys, menu locations and settings;
 3. create classes with the `make:*` commands, first with `--dry-run --format=json`, which writes nothing and prints the file it would write;
 4. run `wp foehn discovery:clear` after it adds a class or changes an attribute.
 

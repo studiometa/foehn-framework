@@ -13,7 +13,7 @@ Documentation index (one Markdown file per page): https://studiometa.github.io/f
 
 ## Before you write code
 
-1. Run `wp foehn inspect --format=json` (`ddev wp …` in a DDEV project). It reports what the project already declares: post types and their meta keys, taxonomies, settings options, blocks and their attributes, templates and the controller that renders each one, Twig views and the context keys they receive, menus, routes, plugins and Vite entries. Read it before you add a class, so you reuse a post type, a meta key or a context key that exists instead of declaring it again. `wp foehn inspect <section>` reads one section.
+1. Run `wp foehn inspect --format=json` (`ddev wp …` in a DDEV project). It prints a summary of what the project already declares, the names in each section, short enough to read whole. Then read the sections you need in full, in one call: `wp foehn inspect post-types templates views menus settings --format=json` gives post types and their meta keys, the controller that renders each WordPress template, Twig views and the context keys they receive, menu locations and settings options. Read them before you add a class, so you reuse a post type, a meta key or a context key that exists instead of declaring it again. `--all` prints every section.
 2. Create classes with a `make:*` command, not by hand. Run it with `--dry-run --format=json` first: it writes nothing and prints the `path`, `status` and `contents` of the file it would write. Run it again without `--dry-run` to write the file, then do what its `notes` say (the Twig template to create, for example).
 3. After you add a class or change an attribute, run `wp foehn discovery:clear`, then `wp foehn inspect` again to check that Føhn found it.
 
