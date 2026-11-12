@@ -71,6 +71,25 @@ final readonly class ProjectInspector
     }
 
     /**
+     * What each section holds, by name: the name of each row, in report order.
+     *
+     * Short enough to read whole, so it is where a reader starts and picks the
+     * sections to read in full.
+     *
+     * @return array<string, list<string>>
+     */
+    public function summary(): array
+    {
+        $summary = [];
+
+        foreach (self::SECTIONS as $name) {
+            $summary[$name] = self::names($name, $this->section($name));
+        }
+
+        return $summary;
+    }
+
+    /**
      * One section: a list of rows, or for `vite` a single record.
      *
      * @return array<mixed>
@@ -100,5 +119,36 @@ final readonly class ProjectInspector
                 implode(', ', self::SECTIONS),
             )),
         };
+    }
+
+    /**
+     * The name of each row of a section: the field a reader asks for it by.
+     *
+     * @param array<mixed> $data
+     * @return list<string>
+     */
+    private static function names(string $section, array $data): array
+    {
+        $rows = $section === 'vite' ? $data['entries'] ?? [] : $data;
+        $names = [];
+
+        foreach (is_array($rows) ? $rows : [] as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+
+            $names[] = (string) match ($section) {
+                'templates', 'context-providers' => $row['class'],
+                'menus' => $row['location'],
+                'rewrite-rules' => $row['regex'],
+                'rest-routes' => $row['method'] . ' ' . $row['path'],
+                'cli-commands' => $row['command'],
+                'theme-supports' => $row['feature'],
+                'vite' => $row['entry'],
+                default => $row['name'],
+            };
+        }
+
+        return $names;
     }
 }

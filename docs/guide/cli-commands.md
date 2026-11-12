@@ -80,17 +80,19 @@ wp foehn make:model Product --post-type --dry-run
 ### Project Inspection
 
 ```bash
-# Everything the project declares, as tables
+# What the project declares, by name: a summary to read whole
 wp foehn inspect
 
-# The same report as JSON, for a program or a coding agent
-wp foehn inspect --format=json
+# Some sections in full, as JSON for a program or a coding agent
+wp foehn inspect post-types templates menus --format=json
 
-# One section
-wp foehn inspect post-types --format=json
+# Every section in full
+wp foehn inspect --all --format=json
 ```
 
 `inspect` reports the project model from what discovery found. It reads the attributes the code declares, so it registers nothing and writes nothing. Run it before you write code in a project you do not know.
+
+With no section, `inspect` prints a summary: each section with the names of its rows (post type names, template controller classes, menu locations, command names…). It is short enough to read whole. Name one or more sections to print them in full, or pass `--all` for every section. `--all` cannot be combined with section names.
 
 | Section             | What it lists                                                                                                       |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------- |
@@ -114,7 +116,7 @@ A post type or taxonomy that Føhn does not register, such as `post`, `category`
 
 With the `FULL` discovery cache, a class added after the cache was written is missing from the report until you run `wp foehn discovery:clear`.
 
-The JSON output always has the section names as keys, also for one section, so a program reads `report["post-types"]` in both cases. An unknown section stops with an error that lists the valid names.
+JSON is printed on one line, without indentation. The full report has the section names as keys, also for one section, so a program reads `report["post-types"]` in all cases. The summary has two keys: `summary`, an object with each section name as key and the list of its row names as value, and `commands`, the commands that print sections in full. An unknown section stops with an error that lists the valid names.
 
 ### Discovery Commands
 

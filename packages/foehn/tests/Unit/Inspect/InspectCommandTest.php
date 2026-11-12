@@ -45,13 +45,61 @@ beforeEach(fn() => wp_stub_reset());
 afterEach(fn() => tearDownTestContainer());
 
 describe('wp foehn inspect', function () {
-    it('prints every section as JSON', function () {
+    it('prints a summary as JSON by default', function () {
         inspectCommand()([], ['format' => 'json']);
+
+        $summary = inspectJson();
+
+        expect(array_keys($summary))->toBe(['summary', 'commands']);
+        expect(array_keys($summary['summary']))->toBe(ProjectInspector::SECTIONS);
+        expect($summary['summary']['menus'])->toBe(['primary']);
+        expect($summary['commands'])->toBe([
+            'sections' => 'wp foehn inspect <section>... --format=json',
+            'all' => 'wp foehn inspect --all --format=json',
+        ]);
+    });
+
+    it('prints a summary table by default', function () {
+        inspectCommand()([], []);
+
+        $output = inspectOutput();
+
+        expect($output)->toContain('menus — 1: primary');
+        expect($output)->toContain('wp foehn inspect <section>...');
+        expect($output)->toContain('wp foehn inspect --all');
+        expect($output)->not->toMatch('/location\s+contextKey/');
+    });
+
+    it('prints every section as JSON with --all', function () {
+        inspectCommand()([], ['format' => 'json', 'all' => true]);
 
         $report = inspectJson();
 
         expect(array_keys($report))->toBe(ProjectInspector::SECTIONS);
         expect(array_column($report['post-types'], 'model'))->toContain(Product::class);
+    });
+
+    it('prints JSON on one line', function () {
+        inspectCommand()([], ['format' => 'json', 'all' => true]);
+
+        $lines = array_column(array_column(wp_stub_get_calls('wp_cli_line'), 'args'), 'message');
+
+        expect($lines[0])->not->toContain("\n");
+    });
+
+    it('prints the named sections in the order given', function () {
+        inspectCommand()(['menus', 'post-types', 'menus'], ['format' => 'json']);
+
+        expect(array_keys(inspectJson()))->toBe(['menus', 'post-types']);
+    });
+
+    it('refuses sections together with --all', function () {
+        inspectCommand()(['menus'], ['all' => true]);
+
+        $errors = wp_stub_get_calls('wp_cli_error');
+
+        expect($errors)->toHaveCount(1);
+        expect($errors[0]['args']['message'])->toBe('Name sections or pass --all, not both.');
     });
 
     it('prints one section as JSON under its own name', function () {
@@ -94,8 +142,8 @@ describe('wp foehn inspect', function () {
         expect(wp_stub_get_calls('wp_cli_error'))->toBe([]);
     });
 
-    it('prints every section as a table', function () {
-        inspectCommand()([], []);
+    it('prints every section as a table with --all', function () {
+        inspectCommand()([], ['all' => true]);
 
         $output = inspectOutput();
 
@@ -113,6 +161,14 @@ describe('wp foehn inspect', function () {
         expect($errors[0]['args']['message'])->toContain("Unknown section 'widgets'");
         expect($errors[0]['args']['message'])->toContain('post-types, taxonomies');
         expect(wp_stub_get_calls('wp_cli_line'))->toBe([]);
+    });
+
+    it('names every unknown section', function () {
+        inspectCommand()(['menus', 'widgets', 'sidebars'], []);
+
+        $errors = wp_stub_get_calls('wp_cli_error');
+
+        expect($errors[0]['args']['message'])->toContain("Unknown section 'widgets', 'sidebars'");
     });
 
     it('refuses an unknown format', function () {

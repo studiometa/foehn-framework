@@ -63,6 +63,16 @@ describe('ProjectInspector', function () {
         expect(array_keys(inspector()->all()))->toBe(ProjectInspector::SECTIONS);
     });
 
+    it('summarizes each section by the names of its rows', function () {
+        $summary = inspector()->summary();
+
+        expect(array_keys($summary))->toBe(ProjectInspector::SECTIONS);
+        expect($summary['post-types'])->toContain('product');
+        expect($summary['menus'])->toBe(['primary']);
+        expect($summary['templates'])->toBe([ProductController::class]);
+        expect($summary['cli-commands'])->toContain('foehn inspect');
+    });
+
     it('reports the same model from a warm discovery cache', function () {
         $directory = sys_get_temp_dir() . '/foehn-tests/inspect-cache-' . uniqid('', true);
         $pool = new PhpFilesAdapter(directory: $directory);

@@ -20,28 +20,35 @@ use Studiometa\Foehn\Console\WpCli;
     code declares. Run it before writing code in a project you do not know, and use
     `--format=json` when a program or a coding agent reads the result.
 
+    With no section, it prints a summary: the names in each section, short enough
+    to read whole. Name the sections to read them in full, or pass `--all` for the
+    whole report. JSON is printed on one line.
+
     Inspecting registers nothing and writes nothing.
 
     ## OPTIONS
 
-    [<section>]
-    : Only this section. One of post-types, taxonomies, blocks, patterns, bindings,
-      templates, context-providers, menus, image-sizes, rewrite-rules, rest-routes,
-      cli-commands, plugins, theme-supports, vite.
+    [<section>...]
+    : The sections to print in full. Any of post-types, taxonomies, blocks,
+      patterns, bindings, templates, context-providers, menus, image-sizes,
+      rewrite-rules, rest-routes, cli-commands, plugins, theme-supports, vite.
+
+    [--all]
+    : Print every section in full.
 
     [--format=<format>]
     : Output format. table (default) or json.
 
     ## EXAMPLES
 
-        # The whole project, readable
+        # What the project declares, by name
         wp foehn inspect
 
-        # The whole project, for a program or an agent
-        wp foehn inspect --format=json
+        # Some sections in full, for a program or an agent
+        wp foehn inspect post-types templates menus --format=json
 
-        # One section
-        wp foehn inspect post-types --format=json
+        # Every section in full
+        wp foehn inspect --all --format=json
     DOC)]
 final readonly class InspectCommand implements CliCommandInterface
 {
@@ -91,32 +98,41 @@ final readonly class InspectCommand implements CliCommandInterface
             return;
         }
 
-        $section = $args[0] ?? null;
+        $sections = array_values(array_unique($args));
+        $unknown = array_diff($sections, ProjectInspector::SECTIONS);
 
-        if ($section !== null && !in_array($section, ProjectInspector::SECTIONS, true)) {
+        if ($unknown !== []) {
             $this->cli->error(sprintf(
                 "Unknown section '%s'. Available sections: %s.",
-                $section,
+                implode("', '", $unknown),
                 implode(', ', ProjectInspector::SECTIONS),
             ));
 
             return;
         }
 
-        $report = $section === null ? $this->inspector->all() : [$section => $this->inspector->section($section)];
+        $all = ($assocArgs['all'] ?? null) !== null;
+
+        if ($all && $sections !== []) {
+            $this->cli->error('Name sections or pass --all, not both.');
+
+            return;
+        }
+
+        if ($sections === [] && !$all) {
+            $this->renderSummary($this->inspector->summary(), $format);
+
+            return;
+        }
+
+        $report = [];
+
+        foreach ($all ? ProjectInspector::SECTIONS : $sections as $section) {
+            $report[$section] = $this->inspector->section($section);
+        }
 
         if ($format === 'json') {
-            // Plugin headers and theme support arguments come from code Føhn does not
-            // control. One value json_encode() cannot take must not turn the whole
-            // report into an empty line: it is replaced, and the rest is printed.
-            $this->cli->line((string) json_encode(
-                $report,
-                JSON_PRETTY_PRINT
-                | JSON_UNESCAPED_SLASHES
-                | JSON_UNESCAPED_UNICODE
-                | JSON_INVALID_UTF8_SUBSTITUTE
-                | JSON_PARTIAL_OUTPUT_ON_ERROR,
-            ));
+            $this->renderJson($report);
 
             return;
         }
@@ -124,6 +140,59 @@ final readonly class InspectCommand implements CliCommandInterface
         foreach ($report as $name => $data) {
             $this->renderSection($name, $data);
         }
+    }
+
+    /**
+     * The names in each section, and the commands that print them in full.
+     *
+     * @param array<string, list<string>> $summary
+     */
+    private function renderSummary(array $summary, string $format): void
+    {
+        if ($format === 'json') {
+            $this->renderJson([
+                'summary' => $summary,
+                'commands' => [
+                    'sections' => 'wp foehn inspect <section>... --format=json',
+                    'all' => 'wp foehn inspect --all --format=json',
+                ],
+            ]);
+
+            return;
+        }
+
+        foreach ($summary as $name => $names) {
+            $this->cli->log(sprintf(
+                '%s — %d%s',
+                $name,
+                count($names),
+                $names === [] ? '' : ': ' . implode(', ', $names),
+            ));
+        }
+
+        $this->cli->line('');
+        $this->cli->log('Sections in full: wp foehn inspect <section>...');
+        $this->cli->log('Every section in full: wp foehn inspect --all');
+    }
+
+    /**
+     * JSON on one line: a program or an agent reads it, and indentation would
+     * double its size.
+     *
+     * @param array<string, mixed> $data
+     */
+    private function renderJson(array $data): void
+    {
+        // Plugin headers and theme support arguments come from code Føhn does not
+        // control. One value json_encode() cannot take must not turn the whole
+        // report into an empty line: it is replaced, and the rest is printed.
+        $this->cli->line((string) json_encode(
+            $data,
+            JSON_UNESCAPED_SLASHES
+            | JSON_UNESCAPED_UNICODE
+            | JSON_INVALID_UTF8_SUBSTITUTE
+            | JSON_PARTIAL_OUTPUT_ON_ERROR,
+        ));
     }
 
     /**

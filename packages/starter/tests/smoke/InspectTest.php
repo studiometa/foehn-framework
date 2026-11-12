@@ -36,16 +36,17 @@ beforeEach(
     fn() => Site::isRunning() || $this->markTestSkipped('ddev is not running — run `ddev start` and try again.'),
 );
 
-it('prints the project model as JSON', function () {
+it('prints a summary of the project model as JSON', function () {
     $result = inspectSite();
 
     expect($result['status'])->toBe(0, $result['output']);
     expect($result['report'])->toBeArray($result['output']);
-    expect(array_keys($result['report']))->toContain('post-types', 'templates', 'menus', 'plugins', 'vite');
+    expect(array_keys($result['report']['summary']))->toContain('post-types', 'templates', 'menus', 'plugins', 'vite');
+    expect($result['report']['summary']['menus'])->toContain('header');
 });
 
 it('reports what the starter declares', function () {
-    $report = inspectSite()['report'];
+    $report = inspectSite('--all')['report'];
 
     expect(array_column($report['templates'], 'class'))->toContain('App\\Controllers\\SingleController');
     expect(array_column($report['context-providers'], 'class'))
@@ -54,11 +55,11 @@ it('reports what the starter declares', function () {
     expect(array_column($report['cli-commands'], 'command'))->toContain('foehn inspect');
 });
 
-it('prints one section on its own', function () {
-    $result = inspectSite('menus');
+it('prints the named sections on their own', function () {
+    $result = inspectSite('menus post-types');
 
     expect($result['status'])->toBe(0, $result['output']);
-    expect(array_keys($result['report']))->toBe(['menus']);
+    expect(array_keys($result['report']))->toBe(['menus', 'post-types']);
 });
 
 it('refuses an unknown section', function () {
