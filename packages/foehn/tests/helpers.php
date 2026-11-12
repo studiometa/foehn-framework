@@ -817,3 +817,29 @@ function loadActionSchedulerSchedules(): void
         require_once $root . '/' . $file;
     }
 }
+
+/**
+ * Set the `S3_UPLOADS_*` variables the bucket snippet reads, and unset the others.
+ *
+ * Call it with no argument to unset them all, in an `afterEach`.
+ *
+ * @param array<string, string> $variables
+ */
+function pageCacheBucketEnv(array $variables = []): void
+{
+    foreach ([
+        'S3_UPLOADS_BUCKET',
+        'S3_UPLOADS_ENDPOINT',
+        'S3_UPLOADS_PATH_STYLE',
+        'S3_UPLOADS_PROXY_HOST',
+        'S3_UPLOADS_PROXY_SCHEME',
+        'S3_UPLOADS_PROXY_RESOLVER',
+    ] as $name) {
+        unset($_ENV[$name], $_SERVER[$name]);
+        putenv($name);
+    }
+
+    foreach ($variables as $name => $value) {
+        putenv($name . '=' . $value);
+    }
+}

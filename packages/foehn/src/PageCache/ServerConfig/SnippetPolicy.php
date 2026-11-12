@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Studiometa\Foehn\PageCache\ServerConfig;
 
 use Studiometa\Foehn\Config\PageCacheConfig;
+use Studiometa\Foehn\Config\PageCacheStorage;
 use Studiometa\Foehn\PageCache\QueryKey;
 use Studiometa\Foehn\Views\Sections\SectionRequest;
 
@@ -401,10 +402,35 @@ final readonly class SnippetPolicy
                 $this->config->browserMaxAge,
                 $this->config->cacheControl,
                 $this->config->responseHeaders,
+                // Only in bucket storage, so an include generated for disk before this
+                // option existed still reads as current.
+                ...$this->bucketPolicy(),
             ])),
             0,
             12,
         );
+    }
+
+    /**
+     * Whether the pages live in the uploads bucket rather than under the document root.
+     */
+    public function storesInBucket(): bool
+    {
+        return $this->config->storage === PageCacheStorage::Bucket;
+    }
+
+    /**
+     * What a bucket snippet bakes in beyond the configuration: where the bucket is.
+     *
+     * @return list<mixed>
+     */
+    private function bucketPolicy(): array
+    {
+        if (!$this->storesInBucket()) {
+            return [];
+        }
+
+        return [$this->config->storage->value, BucketOrigin::fromEnvironment()?->toArray()];
     }
 
     /**
