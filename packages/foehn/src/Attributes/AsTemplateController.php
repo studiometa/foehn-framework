@@ -20,7 +20,9 @@ final readonly class AsTemplateController
      *                                   Uses WordPress template hierarchy names.
      *                                   Supports wildcards: 'single-*', 'archive-*'
      *                                   Examples: 'single', 'single-post', 'page-contact', ['home', 'front-page']
-     * @param int $priority Priority for template_include filter (lower = earlier). Default: 10
+     * @param int $priority Which controller wins when several claim the same template:
+     *                      the lowest priority, and on a tie the one discovered last.
+     *                      Wildcard patterns are also tried in priority order. Default: 10
      */
     public function __construct(
         public string|array $templates,

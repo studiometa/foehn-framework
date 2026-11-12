@@ -5,7 +5,10 @@ declare(strict_types=1);
 use Studiometa\Foehn\Console\WpCli;
 use Studiometa\Foehn\Inspect\InspectCommand;
 use Studiometa\Foehn\Inspect\ProjectInspector;
+use Tests\Fixtures\InspectApp\GlobalContext;
 use Tests\Fixtures\InspectApp\Product;
+use Tests\Fixtures\InspectApp\ProductCardContext;
+use Timber\Timber;
 
 function inspectCommand(): InspectCommand
 {
@@ -140,6 +143,52 @@ describe('wp foehn inspect', function () {
             '/product\s+' . preg_quote(Product::class, '/') . '\s+category, brand\s+featured, price, sku/',
         );
         expect(wp_stub_get_calls('wp_cli_error'))->toBe([]);
+    });
+
+    it('names the options of each settings page in the table', function () {
+        inspectCommand()(['settings'], []);
+
+        expect(inspectOutput())
+            ->toMatch('/shop-settings\s+\S+ShopSettings\s+shop_contact_email, shop_show_banner, shop_currency/');
+    });
+
+    it('shows the base keys once, and the controller and context keys of each template', function () {
+        inspectCommand()(['templates'], []);
+
+        $output = inspectOutput();
+
+        expect($output)->toContain('  every template: body_class, http_host');
+        expect($output)->toMatch('/template\s+controller\s+request\s+keys/');
+        expect($output)->toMatch('/single-product\s+\S+ProductController\s+in_stock, related/');
+        expect($output)->toMatch('/taxonomy-brand\s+\S+BrandController\s+term\s+brand_count/');
+    });
+
+    it('prints what every view receives once, and only what differs on each row', function () {
+        $theme = sys_get_temp_dir() . '/foehn-inspect-command-theme-' . uniqid();
+        mkdir($theme . '/templates/pages', 0o777, true);
+        mkdir($theme . '/templates/components', 0o777, true);
+        touch($theme . '/templates/pages/single.twig');
+        touch($theme . '/templates/components/footer.twig');
+        $GLOBALS['wp_stub_template_directory'] = $theme;
+        $dirname = Timber::$dirname;
+        Timber::$dirname = ['templates'];
+
+        try {
+            inspectCommand()(['views'], []);
+        } finally {
+            Timber::$dirname = $dirname;
+            unset($GLOBALS['wp_stub_template_directory']);
+            removeTestDirectory($theme);
+        }
+
+        $output = inspectOutput();
+
+        expect($output)->toContain('  every view: body_class, http_host');
+        expect($output)->toContain('  every view, from ' . GlobalContext::class . ': current_year');
+        expect($output)->toMatch('/pages\/single\s+' . preg_quote(ProductCardContext::class, '/') . '\s+price_label/');
+        // The provider on `*` is above the table, not on each row.
+        expect($output)->toMatch('/components\/footer\s*$/m');
+        expect(substr_count($output, GlobalContext::class))->toBe(1);
     });
 
     it('prints every section as a table with --all', function () {

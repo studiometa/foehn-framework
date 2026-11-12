@@ -121,7 +121,7 @@ final class CartContextProvider implements ContextProviderInterface
 ```php
 use App\Models\Product;
 
-#[AsContextProvider('single-product')]
+#[AsContextProvider('pages/single-product')]
 final class ProductContextProvider implements ContextProviderInterface
 {
     public function provide(TemplateContext $context): TemplateContext
@@ -155,7 +155,7 @@ final readonly class ArchiveData implements Arrayable
     ) {}
 }
 
-#[AsContextProvider('archive-*')]
+#[AsContextProvider('pages/archive*')]
 final class ArchiveContextProvider implements ContextProviderInterface
 {
     public function provide(TemplateContext $context): TemplateContext

@@ -22,7 +22,7 @@ final readonly class AsTemplateController
 | Parameter   | Type            | Default | Description                             |
 | ----------- | --------------- | ------- | --------------------------------------- |
 | `templates` | `string\|array` | —       | Template pattern(s) to match (required) |
-| `priority`  | `int`           | `10`    | Priority for template_include filter    |
+| `priority`  | `int`           | `10`    | Which controller wins a shared template |
 
 ## Template Patterns
 
@@ -37,6 +37,8 @@ Uses WordPress template hierarchy names:
 - `'404'` — Not found
 - `'single-*'` — Wildcard pattern
 - `['home', 'front-page']` — Multiple templates
+
+When several controllers claim the same template, the one with the lowest `priority` renders it, and on a tie the one discovered last. A template name is looked up exactly first; failing that, wildcard patterns are tried in `priority` order and the first that matches wins. `wp foehn inspect templates` shows the controller of each template and the ones it overrides.
 
 ## Usage
 

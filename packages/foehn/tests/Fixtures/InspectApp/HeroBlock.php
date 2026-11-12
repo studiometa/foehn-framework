@@ -13,7 +13,11 @@ final class HeroBlock implements BlockInterface
 {
     public static function attributes(): array
     {
-        return [];
+        return [
+            'title' => ['type' => 'string', 'default' => '', 'label' => 'Title'],
+            'align' => ['type' => 'string', 'enum' => ['left', 'center'], 'default' => 'left'],
+            'imageId' => ['type' => 'integer', 'control' => 'image'],
+        ];
     }
 
     public function compose(array $attributes, string $content, WP_Block $block): array

@@ -12,9 +12,22 @@ use Studiometa\Foehn\Console\WpCli;
     ## DESCRIPTION
 
     Reports the project model: post types with their meta fields, taxonomies and
-    Timber model classes, taxonomies, blocks, patterns, block bindings, template
-    controllers, context providers, menus, image sizes, rewrite rules, REST routes,
-    `wp foehn` commands, active plugins, theme supports and the Vite entry points.
+    Timber model classes, taxonomies, settings pages with their options, blocks with
+    their attributes, patterns, block bindings, templates, Twig views, context
+    providers, menus, image sizes, rewrite rules, REST routes, `wp foehn` commands,
+    active plugins, theme supports and the Vite entry points.
+
+    `templates` gives the controller that renders each WordPress template. `views`
+    gives, for each Twig file, the context providers its name matches. Both give
+    the context keys: `base` keys are always set, the `keys` of a controller or a
+    provider come from literal `with()` calls in its source and can depend on
+    runtime conditions, and `partial` says that a class also sets keys only known
+    at runtime. What every row shares is given once, above the rows: the base keys,
+    the keys of each class, and in `views` the providers that match every view.
+
+    The post meta keys, the options and the block attributes are where content is
+    stored, so an agent can write it with core commands such as `wp post meta
+    update` and `wp option update`.
 
     The report is built from what discovery found, so it reads the attributes the
     code declares. Run it before writing code in a project you do not know, and use
@@ -29,9 +42,10 @@ use Studiometa\Foehn\Console\WpCli;
     ## OPTIONS
 
     [<section>...]
-    : The sections to print in full. Any of post-types, taxonomies, blocks,
-      patterns, bindings, templates, context-providers, menus, image-sizes,
-      rewrite-rules, rest-routes, cli-commands, plugins, theme-supports, vite.
+    : The sections to print in full. Any of post-types, taxonomies, settings,
+      blocks, patterns, bindings, templates, views, context-providers, menus,
+      image-sizes, rewrite-rules, rest-routes, cli-commands, plugins,
+      theme-supports, vite.
 
     [--all]
     : Print every section in full.
@@ -64,11 +78,13 @@ final readonly class InspectCommand implements CliCommandInterface
     private const array TABLE_COLUMNS = [
         'post-types' => ['name', 'model', 'taxonomies', 'meta'],
         'taxonomies' => ['name', 'model', 'postTypes', 'meta'],
-        'blocks' => ['name', 'title', 'class'],
+        'settings' => ['page', 'class', 'settings'],
+        'blocks' => ['name', 'title', 'attributes'],
         'patterns' => ['name', 'title', 'template'],
         'bindings' => ['name', 'label', 'class'],
-        'templates' => ['class', 'templates', 'priority'],
-        'context-providers' => ['class', 'templates', 'priority'],
+        'templates' => ['template', 'controller', 'request', 'keys'],
+        'views' => ['view', 'providers', 'keys'],
+        'context-providers' => ['class', 'templates', 'keys'],
         'menus' => ['location', 'contextKey', 'class'],
         'image-sizes' => ['name', 'width', 'height', 'crop'],
         'rewrite-rules' => ['regex', 'query', 'class'],
@@ -194,37 +210,35 @@ final readonly class InspectCommand implements CliCommandInterface
     }
 
     /**
-     * One section as a heading and padded rows.
+     * One section as a heading, what its rows share, and padded rows.
      *
      * @param array<mixed> $data
      */
     private function renderSection(string $name, array $data): void
     {
-        // The one section that is a record rather than a list: the dev server is a
-        // fact about the build, and the rows are its entries.
-        $isVite = $name === 'vite';
-        $entries = $data['entries'] ?? [];
-        $entries = is_array($entries) ? $entries : [];
-        $rows = $isVite ? $entries : $data;
+        [$heading, $shared, $rows] = match ($name) {
+            'vite' => self::viteTable($data),
+            'templates' => self::templatesTable($data),
+            'views' => self::viewsTable($data),
+            default => [sprintf('%s — %d', $name, count($data)), [], array_values($data)],
+        };
 
         $this->cli->line('');
-        $this->cli->log(
-            $isVite
-                ? sprintf('vite — dev server: %s', self::scalar($data['devServer'] ?? null))
-                : sprintf('%s — %d', $name, count($rows)),
-        );
+        $this->cli->log($heading);
 
         if ($rows === []) {
             return;
+        }
+
+        foreach ($shared as $line) {
+            $this->cli->log('  ' . $line);
         }
 
         $columns = self::TABLE_COLUMNS[$name];
         $lines = [$columns];
 
         foreach ($rows as $row) {
-            $lines[] = array_map(static fn(string $column): string => self::cell(
-                is_array($row) ? $row[$column] ?? null : null,
-            ), $columns);
+            $lines[] = array_map(static fn(string $column): string => self::cell(self::field($row, $column)), $columns);
         }
 
         $widths = [];
@@ -244,6 +258,100 @@ final readonly class InspectCommand implements CliCommandInterface
 
             $this->cli->log('  ' . rtrim(implode('  ', $cells)));
         }
+    }
+
+    /**
+     * The one section about the build: the dev server is a fact about it, and the
+     * rows are its entries.
+     *
+     * @param array<mixed> $data
+     * @return array{string, list<string>, list<mixed>}
+     */
+    private static function viteTable(array $data): array
+    {
+        return [
+            sprintf('vite — dev server: %s', self::scalar($data['devServer'] ?? null)),
+            [],
+            self::listOf($data['entries'] ?? null),
+        ];
+    }
+
+    /**
+     * Templates, with the keys every controller receives above the rows, and the keys
+     * of its controller on each row.
+     *
+     * @param array<mixed> $data
+     * @return array{string, list<string>, list<mixed>}
+     */
+    private static function templatesTable(array $data): array
+    {
+        $rows = self::listOf($data['templates'] ?? null);
+        $controllers = $data['controllers'] ?? [];
+
+        return [
+            sprintf('templates — %d', count($rows)),
+            ['every template: ' . self::cell($data['base'] ?? null)],
+            array_map(static fn(mixed $row): array => [
+                ...(is_array($row) ? $row : []),
+                'keys' => self::field($controllers, self::scalar(self::field($row, 'controller')) . '.keys'),
+            ], $rows),
+        ];
+    }
+
+    /**
+     * Views, with what every view receives above the rows: the base keys, and the
+     * providers that match every view with their keys. Each row shows only the
+     * providers and keys that view adds.
+     *
+     * @param array<mixed> $data
+     * @return array{string, list<string>, list<mixed>}
+     */
+    private static function viewsTable(array $data): array
+    {
+        $rows = self::listOf($data['views'] ?? null);
+        $providers = $data['providers'] ?? [];
+        $keysOf = static fn(mixed $class): array => self::listOf(self::field(
+            $providers,
+            self::scalar($class) . '.keys',
+        ));
+        $shared = ['every view: ' . self::cell($data['base'] ?? null)];
+
+        foreach (self::listOf($data['everyView'] ?? null) as $class) {
+            $shared[] = sprintf('every view, from %s: %s', self::scalar($class), self::cell($keysOf($class)));
+        }
+
+        return [
+            sprintf('views — %d', count($rows)),
+            $shared,
+            array_map(static fn(mixed $row): array => [
+                ...(is_array($row) ? $row : []),
+                'keys' => array_merge(...array_map($keysOf, self::listOf(self::field($row, 'providers')))),
+            ], $rows),
+        ];
+    }
+
+    /**
+     * @return list<mixed>
+     */
+    private static function listOf(mixed $value): array
+    {
+        return is_array($value) ? array_values($value) : [];
+    }
+
+    /**
+     * A field of a row, following a dotted column into nested records.
+     */
+    private static function field(mixed $row, string $column): mixed
+    {
+        foreach (explode('.', $column) as $segment) {
+            if (!is_array($row)) {
+                return null;
+            }
+
+            $row = $row[$segment] ?? null;
+        }
+
+        return $row;
     }
 
     /**

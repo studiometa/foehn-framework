@@ -2,6 +2,8 @@
 
 Context providers automatically inject data into specific templates. Use `#[AsContextProvider]` to define providers.
 
+A provider matches a **view name**: the name of the Twig file passed to `ViewEngine::render()`, such as `pages/single` or `blocks/hero`. It does not match the WordPress template name that a [template controller](./template-controllers) claims, such as `single-product`. A controller that handles `single-product` can render `pages/single-product` or `pages/single`, and a provider for `pages/single-product` only runs when that view is the one rendered.
+
 ## Basic Context Provider
 
 ```php
@@ -38,10 +40,10 @@ See [Template Controllers](./template-controllers#templatecontext) for full `Tem
 
 ## Template Matching
 
-### Single Template
+### One View
 
 ```php
-#[AsContextProvider('single')]
+#[AsContextProvider('pages/single')]
 final class SingleContextProvider implements ContextProviderInterface
 {
     public function provide(TemplateContext $context): TemplateContext
@@ -51,10 +53,12 @@ final class SingleContextProvider implements ContextProviderInterface
 }
 ```
 
-### Specific Template
+### A View for One Post Type
+
+The starter's `SingleController` renders the first view that exists of `pages/single-{post-type}-{slug}`, `pages/single-{post-type}` and `pages/single`. A provider for products names the product view:
 
 ```php
-#[AsContextProvider('single-product')]
+#[AsContextProvider('pages/single-product')]
 final class ProductContextProvider implements ContextProviderInterface
 {
     public function provide(TemplateContext $context): TemplateContext
@@ -72,26 +76,30 @@ final class ProductContextProvider implements ContextProviderInterface
 }
 ```
 
+When a project has no `pages/single-product.twig`, the controller renders `pages/single` and this provider does not run. Name both views to cover both cases: `#[AsContextProvider(['pages/single-product', 'pages/single'])]`.
+
 ### Wildcard Patterns
 
 ```php
-// All single templates (single-*, single-post, single-product, etc.)
-#[AsContextProvider('single-*')]
+// Every single view: pages/single, pages/single-product, …
+#[AsContextProvider('pages/single*')]
 final class AllSinglesContextProvider implements ContextProviderInterface {}
 
-// All archive templates
-#[AsContextProvider('archive-*')]
+// Every archive view
+#[AsContextProvider('pages/archive*')]
 final class AllArchivesContextProvider implements ContextProviderInterface {}
 
-// Global (all templates)
+// Every view, blocks and patterns included
 #[AsContextProvider('*')]
 final class GlobalContextProvider implements ContextProviderInterface {}
 ```
 
-### Multiple Templates
+`*` matches any characters, `/` included. Blocks (`blocks/<name>`), patterns, settings pages and [sections](./section-rendering) are rendered through `ViewEngine::render()` too, so a `*` provider runs for them as well. A Twig file included with `{% include %}` is not rendered on its own: it gets the context of the file that includes it.
+
+### Multiple Views
 
 ```php
-#[AsContextProvider(['home', 'front-page'])]
+#[AsContextProvider(['pages/home', 'pages/front-page'])]
 final class HomeContextProvider implements ContextProviderInterface
 {
     public function provide(TemplateContext $context): TemplateContext
@@ -104,6 +112,10 @@ final class HomeContextProvider implements ContextProviderInterface
     }
 }
 ```
+
+### See What Applies
+
+`wp foehn inspect views` lists each Twig file of the theme with the providers its view name matches, in the order they run, and the keys they add. See [Template context](./cli-commands#template-context).
 
 ## Priority
 
@@ -178,7 +190,7 @@ When using `#[AsMenu]` attributes, menus are automatically added to the context 
 ### Archive Provider
 
 ```php
-#[AsContextProvider('archive-*')]
+#[AsContextProvider('pages/archive*')]
 final class ArchiveContextProvider implements ContextProviderInterface
 {
     public function provide(TemplateContext $context): TemplateContext
@@ -201,7 +213,7 @@ final class ArchiveContextProvider implements ContextProviderInterface
 ```php
 use Studiometa\Foehn\Helpers\WP;
 
-#[AsContextProvider('search')]
+#[AsContextProvider('pages/search')]
 final class SearchContextProvider implements ContextProviderInterface
 {
     public function provide(TemplateContext $context): TemplateContext
@@ -231,7 +243,7 @@ final readonly class ArchiveData implements Arrayable
     ) {}
 }
 
-#[AsContextProvider('archive-*')]
+#[AsContextProvider('pages/archive*')]
 final class ArchiveContextProvider implements ContextProviderInterface
 {
     public function provide(TemplateContext $context): TemplateContext

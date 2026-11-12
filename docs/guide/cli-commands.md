@@ -92,17 +92,19 @@ wp foehn inspect --all --format=json
 
 `inspect` reports the project model from what discovery found. It reads the attributes the code declares, so it registers nothing and writes nothing. Run it before you write code in a project you do not know.
 
-With no section, `inspect` prints a summary: each section with the names of its rows (post type names, template controller classes, menu locations, command names…). It is short enough to read whole. Name one or more sections to print them in full, or pass `--all` for every section. `--all` cannot be combined with section names.
+With no section, `inspect` prints a summary: each section with the names of its rows (post type names, WordPress templates, Twig views, menu locations, command names…). It is short enough to read whole. Name one or more sections to print them in full, or pass `--all` for every section. `--all` cannot be combined with section names.
 
 | Section             | What it lists                                                                                                       |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | `post-types`        | Post types: the Timber model class, the arguments of `#[AsPostType]`, the taxonomies and the `#[AsPostMeta]` fields |
 | `taxonomies`        | Taxonomies: the Timber model class, the arguments of `#[AsTaxonomy]`, the post types and the term meta fields       |
-| `blocks`            | `#[AsBlock]` blocks: name, title, class, category                                                                   |
+| `settings`          | `#[AsSettingsPage]` pages and the options they store: option name, type, default and sanitizer                      |
+| `blocks`            | `#[AsBlock]` blocks: name, title, class, category, and each attribute with its type, default and allowed values     |
 | `patterns`          | `#[AsBlockPattern]` patterns: name, title, class and Twig template                                                  |
 | `bindings`          | `#[AsBlockBinding]` sources: name, label, class and the block context they use                                      |
-| `templates`         | Template controllers and the WordPress templates each one handles                                                   |
-| `context-providers` | Context providers and the view names they match                                                                     |
+| `templates`         | Each WordPress template a controller claims: the controller that renders it, and its context keys                   |
+| `views`             | Each Twig file of the theme: the context providers its view name matches, and its context keys                      |
+| `context-providers` | Context providers, the view names they match, and the keys each one adds                                            |
 | `menus`             | Menu locations and the Twig variable of each one (`menus.<location>`)                                               |
 | `image-sizes`       | Image sizes, with the name WordPress registers them under                                                           |
 | `rewrite-rules`     | `#[AsRewriteRule]` rules: regex, query, query vars and class                                                        |
@@ -114,9 +116,103 @@ With no section, `inspect` prints a summary: each section with the names of its 
 
 A post type or taxonomy that Føhn does not register, such as `post`, `category` or a plugin's post type, is listed when a `#[AsTimberModel]` maps it to a class or a `#[AsPostMeta]` names it as its subtype. Its `declared` field is then `false`, `model` is `null` when no Timber model maps it, and the arguments only the registering code knows are `null`. A `#[AsPostMeta]` field with no subtype applies to every post type or taxonomy, so it is listed on each of them.
 
+#### Where content is stored
+
+Three sections say where content goes, so you can write it with core WP-CLI commands instead of guessing keys:
+
+- `post-types` and `taxonomies`: each `#[AsPostMeta]` field gives its `key`, `type`, `default` and `single` (`false` means one row per value). Write it with `wp post meta update <id> <key> <value>` or `wp term meta update`.
+- `settings`: each setting gives its `option` name, `type`, `default` and `sanitize` callback. Write it with `wp option update <option> <value>`. Every setting has a sanitizer: the one the page declares (`sanitizeDeclared: true`) or the one its type implies, such as `sanitize_text_field` for a string. Føhn calls `register_setting()` on `init`, and WP-CLI fires `init` before it runs a command, so `wp option update` saves through the same sanitizer as the admin form (`sanitizeOnWpCli: true`). A command run with `--skip-themes` does not load Føhn, and then no sanitizer runs.
+- `blocks`: each attribute gives its `name`, `type`, `default` and `enum`, which is what a block comment such as `<!-- wp:theme/hero {"align":"center"} /-->` in `post_content` may hold. The editor-only keys (`control`, `label`, …) are left out.
+
+#### Template context
+
+Two kinds of names meet in a template, and `inspect` reports them apart:
+
+- `templates` has one row per WordPress template a `#[AsTemplateController]` claims, such as `single-product` or `archive-*`. `controller` is the class that renders it. When several controllers claim the same template, the lowest `priority` wins (on a tie, the one discovered last), and `overridden` lists the others.
+- `views` has one row per Twig file in the theme's template directories (`TimberConfig::templatesDir`), named as `render()` names it: `templates/pages/single.twig` is `pages/single`. A child theme's file replaces the parent's file with the same name.
+
+Context providers match view names, not WordPress templates. Which view a controller renders is decided at runtime (the starter's `SingleController` renders the first of `pages/single-{post-type}-{slug}`, `pages/single-{post-type}` and `pages/single` that exists), so `inspect` does not link a template to a view.
+
+Both sections give the Twig variables that can be known without rendering. What all rows share is given once, next to the rows, so the sections stay short:
+
+```json
+{
+  "templates": {
+    "base": [
+      "body_class",
+      "http_host",
+      "menus",
+      "post",
+      "posts",
+      "site",
+      "theme",
+      "user",
+      "wp_title"
+    ],
+    "controllers": {
+      "App\\Controllers\\TermController": { "priority": 10, "keys": ["children"], "partial": false }
+    },
+    "templates": [
+      {
+        "template": "taxonomy-*",
+        "controller": "App\\Controllers\\TermController",
+        "overridden": [],
+        "request": ["term"]
+      }
+    ]
+  },
+  "views": {
+    "base": [
+      "body_class",
+      "http_host",
+      "menus",
+      "post",
+      "posts",
+      "site",
+      "theme",
+      "user",
+      "wp_title"
+    ],
+    "providers": {
+      "App\\ContextProviders\\CardContextProvider": {
+        "priority": 10,
+        "keys": ["price_label"],
+        "partial": false
+      },
+      "App\\ContextProviders\\GlobalContextProvider": {
+        "priority": 10,
+        "keys": ["current_year"],
+        "partial": false
+      }
+    },
+    "everyView": ["App\\ContextProviders\\GlobalContextProvider"],
+    "views": [
+      {
+        "view": "components/card",
+        "file": "templates/components/card.twig",
+        "providers": ["App\\ContextProviders\\CardContextProvider"]
+      },
+      { "view": "pages/single", "file": "templates/pages/single.twig", "providers": [] }
+    ]
+  }
+}
+```
+
+| Field                      | What it holds                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `base`                     | Keys that are always set: `post`, `posts`, `site`, `user`, the Timber global context (`theme`, `http_host`, `wp_title`, `body_class`), and `menus` when the project declares a `#[AsMenu]`. A value can be `null` (`post` on an archive, `user` for a visitor)                                                                                                                                                                                                                                              |
+| `templates[].request`      | Keys that `Timber::context()` adds for the request that template answers, on top of `base`: `term` on a category, tag or taxonomy archive, `search_query` on `search`, `author` on `author`. A wildcard that reaches several kinds of request adds none                                                                                                                                                                                                                                                     |
+| `controllers`, `providers` | Each controller that claims a template, and each provider that matches a view, by class: its `priority`, its `keys` and `partial`. `keys` are read from the source of the class: each literal `->with('key', …)` call in the class, its parent classes and their traits. A call can sit in a condition, so a key is not guaranteed at runtime. `partial` is `true` when the class also sets keys that only exist at runtime: `with($name, …)`, `merge()` or `withDto()`. Its `keys` list is then incomplete |
+| `everyView`                | The providers on `*`, which match every view name, in the order they run. They are not repeated on the rows                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `views[].providers`        | The other providers whose pattern matches that view, in the order they run. With `everyView`, they run in `priority` order                                                                                                                                                                                                                                                                                                                                                                                  |
+
+The tables give the same data: `base` and the providers in `everyView` with their keys are printed once above the rows, and each row shows the keys of its controller or of its own providers.
+
+Keys added elsewhere are not listed: a `timber/context` filter from a plugin, `ViewEngine::share()`, a helper class that a controller calls, and the keys a block's `compose()` returns. The controller's keys reach only the views it renders, and a Twig file included with `{% include %}` gets the context of the file that includes it.
+
 With the `FULL` discovery cache, a class added after the cache was written is missing from the report until you run `wp foehn discovery:clear`.
 
-JSON is printed on one line, without indentation. The full report has the section names as keys, also for one section, so a program reads `report["post-types"]` in all cases. The summary has two keys: `summary`, an object with each section name as key and the list of its row names as value, and `commands`, the commands that print sections in full. An unknown section stops with an error that lists the valid names.
+JSON is printed on one line, without indentation. The full report has the section names as keys, also for one section, so a program reads `report["post-types"]` in all cases. Most sections are a list of rows; `templates`, `views` and `vite` are records that hold their rows (`templates`, `views`, `entries`) next to what the rows share. The summary has two keys: `summary`, an object with each section name as key and the list of its row names as value, and `commands`, the commands that print sections in full. An unknown section stops with an error that lists the valid names.
 
 ### Discovery Commands
 

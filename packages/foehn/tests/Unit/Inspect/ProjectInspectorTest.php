@@ -3,25 +3,35 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Discovery\DiscoveryLocations;
+use Studiometa\Foehn\Discovery\DiscoveryPhase;
 use Studiometa\Foehn\Discovery\DiscoveryRunner;
+use Studiometa\Foehn\Discovery\SettingsPageDiscovery;
 use Studiometa\Foehn\Inspect\ProjectInspector;
+use Studiometa\Foehn\Views\ContextProviderRegistry;
+use Studiometa\Foehn\Views\TemplateContext;
 use Symfony\Component\Cache\Adapter\PhpFilesAdapter;
 use Tempest\Discovery\DiscoveryCache;
 use Tempest\Discovery\DiscoveryCacheStrategy;
 use Tests\Fixtures\InspectApp\Article;
 use Tests\Fixtures\InspectApp\Brand;
+use Tests\Fixtures\InspectApp\BrandController;
 use Tests\Fixtures\InspectApp\CallToActionPattern;
 use Tests\Fixtures\InspectApp\CardImageSize;
 use Tests\Fixtures\InspectApp\GlobalContext;
 use Tests\Fixtures\InspectApp\HeroBlock;
+use Tests\Fixtures\InspectApp\LegacyProductController;
 use Tests\Fixtures\InspectApp\PrimaryMenu;
 use Tests\Fixtures\InspectApp\Product;
+use Tests\Fixtures\InspectApp\ProductCardContext;
 use Tests\Fixtures\InspectApp\ProductController;
 use Tests\Fixtures\InspectApp\ProductsEndpoint;
+use Tests\Fixtures\InspectApp\ShopSettings;
 use Tests\Fixtures\InspectApp\StockBinding;
 use Tests\Fixtures\InspectApp\StripeWebhook;
 use Tests\Fixtures\InspectApp\SyncCommand;
 use Tests\Fixtures\InspectApp\Topic;
+use Timber\Site;
+use Timber\Timber;
 
 /**
  * An inspector over tests/Fixtures/InspectApp, which declares one of everything.
@@ -50,11 +60,14 @@ function inspectedRow(array $rows, string $key, mixed $value): ?array
 beforeEach(function () {
     wp_stub_reset();
     $GLOBALS['wp_stub_template_directory'] = sys_get_temp_dir() . '/foehn-inspect-theme-' . uniqid();
+    $this->dirname = Timber::$dirname;
+    Timber::$dirname = ['templates'];
 });
 
 afterEach(function () {
     removeTestDirectory($GLOBALS['wp_stub_template_directory']);
     unset($GLOBALS['wp_stub_template_directory']);
+    Timber::$dirname = $this->dirname;
     tearDownTestContainer();
 });
 
@@ -69,7 +82,7 @@ describe('ProjectInspector', function () {
         expect(array_keys($summary))->toBe(ProjectInspector::SECTIONS);
         expect($summary['post-types'])->toContain('product');
         expect($summary['menus'])->toBe(['primary']);
-        expect($summary['templates'])->toBe([ProductController::class]);
+        expect($summary['templates'])->toContain('single-product');
         expect($summary['cli-commands'])->toContain('foehn inspect');
     });
 
@@ -164,6 +177,61 @@ describe('ProjectInspector', function () {
             ->toBe(array_keys(inspectedRow($rows, 'name', 'brand')));
     });
 
+    it('reports settings pages with the option, type, default and sanitizer of each setting', function () {
+        expect(inspector()->section('settings'))->toBe([
+            [
+                'page' => 'shop-settings',
+                'title' => 'Shop settings',
+                'class' => ShopSettings::class,
+                'optionGroup' => 'shop-settings',
+                'settings' => [
+                    [
+                        'option' => 'shop_contact_email',
+                        'type' => 'string',
+                        'default' => '',
+                        'sanitize' => 'sanitize_email',
+                        'sanitizeDeclared' => true,
+                        'sanitizeOnWpCli' => true,
+                        'showInRest' => false,
+                    ],
+                    [
+                        'option' => 'shop_show_banner',
+                        'type' => 'boolean',
+                        'default' => true,
+                        // None declared: the type's own sanitizer still runs.
+                        'sanitize' => 'rest_sanitize_boolean',
+                        'sanitizeDeclared' => false,
+                        'sanitizeOnWpCli' => true,
+                        'showInRest' => false,
+                    ],
+                    [
+                        'option' => 'shop_currency',
+                        'type' => 'string',
+                        'default' => 'EUR',
+                        'sanitize' => ShopSettings::class . '::normalizeCurrency',
+                        'sanitizeDeclared' => true,
+                        'sanitizeOnWpCli' => true,
+                        'showInRest' => false,
+                    ],
+                ],
+            ],
+        ]);
+    });
+
+    it('registers settings on init, so their sanitizers run under WP-CLI', function () {
+        // `sanitizeOnWpCli` holds because WP-CLI fires `init` before a command runs. A
+        // move to a hook WP-CLI does not fire, such as `admin_init`, must change it.
+        expect(DiscoveryRunner::phaseOf(SettingsPageDiscovery::class))->toBe(DiscoveryPhase::Main);
+    });
+
+    it('reports the attributes a block stores, without the editor-only keys', function () {
+        expect(inspectedRow(inspector()->section('blocks'), 'name', 'theme/hero')['attributes'])->toBe([
+            ['name' => 'title', 'type' => 'string', 'default' => '', 'enum' => null],
+            ['name' => 'align', 'type' => 'string', 'default' => 'left', 'enum' => ['left', 'center']],
+            ['name' => 'imageId', 'type' => 'integer', 'default' => null, 'enum' => null],
+        ]);
+    });
+
     it('reports blocks, patterns and bindings', function () {
         $inspector = inspector();
 
@@ -182,20 +250,173 @@ describe('ProjectInspector', function () {
         ]);
     });
 
-    it('reports template controllers with their templates', function () {
-        expect(inspectedRow(inspector()->section('templates'), 'class', ProductController::class))->toBe([
-            'class' => ProductController::class,
-            'templates' => ['single-product', 'archive-product'],
+    it('reports the controller of each template, and the context keys once per controller', function () {
+        $templates = inspector()->section('templates');
+
+        expect($templates['base'])->toBe([
+            'body_class',
+            'http_host',
+            'menus',
+            'post',
+            'posts',
+            'site',
+            'theme',
+            'user',
+            'wp_title',
+        ]);
+        expect(inspectedRow($templates['templates'], 'template', 'single-product'))->toBe([
+            'template' => 'single-product',
+            'controller' => ProductController::class,
+            // Claims it too, with priority 20: the lower priority wins.
+            'overridden' => [LegacyProductController::class],
+            'request' => [],
+        ]);
+        expect($templates['controllers'][ProductController::class])->toBe([
             'priority' => 10,
+            'keys' => ['in_stock', 'related'],
+            'partial' => false,
+        ]);
+        expect($templates['controllers'][LegacyProductController::class]['priority'])->toBe(20);
+    });
+
+    it('adds the queried term to a term archive, and says when a controller sets keys at runtime', function () {
+        $templates = inspector()->section('templates');
+        $brand = inspectedRow($templates['templates'], 'template', 'taxonomy-brand');
+
+        expect($brand['controller'])->toBe(BrandController::class);
+        expect($brand['request'])->toBe(['term']);
+        expect($templates['controllers'][BrandController::class])->toBe([
+            'priority' => 10,
+            'keys' => ['brand_count'],
+            'partial' => true,
         ]);
     });
 
-    it('reports context providers with the view names they match', function () {
+    it('reports context providers with the view names they match and the keys they add', function () {
         expect(inspectedRow(inspector()->section('context-providers'), 'class', GlobalContext::class))->toBe([
             'class' => GlobalContext::class,
             'templates' => ['*'],
             'priority' => 1,
+            'keys' => ['current_year'],
+            'partial' => false,
         ]);
+    });
+
+    it('reports each Twig file with the providers its view name matches, and what every view shares once', function () {
+        $theme = $GLOBALS['wp_stub_template_directory'];
+        mkdir($theme . '/templates/pages', 0o777, true);
+        mkdir($theme . '/templates/components', 0o777, true);
+        touch($theme . '/templates/pages/single.twig');
+        touch($theme . '/templates/components/footer.twig');
+        touch($theme . '/templates/pages/notes.txt');
+
+        expect(inspector()->section('views'))->toBe([
+            'base' => ['body_class', 'http_host', 'menus', 'post', 'posts', 'site', 'theme', 'user', 'wp_title'],
+            'providers' => [
+                GlobalContext::class => ['priority' => 1, 'keys' => ['current_year'], 'partial' => false],
+                ProductCardContext::class => ['priority' => 5, 'keys' => ['price_label'], 'partial' => false],
+            ],
+            'everyView' => [GlobalContext::class],
+            'views' => [
+                ['view' => 'components/footer', 'file' => 'templates/components/footer.twig', 'providers' => []],
+                [
+                    'view' => 'pages/single',
+                    'file' => 'templates/pages/single.twig',
+                    'providers' => [ProductCardContext::class],
+                ],
+            ],
+        ]);
+    });
+
+    it('lists in everyView only the providers on `*`, whatever files the theme holds', function () {
+        // ProductCardContext matches every file listed here, but not a view added in
+        // another directory: it stays on the row.
+        $theme = $GLOBALS['wp_stub_template_directory'];
+        mkdir($theme . '/templates/pages', 0o777, true);
+        touch($theme . '/templates/pages/single.twig');
+
+        $views = inspector()->section('views');
+
+        expect($views['everyView'])->toBe([GlobalContext::class]);
+        expect($views['views'][0]['providers'])->toBe([ProductCardContext::class]);
+    });
+
+    it('names a view with a numeric name as a string', function () {
+        $theme = $GLOBALS['wp_stub_template_directory'];
+        mkdir($theme . '/templates', 0o777, true);
+        touch($theme . '/templates/404.twig');
+
+        expect(inspector()->section('views')['views'][0]['view'])->toBe('404');
+    });
+
+    it('lists the providers on `*` when the theme has no Twig file', function () {
+        $views = inspector()->section('views');
+
+        expect($views['everyView'])->toBe([GlobalContext::class]);
+        expect(array_keys($views['providers']))->toBe([GlobalContext::class]);
+        expect($views['views'])->toBe([]);
+    });
+
+    it('runs providers for a view in the order the registry runs them', function () {
+        $theme = $GLOBALS['wp_stub_template_directory'];
+        mkdir($theme . '/templates/pages', 0o777, true);
+        mkdir($theme . '/templates/components', 0o777, true);
+        touch($theme . '/templates/pages/single.twig');
+        // A second view that only the provider on `*` matches, so that the view above
+        // lists the other provider on its row.
+        touch($theme . '/templates/components/footer.twig');
+
+        $registry = new ContextProviderRegistry();
+        // Registered in the reverse order of their priorities: the order must come from
+        // the priorities, as it does in the registry.
+        $registry->register(['pages/single'], new ProductCardContext(), 5);
+        $registry->register(['*'], new GlobalContext(), 1);
+
+        $site = new ReflectionClass(Site::class)->newInstanceWithoutConstructor();
+        $context = $registry->provide('pages/single', new TemplateContext(null, null, $site, null));
+        $added = array_values(array_diff(array_keys($context->toArray()), ['post', 'posts', 'site', 'user']));
+
+        $views = inspector()->section('views');
+        $view = inspectedRow($views['views'], 'view', 'pages/single');
+        $classes = [...$views['everyView'], ...$view['providers']];
+        // Every provider of a view runs in priority order.
+        usort(
+            $classes,
+            static fn(string $a, string $b): int => (
+                $views['providers'][$a]['priority'] <=> $views['providers'][$b]['priority']
+            ),
+        );
+        $keys = array_merge(...array_map(
+            static fn(string $class): array => $views['providers'][$class]['keys'],
+            $classes,
+        ));
+
+        expect($keys)->toBe($added);
+    });
+
+    it('lists a view a child theme overrides once, with the child file', function () {
+        $child = sys_get_temp_dir() . '/foehn-inspect-child-' . uniqid();
+        $GLOBALS['wp_stub_stylesheet_directory'] = $child;
+        mkdir($child . '/templates/pages', 0o777, true);
+        mkdir($GLOBALS['wp_stub_template_directory'] . '/templates/pages', 0o777, true);
+        touch($child . '/templates/pages/single.twig');
+        touch($GLOBALS['wp_stub_template_directory'] . '/templates/pages/single.twig');
+        touch($GLOBALS['wp_stub_template_directory'] . '/templates/pages/page.twig');
+
+        try {
+            expect(array_column(inspector()->section('views')['views'], 'view'))->toBe(['pages/page', 'pages/single']);
+        } finally {
+            removeTestDirectory($child);
+            unset($GLOBALS['wp_stub_stylesheet_directory']);
+        }
+    });
+
+    it('passes over namespaced Timber directories instead of failing', function () {
+        mkdir($GLOBALS['wp_stub_template_directory'] . '/templates/pages', 0o777, true);
+        touch($GLOBALS['wp_stub_template_directory'] . '/templates/pages/single.twig');
+        Timber::$dirname = ['templates', 'shop' => ['shop-templates']];
+
+        expect(array_column(inspector()->section('views')['views'], 'view'))->toBe(['pages/single']);
     });
 
     it('reports menus with the context key each one is exposed as', function () {
