@@ -71,6 +71,10 @@ it('requests a path itself, and prints the trace in a few lines', function () {
     expect($result['status'])->toBe(0, $result['output']);
     expect($result['output'])->toContain('GET / · 200', "\ntemplate\n", "\nviews\n", 'Every field: wp foehn trace ');
     expect(substr_count(trim($result['output']), "\n"))->toBeLessThan(40);
+
+    // A browser asks for robots.txt after the page: it must not become the last trace.
+    Client::get((string) Site::url() . '/robots.txt');
+
     expect(printedTrace('wp foehn trace list --format=json'))->toHaveCount(1);
 });
 
