@@ -67,10 +67,11 @@ final class ViteManifest
 
             if ($url !== '') {
                 $this->devServer = rtrim($url, '/');
-
-                return;
             }
         }
+
+        // Read even while the dev server runs: enqueuing prefers the server either way,
+        // and entries() still has to say what a build would contain.
 
         $manifestPath = rtrim($distPath, '/') . '/.vite/manifest.json';
 
@@ -184,6 +185,46 @@ final class ViteManifest
     public function isDevServer(): bool
     {
         return $this->devServer !== null;
+    }
+
+    /**
+     * The dev server's URL while `npm run dev` runs, null otherwise.
+     */
+    public function devServer(): ?string
+    {
+        return $this->devServer;
+    }
+
+    /**
+     * The entry points the build declares, by the name `enqueue()` takes.
+     *
+     * Read from the manifest, so a project that was never built reports none even
+     * while the dev server runs.
+     *
+     * @return list<array{entry: string, file: string, css: list<string>}>
+     */
+    public function entries(): array
+    {
+        $entries = [];
+
+        foreach ($this->manifest ?? [] as $name => $chunk) {
+            if (($chunk['isEntry'] ?? false) !== true) {
+                continue;
+            }
+
+            $file = $chunk['file'] ?? null;
+
+            $entries[] = [
+                'entry' => $name,
+                'file' => is_string($file) ? $file : '',
+                'css' => array_values(array_filter(
+                    is_array($chunk['css'] ?? null) ? $chunk['css'] : [],
+                    is_string(...),
+                )),
+            ];
+        }
+
+        return $entries;
     }
 
     /**

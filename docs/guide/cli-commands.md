@@ -77,6 +77,47 @@ Example with dry-run:
 wp foehn make:model Product --post-type --dry-run
 ```
 
+### Project Inspection
+
+```bash
+# What the project declares, by name: a summary to read whole
+wp foehn inspect
+
+# Some sections in full, as JSON for a program or a coding agent
+wp foehn inspect post-types templates menus --format=json
+
+# Every section in full
+wp foehn inspect --all --format=json
+```
+
+`inspect` reports the project model from what discovery found. It reads the attributes the code declares, so it registers nothing and writes nothing. Run it before you write code in a project you do not know.
+
+With no section, `inspect` prints a summary: each section with the names of its rows (post type names, template controller classes, menu locations, command names…). It is short enough to read whole. Name one or more sections to print them in full, or pass `--all` for every section. `--all` cannot be combined with section names.
+
+| Section             | What it lists                                                                                                       |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `post-types`        | Post types: the Timber model class, the arguments of `#[AsPostType]`, the taxonomies and the `#[AsPostMeta]` fields |
+| `taxonomies`        | Taxonomies: the Timber model class, the arguments of `#[AsTaxonomy]`, the post types and the term meta fields       |
+| `blocks`            | `#[AsBlock]` blocks: name, title, class, category                                                                   |
+| `patterns`          | `#[AsBlockPattern]` patterns: name, title, class and Twig template                                                  |
+| `bindings`          | `#[AsBlockBinding]` sources: name, label, class and the block context they use                                      |
+| `templates`         | Template controllers and the WordPress templates each one handles                                                   |
+| `context-providers` | Context providers and the view names they match                                                                     |
+| `menus`             | Menu locations and the Twig variable of each one (`menus.<location>`)                                               |
+| `image-sizes`       | Image sizes, with the name WordPress registers them under                                                           |
+| `rewrite-rules`     | `#[AsRewriteRule]` rules: regex, query, query vars and class                                                        |
+| `rest-routes`       | `#[AsRestRoute]` routes: path, HTTP method, permission and handler method                                           |
+| `cli-commands`      | Every `wp foehn` command, the framework's own included                                                              |
+| `plugins`           | Active, network-activated and must-use plugins, with their versions                                                 |
+| `theme-supports`    | Every `add_theme_support()` feature, with its arguments                                                             |
+| `vite`              | The entry points of the theme build (`dist/.vite/manifest.json`), and the dev server URL while `npm run dev` runs   |
+
+A post type or taxonomy that Føhn does not register, such as `post`, `category` or a plugin's post type, is listed when a `#[AsTimberModel]` maps it to a class or a `#[AsPostMeta]` names it as its subtype. Its `declared` field is then `false`, `model` is `null` when no Timber model maps it, and the arguments only the registering code knows are `null`. A `#[AsPostMeta]` field with no subtype applies to every post type or taxonomy, so it is listed on each of them.
+
+With the `FULL` discovery cache, a class added after the cache was written is missing from the report until you run `wp foehn discovery:clear`.
+
+JSON is printed on one line, without indentation. The full report has the section names as keys, also for one section, so a program reads `report["post-types"]` in all cases. The summary has two keys: `summary`, an object with each section name as key and the list of its row names as value, and `commands`, the commands that print sections in full. An unknown section stops with an error that lists the valid names.
+
 ### Discovery Commands
 
 ```bash

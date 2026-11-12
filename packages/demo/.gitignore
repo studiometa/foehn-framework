@@ -32,6 +32,11 @@ composer.lock
 # debug from a CI log.
 /.ddev/*
 !/.ddev/config.yaml
+# WP-CLI without the PHP 8.5 deprecations: see web-build/prepend.Dockerfile.wp-cli.
+!/.ddev/web-build/
+/.ddev/web-build/*
+!/.ddev/web-build/prepend.Dockerfile.wp-cli
+!/.ddev/web-build/Dockerfile.wp-cli
 !/.ddev/config.local.example.yaml
 !/.ddev/docker-compose.minio.yaml
 !/.ddev/nginx/

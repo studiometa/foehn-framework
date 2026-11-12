@@ -31,6 +31,11 @@ composer.lock
 # debug from a CI log.
 /.ddev/*
 !/.ddev/config.yaml
+# WP-CLI sans dépréciation PHP 8.5 : voir web-build/prepend.Dockerfile.wp-cli.
+!/.ddev/web-build/
+/.ddev/web-build/*
+!/.ddev/web-build/prepend.Dockerfile.wp-cli
+!/.ddev/web-build/Dockerfile.wp-cli
 # Écrit à la main, et suivi pour survivre à un clone. Exclu de l'archive
 # Composer par .gitattributes : les hooks qu'il porte supposent les dépôts
 # `path` du monorepo.

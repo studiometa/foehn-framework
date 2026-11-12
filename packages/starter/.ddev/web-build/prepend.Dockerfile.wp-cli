@@ -1,0 +1,22 @@
+# WP-CLI construit ici plutôt que téléchargé, comme dans l'image d'exécution
+# (docker/wordpress/Dockerfile du monorepo studiometa/foehn-framework).
+#
+# Le `wp-cli.phar` publié (2.12.0, mai 2025) embarque `php-cli-tools` 0.12.5 et
+# `react/promise` 2.11, que PHP 8.5 déprécie à chaque exécution. Le message de
+# `react/promise` part sur la sortie standard avant celle de la commande, donc
+# `ddev wp foehn inspect --format=json | jq` échoue, et un agent qui lit ce JSON
+# aussi. Ce phar est celui qu'upstream construirait, avec ces deux dépendances
+# avancées dans les plages que WP-CLI déclare déjà.
+FROM composer:2 AS wp-cli
+
+WORKDIR /build
+
+RUN composer create-project wp-cli/wp-cli-bundle:^2.12 . \
+        --no-install --no-scripts --no-interaction --no-progress \
+    && composer config --unset platform.php \
+    && composer remove --dev wp-cli/wp-cli-tests --no-install --no-interaction \
+    && composer update wp-cli/php-cli-tools composer/composer \
+        --with-all-dependencies --no-dev --no-interaction --no-progress \
+    && php -d phar.readonly=0 -d error_reporting='E_ALL & ~E_DEPRECATED' \
+        utils/make-phar.php wp-cli.phar --quiet \
+    && ./wp-cli.phar --allow-root cli version
