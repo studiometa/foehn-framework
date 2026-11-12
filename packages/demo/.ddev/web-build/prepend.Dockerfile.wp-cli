@@ -1,0 +1,22 @@
+# WP-CLI, built here rather than downloaded, as in the runtime image
+# (docker/wordpress/Dockerfile; see there for the full reasoning).
+#
+# The published `wp-cli.phar` (2.12.0, May 2025) carries `php-cli-tools` 0.12.5
+# and `react/promise` 2.11, which PHP 8.5 deprecates on every run. The
+# `react/promise` notice goes to stdout ahead of the command's own output, so
+# `ddev wp foehn inspect --format=json | jq` fails, and so does an agent that
+# reads that JSON. This is the phar upstream would build, with those two
+# dependencies moved forward inside the ranges WP-CLI already declares.
+FROM composer:2 AS wp-cli
+
+WORKDIR /build
+
+RUN composer create-project wp-cli/wp-cli-bundle:^2.12 . \
+        --no-install --no-scripts --no-interaction --no-progress \
+    && composer config --unset platform.php \
+    && composer remove --dev wp-cli/wp-cli-tests --no-install --no-interaction \
+    && composer update wp-cli/php-cli-tools composer/composer \
+        --with-all-dependencies --no-dev --no-interaction --no-progress \
+    && php -d phar.readonly=0 -d error_reporting='E_ALL & ~E_DEPRECATED' \
+        utils/make-phar.php wp-cli.phar --quiet \
+    && ./wp-cli.phar --allow-root cli version

@@ -1,0 +1,2 @@
+# Remplace le WP-CLI de ddev par celui construit dans prepend.Dockerfile.wp-cli.
+COPY --from=wp-cli --chmod=755 /build/wp-cli.phar /usr/local/bin/wp-cli
