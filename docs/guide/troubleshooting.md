@@ -87,6 +87,90 @@ No template found for the views 'pages/single-product', 'pages/single'. Searched
 
 The directories are the ones Timber's loader searches, from `TimberConfig::$templatesDir` and the `timber/locations` filter. `exists()` asks the same loader, so a view `exists()` finds is a view `render()` finds.
 
+## The error log
+
+In the `local` and `development` environments, Føhn writes the errors of the site to a log, and `wp foehn errors` prints the last one. An agent that changed code reads it after it loads a page, instead of a browser or the PHP log.
+
+```bash
+wp foehn errors
+```
+
+```
+Studiometa\Foehn\Views\ViewRenderingFailed: Rendering the view 'pages/404' failed in pages/404.twig at line 18: Variable "price" does not exist.
+  exception at 2026-11-12 11:25:42 UTC in vendor/studiometa/foehn/src/Views/ViewRenderingFailed.php:67
+  twig pages/404.twig:18
+  caused by Twig\Error\RuntimeError: Variable "price" does not exist in "pages/404.twig" at line 18.
+  GET /no-such-page/ · template 404 · controller App\Controllers\Error404Controller · view pages/404.twig
+  context site, theme, user, menus, post, posts, current_year
+    theme/app/Controllers/Error404Controller.php:21 Studiometa\Foehn\Views\TimberViewEngine->render()
+    +7 other frames
+```
+
+### What is recorded
+
+- each uncaught exception;
+- each fatal error;
+- each warning and notice raised in the theme's own code: a PHP file of the theme directory, or a Twig template of the theme. The `vendor` and `node_modules` directories of the theme are not its own code. A warning of WordPress, a plugin or a Composer package is not recorded.
+
+A warning that `error_reporting()` leaves out is not recorded: a warning silenced with `@`, and a notice when `WP_DEBUG` is off, because WordPress then leaves notices out. Deprecations are not recorded: `wp foehn verify --profile=updates` reports them. One request writes each error once, and at most 20 entries.
+
+Recording starts when the theme boots Føhn. An error raised before, in WordPress core or in a plugin that loads first, is not recorded. An exception that code catches is not recorded.
+
+### The fields of an entry
+
+| Field             | Content                                                                                                      |
+| ----------------- | ------------------------------------------------------------------------------------------------------------ |
+| `time`            | UTC, ISO 8601                                                                                                |
+| `level`           | `exception`, `fatal`, `warning` or `notice`                                                                  |
+| `class`           | The exception class, or the PHP error type, such as `E_WARNING`                                              |
+| `message`         | The message, cut after 2000 characters                                                                       |
+| `file`, `line`    | Where it was thrown or raised, relative to the Composer project or to WordPress                              |
+| `twig`            | `template:line` in the Twig template, when the error comes from a view                                       |
+| `previous`        | The previous exceptions, as `Class: message`, up to 3                                                        |
+| `stack`           | The frames of the theme's own code in call order, then `+N other frames` for WordPress, plugins and packages |
+| `method`, `url`   | The HTTP method and the request URI, or `CLI` and the WP-CLI command                                         |
+| `template`        | The WordPress template Føhn matched, such as `single-product`                                                |
+| `controller`      | The template controller that handles it, or `null`                                                           |
+| `view`, `context` | The last Twig view Timber rendered, and the keys of its context (up to 40)                                   |
+| `requestId`       | Reserved for a request id. Always `null` for now                                                             |
+
+### The command
+
+| Option             | Effect                                                                                    |
+| ------------------ | ----------------------------------------------------------------------------------------- |
+| `--limit=<n>`      | Print the last `n` entries, the newest first. Defaults to 1                               |
+| `--level=<levels>` | Only these levels, separated by commas: `exception,fatal`                                 |
+| `--since=<date>`   | Only entries recorded at or after this date: `2026-11-12 10:00`, `-10 minutes`, `-1 hour` |
+| `--format=json`    | Every field of each entry, as a JSON array on one line                                    |
+| `--clear`          | Delete the log                                                                            |
+
+The text gives the first 5 lines of the stack. JSON gives all of them.
+
+### The log file
+
+The log is `wp-content/cache/foehn/errors/errors.jsonl`, one JSON object per line. When the next entry would make it larger than 256 KB, it becomes `errors.1.jsonl` and the oldest file is deleted. The log never holds more than 3 files.
+
+### When errors are recorded
+
+`FoehnConfig::$recordErrors` decides. With the default, `null`, errors are recorded when the environment (`WP_ENVIRONMENT_TYPE`) is `local` or `development`. Set it to `true` to record them in another environment, such as a staging site, and to `false` to never record them:
+
+```php
+// app/foehn.config.php
+return new FoehnConfig(
+    recordErrors: true,
+);
+```
+
+An entry holds paths, messages and URLs. The cache directory can be served by the web server: do not turn recording on where people you do not trust can read the files of `wp-content`.
+
+### How it hooks into PHP and WordPress
+
+The recorder adds a PHP error handler, a PHP exception handler and a shutdown function, and it changes nothing in how PHP and WordPress handle the error:
+
+- The error handler records the warning, then gives it to the handler that was there before, or to PHP.
+- The exception handler records the exception, then gives it to the handler that was there before. With none, it throws the exception again, so PHP ends the request with its own fatal error.
+- The shutdown function reads `error_get_last()`. WordPress's fatal error handler (`WP_Fatal_Error_Handler`) reads the same value in its own shutdown function, which runs first, and shows its error page as usual.
+
 ## Related
 
 - [CLI Commands](/guide/cli-commands#project-inspection)

@@ -388,6 +388,21 @@ wp foehn db:export db.sql.gz --from=-1year
 
 Writes a gzipped SQL dump to import locally. Users, user meta, comments and WooCommerce orders are anonymized, transients are left out, and revisions and orders older than the window are left out. A table no rule covers is exported without rows and listed at the end. See [Database Export](/guide/database-export) for every rule, the config file, and what is not anonymized.
 
+### Errors
+
+```bash
+# The last error, with the request that raised it
+wp foehn errors
+
+# The exceptions and fatal errors of the last hour, for an agent
+wp foehn errors --level=exception,fatal --since=-1hour --limit=10 --format=json
+
+# Start again from an empty log
+wp foehn errors --clear
+```
+
+Prints the last errors the site recorded in the `local` and `development` environments: uncaught exceptions, fatal errors, and the warnings and notices of the theme's own code. Each entry gives the file and line, the Twig template and line, a short stack, the URL, the WordPress template, the controller, the view and its context keys. See [The error log](/guide/troubleshooting#the-error-log).
+
 ### Security Keys
 
 WordPress signs authentication cookies and nonces with eight keys. They live in the environment, so a project keeps them wherever it keeps its other secrets. `composer install` fills them into `.env` on a first install, and the generated `wp-config.php` refuses to serve a production request without them.

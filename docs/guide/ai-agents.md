@@ -31,7 +31,8 @@ The starter ships an `AGENTS.md` at the project root, and a `CLAUDE.md` that imp
 2. run `wp foehn inspect --format=json` to read the summary of what the project already declares, and fix what its `problems` section lists (`wp foehn inspect problems` gives the fix of each one), then `wp foehn inspect post-types templates views menus settings --format=json` to read in full the post types and their meta keys, templates and their controllers, Twig views and their context keys, menu locations and settings;
 3. create classes with the `make:*` commands, first with `--dry-run --format=json`, which writes nothing and prints the file it would write;
 4. run `wp foehn discovery:clear` after it adds a class or changes an attribute;
-5. put sample content and menus in a seeder made with `make:seeder` and run with `wp foehn seed`, never only in the database. See [Seeders](/guide/seeders).
+5. put sample content and menus in a seeder made with `make:seeder` and run with `wp foehn seed`, never only in the database. See [Seeders](/guide/seeders);
+6. run `wp foehn errors` after it loads a page that fails, to read the last error with its file, Twig template, controller and view. See [The error log](/guide/troubleshooting#the-error-log).
 
 Its **Project conventions** section says that sample content and menus go in seeders. The project fills in the rest: how editors edit post meta, and which checks to run. Keep it current, because the agent follows what it says.
 
