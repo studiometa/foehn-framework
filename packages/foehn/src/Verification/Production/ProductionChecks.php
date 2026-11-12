@@ -72,6 +72,7 @@ final readonly class ProductionChecks
                 self::overdueEvents(),
             ),
             new PageCacheCheck($this->config, $this->store),
+            self::publicFiles(),
         ];
 
         $results = [];
@@ -83,6 +84,54 @@ final readonly class ProductionChecks
         }
 
         return new VerificationReport(VerificationProfile::Production, $results);
+    }
+
+    /**
+     * The public files check, against the directory `extra.foehn.public-dir` names.
+     *
+     * The web root is the parent of `WP_CONTENT_DIR` and the project root is its parent,
+     * as the generated `wp-config.php` lays them out. The option is read from the
+     * project's `composer.json`, where the installer reads it.
+     */
+    private static function publicFiles(): PublicFilesCheck
+    {
+        $webRoot = defined('WP_CONTENT_DIR') ? dirname((string) constant('WP_CONTENT_DIR')) : '';
+        $projectRoot = dirname($webRoot);
+        $directory = 'public';
+        $composer = $projectRoot . '/composer.json';
+
+        if ($webRoot !== '' && is_file($composer)) {
+            $json = json_decode((string) file_get_contents($composer), true);
+            $configured = is_array($json) ? $json['extra']['foehn']['public-dir'] ?? null : null;
+            $directory = is_string($configured) && $configured !== '' ? $configured : $directory;
+        }
+
+        return new PublicFilesCheck($directory, self::publicSource($projectRoot, $directory, $webRoot), $webRoot);
+    }
+
+    /**
+     * The real path of the public directory, or null when the installer would not copy it.
+     *
+     * The same refusals as the installer's: a directory outside the project, or one that
+     * overlaps the web root.
+     */
+    private static function publicSource(string $projectRoot, string $directory, string $webRoot): ?string
+    {
+        $source = realpath($projectRoot . '/' . $directory);
+        $project = realpath($projectRoot);
+        $web = realpath($webRoot);
+
+        if ($source === false || $project === false || $web === false) {
+            return null;
+        }
+
+        $inside = static fn(string $path, string $parent): bool => str_starts_with($path, $parent . '/');
+
+        if (!$inside($source, $project) || $source === $web || $inside($source, $web) || $inside($web, $source)) {
+            return null;
+        }
+
+        return $source;
     }
 
     /**

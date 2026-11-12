@@ -250,7 +250,7 @@ describe('verify --profile=production: a site that is not production', function 
     });
 
     it('runs every check it promises, on a real WordPress', function () {
-        // The profile exists only because all eight do. Asserting the names here is what
+        // The profile exists only because all nine do. Asserting the names here is what
         // would catch a check quietly dropped from the assembler — the report would still
         // say `pass`, with less behind it than the name implies.
         $path = Site::path(VERIFY_REPORT);
@@ -269,6 +269,7 @@ describe('verify --profile=production: a site that is not production', function 
             'environment',
             'indexing',
             'page-cache-storage',
+            'public-files',
             'real-cron',
             'salts',
         ]);
