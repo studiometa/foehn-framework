@@ -15,6 +15,7 @@
 - The demo requires `studiometa/foehn-acf` and the free ACF plugin. Its projects have a `#[AsAcfFieldGroup]` with the `ButtonLinkBuilder` fragment, and the release moves and checks the demo's `studiometa/foehn-acf` pin with the other ones.
 - The demo's series archives are at `/series/<slug>/` and its project tag archives at `/project-tags/<slug>/`. `/projects/series/<slug>/` was a 404.
 - After a deploy to Fly, the demo's workflow runs one pass of the real cron, warms the page cache with `wp foehn cache:warm --sync` and runs `wp foehn verify --profile=production`, which fails the job on a failed check.
+- The demo's README and its guide page list every feature the demo shows in the same table, and have the same "Try the CLI" and "Debugging" sections, with the admin cache controls.
 
 ### Fixed
 
