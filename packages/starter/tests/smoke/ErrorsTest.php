@@ -16,19 +16,24 @@ use Studiometa\Foehn\Smoke\Support\Site;
 /**
  * The entries the command printed as JSON.
  *
- * Site::run() merges stderr, so the JSON is cut from the first `[` to the last `]`.
+ * Site::run() merges stderr, where this image prints PHP deprecations, so the JSON is
+ * the last line that decodes to a list.
  *
  * @return list<array<string, mixed>>
  */
 function recordedErrors(): array
 {
-    $output = Site::run('wp foehn errors --format=json --limit=5')['output'];
-    $start = strpos($output, '[');
-    $end = strrpos($output, ']');
-    $entries =
-        $start === false || $end === false ? null : json_decode(substr($output, $start, $end - $start + 1), true);
+    $lines = explode("\n", Site::run('wp foehn errors --format=json --limit=5')['output']);
 
-    return is_array($entries) ? $entries : [];
+    foreach (array_reverse($lines) as $line) {
+        $entries = json_decode(trim($line), true);
+
+        if (is_array($entries) && array_is_list($entries)) {
+            return $entries;
+        }
+    }
+
+    return [];
 }
 
 beforeEach(function () {
