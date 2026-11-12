@@ -284,6 +284,18 @@ $(head -c 400 "$body")"
 check_protected post
 check_protected page
 
+# #[AsRestRoute]: a public list, and a route whose own permission method refuses a
+# visitor. The list goes through Project::query(), so it is also the end-to-end check
+# that the builder returns a list.
+projects_json="$(curl -sk "$url/wp-json/demo/v1/projects")"
+[ "$(grep -o '"id":' <<<"$projects_json" | wc -l | tr -d ' ')" = "6" ] ||
+	fail "GET /wp-json/demo/v1/projects did not list the six projects
+$(head -c 400 <<<"$projects_json")"
+grep -q '"year":2024' <<<"$projects_json" || fail "the projects route does not give each project its year"
+drafts_status="$(curl -sk -o /dev/null -w '%{http_code}' "$url/wp-json/demo/v1/projects/drafts")"
+[ "$drafts_status" = "401" ] || fail "the drafts route answered a visitor with HTTP $drafts_status, not 401"
+printf '✓ %s\n' "the REST routes answer, the public one to everyone and the drafts one to editors only"
+
 home="$(curl -sk "$url/")"
 grep -q 'data-foehn-lazy-section' <<<"$home" || fail "the homepage does not demonstrate a lazy section"
 grep -q 'data-option-src="/?foehn_sections=testimonials"' <<<"$home" || fail "the lazy testimonial section has no section request URL"
