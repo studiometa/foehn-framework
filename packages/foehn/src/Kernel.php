@@ -26,6 +26,7 @@ use Studiometa\Foehn\Contracts\JobDispatcher;
 use Studiometa\Foehn\Contracts\ViewEngineInterface;
 use Studiometa\Foehn\Cron\Heartbeat;
 use Studiometa\Foehn\Cron\HeartbeatEvent;
+use Studiometa\Foehn\DebugLog\DebugLog;
 use Studiometa\Foehn\Discovery\DiscoveryLocations;
 use Studiometa\Foehn\Discovery\DiscoveryRunner;
 use Studiometa\Foehn\Errors\EntryBuilder;
@@ -362,6 +363,9 @@ final class Kernel
 
         // Registered whether or not requests are traced, for the same reason as the log.
         $this->container->singleton(TraceStore::class, static fn() => TraceStore::inContentDirectory());
+
+        // Resolved when `wp foehn log` runs: wp-config.php has defined the constants it reads.
+        $this->container->singleton(DebugLog::class, static fn() => DebugLog::fromWordPress());
 
         $this->container->singleton(
             RequestTracer::class,

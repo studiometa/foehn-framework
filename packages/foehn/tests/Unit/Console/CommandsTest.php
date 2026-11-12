@@ -30,6 +30,7 @@ use Studiometa\Foehn\Console\Commands\PageCacheStatusCommand;
 use Studiometa\Foehn\Console\Commands\PageCacheWarmCommand;
 use Studiometa\Foehn\Console\Commands\RewriteFlushCommand;
 use Studiometa\Foehn\DatabaseExport\DbExportCommand;
+use Studiometa\Foehn\DebugLog\LogCommand;
 use Studiometa\Foehn\Errors\ErrorsCommand;
 use Studiometa\Foehn\Trace\TraceCommand;
 use Studiometa\Foehn\Verification\VerifyCommand;
@@ -63,6 +64,7 @@ describe('Commands', function (): void {
         'PageCacheWarmCommand' => ['class' => PageCacheWarmCommand::class, 'name' => 'cache:warm'],
         'DbExportCommand' => ['class' => DbExportCommand::class, 'name' => 'db:export'],
         'ErrorsCommand' => ['class' => ErrorsCommand::class, 'name' => 'errors'],
+        'LogCommand' => ['class' => LogCommand::class, 'name' => 'log'],
         'TraceCommand' => ['class' => TraceCommand::class, 'name' => 'trace'],
         'VerifyCommand' => ['class' => VerifyCommand::class, 'name' => 'verify'],
     ];
