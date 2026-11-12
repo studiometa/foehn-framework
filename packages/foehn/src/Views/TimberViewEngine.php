@@ -81,10 +81,12 @@ final class TimberViewEngine implements ViewEngineInterface
                 continue;
             }
 
-            $this->trace->renderFirst(
-                array_values(array_map($this->resolveTemplate(...), $templates)),
-                $this->resolveTemplate($template),
-            );
+            if ($this->trace->isTracing()) {
+                $this->trace->renderFirst(
+                    array_values(array_map($this->resolveTemplate(...), $templates)),
+                    $this->resolveTemplate($template),
+                );
+            }
 
             return $this->render($template, $context);
         }
