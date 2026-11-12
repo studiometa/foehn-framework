@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Studiometa\Foehn\Smoke\Support\Client;
 use Studiometa\Foehn\Smoke\Support\Site;
 
 /**
@@ -88,6 +89,35 @@ it('reports the controller of a template and the context of a Twig view', functi
     expect($report['views']['everyView'])->toContain('App\\ContextProviders\\GlobalContextProvider');
     expect($report['views']['providers']['App\\ContextProviders\\GlobalContextProvider']['keys'])
         ->toContain('current_year');
+});
+
+it('gives template test URLs that render the controller of their template', function () {
+    $templates = inspectSite('templates')['report']['templates']['templates'];
+    $tested = 0;
+
+    foreach ($templates as $row) {
+        if ($row['url'] === null) {
+            expect($row['noUrl'])->toBeString();
+
+            continue;
+        }
+
+        $response = Client::get($row['url']);
+        $id = $response->header('X-Foehn-Trace');
+
+        expect($id)->toBeString("{$row['template']}: {$row['url']} sent no trace id");
+
+        $result = Site::run("wp foehn trace {$id} --format=json");
+        $start = strpos($result['output'], '{');
+        $trace = json_decode(substr($result['output'], (int) $start), true);
+
+        expect($trace['controller'] ?? null)->toBe($row['controller'], "{$row['template']}: {$row['url']}");
+        $tested++;
+    }
+
+    // The starter claims the front page, search and 404 at least.
+    expect($tested)->toBeGreaterThanOrEqual(3);
+    Site::run('wp foehn trace --clear');
 });
 
 it('prints the named sections on their own', function () {

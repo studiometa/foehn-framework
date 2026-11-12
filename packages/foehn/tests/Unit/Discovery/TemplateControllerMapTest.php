@@ -83,6 +83,31 @@ describe('TemplateControllerMap', function () {
         expect($map->find('single-post')['className'])->toBe('App\\Singles');
     });
 
+    it('gives the claimed pattern that renders a template name', function () {
+        $map = TemplateControllerMap::fromItems([
+            controllerItem('App\\Singles', 'single-*'),
+            controllerItem('App\\Product', 'single-product'),
+        ]);
+
+        expect($map->pattern('single-product'))->toBe('single-product');
+        expect($map->pattern('single-event'))->toBe('single-*');
+        expect($map->pattern('page'))->toBeNull();
+    });
+
+    it('resolves the names of a request to the first one a controller claims', function () {
+        $map = TemplateControllerMap::fromItems([controllerItem('App\\Product', 'single-product')]);
+
+        expect($map->resolve(['single-product-red', 'single-product', 'single']))->toBe('single-product');
+        // None is claimed: the request renders its last, least specific name.
+        expect($map->resolve(['single-event-gala', 'single-event', 'single']))->toBe('single');
+    });
+
+    it('resolves a request to its most specific name when a wildcard claims it', function () {
+        $map = TemplateControllerMap::fromItems([controllerItem('App\\Singles', 'single-*')]);
+
+        expect($map->resolve(['single-post-hello', 'single']))->toBe('single-post-hello');
+    });
+
     it('matches wildcards against the whole name', function () {
         expect(TemplateControllerMap::matches('single-product', 'single-*'))->toBeTrue();
         expect(TemplateControllerMap::matches('single', 'single-*'))->toBeFalse();

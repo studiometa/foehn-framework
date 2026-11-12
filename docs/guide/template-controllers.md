@@ -485,7 +485,7 @@ Listings need the same care. Timber builds `post.excerpt` from the full content 
 | **Multiple** | Can stack multiple providers | One controller per template    |
 | **Use case** | Shared data (menus, etc.)    | Complex page logic             |
 
-When two controllers claim the same template, the lowest `priority` wins, and on a tie the one discovered last. `wp foehn inspect templates` shows which controller renders each template.
+When two controllers claim the same template, the lowest `priority` wins, and on a tie the one discovered last. `wp foehn inspect templates` shows which controller renders each template, and a URL that renders it (see [Test URLs](/guide/cli-commands#test-urls)).
 
 Use **Context Providers** for:
 
