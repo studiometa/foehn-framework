@@ -40,7 +40,7 @@ describe('ProjectCategory', function () {
 
         $args = $result->build();
 
-        expect($args['rewrite']['slug'])->toBe('projects/series');
+        expect($args['rewrite']['slug'])->toBe('series');
         expect($args['rewrite']['with_front'])->toBeFalse();
     });
 });

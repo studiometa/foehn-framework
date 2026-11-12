@@ -210,6 +210,9 @@ printf '✓ %s\n' "DisableGlobalStyles removes the global styles of a theme with
 check_page "/" 'class="banner' "the banner from the theme settings is on every page"
 check_page "/projects/" "index-row__title" "the projects index lists the series"
 check_page "/projects/page/2/" "<html" "project pagination keeps a full-page fallback"
+# /projects/series/<slug>/ was taken by the rule WordPress adds for the attachments
+# of a project, so a series archive was a 404. It lives at /series/<slug>/ now.
+check_page "/series/architecture/" "index-row__title" "a series archive lists its projects"
 check_page "/projects/corridors/" "plate--" "a project page shows its photographs"
 # The theme's own js-toolkit components are mounted by file name, from app.js.
 check_page "/projects/corridors/" 'data-component="CopyLink"' "a project page mounts a component of the theme"

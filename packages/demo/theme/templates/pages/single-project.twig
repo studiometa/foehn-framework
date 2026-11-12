@@ -5,9 +5,9 @@
     <header class="shell masthead">
       <p class="label label--ink">
         <a href="{{ site.url }}/projects/">Projects</a>
-        {% if post.categories %}
-          / {{ post.categories|map(term => term.title)|join(', ') }}
-        {% endif %}
+        {% for term in post.categories %}
+          {{ loop.first ? '/' : ',' }} <a href="{{ term.link }}">{{ term.title }}</a>
+        {% endfor %}
       </p>
 
       <h1 class="title" style="margin-top: 0.75rem">{{ post.title }}</h1>

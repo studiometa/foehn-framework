@@ -24,7 +24,8 @@ describe('ArchiveController', function () {
         expect($templates)->toContain('archive-*');
         expect($templates)->toContain('category');
         expect($templates)->toContain('tag');
-        expect($templates)->toContain('tax-*');
+        expect($templates)->toContain('taxonomy');
+        expect($templates)->toContain('taxonomy-*');
     });
 
     it('requires ViewEngineInterface via constructor', function () {

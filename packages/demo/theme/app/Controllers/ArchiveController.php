@@ -9,7 +9,13 @@ use Studiometa\Foehn\Contracts\TemplateControllerInterface;
 use Studiometa\Foehn\Contracts\ViewEngineInterface;
 use Studiometa\Foehn\Views\TemplateContext;
 
-#[AsTemplateController(['archive', 'archive-*', 'category', 'tag', 'tax-*'])]
+/**
+ * Every listing: post type archives, categories, tags and custom taxonomy terms.
+ *
+ * A custom taxonomy term page is `taxonomy`, or `taxonomy-<taxonomy>` when a
+ * controller declares it, so `taxonomy-*` is what catches the series and the tags.
+ */
+#[AsTemplateController(['archive', 'archive-*', 'category', 'tag', 'taxonomy', 'taxonomy-*'])]
 final readonly class ArchiveController implements TemplateControllerInterface
 {
     public function __construct(
@@ -29,7 +35,6 @@ final readonly class ArchiveController implements TemplateControllerInterface
             'archive_description',
             get_the_archive_description(),
         );
-
 
         // renderFirst rather than render: a post type archive with no template of
         // its own falls back to the generic one instead of throwing.
