@@ -87,6 +87,7 @@ return new FoehnConfig(
 | `hooks`                  | `class-string[]`         | `[]`    | Opt-in hook classes                                                                                                 |
 | `debug`                  | `bool`                   | `false` | Raise PHP warnings: each class discovery skips, a discovery cache it cannot write, a missing block editor registrar |
 | `recordErrors`           | `?bool`                  | `null`  | Write errors to the log `wp foehn errors` reads. `null` records them in the `local` and `development` environments  |
+| `traceRequests`          | `?bool`                  | `null`  | Store a trace of each front-end request for `wp foehn trace`. `null` traces them in `local` and `development`       |
 
 See [FoehnConfig API](/api/foehn-config) for details.
 

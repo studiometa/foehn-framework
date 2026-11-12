@@ -118,21 +118,21 @@ Recording starts when the theme boots Føhn. An error raised before, in WordPres
 
 ### The fields of an entry
 
-| Field             | Content                                                                                                      |
-| ----------------- | ------------------------------------------------------------------------------------------------------------ |
-| `time`            | UTC, ISO 8601                                                                                                |
-| `level`           | `exception`, `fatal`, `warning` or `notice`                                                                  |
-| `class`           | The exception class, or the PHP error type, such as `E_WARNING`                                              |
-| `message`         | The message, cut after 2000 characters                                                                       |
-| `file`, `line`    | Where it was thrown or raised, relative to the Composer project or to WordPress                              |
-| `twig`            | `template:line` in the Twig template, when the error comes from a view                                       |
-| `previous`        | The previous exceptions, as `Class: message`, up to 3                                                        |
-| `stack`           | The frames of the theme's own code in call order, then `+N other frames` for WordPress, plugins and packages |
-| `method`, `url`   | The HTTP method and the request URI, or `CLI` and the WP-CLI command                                         |
-| `template`        | The WordPress template Føhn matched, such as `single-product`                                                |
-| `controller`      | The template controller that handles it, or `null`                                                           |
-| `view`, `context` | The last Twig view Timber rendered, and the keys of its context (up to 40)                                   |
-| `requestId`       | Reserved for a request id. Always `null` for now                                                             |
+| Field             | Content                                                                                                                    |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `time`            | UTC, ISO 8601                                                                                                              |
+| `level`           | `exception`, `fatal`, `warning` or `notice`                                                                                |
+| `class`           | The exception class, or the PHP error type, such as `E_WARNING`                                                            |
+| `message`         | The message, cut after 2000 characters                                                                                     |
+| `file`, `line`    | Where it was thrown or raised, relative to the Composer project or to WordPress                                            |
+| `twig`            | `template:line` in the Twig template, when the error comes from a view                                                     |
+| `previous`        | The previous exceptions, as `Class: message`, up to 3                                                                      |
+| `stack`           | The frames of the theme's own code in call order, then `+N other frames` for WordPress, plugins and packages               |
+| `method`, `url`   | The HTTP method and the request URI, or `CLI` and the WP-CLI command                                                       |
+| `template`        | The WordPress template Føhn matched, such as `single-product`                                                              |
+| `controller`      | The template controller that handles it, or `null`                                                                         |
+| `view`, `context` | The last Twig view Timber rendered, and the keys of its context (up to 40)                                                 |
+| `requestId`       | The id of the traced request, as its `X-Foehn-Trace` header gives it, or `null`. See [Request Trace](/guide/request-trace) |
 
 ### The command
 
@@ -141,6 +141,7 @@ Recording starts when the theme boots Føhn. An error raised before, in WordPres
 | `--limit=<n>`      | Print the last `n` entries, the newest first. Defaults to 1                               |
 | `--level=<levels>` | Only these levels, separated by commas: `exception,fatal`                                 |
 | `--since=<date>`   | Only entries recorded at or after this date: `2026-11-12 10:00`, `-10 minutes`, `-1 hour` |
+| `--request=<id>`   | Only the entries of one traced request: the id `wp foehn trace` prints                    |
 | `--format=json`    | Every field of each entry, as a JSON array on one line                                    |
 | `--clear`          | Delete the log                                                                            |
 
@@ -173,6 +174,7 @@ The recorder adds a PHP error handler, a PHP exception handler and a shutdown fu
 
 ## Related
 
+- [Request Trace](/guide/request-trace)
 - [CLI Commands](/guide/cli-commands#project-inspection)
 - [Discovery Cache](/guide/discovery-cache)
 - [ViewEngineInterface](/api/view-engine-interface)

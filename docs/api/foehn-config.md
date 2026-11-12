@@ -20,11 +20,13 @@ final readonly class FoehnConfig
         public array $hooks = [],
         public bool $debug = false,
         public ?bool $recordErrors = null,
+        public ?bool $traceRequests = null,
     );
 
     public static function fromArray(array $config): self;
     public function isDebugEnabled(): bool;
     public function recordsErrors(): bool;
+    public function tracesRequests(): bool;
     public function isDiscoveryCacheEnabled(): bool;
     public function getDiscoveryCachePath(): string;
 }
@@ -39,6 +41,7 @@ final readonly class FoehnConfig
 | `hooks`                  | `class-string[]`         | `[]`             | Opt-in hook classes to activate                                                                                     |
 | `debug`                  | `bool`                   | `WP_DEBUG` value | Raise PHP warnings: each class discovery skips, a discovery cache it cannot write, a missing block editor registrar |
 | `recordErrors`           | `bool\|null`             | `null`           | Write errors to the log `wp foehn errors` reads. `null` records them in the `local` and `development` environments  |
+| `traceRequests`          | `bool\|null`             | `null`           | Store a trace of each front-end request for `wp foehn trace`. `null` traces them in `local` and `development`       |
 
 ## Usage
 
@@ -127,6 +130,10 @@ Defaults to the value of `WP_DEBUG` when not explicitly set.
 ### Error Log
 
 `recordErrors` decides when uncaught exceptions, fatal errors and the warnings of the theme are written to the log `wp foehn errors` reads. `null`, the default, records them when the environment is `local` or `development`; `recordsErrors()` gives the answer. The array config takes `'record_errors' => true`. See [The error log](/guide/troubleshooting#the-error-log).
+
+### Request Trace
+
+`traceRequests` decides when each front-end request sends its id in the `X-Foehn-Trace` header and stores what it ran for `wp foehn trace`. `null`, the default, traces them when the environment is `local` or `development`; `tracesRequests()` gives the answer. The array config takes `'trace_requests' => true`. See [Request Trace](/guide/request-trace).
 
 ## All Config Classes
 

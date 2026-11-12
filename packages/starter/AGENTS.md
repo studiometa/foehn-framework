@@ -42,6 +42,13 @@ The project runs in DDEV. Run WP-CLI as `ddev wp …`. Without DDEV, run `wp …
    ddev wp foehn errors --limit=5 --format=json
    ```
 
+6. When a page renders the wrong template, view or data, trace it. It requests the page and prints the template files WordPress tried, the controller, each view with its context providers and keys, the blocks and the errors of that request:
+
+   ```bash
+   ddev wp foehn trace /about/
+   ddev wp foehn trace last --format=json
+   ```
+
 ## Project conventions
 
 <!-- Fill in this section for the project and keep it current: an agent follows what it says. Remove a line that does not apply. -->

@@ -99,6 +99,7 @@ export default defineConfig({
             { text: "Discovery Cache", link: "/guide/discovery-cache" },
             { text: "Custom Discovery", link: "/guide/custom-discovery" },
             { text: "Problems and Errors", link: "/guide/troubleshooting" },
+            { text: "Request Trace", link: "/guide/request-trace" },
           ],
         },
         {
