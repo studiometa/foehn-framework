@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Discovery\CronDiscovery;
+use Studiometa\Foehn\Discovery\DiscoveryProblems;
 use Tests\Fixtures\CronCustomHookFixture;
 use Tests\Fixtures\CronFixture;
 use Tests\Fixtures\InvalidCronFixture;
@@ -11,7 +12,7 @@ use Tests\Fixtures\NoAttributeFixture;
 beforeEach(function () {
     wp_stub_reset();
     $this->location = testDiscoveryLocation();
-    $this->discovery = new CronDiscovery();
+    $this->discovery = new CronDiscovery($this->problems = new DiscoveryProblems());
 });
 
 describe('CronDiscovery', function () {
@@ -51,6 +52,9 @@ describe('CronDiscovery', function () {
         $this->discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(InvalidCronFixture::class));
 
         expect($this->discovery->getItems())->toHaveCount(0);
+        expect($this->problems->all()[0]['reason'])->toContain('has #[AsCron] but no public __invoke() method');
+        expect($this->problems->all()[0]['fix'])
+            ->toBe('Add `public function __invoke(): void` to ' . InvalidCronFixture::class . '.');
     });
 
     it('reports hasItems correctly', function () {
@@ -112,7 +116,7 @@ describe('CronDiscovery', function () {
 
     it('does nothing when Action Scheduler is not available', function () {
         // Create a subclass that reports AS as unavailable
-        $unavailableDiscovery = new class extends CronDiscovery {
+        $unavailableDiscovery = new class(new DiscoveryProblems()) extends CronDiscovery {
             protected function isActionSchedulerAvailable(): bool
             {
                 return false;
@@ -132,7 +136,11 @@ describe('CronDiscovery', function () {
 
         expect($this->discovery->getItems()->getForLocation($this->location))->not->toBeEmpty();
 
-        $restored = restoreThroughCacheFile($this->discovery, new CronDiscovery(), $this->location);
+        $restored = restoreThroughCacheFile(
+            $this->discovery,
+            new CronDiscovery(new DiscoveryProblems()),
+            $this->location,
+        );
 
         expect(iterator_to_array($restored->getItems()))->toEqual(iterator_to_array($this->discovery->getItems()));
     });

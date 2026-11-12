@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Discovery;
 
-use InvalidArgumentException;
 use Studiometa\Foehn\Attributes\AsDiscovery;
 use Studiometa\Foehn\Attributes\AsRewriteRule;
 use Studiometa\Foehn\Contracts\RewriteHandlerInterface;
@@ -38,6 +37,7 @@ final class RewriteRuleDiscovery implements Discovery
 
     public function __construct(
         private readonly Container $container,
+        private readonly DiscoveryProblems $problems,
     ) {}
 
     /**
@@ -56,11 +56,19 @@ final class RewriteRuleDiscovery implements Discovery
         }
 
         if (!in_array($attribute->after, ['top', 'bottom'], true)) {
-            throw new InvalidArgumentException(sprintf(
-                '#[AsRewriteRule] on %s declares after: \'%s\'. add_rewrite_rule() accepts top or bottom.',
+            $this->problems->report(
+                $location,
                 $class->getName(),
-                $attribute->after,
-            ));
+                '#[AsRewriteRule]',
+                sprintf(
+                    '#[AsRewriteRule] on %s declares after: \'%s\', which add_rewrite_rule() does not accept, so the rule is not added.',
+                    $class->getName(),
+                    $attribute->after,
+                ),
+                "Set after: 'top' or after: 'bottom' on #[AsRewriteRule].",
+            );
+
+            return;
         }
 
         $this->addItem($location, [

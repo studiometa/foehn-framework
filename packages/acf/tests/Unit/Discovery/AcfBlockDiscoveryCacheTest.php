@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 use Studiometa\Foehn\Attributes\AsAcfBlock;
 use Studiometa\Foehn\Discovery\AcfBlockDiscovery;
+use Studiometa\Foehn\Discovery\DiscoveryProblems;
 use Tests\Fixtures\AcfBlockFixture;
 
 beforeEach(function () {
     $this->location = testDiscoveryLocation();
-    $this->discovery = new AcfBlockDiscovery();
+    $this->discovery = new AcfBlockDiscovery(new DiscoveryProblems());
 });
 
 describe('AcfBlockDiscovery caching', function () {
@@ -21,7 +22,7 @@ describe('AcfBlockDiscovery caching', function () {
     it('restores every item unchanged through a cache file', function () {
         discoverFixture($this->discovery, AcfBlockFixture::class, $this->location);
 
-        $restored = restoreThroughCacheFile($this->discovery, new AcfBlockDiscovery());
+        $restored = restoreThroughCacheFile($this->discovery, new AcfBlockDiscovery(new DiscoveryProblems()));
 
         expect(iterator_to_array($restored->getItems()))->toEqual(iterator_to_array($this->discovery->getItems()));
     });
@@ -29,7 +30,7 @@ describe('AcfBlockDiscovery caching', function () {
     it('restores the attribute as an instance, not an array', function () {
         discoverFixture($this->discovery, AcfBlockFixture::class, $this->location);
 
-        $item = restoreThroughCacheFile($this->discovery, new AcfBlockDiscovery())
+        $item = restoreThroughCacheFile($this->discovery, new AcfBlockDiscovery(new DiscoveryProblems()))
             ->getItems()
             ->getForLocation($this->location)[0];
 

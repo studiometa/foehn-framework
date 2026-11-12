@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Discovery\BlockDiscovery;
+use Studiometa\Foehn\Discovery\DiscoveryProblems;
 use Tests\Fixtures\BlockFixture;
 use Tests\Fixtures\ContainerBlockFixture;
 use Tests\Fixtures\InvalidBlockFixture;
@@ -10,7 +11,7 @@ use Tests\Fixtures\NoAttributeFixture;
 
 beforeEach(function () {
     $this->location = testDiscoveryLocation();
-    $this->discovery = new BlockDiscovery();
+    $this->discovery = new BlockDiscovery(new DiscoveryProblems());
 });
 
 describe('BlockDiscovery', function () {
@@ -35,12 +36,21 @@ describe('BlockDiscovery', function () {
         expect($this->discovery->getItems())->toHaveCount(0);
     });
 
-    it('throws when class does not implement BlockInterface', function () {
-        expect(fn() => $this->discovery->discover(
-            $this->location,
-            new \Tempest\Reflection\ClassReflector(InvalidBlockFixture::class),
-        ))
-            ->toThrow(InvalidArgumentException::class, 'must implement');
+    it('reports a class that does not implement BlockInterface, and skips it', function () {
+        expect(rejectedProblems(
+            fn(DiscoveryProblems $problems) => new BlockDiscovery($problems),
+            InvalidBlockFixture::class,
+        ))->toBe([[
+            'class' => InvalidBlockFixture::class,
+            'attribute' => '#[AsBlock]',
+            'reason' =>
+                InvalidBlockFixture::class
+                    . ' has #[AsBlock] but does not implement Studiometa\\Foehn\\Contracts\\BlockInterface, so the block is not registered.',
+            'fix' =>
+                'Declare '
+                    . InvalidBlockFixture::class
+                    . ' with `implements \\Studiometa\\Foehn\\Contracts\\BlockInterface`.',
+        ]]);
     });
 
     it('reports hasItems correctly', function () {
@@ -132,7 +142,11 @@ describe('BlockDiscovery::getEditorDefinitions', function () {
 
         $live = $this->discovery->getEditorDefinitions();
 
-        $restored = restoreThroughCacheFile($this->discovery, new BlockDiscovery(), $this->location);
+        $restored = restoreThroughCacheFile(
+            $this->discovery,
+            new BlockDiscovery(new DiscoveryProblems()),
+            $this->location,
+        );
 
         expect($restored->getEditorDefinitions())->toBe($live);
     });

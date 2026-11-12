@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 use Studiometa\Foehn\Attributes\AsContextProvider;
 use Studiometa\Foehn\Discovery\ContextProviderDiscovery;
+use Studiometa\Foehn\Discovery\DiscoveryProblems;
 use Tests\Fixtures\ContextProviderFixture;
 
 beforeEach(function () {
     $this->location = testDiscoveryLocation();
-    $this->discovery = new ContextProviderDiscovery();
+    $this->discovery = new ContextProviderDiscovery(new DiscoveryProblems());
 });
 
 describe('ContextProviderDiscovery caching', function () {
@@ -21,7 +22,7 @@ describe('ContextProviderDiscovery caching', function () {
     it('restores every item unchanged through a cache file', function () {
         discoverFixture($this->discovery, ContextProviderFixture::class, $this->location);
 
-        $restored = restoreThroughCacheFile($this->discovery, new ContextProviderDiscovery());
+        $restored = restoreThroughCacheFile($this->discovery, new ContextProviderDiscovery(new DiscoveryProblems()));
 
         expect(iterator_to_array($restored->getItems()))->toEqual(iterator_to_array($this->discovery->getItems()));
     });
@@ -29,7 +30,7 @@ describe('ContextProviderDiscovery caching', function () {
     it('restores the attribute as an instance, not an array', function () {
         discoverFixture($this->discovery, ContextProviderFixture::class, $this->location);
 
-        $item = restoreThroughCacheFile($this->discovery, new ContextProviderDiscovery())
+        $item = restoreThroughCacheFile($this->discovery, new ContextProviderDiscovery(new DiscoveryProblems()))
             ->getItems()
             ->getForLocation($this->location)[0];
 

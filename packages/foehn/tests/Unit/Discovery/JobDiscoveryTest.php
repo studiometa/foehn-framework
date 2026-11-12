@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Studiometa\Foehn\Discovery\DiscoveryProblems;
 use Studiometa\Foehn\Discovery\JobDiscovery;
 use Studiometa\Foehn\Jobs\JobRegistry;
 use Tests\Fixtures\InvalidJobHandlerFixture;
@@ -14,7 +15,7 @@ use Tests\Fixtures\NoAttributeFixture;
 beforeEach(function () {
     $this->location = testDiscoveryLocation();
     $this->registry = new JobRegistry();
-    $this->discovery = new JobDiscovery($this->registry);
+    $this->discovery = new JobDiscovery($this->registry, $this->problems = new DiscoveryProblems());
 });
 
 describe('JobDiscovery', function () {
@@ -49,31 +50,42 @@ describe('JobDiscovery', function () {
         expect($this->discovery->getItems())->toHaveCount(0);
     });
 
-    it('ignores handlers without a DTO parameter', function () {
+    it('reports handlers without a DTO parameter, and skips them', function () {
         $this->discovery->discover(
             $this->location,
             new \Tempest\Reflection\ClassReflector(InvalidJobHandlerFixture::class),
         );
 
         expect($this->discovery->getItems())->toHaveCount(0);
+        expect($this->problems->all()[0]['reason'])
+            ->toContain('has an __invoke() method with 0 parameters instead of one');
     });
 
-    it('ignores handlers without __invoke method', function () {
+    it('reports handlers without __invoke method, and skips them', function () {
         $this->discovery->discover(
             $this->location,
             new \Tempest\Reflection\ClassReflector(JobHandlerNoInvokeFixture::class),
         );
 
         expect($this->discovery->getItems())->toHaveCount(0);
+        expect($this->problems->all()[0]['reason'])->toContain('has #[AsJob] but has no public __invoke() method');
     });
 
-    it('ignores handlers with builtin parameter type', function () {
+    it('reports handlers with builtin parameter type, and skips them', function () {
         $this->discovery->discover(
             $this->location,
             new \Tempest\Reflection\ClassReflector(JobHandlerBuiltinParamFixture::class),
         );
 
         expect($this->discovery->getItems())->toHaveCount(0);
+        expect($this->problems->all()[0]['reason'])
+            ->toContain('has an __invoke() parameter that is not typed with a class');
+        expect($this->problems->all()[0]['fix'])
+            ->toBe(
+                'Give '
+                . JobHandlerBuiltinParamFixture::class
+                . ' a public __invoke() method whose one parameter is typed with the job class.',
+            );
     });
 
     it('reports hasItems correctly', function () {
@@ -120,7 +132,11 @@ describe('JobDiscovery', function () {
 
         expect($this->discovery->getItems()->getForLocation($this->location))->not->toBeEmpty();
 
-        $restored = restoreThroughCacheFile($this->discovery, new JobDiscovery(new JobRegistry()), $this->location);
+        $restored = restoreThroughCacheFile(
+            $this->discovery,
+            new JobDiscovery(new JobRegistry(), new DiscoveryProblems()),
+            $this->location,
+        );
 
         expect(iterator_to_array($restored->getItems()))->toEqual(iterator_to_array($this->discovery->getItems()));
     });

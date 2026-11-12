@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Studiometa\Foehn\Discovery\DiscoveryProblems;
 use Studiometa\Foehn\Discovery\PostTypeDiscovery;
 use Tests\Fixtures\ConfigurablePostTypeFixture;
 use Tests\Fixtures\InvalidPostTypeFixture;
@@ -10,7 +11,7 @@ use Tests\Fixtures\PostTypeFixture;
 
 beforeEach(function () {
     $this->location = testDiscoveryLocation();
-    $this->discovery = new PostTypeDiscovery();
+    $this->discovery = new PostTypeDiscovery(new DiscoveryProblems());
 });
 
 describe('PostTypeDiscovery', function () {
@@ -51,12 +52,18 @@ describe('PostTypeDiscovery', function () {
         expect($this->discovery->getItems())->toHaveCount(0);
     });
 
-    it('throws when class does not extend Timber Post', function () {
-        expect(fn() => $this->discovery->discover(
-            $this->location,
-            new \Tempest\Reflection\ClassReflector(InvalidPostTypeFixture::class),
-        ))
-            ->toThrow(InvalidArgumentException::class, 'must extend');
+    it('reports a class that does not extend Timber Post, and skips it', function () {
+        expect(rejectedProblems(
+            fn(DiscoveryProblems $problems) => new PostTypeDiscovery($problems),
+            InvalidPostTypeFixture::class,
+        ))->toBe([[
+            'class' => InvalidPostTypeFixture::class,
+            'attribute' => '#[AsPostType]',
+            'reason' =>
+                InvalidPostTypeFixture::class
+                    . ' has #[AsPostType] but does not extend Timber\\Post, so the post type is not registered.',
+            'fix' => 'Declare ' . InvalidPostTypeFixture::class . ' with `extends \\Timber\\Post`.',
+        ]]);
     });
 
     it('reports hasItems correctly', function () {

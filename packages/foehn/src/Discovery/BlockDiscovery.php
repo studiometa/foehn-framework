@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Discovery;
 
-use InvalidArgumentException;
 use Studiometa\Foehn\Attributes\AsBlock;
 use Studiometa\Foehn\Attributes\AsDiscovery;
 use Studiometa\Foehn\Blocks\BlockAssets;
@@ -28,6 +27,10 @@ final class BlockDiscovery implements Discovery
 {
     use IsWpDiscovery;
 
+    public function __construct(
+        private readonly DiscoveryProblems $problems,
+    ) {}
+
     /**
      * Discover block attributes on classes.
      *
@@ -46,13 +49,20 @@ final class BlockDiscovery implements Discovery
             return;
         }
 
-        // Verify the class implements BlockInterface
         if (!$class->implements(BlockInterface::class)) {
-            throw new InvalidArgumentException(sprintf(
-                'Class %s must implement %s to use #[AsBlock]',
+            $this->problems->report(
+                $location,
                 $class->getName(),
-                BlockInterface::class,
-            ));
+                '#[AsBlock]',
+                sprintf(
+                    '%s has #[AsBlock] but does not implement %s, so the block is not registered.',
+                    $class->getName(),
+                    BlockInterface::class,
+                ),
+                sprintf('Declare %s with `implements \\%s`.', $class->getName(), BlockInterface::class),
+            );
+
+            return;
         }
 
         $this->addItem($location, [

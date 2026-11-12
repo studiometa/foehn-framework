@@ -4,14 +4,21 @@ declare(strict_types=1);
 
 use Studiometa\Foehn\Config\FoehnConfig;
 use Studiometa\Foehn\Discovery\CliCommandDiscovery;
+use Studiometa\Foehn\Discovery\DiscoveryLocations;
 use Studiometa\Foehn\Discovery\DiscoveryPhase;
+use Studiometa\Foehn\Discovery\DiscoveryProblems;
+use Studiometa\Foehn\Discovery\DiscoveryRunner;
 use Studiometa\Foehn\Discovery\HookDiscovery;
 use Studiometa\Foehn\Discovery\PostTypeDiscovery;
 use Studiometa\Foehn\Discovery\RestRouteDiscovery;
-use Tempest\Container\GenericContainer;
+use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use Tempest\Discovery\Discovery;
+use Tempest\Discovery\DiscoveryCache;
+use Tempest\Discovery\DiscoveryCacheStrategy;
 use Tests\Fixtures\CustomDiscovery\DefaultPhaseFixtureDiscovery;
 use Tests\Fixtures\CustomDiscovery\LateFixtureDiscovery;
+use Tests\Fixtures\ProblemApp\Article;
+use Tests\Fixtures\ProblemApp\Gallery;
 
 describe('discovery classes are discovered', function () {
     beforeEach(function () {
@@ -135,94 +142,115 @@ describe('DiscoveryRunner phase execution', function () {
     });
 });
 
-describe('DiscoveryRunner debug logging', function () {
-    it('logs reflection failures when debug is enabled', function () {
-        $container = new GenericContainer();
-        $config = new FoehnConfig(debug: true);
+/**
+ * Run a callback and return the E_USER_WARNING messages it raised.
+ *
+ * @return list<string>
+ */
+function userWarnings(Closure $callback): array
+{
+    $warnings = [];
 
-        $runner = testDiscoveryRunner($container, config: $config);
-
-        // Use reflection to access the private logDiscoveryFailure method
-        $method = new ReflectionMethod($runner, 'logDiscoveryFailure');
-
-        $warningTriggered = false;
-        $warningMessage = '';
-
-        set_error_handler(function ($errno, $errstr) use (&$warningTriggered, &$warningMessage) {
-            if ($errno === E_USER_WARNING) {
-                $warningTriggered = true;
-                $warningMessage = $errstr;
-            }
-
-            return true;
-        });
-
-        try {
-            $exception = new ReflectionException('Class not found');
-            $method->invoke($runner, 'App\\NonExistentClass', $exception);
-        } finally {
-            restore_error_handler();
+    set_error_handler(function (int $errno, string $errstr) use (&$warnings): bool {
+        if ($errno === E_USER_WARNING) {
+            $warnings[] = $errstr;
         }
 
-        expect($warningTriggered)->toBeTrue();
-        expect($warningMessage)->toContain('[Foehn] Discovery failed for "App\\NonExistentClass"');
-        expect($warningMessage)->toContain('Class not found');
+        return true;
     });
 
-    it('does not log reflection failures when debug is disabled', function () {
-        $container = new GenericContainer();
-        $config = new FoehnConfig(debug: false);
+    try {
+        $callback();
+    } finally {
+        restore_error_handler();
+    }
 
-        $runner = testDiscoveryRunner($container, config: $config);
+    return $warnings;
+}
 
-        // Use reflection to access the private logDiscoveryFailure method
-        $method = new ReflectionMethod($runner, 'logDiscoveryFailure');
-
-        $warningTriggered = false;
-
-        set_error_handler(function ($errno) use (&$warningTriggered) {
-            if ($errno === E_USER_WARNING) {
-                $warningTriggered = true;
-            }
-
-            return true;
-        });
-
-        try {
-            $exception = new ReflectionException('Class not found');
-            $method->invoke($runner, 'App\\NonExistentClass', $exception);
-        } finally {
-            restore_error_handler();
-        }
-
-        expect($warningTriggered)->toBeFalse();
+describe('DiscoveryRunner problems', function () {
+    beforeEach(function () {
+        wp_stub_reset();
+        $this->container = bootTestContainer();
     });
 
-    it('does not log reflection failures when config is null', function () {
-        $container = new GenericContainer();
+    afterEach(fn() => tearDownTestContainer());
 
-        $runner = testDiscoveryRunner($container);
+    it('records a class it skips, and registers the others', function () {
+        $runner = testDiscoveryRunner($this->container, testFixturePath('ProblemApp'));
 
-        // Use reflection to access the private logDiscoveryFailure method
-        $method = new ReflectionMethod($runner, 'logDiscoveryFailure');
+        $classes = array_column(
+            iterator_to_array($runner->getDiscoveries()[PostTypeDiscovery::class]->getItems(), false),
+            'className',
+        );
 
-        $warningTriggered = false;
+        expect($classes)->toContain(Article::class);
+        expect($classes)->not->toContain(Gallery::class);
+        expect($runner->problems())->toBe([[
+            'class' => Gallery::class,
+            'attribute' => '#[AsPostType]',
+            'reason' =>
+                Gallery::class
+                    . ' has #[AsPostType] but does not extend Timber\Post, so the post type is not registered.',
+            'fix' => 'Declare ' . Gallery::class . ' with `extends \Timber\Post`.',
+        ]]);
+    });
 
-        set_error_handler(function ($errno) use (&$warningTriggered) {
-            if ($errno === E_USER_WARNING) {
-                $warningTriggered = true;
-            }
+    it('restores what it recorded from a warm discovery cache', function () {
+        $pool = new ArrayAdapter();
+        $locations = new DiscoveryLocations(testFixturePath('ProblemApp'));
+        $runner = fn(): DiscoveryRunner => new DiscoveryRunner(
+            bootTestContainer(),
+            new DiscoveryCache(DiscoveryCacheStrategy::FULL, $pool),
+            $pool,
+            $locations,
+        );
 
-            return true;
-        });
+        $runner()->getDiscoveries();
 
-        try {
-            $exception = new ReflectionException('Class not found');
-            $method->invoke($runner, 'App\\NonExistentClass', $exception);
-        } finally {
-            restore_error_handler();
-        }
+        // A second scan would find the same class and prove nothing. Changing the
+        // stored record does: only a runner reading the cache can return it.
+        $item = $pool->getItem($locations->app()->key);
+        $entry = $item->get();
+        $entry[DiscoveryProblems::class][0]['reason'] = 'Read from the cache.';
+        $pool->save($item->set($entry));
 
-        expect($warningTriggered)->toBeFalse();
+        expect(array_column($runner()->problems(), 'reason'))->toBe(['Read from the cache.']);
+    });
+
+    it('raises a warning with the fix when debug is enabled', function () {
+        $runner = testDiscoveryRunner($this->container, testFixturePath('ProblemApp'), new FoehnConfig(debug: true));
+
+        $warnings = userWarnings(fn() => $runner->getDiscoveries());
+
+        expect($warnings)->toHaveCount(1);
+        expect($warnings[0])->toStartWith('[Foehn] ' . Gallery::class . ' has #[AsPostType]');
+        expect($warnings[0])->toEndWith('Fix: Declare ' . Gallery::class . ' with `extends \Timber\Post`.');
+    });
+
+    it('raises no warning when debug is disabled', function () {
+        $runner = testDiscoveryRunner($this->container, testFixturePath('ProblemApp'), new FoehnConfig(debug: false));
+
+        expect(userWarnings(fn() => $runner->getDiscoveries()))->toBe([]);
+        expect($runner->problems())->toHaveCount(1);
+    });
+
+    it('records an opt-in hook class that does not exist', function () {
+        $runner = testDiscoveryRunner(
+            $this->container,
+            testFixturePath('ProblemApp'),
+            new FoehnConfig(hooks: ['App\Hooks\Missing']),
+        );
+
+        $problem = array_find(
+            $runner->problems(),
+            static fn(array $problem): bool => $problem['class'] === 'App\Hooks\Missing',
+        );
+
+        expect($problem['attribute'])->toBe('hooks');
+        expect($problem['reason'])
+            ->toBe('FoehnConfig hooks names App\Hooks\Missing, which does not exist, so its hooks are not registered.');
+        expect($problem['fix'])
+            ->toBe('Fix the class name in `hooks` in foehn.config.php, or remove App\Hooks\Missing from it.');
     });
 });

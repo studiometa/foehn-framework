@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Attributes\AsSettingsPage;
+use Studiometa\Foehn\Discovery\DiscoveryProblems;
 use Studiometa\Foehn\Discovery\SettingsPageDiscovery;
 use Studiometa\Foehn\Settings\Setting;
 use Studiometa\Foehn\Settings\Settings;
@@ -15,7 +16,7 @@ beforeEach(function () {
 
     $this->container = new GenericContainer();
     $this->location = testDiscoveryLocation();
-    $this->discovery = new SettingsPageDiscovery($this->container);
+    $this->discovery = new SettingsPageDiscovery($this->container, new DiscoveryProblems());
 });
 
 describe('SettingsPageDiscovery caching', function () {
@@ -28,7 +29,10 @@ describe('SettingsPageDiscovery caching', function () {
     it('restores the item unchanged through a cache file', function () {
         discoverFixture($this->discovery, ThemeSettingsFixture::class, $this->location);
 
-        $restored = restoreThroughCacheFile($this->discovery, new SettingsPageDiscovery($this->container));
+        $restored = restoreThroughCacheFile(
+            $this->discovery,
+            new SettingsPageDiscovery($this->container, new DiscoveryProblems()),
+        );
 
         expect(iterator_to_array($restored->getItems()))->toEqual(iterator_to_array($this->discovery->getItems()));
     });
@@ -38,7 +42,10 @@ describe('SettingsPageDiscovery caching', function () {
         // var_export() with the rest of the item.
         discoverFixture($this->discovery, ThemeSettingsFixture::class, $this->location);
 
-        $item = restoreThroughCacheFile($this->discovery, new SettingsPageDiscovery($this->container))
+        $item = restoreThroughCacheFile(
+            $this->discovery,
+            new SettingsPageDiscovery($this->container, new DiscoveryProblems()),
+        )
             ->getItems()
             ->getForLocation($this->location)[0];
 
@@ -50,7 +57,10 @@ describe('SettingsPageDiscovery caching', function () {
     it('registers from the cache without calling settings() again', function () {
         discoverFixture($this->discovery, ThemeSettingsFixture::class, $this->location);
 
-        restoreThroughCacheFile($this->discovery, new SettingsPageDiscovery($this->container))->apply();
+        restoreThroughCacheFile(
+            $this->discovery,
+            new SettingsPageDiscovery($this->container, new DiscoveryProblems()),
+        )->apply();
 
         expect(wp_stub_get_calls('register_setting'))->toHaveCount(4);
         expect(Settings::get('foehn_posts_per_page'))->toBe(10);

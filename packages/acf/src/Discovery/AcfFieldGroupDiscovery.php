@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Discovery;
 
-use InvalidArgumentException;
 use Studiometa\Foehn\Attributes\AsAcfFieldGroup;
 use Studiometa\Foehn\Attributes\AsDiscovery;
 use Studiometa\Foehn\Contracts\AcfFieldGroupInterface;
@@ -21,6 +20,10 @@ use Tempest\Reflection\ClassReflector;
 final class AcfFieldGroupDiscovery implements Discovery
 {
     use IsWpDiscovery;
+
+    public function __construct(
+        private readonly DiscoveryProblems $problems,
+    ) {}
 
     /**
      * Discover ACF field group attributes on classes.
@@ -40,13 +43,20 @@ final class AcfFieldGroupDiscovery implements Discovery
             return;
         }
 
-        // Verify the class implements AcfFieldGroupInterface
         if (!$class->implements(AcfFieldGroupInterface::class)) {
-            throw new InvalidArgumentException(sprintf(
-                'Class %s must implement %s to use #[AsAcfFieldGroup]',
+            $this->problems->report(
+                $location,
                 $class->getName(),
-                AcfFieldGroupInterface::class,
-            ));
+                '#[AsAcfFieldGroup]',
+                sprintf(
+                    '%s has #[AsAcfFieldGroup] but does not implement %s, so the field group is not registered.',
+                    $class->getName(),
+                    AcfFieldGroupInterface::class,
+                ),
+                sprintf('Declare %s with `implements \\%s`.', $class->getName(), AcfFieldGroupInterface::class),
+            );
+
+            return;
         }
 
         $this->addItem($location, [

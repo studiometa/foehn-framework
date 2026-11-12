@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 use Studiometa\Foehn\Attributes\AsCliCommand;
 use Studiometa\Foehn\Discovery\CliCommandDiscovery;
+use Studiometa\Foehn\Discovery\DiscoveryProblems;
 use Tempest\Container\GenericContainer;
 use Tests\Fixtures\CliCommandFixture;
 
 beforeEach(function () {
     $this->location = testDiscoveryLocation();
-    $this->discovery = new CliCommandDiscovery(new GenericContainer());
+    $this->discovery = new CliCommandDiscovery(new GenericContainer(), new DiscoveryProblems());
 });
 
 describe('CliCommandDiscovery caching', function () {
@@ -22,7 +23,10 @@ describe('CliCommandDiscovery caching', function () {
     it('restores every item unchanged through a cache file', function () {
         discoverFixture($this->discovery, CliCommandFixture::class, $this->location);
 
-        $restored = restoreThroughCacheFile($this->discovery, new CliCommandDiscovery(new GenericContainer()));
+        $restored = restoreThroughCacheFile(
+            $this->discovery,
+            new CliCommandDiscovery(new GenericContainer(), new DiscoveryProblems()),
+        );
 
         expect(iterator_to_array($restored->getItems()))->toEqual(iterator_to_array($this->discovery->getItems()));
     });
@@ -30,7 +34,10 @@ describe('CliCommandDiscovery caching', function () {
     it('restores the attribute as an instance, not an array', function () {
         discoverFixture($this->discovery, CliCommandFixture::class, $this->location);
 
-        $item = restoreThroughCacheFile($this->discovery, new CliCommandDiscovery(new GenericContainer()))
+        $item = restoreThroughCacheFile(
+            $this->discovery,
+            new CliCommandDiscovery(new GenericContainer(), new DiscoveryProblems()),
+        )
             ->getItems()
             ->getForLocation($this->location)[0];
 

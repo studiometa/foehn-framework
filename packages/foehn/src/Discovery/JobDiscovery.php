@@ -28,6 +28,7 @@ final class JobDiscovery implements Discovery
 
     public function __construct(
         private readonly JobRegistry $jobRegistry,
+        private readonly DiscoveryProblems $problems,
     ) {}
 
     /**
@@ -51,25 +52,38 @@ final class JobDiscovery implements Discovery
             return;
         }
 
-        // Validate __invoke exists and is public
+        $fix = sprintf(
+            'Give %s a public __invoke() method whose one parameter is typed with the job class.',
+            $class->getName(),
+        );
+
         if (
             !$class->getReflection()->hasMethod('__invoke')
             || !$class->getReflection()->getMethod('__invoke')->isPublic()
         ) {
+            $this->reject($location, $class, 'has no public __invoke() method', $fix);
+
             return;
         }
 
-        $invoke = $class->getReflection()->getMethod('__invoke');
-        $params = $invoke->getParameters();
+        $params = $class->getReflection()->getMethod('__invoke')->getParameters();
 
-        // Must have exactly one typed parameter (the DTO)
         if (count($params) !== 1) {
+            $this->reject(
+                $location,
+                $class,
+                sprintf('has an __invoke() method with %d parameters instead of one', count($params)),
+                $fix,
+            );
+
             return;
         }
 
         $paramType = $params[0]->getType();
 
         if (!$paramType instanceof ReflectionNamedType || $paramType->isBuiltin()) {
+            $this->reject($location, $class, 'has an __invoke() parameter that is not typed with a class', $fix);
+
             return;
         }
 
@@ -80,6 +94,20 @@ final class JobDiscovery implements Discovery
             'handlerClass' => $class->getName(),
             'dtoClass' => $paramType->getName(),
         ]);
+    }
+
+    /**
+     * Report a handler whose __invoke() cannot receive a job.
+     */
+    private function reject(DiscoveryLocation $location, ClassReflector $class, string $what, string $fix): void
+    {
+        $this->problems->report(
+            $location,
+            $class->getName(),
+            '#[AsJob]',
+            sprintf('%s has #[AsJob] but %s, so it handles no job.', $class->getName(), $what),
+            $fix,
+        );
     }
 
     /**

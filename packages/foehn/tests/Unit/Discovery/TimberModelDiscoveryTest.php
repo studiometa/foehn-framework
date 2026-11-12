@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Studiometa\Foehn\Discovery\DiscoveryProblems;
 use Studiometa\Foehn\Discovery\TimberModelDiscovery;
 use Tests\Fixtures\InvalidTimberModelFixture;
 use Tests\Fixtures\NoAttributeFixture;
@@ -10,7 +11,7 @@ use Tests\Fixtures\TimberModelTermFixture;
 
 beforeEach(function () {
     $this->location = testDiscoveryLocation();
-    $this->discovery = new TimberModelDiscovery();
+    $this->discovery = new TimberModelDiscovery(new DiscoveryProblems());
 });
 
 describe('TimberModelDiscovery', function () {
@@ -48,12 +49,21 @@ describe('TimberModelDiscovery', function () {
         expect($this->discovery->getItems())->toHaveCount(0);
     });
 
-    it('throws when class does not extend Timber Post or Term', function () {
-        expect(fn() => $this->discovery->discover(
-            $this->location,
-            new \Tempest\Reflection\ClassReflector(InvalidTimberModelFixture::class),
-        ))
-            ->toThrow(InvalidArgumentException::class, 'must extend');
+    it('reports a class that extends neither Timber Post nor Term, and skips it', function () {
+        expect(rejectedProblems(
+            fn(DiscoveryProblems $problems) => new TimberModelDiscovery($problems),
+            InvalidTimberModelFixture::class,
+        ))->toBe([[
+            'class' => InvalidTimberModelFixture::class,
+            'attribute' => '#[AsTimberModel]',
+            'reason' =>
+                InvalidTimberModelFixture::class
+                    . ' has #[AsTimberModel] but extends neither Timber\\Post nor Timber\\Term, so Timber does not map it.',
+            'fix' =>
+                'Declare '
+                    . InvalidTimberModelFixture::class
+                    . ' with `extends \\Timber\\Post` for a post type or `extends \\Timber\\Term` for a taxonomy.',
+        ]]);
     });
 
     it('reports hasItems correctly', function () {

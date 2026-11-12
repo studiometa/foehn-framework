@@ -3,13 +3,14 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Discovery\CronDiscovery;
+use Studiometa\Foehn\Discovery\DiscoveryProblems;
 use Tests\Fixtures\CronFixture;
 
 beforeEach(function () {
     wp_stub_reset();
     $this->container = bootTestContainer();
     $this->location = testDiscoveryLocation();
-    $this->discovery = new CronDiscovery();
+    $this->discovery = new CronDiscovery(new DiscoveryProblems());
 });
 
 afterEach(fn() => tearDownTestContainer());

@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Studiometa\Foehn\Blocks\BlockEditorAssets;
 use Studiometa\Foehn\Config\FoehnConfig;
 use Studiometa\Foehn\Discovery\BlockDiscovery;
+use Studiometa\Foehn\Discovery\DiscoveryProblems;
 use Studiometa\Foehn\Discovery\DiscoveryRunner;
 use Tempest\Container\GenericContainer;
 use Tests\Fixtures\BlockFixture;
@@ -16,7 +17,7 @@ beforeEach(function () {
 
     // BlockDiscovery is not a container singleton, so the definitions must come
     // from the discovery instance the DiscoveryRunner holds.
-    $this->discovery = new BlockDiscovery();
+    $this->discovery = new BlockDiscovery(new DiscoveryProblems());
     $this->discovery->discover(
         testDiscoveryLocation('Tests\\Fixtures\\', __DIR__),
         new \Tempest\Reflection\ClassReflector(BlockFixture::class),
@@ -111,7 +112,7 @@ describe('BlockEditorAssets', function () {
     });
 
     it('does nothing when no block was discovered', function () {
-        $runner = ($this->makeRunner)([BlockDiscovery::class => new BlockDiscovery()]);
+        $runner = ($this->makeRunner)([BlockDiscovery::class => new BlockDiscovery(new DiscoveryProblems())]);
         $assets = new BlockEditorAssets($runner, new FoehnConfig());
 
         $assets->enqueue();

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Discovery\BlockDiscovery;
+use Studiometa\Foehn\Discovery\DiscoveryProblems;
 use Tests\Fixtures\BlockFixture;
 use Tests\Fixtures\ContainerBlockFixture;
 
@@ -10,7 +11,7 @@ beforeEach(function () {
     $this->location = testDiscoveryLocation();
     wp_stub_reset();
     bootTestContainer();
-    $this->discovery = new BlockDiscovery();
+    $this->discovery = new BlockDiscovery(new DiscoveryProblems());
 });
 
 afterEach(fn() => tearDownTestContainer());

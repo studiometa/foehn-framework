@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Attributes\AsRewriteRule;
+use Studiometa\Foehn\Discovery\DiscoveryProblems;
 use Studiometa\Foehn\Discovery\RewriteRuleDiscovery;
 use Tempest\Container\GenericContainer;
 use Tests\Fixtures\RewriteRuleFixture;
@@ -14,7 +15,7 @@ beforeEach(function () {
 
     $this->container = new GenericContainer();
     $this->location = testDiscoveryLocation();
-    $this->discovery = new RewriteRuleDiscovery($this->container);
+    $this->discovery = new RewriteRuleDiscovery($this->container, new DiscoveryProblems());
 });
 
 describe('RewriteRuleDiscovery caching', function () {
@@ -27,7 +28,10 @@ describe('RewriteRuleDiscovery caching', function () {
     it('restores the item unchanged through a cache file', function () {
         discoverFixture($this->discovery, RewriteRuleFixture::class, $this->location);
 
-        $restored = restoreThroughCacheFile($this->discovery, new RewriteRuleDiscovery($this->container));
+        $restored = restoreThroughCacheFile(
+            $this->discovery,
+            new RewriteRuleDiscovery($this->container, new DiscoveryProblems()),
+        );
 
         expect(iterator_to_array($restored->getItems()))->toEqual(iterator_to_array($this->discovery->getItems()));
     });
@@ -35,7 +39,10 @@ describe('RewriteRuleDiscovery caching', function () {
     it('registers and dispatches from the cache without reflecting the class', function () {
         discoverFixture($this->discovery, RewriteRuleFixture::class, $this->location);
 
-        $restored = restoreThroughCacheFile($this->discovery, new RewriteRuleDiscovery($this->container));
+        $restored = restoreThroughCacheFile(
+            $this->discovery,
+            new RewriteRuleDiscovery($this->container, new DiscoveryProblems()),
+        );
         $restored->apply();
 
         expect(wp_stub_get_calls('add_rewrite_rule'))->toHaveCount(1);
@@ -53,7 +60,10 @@ describe('RewriteRuleDiscovery caching', function () {
     it('restores the attribute as an instance, not an array', function () {
         discoverFixture($this->discovery, RewriteRuleFixture::class, $this->location);
 
-        $item = restoreThroughCacheFile($this->discovery, new RewriteRuleDiscovery($this->container))
+        $item = restoreThroughCacheFile(
+            $this->discovery,
+            new RewriteRuleDiscovery($this->container, new DiscoveryProblems()),
+        )
             ->getItems()
             ->getForLocation($this->location)[0];
 

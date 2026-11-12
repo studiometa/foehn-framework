@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Studiometa\Foehn\Discovery\AcfBlockDiscovery;
 use Studiometa\Foehn\Discovery\BlockDiscovery;
 use Studiometa\Foehn\Discovery\BlockPatternDiscovery;
+use Studiometa\Foehn\Discovery\DiscoveryProblems;
 use Tests\Fixtures\ConstrainedAcfBlockFixture;
 use Tests\Fixtures\ConstrainedBlockFixture;
 use Tests\Fixtures\ConstrainedBlockPatternFixture;
@@ -27,7 +28,7 @@ afterEach(fn() => tearDownTestContainer());
 describe('native block registration options', function () {
     beforeEach(function () {
         $this->register = function (string $fixture): array {
-            $discovery = new BlockDiscovery();
+            $discovery = new BlockDiscovery(new DiscoveryProblems());
             $discovery->discover($this->location, new \Tempest\Reflection\ClassReflector($fixture));
             $discovery->apply();
 
@@ -62,7 +63,7 @@ describe('native block registration options', function () {
 describe('ACF block registration options', function () {
     beforeEach(function () {
         $this->register = function (string $fixture): array {
-            $discovery = new AcfBlockDiscovery();
+            $discovery = new AcfBlockDiscovery(new DiscoveryProblems());
             $discovery->discover($this->location, new \Tempest\Reflection\ClassReflector($fixture));
             $discovery->apply();
 

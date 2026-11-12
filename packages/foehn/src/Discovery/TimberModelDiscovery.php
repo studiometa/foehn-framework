@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Discovery;
 
-use InvalidArgumentException;
 use Studiometa\Foehn\Attributes\AsDiscovery;
 use Studiometa\Foehn\Attributes\AsTimberModel;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
@@ -24,6 +23,10 @@ use Timber\Term;
 final class TimberModelDiscovery implements Discovery
 {
     use IsWpDiscovery;
+
+    public function __construct(
+        private readonly DiscoveryProblems $problems,
+    ) {}
 
     /**
      * Discover timber model attributes on classes.
@@ -47,12 +50,25 @@ final class TimberModelDiscovery implements Discovery
         $isTerm = $class->getReflection()->isSubclassOf(Term::class);
 
         if (!$isPost && !$isTerm) {
-            throw new InvalidArgumentException(sprintf(
-                'Class %s must extend %s or %s to use #[AsTimberModel]',
+            $this->problems->report(
+                $location,
                 $class->getName(),
-                Post::class,
-                Term::class,
-            ));
+                '#[AsTimberModel]',
+                sprintf(
+                    '%s has #[AsTimberModel] but extends neither %s nor %s, so Timber does not map it.',
+                    $class->getName(),
+                    Post::class,
+                    Term::class,
+                ),
+                sprintf(
+                    'Declare %s with `extends \\%s` for a post type or `extends \\%s` for a taxonomy.',
+                    $class->getName(),
+                    Post::class,
+                    Term::class,
+                ),
+            );
+
+            return;
         }
 
         $this->addItem($location, [

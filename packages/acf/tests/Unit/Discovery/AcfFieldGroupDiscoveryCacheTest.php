@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 use Studiometa\Foehn\Attributes\AsAcfFieldGroup;
 use Studiometa\Foehn\Discovery\AcfFieldGroupDiscovery;
+use Studiometa\Foehn\Discovery\DiscoveryProblems;
 use Tests\Fixtures\AcfFieldGroupComplexLocationFixture;
 use Tests\Fixtures\AcfFieldGroupFixture;
 
 beforeEach(function () {
     $this->location = testDiscoveryLocation();
-    $this->discovery = new AcfFieldGroupDiscovery();
+    $this->discovery = new AcfFieldGroupDiscovery(new DiscoveryProblems());
 });
 
 describe('AcfFieldGroupDiscovery caching', function () {
@@ -22,7 +23,7 @@ describe('AcfFieldGroupDiscovery caching', function () {
     it('restores every item unchanged through a cache file', function () {
         discoverFixture($this->discovery, AcfFieldGroupFixture::class, $this->location);
 
-        $restored = restoreThroughCacheFile($this->discovery, new AcfFieldGroupDiscovery());
+        $restored = restoreThroughCacheFile($this->discovery, new AcfFieldGroupDiscovery(new DiscoveryProblems()));
 
         expect(iterator_to_array($restored->getItems()))->toEqual(iterator_to_array($this->discovery->getItems()));
     });
@@ -30,7 +31,7 @@ describe('AcfFieldGroupDiscovery caching', function () {
     it('restores the attribute as an instance, not an array', function () {
         discoverFixture($this->discovery, AcfFieldGroupFixture::class, $this->location);
 
-        $item = restoreThroughCacheFile($this->discovery, new AcfFieldGroupDiscovery())
+        $item = restoreThroughCacheFile($this->discovery, new AcfFieldGroupDiscovery(new DiscoveryProblems()))
             ->getItems()
             ->getForLocation($this->location)[0];
 
@@ -47,7 +48,7 @@ describe('AcfFieldGroupDiscovery caching', function () {
     it('restores a full ACF location format unchanged', function () {
         discoverFixture($this->discovery, AcfFieldGroupComplexLocationFixture::class, $this->location);
 
-        $restored = restoreThroughCacheFile($this->discovery, new AcfFieldGroupDiscovery());
+        $restored = restoreThroughCacheFile($this->discovery, new AcfFieldGroupDiscovery(new DiscoveryProblems()));
 
         expect(iterator_to_array($restored->getItems()))->toEqual(iterator_to_array($this->discovery->getItems()));
     });

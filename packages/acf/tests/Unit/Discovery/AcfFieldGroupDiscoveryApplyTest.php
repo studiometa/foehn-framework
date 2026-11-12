@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Discovery\AcfFieldGroupDiscovery;
+use Studiometa\Foehn\Discovery\DiscoveryProblems;
 use Tests\Fixtures\AcfFieldGroupComplexLocationFixture;
 use Tests\Fixtures\AcfFieldGroupFixture;
 
@@ -10,7 +11,7 @@ beforeEach(function () {
     $this->location = testDiscoveryLocation();
     wp_stub_reset();
     bootTestContainer();
-    $this->discovery = new AcfFieldGroupDiscovery();
+    $this->discovery = new AcfFieldGroupDiscovery(new DiscoveryProblems());
 });
 
 afterEach(fn() => tearDownTestContainer());
@@ -88,7 +89,7 @@ describe('AcfFieldGroupDiscovery apply', function () {
     });
 
     it('registers the same field group whether scanned or restored from cache', function () {
-        $scanned = new AcfFieldGroupDiscovery();
+        $scanned = new AcfFieldGroupDiscovery(new DiscoveryProblems());
         discoverFixture($scanned, AcfFieldGroupFixture::class, $this->location);
 
         restoreThroughCacheFile($scanned, $this->discovery)->apply();

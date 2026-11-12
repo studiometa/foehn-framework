@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Studiometa\Foehn\Discovery\DiscoveryProblems;
 use Studiometa\Foehn\Discovery\PostMetaDiscovery;
 use Tests\Fixtures\PostMeta\Gallery;
 use Tests\Fixtures\PostMeta\Product;
@@ -25,7 +26,7 @@ beforeEach(fn() => wp_stub_reset());
 
 describe('PostMetaDiscovery::apply', function () {
     it('registers every declared key', function () {
-        $discovery = new PostMetaDiscovery();
+        $discovery = new PostMetaDiscovery(new DiscoveryProblems());
 
         discoverFixture($discovery, Product::class);
         $discovery->apply();
@@ -34,13 +35,13 @@ describe('PostMetaDiscovery::apply', function () {
     });
 
     it('registers nothing when nothing was discovered', function () {
-        new PostMetaDiscovery()->apply();
+        new PostMetaDiscovery(new DiscoveryProblems())->apply();
 
         expect(wp_stub_get_calls('register_meta'))->toBeEmpty();
     });
 
     it('passes the type, the subtype and the description through', function () {
-        $discovery = new PostMetaDiscovery();
+        $discovery = new PostMetaDiscovery(new DiscoveryProblems());
 
         discoverFixture($discovery, Product::class);
         $discovery->apply();
@@ -55,7 +56,7 @@ describe('PostMetaDiscovery::apply', function () {
     });
 
     it('shows a key in REST by default', function () {
-        $discovery = new PostMetaDiscovery();
+        $discovery = new PostMetaDiscovery(new DiscoveryProblems());
 
         discoverFixture($discovery, Product::class);
         $discovery->apply();
@@ -67,7 +68,7 @@ describe('PostMetaDiscovery::apply', function () {
     });
 
     it('passes an array schema through as show_in_rest', function () {
-        $discovery = new PostMetaDiscovery();
+        $discovery = new PostMetaDiscovery(new DiscoveryProblems());
 
         discoverFixture($discovery, Gallery::class);
         $discovery->apply();
@@ -76,7 +77,7 @@ describe('PostMetaDiscovery::apply', function () {
     });
 
     it('registers a repeatable key as not single', function () {
-        $discovery = new PostMetaDiscovery();
+        $discovery = new PostMetaDiscovery(new DiscoveryProblems());
 
         discoverFixture($discovery, Product::class);
         $discovery->apply();
@@ -86,7 +87,7 @@ describe('PostMetaDiscovery::apply', function () {
     });
 
     it('leaves out a default that was never declared', function () {
-        $discovery = new PostMetaDiscovery();
+        $discovery = new PostMetaDiscovery(new DiscoveryProblems());
 
         discoverFixture($discovery, Product::class);
         $discovery->apply();
@@ -97,7 +98,7 @@ describe('PostMetaDiscovery::apply', function () {
     });
 
     it('builds the auth callback from the declared capability', function () {
-        $discovery = new PostMetaDiscovery();
+        $discovery = new PostMetaDiscovery(new DiscoveryProblems());
 
         discoverFixture($discovery, Product::class);
         $discovery->apply();
@@ -108,7 +109,7 @@ describe('PostMetaDiscovery::apply', function () {
     });
 
     it('resolves the sanitizer to a method on the declaring class', function () {
-        $discovery = new PostMetaDiscovery();
+        $discovery = new PostMetaDiscovery(new DiscoveryProblems());
 
         discoverFixture($discovery, Product::class);
         $discovery->apply();
@@ -120,7 +121,7 @@ describe('PostMetaDiscovery::apply', function () {
     });
 
     it('sets no sanitizer when none was named', function () {
-        $discovery = new PostMetaDiscovery();
+        $discovery = new PostMetaDiscovery(new DiscoveryProblems());
 
         discoverFixture($discovery, Product::class);
         $discovery->apply();

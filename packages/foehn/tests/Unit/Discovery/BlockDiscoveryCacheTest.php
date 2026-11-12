@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 use Studiometa\Foehn\Attributes\AsBlock;
 use Studiometa\Foehn\Discovery\BlockDiscovery;
+use Studiometa\Foehn\Discovery\DiscoveryProblems;
 use Tests\Fixtures\BlockFixture;
 use Tests\Fixtures\ContainerBlockFixture;
 
 beforeEach(function () {
     $this->location = testDiscoveryLocation();
-    $this->discovery = new BlockDiscovery();
+    $this->discovery = new BlockDiscovery(new DiscoveryProblems());
 });
 
 describe('BlockDiscovery caching', function () {
@@ -22,7 +23,7 @@ describe('BlockDiscovery caching', function () {
     it('restores every item unchanged through a cache file', function () {
         discoverFixture($this->discovery, BlockFixture::class, $this->location);
 
-        $restored = restoreThroughCacheFile($this->discovery, new BlockDiscovery());
+        $restored = restoreThroughCacheFile($this->discovery, new BlockDiscovery(new DiscoveryProblems()));
 
         expect(iterator_to_array($restored->getItems()))->toEqual(iterator_to_array($this->discovery->getItems()));
     });
@@ -30,7 +31,7 @@ describe('BlockDiscovery caching', function () {
     it('restores the attribute as an instance, not an array', function () {
         discoverFixture($this->discovery, BlockFixture::class, $this->location);
 
-        $item = restoreThroughCacheFile($this->discovery, new BlockDiscovery())
+        $item = restoreThroughCacheFile($this->discovery, new BlockDiscovery(new DiscoveryProblems()))
             ->getItems()
             ->getForLocation($this->location)[0];
 
@@ -51,7 +52,7 @@ describe('BlockDiscovery caching', function () {
     it('restores the inner blocks configuration of a container block', function () {
         discoverFixture($this->discovery, ContainerBlockFixture::class, $this->location);
 
-        $item = restoreThroughCacheFile($this->discovery, new BlockDiscovery())
+        $item = restoreThroughCacheFile($this->discovery, new BlockDiscovery(new DiscoveryProblems()))
             ->getItems()
             ->getForLocation($this->location)[0];
 
@@ -67,7 +68,7 @@ describe('BlockDiscovery caching', function () {
         discoverFixture($this->discovery, BlockFixture::class, $this->location);
         discoverFixture($this->discovery, ContainerBlockFixture::class, $this->location);
 
-        $restored = restoreThroughCacheFile($this->discovery, new BlockDiscovery());
+        $restored = restoreThroughCacheFile($this->discovery, new BlockDiscovery(new DiscoveryProblems()));
 
         expect($restored->getEditorDefinitions())->toBe($this->discovery->getEditorDefinitions());
     });
@@ -85,7 +86,7 @@ describe('BlockDiscovery caching', function () {
 
             wp_stub_reset();
 
-            restoreThroughCacheFile($this->discovery, new BlockDiscovery())->apply();
+            restoreThroughCacheFile($this->discovery, new BlockDiscovery(new DiscoveryProblems()))->apply();
             wp_stub_get_calls('add_action')[0]['args']['callback']();
             $restored = wp_stub_get_calls('register_block_type');
         } finally {

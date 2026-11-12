@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Discovery;
 
-use InvalidArgumentException;
 use Studiometa\Foehn\Attributes\AsContextProvider;
 use Studiometa\Foehn\Attributes\AsDiscovery;
 use Studiometa\Foehn\Contracts\ContextProviderInterface;
@@ -25,6 +24,10 @@ final class ContextProviderDiscovery implements Discovery
 {
     use IsWpDiscovery;
 
+    public function __construct(
+        private readonly DiscoveryProblems $problems,
+    ) {}
+
     /**
      * Discover context provider attributes on classes.
      *
@@ -43,13 +46,20 @@ final class ContextProviderDiscovery implements Discovery
             return;
         }
 
-        // Verify the class implements ContextProviderInterface
         if (!$class->implements(ContextProviderInterface::class)) {
-            throw new InvalidArgumentException(sprintf(
-                'Class %s must implement %s to use #[AsContextProvider]',
+            $this->problems->report(
+                $location,
                 $class->getName(),
-                ContextProviderInterface::class,
-            ));
+                '#[AsContextProvider]',
+                sprintf(
+                    '%s has #[AsContextProvider] but does not implement %s, so it provides no context.',
+                    $class->getName(),
+                    ContextProviderInterface::class,
+                ),
+                sprintf('Declare %s with `implements \\%s`.', $class->getName(), ContextProviderInterface::class),
+            );
+
+            return;
         }
 
         $this->addItem($location, [

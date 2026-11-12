@@ -3,13 +3,14 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Attributes\AsTimberModel;
+use Studiometa\Foehn\Discovery\DiscoveryProblems;
 use Studiometa\Foehn\Discovery\TimberModelDiscovery;
 use Tests\Fixtures\TimberModelPostFixture;
 use Tests\Fixtures\TimberModelTermFixture;
 
 beforeEach(function () {
     $this->location = testDiscoveryLocation();
-    $this->discovery = new TimberModelDiscovery();
+    $this->discovery = new TimberModelDiscovery(new DiscoveryProblems());
 });
 
 describe('TimberModelDiscovery caching', function () {
@@ -22,7 +23,7 @@ describe('TimberModelDiscovery caching', function () {
     it('restores every item unchanged through a cache file', function () {
         discoverFixture($this->discovery, TimberModelPostFixture::class, $this->location);
 
-        $restored = restoreThroughCacheFile($this->discovery, new TimberModelDiscovery());
+        $restored = restoreThroughCacheFile($this->discovery, new TimberModelDiscovery(new DiscoveryProblems()));
 
         expect(iterator_to_array($restored->getItems()))->toEqual(iterator_to_array($this->discovery->getItems()));
     });
@@ -30,7 +31,7 @@ describe('TimberModelDiscovery caching', function () {
     it('restores the attribute as an instance, not an array', function () {
         discoverFixture($this->discovery, TimberModelPostFixture::class, $this->location);
 
-        $item = restoreThroughCacheFile($this->discovery, new TimberModelDiscovery())
+        $item = restoreThroughCacheFile($this->discovery, new TimberModelDiscovery(new DiscoveryProblems()))
             ->getItems()
             ->getForLocation($this->location)[0];
 
@@ -47,7 +48,7 @@ describe('TimberModelDiscovery caching', function () {
     it('keeps the term type of a term model', function () {
         discoverFixture($this->discovery, TimberModelTermFixture::class, $this->location);
 
-        $item = restoreThroughCacheFile($this->discovery, new TimberModelDiscovery())
+        $item = restoreThroughCacheFile($this->discovery, new TimberModelDiscovery(new DiscoveryProblems()))
             ->getItems()
             ->getForLocation($this->location)[0];
 

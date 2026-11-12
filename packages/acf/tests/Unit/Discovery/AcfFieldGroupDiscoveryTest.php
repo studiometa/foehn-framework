@@ -3,13 +3,14 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Discovery\AcfFieldGroupDiscovery;
+use Studiometa\Foehn\Discovery\DiscoveryProblems;
 use Tests\Fixtures\AcfFieldGroupFixture;
 use Tests\Fixtures\InvalidAcfFieldGroupFixture;
 use Tests\Fixtures\NoAttributeFixture;
 
 beforeEach(function () {
     $this->location = testDiscoveryLocation();
-    $this->discovery = new AcfFieldGroupDiscovery();
+    $this->discovery = new AcfFieldGroupDiscovery(new DiscoveryProblems());
 });
 
 describe('AcfFieldGroupDiscovery', function () {
@@ -40,12 +41,27 @@ describe('AcfFieldGroupDiscovery', function () {
         expect($this->discovery->getItems())->toHaveCount(0);
     });
 
-    it('throws when class does not implement AcfFieldGroupInterface', function () {
-        expect(fn() => $this->discovery->discover(
+    it('reports a class that does not implement AcfFieldGroupInterface, and skips it', function () {
+        $problems = new DiscoveryProblems();
+        $discovery = new AcfFieldGroupDiscovery($problems);
+
+        $discovery->discover(
             $this->location,
             new \Tempest\Reflection\ClassReflector(InvalidAcfFieldGroupFixture::class),
-        ))
-            ->toThrow(InvalidArgumentException::class, 'must implement');
+        );
+
+        expect($discovery->getItems())->toHaveCount(0);
+        expect($problems->all())->toBe([[
+            'class' => InvalidAcfFieldGroupFixture::class,
+            'attribute' => '#[AsAcfFieldGroup]',
+            'reason' =>
+                InvalidAcfFieldGroupFixture::class
+                    . ' has #[AsAcfFieldGroup] but does not implement Studiometa\\Foehn\\Contracts\\AcfFieldGroupInterface, so the field group is not registered.',
+            'fix' =>
+                'Declare '
+                    . InvalidAcfFieldGroupFixture::class
+                    . ' with `implements \\Studiometa\\Foehn\\Contracts\\AcfFieldGroupInterface`.',
+        ]]);
     });
 
     it('reports hasItems correctly', function () {
@@ -62,7 +78,7 @@ describe('AcfFieldGroupDiscovery', function () {
 
 describe('AcfFieldGroupDiscovery::parseLocation', function () {
     it('parses simplified location format', function () {
-        $discovery = new AcfFieldGroupDiscovery();
+        $discovery = new AcfFieldGroupDiscovery(new DiscoveryProblems());
 
         $result = $discovery->parseLocation(['post_type' => 'product']);
 
@@ -74,7 +90,7 @@ describe('AcfFieldGroupDiscovery::parseLocation', function () {
     });
 
     it('parses simplified location with multiple conditions', function () {
-        $discovery = new AcfFieldGroupDiscovery();
+        $discovery = new AcfFieldGroupDiscovery(new DiscoveryProblems());
 
         $result = $discovery->parseLocation([
             'post_type' => 'page',
@@ -90,7 +106,7 @@ describe('AcfFieldGroupDiscovery::parseLocation', function () {
     });
 
     it('passes through full ACF format unchanged', function () {
-        $discovery = new AcfFieldGroupDiscovery();
+        $discovery = new AcfFieldGroupDiscovery(new DiscoveryProblems());
 
         $fullFormat = [
             [
@@ -108,7 +124,7 @@ describe('AcfFieldGroupDiscovery::parseLocation', function () {
     });
 
     it('handles empty location array', function () {
-        $discovery = new AcfFieldGroupDiscovery();
+        $discovery = new AcfFieldGroupDiscovery(new DiscoveryProblems());
 
         $result = $discovery->parseLocation([]);
 

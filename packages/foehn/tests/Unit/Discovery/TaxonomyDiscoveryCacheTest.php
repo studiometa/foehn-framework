@@ -3,12 +3,13 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Attributes\AsTaxonomy;
+use Studiometa\Foehn\Discovery\DiscoveryProblems;
 use Studiometa\Foehn\Discovery\TaxonomyDiscovery;
 use Tests\Fixtures\TaxonomyFixture;
 
 beforeEach(function () {
     $this->location = testDiscoveryLocation();
-    $this->discovery = new TaxonomyDiscovery();
+    $this->discovery = new TaxonomyDiscovery(new DiscoveryProblems());
 });
 
 describe('TaxonomyDiscovery caching', function () {
@@ -21,7 +22,7 @@ describe('TaxonomyDiscovery caching', function () {
     it('restores every item unchanged through a cache file', function () {
         discoverFixture($this->discovery, TaxonomyFixture::class, $this->location);
 
-        $restored = restoreThroughCacheFile($this->discovery, new TaxonomyDiscovery());
+        $restored = restoreThroughCacheFile($this->discovery, new TaxonomyDiscovery(new DiscoveryProblems()));
 
         expect(iterator_to_array($restored->getItems()))->toEqual(iterator_to_array($this->discovery->getItems()));
     });
@@ -29,7 +30,7 @@ describe('TaxonomyDiscovery caching', function () {
     it('restores the attribute as an instance, not an array', function () {
         discoverFixture($this->discovery, TaxonomyFixture::class, $this->location);
 
-        $item = restoreThroughCacheFile($this->discovery, new TaxonomyDiscovery())
+        $item = restoreThroughCacheFile($this->discovery, new TaxonomyDiscovery(new DiscoveryProblems()))
             ->getItems()
             ->getForLocation($this->location)[0];
 

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Studiometa\Foehn\Discovery\DiscoveryProblems;
 use Studiometa\Foehn\Discovery\TwigExtensionDiscovery;
 use Tests\Fixtures\TwigExtensionFixture;
 use Tests\Fixtures\TwigExtensionWithPriorityFixture;
@@ -12,7 +13,7 @@ beforeEach(function () {
     $this->location = testDiscoveryLocation();
     wp_stub_reset();
     $this->container = bootTestContainer();
-    $this->discovery = new TwigExtensionDiscovery($this->container);
+    $this->discovery = new TwigExtensionDiscovery($this->container, new DiscoveryProblems());
 });
 
 afterEach(fn() => tearDownTestContainer());
@@ -82,7 +83,7 @@ describe('TwigExtensionDiscovery::apply', function () {
     });
 
     it('works with cache restoration', function () {
-        $scanned = new TwigExtensionDiscovery($this->container);
+        $scanned = new TwigExtensionDiscovery($this->container, new DiscoveryProblems());
         discoverFixture($scanned, TwigExtensionWithPriorityFixture::class, $this->location);
         discoverFixture($scanned, TwigExtensionFixture::class, $this->location);
 

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Studiometa\Foehn\Discovery\DiscoveryProblems;
 use Studiometa\Foehn\Discovery\TimberModelDiscovery;
 use Tests\Fixtures\TimberModelPostFixture;
 use Tests\Fixtures\TimberModelTermFixture;
@@ -10,7 +11,7 @@ beforeEach(function () {
     $this->location = testDiscoveryLocation();
     wp_stub_reset();
     bootTestContainer();
-    $this->discovery = new TimberModelDiscovery();
+    $this->discovery = new TimberModelDiscovery(new DiscoveryProblems());
 });
 
 afterEach(fn() => tearDownTestContainer());
@@ -76,7 +77,7 @@ describe('TimberModelDiscovery apply', function () {
     });
 
     it('registers the same class maps whether scanned or restored from cache', function () {
-        $scanned = new TimberModelDiscovery();
+        $scanned = new TimberModelDiscovery(new DiscoveryProblems());
         discoverFixture($scanned, TimberModelPostFixture::class, $this->location);
         discoverFixture($scanned, TimberModelTermFixture::class, $this->location);
 

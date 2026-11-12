@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Studiometa\Foehn\Discovery\DiscoveryProblems;
 use Studiometa\Foehn\Discovery\TaxonomyDiscovery;
 use Tests\Fixtures\TaxonomyFixture;
 
@@ -9,7 +10,7 @@ beforeEach(function () {
     $this->location = testDiscoveryLocation();
     wp_stub_reset();
     bootTestContainer();
-    $this->discovery = new TaxonomyDiscovery();
+    $this->discovery = new TaxonomyDiscovery(new DiscoveryProblems());
 });
 
 afterEach(fn() => tearDownTestContainer());
@@ -46,7 +47,7 @@ describe('TaxonomyDiscovery apply', function () {
     });
 
     it('registers the same taxonomy whether scanned or restored from cache', function () {
-        $scanned = new TaxonomyDiscovery();
+        $scanned = new TaxonomyDiscovery(new DiscoveryProblems());
         discoverFixture($scanned, TaxonomyFixture::class, $this->location);
 
         $scanned->apply();
