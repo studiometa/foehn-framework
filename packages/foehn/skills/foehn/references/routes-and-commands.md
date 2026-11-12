@@ -215,9 +215,22 @@ final readonly class PurgeExpiredExports
         // …
     }
 }
+
+#[AsCron('0 0 * * *')] // cron expression, in the site timezone (wp_timezone())
+final readonly class PurgeAgenda
+{
+    public function __invoke(): void
+    {
+        // …
+    }
+}
 ```
 
-The class needs a public `__invoke()` with no required arguments. Føhn schedules it with Action Scheduler when it is not scheduled yet. Without Action Scheduler, nothing is scheduled.
+The class needs a public `__invoke()` with no required arguments. Føhn schedules it with Action Scheduler when it is not scheduled yet, and schedules it again when its interval or expression changed. Without Action Scheduler, nothing is scheduled.
+
+- An interval starts at the first request after a deploy, so a daily job runs at any hour. Use an expression for a fixed time of day.
+- An expression has five fields (minute, hour, day of month, month, day of week). Each field takes `*`, numbers, ranges, lists and steps; no names, no `@daily`. An invalid expression skips the class and records a discovery problem.
+- Føhn does not use `as_schedule_cron_action()`: it reads expressions in UTC. Føhn saves the action with `SiteTimezoneCronSchedule` instead.
 
 ## `#[AsTwigExtension]`
 

@@ -16,7 +16,7 @@ A class that carries an attribute but breaks the contract of that attribute is n
 | `#[AsSettingsPage]`                                             | The class does not implement the interface, or it declares no form                                  |
 | `#[AsCliCommand]`, `#[AsSeeder]`                                | The class does not implement the interface of the attribute                                         |
 | `#[AsTwigExtension]`                                            | The class does not extend `Twig\Extension\AbstractExtension`                                        |
-| `#[AsCron]`                                                     | The class has no public `__invoke()` method                                                         |
+| `#[AsCron]`                                                     | The class has no public `__invoke()` method, or the cron expression is not valid                    |
 | `#[AsJob]`                                                      | `__invoke()` is missing, or it does not take one parameter typed with a class                       |
 | `#[AsRewriteRule]`                                              | `after` is not `top` or `bottom`                                                                    |
 | `#[AsPostMeta]`                                                 | The type, the object type, the REST schema or the sanitizer is not valid (only that key is skipped) |

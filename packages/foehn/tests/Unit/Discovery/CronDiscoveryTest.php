@@ -4,13 +4,25 @@ declare(strict_types=1);
 
 use Studiometa\Foehn\Discovery\CronDiscovery;
 use Studiometa\Foehn\Discovery\DiscoveryProblems;
+use Studiometa\Foehn\Jobs\SiteTimezoneCronSchedule;
 use Tests\Fixtures\CronCustomHookFixture;
+use Tests\Fixtures\CronExpressionFixture;
 use Tests\Fixtures\CronFixture;
+use Tests\Fixtures\InvalidCronExpressionFixture;
 use Tests\Fixtures\InvalidCronFixture;
 use Tests\Fixtures\NoAttributeFixture;
 
+/**
+ * A pending action for a hook, as as_get_scheduled_actions() returns it.
+ */
+function pendingCronAction(string $hook, ActionScheduler_Schedule $schedule): void
+{
+    $GLOBALS['wp_stub_as_scheduled_actions'][$hook][] = new ActionScheduler_Action($hook, [], $schedule, 'foehn');
+}
+
 beforeEach(function () {
     wp_stub_reset();
+    loadActionSchedulerSchedules();
     $this->location = testDiscoveryLocation();
     $this->discovery = new CronDiscovery($this->problems = new DiscoveryProblems());
 });
@@ -86,10 +98,11 @@ describe('CronDiscovery', function () {
         expect($scheduleCalls[0]['args']['group'])->toBe('foehn');
     });
 
-    it('does not schedule when already scheduled', function () {
-        $GLOBALS['wp_stub_as_has_scheduled'] = [
-            'foehn/tests/fixtures/cron_fixture' => true,
-        ];
+    it('does not schedule when the pending action has the same interval', function () {
+        pendingCronAction(
+            'foehn/tests/fixtures/cron_fixture',
+            new ActionScheduler_IntervalSchedule(as_get_datetime_object(), 86400),
+        );
 
         $this->discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(CronFixture::class));
         $this->discovery->apply();
@@ -102,9 +115,184 @@ describe('CronDiscovery', function () {
         ));
         expect($cronActions)->toHaveCount(1);
 
-        // But as_schedule_recurring_action should NOT be called
+        expect(wp_stub_get_calls('as_unschedule_all_actions'))->toBeEmpty();
+        expect(wp_stub_get_calls('as_schedule_recurring_action'))->toBeEmpty();
+    });
+
+    it('looks for pending actions of the hook in its group', function () {
+        $this->discovery->discover(
+            $this->location,
+            new \Tempest\Reflection\ClassReflector(CronCustomHookFixture::class),
+        );
+        $this->discovery->apply();
+
+        expect(wp_stub_get_calls('as_get_scheduled_actions')[0]['args']['args'])->toBe([
+            'hook' => 'my_plugin/sync_data',
+            'group' => 'my-plugin',
+            'status' => 'pending',
+        ]);
+    });
+
+    it('does not schedule while an instance is running', function () {
+        // A running instance has no pending action yet: it schedules the next one when it ends.
+        $GLOBALS['wp_stub_as_has_scheduled'] = [
+            'foehn/tests/fixtures/cron_fixture' => true,
+        ];
+
+        $this->discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(CronFixture::class));
+        $this->discovery->apply();
+
+        expect(wp_stub_get_calls('as_schedule_recurring_action'))->toBeEmpty();
+    });
+
+    it('reschedules when the interval changed', function () {
+        pendingCronAction(
+            'foehn/tests/fixtures/cron_fixture',
+            new ActionScheduler_IntervalSchedule(as_get_datetime_object(), 3600),
+        );
+
+        $this->discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(CronFixture::class));
+        $this->discovery->apply();
+
+        $unscheduleCalls = wp_stub_get_calls('as_unschedule_all_actions');
+        expect($unscheduleCalls)->toHaveCount(1);
+        expect($unscheduleCalls[0]['args'])->toBe([
+            'hook' => 'foehn/tests/fixtures/cron_fixture',
+            'args' => [],
+            'group' => 'foehn',
+        ]);
+
         $scheduleCalls = wp_stub_get_calls('as_schedule_recurring_action');
-        expect($scheduleCalls)->toHaveCount(0);
+        expect($scheduleCalls)->toHaveCount(1);
+        expect($scheduleCalls[0]['args']['intervalInSeconds'])->toBe(86400);
+    });
+
+    it('reschedules an expression that became an interval', function () {
+        pendingCronAction(
+            'foehn/tests/fixtures/cron_fixture',
+            new SiteTimezoneCronSchedule(as_get_datetime_object(), '0 0 * * *'),
+        );
+
+        $this->discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(CronFixture::class));
+        $this->discovery->apply();
+
+        expect(wp_stub_get_calls('as_unschedule_all_actions'))->toHaveCount(1);
+        expect(wp_stub_get_calls('as_schedule_recurring_action'))->toHaveCount(1);
+    });
+
+    it('schedules a cron expression in the site timezone', function () {
+        $GLOBALS['wp_stub_timezone'] = 'Europe/Paris';
+
+        $this->discovery->discover(
+            $this->location,
+            new \Tempest\Reflection\ClassReflector(CronExpressionFixture::class),
+        );
+        $this->discovery->apply();
+
+        expect(wp_stub_get_calls('as_schedule_recurring_action'))->toBeEmpty();
+
+        $saveCalls = wp_stub_get_calls('ActionScheduler::store()->save_action');
+        expect($saveCalls)->toHaveCount(1);
+
+        /** @var ActionScheduler_Action $action */
+        $action = $saveCalls[0]['args']['action'];
+        expect($action->get_hook())->toBe('foehn/tests/fixtures/cron_expression_fixture');
+        expect($action->get_args())->toBe([]);
+        expect($action->get_group())->toBe('foehn');
+
+        $schedule = $action->get_schedule();
+        expect($schedule)->toBeInstanceOf(SiteTimezoneCronSchedule::class);
+        expect($schedule->get_recurrence())->toBe('0 0 * * *');
+
+        // The first run is the next midnight in Paris.
+        $expected = new DateTimeImmutable('tomorrow', new DateTimeZone('Europe/Paris'));
+        expect($schedule->get_date()->getTimestamp())->toBe($expected->getTimestamp());
+    });
+
+    it('does not schedule when the pending action has the same expression', function () {
+        pendingCronAction(
+            'foehn/tests/fixtures/cron_expression_fixture',
+            new SiteTimezoneCronSchedule(as_get_datetime_object(), '0 0 * * *'),
+        );
+
+        $this->discovery->discover(
+            $this->location,
+            new \Tempest\Reflection\ClassReflector(CronExpressionFixture::class),
+        );
+        $this->discovery->apply();
+
+        expect(wp_stub_get_calls('as_unschedule_all_actions'))->toBeEmpty();
+        expect(wp_stub_get_calls('ActionScheduler::store()->save_action'))->toBeEmpty();
+    });
+
+    it('reschedules when the expression changed', function () {
+        pendingCronAction(
+            'foehn/tests/fixtures/cron_expression_fixture',
+            new SiteTimezoneCronSchedule(as_get_datetime_object(), '0 3 * * *'),
+        );
+
+        $this->discovery->discover(
+            $this->location,
+            new \Tempest\Reflection\ClassReflector(CronExpressionFixture::class),
+        );
+        $this->discovery->apply();
+
+        expect(wp_stub_get_calls('as_unschedule_all_actions'))->toHaveCount(1);
+
+        $saveCalls = wp_stub_get_calls('ActionScheduler::store()->save_action');
+        expect($saveCalls)->toHaveCount(1);
+        expect($saveCalls[0]['args']['action']->get_schedule()->get_recurrence())->toBe('0 0 * * *');
+    });
+
+    it('reschedules an interval that became an expression', function () {
+        pendingCronAction(
+            'foehn/tests/fixtures/cron_expression_fixture',
+            new ActionScheduler_IntervalSchedule(as_get_datetime_object(), 86400),
+        );
+
+        $this->discovery->discover(
+            $this->location,
+            new \Tempest\Reflection\ClassReflector(CronExpressionFixture::class),
+        );
+        $this->discovery->apply();
+
+        expect(wp_stub_get_calls('as_unschedule_all_actions'))->toHaveCount(1);
+        expect(wp_stub_get_calls('ActionScheduler::store()->save_action'))->toHaveCount(1);
+    });
+
+    it('reschedules an expression that Action Scheduler would read in UTC', function () {
+        // Same expression, but in a plain ActionScheduler_CronSchedule.
+        pendingCronAction(
+            'foehn/tests/fixtures/cron_expression_fixture',
+            new ActionScheduler_CronSchedule(as_get_datetime_object(), '0 0 * * *'),
+        );
+
+        $this->discovery->discover(
+            $this->location,
+            new \Tempest\Reflection\ClassReflector(CronExpressionFixture::class),
+        );
+        $this->discovery->apply();
+
+        expect(wp_stub_get_calls('as_unschedule_all_actions'))->toHaveCount(1);
+        expect(wp_stub_get_calls('ActionScheduler::store()->save_action'))->toHaveCount(1);
+    });
+
+    it('reports an invalid cron expression and skips the class', function () {
+        $this->discovery->discover(
+            $this->location,
+            new \Tempest\Reflection\ClassReflector(InvalidCronExpressionFixture::class),
+        );
+
+        expect($this->discovery->getItems())->toHaveCount(0);
+        expect($this->problems->all()[0]['attribute'])->toBe('#[AsCron]');
+        expect($this->problems->all()[0]['reason'])
+            ->toBe(
+                InvalidCronExpressionFixture::class
+                . ' has #[AsCron] with an invalid schedule, so the event is not scheduled.'
+                . ' "0 0 * *" is not a valid cron expression: it must have 5 fields'
+                . ' (minute, hour, day of month, month, day of week), it has 4.',
+            );
+        expect($this->problems->all()[0]['fix'])->toContain('`0 0 * * *`');
     });
 
     it('does nothing on apply when no items discovered', function () {
