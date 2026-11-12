@@ -182,6 +182,25 @@ describe('Warmer', function () {
         expect(pageCacheWarmer($config)->urls())->toBe(['http://example.com/', 'http://example.com/?lang=fr&page=2']);
     });
 
+    it('reads a location written in a CDATA section', function () {
+        $config = new PageCacheConfig(
+            enabled: true,
+            path: pageCacheRoot(),
+            cacheQueryArgs: ['lang'],
+            warmSitemap: 'http://example.com/sitemap.xml',
+        );
+        $GLOBALS['wp_stub_remote_bodies'] = [
+            'http://example.com/sitemap.xml' => <<<'XML'
+                <sitemapindex><sitemap><loc><![CDATA[ http://example.com/page-sitemap.xml ]]></loc></sitemap></sitemapindex>
+                XML,
+            'http://example.com/page-sitemap.xml' => <<<'XML'
+                <urlset><url><loc><![CDATA[http://example.com/about/?lang=fr]]></loc></url></urlset>
+                XML,
+        ];
+
+        expect(pageCacheWarmer($config)->urls())->toBe(['http://example.com/', 'http://example.com/about/?lang=fr']);
+    });
+
     it('stops following sitemap indexes two levels down, so a loop ends', function () {
         $config = new PageCacheConfig(enabled: true, path: pageCacheRoot(), warmSitemap: 'http://example.com/a.xml');
         $index = static fn(string $next): string => (

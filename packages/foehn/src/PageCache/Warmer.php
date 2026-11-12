@@ -225,7 +225,8 @@ final readonly class Warmer
      * The `<loc>` values of a sitemap or a sitemap index.
      *
      * Only the bare `<loc>` element: the `<image:loc>` of an image sitemap extension is
-     * an image, not a page.
+     * an image, not a page. A location in a CDATA section, as some SEO plugins write it,
+     * is taken as it is, with no entity to decode.
      *
      * @return list<string>
      */
@@ -235,12 +236,22 @@ final readonly class Warmer
         preg_match_all('#<loc>\s*(.*?)\s*</loc>#s', $xml, $matches);
 
         return array_values(array_filter(
-            array_map(static fn(string $location): string => html_entity_decode(
-                $location,
-                ENT_QUOTES | ENT_XML1,
-                'UTF-8',
-            ), $matches[1]),
+            array_map(self::location(...), $matches[1]),
             static fn(string $location): bool => $location !== '',
         ));
+    }
+
+    /**
+     * The URL in the text of one `<loc>` element.
+     */
+    private static function location(string $text): string
+    {
+        $cdata = [];
+
+        if (preg_match('#^<!\[CDATA\[\s*(.*?)\s*\]\]>$#s', $text, $cdata) === 1) {
+            return $cdata[1];
+        }
+
+        return html_entity_decode($text, ENT_QUOTES | ENT_XML1, 'UTF-8');
     }
 }
