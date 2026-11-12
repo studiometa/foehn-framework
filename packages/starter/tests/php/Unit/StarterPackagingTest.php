@@ -102,6 +102,8 @@ describe('starter packaging', function () {
         expect($agents)
             ->toContain('wp foehn skill')
             ->toContain('wp foehn inspect')
+            ->toContain('wp foehn make:seeder')
+            ->toContain('wp foehn seed')
             ->toContain('vendor/studiometa/foehn/skills/foehn/SKILL.md')
             ->toContain('node_modules/@studiometa/foehn-vite-plugin/skills');
         expect((string) file_get_contents($racine . '/CLAUDE.md'))->toBe("@AGENTS.md\n");

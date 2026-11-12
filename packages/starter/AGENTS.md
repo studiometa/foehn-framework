@@ -39,8 +39,16 @@ The project runs in DDEV. Run WP-CLI as `ddev wp …`. Without DDEV, run `wp …
 
 <!-- Fill in this section for the project and keep it current: an agent follows what it says. Remove a line that does not apply. -->
 
-- Sample content: _where it is created, for example `database/seed.php`, run with `ddev wp eval-file database/seed.php`. Add new sample content there, not by hand._
-- Menus: _which menu is assigned to each `#[AsMenu]` location, and where the items are created._ `wp menu item add-*` takes a menu, not a location: `ddev wp menu list --fields=term_id,slug,locations` gives the menu of each location.
+- Sample content and menus: in seeders (`theme/app/Seeders/`), never only in the database, so an empty or replaced database gets them back. Do not create them with one-off `wp post create` or `wp menu` commands. A seeder is idempotent: it finds each post by slug (`Upsert::post()`), each attachment by meta and each menu by name before it creates it. `wp menu item add-*` takes a menu, not a location: `ddev wp menu list --fields=term_id,slug,locations` gives the menu of each location.
+
+  ```bash
+  ddev wp foehn make:seeder events --dry-run --format=json
+  ddev wp foehn make:seeder events --format=json
+  ddev wp foehn discovery:clear
+  ddev wp foehn seed                       # every seeder, by order; run it twice: the second run creates nothing
+  ddev wp foehn seed --class=EventsSeeder  # one seeder
+  ```
+
 - Editors: _how editors edit post meta: `custom-fields` support, ACF field groups or block bindings._
 - Checks: _the commands to run before a commit, in addition to the ones below._
 
