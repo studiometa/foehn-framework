@@ -319,6 +319,84 @@ The one header the snippet derives rather than leaves behind is the `X-Robots-Ta
 - **A page whose content depends on a post in a way the rules do not model goes stale.** The TTL and the sweep are the safety net, which is why they ship in v1 rather than later.
 - **`.maintenance` is only seen by the PHP readers on a WordPress in a subdirectory.** Core writes the file next to `wp-settings.php`, and the server snippets can only test the document root above it. Maintenance windows are seconds long and plugin activation flushes the cache, so this is a note rather than a hazard.
 
+## The headers of a hit
+
+A hit sends these headers, from nginx and from the drop-in alike:
+
+| Header                     | Value                                                                               |
+| -------------------------- | ----------------------------------------------------------------------------------- |
+| `Cache-Control`            | `public, max-age=<browserMaxAge>, must-revalidate`, or the value of `cacheControl`  |
+| `Vary`                     | `Cookie, Accept-Encoding`                                                           |
+| `ETag`, `Last-Modified`    | Computed for the stored file                                                        |
+| `X-Robots-Tag`             | `noindex, nofollow` on a section response only                                      |
+| `X-Foehn-Cache`, `-Via`    | `HIT` and the reader. nginx always sends them; the drop-in only with `debugHeaders` |
+| Each `responseHeaders` one | The value you set                                                                   |
+
+The drop-in also replays the headers the page recorded ([see above](#the-headers)). A `responseHeaders` value replaces a recorded header with the same name.
+
+The Apache block sets `X-Foehn-Cache`, `X-Foehn-Cache-Via` and `Vary` only. It does not write `cacheControl` or `responseHeaders`. Apache merges the headers of the server configuration into the `.htaccess` ones, so a server-level header is not lost on an Apache hit.
+
+### `Cache-Control`
+
+Set `cacheControl` to send another value. For example, a site that migrates from WP Rocket and must keep the browser from storing the page:
+
+```php
+return new PageCacheConfig(
+    enabled: true,
+    cacheControl: 'no-cache, no-store, must-revalidate',
+);
+```
+
+The value replaces the whole header, and `browserMaxAge` then has no effect. Without `no-store`, a browser can keep the page in its back/forward cache, and a shared cache can store it.
+
+### Server-level headers and nginx
+
+nginx has one rule that removes headers from hits: **a `location` that has its own `add_header` drops every `add_header` of the `server` (and `http`) level.** The headers are not merged. The cache location of the generated snippet has its own `add_header` lines, so a page that nginx serves from the cache does not get the server-level headers. The same page rendered by PHP gets them, because the PHP location has no `add_header` of its own.
+
+The Laravel Forge nginx template is an example. It sets these lines at server level:
+
+```nginx
+server {
+    add_header X-Frame-Options "SAMEORIGIN";
+    add_header X-XSS-Protection "1; mode=block";
+    add_header X-Content-Type-Options "nosniff";
+
+    include /path/to/project/config/nginx/foehn-page-cache.conf;
+    # ...
+}
+```
+
+With the snippet installed, a miss has the three headers and a hit from nginx has none of them. The stored headers do not help: nginx cannot replay them, and they never contain the headers that nginx adds.
+
+You have two options.
+
+**1. List the server-level headers in `responseHeaders`.** This is the recommended option. Copy each server-level `add_header` into the configuration, then regenerate the snippet with `wp foehn cache:config --server=nginx --write` and reload nginx:
+
+```php
+return new PageCacheConfig(
+    enabled: true,
+    responseHeaders: [
+        'X-Frame-Options' => 'SAMEORIGIN',
+        'X-XSS-Protection' => '1; mode=block',
+        'X-Content-Type-Options' => 'nosniff',
+    ],
+);
+```
+
+The snippet writes them into the cache location, and the drop-in sends them too, so a hit has the same headers as a miss. When you change a server-level header, change it here too: `wp foehn cache:status` shows the snippet as outdated until you regenerate it.
+
+**2. Do not install the nginx snippet.** The drop-in then serves every hit through the PHP location, which keeps the server-level headers. A hit costs a few milliseconds instead of one, and the cache directory is not protected by the snippet.
+
+`responseHeaders` is for static headers. Some rules apply:
+
+- The names contain letters, digits and hyphens only.
+- The values are printable ASCII, without `"`, `\` or `$`, and without spaces at the start or the end. The same rule applies to `cacheControl`.
+- A header that the cache sets itself (`Cache-Control`, `Vary`, `ETag`, `Content-Type`, `Set-Cookie`, `X-Robots-Tag`, `X-Foehn-Cache` and the other [headers that are never stored](#the-headers)) is refused. Use `cacheControl` for `Cache-Control`.
+
+A value that breaks these rules makes `wp foehn cache:config` fail and stops the drop-in from serving hits. It never stops WordPress: the page is rendered by PHP.
+
+The headers are not added to a page that PHP renders. That page already gets the server-level headers from the web server, and adding them from PHP too would send each one twice. For the same reason, a drop-in hit behind nginx can send a configured header twice with the same value: once from PHP, once from the server level. Browsers accept a repeated identical value for these headers.
+
 ## TTL and the sweep
 
 `ttl` is the number of seconds a stored page stays servable, and `0` means "until something purges it".

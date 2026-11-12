@@ -18,6 +18,8 @@ final readonly class PageCacheConfig
         public ?string $path = null,
         public int $ttl = 0,
         public int $browserMaxAge = 0,
+        public ?string $cacheControl = null,
+        public array $responseHeaders = [],
         public array $environments = ['production'],
         public array $bypassCookies = ['wordpress_logged_in_', 'comment_author_', 'wp-postpass_'],
         public array $ignoredQueryArgs = [
@@ -38,23 +40,25 @@ final readonly class PageCacheConfig
 
 ## Properties
 
-| Property                  | Type                                  | Default                  | Description                                                                 |
-| ------------------------- | ------------------------------------- | ------------------------ | --------------------------------------------------------------------------- |
-| `enabled`                 | `bool`                                | `false`                  | Master switch. Nothing is written or served while this is false.            |
-| `path`                    | `string\|null`                        | `null`                   | Cache root. Defaults to `WP_CONTENT_DIR . '/cache/foehn/pages'`.            |
-| `ttl`                     | `int`                                 | `0`                      | Seconds a stored page stays servable. `0` = until something purges it.      |
-| `browserMaxAge`           | `int`                                 | `0`                      | `max-age` sent to the browser for cached HTML.                              |
-| `environments`            | `list<string>`                        | `['production']`         | Environments where caching is allowed at all.                               |
-| `bypassCookies`           | `list<string>`                        | three WordPress prefixes | A request carrying one of these cookie prefixes is never served or written. |
-| `ignoredQueryArgs`        | `list<string>`                        | thirteen tracking args   | Stripped before the filename is computed, so tracking links still hit.      |
-| `cacheQueryArgs`          | `array<string, string>\|list<string>` | `[]`                     | Args that go into the filename, each with the pattern its value must match. |
-| `excludedPaths`           | `list<string>`                        | `[]`                     | URL path prefixes never cached.                                             |
-| `excludeWhenBodyContains` | `list<string>`                        | `[]`                     | Response bodies containing one of these substrings are not stored.          |
-| `cacheNotFound`           | `bool`                                | `false`                  | Store 404s as well as 200s.                                                 |
-| `debugHeaders`            | `bool\|null`                          | `null`                   | Emit the `X-Foehn-Cache` headers. `null` follows `WP_DEBUG`.                |
-| `warmAfterPurge`          | `bool`                                | `false`                  | Queue the warm-up of the pages a purge removed.                             |
-| `warmSitemap`             | `string\|null`                        | `null`                   | Sitemap or sitemap index URL to warm from. `null` reads the core sitemap.   |
-| `warmExclude`             | `list<string>`                        | `[]`                     | Regular expressions, matched in the full URL, of URLs never warmed.         |
+| Property                  | Type                                  | Default                  | Description                                                                      |
+| ------------------------- | ------------------------------------- | ------------------------ | -------------------------------------------------------------------------------- |
+| `enabled`                 | `bool`                                | `false`                  | Master switch. Nothing is written or served while this is false.                 |
+| `path`                    | `string\|null`                        | `null`                   | Cache root. Defaults to `WP_CONTENT_DIR . '/cache/foehn/pages'`.                 |
+| `ttl`                     | `int`                                 | `0`                      | Seconds a stored page stays servable. `0` = until something purges it.           |
+| `browserMaxAge`           | `int`                                 | `0`                      | `max-age` sent to the browser for cached HTML.                                   |
+| `cacheControl`            | `string\|null`                        | `null`                   | The whole `Cache-Control` value of a hit. `null` builds it from `browserMaxAge`. |
+| `responseHeaders`         | `array<string, string>`               | `[]`                     | Static headers sent on every hit, by nginx and by the drop-in.                   |
+| `environments`            | `list<string>`                        | `['production']`         | Environments where caching is allowed at all.                                    |
+| `bypassCookies`           | `list<string>`                        | three WordPress prefixes | A request carrying one of these cookie prefixes is never served or written.      |
+| `ignoredQueryArgs`        | `list<string>`                        | thirteen tracking args   | Stripped before the filename is computed, so tracking links still hit.           |
+| `cacheQueryArgs`          | `array<string, string>\|list<string>` | `[]`                     | Args that go into the filename, each with the pattern its value must match.      |
+| `excludedPaths`           | `list<string>`                        | `[]`                     | URL path prefixes never cached.                                                  |
+| `excludeWhenBodyContains` | `list<string>`                        | `[]`                     | Response bodies containing one of these substrings are not stored.               |
+| `cacheNotFound`           | `bool`                                | `false`                  | Store 404s as well as 200s.                                                      |
+| `debugHeaders`            | `bool\|null`                          | `null`                   | Emit the `X-Foehn-Cache` headers. `null` follows `WP_DEBUG`.                     |
+| `warmAfterPurge`          | `bool`                                | `false`                  | Queue the warm-up of the pages a purge removed.                                  |
+| `warmSitemap`             | `string\|null`                        | `null`                   | Sitemap or sitemap index URL to warm from. `null` reads the core sitemap.        |
+| `warmExclude`             | `list<string>`                        | `[]`                     | Regular expressions, matched in the full URL, of URLs never warmed.              |
 
 ## Usage
 
@@ -103,6 +107,27 @@ Enforced exactly by the drop-in, and by an hourly `#[AsCron]` sweep on the nginx
 ### `browserMaxAge`
 
 `0` plus `must-revalidate` means a purge takes effect immediately, because the browser asks every time and gets a `304` when nothing changed. Raising it trades that away: a visitor holds the old page for as long as you allow, and no server-side purge can reach them.
+
+### `cacheControl`
+
+Left at `null`, a hit sends `public, max-age=<browserMaxAge>, must-revalidate`. A string replaces the whole value, in the drop-in and in the nginx snippet, and `browserMaxAge` then has no effect:
+
+```php
+cacheControl: 'no-cache, no-store, must-revalidate',
+```
+
+### `responseHeaders`
+
+Static headers that a hit sends, as `name => value`. Use it for the headers your server sets at server level: an nginx `location` with its own `add_header` drops them, and the cache location has its own. They are not added to a page that PHP renders. See [The headers of a hit](/guide/page-cache#the-headers-of-a-hit).
+
+```php
+responseHeaders: [
+    'X-Frame-Options' => 'SAMEORIGIN',
+    'X-Content-Type-Options' => 'nosniff',
+],
+```
+
+A name contains letters, digits and hyphens. A value, and `cacheControl`, is printable ASCII without `"`, `\` or `$`. A header the cache sets itself is refused. The getters `getCacheControl()` and `getResponseHeaders()` throw an `InvalidArgumentException` for a value that breaks these rules: `wp foehn cache:config` fails, and the drop-in lets WordPress render the page. Re-run `wp foehn cache:config --write` after a change.
 
 ### `bypassCookies`
 
@@ -159,14 +184,16 @@ Left at `null` this follows `WP_DEBUG`, which is the right default: the headers 
 
 ## Methods
 
-| Method                                    | Returns  | Description                                                                |
-| ----------------------------------------- | -------- | -------------------------------------------------------------------------- |
-| `getPath()`                               | `string` | The resolved cache root.                                                   |
-| `wantsDebugHeaders()`                     | `bool`   | Whether the `X-Foehn-Cache` headers are emitted.                           |
-| `allowsEnvironment(?string $environment)` | `bool`   | Whether caching is allowed in an environment. Defaults to the current one. |
-| `PageCacheConfig::environment()`          | `string` | The environment, resolved without needing WordPress loaded.                |
-| `excludesPath(string $path)`              | `bool`   | Whether a cache key path is under one of the `excludedPaths` prefixes.     |
-| `excludesFromWarmup(string $url)`         | `bool`   | Whether a URL matches one of the `warmExclude` patterns.                   |
+| Method                                    | Returns                 | Description                                                                |
+| ----------------------------------------- | ----------------------- | -------------------------------------------------------------------------- |
+| `getPath()`                               | `string`                | The resolved cache root.                                                   |
+| `getCacheControl()`                       | `string`                | The `Cache-Control` value of a hit, validated.                             |
+| `getResponseHeaders()`                    | `array<string, string>` | The `responseHeaders`, validated.                                          |
+| `wantsDebugHeaders()`                     | `bool`                  | Whether the `X-Foehn-Cache` headers are emitted.                           |
+| `allowsEnvironment(?string $environment)` | `bool`                  | Whether caching is allowed in an environment. Defaults to the current one. |
+| `PageCacheConfig::environment()`          | `string`                | The environment, resolved without needing WordPress loaded.                |
+| `excludesPath(string $path)`              | `bool`                  | Whether a cache key path is under one of the `excludedPaths` prefixes.     |
+| `excludesFromWarmup(string $url)`         | `bool`                  | Whether a URL matches one of the `warmExclude` patterns.                   |
 
 `environment()` is static and deliberately does not depend on WordPress being booted: the drop-in has to answer the same question before `wp-settings.php` has finished. It prefers `wp_get_environment_type()`, falls back to the `WP_ENVIRONMENT_TYPE` constant, then the environment variable, then `production` — as WordPress does.
 
