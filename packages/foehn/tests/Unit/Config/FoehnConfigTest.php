@@ -148,4 +148,33 @@ describe('FoehnConfig', function () {
             expect($config->isDebugEnabled())->toBeFalse();
         });
     });
+    describe('recordsErrors', function () {
+        afterEach(fn() => wp_stub_reset());
+
+        it('records errors in the local and development environments by default', function (
+            string $environment,
+            bool $records,
+        ) {
+            $GLOBALS['wp_stub_environment_type'] = $environment;
+
+            expect(new FoehnConfig()->recordsErrors())->toBe($records);
+        })->with([
+            'local' => ['local', true],
+            'development' => ['development', true],
+            'staging' => ['staging', false],
+            'production' => ['production', false],
+        ]);
+
+        it('follows recordErrors when a project sets it', function () {
+            $GLOBALS['wp_stub_environment_type'] = 'local';
+
+            expect(new FoehnConfig(recordErrors: false)->recordsErrors())->toBeFalse();
+
+            $GLOBALS['wp_stub_environment_type'] = 'production';
+
+            expect(new FoehnConfig(recordErrors: true)->recordsErrors())->toBeTrue();
+            expect(FoehnConfig::fromArray(['record_errors' => true])->recordErrors)->toBeTrue();
+            expect(FoehnConfig::fromArray([])->recordErrors)->toBeNull();
+        });
+    });
 });

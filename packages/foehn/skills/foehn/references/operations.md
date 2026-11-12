@@ -10,7 +10,7 @@ Each `theme/app/<name>.config.php` returns one object. Føhn registers it in the
 
 | File                       | Class (`Studiometa\Foehn\Config\…`) | Main arguments                                                                                                                                                                                                     |
 | -------------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `foehn.config.php`         | `FoehnConfig`                       | `discoveryCacheStrategy` (`DiscoveryCacheStrategy::NONE`), `discoveryCachePath`, `hooks` (`[]`), `imageTransformer` (`null`), `debug` (`false`)                                                                    |
+| `foehn.config.php`         | `FoehnConfig`                       | `discoveryCacheStrategy` (`DiscoveryCacheStrategy::NONE`), `discoveryCachePath`, `hooks` (`[]`), `imageTransformer` (`null`), `debug` (`false`), `recordErrors` (`null` = `local` and `development` only)          |
 | `page-cache.config.php`    | `PageCacheConfig`                   | `enabled` (`false`), `ttl`, `environments` (`['production']`), `cacheQueryArgs`, `excludedPaths`, `excludeWhenBodyContains`, `ignoredQueryArgs`, `bypassCookies`, `cacheNotFound`, `browserMaxAge`, `debugHeaders` |
 | `db-export.config.php`     | `DatabaseExportConfig`              | `window` (`'-2 months'`), `safeTables`, `structureOnlyTables`, `columns` (table => column => `Anonymizer`), `allowedEmailDomains`                                                                                  |
 | `query-filters.config.php` | `QueryFiltersConfig`                | `taxonomies`, `publicVars`                                                                                                                                                                                         |
@@ -93,6 +93,17 @@ Docs: [Problems and errors](https://studiometa.github.io/foehn-framework/guide/t
 - `wp foehn inspect problems --format=json` gives one row per problem: `class`, `attribute`, `reason`, `fix` (`null` when the cause is not known). It also lists a post type naming a taxonomy, or a taxonomy naming a post type, that no attribute declares and WordPress does not register. Apply the `fix`, run `wp foehn discovery:clear`, then check that `problems` is empty.
 - `wp foehn discovery:status` prints the skipped classes, one line each, as `<reason> Fix: <fix>`. The records are in the discovery cache, so a warm cache still reports them. With `debug` on, each one is also a PHP warning on every request.
 - `TimberViewEngine` throws `Studiometa\Foehn\Views\ViewRenderingFailed` (a `RuntimeException`). A Twig error gives the view asked for, the template and line where Twig failed and Twig's message (the Twig error is `getPrevious()`). A missing view gives every view tried, the directories Timber searched and `Fix: create <directory>/<view>.twig`.
+
+## Error log
+
+Docs: [The error log](https://studiometa.github.io/foehn-framework/guide/troubleshooting.md#the-error-log).
+
+- `wp foehn errors` prints the last entry in a few lines (messages cut at 300 characters, 5 stack lines). `--limit=<n>` (newest first), `--level=exception,fatal,warning,notice`, `--since=<date>` (`-10 minutes`), `--format=json` (every field, one line), `--clear`.
+- Recorded: uncaught exceptions, fatal errors, and the warnings and notices of the theme's own code (PHP files of the theme directory outside `vendor/` and `node_modules/`, and its Twig templates). Not recorded: warnings of WordPress, plugins and packages, warnings that `error_reporting()` leaves out (`@`, notices when `WP_DEBUG` is off), deprecations, caught exceptions, errors raised before the theme boots Føhn. Each error once per request, at most 20 per request.
+- Fields: `time`, `level`, `class`, `message`, `file`, `line`, `twig` (`template:line`), `previous`, `stack` (theme frames, then `+N other frames`), `method`, `url` (or `CLI` and the WP-CLI command), `template` (the WordPress template Føhn matched), `controller`, `view`, `context` (keys), `requestId` (`null` for now).
+- On by default in the `local` and `development` environments. `FoehnConfig(recordErrors: true)` turns it on elsewhere, `false` turns it off.
+- File: `wp-content/cache/foehn/errors/errors.jsonl`, rotated at 256 KB, 3 files at most.
+- PHP and WordPress handle the error as before: each handler gives the error to the one before it, an uncaught exception is thrown again so PHP ends the request with its fatal error, and `WP_Fatal_Error_Handler` still shows its page.
 
 ## Discovery cache
 

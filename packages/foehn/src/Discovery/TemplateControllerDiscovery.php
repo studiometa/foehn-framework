@@ -8,6 +8,7 @@ use Studiometa\Foehn\Attributes\AsDiscovery;
 use Studiometa\Foehn\Attributes\AsTemplateController;
 use Studiometa\Foehn\Contracts\TemplateControllerInterface;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
+use Studiometa\Foehn\Errors\RequestContext;
 use Studiometa\Foehn\Views\Sections\SectionCollector;
 use Studiometa\Foehn\Views\Sections\SectionNotFoundException;
 use Studiometa\Foehn\Views\Sections\SectionRenderer;
@@ -37,6 +38,7 @@ final class TemplateControllerDiscovery implements Discovery
         private readonly SectionCollector $sectionCollector,
         private readonly SectionResponse $sectionResponse,
         private readonly DiscoveryProblems $problems,
+        private readonly RequestContext $requestContext,
     ) {
         $this->controllers = TemplateControllerMap::fromItems([]);
     }
@@ -106,6 +108,9 @@ final class TemplateControllerDiscovery implements Discovery
 
         $templateType = $this->getTemplateType();
         $controller = $this->controllers->find($templateType);
+
+        // What an error recorded during this request says it was rendering.
+        $this->requestContext->matchTemplate($templateType, $controller['className'] ?? null);
 
         if ($controller === null) {
             return $this->sectionRequest->isSelected() ? $this->sectionResponse->error(404) : $template;

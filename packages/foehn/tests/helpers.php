@@ -42,6 +42,7 @@ function testTemplateControllerDiscovery(
     ?\Studiometa\Foehn\Views\Sections\SectionCollector $collector = null,
     ?\Studiometa\Foehn\Config\PageCacheConfig $pageCacheConfig = null,
     ?\Studiometa\Foehn\Discovery\DiscoveryProblems $problems = null,
+    ?\Studiometa\Foehn\Errors\RequestContext $requestContext = null,
 ): \Studiometa\Foehn\Discovery\TemplateControllerDiscovery {
     $request ??= new \Studiometa\Foehn\Views\Sections\SectionRequest('GET', '/');
 
@@ -50,6 +51,7 @@ function testTemplateControllerDiscovery(
         $collector ?? new \Studiometa\Foehn\Views\Sections\SectionCollector(),
         testSectionResponse($request, $pageCacheConfig),
         $problems ?? new \Studiometa\Foehn\Discovery\DiscoveryProblems(),
+        $requestContext ?? new \Studiometa\Foehn\Errors\RequestContext(),
     );
 }
 
@@ -624,4 +626,23 @@ function testProjectRoot(array $files): string
     }
 
     return $root;
+}
+
+/**
+ * A temporary directory for an error log, which a test removes with removeErrorLogDirectory().
+ */
+function errorLogDirectory(): string
+{
+    return sys_get_temp_dir() . '/foehn-error-log-' . bin2hex(random_bytes(4));
+}
+
+function removeErrorLogDirectory(string $directory): void
+{
+    foreach (glob($directory . '/*') ?: [] as $file) {
+        unlink($file);
+    }
+
+    if (is_dir($directory)) {
+        rmdir($directory);
+    }
 }

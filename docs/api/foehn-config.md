@@ -19,10 +19,12 @@ final readonly class FoehnConfig
         /** @var list<class-string> */
         public array $hooks = [],
         public bool $debug = false,
+        public ?bool $recordErrors = null,
     );
 
     public static function fromArray(array $config): self;
     public function isDebugEnabled(): bool;
+    public function recordsErrors(): bool;
     public function isDiscoveryCacheEnabled(): bool;
     public function getDiscoveryCachePath(): string;
 }
@@ -36,6 +38,7 @@ final readonly class FoehnConfig
 | `discoveryCachePath`     | `string\|null`           | `null`           | Custom path for cache files                                                                                         |
 | `hooks`                  | `class-string[]`         | `[]`             | Opt-in hook classes to activate                                                                                     |
 | `debug`                  | `bool`                   | `WP_DEBUG` value | Raise PHP warnings: each class discovery skips, a discovery cache it cannot write, a missing block editor registrar |
+| `recordErrors`           | `bool\|null`             | `null`           | Write errors to the log `wp foehn errors` reads. `null` records them in the `local` and `development` environments  |
 
 ## Usage
 
@@ -120,6 +123,10 @@ When enabled, discovery failures (reflection errors, missing classes) are logged
 ```
 
 Defaults to the value of `WP_DEBUG` when not explicitly set.
+
+### Error Log
+
+`recordErrors` decides when uncaught exceptions, fatal errors and the warnings of the theme are written to the log `wp foehn errors` reads. `null`, the default, records them when the environment is `local` or `development`; `recordsErrors()` gives the answer. The array config takes `'record_errors' => true`. See [The error log](/guide/troubleshooting#the-error-log).
 
 ## All Config Classes
 

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Studiometa\Foehn\Errors\RequestContext;
 use Tests\Fixtures\TemplateControllerFixture;
 
 beforeEach(function () {
@@ -50,6 +51,28 @@ describe('TemplateControllerDiscovery apply', function () {
 
         // Still registers template_include even with no items (it checks at runtime)
         expect($filters)->toHaveCount(1);
+    });
+
+    it('tells the request context the template it matched and the controller that handles it', function () {
+        $context = new RequestContext();
+        $discovery = testTemplateControllerDiscovery(requestContext: $context);
+        $discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(TemplateControllerFixture::class));
+        $discovery->apply();
+
+        $GLOBALS['wp_stub_template'] = 'page';
+
+        // The controller then needs Timber::context(), which needs WordPress. The
+        // match is recorded before it runs.
+        expect(fn() => $discovery->handleTemplateInclude('/index.php'))->toThrow(Error::class);
+
+        expect($context->toArray()['template'])->toBe('page');
+        expect($context->toArray()['controller'])->toBe(TemplateControllerFixture::class);
+
+        $GLOBALS['wp_stub_template'] = '404';
+        $discovery->handleTemplateInclude('/index.php');
+
+        expect($context->toArray()['template'])->toBe('404');
+        expect($context->toArray()['controller'])->toBeNull();
     });
 
     // Note: Full handleTemplateInclude tests with controller execution require

@@ -86,6 +86,7 @@ return new FoehnConfig(
 | `discoveryCachePath`     | `?string`                | `null`  | Custom cache path                                                                                                   |
 | `hooks`                  | `class-string[]`         | `[]`    | Opt-in hook classes                                                                                                 |
 | `debug`                  | `bool`                   | `false` | Raise PHP warnings: each class discovery skips, a discovery cache it cannot write, a missing block editor registrar |
+| `recordErrors`           | `?bool`                  | `null`  | Write errors to the log `wp foehn errors` reads. `null` records them in the `local` and `development` environments  |
 
 See [FoehnConfig API](/api/foehn-config) for details.
 

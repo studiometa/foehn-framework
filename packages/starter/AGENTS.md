@@ -35,6 +35,13 @@ The project runs in DDEV. Run WP-CLI as `ddev wp …`. Without DDEV, run `wp …
 
 4. After you add a class or change an attribute, run `ddev wp foehn discovery:clear`. The discovery cache is on in every environment. Then check that `problems` in `ddev wp foehn inspect --format=json` is empty: a class that breaks the contract of its attribute is skipped, not fatal.
 
+5. When a page fails, read the last error before you open a browser or the PHP log. It gives the file and line, the Twig template and line, the WordPress template, the controller, the view and its context keys:
+
+   ```bash
+   ddev wp foehn errors
+   ddev wp foehn errors --limit=5 --format=json
+   ```
+
 ## Project conventions
 
 <!-- Fill in this section for the project and keep it current: an agent follows what it says. Remove a line that does not apply. -->
