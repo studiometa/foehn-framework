@@ -16,6 +16,7 @@ On `composer install` and `composer update`, this plugin automatically:
 4. Symlinks `theme/` → `web/wp-content/themes/{name}`
 5. Symlinks `mu-plugins/` → `web/wp-content/mu-plugins/_custom`
 6. Generates the mu-plugin loader
+7. Copies the content of `public/` into `web/`
 
 ## Installation
 
@@ -36,7 +37,8 @@ Configure via `extra.foehn` in your project's `composer.json`:
       "theme-dir": "theme",
       "theme-name": "my-theme",
       "mu-plugins-dir": "mu-plugins",
-      "config-dir": "config"
+      "config-dir": "config",
+      "public-dir": "public"
     }
   }
 }
@@ -52,12 +54,14 @@ All options are optional and have sensible defaults.
 | `theme-name`     | `theme`      | Theme directory name in `wp-content/themes/` |
 | `mu-plugins-dir` | `mu-plugins` | Custom mu-plugins directory to symlink       |
 | `config-dir`     | `config`     | Configuration files directory                |
+| `public-dir`     | `public`     | Directory copied into the web root           |
 
 ## Generated structure
 
 ```
 web/                            ← Document root (nginx/apache)
 ├── index.php                   ← Generated front controller
+├── robots.txt                  ← Copied from public/
 ├── wp-config.php               ← Generated configuration
 ├── wp/                         ← WordPress core (via composer)
 └── wp-content/
@@ -69,6 +73,10 @@ web/                            ← Document root (nginx/apache)
     │   └── _custom → ../../mu-plugins/
     └── uploads/
 ```
+
+## Public files
+
+The installer copies the content of `public-dir` into the web root, dotfiles included. It copies the files and does not create symlinks. `index.php`, `wp-config.php`, the WordPress directory and `wp-content/` belong to the installer: it does not copy a public file to these paths, and shows a warning. A file removed from `public-dir` is removed from the web root on the next install. See [Public Files](https://studiometa.github.io/foehn-framework/guide/public-files).
 
 ## License
 

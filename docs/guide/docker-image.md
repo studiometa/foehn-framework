@@ -34,6 +34,8 @@ That is the whole of it. Nothing about NGINX, no entrypoint, no PHP settings.
 
 The ownership line is the one part the image cannot do for you, because only the project image knows where its code is. Everything under `/app` should belong to `root` and stay unwritable by `application`, the user PHP runs as; only the two paths written at runtime are handed over.
 
+The `vendor` stage runs `composer install`, which generates `web/`. When the project has a [public directory](./public-files), copy it into that stage before `composer install`, or its files are not in `web/`.
+
 ## What it carries
 
 | Piece                             | What it does                                                                      |

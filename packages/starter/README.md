@@ -58,6 +58,7 @@ my-project/
 │
 ├── .ddev/                      # DDEV configuration
 ├── vite.config.js              # Vite, with @studiometa/foehn-vite-plugin
+├── public/                     # files copied into web/ (robots.txt, .well-known/)
 ├── web/                        # generated document root (gitignored)
 ├── .env                        # environment variables (DDEV supplies its own)
 ├── composer.json
