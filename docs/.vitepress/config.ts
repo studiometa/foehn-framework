@@ -106,6 +106,7 @@ export default defineConfig({
             { text: "Docker Image", link: "/guide/docker-image" },
             { text: "Deploying to Fly.io", link: "/guide/deployment-fly" },
             { text: "Verification", link: "/guide/verification" },
+            { text: "Database Export", link: "/guide/database-export" },
           ],
         },
         {

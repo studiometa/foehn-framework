@@ -12,6 +12,7 @@ use Studiometa\Foehn\Admin\Dashboard;
 use Studiometa\Foehn\Blocks\BlockEditorAssets;
 use Studiometa\Foehn\Cache\TransientCache;
 use Studiometa\Foehn\Config\ConfigLoader;
+use Studiometa\Foehn\Config\DatabaseExportConfig;
 use Studiometa\Foehn\Config\FoehnConfig;
 use Studiometa\Foehn\Config\PageCacheConfig;
 use Studiometa\Foehn\Config\RestConfig;
@@ -250,6 +251,7 @@ final class Kernel
         $this->container->config(new TimberConfig());
         $this->container->config(new RestConfig());
         $this->container->config(new PageCacheConfig());
+        $this->container->config(new DatabaseExportConfig());
         $this->container->config($this->config !== [] ? FoehnConfig::fromArray($this->config) : new FoehnConfig());
 
         new ConfigLoader($this->container)->load($this->container->get(DiscoveryLocations::class)->all());
