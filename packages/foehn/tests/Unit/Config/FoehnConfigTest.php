@@ -147,6 +147,10 @@ describe('FoehnConfig', function () {
             expect($config->debug)->toBeFalse();
             expect($config->isDebugEnabled())->toBeFalse();
         });
+        it('creates config with the cli namespace of the project', function () {
+            expect(FoehnConfig::fromArray([])->cliNamespace)->toBe('app');
+            expect(FoehnConfig::fromArray(['cli_namespace' => 'site'])->cliNamespace)->toBe('site');
+        });
     });
     describe('recordsErrors', function () {
         afterEach(fn() => wp_stub_reset());

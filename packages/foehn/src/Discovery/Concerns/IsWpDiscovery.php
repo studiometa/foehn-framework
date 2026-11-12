@@ -52,6 +52,17 @@ trait IsWpDiscovery
     }
 
     /**
+     * Whether a location belongs to an installed package rather than to the project.
+     *
+     * The namespace is checked as well as the path, because a package installed
+     * from a path repository with symlinks resolves to a path outside vendor/.
+     */
+    protected function isPackageLocation(DiscoveryLocation $location): bool
+    {
+        return $location->isVendor() || str_starts_with($location->namespace, 'Studiometa\\Foehn\\');
+    }
+
+    /**
      * Record a discovered item against the location its class came from.
      *
      * Whatever goes in here is written to the discovery cache as-is, so it must

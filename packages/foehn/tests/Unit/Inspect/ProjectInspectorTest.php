@@ -87,7 +87,7 @@ describe('ProjectInspector', function () {
         expect($summary['post-types'])->toContain('product');
         expect($summary['menus'])->toBe(['primary']);
         expect($summary['templates'])->toContain('single-product');
-        expect($summary['cli-commands'])->toContain('foehn inspect');
+        expect($summary['cli-commands'])->toContain('wp foehn inspect');
         expect($summary['seeders'])->toBe([SampleProductsSeeder::class]);
     });
 
@@ -517,12 +517,13 @@ describe('ProjectInspector', function () {
         ]);
     });
 
-    it('reports the project commands next to the framework ones', function () {
+    it('reports the project commands under wp app next to the framework ones under wp foehn', function () {
         $commands = array_column(inspector()->section('cli-commands'), 'command');
 
-        expect($commands)->toContain('foehn shop:sync');
-        expect($commands)->toContain('foehn inspect');
-        expect(inspectedRow(inspector()->section('cli-commands'), 'command', 'foehn shop:sync')['class'])
+        expect($commands)->toContain('wp app shop:sync');
+        expect($commands)->toContain('wp foehn inspect');
+        expect($commands)->not->toContain('wp foehn shop:sync');
+        expect(inspectedRow(inspector()->section('cli-commands'), 'command', 'wp app shop:sync')['class'])
             ->toBe(SyncCommand::class);
     });
 

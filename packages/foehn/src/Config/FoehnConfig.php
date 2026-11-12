@@ -83,6 +83,12 @@ final readonly class FoehnConfig
          * Null traces them when the environment is `local` or `development`.
          */
         public ?bool $traceRequests = null,
+
+        /**
+         * The WP-CLI command the project's own #[AsCliCommand] classes go under:
+         * `wp app <name>` by default. The framework's commands stay under `wp foehn`.
+         */
+        public string $cliNamespace = 'app',
     ) {}
 
     /**
@@ -115,6 +121,7 @@ final readonly class FoehnConfig
             debug: (bool) $debug,
             recordErrors: ($config['record_errors'] ?? null) === null ? null : (bool) $config['record_errors'],
             traceRequests: ($config['trace_requests'] ?? null) === null ? null : (bool) $config['trace_requests'],
+            cliNamespace: $config['cli_namespace'] ?? 'app',
         );
     }
 

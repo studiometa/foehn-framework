@@ -6,6 +6,7 @@ namespace Studiometa\Foehn\Discovery;
 
 use Studiometa\Foehn\Attributes\AsCliCommand;
 use Studiometa\Foehn\Attributes\AsDiscovery;
+use Studiometa\Foehn\Config\FoehnConfig;
 use Studiometa\Foehn\Console\CliCommandInterface;
 use Studiometa\Foehn\Console\ProductionGuard;
 use Studiometa\Foehn\Console\WpCli;
@@ -18,6 +19,10 @@ use WP_CLI;
 
 /**
  * Discovers CLI commands and registers them with WP-CLI.
+ *
+ * The framework's commands go under `wp foehn`, the project's under `wp app`, or
+ * the name FoehnConfig::$cliNamespace gives. A project command can then never
+ * collide with one a later Foehn release adds, and `wp app` lists only the site's.
  */
 #[AsDiscovery(phase: DiscoveryPhase::Early)]
 final class CliCommandDiscovery implements Discovery
@@ -27,6 +32,7 @@ final class CliCommandDiscovery implements Discovery
     public function __construct(
         private readonly Container $container,
         private readonly DiscoveryProblems $problems,
+        private readonly FoehnConfig $config,
     ) {}
 
     /**
@@ -67,6 +73,7 @@ final class CliCommandDiscovery implements Discovery
         $this->addItem($location, [
             'attribute' => $class->getAttribute(AsCliCommand::class),
             'className' => $class->getName(),
+            'package' => $this->isPackageLocation($location),
         ]);
     }
 
@@ -84,8 +91,25 @@ final class CliCommandDiscovery implements Discovery
             /** @var AsCliCommand $attribute */
             $attribute = $item['attribute'];
 
-            $this->registerCommand($attribute, $item['className']);
+            $this->registerCommand($this->commandName($item), $attribute, $item['className']);
         }
+    }
+
+    /**
+     * The WP-CLI command an item registers, without the leading `wp`.
+     *
+     * The namespace is resolved here and not stored in the item, so a change of
+     * FoehnConfig::$cliNamespace applies without a discovery cache rebuild.
+     *
+     * @param array<string, mixed> $item
+     */
+    public function commandName(array $item): string
+    {
+        /** @var AsCliCommand $attribute */
+        $attribute = $item['attribute'];
+        $namespace = $item['package'] === true ? 'foehn' : $this->config->cliNamespace;
+
+        return $namespace . ' ' . $attribute->name;
     }
 
     /**
@@ -93,7 +117,7 @@ final class CliCommandDiscovery implements Discovery
      *
      * @param class-string<CliCommandInterface> $className
      */
-    private function registerCommand(AsCliCommand $attribute, string $className): void
+    private function registerCommand(string $commandName, AsCliCommand $attribute, string $className): void
     {
         $container = $this->container;
 
@@ -108,9 +132,6 @@ final class CliCommandDiscovery implements Discovery
             $command = $container->get($className);
             $command($args, $assocArgs);
         };
-
-        // Every Foehn command lives under one WP-CLI namespace, so `wp foehn` lists them
-        $commandName = 'foehn ' . $attribute->name;
 
         // Register with WP-CLI
         WP_CLI::add_command($commandName, $callback, [

@@ -67,8 +67,9 @@ final class Kernel
     /**
      * Shape version of the cached discovery items.
      *
-     * Bump this whenever an attribute's promoted constructor changes: a cache
-     * written against the old signature is then ignored instead of restored.
+     * Bump this whenever an attribute's promoted constructor or the keys of a
+     * discovery's items change: a cache written against the old shape is then
+     * ignored instead of restored.
      */
     private const DISCOVERY_CACHE_VERSION = 'foehn.discovery.v2';
 

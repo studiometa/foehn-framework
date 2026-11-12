@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Attributes\AsCliCommand;
+use Studiometa\Foehn\Config\FoehnConfig;
 use Studiometa\Foehn\Discovery\CliCommandDiscovery;
 use Studiometa\Foehn\Discovery\DiscoveryProblems;
 use Tempest\Container\GenericContainer;
@@ -11,7 +12,7 @@ use Tests\Fixtures\WritingCliCommandFixture;
 
 beforeEach(function () {
     $this->location = testDiscoveryLocation();
-    $this->discovery = new CliCommandDiscovery(new GenericContainer(), new DiscoveryProblems());
+    $this->discovery = new CliCommandDiscovery(new GenericContainer(), new DiscoveryProblems(), new FoehnConfig());
 });
 
 describe('CliCommandDiscovery caching', function () {
@@ -26,7 +27,7 @@ describe('CliCommandDiscovery caching', function () {
 
         $restored = restoreThroughCacheFile(
             $this->discovery,
-            new CliCommandDiscovery(new GenericContainer(), new DiscoveryProblems()),
+            new CliCommandDiscovery(new GenericContainer(), new DiscoveryProblems(), new FoehnConfig()),
         );
 
         expect(iterator_to_array($restored->getItems()))->toEqual(iterator_to_array($this->discovery->getItems()));
@@ -37,7 +38,7 @@ describe('CliCommandDiscovery caching', function () {
 
         $item = restoreThroughCacheFile(
             $this->discovery,
-            new CliCommandDiscovery(new GenericContainer(), new DiscoveryProblems()),
+            new CliCommandDiscovery(new GenericContainer(), new DiscoveryProblems(), new FoehnConfig()),
         )
             ->getItems()
             ->getForLocation($this->location)[0];

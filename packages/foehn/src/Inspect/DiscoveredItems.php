@@ -17,6 +17,20 @@ final readonly class DiscoveredItems
     ) {}
 
     /**
+     * The discovery itself, for what only it can work out from an item.
+     *
+     * @template T of Discovery
+     * @param class-string<T> $discoveryClass
+     * @return T|null
+     */
+    public function discovery(string $discoveryClass): ?Discovery
+    {
+        $discovery = $this->runner->getDiscoveries()[$discoveryClass] ?? null;
+
+        return $discovery instanceof $discoveryClass ? $discovery : null;
+    }
+
+    /**
      * The items one discovery collected, across every location.
      *
      * Read from the runner rather than registered again: under WP-CLI discovery has
@@ -27,7 +41,7 @@ final readonly class DiscoveredItems
      */
     public function of(string $discoveryClass): array
     {
-        $discovery = $this->runner->getDiscoveries()[$discoveryClass] ?? null;
+        $discovery = $this->discovery($discoveryClass);
 
         if ($discovery === null) {
             return [];

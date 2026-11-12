@@ -15,8 +15,8 @@ use Studiometa\Foehn\Console\WpCli;
     taxonomies and Timber model classes, taxonomies, settings pages with their
     options, blocks with their attributes, patterns, block bindings, templates,
     Twig views, context providers, menus, image sizes, rewrite rules, REST routes,
-    `wp foehn` commands, seeders, active plugins, theme supports and the Vite entry
-    points.
+    WP-CLI commands (`wp app` and `wp foehn`), seeders, active plugins, theme
+    supports and the Vite entry points.
 
     `templates` gives the controller that renders each WordPress template, and a
     real URL to check it with: the newest published post of the type, the archive,
