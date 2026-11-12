@@ -80,6 +80,7 @@ function wp_stub_reset(): void
         $GLOBALS['wp_stub_remote_status'],
         $GLOBALS['wp_stub_remote_error'],
         $GLOBALS['wp_stub_remote_headers'],
+        $GLOBALS['wp_stub_remote_bodies'],
         $GLOBALS['wp_stub_num_queries'],
     );
 
@@ -2233,10 +2234,25 @@ if (!function_exists('wp_remote_get')) {
             return new WP_Error('http_request_failed', 'stubbed failure');
         }
 
+        // With bodies set, a URL that has none answers 404, like a sitemap that is not there.
+        $bodies = $GLOBALS['wp_stub_remote_bodies'] ?? null;
+
+        if (is_array($bodies) && !array_key_exists($url, $bodies)) {
+            return ['response' => ['code' => 404], 'headers' => [], 'body' => ''];
+        }
+
         return [
             'response' => ['code' => $GLOBALS['wp_stub_remote_status'] ?? 200],
             'headers' => array_change_key_case($GLOBALS['wp_stub_remote_headers'] ?? []),
+            'body' => is_array($bodies) ? $bodies[$url] : '',
         ];
+    }
+}
+
+if (!function_exists('wp_remote_retrieve_body')) {
+    function wp_remote_retrieve_body(mixed $response): string
+    {
+        return is_array($response) ? (string) ($response['body'] ?? '') : '';
     }
 }
 

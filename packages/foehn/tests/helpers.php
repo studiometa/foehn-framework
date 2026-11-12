@@ -583,6 +583,14 @@ function pageCacheBypass(?\Studiometa\Foehn\Config\PageCacheConfig $config = nul
 }
 
 /**
+ * The warmer, on the given config, with the eligibility rules of that config.
+ */
+function pageCacheWarmer(\Studiometa\Foehn\Config\PageCacheConfig $config): \Studiometa\Foehn\PageCache\Warmer
+{
+    return new \Studiometa\Foehn\PageCache\Warmer($config, new \Studiometa\Foehn\PageCache\Bypass($config));
+}
+
+/**
  * A response body long enough and complete enough to be storable.
  */
 function pageCacheBody(string $extra = ''): string
