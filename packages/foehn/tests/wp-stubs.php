@@ -70,7 +70,12 @@ function wp_stub_reset(): void
     $GLOBALS['wp_stub_post_ancestors'] = [];
     $GLOBALS['wp_stub_adjacent_posts'] = [];
     $GLOBALS['wp_stub_sitemap_urls'] = [];
-    unset($GLOBALS['wp_stub_sitemap_providers'], $GLOBALS['wp_stub_remote_status'], $GLOBALS['wp_stub_remote_error']);
+    unset(
+        $GLOBALS['wp_stub_sitemap_providers'],
+        $GLOBALS['wp_stub_remote_status'],
+        $GLOBALS['wp_stub_remote_error'],
+        $GLOBALS['wp_stub_num_queries'],
+    );
 
     // The admin controls read all four. A referer left behind would make a redirect land
     // somewhere a later test never set up, and a leaked screen, queried object or global
@@ -2127,6 +2132,13 @@ if (!function_exists('wp_remote_get')) {
         }
 
         return ['response' => ['code' => $GLOBALS['wp_stub_remote_status'] ?? 200]];
+    }
+}
+
+if (!function_exists('get_num_queries')) {
+    function get_num_queries(): int
+    {
+        return $GLOBALS['wp_stub_num_queries'] ?? 0;
     }
 }
 

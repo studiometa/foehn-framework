@@ -181,7 +181,6 @@ final class RequestTracer
         $start = $_SERVER['REQUEST_TIME_FLOAT'] ?? null;
         $uri = is_string($_SERVER['REQUEST_URI'] ?? null) ? $_SERVER['REQUEST_URI'] : null;
         $status = http_response_code();
-        $wpdb = $GLOBALS['wpdb'] ?? null;
 
         return [
             'id' => $id,
@@ -189,9 +188,24 @@ final class RequestTracer
             'method' => is_string($_SERVER['REQUEST_METHOD'] ?? null) ? $_SERVER['REQUEST_METHOD'] : null,
             'url' => $uri === null ? null : mb_substr($uri, 0, self::MAX_URL),
             'status' => is_int($status) ? $status : null,
+            'location' => self::location(),
             'durationMs' => is_float($start) ? (int) round((microtime(true) - $start) * 1000) : null,
-            'queries' => is_object($wpdb) && is_int($wpdb->num_queries ?? null) ? $wpdb->num_queries : null,
+            'queries' => function_exists('get_num_queries') ? (int) get_num_queries() : null,
             ...$this->trace->toArray(),
         ];
+    }
+
+    /**
+     * Where a redirect sends the visitor: the `Location` header of the response, if any.
+     */
+    private static function location(): ?string
+    {
+        foreach (headers_list() as $header) {
+            if (stripos($header, 'location:') === 0) {
+                return mb_substr(trim(substr($header, strlen('location:'))), 0, self::MAX_URL);
+            }
+        }
+
+        return null;
     }
 }

@@ -19,7 +19,7 @@ describe('RequestTracer', function () {
 
     afterEach(function () {
         $_SERVER = $this->server;
-        unset($GLOBALS['wpdb']);
+        unset($GLOBALS['wp_stub_num_queries']);
         removeErrorLogDirectory($this->directory);
     });
 
@@ -79,9 +79,7 @@ describe('RequestTracer', function () {
         $_SERVER['REQUEST_METHOD'] = 'GET';
         $_SERVER['REQUEST_URI'] = '/hello-world/?preview=1';
         $_SERVER['REQUEST_TIME_FLOAT'] = microtime(true) - 0.25;
-        $GLOBALS['wpdb'] = new class {
-            public int $num_queries = 31;
-        };
+        $GLOBALS['wp_stub_num_queries'] = 31;
         $this->trace->matchTemplate('single', 'App\\Controllers\\SingleController');
 
         $trace = $this->tracer->build('a1b2c3');
@@ -92,6 +90,7 @@ describe('RequestTracer', function () {
             'method',
             'url',
             'status',
+            'location',
             'durationMs',
             'queries',
             'hierarchy',

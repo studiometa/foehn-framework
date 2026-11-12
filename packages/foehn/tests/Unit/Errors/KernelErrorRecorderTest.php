@@ -16,6 +16,8 @@ describe('Kernel: the error recorder', function () {
         Kernel::get(ErrorRecorder::class)->stop();
         Kernel::reset();
         wp_stub_reset();
+        // wp_stub_reset() keeps the environment: a later test would boot in `local`.
+        unset($GLOBALS['wp_stub_environment_type']);
     });
 
     it('does not start it in production', function () {
