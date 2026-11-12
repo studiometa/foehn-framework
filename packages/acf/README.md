@@ -48,4 +48,4 @@ composer require studiometa/foehn-acf
 
 ## License
 
-MIT
+GNU General Public License v3.0 or later. See [LICENSE](LICENSE) for details.

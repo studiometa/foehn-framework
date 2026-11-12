@@ -199,7 +199,8 @@ export default defineConfig({
     socialLinks: [{ icon: "github", link: "https://github.com/studiometa/foehn-framework" }],
 
     footer: {
-      message: "Released under the MIT License.",
+      message:
+        "Føhn is released under the GPL-3.0-or-later license. The starter, the installer and the Vite plugin are MIT.",
       copyright: "Copyright © 2024-present Studio Meta",
     },
 

@@ -2,7 +2,7 @@
     "name": "studiometa/foehn",
     "description": "🍃 A modern WordPress framework powered by Tempest, featuring attribute-based auto-discovery for hooks, post types, blocks, and more.",
     "type": "library",
-    "license": "MIT",
+    "license": "GPL-3.0-or-later",
     "authors": [
         {
             "name": "Studio Meta",
