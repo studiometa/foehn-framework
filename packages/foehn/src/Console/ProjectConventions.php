@@ -29,7 +29,7 @@ final readonly class ProjectConventions
 
     public function __construct(
         private string $appPath,
-        private DiscoveryRunner $runner,
+        DiscoveryRunner $runner,
     ) {
         $this->items = new DiscoveredItems($runner);
     }
