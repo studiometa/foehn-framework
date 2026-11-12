@@ -7,6 +7,7 @@ namespace Studiometa\Foehn\Discovery;
 use Studiometa\Foehn\Attributes\AsCliCommand;
 use Studiometa\Foehn\Attributes\AsDiscovery;
 use Studiometa\Foehn\Console\CliCommandInterface;
+use Studiometa\Foehn\Console\ProductionGuard;
 use Studiometa\Foehn\Console\WpCli;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
 use Tempest\Container\Container;
@@ -96,8 +97,13 @@ final class CliCommandDiscovery implements Discovery
     {
         $container = $this->container;
 
-        // Create wrapper callback for WP-CLI
-        $callback = static function (array $args, array $assocArgs) use ($container, $className): void {
+        // Create wrapper callback for WP-CLI. A command that writes is checked against
+        // the environment before it is built, so no command repeats the check.
+        $callback = static function (array $args, array $assocArgs) use ($container, $className, $attribute): void {
+            if (!$container->get(ProductionGuard::class)->allows($attribute, $assocArgs)) {
+                return;
+            }
+
             /** @var CliCommandInterface $command */
             $command = $container->get($className);
             $command($args, $assocArgs);

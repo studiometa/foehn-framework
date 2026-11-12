@@ -19,10 +19,14 @@ final readonly class AsCliCommand
      * @param string $name Command name (e.g., 'make:post-type')
      * @param string $description Short description for help
      * @param string|null $longDescription Long description with examples (docblock format)
+     * @param bool $writes Whether the command changes content or files. Such a command refuses to run
+     *                     in the production environment unless `--force` or `--dry-run` is given, so its
+     *                     long description must declare `[--force]`; see ProductionGuard.
      */
     public function __construct(
         public string $name,
         public string $description,
         public ?string $longDescription = null,
+        public bool $writes = false,
     ) {}
 }
