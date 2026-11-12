@@ -15,7 +15,7 @@ use Studiometa\Foehn\Config\PageCacheConfig;
  * on the next reload rather than in eight hours. To watch it work here, add an
  * `app/page-cache.local.config.php` with `environments: ['local']`; the
  * environment's own file wins over this one. A purge fires on content changes, not
- * on template edits, so `wp foehn page-cache:clear` is the companion to that.
+ * on template edits, so `wp foehn cache:clear` is the companion to that.
  *
  * Nonce caveat: a nonce frozen into a cached page expires with its 12–24 h window,
  * and a form submitted after that fails until the page is re-rendered. The filter

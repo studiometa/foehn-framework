@@ -14,7 +14,7 @@ use WP_Block;
  * This is what a custom source is for: a value that is *computed*. A value that
  * is merely *stored* needs none of this — a key declared with #[AsPostMeta] is
  * bindable through core's own `core/post-meta` with no PHP at all. See
- * Demo\Models\Product, whose `price` works that way.
+ * Demo\Models\Project, whose `camera` works that way.
  *
  * Bind it in the editor, or in markup:
  *

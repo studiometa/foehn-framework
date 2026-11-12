@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
-# Integration smoke test for the starter theme against a real WordPress.
+# Integration smoke test for the demo theme against a real WordPress.
 #
-# Run from packages/starter with a started ddev project:
+# Run from packages/demo with a started ddev project:
 #
 #     ./tests/smoke/run.sh
 #
@@ -107,7 +107,7 @@ listing="$(ddev exec 'cd /var/www/html && wp foehn discovery:list --discovery=Po
 
 case "$listing" in
 *"AsPostType(name: project"*) ;;
-*) fail "wp foehn discovery:list did not describe the starter's post types
+*) fail "wp foehn discovery:list did not describe the demo's post types
 $listing" ;;
 esac
 

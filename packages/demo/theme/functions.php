@@ -1,9 +1,9 @@
 <?php
 
 /**
- * Starter Theme — powered by Foehn.
+ * Føhn demo theme.
  *
- * @package StarterTheme
+ * @package DemoTheme
  */
 
 declare(strict_types=1);
