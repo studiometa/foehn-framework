@@ -14,26 +14,28 @@ That is deliberate. A starting point you delete half of is worse than one you ad
 composer create-project studiometa/foehn-starter my-project
 cd my-project
 ddev start
+npm install && npm run build
 ```
 
-DDEV starts PHP 8.5, MariaDB and nginx, copies `.env.example` to `.env`, runs `composer install` (which generates `web/`, the symlinks and `wp-config.php`), installs WordPress with `admin` / `admin`, and activates the theme.
+`composer create-project` installs the dependencies, generates `web/` and `wp-config.php`, and writes `.env` from `.env.example` with new security keys. `ddev start` starts PHP 8.5, MariaDB and nginx. When WordPress is not installed, it installs it with `admin` / `admin` and activates the theme. When `vendor/` is missing (a fresh clone), it runs `composer install` first.
 
 ```bash
 ddev launch              # the site
 ddev launch /wp/wp-admin # the admin
+ddev wp foehn seed       # the header, footer and legal menus
 ```
+
+Before you change the ddev project name, read [Rename the theme](https://studiometa.github.io/foehn-framework/guide/starter-theme#rename-the-theme): the name is also in `WP_HOME`.
 
 ## Quick start without DDEV
 
 ```bash
 composer create-project studiometa/foehn-starter my-project
 cd my-project
-cp .env.example .env
-# Edit .env with your database credentials
-composer install
+# Edit .env: database credentials and WP_HOME
 ```
 
-Then point your web server's document root at `web/`.
+Then point the document root of your web server at `web/`, install WordPress (`wp core install`) and activate the theme (`wp theme activate starter-theme`).
 
 ## What is here
 
@@ -41,33 +43,41 @@ Then point your web server's document root at `web/`.
 my-project/
 ├── theme/
 │   ├── app/
-│   │   ├── ContextProviders/   # GlobalContextProvider — data every template gets
-│   │   ├── Controllers/        # single, archive, search, 404
-│   │   ├── Hooks/              # theme supports, excerpt length
-│   │   ├── Menus/              # header, footer, legal
-│   │   └── foehn.config.php    # discovery cache, opt-in cleanup and security hooks
+│   │   ├── ContextProviders/       # GlobalContextProvider — data every template gets
+│   │   ├── Controllers/            # single, page, archive, search, 404, and the password form
+│   │   ├── Hooks/                  # AssetHooks (Vite build), ThemeHooks (theme supports, excerpt)
+│   │   ├── Menus/                  # header, footer, legal
+│   │   ├── Seeders/                # MenusSeeder — the three menus, for `wp foehn seed`
+│   │   ├── foehn.config.php        # discovery cache, opt-in cleanup and security hooks
+│   │   └── page-cache.config.php   # static page cache, production only
 │   ├── assets/
-│   │   ├── css/app.css         # Tailwind entry point
-│   │   └── js/app.js           # js-toolkit entry point
+│   │   ├── css/app.css             # Tailwind entry point
+│   │   └── js/app.js               # js-toolkit entry point
 │   ├── templates/
 │   │   ├── layouts/base.twig
-│   │   ├── pages/              # single, archive, search, 404
-│   │   └── components/         # header, footer, card, pagination
-│   ├── functions.php           # one line: Kernel::boot()
+│   │   ├── pages/                  # single, page, archive, search, 404, password
+│   │   ├── sections/               # posts — the archive list, which can render alone
+│   │   └── components/             # header, footer, card, pagination
+│   ├── functions.php               # one line: Kernel::boot()
 │   └── style.css
 │
-├── .ddev/                      # DDEV configuration
-├── vite.config.js              # Vite, with @studiometa/foehn-vite-plugin
-├── public/                     # files copied into web/ (robots.txt, .well-known/)
-├── web/                        # generated document root (gitignored)
-├── .env                        # environment variables (DDEV supplies its own)
+├── tests/
+│   ├── php/                        # unit tests: `composer test`
+│   └── smoke/                      # tests against the site in ddev: `composer test:smoke`, run.sh
+├── .ddev/                          # DDEV configuration
+├── vite.config.js                  # Vite, with @studiometa/foehn-vite-plugin
+├── public/                         # files copied into web/ (robots.txt, .well-known/)
+├── web/                            # generated document root (gitignored)
+├── .env                            # environment variables (DDEV supplies its own)
 ├── composer.json
 └── package.json
 ```
 
-Every class here is one a theme needs before it renders anything: the controllers that answer WordPress's template hierarchy, the menus the header and footer templates read, the context provider that puts `current_year` in the footer, and the theme supports.
+Every class here is one a theme needs before it renders anything: the controllers that answer WordPress's template hierarchy, the menus the header and footer templates read, the context provider that puts `current_year` in the footer, the theme supports and the asset hooks. `MenusSeeder` fills the three menus, so an empty database gets them back with `wp foehn seed`.
 
-`foehn.config.php` opts into the framework's own cleanup and security hooks — `CleanHeadTags`, `DisableEmoji`, `DisableOembed`, `DisableVersionDisclosure`, `DisableXmlRpc`, `GenericLoginErrors`, `YouTubeNoCookieHooks` — and turns the discovery cache on.
+`foehn.config.php` opts into the framework's own cleanup and security hooks — `CleanHeadTags`, `DisableEmoji`, `DisableFileEditor`, `DisableGlobalStyles`, `DisableOembed`, `DisableVersionDisclosure`, `DisableXmlRpc`, `GenericLoginErrors`, `StudiometaUi`, `YouTubeNoCookieHooks` — and turns the discovery cache on. `page-cache.config.php` turns the static page cache on in production.
+
+Put the files that must be at the document root, such as `robots.txt` or `.well-known/security.txt`, in `public/`. See [Public files](https://studiometa.github.io/foehn-framework/guide/public-files).
 
 ## Adding to it
 
