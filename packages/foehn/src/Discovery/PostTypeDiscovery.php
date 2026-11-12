@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Discovery;
 
-use InvalidArgumentException;
 use Studiometa\Foehn\Attributes\AsDiscovery;
 use Studiometa\Foehn\Attributes\AsPostType;
 use Studiometa\Foehn\Contracts\ConfiguresPostType;
@@ -25,6 +24,10 @@ final class PostTypeDiscovery implements Discovery
 {
     use IsWpDiscovery;
 
+    public function __construct(
+        private readonly DiscoveryProblems $problems,
+    ) {}
+
     /**
      * Discover post type attributes on classes.
      *
@@ -43,13 +46,20 @@ final class PostTypeDiscovery implements Discovery
             return;
         }
 
-        // Verify the class extends Timber\Post
         if (!$class->getReflection()->isSubclassOf(Post::class)) {
-            throw new InvalidArgumentException(sprintf(
-                'Class %s must extend %s to use #[AsPostType]',
+            $this->problems->report(
+                $location,
                 $class->getName(),
-                Post::class,
-            ));
+                '#[AsPostType]',
+                sprintf(
+                    '%s has #[AsPostType] but does not extend %s, so the post type is not registered.',
+                    $class->getName(),
+                    Post::class,
+                ),
+                sprintf('Declare %s with `extends \\%s`.', $class->getName(), Post::class),
+            );
+
+            return;
         }
 
         $this->addItem($location, [

@@ -98,6 +98,7 @@ export default defineConfig({
             { text: "CLI Commands", link: "/guide/cli-commands" },
             { text: "Discovery Cache", link: "/guide/discovery-cache" },
             { text: "Custom Discovery", link: "/guide/custom-discovery" },
+            { text: "Problems and Errors", link: "/guide/troubleshooting" },
           ],
         },
         {

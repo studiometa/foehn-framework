@@ -26,7 +26,7 @@ interface ViewEngineInterface
      * @param string[] $templates List of template names to try
      * @param array<string, mixed>|object $context Variables to pass to the template
      * @return string Rendered HTML
-     * @throws RuntimeException If no template is found
+     * @throws \RuntimeException If no template is found
      */
     public function renderFirst(array $templates, array|object $context = []): string;
 
@@ -120,7 +120,16 @@ $view->render('pages/home');       // → pages/home.twig
 $view->render('pages/home.twig');  // → pages/home.twig
 ```
 
-Templates are searched in the directories configured by `TimberConfig::$templatesDir`.
+Templates are searched in the directories Timber's loader searches: the theme, and the directories configured by `TimberConfig::$templatesDir`. `exists()` asks the same loader.
+
+## Errors
+
+`TimberViewEngine` throws `Studiometa\Foehn\Views\ViewRenderingFailed`, a `RuntimeException`:
+
+- when Twig fails, with the view that was asked for, the template and line where Twig failed and Twig's message; the Twig error is the previous exception;
+- when no template is found, with every view tried, the directories searched and the file to create.
+
+See [Problems and Errors](/guide/troubleshooting#rendering-errors).
 
 ## Related
 

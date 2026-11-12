@@ -24,7 +24,7 @@ The project runs in DDEV. Run WP-CLI as `ddev wp …`. Without DDEV, run `wp …
    ddev wp foehn inspect post-types templates views menus settings --format=json
    ```
 
-   `post-types` gives the models and meta keys, `templates` the controller of each WordPress template, `views` the Twig files and their context keys, `menus` the menu locations, and `settings` the options. `--all` prints every section; the output is long, so name sections instead.
+   `post-types` gives the models and meta keys, `templates` the controller of each WordPress template, `views` the Twig files and their context keys, `menus` the menu locations, and `settings` the options. `--all` prints every section; the output is long, so name sections instead. The summary starts with `problems`: what Føhn skipped or WordPress will ignore. `ddev wp foehn inspect problems --format=json` gives the fix of each one.
 
 3. Create classes with the generators. Preview first, then write:
 
@@ -33,7 +33,7 @@ The project runs in DDEV. Run WP-CLI as `ddev wp …`. Without DDEV, run `wp …
    ddev wp foehn make:post-type product --format=json
    ```
 
-4. After you add a class or change an attribute, run `ddev wp foehn discovery:clear`. The discovery cache is on in every environment.
+4. After you add a class or change an attribute, run `ddev wp foehn discovery:clear`. The discovery cache is on in every environment. Then check that `problems` in `ddev wp foehn inspect --format=json` is empty: a class that breaks the contract of its attribute is skipped, not fatal.
 
 ## Project conventions
 

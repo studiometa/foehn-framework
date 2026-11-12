@@ -31,6 +31,9 @@ use Tests\Fixtures\InspectApp\StockBinding;
 use Tests\Fixtures\InspectApp\StripeWebhook;
 use Tests\Fixtures\InspectApp\SyncCommand;
 use Tests\Fixtures\InspectApp\Topic;
+use Tests\Fixtures\ProblemApp\Article as ProblemArticle;
+use Tests\Fixtures\ProblemApp\Gallery as ProblemGallery;
+use Tests\Fixtures\ProblemApp\Shelf as ProblemShelf;
 use Timber\Site;
 use Timber\Timber;
 
@@ -111,9 +114,51 @@ describe('ProjectInspector', function () {
         expect($warm)->toBe(inspector()->all());
     });
 
+    it('reports no problems for a project whose classes all register', function () {
+        expect(inspector()->section('problems'))->toBe([]);
+    });
+
+    it('reports a skipped class, then the links that point at nothing', function () {
+        $problems = new ProjectInspector(testDiscoveryRunner(
+            bootTestContainer(),
+            testFixturePath('ProblemApp'),
+        ))->section('problems');
+
+        expect(array_column($problems, 'class'))->toBe([
+            ProblemGallery::class,
+            ProblemArticle::class,
+            ProblemShelf::class,
+        ]);
+        expect($problems[1])->toBe([
+            'class' => ProblemArticle::class,
+            'attribute' => '#[AsPostType]',
+            'reason' => "Post type 'article' names the taxonomy 'genre', which no #[AsTaxonomy] declares and WordPress does not register, so WordPress ignores it.",
+            'fix' =>
+                "Declare the taxonomy 'genre' with #[AsTaxonomy], or remove it from taxonomies on #[AsPostType] of "
+                    . ProblemArticle::class
+                    . '.',
+        ]);
+        expect($problems[2]['reason'])
+            ->toBe(
+                "Taxonomy 'shelf' names the post type 'book', which no #[AsPostType] declares and WordPress does not register, so WordPress ignores it.",
+            );
+    });
+
+    it('counts a type WordPress registers as known', function () {
+        $GLOBALS['wp_stub_taxonomies'] = ['genre'];
+        $GLOBALS['wp_stub_post_types'] = ['book'];
+
+        $problems = new ProjectInspector(testDiscoveryRunner(
+            bootTestContainer(),
+            testFixturePath('ProblemApp'),
+        ))->section('problems');
+
+        expect(array_column($problems, 'class'))->toBe([ProblemGallery::class]);
+    });
+
     it('refuses a section that does not exist', function () {
         inspector()->section('widgets');
-    })->throws(InvalidArgumentException::class, "Unknown section 'widgets'. Available sections: post-types,");
+    })->throws(InvalidArgumentException::class, "Unknown section 'widgets'. Available sections: problems, post-types,");
 
     it('reports a post type with its model, meta fields and taxonomies', function () {
         $product = inspectedRow(inspector()->section('post-types'), 'name', 'product');

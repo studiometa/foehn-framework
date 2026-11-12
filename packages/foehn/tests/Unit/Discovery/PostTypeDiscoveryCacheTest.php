@@ -3,13 +3,14 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Attributes\AsPostType;
+use Studiometa\Foehn\Discovery\DiscoveryProblems;
 use Studiometa\Foehn\Discovery\PostTypeDiscovery;
 use Tests\Fixtures\PostTypeFixture;
 use Tests\Fixtures\ProductFixture;
 
 beforeEach(function () {
     $this->location = testDiscoveryLocation();
-    $this->discovery = new PostTypeDiscovery();
+    $this->discovery = new PostTypeDiscovery(new DiscoveryProblems());
 });
 
 describe('PostTypeDiscovery caching', function () {
@@ -22,7 +23,7 @@ describe('PostTypeDiscovery caching', function () {
     it('restores every item unchanged through a cache file', function () {
         discoverFixture($this->discovery, PostTypeFixture::class, $this->location);
 
-        $restored = restoreThroughCacheFile($this->discovery, new PostTypeDiscovery());
+        $restored = restoreThroughCacheFile($this->discovery, new PostTypeDiscovery(new DiscoveryProblems()));
 
         expect(iterator_to_array($restored->getItems()))->toEqual(iterator_to_array($this->discovery->getItems()));
     });
@@ -30,7 +31,7 @@ describe('PostTypeDiscovery caching', function () {
     it('restores the attribute as an instance, not an array', function () {
         discoverFixture($this->discovery, PostTypeFixture::class, $this->location);
 
-        $item = restoreThroughCacheFile($this->discovery, new PostTypeDiscovery())
+        $item = restoreThroughCacheFile($this->discovery, new PostTypeDiscovery(new DiscoveryProblems()))
             ->getItems()
             ->getForLocation($this->location)[0];
 

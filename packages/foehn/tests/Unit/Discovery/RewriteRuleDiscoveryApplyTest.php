@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Studiometa\Foehn\Discovery\DiscoveryProblems;
 use Studiometa\Foehn\Discovery\RewriteRuleDiscovery;
 use Tempest\Container\GenericContainer;
 use Tests\Fixtures\RewriteRuleCaptureFixture;
@@ -29,7 +30,7 @@ beforeEach(function () {
     RewriteRuleCaptureFixture::$handled = 0;
 
     $this->container = new GenericContainer();
-    $this->discovery = new RewriteRuleDiscovery($this->container);
+    $this->discovery = new RewriteRuleDiscovery($this->container, new DiscoveryProblems());
 });
 
 describe('RewriteRuleDiscovery::apply', function () {
@@ -177,7 +178,7 @@ describe('RewriteRuleDiscovery flushing', function () {
         discoverFixture($this->discovery, RewriteRuleFixture::class);
         $this->discovery->apply();
 
-        $second = new RewriteRuleDiscovery($this->container);
+        $second = new RewriteRuleDiscovery($this->container, new DiscoveryProblems());
         discoverFixture($second, RewriteRuleFixture::class);
         $second->apply();
 
@@ -189,7 +190,7 @@ describe('RewriteRuleDiscovery flushing', function () {
         discoverFixture($this->discovery, RewriteRuleFixture::class);
         $this->discovery->apply();
 
-        $second = new RewriteRuleDiscovery($this->container);
+        $second = new RewriteRuleDiscovery($this->container, new DiscoveryProblems());
         discoverFixture($second, RewriteRuleFixture::class);
         discoverFixture($second, RewriteRuleWithoutHandlerFixture::class);
         $second->apply();

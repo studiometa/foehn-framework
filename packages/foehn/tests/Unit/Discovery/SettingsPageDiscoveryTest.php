@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Attributes\AsSettingsPage;
+use Studiometa\Foehn\Discovery\DiscoveryProblems;
 use Studiometa\Foehn\Discovery\SettingsPageDiscovery;
 use Studiometa\Foehn\Settings\Setting;
 use Tempest\Container\GenericContainer;
@@ -17,7 +18,7 @@ use Tests\Fixtures\Settings\TopLevelSettingsFixture;
  */
 function discoveredPages(string $fixture): array
 {
-    $discovery = new SettingsPageDiscovery(new GenericContainer());
+    $discovery = new SettingsPageDiscovery(new GenericContainer(), new DiscoveryProblems());
 
     discoverFixture($discovery, $fixture);
 
@@ -52,16 +53,32 @@ describe('SettingsPageDiscovery', function () {
         expect(discoveredPages(PostTypeFixture::class))->toHaveCount(0);
     });
 
-    it('rejects a page that cannot say what it stores', function () {
-        expect(fn() => discoveredPages(InterfacelessSettingsFixture::class))
-            ->toThrow(InvalidArgumentException::class, 'must implement');
+    it('reports a page that cannot say what it stores, and skips it', function () {
+        $problems = rejectedProblems(
+            fn(DiscoveryProblems $problems) => new SettingsPageDiscovery(new GenericContainer(), $problems),
+            InterfacelessSettingsFixture::class,
+        );
+
+        expect($problems[0]['reason'])
+            ->toContain('does not implement Studiometa\\Foehn\\Contracts\\SettingsPageInterface');
+        expect($problems[0]['fix'])
+            ->toBe(
+                'Declare '
+                . InterfacelessSettingsFixture::class
+                . ' with `implements \\Studiometa\\Foehn\\Contracts\\SettingsPageInterface`.',
+            );
     });
 
-    it('rejects a page that declares no form at all', function () {
+    it('reports a page that declares no form at all, and skips it', function () {
         // Without a template or a form() there is nothing between the heading
         // and the submit button, and the page renders as an empty form.
-        expect(fn() => discoveredPages(FormlessSettingsFixture::class))
-            ->toThrow(InvalidArgumentException::class, 'declares no form');
+        $problems = rejectedProblems(
+            fn(DiscoveryProblems $problems) => new SettingsPageDiscovery(new GenericContainer(), $problems),
+            FormlessSettingsFixture::class,
+        );
+
+        expect($problems[0]['reason'])->toContain('declares no form');
+        expect($problems[0]['fix'])->toStartWith('Name a `template` on #[AsSettingsPage], or declare');
     });
 
     it('records which of the two ways a page builds its form', function () {

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Discovery;
 
-use InvalidArgumentException;
 use Studiometa\Foehn\Attributes\AsDiscovery;
 use Studiometa\Foehn\Attributes\AsPostMeta;
 use Studiometa\Foehn\Attributes\AsPostType;
@@ -26,6 +25,10 @@ final class PostMetaDiscovery implements Discovery
 {
     use IsWpDiscovery;
 
+    public function __construct(
+        private readonly DiscoveryProblems $problems,
+    ) {}
+
     /**
      * Discover meta declarations on a class.
      */
@@ -38,7 +41,13 @@ final class PostMetaDiscovery implements Discovery
         foreach ($class->getReflection()->getAttributes(AsPostMeta::class) as $reflected) {
             $attribute = $reflected->newInstance();
 
-            $this->validate($class, $attribute);
+            $problem = $this->problem($class, $attribute);
+
+            if ($problem !== null) {
+                $this->problems->report($location, $class->getName(), '#[AsPostMeta]', ...$problem);
+
+                continue;
+            }
 
             $this->addItem($location, [
                 'attribute' => $attribute,
@@ -142,32 +151,39 @@ final class PostMetaDiscovery implements Discovery
     }
 
     /**
-     * Reject a declaration WordPress would refuse or silently ignore.
+     * What is wrong with a declaration WordPress would refuse or silently ignore,
+     * and the fix, or null when nothing is.
      *
-     * All of these are mistakes in the theme's own source, so they are raised
-     * where they are written rather than left to produce a key that does not
-     * appear in the REST API for reasons nothing explains.
+     * All of these are mistakes in the theme's own source. The key is skipped and
+     * reported, rather than left to produce a key that does not appear in the REST
+     * API for reasons nothing explains.
+     *
+     * @return array{reason: string, fix: string}|null
      */
-    private function validate(ClassReflector $class, AsPostMeta $attribute): void
+    private function problem(ClassReflector $class, AsPostMeta $attribute): ?array
     {
         $subject = sprintf('#[AsPostMeta(key: \'%s\')] on %s', $attribute->key, $class->getName());
 
         if (!in_array($attribute->type, AsPostMeta::TYPES, true)) {
-            throw new InvalidArgumentException(sprintf(
-                '%s declares type \'%s\'. register_meta() accepts %s.',
-                $subject,
-                $attribute->type,
-                implode(', ', AsPostMeta::TYPES),
-            ));
+            return [
+                'reason' => sprintf(
+                    '%s declares type \'%s\', which register_meta() does not accept, so the key is not registered.',
+                    $subject,
+                    $attribute->type,
+                ),
+                'fix' => sprintf('Set type to one of %s.', implode(', ', AsPostMeta::TYPES)),
+            ];
         }
 
         if (!in_array($attribute->objectType, AsPostMeta::OBJECT_TYPES, true)) {
-            throw new InvalidArgumentException(sprintf(
-                '%s declares objectType \'%s\'. register_meta() accepts %s.',
-                $subject,
-                $attribute->objectType,
-                implode(', ', AsPostMeta::OBJECT_TYPES),
-            ));
+            return [
+                'reason' => sprintf(
+                    '%s declares objectType \'%s\', which register_meta() does not accept, so the key is not registered.',
+                    $subject,
+                    $attribute->objectType,
+                ),
+                'fix' => sprintf('Set objectType to one of %s.', implode(', ', AsPostMeta::OBJECT_TYPES)),
+            ];
         }
 
         if (
@@ -175,16 +191,21 @@ final class PostMetaDiscovery implements Discovery
             && $attribute->schema === []
             && in_array($attribute->type, ['array', 'object'], true)
         ) {
-            throw new InvalidArgumentException(sprintf(
-                '%s is type \'%s\' and shown in REST, so it needs a schema. WordPress cannot describe the contents of an array or an object on its own.',
-                $subject,
-                $attribute->type,
-            ));
+            return [
+                'reason' => sprintf(
+                    '%s is type \'%s\' and shown in REST, so it needs a schema: WordPress cannot describe the contents of an array or an object on its own.',
+                    $subject,
+                    $attribute->type,
+                ),
+                'fix' => 'Add a `schema` to #[AsPostMeta], or set showInRest: false.',
+            ];
         }
 
-        if ($attribute->sanitize !== null) {
-            $this->validateSanitizer($class, $attribute, $subject);
+        if ($attribute->sanitize === null) {
+            return null;
         }
+
+        return $this->sanitizerProblem($class, $attribute, $subject);
     }
 
     /**
@@ -193,28 +214,38 @@ final class PostMetaDiscovery implements Discovery
      * Static because the declaring class is usually a Timber model: `Timber\Post`
      * declares a protected constructor and is built through its own factories, so
      * there is nothing to call an instance method on when `apply()` runs.
+     *
+     * @return array{reason: string, fix: string}|null
      */
-    private function validateSanitizer(ClassReflector $class, AsPostMeta $attribute, string $subject): void
+    private function sanitizerProblem(ClassReflector $class, AsPostMeta $attribute, string $subject): ?array
     {
         $reflection = $class->getReflection();
         $name = (string) $attribute->sanitize;
 
         if (!$reflection->hasMethod($name)) {
-            throw new InvalidArgumentException(sprintf(
-                '%s names a sanitize method %s() that does not exist.',
-                $subject,
-                $name,
-            ));
+            return [
+                'reason' => sprintf('%s names a sanitize method %s() that does not exist.', $subject, $name),
+                'fix' => sprintf(
+                    'Add `public static function %s(mixed $value): mixed` to %s, or remove `sanitize`.',
+                    $name,
+                    $class->getName(),
+                ),
+            ];
         }
 
         $method = $reflection->getMethod($name);
 
         if (!$method->isPublic() || !$method->isStatic()) {
-            throw new InvalidArgumentException(sprintf(
-                '%s names %s() as its sanitizer, which must be public static — the declaring class is not instantiated.',
-                $subject,
-                $name,
-            ));
+            return [
+                'reason' => sprintf(
+                    '%s names %s() as its sanitizer, which must be public static: the declaring class is not instantiated.',
+                    $subject,
+                    $name,
+                ),
+                'fix' => sprintf('Declare %s::%s() as `public static`.', $class->getName(), $name),
+            ];
         }
+
+        return null;
     }
 }

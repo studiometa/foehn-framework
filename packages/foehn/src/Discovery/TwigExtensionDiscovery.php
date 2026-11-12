@@ -25,6 +25,7 @@ final class TwigExtensionDiscovery implements Discovery
 
     public function __construct(
         private readonly Container $container,
+        private readonly DiscoveryProblems $problems,
     ) {}
 
     /**
@@ -45,8 +46,19 @@ final class TwigExtensionDiscovery implements Discovery
             return;
         }
 
-        // Ensure the class extends AbstractExtension
         if (!$class->getReflection()->isSubclassOf(AbstractExtension::class)) {
+            $this->problems->report(
+                $location,
+                $class->getName(),
+                '#[AsTwigExtension]',
+                sprintf(
+                    '%s has #[AsTwigExtension] but does not extend %s, so Twig does not load it.',
+                    $class->getName(),
+                    AbstractExtension::class,
+                ),
+                sprintf('Declare %s with `extends \\%s`.', $class->getName(), AbstractExtension::class),
+            );
+
             return;
         }
 

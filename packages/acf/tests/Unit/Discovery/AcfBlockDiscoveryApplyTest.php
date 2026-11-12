@@ -3,13 +3,14 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Discovery\AcfBlockDiscovery;
+use Studiometa\Foehn\Discovery\DiscoveryProblems;
 use Tests\Fixtures\AcfBlockFixture;
 
 beforeEach(function () {
     $this->location = testDiscoveryLocation();
     wp_stub_reset();
     bootTestContainer();
-    $this->discovery = new AcfBlockDiscovery();
+    $this->discovery = new AcfBlockDiscovery(new DiscoveryProblems());
 });
 
 afterEach(fn() => tearDownTestContainer());

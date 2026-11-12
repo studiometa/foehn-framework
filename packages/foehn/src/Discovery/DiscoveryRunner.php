@@ -151,6 +151,26 @@ final class DiscoveryRunner
         }
 
         ksort($this->discoveries);
+
+        foreach ($this->problems() as $problem) {
+            $this->warn(sprintf('[Foehn] %s', DiscoveryProblems::format($problem)));
+        }
+    }
+
+    /**
+     * The classes discovery skipped, with why and the fix.
+     *
+     * Recorded on every request, whether or not debug is on, and restored from the
+     * discovery cache with the rest: `wp foehn inspect` and `discovery:status` show
+     * them.
+     *
+     * @return list<array{class: string, attribute: string, reason: string, fix: string|null}>
+     */
+    public function problems(): array
+    {
+        $problems = $this->getDiscoveries()[DiscoveryProblems::class] ?? null;
+
+        return $problems instanceof DiscoveryProblems ? $problems->all() : [];
     }
 
     /**
@@ -215,7 +235,11 @@ final class DiscoveryRunner
             try {
                 $cache->store($location, $discoveries);
             } catch (Throwable $e) {
-                $this->logDiscoveryFailure($location->namespace, $e);
+                $this->warn(sprintf(
+                    '[Foehn] Discovery cache for "%s" could not be written: %s',
+                    $location->namespace,
+                    $e->getMessage(),
+                ));
             }
         }
     }
@@ -377,8 +401,24 @@ final class DiscoveryRunner
             return;
         }
 
+        $problems = array_find(
+            $discoveries,
+            static fn(Discovery $discovery): bool => $discovery instanceof DiscoveryProblems,
+        );
+
         foreach ($this->config->hooks as $hookClass) {
             if (!class_exists($hookClass)) {
+                $problems?->report(
+                    $location,
+                    $hookClass,
+                    'hooks',
+                    sprintf(
+                        'FoehnConfig hooks names %s, which does not exist, so its hooks are not registered.',
+                        $hookClass,
+                    ),
+                    sprintf('Fix the class name in `hooks` in foehn.config.php, or remove %s from it.', $hookClass),
+                );
+
                 continue;
             }
 
@@ -389,7 +429,12 @@ final class DiscoveryRunner
                     $discovery->discover($location, $reflector);
                 }
             } catch (Throwable $e) {
-                $this->logDiscoveryFailure($hookClass, $e);
+                $problems?->report(
+                    $location,
+                    $hookClass,
+                    'hooks',
+                    sprintf('Discovering %s, named in FoehnConfig hooks, failed: %s', $hookClass, $e->getMessage()),
+                );
 
                 continue;
             }
@@ -397,15 +442,16 @@ final class DiscoveryRunner
     }
 
     /**
-     * Log a discovery failure when debug mode is enabled.
+     * Raise a PHP warning when debug mode is enabled.
+     *
+     * A warning on every request is how a developer without a terminal learns that
+     * a class was skipped; in production it would only fill the log.
      */
-    private function logDiscoveryFailure(string $subject, Throwable $exception): void
+    private function warn(string $message): void
     {
         if ($this->config === null || !$this->config->isDebugEnabled()) {
             return;
         }
-
-        $message = sprintf('[Foehn] Discovery failed for "%s": %s', $subject, $exception->getMessage());
 
         trigger_error($message, E_USER_WARNING);
     }

@@ -21,6 +21,10 @@ final class SeederDiscovery implements Discovery
 {
     use IsWpDiscovery;
 
+    public function __construct(
+        private readonly DiscoveryProblems $problems,
+    ) {}
+
     /**
      * Discover seeder attributes on classes.
      *
@@ -40,6 +44,18 @@ final class SeederDiscovery implements Discovery
         // Checked before the attribute is built, as for CLI commands: a seeder
         // without the interface has no run() to call.
         if (!$class->implements(SeederInterface::class)) {
+            $this->problems->report(
+                $location,
+                $class->getName(),
+                '#[AsSeeder]',
+                sprintf(
+                    '%s has #[AsSeeder] but does not implement %s, so `wp foehn seed` does not run it.',
+                    $class->getName(),
+                    SeederInterface::class,
+                ),
+                sprintf('Declare %s with `implements \\%s`.', $class->getName(), SeederInterface::class),
+            );
+
             return;
         }
 

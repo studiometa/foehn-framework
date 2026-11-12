@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Discovery\ContextProviderDiscovery;
+use Studiometa\Foehn\Discovery\DiscoveryProblems;
 use Studiometa\Foehn\Views\ContextProviderRegistry;
 use Tests\Fixtures\ContextProviderFixture;
 
@@ -15,7 +16,7 @@ beforeEach(function () {
     $this->registry = new ContextProviderRegistry();
     $container->singleton(ContextProviderRegistry::class, fn() => $this->registry);
 
-    $this->discovery = new ContextProviderDiscovery();
+    $this->discovery = new ContextProviderDiscovery(new DiscoveryProblems());
 });
 
 afterEach(fn() => tearDownTestContainer());
@@ -38,7 +39,7 @@ describe('ContextProviderDiscovery apply', function () {
     });
 
     it('registers the same providers whether scanned or restored from cache', function () {
-        $scanned = new ContextProviderDiscovery();
+        $scanned = new ContextProviderDiscovery(new DiscoveryProblems());
         discoverFixture($scanned, ContextProviderFixture::class, $this->location);
 
         restoreThroughCacheFile($scanned, $this->discovery)->apply();

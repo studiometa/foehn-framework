@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Attributes\AsRewriteRule;
+use Studiometa\Foehn\Discovery\DiscoveryProblems;
 use Studiometa\Foehn\Discovery\RewriteRuleDiscovery;
 use Tempest\Container\GenericContainer;
 use Tests\Fixtures\InvalidRewriteRuleFixture;
@@ -15,7 +16,7 @@ use Tests\Fixtures\RewriteRuleWithoutHandlerFixture;
  */
 function discoveredRules(string $fixture): array
 {
-    $discovery = new RewriteRuleDiscovery(new GenericContainer());
+    $discovery = new RewriteRuleDiscovery(new GenericContainer(), new DiscoveryProblems());
 
     discoverFixture($discovery, $fixture);
 
@@ -60,8 +61,13 @@ describe('RewriteRuleDiscovery', function () {
         ]);
     });
 
-    it('rejects a position add_rewrite_rule does not accept', function () {
-        expect(fn() => discoveredRules(InvalidRewriteRuleFixture::class))
-            ->toThrow(InvalidArgumentException::class, "declares after: 'sideways'");
+    it('reports a position add_rewrite_rule does not accept, and skips it', function () {
+        $problems = rejectedProblems(
+            fn(DiscoveryProblems $problems) => new RewriteRuleDiscovery(new GenericContainer(), $problems),
+            InvalidRewriteRuleFixture::class,
+        );
+
+        expect($problems[0]['reason'])->toContain("declares after: 'sideways'");
+        expect($problems[0]['fix'])->toBe("Set after: 'top' or after: 'bottom' on #[AsRewriteRule].");
     });
 });

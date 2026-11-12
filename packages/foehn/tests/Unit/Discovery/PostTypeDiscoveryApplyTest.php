@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Studiometa\Foehn\Discovery\DiscoveryProblems;
 use Studiometa\Foehn\Discovery\PostTypeDiscovery;
 use Tests\Fixtures\PostTypeFixture;
 
@@ -9,7 +10,7 @@ beforeEach(function () {
     $this->location = testDiscoveryLocation();
     wp_stub_reset();
     bootTestContainer();
-    $this->discovery = new PostTypeDiscovery();
+    $this->discovery = new PostTypeDiscovery(new DiscoveryProblems());
 });
 
 afterEach(fn() => tearDownTestContainer());
@@ -46,7 +47,7 @@ describe('PostTypeDiscovery apply', function () {
     });
 
     it('registers the same post type whether scanned or restored from cache', function () {
-        $scanned = new PostTypeDiscovery();
+        $scanned = new PostTypeDiscovery(new DiscoveryProblems());
         discoverFixture($scanned, PostTypeFixture::class, $this->location);
 
         $scanned->apply();

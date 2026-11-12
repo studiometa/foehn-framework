@@ -162,10 +162,11 @@ wp foehn inspect --all --format=json
 
 `inspect` reports the project model from what discovery found. It reads the attributes the code declares, so it registers nothing and writes nothing. Run it before you write code in a project you do not know.
 
-With no section, `inspect` prints a summary: each section with the names of its rows (post type names, WordPress templates, Twig views, menu locations, command names…). It is short enough to read whole. Name one or more sections to print them in full, or pass `--all` for every section. `--all` cannot be combined with section names.
+With no section, `inspect` prints a summary: each section with the names of its rows (post type names, WordPress templates, Twig views, menu locations, command names…). It is short enough to read whole. It starts with `problems`; `wp foehn inspect problems` gives the reason and the fix of each one (see [Problems and Errors](/guide/troubleshooting)). Name one or more sections to print them in full, or pass `--all` for every section. `--all` cannot be combined with section names.
 
 | Section             | What it lists                                                                                                       |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `problems`          | What will not register: the classes discovery skipped and the type links that point at nothing, with the fix        |
 | `post-types`        | Post types: the Timber model class, the arguments of `#[AsPostType]`, the taxonomies and the `#[AsPostMeta]` fields |
 | `taxonomies`        | Taxonomies: the Timber model class, the arguments of `#[AsTaxonomy]`, the post types and the term meta fields       |
 | `settings`          | `#[AsSettingsPage]` pages and the options they store: option name, type, default and sanitizer                      |
@@ -345,7 +346,7 @@ wp foehn discovery:generate
 # Clear the discovery cache
 wp foehn discovery:clear
 
-# Check cache status, per location
+# Check cache status, per location, and list the classes discovery skipped
 wp foehn discovery:status
 ```
 

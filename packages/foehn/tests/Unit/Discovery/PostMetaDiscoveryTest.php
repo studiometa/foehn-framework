@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Attributes\AsPostMeta;
+use Studiometa\Foehn\Discovery\DiscoveryProblems;
 use Studiometa\Foehn\Discovery\PostMetaDiscovery;
 use Tests\Fixtures\PostMeta\AbstractBase;
 use Tests\Fixtures\PostMeta\Article;
@@ -22,7 +23,7 @@ use Tests\Fixtures\PostTypeFixture;
  */
 function discoveredMeta(string $fixture): array
 {
-    $discovery = new PostMetaDiscovery();
+    $discovery = new PostMetaDiscovery(new DiscoveryProblems());
 
     discoverFixture($discovery, $fixture);
 
@@ -81,32 +82,73 @@ describe('PostMetaDiscovery', function () {
         expect(discoveredMeta(AbstractBase::class))->toHaveCount(0);
     });
 
-    it('rejects a type register_meta does not accept', function () {
-        expect(fn() => discoveredMeta(InvalidType::class))
-            ->toThrow(InvalidArgumentException::class, "declares type 'float'");
+    it('reports a type register_meta does not accept', function () {
+        $problems = rejectedProblems(
+            fn(DiscoveryProblems $problems) => new PostMetaDiscovery($problems),
+            InvalidType::class,
+        );
+
+        expect($problems)->toHaveCount(1);
+        expect($problems[0]['attribute'])->toBe('#[AsPostMeta]');
+        expect($problems[0]['reason'])->toContain("declares type 'float'");
+        expect($problems[0]['fix'])->toBe('Set type to one of string, boolean, integer, number, array, object.');
     });
 
-    it('rejects an object type register_meta does not accept', function () {
-        expect(fn() => discoveredMeta(InvalidObjectType::class))
-            ->toThrow(InvalidArgumentException::class, "declares objectType 'widget'");
+    it('reports an object type register_meta does not accept', function () {
+        $problems = rejectedProblems(
+            fn(DiscoveryProblems $problems) => new PostMetaDiscovery($problems),
+            InvalidObjectType::class,
+        );
+
+        expect($problems)->toHaveCount(1);
+        expect($problems[0]['attribute'])->toBe('#[AsPostMeta]');
+        expect($problems[0]['reason'])->toContain("declares objectType 'widget'");
+        expect($problems[0]['fix'])->toBe('Set objectType to one of post, term, user, comment.');
     });
 
-    it('rejects an array shown in REST with no schema', function () {
+    it('reports an array shown in REST with no schema', function () {
         // WordPress refuses to build a REST schema for an array whose items it
         // cannot describe, and says so only under WP_DEBUG.
-        expect(fn() => discoveredMeta(SchemalessArray::class))
-            ->toThrow(InvalidArgumentException::class, 'needs a schema');
+        $problems = rejectedProblems(
+            fn(DiscoveryProblems $problems) => new PostMetaDiscovery($problems),
+            SchemalessArray::class,
+        );
+
+        expect($problems)->toHaveCount(1);
+        expect($problems[0]['attribute'])->toBe('#[AsPostMeta]');
+        expect($problems[0]['reason'])->toContain('needs a schema');
+        expect($problems[0]['fix'])->toBe('Add a `schema` to #[AsPostMeta], or set showInRest: false.');
     });
 
-    it('rejects a sanitizer that does not exist', function () {
-        expect(fn() => discoveredMeta(MissingSanitizer::class))
-            ->toThrow(InvalidArgumentException::class, 'does not exist');
+    it('reports a sanitizer that does not exist', function () {
+        $problems = rejectedProblems(
+            fn(DiscoveryProblems $problems) => new PostMetaDiscovery($problems),
+            MissingSanitizer::class,
+        );
+
+        expect($problems)->toHaveCount(1);
+        expect($problems[0]['attribute'])->toBe('#[AsPostMeta]');
+        expect($problems[0]['reason'])->toContain('that does not exist');
+        expect($problems[0]['fix'])
+            ->toBe(
+                'Add `public static function sanitizeNothing(mixed $value): mixed` to '
+                . MissingSanitizer::class
+                . ', or remove `sanitize`.',
+            );
     });
 
-    it('rejects a sanitizer that is not static', function () {
-        // Timber\Post declares a protected constructor, so there is nothing to
+    it('reports a sanitizer that is not static', function () {
+        // Timber\\Post declares a protected constructor, so there is nothing to
         // call an instance method on when apply() runs.
-        expect(fn() => discoveredMeta(InstanceSanitizer::class))
-            ->toThrow(InvalidArgumentException::class, 'must be public static');
+        $problems = rejectedProblems(
+            fn(DiscoveryProblems $problems) => new PostMetaDiscovery($problems),
+            InstanceSanitizer::class,
+        );
+
+        expect($problems)->toHaveCount(1);
+        expect($problems[0]['attribute'])->toBe('#[AsPostMeta]');
+        expect($problems[0]['reason'])->toContain('must be public static');
+        expect($problems[0]['fix'])
+            ->toBe('Declare ' . InstanceSanitizer::class . '::sanitizeSku() as `public static`.');
     });
 });

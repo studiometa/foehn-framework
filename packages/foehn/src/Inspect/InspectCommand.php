@@ -11,11 +11,12 @@ use Studiometa\Foehn\Console\WpCli;
 #[AsCliCommand(name: 'inspect', description: 'Report what the project declares', longDescription: <<<'DOC'
     ## DESCRIPTION
 
-    Reports the project model: post types with their meta fields, taxonomies and
-    Timber model classes, taxonomies, settings pages with their options, blocks with
-    their attributes, patterns, block bindings, templates, Twig views, context
-    providers, menus, image sizes, rewrite rules, REST routes, `wp foehn` commands,
-    seeders, active plugins, theme supports and the Vite entry points.
+    Reports the project model: the problems, post types with their meta fields,
+    taxonomies and Timber model classes, taxonomies, settings pages with their
+    options, blocks with their attributes, patterns, block bindings, templates,
+    Twig views, context providers, menus, image sizes, rewrite rules, REST routes,
+    `wp foehn` commands, seeders, active plugins, theme supports and the Vite entry
+    points.
 
     `templates` gives the controller that renders each WordPress template. `views`
     gives, for each Twig file, the context providers its name matches. Both give
@@ -30,6 +31,13 @@ use Studiometa\Foehn\Console\WpCli;
     update` and `wp option update`. Sample content goes in a seeder instead, so
     `wp foehn seed` can write it again: `seeders` lists them in run order.
 
+    `problems` lists what the project declares and WordPress will not register:
+    a class discovery skipped because it breaks the contract of its attribute
+    (#[AsPostType] on a class that does not extend Timber\Post, a command that
+    does not implement its interface…), and a post type or taxonomy that names a
+    taxonomy or post type nobody registers. Each row gives the reason and, when
+    the cause is known, the fix. The summary names them first.
+
     The report is built from what discovery found, so it reads the attributes the
     code declares. Run it before writing code in a project you do not know, and use
     `--format=json` when a program or a coding agent reads the result.
@@ -43,10 +51,10 @@ use Studiometa\Foehn\Console\WpCli;
     ## OPTIONS
 
     [<section>...]
-    : The sections to print in full. Any of post-types, taxonomies, settings,
-      blocks, patterns, bindings, templates, views, context-providers, menus,
-      image-sizes, rewrite-rules, rest-routes, cli-commands, seeders, plugins,
-      theme-supports, vite.
+    : The sections to print in full. Any of problems, post-types, taxonomies,
+      settings, blocks, patterns, bindings, templates, views, context-providers,
+      menus, image-sizes, rewrite-rules, rest-routes, cli-commands, seeders,
+      plugins, theme-supports, vite.
 
     [--all]
     : Print every section in full.
@@ -58,6 +66,9 @@ use Studiometa\Foehn\Console\WpCli;
 
         # What the project declares, by name
         wp foehn inspect
+
+        # What will not register, and how to fix it
+        wp foehn inspect problems
 
         # Some sections in full, for a program or an agent
         wp foehn inspect post-types templates menus --format=json
@@ -77,6 +88,7 @@ final readonly class InspectCommand implements CliCommandInterface
      * @var array<string, list<string>>
      */
     private const array TABLE_COLUMNS = [
+        'problems' => ['reason', 'fix'],
         'post-types' => ['name', 'model', 'taxonomies', 'meta'],
         'taxonomies' => ['name', 'model', 'postTypes', 'meta'],
         'settings' => ['page', 'class', 'settings'],
@@ -169,6 +181,7 @@ final readonly class InspectCommand implements CliCommandInterface
             $this->renderJson([
                 'summary' => $summary,
                 'commands' => [
+                    'problems' => 'wp foehn inspect problems --format=json',
                     'sections' => 'wp foehn inspect <section>... --format=json',
                     'all' => 'wp foehn inspect --all --format=json',
                 ],
@@ -187,6 +200,11 @@ final readonly class InspectCommand implements CliCommandInterface
         }
 
         $this->cli->line('');
+
+        if (($summary['problems'] ?? []) !== []) {
+            $this->cli->log('Problems with their fix: wp foehn inspect problems');
+        }
+
         $this->cli->log('Sections in full: wp foehn inspect <section>...');
         $this->cli->log('Every section in full: wp foehn inspect --all');
     }

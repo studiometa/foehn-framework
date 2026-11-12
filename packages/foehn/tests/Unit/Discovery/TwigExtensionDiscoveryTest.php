@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Studiometa\Foehn\Discovery\DiscoveryProblems;
 use Studiometa\Foehn\Discovery\TwigExtensionDiscovery;
 use Tempest\Container\GenericContainer;
 use Tests\Fixtures\InvalidTwigExtensionFixture;
@@ -11,7 +12,7 @@ use Tests\Fixtures\TwigExtensionWithPriorityFixture;
 
 beforeEach(function () {
     $this->location = testDiscoveryLocation();
-    $this->discovery = new TwigExtensionDiscovery(new GenericContainer());
+    $this->discovery = new TwigExtensionDiscovery(new GenericContainer(), $this->problems = new DiscoveryProblems());
 });
 
 describe('TwigExtensionDiscovery', function () {
@@ -55,7 +56,13 @@ describe('TwigExtensionDiscovery', function () {
         );
 
         expect($this->discovery->getItems())->toHaveCount(0);
-        expect($this->discovery->getItems())->toHaveCount(0);
+        expect($this->problems->all()[0]['attribute'])->toBe('#[AsTwigExtension]');
+        expect($this->problems->all()[0]['fix'])
+            ->toBe(
+                'Declare '
+                . InvalidTwigExtensionFixture::class
+                . ' with `extends \\Twig\\Extension\\AbstractExtension`.',
+            );
     });
 
     it('reports hasItems correctly', function () {
@@ -96,7 +103,10 @@ describe('TwigExtensionDiscovery', function () {
             new \Tempest\Reflection\ClassReflector(TwigExtensionWithPriorityFixture::class),
         );
 
-        $restored = restoreThroughCacheFile($this->discovery, new TwigExtensionDiscovery(new GenericContainer()));
+        $restored = restoreThroughCacheFile(
+            $this->discovery,
+            new TwigExtensionDiscovery(new GenericContainer(), new DiscoveryProblems()),
+        );
 
         expect(iterator_to_array($restored->getItems()))->toEqual(iterator_to_array($this->discovery->getItems()));
     });

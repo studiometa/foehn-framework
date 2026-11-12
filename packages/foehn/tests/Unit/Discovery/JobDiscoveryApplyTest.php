@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Studiometa\Foehn\Discovery\DiscoveryProblems;
 use Studiometa\Foehn\Discovery\JobDiscovery;
 use Studiometa\Foehn\Jobs\JobRegistry;
 use Studiometa\Foehn\Jobs\JobSerializer;
@@ -13,7 +14,7 @@ beforeEach(function () {
     $this->container = bootTestContainer();
     $this->location = testDiscoveryLocation();
     $this->registry = new JobRegistry();
-    $this->discovery = new JobDiscovery($this->registry);
+    $this->discovery = new JobDiscovery($this->registry, new DiscoveryProblems());
 });
 
 afterEach(fn() => tearDownTestContainer());

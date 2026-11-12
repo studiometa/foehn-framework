@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Studiometa\Foehn\Discovery\DiscoveryProblems;
 use Studiometa\Foehn\Discovery\SeederDiscovery;
 use Tempest\Reflection\ClassReflector;
 use Tests\Fixtures\NoAttributeFixture;
@@ -11,7 +12,7 @@ use Tests\Fixtures\Seeders\NotASeeder;
 beforeEach(function () {
     wp_stub_reset();
     $this->location = testDiscoveryLocation();
-    $this->discovery = new SeederDiscovery();
+    $this->discovery = new SeederDiscovery($this->problems = new DiscoveryProblems());
 });
 
 describe('SeederDiscovery', function () {
@@ -32,10 +33,19 @@ describe('SeederDiscovery', function () {
         expect($this->discovery->getItems())->toHaveCount(0);
     });
 
-    it('ignores classes that do not implement SeederInterface', function () {
+    it('reports classes that do not implement SeederInterface, and skips them', function () {
         $this->discovery->discover($this->location, new ClassReflector(NotASeeder::class));
 
         expect($this->discovery->getItems())->toHaveCount(0);
+        expect($this->problems->all())->toBe([[
+            'class' => NotASeeder::class,
+            'attribute' => '#[AsSeeder]',
+            'reason' =>
+                NotASeeder::class
+                    . ' has #[AsSeeder] but does not implement Studiometa\\Foehn\\Contracts\\SeederInterface, so `wp foehn seed` does not run it.',
+            'fix' =>
+                'Declare ' . NotASeeder::class . ' with `implements \\Studiometa\\Foehn\\Contracts\\SeederInterface`.',
+        ]]);
     });
 
     it('registers nothing and runs nothing on apply', function () {
@@ -46,9 +56,9 @@ describe('SeederDiscovery', function () {
     });
 
     it('survives the discovery cache', function () {
-        $source = new SeederDiscovery();
+        $source = new SeederDiscovery(new DiscoveryProblems());
         $location = discoverFixture($source, MediaSeeder::class);
-        $restored = restoreThroughCacheFile($source, new SeederDiscovery(), $location);
+        $restored = restoreThroughCacheFile($source, new SeederDiscovery(new DiscoveryProblems()), $location);
 
         $items = iterator_to_array($restored->getItems());
 

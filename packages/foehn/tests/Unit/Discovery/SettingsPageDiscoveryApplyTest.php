@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Contracts\ViewEngineInterface;
+use Studiometa\Foehn\Discovery\DiscoveryProblems;
 use Studiometa\Foehn\Discovery\SettingsPageDiscovery;
 use Studiometa\Foehn\Settings\Settings;
 use Tempest\Container\GenericContainer;
@@ -83,7 +84,7 @@ beforeEach(function () {
     $this->container = new GenericContainer();
     $this->container->singleton(ViewEngineInterface::class, fn() => $this->view);
 
-    $this->discovery = new SettingsPageDiscovery($this->container);
+    $this->discovery = new SettingsPageDiscovery($this->container, new DiscoveryProblems());
 });
 
 describe('SettingsPageDiscovery::apply', function () {

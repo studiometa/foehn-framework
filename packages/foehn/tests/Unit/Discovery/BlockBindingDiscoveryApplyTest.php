@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Discovery\BlockBindingDiscovery;
+use Studiometa\Foehn\Discovery\DiscoveryProblems;
 use Tempest\Container\GenericContainer;
 use Tests\Fixtures\Bindings\ReadingTimeFixture;
 
@@ -21,7 +22,7 @@ beforeEach(function () {
 
     ReadingTimeFixture::$calls = [];
 
-    $this->discovery = new BlockBindingDiscovery(new GenericContainer());
+    $this->discovery = new BlockBindingDiscovery(new GenericContainer(), new DiscoveryProblems());
 });
 
 describe('BlockBindingDiscovery::apply', function () {
@@ -102,7 +103,10 @@ describe('BlockBindingDiscovery caching', function () {
 
         discoverFixture($this->discovery, ReadingTimeFixture::class, $location);
 
-        $restored = restoreThroughCacheFile($this->discovery, new BlockBindingDiscovery(new GenericContainer()));
+        $restored = restoreThroughCacheFile(
+            $this->discovery,
+            new BlockBindingDiscovery(new GenericContainer(), new DiscoveryProblems()),
+        );
 
         expect(iterator_to_array($restored->getItems()))->toEqual(iterator_to_array($this->discovery->getItems()));
     });
@@ -112,7 +116,10 @@ describe('BlockBindingDiscovery caching', function () {
         // makes the item cacheable at all.
         discoverFixture($this->discovery, ReadingTimeFixture::class);
 
-        restoreThroughCacheFile($this->discovery, new BlockBindingDiscovery(new GenericContainer()))->apply();
+        restoreThroughCacheFile(
+            $this->discovery,
+            new BlockBindingDiscovery(new GenericContainer(), new DiscoveryProblems()),
+        )->apply();
 
         expect(wp_stub_get_calls('register_block_bindings_source'))->toHaveCount(1);
         expect(registeredSource()['get_value_callback']([], new WP_Block(), 'content'))->toBe('4 minutes');

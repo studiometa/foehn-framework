@@ -25,6 +25,7 @@ final class CliCommandDiscovery implements Discovery
 
     public function __construct(
         private readonly Container $container,
+        private readonly DiscoveryProblems $problems,
     ) {}
 
     /**
@@ -47,6 +48,18 @@ final class CliCommandDiscovery implements Discovery
         // without the interface is a mistake, and building its attribute first
         // would report that mistake as an argument error from somewhere else.
         if (!$class->implements(CliCommandInterface::class)) {
+            $this->problems->report(
+                $location,
+                $class->getName(),
+                '#[AsCliCommand]',
+                sprintf(
+                    '%s has #[AsCliCommand] but does not implement %s, so the command is not registered.',
+                    $class->getName(),
+                    CliCommandInterface::class,
+                ),
+                sprintf('Declare %s with `implements \\%s`.', $class->getName(), CliCommandInterface::class),
+            );
+
             return;
         }
 

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Discovery;
 
-use InvalidArgumentException;
 use Studiometa\Foehn\Attributes\AsDiscovery;
 use Studiometa\Foehn\Attributes\AsTemplateController;
 use Studiometa\Foehn\Contracts\TemplateControllerInterface;
@@ -37,6 +36,7 @@ final class TemplateControllerDiscovery implements Discovery
         private readonly SectionRequest $sectionRequest,
         private readonly SectionCollector $sectionCollector,
         private readonly SectionResponse $sectionResponse,
+        private readonly DiscoveryProblems $problems,
     ) {
         $this->controllers = TemplateControllerMap::fromItems([]);
     }
@@ -59,13 +59,20 @@ final class TemplateControllerDiscovery implements Discovery
             return;
         }
 
-        // Verify the class implements TemplateControllerInterface
         if (!$class->implements(TemplateControllerInterface::class)) {
-            throw new InvalidArgumentException(sprintf(
-                'Class %s must implement %s to use #[AsTemplateController]',
+            $this->problems->report(
+                $location,
                 $class->getName(),
-                TemplateControllerInterface::class,
-            ));
+                '#[AsTemplateController]',
+                sprintf(
+                    '%s has #[AsTemplateController] but does not implement %s, so it handles no template.',
+                    $class->getName(),
+                    TemplateControllerInterface::class,
+                ),
+                sprintf('Declare %s with `implements \\%s`.', $class->getName(), TemplateControllerInterface::class),
+            );
+
+            return;
         }
 
         $this->addItem($location, [

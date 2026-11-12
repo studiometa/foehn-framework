@@ -3,13 +3,14 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Discovery\AcfBlockDiscovery;
+use Studiometa\Foehn\Discovery\DiscoveryProblems;
 use Tests\Fixtures\AcfBlockFixture;
 use Tests\Fixtures\InvalidAcfBlockFixture;
 use Tests\Fixtures\NoAttributeFixture;
 
 beforeEach(function () {
     $this->location = testDiscoveryLocation();
-    $this->discovery = new AcfBlockDiscovery();
+    $this->discovery = new AcfBlockDiscovery(new DiscoveryProblems());
 });
 
 describe('AcfBlockDiscovery', function () {
@@ -34,12 +35,24 @@ describe('AcfBlockDiscovery', function () {
         expect($this->discovery->getItems())->toHaveCount(0);
     });
 
-    it('throws when class does not implement AcfBlockInterface', function () {
-        expect(fn() => $this->discovery->discover(
-            $this->location,
-            new \Tempest\Reflection\ClassReflector(InvalidAcfBlockFixture::class),
-        ))
-            ->toThrow(InvalidArgumentException::class, 'must implement');
+    it('reports a class that does not implement AcfBlockInterface, and skips it', function () {
+        $problems = new DiscoveryProblems();
+        $discovery = new AcfBlockDiscovery($problems);
+
+        $discovery->discover($this->location, new \Tempest\Reflection\ClassReflector(InvalidAcfBlockFixture::class));
+
+        expect($discovery->getItems())->toHaveCount(0);
+        expect($problems->all())->toBe([[
+            'class' => InvalidAcfBlockFixture::class,
+            'attribute' => '#[AsAcfBlock]',
+            'reason' =>
+                InvalidAcfBlockFixture::class
+                    . ' has #[AsAcfBlock] but does not implement Studiometa\\Foehn\\Contracts\\AcfBlockInterface, so the block is not registered.',
+            'fix' =>
+                'Declare '
+                    . InvalidAcfBlockFixture::class
+                    . ' with `implements \\Studiometa\\Foehn\\Contracts\\AcfBlockInterface`.',
+        ]]);
     });
 
     it('reports hasItems correctly', function () {

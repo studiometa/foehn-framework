@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Discovery;
 
-use InvalidArgumentException;
 use Studiometa\Foehn\Attributes\AsAcfBlock;
 use Studiometa\Foehn\Attributes\AsDiscovery;
 use Studiometa\Foehn\Blocks\AcfBlockRenderer;
@@ -25,6 +24,10 @@ final class AcfBlockDiscovery implements Discovery
 {
     use IsWpDiscovery;
 
+    public function __construct(
+        private readonly DiscoveryProblems $problems,
+    ) {}
+
     /**
      * Discover ACF block attributes on classes.
      *
@@ -43,13 +46,20 @@ final class AcfBlockDiscovery implements Discovery
             return;
         }
 
-        // Verify the class implements AcfBlockInterface
         if (!$class->implements(AcfBlockInterface::class)) {
-            throw new InvalidArgumentException(sprintf(
-                'Class %s must implement %s to use #[AsAcfBlock]',
+            $this->problems->report(
+                $location,
                 $class->getName(),
-                AcfBlockInterface::class,
-            ));
+                '#[AsAcfBlock]',
+                sprintf(
+                    '%s has #[AsAcfBlock] but does not implement %s, so the block is not registered.',
+                    $class->getName(),
+                    AcfBlockInterface::class,
+                ),
+                sprintf('Declare %s with `implements \\%s`.', $class->getName(), AcfBlockInterface::class),
+            );
+
+            return;
         }
 
         $this->addItem($location, [

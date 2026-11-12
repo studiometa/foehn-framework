@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Discovery;
 
-use InvalidArgumentException;
 use Studiometa\Foehn\Attributes\AsDiscovery;
 use Studiometa\Foehn\Attributes\AsTaxonomy;
 use Studiometa\Foehn\Contracts\ConfiguresTaxonomy;
@@ -24,6 +23,10 @@ final class TaxonomyDiscovery implements Discovery
 {
     use IsWpDiscovery;
 
+    public function __construct(
+        private readonly DiscoveryProblems $problems,
+    ) {}
+
     /**
      * Discover taxonomy attributes on classes.
      *
@@ -42,13 +45,20 @@ final class TaxonomyDiscovery implements Discovery
             return;
         }
 
-        // Verify the class extends Timber\Term
         if (!$class->getReflection()->isSubclassOf(Term::class)) {
-            throw new InvalidArgumentException(sprintf(
-                'Class %s must extend %s to use #[AsTaxonomy]',
+            $this->problems->report(
+                $location,
                 $class->getName(),
-                Term::class,
-            ));
+                '#[AsTaxonomy]',
+                sprintf(
+                    '%s has #[AsTaxonomy] but does not extend %s, so the taxonomy is not registered.',
+                    $class->getName(),
+                    Term::class,
+                ),
+                sprintf('Declare %s with `extends \\%s`.', $class->getName(), Term::class),
+            );
+
+            return;
         }
 
         $this->addItem($location, [

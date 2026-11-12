@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Discovery;
 
-use InvalidArgumentException;
 use Studiometa\Foehn\Attributes\AsDiscovery;
 use Studiometa\Foehn\Attributes\AsSettingsPage;
 use Studiometa\Foehn\Contracts\SettingsFormInterface;
@@ -33,6 +32,7 @@ final class SettingsPageDiscovery implements Discovery
 
     public function __construct(
         private readonly Container $container,
+        private readonly DiscoveryProblems $problems,
     ) {}
 
     /**
@@ -54,11 +54,19 @@ final class SettingsPageDiscovery implements Discovery
         // without the interface has no settings() to call, and the error it
         // would produce names the wrong thing.
         if (!$class->implements(SettingsPageInterface::class)) {
-            throw new InvalidArgumentException(sprintf(
-                'Class %s must implement %s to use #[AsSettingsPage].',
+            $this->problems->report(
+                $location,
                 $class->getName(),
-                SettingsPageInterface::class,
-            ));
+                '#[AsSettingsPage]',
+                sprintf(
+                    '%s has #[AsSettingsPage] but does not implement %s, so the settings page is not registered.',
+                    $class->getName(),
+                    SettingsPageInterface::class,
+                ),
+                sprintf('Declare %s with `implements \\%s`.', $class->getName(), SettingsPageInterface::class),
+            );
+
+            return;
         }
 
         $buildsItsOwnForm = $class->implements(SettingsFormInterface::class);
@@ -66,11 +74,19 @@ final class SettingsPageDiscovery implements Discovery
         // Without one or the other there is nothing between the heading and the
         // submit button, and the page renders as an empty form.
         if ($attribute->template === null && !$buildsItsOwnForm) {
-            throw new InvalidArgumentException(sprintf(
-                'Class %s declares no form: name a `template` on #[AsSettingsPage], or implement %s.',
+            $this->problems->report(
+                $location,
                 $class->getName(),
-                SettingsFormInterface::class,
-            ));
+                '#[AsSettingsPage]',
+                sprintf('%s declares no form, so the settings page would render an empty form.', $class->getName()),
+                sprintf(
+                    'Name a `template` on #[AsSettingsPage], or declare %s with `implements \\%s`.',
+                    $class->getName(),
+                    SettingsFormInterface::class,
+                ),
+            );
+
+            return;
         }
 
         /** @var array<string, Setting> $settings */

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Discovery\CliCommandDiscovery;
+use Studiometa\Foehn\Discovery\DiscoveryProblems;
 use Tempest\Container\GenericContainer;
 use Tests\Fixtures\CliCommandFixture;
 use Tests\Fixtures\InvalidCliCommandFixture;
@@ -10,7 +11,7 @@ use Tests\Fixtures\NoAttributeFixture;
 
 beforeEach(function () {
     $this->location = testDiscoveryLocation();
-    $this->discovery = new CliCommandDiscovery(new GenericContainer());
+    $this->discovery = new CliCommandDiscovery(new GenericContainer(), $this->problems = new DiscoveryProblems());
 });
 
 describe('CliCommandDiscovery', function () {
@@ -39,6 +40,13 @@ describe('CliCommandDiscovery', function () {
         );
 
         expect($this->discovery->getItems())->toHaveCount(0);
+        expect($this->problems->all()[0]['attribute'])->toBe('#[AsCliCommand]');
+        expect($this->problems->all()[0]['fix'])
+            ->toBe(
+                'Declare '
+                . InvalidCliCommandFixture::class
+                . ' with `implements \\Studiometa\\Foehn\\Console\\CliCommandInterface`.',
+            );
     });
 
     it('reports hasItems correctly', function () {

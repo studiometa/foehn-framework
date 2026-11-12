@@ -3,13 +3,14 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Discovery\ContextProviderDiscovery;
+use Studiometa\Foehn\Discovery\DiscoveryProblems;
 use Tests\Fixtures\ContextProviderFixture;
 use Tests\Fixtures\InvalidContextProviderFixture;
 use Tests\Fixtures\NoAttributeFixture;
 
 beforeEach(function () {
     $this->location = testDiscoveryLocation();
-    $this->discovery = new ContextProviderDiscovery();
+    $this->discovery = new ContextProviderDiscovery(new DiscoveryProblems());
 });
 
 describe('ContextProviderDiscovery', function () {
@@ -33,12 +34,21 @@ describe('ContextProviderDiscovery', function () {
         expect($this->discovery->getItems())->toHaveCount(0);
     });
 
-    it('throws when class does not implement ContextProviderInterface', function () {
-        expect(fn() => $this->discovery->discover(
-            $this->location,
-            new \Tempest\Reflection\ClassReflector(InvalidContextProviderFixture::class),
-        ))
-            ->toThrow(InvalidArgumentException::class, 'must implement');
+    it('reports a class that does not implement ContextProviderInterface, and skips it', function () {
+        expect(rejectedProblems(
+            fn(DiscoveryProblems $problems) => new ContextProviderDiscovery($problems),
+            InvalidContextProviderFixture::class,
+        ))->toBe([[
+            'class' => InvalidContextProviderFixture::class,
+            'attribute' => '#[AsContextProvider]',
+            'reason' =>
+                InvalidContextProviderFixture::class
+                    . ' has #[AsContextProvider] but does not implement Studiometa\\Foehn\\Contracts\\ContextProviderInterface, so it provides no context.',
+            'fix' =>
+                'Declare '
+                    . InvalidContextProviderFixture::class
+                    . ' with `implements \\Studiometa\\Foehn\\Contracts\\ContextProviderInterface`.',
+        ]]);
     });
 
     it('reports hasItems correctly', function () {

@@ -41,6 +41,7 @@ function testTemplateControllerDiscovery(
     ?\Studiometa\Foehn\Views\Sections\SectionRequest $request = null,
     ?\Studiometa\Foehn\Views\Sections\SectionCollector $collector = null,
     ?\Studiometa\Foehn\Config\PageCacheConfig $pageCacheConfig = null,
+    ?\Studiometa\Foehn\Discovery\DiscoveryProblems $problems = null,
 ): \Studiometa\Foehn\Discovery\TemplateControllerDiscovery {
     $request ??= new \Studiometa\Foehn\Views\Sections\SectionRequest('GET', '/');
 
@@ -48,6 +49,7 @@ function testTemplateControllerDiscovery(
         $request,
         $collector ?? new \Studiometa\Foehn\Views\Sections\SectionCollector(),
         testSectionResponse($request, $pageCacheConfig),
+        $problems ?? new \Studiometa\Foehn\Discovery\DiscoveryProblems(),
     );
 }
 
@@ -154,6 +156,27 @@ function discoverFixture(
     $discovery->discover($location, new \Tempest\Reflection\ClassReflector($fixture));
 
     return $location;
+}
+
+/**
+ * Run a discovery over a class it must reject, and return what it reported.
+ *
+ * A rejected class is skipped, not registered: the helper asserts that the
+ * discovery collected nothing, so each test only states the problem.
+ *
+ * @param \Closure(\Studiometa\Foehn\Discovery\DiscoveryProblems): \Tempest\Discovery\Discovery $make
+ * @return list<array{class: string, attribute: string, reason: string, fix: string|null}>
+ */
+function rejectedProblems(\Closure $make, string $fixture): array
+{
+    $problems = new \Studiometa\Foehn\Discovery\DiscoveryProblems();
+    $discovery = $make($problems);
+
+    discoverFixture($discovery, $fixture);
+
+    expect(iterator_to_array($discovery->getItems(), false))->toBe([]);
+
+    return $problems->all();
 }
 
 /**

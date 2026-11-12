@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Discovery;
 
-use InvalidArgumentException;
 use Studiometa\Foehn\Attributes\AsBlockBinding;
 use Studiometa\Foehn\Attributes\AsDiscovery;
 use Studiometa\Foehn\Contracts\BlockBindingInterface;
@@ -29,6 +28,7 @@ final class BlockBindingDiscovery implements Discovery
 
     public function __construct(
         private readonly Container $container,
+        private readonly DiscoveryProblems $problems,
     ) {}
 
     /**
@@ -47,22 +47,37 @@ final class BlockBindingDiscovery implements Discovery
         }
 
         if (!$class->implements(BlockBindingInterface::class)) {
-            throw new InvalidArgumentException(sprintf(
-                'Class %s must implement %s to use #[AsBlockBinding].',
+            $this->problems->report(
+                $location,
                 $class->getName(),
-                BlockBindingInterface::class,
-            ));
+                '#[AsBlockBinding]',
+                sprintf(
+                    '%s has #[AsBlockBinding] but does not implement %s, so the binding source is not registered.',
+                    $class->getName(),
+                    BlockBindingInterface::class,
+                ),
+                sprintf('Declare %s with `implements \\%s`.', $class->getName(), BlockBindingInterface::class),
+            );
+
+            return;
         }
 
         // WordPress refuses a name without a namespace, and says so through
         // _doing_it_wrong() — which is to say only under WP_DEBUG.
         if (!str_contains($attribute->name, '/')) {
-            throw new InvalidArgumentException(sprintf(
-                '#[AsBlockBinding] on %s names the source \'%s\'. It must be namespaced, as in \'theme/%s\'.',
+            $this->problems->report(
+                $location,
                 $class->getName(),
-                $attribute->name,
-                $attribute->name,
-            ));
+                '#[AsBlockBinding]',
+                sprintf(
+                    '#[AsBlockBinding] on %s names the source \'%s\', which has no namespace, so WordPress refuses it.',
+                    $class->getName(),
+                    $attribute->name,
+                ),
+                sprintf('Name the source \'theme/%s\' on #[AsBlockBinding].', $attribute->name),
+            );
+
+            return;
         }
 
         $this->addItem($location, [

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Studiometa\Foehn\Discovery\DiscoveryProblems;
 use Studiometa\Foehn\Discovery\TaxonomyDiscovery;
 use Tests\Fixtures\ConfigurableTaxonomyFixture;
 use Tests\Fixtures\InvalidTaxonomyFixture;
@@ -10,7 +11,7 @@ use Tests\Fixtures\TaxonomyFixture;
 
 beforeEach(function () {
     $this->location = testDiscoveryLocation();
-    $this->discovery = new TaxonomyDiscovery();
+    $this->discovery = new TaxonomyDiscovery(new DiscoveryProblems());
 });
 
 describe('TaxonomyDiscovery', function () {
@@ -48,12 +49,18 @@ describe('TaxonomyDiscovery', function () {
         expect($this->discovery->getItems())->toHaveCount(0);
     });
 
-    it('throws when class does not extend Timber Term', function () {
-        expect(fn() => $this->discovery->discover(
-            $this->location,
-            new \Tempest\Reflection\ClassReflector(InvalidTaxonomyFixture::class),
-        ))
-            ->toThrow(InvalidArgumentException::class, 'must extend');
+    it('reports a class that does not extend Timber Term, and skips it', function () {
+        expect(rejectedProblems(
+            fn(DiscoveryProblems $problems) => new TaxonomyDiscovery($problems),
+            InvalidTaxonomyFixture::class,
+        ))->toBe([[
+            'class' => InvalidTaxonomyFixture::class,
+            'attribute' => '#[AsTaxonomy]',
+            'reason' =>
+                InvalidTaxonomyFixture::class
+                    . ' has #[AsTaxonomy] but does not extend Timber\\Term, so the taxonomy is not registered.',
+            'fix' => 'Declare ' . InvalidTaxonomyFixture::class . ' with `extends \\Timber\\Term`.',
+        ]]);
     });
 
     it('reports hasItems correctly', function () {

@@ -23,6 +23,10 @@ class CronDiscovery implements Discovery
 {
     use IsWpDiscovery;
 
+    public function __construct(
+        private readonly DiscoveryProblems $problems,
+    ) {}
+
     /**
      * Discover cron attributes on classes.
      *
@@ -41,11 +45,21 @@ class CronDiscovery implements Discovery
             return;
         }
 
-        // Validate that the class has a public __invoke() method
         if (
             !$class->getReflection()->hasMethod('__invoke')
             || !$class->getReflection()->getMethod('__invoke')->isPublic()
         ) {
+            $this->problems->report(
+                $location,
+                $class->getName(),
+                '#[AsCron]',
+                sprintf(
+                    '%s has #[AsCron] but no public __invoke() method, so the event is not scheduled.',
+                    $class->getName(),
+                ),
+                sprintf('Add `public function __invoke(): void` to %s.', $class->getName()),
+            );
+
             return;
         }
 
