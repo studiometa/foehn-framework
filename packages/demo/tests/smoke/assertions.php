@@ -143,9 +143,9 @@ $results->same(
 $commands = Kernel::get(DiscoveryRunner::class)->getDiscoveries()[CliCommandDiscovery::class];
 
 $results->containsAll(
-    'framework CLI commands are discovered',
-    ['make:block', 'make:post-type', 'discovery:generate', 'discovery:clear'],
-    array_map(static fn(array $item): string => $item['attribute']->name, iterator_to_array($commands->getItems())),
+    'framework CLI commands are discovered under wp foehn',
+    ['foehn make:block', 'foehn make:post-type', 'foehn discovery:generate', 'foehn discovery:clear'],
+    array_map($commands->commandName(...), iterator_to_array($commands->getItems())),
 );
 
 // Command stubs carry real attributes and are marked #[SkipDiscovery]. If the
