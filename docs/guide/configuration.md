@@ -80,12 +80,12 @@ return new FoehnConfig(
 );
 ```
 
-| Property                 | Type                     | Default | Description                                         |
-| ------------------------ | ------------------------ | ------- | --------------------------------------------------- |
-| `discoveryCacheStrategy` | `DiscoveryCacheStrategy` | `NONE`  | Discovery cache strategy                            |
-| `discoveryCachePath`     | `?string`                | `null`  | Custom cache path                                   |
-| `hooks`                  | `class-string[]`         | `[]`    | Opt-in hook classes                                 |
-| `debug`                  | `bool`                   | `false` | Raise each class discovery skipped as a PHP warning |
+| Property                 | Type                     | Default | Description                                                                                                         |
+| ------------------------ | ------------------------ | ------- | ------------------------------------------------------------------------------------------------------------------- |
+| `discoveryCacheStrategy` | `DiscoveryCacheStrategy` | `NONE`  | Discovery cache strategy                                                                                            |
+| `discoveryCachePath`     | `?string`                | `null`  | Custom cache path                                                                                                   |
+| `hooks`                  | `class-string[]`         | `[]`    | Opt-in hook classes                                                                                                 |
+| `debug`                  | `bool`                   | `false` | Raise PHP warnings: each class discovery skips, a discovery cache it cannot write, a missing block editor registrar |
 
 See [FoehnConfig API](/api/foehn-config) for details.
 
