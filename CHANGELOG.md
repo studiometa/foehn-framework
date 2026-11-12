@@ -5,6 +5,119 @@ All notable changes to this project will be documented in this file. Each pull r
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.8.0 - 2026-11-12
+
+### Added
+
+- `wp foehn inspect` reports the project model from what discovery found: post types with their Timber model, `#[AsPostMeta]` fields and taxonomies, taxonomies, blocks, patterns, block bindings, template controllers, context providers, menus, image sizes, rewrite rules, REST routes, `wp foehn` commands, active plugins with their versions, theme supports and the Vite entry points. With no section it prints a summary, the names in each section; `wp foehn inspect <section>...` prints the named sections in full, `--all` prints every section, and `--format=json` gives the report on one line to a program or a coding agent. See [Project Inspection](https://studiometa.github.io/foehn-framework/guide/cli-commands#project-inspection) ([#218])
+- `ViteManifest::entries()` lists the entry points of the build, and `ViteManifest::devServer()` gives the dev server URL while `npm run dev` runs ([#218])
+- Every `make:*` command, the `foehn-acf` ones included, takes `--format=json`. It prints the files with their status (`created`, `overwritten`, `exists`, `would-create`, `would-overwrite`) and the next steps. With `--dry-run`, it also prints the contents that would be written. See [Scripts and Coding Agents](https://studiometa.github.io/foehn-framework/guide/cli-commands#scripts-and-coding-agents) ([#220])
+- `ClassFileGenerator::plan()` tells what `ClassFileGenerator::write()` would do, without touching the disk ([#220])
+- A `make:*` command puts its class next to the classes of the same kind the project declares: in their directory, in their namespace and under the parent class most of them extend. With none, it uses its default directory. See [Where a Generated Class Goes](https://studiometa.github.io/foehn-framework/guide/cli-commands#where-a-generated-class-goes) ([#220])
+- `make:post-type` takes `--meta=<key>[:<type>],…`, which declares each field with `#[AsPostMeta]` and writes a typed accessor for it, and `--rewrite-slug=<slug>` ([#220])
+- The `make:post-type` and `make:model --post-type` notes name the Twig files to create where the theme keeps its views of the same kind (`templates/pages/single-<name>.twig` in the starter), and the controller that renders each one ([#220])
+- `wp foehn inspect settings` lists each `#[AsSettingsPage]` with the options it stores: option name, type, default and sanitizer. The sanitizer runs under WP-CLI too, so `wp option update` saves a value as the admin form does ([#219])
+- The `blocks` section of `wp foehn inspect` gives each block attribute with its type, default and allowed values ([#219])
+- The `templates` section of `wp foehn inspect` gives, for each WordPress template a controller claims, the controller that renders it and the ones it overrides. A new `views` section gives, for each Twig file of the theme, the context providers that match it in the order they run. Both list the context keys known without rendering: the keys Føhn and Timber always set, and the keys a controller or provider sets with a literal `with()` call. See [Template context](https://studiometa.github.io/foehn-framework/guide/cli-commands#template-context) ([#219])
+- `wp foehn skill` lists the Agent Skills of the installed packages, with their package and installed version, and prints one `SKILL.md` (`wp foehn skill foehn`) or one reference file (`--reference=<file>`, `--list-references`). It reads every Composer package with a `skills/<name>/SKILL.md`, third-party packages included, and `node_modules/@studiometa/foehn-vite-plugin/skills`. See [Agent Skills](https://studiometa.github.io/foehn-framework/guide/cli-commands#agent-skills) ([#221])
+- The starter ships an `AGENTS.md`, and a `CLAUDE.md` that imports it. It tells a coding agent to read the installed skills, run `wp foehn inspect` and preview `make:*` commands with `--dry-run --format=json` before it writes code. A project made from an earlier starter can copy it from `packages/starter/AGENTS.md` ([#221])
+- The `foehn` skill starts with the steps to follow before writing code: `wp foehn inspect`, then `make:*` with `--dry-run`, then `wp foehn discovery:clear` ([#221])
+- `wp foehn db:export [<file>|-] [--from=<date>]` writes a light, anonymized, gzipped dump of the database, to import on a local copy of the site. Users, user meta, comments and WooCommerce orders are anonymized, transients and old revisions are left out, and a table that no rule covers is exported without rows and listed in a warning. A project declares its own tables in `app/db-export.config.php` with `DatabaseExportConfig`. See [Database Export](https://studiometa.github.io/foehn-framework/guide/database-export) ([#227])
+- Seeders: a class with `#[AsSeeder(order:, description:)]` that implements `SeederInterface` writes the sample content of a site in `run()`. `wp foehn seed` runs every seeder by `order` (then by class name), `--class=<name>` runs one, and `--dry-run` lists them. The command stops with exit status 1 at the first seeder that throws. A seeder must be idempotent. See [Seeders](https://studiometa.github.io/foehn-framework/guide/seeders) ([#226])
+- `Upsert::post($type, $slug, $data, $meta)` updates the post of this type that has this slug, or creates it, so a seeder can run again without duplicating content ([#226])
+- `wp foehn make:seeder <name>` generates a seeder in `app/Seeders/`, with `--order`, `--description`, `--dry-run` and `--format=json` ([#226])
+- `wp foehn inspect` has a `seeders` section with the class, order and description of each seeder, in run order ([#226])
+- The starter `AGENTS.md` tells coding agents to put sample content and menus in a seeder and run `wp foehn seed`, never to create them only in the database. A project made from an earlier starter can copy the section from `packages/starter/AGENTS.md` ([#226])
+- `wp foehn inspect` starts its summary with a `problems` section, and `wp foehn inspect problems` gives the `class`, `attribute`, `reason` and `fix` of each one: the classes discovery skipped, and a post type or taxonomy that names a taxonomy or post type no attribute declares and WordPress does not register. See [Problems and Errors](https://studiometa.github.io/foehn-framework/guide/troubleshooting) ([#237])
+- `wp foehn discovery:status` lists the classes discovery skipped, with the reason and the fix ([#237])
+- `wp foehn errors` prints the last errors of the site in a few lines: uncaught exceptions, fatal errors, and the warnings and notices of the theme's own code, with the file and line, the Twig template and line, a short stack of the theme's frames, the URL, the WordPress template, the controller, the view and its context keys. `--limit`, `--level`, `--since`, `--format=json` and `--clear` filter and empty the log. See [The error log](https://studiometa.github.io/foehn-framework/guide/troubleshooting#the-error-log) ([#238])
+- Errors are recorded in the `local` and `development` environments, to `wp-content/cache/foehn/errors/errors.jsonl` (3 files of 256 KB at most). `FoehnConfig::$recordErrors` (`'record_errors'` in the array config) turns recording on in another environment, or off ([#238])
+- `wp foehn trace [<path>|<id>|last|list]` prints what a front-end request ran: the status, time and query count, the template files WordPress tried and the one it found, the template controller, each Twig view with the views `renderFirst()` tried, its context providers and its context keys, the blocks, and the errors of the request. With a path, the command requests the page on the site; `--format=json` prints every field. ([#239])
+- In the `local` and `development` environments, each front-end request sends its id in the `X-Foehn-Trace` response header and stores its trace in `wp-content/cache/foehn/traces` (the last 100). `FoehnConfig::$traceRequests` (`trace_requests`) turns tracing on or off in any environment. ([#239])
+- `wp foehn errors --request=<id>` prints only the errors of one traced request. An error entry now carries the id of its request in `requestId`. ([#239])
+- `@studiometa/foehn-vite-plugin` turns on Vite 8's `server.forwardConsole` in dev, unless `vite.config.js` sets it: the page sends its console errors and warnings, uncaught errors and unhandled promise rejections to the dev server. The plugin also writes them to `browser-errors.jsonl` in `outDir` (`theme/dist/` in the starter), with the source file and line mapped through the source map, in at most 3 files of 256 KB. Set `server.forwardConsole: false` to turn it off. Vite 6 and 7 send nothing. ([#241])
+- `wp foehn errors --browser` prints the entries of that browser log, with the `--limit`, `--level=error,rejection,console`, `--since`, `--format=json` and `--clear` options. ([#241])
+- `wp foehn log` reads the WordPress debug log (`wp-content/debug.log`, or the path `WP_DEBUG_LOG` holds) as entries: level, message, file and line, and the stack trace of a fatal error. Entries that repeat are one group with a count and the time of the first and the last. It prints the last 20 groups; `--level`, `--since`, `--grep`, `--limit` and `--format=json` select and format them. When `WP_DEBUG_LOG` is off, it says how to turn it on: `WP_DEBUG=true` in `.env`. ([#240])
+- `#[AsCliCommand(writes: true)]` marks a command that changes content or files. When `wp_get_environment_type()` is `production`, such a command does not run unless `--force` or `--dry-run` is given, and the error says why and how. A project command that sets it must declare `[--force]` in its `longDescription`. See [Production Environment](https://studiometa.github.io/foehn-framework/guide/cli-commands#production-environment) ([#243])
+- `wp foehn salts:generate --dry-run` names the file that would get the keys and the keys it would replace, and writes nothing ([#243])
+- `wp foehn inspect templates` gives each template a `url` to test it with: the newest published post of its type, the post type archive, the term with the most posts, the front page, the posts page, a search, a missing page, or the author or month of the newest post. A template that no such URL renders has `url: null` and a `noUrl` reason, such as `Its sample URLs render 'single-*' instead.` or, for a pattern like `tax-*`, `Føhn gives no request a template name like this.`. See [Test URLs](https://studiometa.github.io/foehn-framework/guide/cli-commands#test-urls) ([#242])
+- `wp foehn agents-md` writes the Føhn block in the project's `AGENTS.md`, between `<!-- foehn:begin -->` and `<!-- foehn:end -->`: the first commands an agent runs (inspect, `make:*` with `--dry-run`, seeders, `errors`, `log`, `trace`) and one line for each installed skill and reference file, with the command that prints it. It changes nothing outside the markers, adds the block at the end of a file without them, creates a missing file, and writes nothing when the block is current. Run it after `composer update` or `npm update` and commit the change. Like the other commands that write, it refuses to run in production without `--force` or `--dry-run`. See [AGENTS.md Block](https://studiometa.github.io/foehn-framework/guide/cli-commands#agents-md-block) ([#244])
+- `cliNamespace` in `FoehnConfig` (`'cli_namespace'` in the array config) sets the WP-CLI command the `#[AsCliCommand]` classes of the project go under. The default is `app`. A name with a space, an empty name or `foehn` throws an `InvalidArgumentException`. See [Command Namespace](https://studiometa.github.io/foehn-framework/guide/cli-commands#command-namespace) ([#248])
+- A package declares the WP-CLI namespace of its `#[AsCliCommand]` classes with `"extra": {"foehn": {"cli-namespace": "<name>"}}` in its `composer.json`. Without it, the namespace is the package name without its vendor: `acme/shop-tools` gives `wp shop-tools <name>`. A namespace that is not one word of lowercase letters, digits, `-` and `_`, or that is `foehn`, is reported in `wp foehn inspect problems` and the commands of the package are not registered. See [The namespace of a package](https://studiometa.github.io/foehn-framework/guide/cli-commands#the-namespace-of-a-package) ([#248])
+- `#[AsCron]` accepts a cron expression with five fields, for example `#[AsCron('0 0 * * *')]` for every day at midnight. The expression runs in the site timezone (`wp_timezone()`), not in UTC as with `as_schedule_cron_action()`. An invalid expression skips the class and records a discovery problem. ([#249])
+- `#[AsCron]` schedules a job again when its interval or its expression changed, or when an interval became an expression. Before, a changed schedule kept the old one until somebody removed the pending action by hand. ([#249])
+- `PageCacheConfig` takes `cacheControl`, the whole `Cache-Control` value of a page-cache hit. The drop-in sends it and `wp foehn cache:config --server=nginx` writes it, in place of `public, max-age=<browserMaxAge>, must-revalidate`. A site that migrates from WP Rocket can keep `no-cache, no-store, must-revalidate` ([#251])
+- `PageCacheConfig` takes `responseHeaders`, static headers that the drop-in and the generated nginx snippet send on every hit. List there the headers your server sets at server level, such as the `X-Frame-Options`, `X-XSS-Protection` and `X-Content-Type-Options` of the Laravel Forge template: the cache location of the nginx snippet has its own `add_header` lines, so nginx drops the server-level ones on a hit. See [The headers of a hit](https://studiometa.github.io/foehn-framework/guide/page-cache#the-headers-of-a-hit) ([#251])
+- `wp foehn cache:config` refuses a `cacheControl` or `responseHeaders` value it cannot write safely, for nginx and for Apache, and `wp foehn cache:status` warns about it: the drop-in serves no page while such a value is set ([#251])
+- `PageCacheConfig::$warmAfterPurge` queues the warm-up of the pages that a purge removed, through Action Scheduler: one `WarmUrl` job for each purged URL after a content change, and one job that warms every sitemap URL after a full flush. Off by default. ([#250])
+- `PageCacheConfig::$warmSitemap` names the sitemap or sitemap index that `wp foehn cache:warm` and the warm-up after a flush read, for example `https://example.com/sitemap_index.xml` on a site where Rank Math or Yoast turn the core sitemap off. ([#250])
+- `PageCacheConfig::$warmExclude` lists regular expressions, matched anywhere in the full URL, of URLs that are never warmed. ([#250])
+
+### Changed
+
+- **Breaking:** a `make:*` command exits with status 1 when the file already exists and `--force` is not given, also with `--dry-run`. Before, it printed an error and exited with status 0. A script that runs a generator twice must pass `--force` or expect the failure ([#220])
+- **Breaking:** `ClassFileGenerator::write()` returns a `GenerationStatus` instead of a `bool` ([#220])
+- **Breaking:** the `make:*` commands take a `Scaffolder` instead of a `ClassFileGenerator` in their constructor. `make:post-type` and `make:model` also take `ProjectConventions` ([#220])
+- **Breaking:** `make:post-type` writes `app/Models/<Name>.php`, a class named after the post type (`Event`, not `EventPost`) that extends `Studiometa\Foehn\Models\Post`, instead of `app/PostTypes/<Name>Post.php` extending `Timber\Post` ([#220])
+- A generated class imports its parent class (`extends Post`, not `extends \Timber\Post`) ([#220])
+- `make:*` commands print their next steps one line each ([#220])
+- `@studiometa/foehn-vite-plugin` publishes its `skills/` directory to npm, so its skill is in `node_modules/` after `npm install` ([#221])
+- The demo writes its portfolio with six seeders in `theme/app/Seeders/` instead of `database/seed.php`. `database/restore.sh` and the Fly entrypoint run `wp foehn seed` ([#226])
+- A class whose attribute contract is broken (`#[AsPostType]` on a class that does not extend `Timber\Post`, `#[AsBlock]` without `BlockInterface`, an invalid `#[AsPostMeta]`…) is skipped and recorded instead of stopping discovery with an exception, so every other class still registers. The records are kept in the discovery cache, and `debug` raises each one as a PHP warning instead of logging only the failures of opt-in hooks. A project that relied on the exception must now read `problems` ([#237])
+- A class that `#[AsCliCommand]`, `#[AsSeeder]`, `#[AsTwigExtension]`, `#[AsCron]` or `#[AsJob]` skipped, and a class in `hooks` that does not exist, are now recorded as problems instead of being skipped without a word ([#237])
+- `TimberViewEngine` throws `Studiometa\Foehn\Views\ViewRenderingFailed`, still a `RuntimeException`. A Twig error keeps its message, its template and its line, names the view that was asked for, and is the previous exception. A missing view names every view tried, the directories Timber searched and the file to create ([#237])
+- `TimberViewEngine::exists()` asks Timber's loader, so it finds a template exactly when rendering finds it ([#237])
+- `wp foehn seed`, every `make:*` command (the `foehn-acf` ones included) and `wp foehn salts:generate` refuse to run in production without `--force` or `--dry-run`. A deploy script or a production task that runs one of them must add `--force`. `seed` takes a new `--force` option. On `make:*` and `salts:generate`, `--force` still also overwrites a file or replaces keys ([#243])
+- The starter's `AGENTS.md` ships with the generated block. The block replaces the "Before you write code" and "When WordPress cannot boot" sections. A project made from an earlier starter runs `wp foehn agents-md`, which adds the block at the end of its `AGENTS.md`, and can then remove the steps the block repeats ([#244])
+- **Breaking:** a `#[AsCliCommand]` class of the project registers as `wp app <name>` instead of `wp foehn <name>`. There is no alias for the old name: change the cron jobs, deploy scripts and runbooks that call `wp foehn <name>` for a project command to call `wp app <name>`, or set `cliNamespace` to keep another name ([#248])
+- **Breaking:** the commands of `studiometa/foehn-acf` register as `wp foehn-acf make:acf-block`, `wp foehn-acf make:field-group` and `wp foehn-acf make:options-page` instead of `wp foehn <name>`. The commands of another package that registered under `wp foehn` go under the namespace of that package. Only the commands of Føhn stay under `wp foehn`. There is no alias for the old names: change the scripts that call them ([#248])
+- When two classes declare the same WP-CLI command, neither is registered, and each `wp` run prints a warning that names both classes. Before, the class registered last replaced the other ([#248])
+- `wp foehn inspect cli-commands` gives the full line that runs each command, such as `wp app import:products`, `wp foehn inspect` or `wp foehn-acf make:acf-block`, instead of `foehn <name>` ([#248])
+- The discovery cache version is `v2`: each command item records the namespace of its package. The first request after the update scans again, and `wp foehn discovery:generate` writes the new cache ([#248])
+- The first argument of `#[AsCron]` is now `schedule`, not `interval`. Projects that write `#[AsCron(interval: …)]` must write `#[AsCron(schedule: …)]`. `AsCron::$intervalSeconds` is `null` for a cron expression; `AsCron::$expression` holds the expression. ([#249])
+- **Breaking:** `studiometa/foehn` and `studiometa/foehn-acf` are now released under the GNU General Public License v3.0 or later (`GPL-3.0-or-later`), in place of the MIT License. A project that distributes code that includes them must follow the GPL. A site that is only hosted does not distribute it. Versions released before this one stay MIT. ([#254])
+- `studiometa/foehn-starter`, `studiometa/foehn-installer` and `@studiometa/foehn-vite-plugin` stay MIT. `studiometa/foehn`, `studiometa/foehn-acf`, `studiometa/foehn-installer` and `@studiometa/foehn-vite-plugin` now ship their own `LICENSE` file. ([#254])
+- The `# policy:` hash of the generated nginx and Apache snippets includes `cacheControl` and `responseHeaders`, so `wp foehn cache:status` reports an installed snippet as outdated until you run `wp foehn cache:config --write` again ([#251])
+- `wp foehn cache:warm` no longer requests URLs that the page cache does not store: another host, a query string that the cache does not key, or a path under `excludedPaths`. ([#250])
+
+### Removed
+
+- **Breaking:** `WpCli::prompt()`, `WpCli::previewGeneratedFile()` and `WpCli::reportFileExists()`. The `Scaffolder` service previews and reports generated files ([#220])
+
+### Fixed
+
+- The starter's ddev image builds WP-CLI as the runtime image does, with the `php-cli-tools` and `react/promise` versions that PHP 8.5 does not deprecate. `ddev wp` no longer prints a `Deprecated:` line ahead of its output, so `ddev wp foehn inspect --format=json` gives valid JSON. A project made from an earlier starter can copy `.ddev/web-build/prepend.Dockerfile.wp-cli` and `.ddev/web-build/Dockerfile.wp-cli`, then run `ddev restart` ([#218])
+- `make:block --interactive` names the view script Føhn loads, `assets/js/blocks/<name>.js`, instead of `assets/scripts/blocks/<name>/view.js`, which nothing loads ([#220])
+- `make:menu` and `make:image-size` give Twig hints that are valid Twig: `menus['<location>'].items` and `post.thumbnail.src('<size>')`. A class call such as `PrimaryMenu::get()` is now named as PHP ([#220])
+- When several `#[AsTemplateController]` classes claim the same template, the one with the lowest `priority` renders it, as the attribute documents; on a tie, the one discovered last. Wildcard patterns are tried in `priority` order. Before, `priority` was ignored and the controller discovered last always won ([#219])
+- The context provider guide and API pages said that providers match WordPress template names such as `single-product`. They match the view name passed to `render()`, such as `pages/single-product` ([#219])
+- In a DDEV project, `@studiometa/foehn-vite-plugin` adds the DDEV site to `server.cors`, unless `vite.config.js` sets it. A page opened on `https://<project>.ddev.site` can now load `/@vite/client` from the dev server, so HMR works there too. ([#241])
+
+### Dependencies
+
+- `studiometa/foehn` requires `druidfi/mysqldump-php` `^2`, which dumps the database with PDO, without a `mysqldump` binary ([#227])
+- `@studiometa/foehn-vite-plugin` requires `@jridgewell/trace-mapping` `^0.3.31`. ([#241])
+
+[#218]: https://github.com/studiometa/foehn-framework/pull/218
+[#219]: https://github.com/studiometa/foehn-framework/pull/219
+[#220]: https://github.com/studiometa/foehn-framework/pull/220
+[#221]: https://github.com/studiometa/foehn-framework/pull/221
+[#226]: https://github.com/studiometa/foehn-framework/pull/226
+[#227]: https://github.com/studiometa/foehn-framework/pull/227
+[#237]: https://github.com/studiometa/foehn-framework/pull/237
+[#238]: https://github.com/studiometa/foehn-framework/pull/238
+[#239]: https://github.com/studiometa/foehn-framework/pull/239
+[#240]: https://github.com/studiometa/foehn-framework/pull/240
+[#241]: https://github.com/studiometa/foehn-framework/pull/241
+[#242]: https://github.com/studiometa/foehn-framework/pull/242
+[#243]: https://github.com/studiometa/foehn-framework/pull/243
+[#244]: https://github.com/studiometa/foehn-framework/pull/244
+[#248]: https://github.com/studiometa/foehn-framework/pull/248
+[#249]: https://github.com/studiometa/foehn-framework/pull/249
+[#250]: https://github.com/studiometa/foehn-framework/pull/250
+[#251]: https://github.com/studiometa/foehn-framework/pull/251
+[#254]: https://github.com/studiometa/foehn-framework/pull/254
+
 ## 0.7.1 - 2026-11-12
 
 ### Dependencies
