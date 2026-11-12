@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Attributes\AsCliCommand;
-use Studiometa\Foehn\Discovery\CliCommandDiscovery;
 use Tests\Fixtures\CliCommandFixture;
 use Tests\Fixtures\WritingCliCommandFixture;
 
@@ -49,10 +48,7 @@ describe('CliCommandDiscovery caching', function () {
     it('restores whether the command writes, so a warm cache still guards it', function () {
         discoverFixture($this->discovery, WritingCliCommandFixture::class, $this->location);
 
-        $item = restoreThroughCacheFile(
-            $this->discovery,
-            new CliCommandDiscovery(new GenericContainer(), new DiscoveryProblems()),
-        )
+        $item = restoreThroughCacheFile($this->discovery, testCliCommandDiscovery())
             ->getItems()
             ->getForLocation($this->location)[0];
 

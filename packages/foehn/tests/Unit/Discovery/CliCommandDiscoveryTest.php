@@ -69,6 +69,8 @@ describe('CliCommandDiscovery', function () {
             $discovery = new Studiometa\Foehn\Discovery\CliCommandDiscovery(
                 $container,
                 new Studiometa\Foehn\Discovery\DiscoveryProblems(),
+                new Studiometa\Foehn\Config\FoehnConfig(),
+                new Studiometa\Foehn\Discovery\InstalledPackages(new Studiometa\Foehn\Discovery\DiscoveryLocations()),
             );
             $discovery->discover(
                 new Tempest\Discovery\DiscoveryLocation('App\\', sys_get_temp_dir()),
