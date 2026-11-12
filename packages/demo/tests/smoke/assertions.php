@@ -637,6 +637,57 @@ $results->true('an allowed page size passes', $filtersConfig->validatePublicVar(
 $results->true('one outside the list does not', !$filtersConfig->validatePublicVar('posts_per_page', '999'));
 
 // ──────────────────────────────────────────────
+// Cron jobs, on Action Scheduler
+//
+// Discovery schedules each #[AsCron] class once, on the first request that finds it
+// missing. Without Action Scheduler it schedules nothing and says nothing, so the
+// plugin is checked first.
+// ──────────────────────────────────────────────
+
+$results->true('Action Scheduler is active', function_exists('as_get_scheduled_actions'));
+
+/** The pending action of a cron job of the demo, or null. */
+$pendingCron = static function (string $hook): ?ActionScheduler_Action {
+    $actions = as_get_scheduled_actions(['hook' => $hook, 'group' => 'demo', 'status' => 'pending']);
+
+    return $actions === [] ? null : array_values($actions)[0];
+};
+
+$warmAll = $pendingCron('foehn/demo/jobs/warm_all_plates');
+
+$results->true('WarmAllPlates is scheduled', $warmAll instanceof ActionScheduler_Action);
+$results->same(
+    'WarmAllPlates recurs every day, on an interval',
+    DAY_IN_SECONDS,
+    (int) $warmAll?->get_schedule()->get_recurrence(),
+);
+
+$newYear = $pendingCron('foehn/demo/jobs/flush_page_cache_at_new_year');
+$newYearSchedule = $newYear?->get_schedule();
+
+$results->true(
+    'FlushPageCacheAtNewYear is scheduled on the site timezone',
+    $newYearSchedule instanceof Studiometa\Foehn\Jobs\SiteTimezoneCronSchedule,
+);
+
+// A schedule built now, from the stored one's expression. The stored date can be an
+// hour off: it was computed at the first request, which can come before SettingsSeeder
+// sets the timezone, and a date already scheduled does not move with it.
+$results->same(
+    'its expression runs at midnight on 1 January in Europe/Paris',
+    '01-01 00:00 Europe/Paris',
+    $newYearSchedule === null
+        ? null
+        : new Studiometa\Foehn\Jobs\SiteTimezoneCronSchedule(
+            as_get_datetime_object(),
+            $newYearSchedule->get_recurrence(),
+        )
+            ->get_date()
+            ?->setTimezone(wp_timezone())
+            ->format('m-d H:i e'),
+);
+
+// ──────────────────────────────────────────────
 // Report
 // ──────────────────────────────────────────────
 

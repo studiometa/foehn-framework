@@ -2,6 +2,7 @@
 
 - The demo shows more of Føhn on its pages: an interactive block on the Interactivity API, blocks with the `gallery`, `posts` and `file` controls and with `parent`, a block pattern, the hero, section and callout blocks and the reading-time binding in seeded content, a journal with categories, tags and a password-protected post, project tags, a film embedded with `video_embed()`, `ContentImageHooks`, testimonial meta, `Model::query()` in a controller, a `#[AsTimberModel]` for attachments, a `#[AsTwigExtension]`, the twig-toolkit helpers, the query helpers, a `#[AsShortcode]`, `#[AsRestRoute]` routes, a tagged cache, an `#[AsAcfFieldGroup]` and the `AGENTS.md` block of `wp foehn agents-md`.
 - The demo runs Action Scheduler. Saving a project dispatches a `#[AsJob]` that requests the image transforms of its plates, so the first visitor does not wait for them.
+- The demo schedules two `#[AsCron]` jobs: one on a daily interval that warms the plates of every project, and one on the cron expression `0 0 1 1 *` that empties the page cache at midnight on 1 January. Its seeded site timezone is Europe/Paris, so the expression runs at midnight in Paris.
 
 ### Changed
 
