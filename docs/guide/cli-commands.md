@@ -399,9 +399,12 @@ wp foehn errors --level=exception,fatal --since=-1hour --limit=10 --format=json
 
 # Start again from an empty log
 wp foehn errors --clear
+
+# The JavaScript errors of the pages the Vite dev server served
+wp foehn errors --browser --level=error,rejection --limit=5
 ```
 
-Prints the last errors the site recorded in the `local` and `development` environments: uncaught exceptions, fatal errors, and the warnings and notices of the theme's own code. Each entry gives the file and line, the Twig template and line, a short stack, the URL, the WordPress template, the controller, the view and its context keys. See [The error log](/guide/troubleshooting#the-error-log).
+Prints the last errors the site recorded in the `local` and `development` environments: uncaught exceptions, fatal errors, and the warnings and notices of the theme's own code. Each entry gives the file and line, the Twig template and line, a short stack, the URL, the WordPress template, the controller, the view and its context keys. See [The error log](/guide/troubleshooting#the-error-log). With `--browser`, it prints the console errors and the uncaught errors of the pages that `npm run dev` serves, which `@studiometa/foehn-vite-plugin` writes with Vite 8. See [Browser errors](/guide/troubleshooting#browser-errors).
 
 ### Debug Log
 

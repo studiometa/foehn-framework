@@ -34,6 +34,13 @@ use Studiometa\Foehn\Trace\TraceStore;
 
         With no option, it prints the last entry, short enough to read whole.
 
+        With --browser, it prints the errors of the browser instead: the console
+        errors and warnings, the uncaught errors and the unhandled promise
+        rejections of the pages that `npm run dev` serves. The Vite dev server
+        (@studiometa/foehn-vite-plugin with Vite 8) writes them to
+        `dist/browser-errors.jsonl` in the theme, with the file and line of the
+        theme's source.
+
         ## OPTIONS
 
         [--limit=<n>]
@@ -41,6 +48,7 @@ use Studiometa\Foehn\Trace\TraceStore;
 
         [--level=<level>]
         : Only these levels, separated by commas: exception, fatal, warning, notice.
+          With --browser: error, rejection, console.
 
         [--since=<date>]
         : Only entries recorded at or after this date. A date or a relative date
@@ -50,11 +58,14 @@ use Studiometa\Foehn\Trace\TraceStore;
         : Only the entries of one traced request: the id in its X-Foehn-Trace
           header, as `wp foehn trace` prints it.
 
+        [--browser]
+        : Read the browser log of the Vite dev server.
+
         [--format=<format>]
         : Output format. text (default) or json.
 
         [--clear]
-        : Delete the log.
+        : Delete the log, or the browser log with --browser.
 
         ## EXAMPLES
 
@@ -64,6 +75,9 @@ use Studiometa\Foehn\Trace\TraceStore;
             # The exceptions and fatal errors of the last hour, for an agent
             wp foehn errors --level=exception,fatal --since=-1hour --limit=10 --format=json
 
+            # The JavaScript errors of the pages the dev server served
+            wp foehn errors --browser --level=error,rejection --limit=5
+
             # Start again from an empty log
             wp foehn errors --clear
         DOC,
@@ -72,6 +86,9 @@ final readonly class ErrorsCommand implements CliCommandInterface
 {
     /** @var list<string> */
     private const array FORMATS = ['text', 'json'];
+
+    /** @var list<string> */
+    private const array BROWSER_LEVELS = ['error', 'rejection', 'console'];
 
     public function __construct(
         private WpCli $cli,
@@ -85,9 +102,15 @@ final readonly class ErrorsCommand implements CliCommandInterface
      */
     public function __invoke(array $args, array $assocArgs): void
     {
+        $browser = ($assocArgs['browser'] ?? null) !== null;
+        $log = $browser ? ErrorLog::browserInTheme() : $this->log;
+        $name = $browser ? 'browser log' : 'error log';
+
         if (($assocArgs['clear'] ?? null) !== null) {
-            $deleted = $this->log->clear();
-            $this->cli->success($deleted === 0 ? 'The error log is empty.' : 'Deleted the error log.');
+            $deleted = $log->clear();
+            $this->cli->success(
+                $deleted === 0 ? sprintf('The %s is empty.', $name) : sprintf('Deleted the %s.', $name),
+            );
 
             return;
         }
@@ -110,6 +133,12 @@ final readonly class ErrorsCommand implements CliCommandInterface
             return;
         }
 
+        if ($browser && $request !== null) {
+            $this->cli->error('--request does not apply to --browser: browser entries have no request id.');
+
+            return;
+        }
+
         if ($request !== null && (!is_string($request) || preg_match(TraceStore::ID_PATTERN, $request) !== 1)) {
             $this->cli->error('--request must be the id of a traced request: 6 characters such as 3fa2c1.');
 
@@ -117,14 +146,11 @@ final readonly class ErrorsCommand implements CliCommandInterface
         }
 
         $levels = is_string($levels) ? array_values(array_filter(array_map(trim(...), explode(',', $levels)))) : [];
-        $unknown = array_diff($levels, EntryBuilder::LEVELS);
+        $known = $browser ? self::BROWSER_LEVELS : EntryBuilder::LEVELS;
+        $unknown = array_diff($levels, $known);
 
         if ($unknown !== []) {
-            $this->cli->error(sprintf(
-                "Unknown level '%s'. Use %s.",
-                implode("', '", $unknown),
-                implode(', ', EntryBuilder::LEVELS),
-            ));
+            $this->cli->error(sprintf("Unknown level '%s'. Use %s.", implode("', '", $unknown), implode(', ', $known)));
 
             return;
         }
@@ -144,7 +170,7 @@ final readonly class ErrorsCommand implements CliCommandInterface
         }
 
         $entries = array_values(array_filter(
-            $this->log->entries(),
+            $log->entries(),
             static fn(array $entry): bool => (
                 ($levels === [] || in_array($entry['level'] ?? null, $levels, true))
                 && ($from === null || is_string($entry['time'] ?? null) && $entry['time'] >= $from)
@@ -162,16 +188,24 @@ final readonly class ErrorsCommand implements CliCommandInterface
             return;
         }
 
-        $this->renderText($shown, count($entries) - count($shown), (int) $limit);
+        $this->renderText($shown, count($entries) - count($shown), (int) $limit, $browser ? $log : null);
     }
 
     /**
      * @param list<array<string, mixed>> $entries
+     * @param ErrorLog|null $browserLog The browser log, when the command reads it
      */
-    private function renderText(array $entries, int $more, int $limit): void
+    private function renderText(array $entries, int $more, int $limit, ?ErrorLog $browserLog): void
     {
         if ($entries === []) {
-            $this->cli->log('No errors recorded.');
+            $this->cli->log(
+                $browserLog === null
+                    ? 'No errors recorded.'
+                    : sprintf(
+                        'No browser errors recorded. While `npm run dev` runs, the Vite dev server writes them to %s (Vite 8 and @studiometa/foehn-vite-plugin).',
+                        $browserLog->file(),
+                    ),
+            );
         }
 
         foreach ($entries as $index => $entry) {
@@ -187,13 +221,14 @@ final readonly class ErrorsCommand implements CliCommandInterface
         if ($more > 0) {
             $this->cli->line('');
             $this->cli->log(sprintf(
-                '%d more: wp foehn errors --limit=%d. Every field: --format=json.',
+                '%d more: wp foehn errors%s --limit=%d. Every field: --format=json.',
                 $more,
+                $browserLog === null ? '' : ' --browser',
                 $limit + $more,
             ));
         }
 
-        if (!$this->config->recordsErrors()) {
+        if ($browserLog === null && !$this->config->recordsErrors()) {
             $this->cli->log(sprintf(
                 'Errors are not recorded in the %s environment. Set recordErrors: true in app/foehn.config.php to record them.',
                 Env::get(),

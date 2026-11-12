@@ -89,7 +89,7 @@ The directories are the ones Timber's loader searches, from `TimberConfig::$temp
 
 ## The error log
 
-In the `local` and `development` environments, Føhn writes the errors of the site to a log, and `wp foehn errors` prints the last one. An agent that changed code reads it after it loads a page, instead of a browser or the PHP log.
+In the `local` and `development` environments, Føhn writes the errors of the site to a log, and `wp foehn errors` prints the last one. An agent that changed code reads it after it loads a page, instead of a browser or the PHP log. For the JavaScript errors of the page, see [Browser errors](#browser-errors).
 
 ```bash
 wp foehn errors
@@ -171,6 +171,47 @@ The recorder adds a PHP error handler, a PHP exception handler and a shutdown fu
 - The error handler records the warning, then gives it to the handler that was there before, or to PHP.
 - The exception handler records the exception, then gives it to the handler that was there before. With none, it throws the exception again, so PHP ends the request with its own fatal error.
 - The shutdown function reads `error_get_last()`. WordPress's fatal error handler (`WP_Fatal_Error_Handler`) reads the same value in its own shutdown function, which runs first, and shows its error page as usual.
+
+## Browser errors
+
+The error log holds the errors of PHP. The errors of the JavaScript that runs in the page go to the browser console, which an agent in a terminal cannot read. While `npm run dev` runs, the Vite dev server writes them to a log in the theme, and `wp foehn errors --browser` prints them:
+
+```bash
+wp foehn errors --browser
+```
+
+```
+TypeError: card is null
+  error at 2026-11-12 15:48:50 UTC in theme/assets/js/components/Card.ts:12
+    theme/assets/js/components/Card.ts:12 Card.mounted()
+    theme/assets/js/app.js:4
+    +3 other frames
+```
+
+### How it works
+
+Vite 8 has the `server.forwardConsole` option: the Vite client in the page sends the console errors and warnings, the uncaught errors and the unhandled promise rejections to the dev server, which prints them in its terminal. Vite turns it on only when it runs inside a coding agent. The agent that edits the theme usually does not run `npm run dev` itself, and it cannot read the terminal of another process. So `@studiometa/foehn-vite-plugin` turns the option on, and also writes each event to `dist/browser-errors.jsonl` in the theme, beside the `hot` file. The PHP page loads the Vite client from the URL in the `hot` file, so this works for the pages WordPress renders, opened on the DDEV URL or on the Vite URL.
+
+It needs Vite 8. With Vite 6 or 7, the page sends nothing and the log stays empty. Set `server.forwardConsole: false` in `vite.config.js` to turn off the terminal output and the log.
+
+### The fields of an entry
+
+| Field          | Content                                                                                                     |
+| -------------- | ----------------------------------------------------------------------------------------------------------- |
+| `time`         | UTC, ISO 8601                                                                                               |
+| `level`        | `error` (uncaught error), `rejection` (unhandled promise rejection) or `console` (a console call)           |
+| `class`        | The error name, such as `TypeError`, or the console method, such as `console.warn`                          |
+| `message`      | The message, cut after 2000 characters                                                                      |
+| `file`, `line` | The first frame of the project's own code, relative to the Vite root, with the line of the source file      |
+| `stack`        | The frames of the project's own code (8 at most), then `+N other frames` for dependencies and other origins |
+
+Lines are the lines of the source file: the plugin maps them back through the source map of the module, so a TypeScript or Vue file gives the line you edit. A console call has no stack, and an entry has no URL: Vite does not send the page.
+
+### The command
+
+`--browser` reads the browser log in place of the error log. `--limit`, `--since`, `--format=json` and `--clear` work as for the error log. `--level` takes `error`, `rejection` and `console`. `--request` does not apply: a browser entry has no request id.
+
+The log is in the `dist` directory of the active (parent) theme, where `ViteManifest::fromTheme()` reads the `hot` file. It has the cap of the error log: 3 files of 256 KB. `npm run build` empties `dist`, and the log with it. An entry holds console messages, and the web server can serve `dist`: the log exists only where the dev server runs.
 
 ## The debug log
 

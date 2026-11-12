@@ -12,6 +12,9 @@ namespace Studiometa\Foehn\Errors;
  * becomes `errors.1.jsonl`, the previous `errors.1.jsonl` becomes `errors.2.jsonl`,
  * and the oldest file is deleted. So the log never holds more than `MAX_FILES`
  * files of `MAX_BYTES`.
+ *
+ * The browser log has the same format and the same cap. `@studiometa/foehn-vite-plugin`
+ * writes it, and `wp foehn errors --browser` reads it.
  */
 final readonly class ErrorLog
 {
@@ -19,10 +22,11 @@ final readonly class ErrorLog
 
     public const int MAX_FILES = 3;
 
-    private const string NAME = 'errors';
+    public const string BROWSER = 'browser-errors';
 
     public function __construct(
         private string $directory,
+        private string $name = 'errors',
     ) {}
 
     /**
@@ -33,6 +37,23 @@ final readonly class ErrorLog
         $base = defined('WP_CONTENT_DIR') ? constant('WP_CONTENT_DIR') . '/cache' : sys_get_temp_dir();
 
         return new self($base . '/foehn/errors');
+    }
+
+    /**
+     * The browser log the Vite dev server writes beside its hot file, in the `dist`
+     * directory of the theme, where `ViteManifest::fromTheme()` reads the hot file.
+     */
+    public static function browserInTheme(): self
+    {
+        return new self(rtrim(get_template_directory(), '/') . '/dist', self::BROWSER);
+    }
+
+    /**
+     * The newest file of the log.
+     */
+    public function file(): string
+    {
+        return $this->path(0);
     }
 
     public function directory(): string
@@ -63,7 +84,7 @@ final readonly class ErrorLog
             return;
         }
 
-        $file = $this->file(0);
+        $file = $this->path(0);
         clearstatcache(true, $file);
 
         if (is_file($file) && ((int) filesize($file) + strlen($line) + 1) > self::MAX_BYTES) {
@@ -85,7 +106,7 @@ final readonly class ErrorLog
         $entries = [];
 
         for ($index = 0; $index < self::MAX_FILES; $index++) {
-            $file = $this->file($index);
+            $file = $this->path($index);
 
             if (!is_file($file)) {
                 continue;
@@ -116,7 +137,7 @@ final readonly class ErrorLog
         $deleted = 0;
 
         for ($index = 0; $index < self::MAX_FILES; $index++) {
-            $file = $this->file($index);
+            $file = $this->path($index);
 
             if (is_file($file) && unlink($file)) {
                 $deleted++;
@@ -131,23 +152,23 @@ final readonly class ErrorLog
      */
     private function rotate(): void
     {
-        $oldest = $this->file(self::MAX_FILES - 1);
+        $oldest = $this->path(self::MAX_FILES - 1);
 
         if (is_file($oldest)) {
             unlink($oldest);
         }
 
         for ($index = self::MAX_FILES - 2; $index >= 0; $index--) {
-            $file = $this->file($index);
+            $file = $this->path($index);
 
             if (is_file($file)) {
-                rename($file, $this->file($index + 1));
+                rename($file, $this->path($index + 1));
             }
         }
     }
 
-    private function file(int $index): string
+    private function path(int $index): string
     {
-        return sprintf('%s/%s%s.jsonl', rtrim($this->directory, '/'), self::NAME, $index === 0 ? '' : '.' . $index);
+        return sprintf('%s/%s%s.jsonl', rtrim($this->directory, '/'), $this->name, $index === 0 ? '' : '.' . $index);
     }
 }

@@ -30,6 +30,22 @@ beforeAll(async () => {
     await writeFile(join(root, "theme/assets/js/app.js"), "export const entry = 'from-vite';\n");
     await writeFile(join(root, "theme/assets/css/app.css"), "body { color: red; }\n");
     await writeFile(join(root, "public/robots.txt"), "from-public\n");
+    // TypeScript with an enum: the served module has other line numbers.
+    await writeFile(
+        join(root, "theme/assets/js/widget.ts"),
+        [
+            "interface Options {",
+            "    size: number;",
+            "}",
+            "",
+            "enum Mode { A, B }",
+            "",
+            "export function boom(options: Options): never {",
+            "    throw new TypeError(`size ${options.size} ${Mode.B}`);",
+            "}",
+            "",
+        ].join("\n"),
+    );
 
     ddevServer = createHttpServer((req, res) => {
         res.writeHead(200, { "Content-Type": "text/plain" });
@@ -153,6 +169,13 @@ describe("dev server", () => {
         expect(body).toContain(expected);
     });
 
+    it("lets a page of the DDEV site load the Vite client", async () => {
+        const response = await fetch(`${origin()}/@vite/client`, {
+            headers: { Origin: upstream.url },
+        });
+        expect(response.headers.get("access-control-allow-origin")).toBe(upstream.url);
+    });
+
     it("answers the HMR ping from Vite", async () => {
         const response = await fetch(`${origin()}/`, {
             headers: { Accept: "text/x-vite-ping" },
@@ -171,6 +194,55 @@ describe("dev server", () => {
         expect(JSON.parse(message)).toEqual({ type: "connected" });
     });
 
+    it("writes a console error of the page to the browser log", async () => {
+        await sendFromBrowser({ type: "log", data: { level: "error", message: "Missing price" } });
+
+        expect(await browserLog()).toEqual([
+            {
+                time: expect.stringMatching(/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/),
+                level: "console",
+                class: "console.error",
+                message: "Missing price",
+                file: null,
+                line: null,
+                stack: [],
+            },
+        ]);
+    });
+
+    it("gives the source line of an uncaught error, through the source map", async () => {
+        const served = (await (await fetch(`${origin()}/theme/assets/js/widget.ts`)).text()).split(
+            "\n",
+        );
+        const line = served.findIndex((text) => text.includes("throw")) + 1;
+        const column = served[line - 1].indexOf("throw") + 1;
+        expect(line).not.toBe(8);
+
+        await sendFromBrowser({
+            type: "error",
+            data: {
+                name: "TypeError",
+                message: "size 3 1",
+                stack: [
+                    "TypeError: size 3 1",
+                    `    at boom (${origin()}/theme/assets/js/widget.ts?t=1762963200000:${line}:${column})`,
+                    `    at ${origin()}/node_modules/.vite/deps/chunk.js?v=1:10:3`,
+                ].join("\n"),
+            },
+        });
+
+        expect(await browserLog()).toEqual([
+            expect.objectContaining({
+                level: "error",
+                class: "TypeError",
+                message: "size 3 1",
+                file: "theme/assets/js/widget.ts",
+                line: 8,
+                stack: ["theme/assets/js/widget.ts:8 boom()", "+1 other frame"],
+            }),
+        ]);
+    });
+
     it.each([
         ["the home page", "/"],
         ["the admin", "/wp/wp-admin/"],
@@ -180,6 +252,26 @@ describe("dev server", () => {
         const body = await (await fetch(`${origin()}${path}`)).text();
         expect(body).toBe(`from-ddev ${path}`);
     });
+
+    /** Send an event over the HMR websocket, as the Vite client in the page does. */
+    async function sendFromBrowser(data: unknown): Promise<void> {
+        const url = `${origin().replace("http", "ws")}/?token=${server.config.webSocketToken}`;
+        const socket = new WebSocket(url, "vite-hmr");
+        await new Promise((done) => socket.addEventListener("open", done));
+        socket.send(JSON.stringify({ type: "custom", event: "vite:forward-console", data }));
+        socket.close();
+    }
+
+    /** The entries of the browser log, once there is one. */
+    async function browserLog(): Promise<unknown[]> {
+        const file = join(root, "theme/dist/browser-errors.jsonl");
+        await vi.waitFor(() => expect(existsSync(file)).toBe(true));
+
+        return (await readFile(file, "utf-8"))
+            .trim()
+            .split("\n")
+            .map((line) => JSON.parse(line));
+    }
 
     function origin(): string {
         return `http://127.0.0.1:${(server.httpServer!.address() as AddressInfo).port}`;

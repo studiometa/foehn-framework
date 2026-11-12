@@ -184,3 +184,90 @@ describe('wp foehn errors', function () {
         expect(wp_stub_get_calls('wp_cli_success')[0]['args']['message'])->toBe('Deleted the error log.');
     });
 });
+
+describe('wp foehn errors --browser', function () {
+    beforeEach(function () {
+        wp_stub_reset();
+        $this->theme = errorLogDirectory();
+        $GLOBALS['wp_stub_template_directory'] = $this->theme;
+        $this->browserLog = new ErrorLog($this->theme . '/dist', ErrorLog::BROWSER);
+        $this->command = new ErrorsCommand(
+            new WpCli(),
+            new ErrorLog(errorLogDirectory()),
+            new FoehnConfig(recordErrors: false),
+        );
+    });
+
+    afterEach(function () {
+        removeErrorLogDirectory($this->theme . '/dist');
+        removeErrorLogDirectory($this->theme);
+    });
+
+    it('prints the last entry the Vite dev server wrote', function () {
+        $this->browserLog->append(['time' => '2026-11-12T09:59:00Z', 'level' => 'console', 'class' => 'console.warn']);
+        $this->browserLog->append([
+            'time' => '2026-11-12T10:00:00Z',
+            'level' => 'error',
+            'class' => 'TypeError',
+            'message' => 'card is null',
+            'file' => 'theme/assets/js/components/Card.js',
+            'line' => 12,
+            'stack' => ['theme/assets/js/components/Card.js:12 Card.mounted()', '+3 other frames'],
+        ]);
+
+        ($this->command)([], ['browser' => true]);
+
+        expect(errorsOutput())->toBe([
+            'TypeError: card is null',
+            '  error at 2026-11-12 10:00:00 UTC in theme/assets/js/components/Card.js:12',
+            '    theme/assets/js/components/Card.js:12 Card.mounted()',
+            '    +3 other frames',
+            '1 more: wp foehn errors --browser --limit=2. Every field: --format=json.',
+        ]);
+    });
+
+    it('filters by the levels of the browser', function () {
+        $this->browserLog->append(['time' => '2026-11-12T10:00:00Z', 'level' => 'error', 'message' => 'Uncaught']);
+        $this->browserLog->append(['time' => '2026-11-12T10:00:01Z', 'level' => 'console', 'message' => 'Logged']);
+
+        ($this->command)([], ['browser' => true, 'level' => 'error,rejection', 'format' => 'json']);
+
+        $lines = array_column(array_column(wp_stub_get_calls('wp_cli_line'), 'args'), 'message');
+
+        expect(array_column(json_decode($lines[0], true, flags: JSON_THROW_ON_ERROR), 'message'))->toBe([
+            'Uncaught',
+        ]);
+    });
+
+    it('says where the dev server writes, when the log is empty', function () {
+        ($this->command)([], ['browser' => true]);
+
+        expect(errorsOutput())->toBe([
+            sprintf(
+                'No browser errors recorded. While `npm run dev` runs, the Vite dev server writes them to %s/dist/browser-errors.jsonl (Vite 8 and @studiometa/foehn-vite-plugin).',
+                $this->theme,
+            ),
+        ]);
+    });
+
+    it('refuses a level of the PHP log and a request id', function (array $options, string $message) {
+        ($this->command)([], ['browser' => true, ...$options]);
+
+        expect(wp_stub_get_calls('wp_cli_error')[0]['args']['message'])->toBe($message);
+    })->with([
+        'level' => [['level' => 'exception'], "Unknown level 'exception'. Use error, rejection, console."],
+        'request' => [
+            ['request' => '3fa2c1'],
+            '--request does not apply to --browser: browser entries have no request id.',
+        ],
+    ]);
+
+    it('clears the browser log only', function () {
+        $this->browserLog->append(['level' => 'error']);
+
+        ($this->command)([], ['browser' => true, 'clear' => true]);
+
+        expect($this->browserLog->entries())->toBe([]);
+        expect(wp_stub_get_calls('wp_cli_success')[0]['args']['message'])->toBe('Deleted the browser log.');
+    });
+});

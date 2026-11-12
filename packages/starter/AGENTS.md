@@ -42,6 +42,12 @@ The project runs in DDEV. Run WP-CLI as `ddev wp …`. Without DDEV, run `wp …
    ddev wp foehn errors --limit=5 --format=json
    ```
 
+   While `npm run dev` runs, the Vite dev server writes the console errors and the uncaught errors of the page to a log (Vite 8). Read them after you load a page:
+
+   ```bash
+   ddev wp foehn errors --browser
+   ```
+
    The warnings of WordPress and plugins, and `error_log()` messages, are in the debug log. Read it as grouped entries, not with `tail`:
 
    ```bash
