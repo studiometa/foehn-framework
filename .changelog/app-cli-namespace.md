@@ -1,6 +1,6 @@
 ### Added
 
-- `cliNamespace` in `FoehnConfig` (`'cli_namespace'` in the array config) sets the WP-CLI command the `#[AsCliCommand]` classes of the project go under. The default is `app`. See [Command Namespace](https://studiometa.github.io/foehn-framework/guide/cli-commands#command-namespace)
+- `cliNamespace` in `FoehnConfig` (`'cli_namespace'` in the array config) sets the WP-CLI command the `#[AsCliCommand]` classes of the project go under. The default is `app`. A name with a space, an empty name or `foehn` throws an `InvalidArgumentException`. See [Command Namespace](https://studiometa.github.io/foehn-framework/guide/cli-commands#command-namespace)
 
 ### Changed
 

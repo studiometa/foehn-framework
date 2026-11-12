@@ -577,7 +577,7 @@ return new FoehnConfig(
 );
 ```
 
-The command of the example below is then `wp site import:products`. Change the cron jobs, deploy scripts and runbooks that call a command when you change the name.
+The name is one word of lowercase letters, digits, `-` and `_`. It cannot be `foehn`, because a command of your project would then replace a command of Føhn with the same name. The command of the example below is then `wp site import:products`. Change the cron jobs, deploy scripts and runbooks that call a command when you change the name.
 
 ### A Command Class
 

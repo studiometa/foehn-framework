@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Config;
 
+use InvalidArgumentException;
 use Studiometa\Foehn\Helpers\Env;
 use Tempest\Discovery\DiscoveryCacheStrategy;
 
@@ -87,9 +88,21 @@ final readonly class FoehnConfig
         /**
          * The WP-CLI command the project's own #[AsCliCommand] classes go under:
          * `wp app <name>` by default. The framework's commands stay under `wp foehn`.
+         * One word of lowercase letters, digits, `-` and `_`, and not `foehn`.
          */
         public string $cliNamespace = 'app',
-    ) {}
+    ) {
+        // WP-CLI splits a command name on spaces, so an empty name or one with a
+        // space registers the commands where `wp` cannot reach them. `foehn` would
+        // put the project's commands back among the framework's, where one with the
+        // same name silently replaces the other.
+        if (preg_match('/^[a-z0-9][a-z0-9_-]*$/', $cliNamespace) !== 1 || $cliNamespace === 'foehn') {
+            throw new InvalidArgumentException(sprintf(
+                '"%s" is not a valid cliNamespace: use one word of lowercase letters, digits, "-" and "_", other than "foehn".',
+                $cliNamespace,
+            ));
+        }
+    }
 
     /**
      * Create config from array (typically from Kernel::boot config).
