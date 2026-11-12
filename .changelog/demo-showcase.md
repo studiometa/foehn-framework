@@ -4,6 +4,7 @@
 - The demo runs Action Scheduler. Saving a project dispatches a `#[AsJob]` that requests the image transforms of its plates, so the first visitor does not wait for them.
 - The demo schedules two `#[AsCron]` jobs: one on a daily interval that warms the plates of every project, and one on the cron expression `0 0 1 1 *` that empties the page cache at midnight on 1 January. Its seeded site timezone is Europe/Paris, so the expression runs at midnight in Paris.
 - The demo has two commands of its own under `wp app`: `projects:stats`, which only reads, and `projects:reorder`, which declares `writes: true` and so runs in production only with `--dry-run` or `--force`.
+- The demo turns on `SecurityHeaders`, `DisableFileEditor`, `RestApiAuth` and `CleanContent`.
 
 ### Changed
 

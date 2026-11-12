@@ -217,6 +217,21 @@ if curl -sk "$url/" | grep -q 'global-styles-inline-css'; then
 	fail "the homepage prints the theme.json global styles DisableGlobalStyles removes"
 fi
 printf '✓ %s\n' "DisableGlobalStyles removes the global styles of a theme with no theme.json"
+# CleanContent strips the type from an archive title.
+check_page "/category/notes/" '<h1 class="title"[^>]*>Notes</h1>' "CleanContent removes the Category: prefix from an archive title"
+
+# SecurityHeaders sends its headers on every page PHP renders.
+home_headers="$(curl -sk -D- -o /dev/null "$url/" | tr -d '\r')"
+grep -qi '^x-content-type-options: nosniff$' <<<"$home_headers" || fail "the homepage has no X-Content-Type-Options header from SecurityHeaders
+$home_headers"
+grep -qi '^permissions-policy: ' <<<"$home_headers" || fail "the homepage has no Permissions-Policy header from SecurityHeaders"
+printf '✓ %s\n' "SecurityHeaders sends its headers"
+
+# RestApiAuth hides the user list from visitors, and only that list.
+users_status="$(curl -sk -o /dev/null -w '%{http_code}' "$url/wp-json/wp/v2/users")"
+[ "$users_status" = "404" ] || fail "GET /wp-json/wp/v2/users answered a visitor with HTTP $users_status, not 404"
+printf '✓ %s\n' "RestApiAuth removes the users route for a visitor"
+
 # SettingsSeeder turns the banner on, so the public demo says it is one.
 check_page "/" 'class="banner' "the banner from the theme settings is on every page"
 check_page "/projects/" "index-row__title" "the projects index lists the series"

@@ -79,6 +79,9 @@ $results->same('foehn.config.php is loaded (opt-in hooks)', $declared->hooks, $c
 
 $results->true('opt-in security hooks are applied', has_filter('xmlrpc_enabled') !== false);
 
+// DisableFileEditor defines the constant on `init`, which has run by now.
+$results->true('DisableFileEditor turns off the file editor', defined('DISALLOW_FILE_EDIT') && DISALLOW_FILE_EDIT);
+
 // The config also names a driver, and naming one is the whole of the opt-in: with
 // none, image_url() hands back the source URL and every page still renders — so
 // nothing on the front end would look wrong if this silently reverted.

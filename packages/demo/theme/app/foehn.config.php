@@ -3,15 +3,19 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Config\FoehnConfig;
+use Studiometa\Foehn\Hooks\Cleanup\CleanContent;
 use Studiometa\Foehn\Hooks\Cleanup\CleanHeadTags;
 use Studiometa\Foehn\Hooks\Cleanup\DisableEmoji;
 use Studiometa\Foehn\Hooks\Cleanup\DisableGlobalStyles;
 use Studiometa\Foehn\Hooks\Cleanup\DisableOembed;
 use Studiometa\Foehn\Hooks\QueryFiltersHook;
 use Studiometa\Foehn\Hooks\S3UploadsEndpoint;
+use Studiometa\Foehn\Hooks\Security\DisableFileEditor;
 use Studiometa\Foehn\Hooks\Security\DisableVersionDisclosure;
 use Studiometa\Foehn\Hooks\Security\DisableXmlRpc;
 use Studiometa\Foehn\Hooks\Security\GenericLoginErrors;
+use Studiometa\Foehn\Hooks\Security\RestApiAuth;
+use Studiometa\Foehn\Hooks\Security\SecurityHeaders;
 use Studiometa\Foehn\Hooks\StudiometaUi;
 use Studiometa\Foehn\Hooks\YouTubeNoCookieHooks;
 use Studiometa\Foehn\Images\ContentImageHooks;
@@ -23,15 +27,26 @@ return new FoehnConfig(
     discoveryCacheStrategy: DiscoveryCacheStrategy::FULL,
     imageTransformer: GlideTransformer::class,
     hooks: [
+        // Removes empty paragraphs from content, and the "Category:" and "Series:"
+        // prefixes from archive titles: the archive template prints the name alone.
+        CleanContent::class,
         CleanHeadTags::class,
         DisableEmoji::class,
         // The theme ships no theme.json, so the inline global styles WordPress prints
         // from its defaults style nothing of ours.
         DisableGlobalStyles::class,
         DisableOembed::class,
+        // DisableFeeds is not here: the journal is a blog, and its feed at /feed/ is
+        // worth keeping. The theme declares no `automatic-feed-links`, so there is no
+        // head link for the hook to remove anyway.
+        DisableFileEditor::class,
         DisableVersionDisclosure::class,
         DisableXmlRpc::class,
         GenericLoginErrors::class,
+        // Removes /wp/v2/users for visitors, which would list the admin login. The
+        // other routes stay public, the demo's own /demo/v1/projects included.
+        RestApiAuth::class,
+        SecurityHeaders::class,
         // A transform is keyed on the path and the parameters, never on the pixels, so
         // a crop in the media library would go on serving the old ones forever. This
         // forgets an image's transforms when the image itself changes.
