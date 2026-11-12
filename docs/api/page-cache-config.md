@@ -127,7 +127,7 @@ responseHeaders: [
 ],
 ```
 
-A name contains letters, digits and hyphens. A value, and `cacheControl`, is printable ASCII without `"`, `\` or `$`. A header the cache sets itself is refused. The getters `getCacheControl()` and `getResponseHeaders()` throw an `InvalidArgumentException` for a value that breaks these rules: `wp foehn cache:config` fails, and the drop-in lets WordPress render the page. Re-run `wp foehn cache:config --write` after a change.
+A name contains letters, digits and hyphens. A value, and `cacheControl`, is printable ASCII without `"`, `\` or `$`. A header the cache sets itself is refused. The getters `getCacheControl()` and `getResponseHeaders()` throw an `InvalidArgumentException` for a value that breaks these rules: `wp foehn cache:config` fails, `wp foehn cache:status` shows a warning, and the drop-in lets WordPress render the page. Re-run `wp foehn cache:config --write` after a change.
 
 ### `bypassCookies`
 

@@ -393,7 +393,7 @@ The snippet writes them into the cache location, and the drop-in sends them too,
 - The values are printable ASCII, without `"`, `\` or `$`, and without spaces at the start or the end. The same rule applies to `cacheControl`.
 - A header that the cache sets itself (`Cache-Control`, `Vary`, `ETag`, `Content-Type`, `Set-Cookie`, `X-Robots-Tag`, `X-Foehn-Cache` and the other [headers that are never stored](#the-headers)) is refused. Use `cacheControl` for `Cache-Control`.
 
-A value that breaks these rules makes `wp foehn cache:config` fail and stops the drop-in from serving hits. It never stops WordPress: the page is rendered by PHP.
+A value that breaks these rules makes `wp foehn cache:config` fail, for nginx and for Apache, and stops the drop-in from serving hits. `wp foehn cache:status` then shows a warning in place of "The page cache is active". It never stops WordPress: the page is rendered by PHP.
 
 The headers are not added to a page that PHP renders. That page already gets the server-level headers from the web server, and adding them from PHP too would send each one twice. For the same reason, a drop-in hit behind nginx can send a configured header twice with the same value: once from PHP, once from the server level. Browsers accept a repeated identical value for these headers.
 

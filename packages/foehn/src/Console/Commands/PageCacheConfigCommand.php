@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Console\Commands;
 
+use InvalidArgumentException;
 use Studiometa\Foehn\Attributes\AsCliCommand;
 use Studiometa\Foehn\Config\PageCacheConfig;
 use Studiometa\Foehn\Console\CliCommandInterface;
@@ -73,6 +74,17 @@ final class PageCacheConfigCommand implements CliCommandInterface
 
         if (!in_array($server, ['nginx', 'apache'], true)) {
             $this->cli->error('Pass --server=nginx or --server=apache.');
+
+            return;
+        }
+
+        // Checked for Apache too: the drop-in sends these headers on every setup, and a
+        // value it refuses stops it from serving hits without a word.
+        try {
+            $this->config->getCacheControl();
+            $this->config->getResponseHeaders();
+        } catch (InvalidArgumentException $exception) {
+            $this->cli->error($exception->getMessage());
 
             return;
         }

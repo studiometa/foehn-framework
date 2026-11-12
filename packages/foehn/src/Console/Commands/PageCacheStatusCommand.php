@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Console\Commands;
 
+use InvalidArgumentException;
 use Studiometa\Foehn\Attributes\AsCliCommand;
 use Studiometa\Foehn\Config\PageCacheConfig;
 use Studiometa\Foehn\Console\CliCommandInterface;
@@ -72,6 +73,17 @@ final class PageCacheStatusCommand implements CliCommandInterface
 
         if (!$this->config->allowsEnvironment($environment)) {
             $this->cli->warning("The page cache is enabled but inert in the '{$environment}' environment.");
+
+            return;
+        }
+
+        // The drop-in validates the headers of a hit on each request and, when they are
+        // refused, lets WordPress render the page: the cache looks on and serves nothing.
+        try {
+            $this->config->getCacheControl();
+            $this->config->getResponseHeaders();
+        } catch (InvalidArgumentException $exception) {
+            $this->cli->warning('The drop-in serves no page: ' . $exception->getMessage());
 
             return;
         }
