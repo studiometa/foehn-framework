@@ -225,7 +225,7 @@ describe("dev server", () => {
                 message: "size 3 1",
                 stack: [
                     "TypeError: size 3 1",
-                    `    at boom (${origin()}/theme/assets/js/widget.ts?t=1:${line}:${column})`,
+                    `    at boom (${origin()}/theme/assets/js/widget.ts?t=1762963200000:${line}:${column})`,
                     `    at ${origin()}/node_modules/.vite/deps/chunk.js?v=1:10:3`,
                 ].join("\n"),
             },

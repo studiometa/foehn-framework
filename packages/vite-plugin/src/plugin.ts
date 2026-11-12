@@ -241,7 +241,10 @@ async function findSource(
 ): Promise<SourcePosition | null> {
     let path: string;
     try {
-        path = decodeURIComponent(new URL(url).pathname);
+        // With the query: a Vue block (`?vue&type=script`) is a module of its own.
+        // Vite drops the `?t=` of a hot update and the `?import` itself.
+        const parsed = new URL(url);
+        path = decodeURIComponent(parsed.pathname) + parsed.search;
     } catch {
         return null;
     }

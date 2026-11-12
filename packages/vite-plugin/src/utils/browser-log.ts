@@ -114,7 +114,7 @@ export async function browserEntry(
     return {
         time,
         level: payload.type === "error" ? "error" : "rejection",
-        class: payload.data.name,
+        class: shorten(payload.data.name),
         message: shorten(payload.data.message),
         file: first?.file ?? null,
         line: first?.line ?? null,
