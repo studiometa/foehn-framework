@@ -63,6 +63,26 @@ final readonly class AsCron
     ];
 
     /**
+     * The most days each month can have, February in a leap year included.
+     *
+     * @var array<int, int>
+     */
+    private const array DAYS_IN_MONTH = [
+        1 => 31,
+        2 => 29,
+        3 => 31,
+        4 => 30,
+        5 => 31,
+        6 => 30,
+        7 => 31,
+        8 => 31,
+        9 => 30,
+        10 => 31,
+        11 => 30,
+        12 => 31,
+    ];
+
+    /**
      * The recurrence interval in seconds, or null when the schedule is a cron expression.
      */
     public ?int $intervalSeconds;
@@ -138,7 +158,76 @@ final readonly class AsCron
             }
         }
 
+        // Action Scheduler throws on each request for a date that never comes, such as 31 February.
+        if (!self::hasDate($fields[2], $fields[3])) {
+            throw new InvalidArgumentException(sprintf(
+                '"%s" is not a valid cron expression: no month in "%s" has a day in "%s".',
+                $expression,
+                $fields[3],
+                $fields[2],
+            ));
+        }
+
         return implode(' ', $fields);
+    }
+
+    /**
+     * Whether one of the days of the month falls in one of the months.
+     */
+    private static function hasDate(string $dayOfMonth, string $month): bool
+    {
+        $days = self::values($dayOfMonth, 1, 31);
+
+        if ($days === []) {
+            return false;
+        }
+
+        foreach (self::values($month, 1, 12) as $value) {
+            if (min($days) <= self::DAYS_IN_MONTH[$value]) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * The values a valid field matches, as the cron library of Action Scheduler reads it.
+     *
+     * That library reads a step on `*` as "every value that the step divides", not "every
+     * step values from the first one": a step of 40 on `*` in the day of month matches no day.
+     *
+     * @return list<int>
+     */
+    private static function values(string $field, int $min, int $max): array
+    {
+        $values = [];
+
+        foreach (explode(',', $field) as $item) {
+            $parts = explode('/', $item, 2);
+            $range = $parts[0];
+            $step = $parts[1] ?? null;
+
+            if ($range === '*') {
+                foreach (range($min, $max) as $value) {
+                    if (!($step === null || ($value % (int) $step) === 0)) {
+                        continue;
+                    }
+
+                    $values[] = $value;
+                }
+
+                continue;
+            }
+
+            [$from, $to] = array_pad(explode('-', $range, 2), 2, $step === null ? $range : (string) $max);
+
+            for ($value = (int) $from; $value <= (int) $to; $value += (int) ($step ?? 1)) {
+                $values[] = $value;
+            }
+        }
+
+        return $values;
     }
 
     /**

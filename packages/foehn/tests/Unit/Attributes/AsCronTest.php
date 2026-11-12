@@ -62,6 +62,9 @@ describe('AsCron', function () {
         '0,30 6,18 1,15 1-6 0',
         '5/10 * * * *',
         '59 23 31 12 7',
+        '0 0 29 2 *',
+        '0 0 30 2,3 *',
+        '0 0 31 */2 *',
     ]);
 
     it('rejects an invalid cron expression', function (string $expression, string $message) {
@@ -83,6 +86,10 @@ describe('AsCron', function () {
         'names' => ['0 0 * * MON', '"MON" is not a valid day of week'],
         'macro' => ['@daily', 'it has 1'],
         'empty list item' => ['0,,5 * * * *', '"0,,5" is not a valid minute'],
+        'day that never comes' => ['0 0 31 2 *', 'no month in "2" has a day in "31"'],
+        'days that never come' => ['0 0 31 4,6,9-11/2 *', 'no month in "4,6,9-11/2" has a day in "31"'],
+        'step beyond the days' => ['0 0 */40 * *', 'no month in "*" has a day in "*/40"'],
+        'step beyond the months' => ['0 0 * */13 *', 'no month in "*/13" has a day in "*"'],
     ]);
 
     it('accepts a custom group', function () {
