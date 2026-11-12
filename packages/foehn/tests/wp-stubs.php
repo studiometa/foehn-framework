@@ -38,6 +38,7 @@ function wp_stub_reset(): void
     $GLOBALS['wp_stub_post_fields'] = [];
     $GLOBALS['wp_stub_terms'] = [];
     $GLOBALS['wp_stub_query_posts'] = [];
+    unset($GLOBALS['wp_stub_get_posts'], $GLOBALS['wp_stub_insert_post']);
     if (!function_exists('wp_get_environment_type')) {
         function wp_get_environment_type(): string
         {
@@ -229,6 +230,11 @@ if (!class_exists('WP_Error')) {
             public string $code = '',
             public string $message = '',
         ) {}
+
+        public function get_error_message(): string
+        {
+            return $this->message;
+        }
     }
 }
 
@@ -1616,6 +1622,42 @@ if (!function_exists('get_post_meta')) {
         }
 
         return $value !== null ? [$value] : [];
+    }
+}
+
+if (!function_exists('update_post_meta')) {
+    function update_post_meta(int $postId, string $key, mixed $value): bool
+    {
+        wp_stub_record('update_post_meta', compact('postId', 'key', 'value'));
+
+        $GLOBALS['wp_stub_post_meta'][$postId][$key] = $value;
+
+        return true;
+    }
+}
+
+if (!function_exists('get_posts')) {
+    /**
+     * Answers with `$GLOBALS['wp_stub_get_posts']`, whatever the arguments.
+     */
+    function get_posts(array $args = []): array
+    {
+        wp_stub_record('get_posts', compact('args'));
+
+        return $GLOBALS['wp_stub_get_posts'] ?? [];
+    }
+}
+
+if (!function_exists('wp_insert_post')) {
+    /**
+     * Answers with `$GLOBALS['wp_stub_insert_post']` when a test sets it (a WP_Error,
+     * for example), with the ID of the post it updates, or with 100.
+     */
+    function wp_insert_post(array $postarr, bool $wp_error = false): int|WP_Error
+    {
+        wp_stub_record('wp_insert_post', compact('postarr', 'wp_error'));
+
+        return $GLOBALS['wp_stub_insert_post'] ?? $postarr['ID'] ?? 100;
     }
 }
 

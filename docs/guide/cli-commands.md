@@ -61,6 +61,9 @@ wp foehn make:menu FooterMenu --description="Footer Navigation"
 # Generate an image size
 wp foehn make:image-size CardImage --width=400 --height=300 --crop
 wp foehn make:image-size HeroImage --width=1920 --height=0
+
+# Generate a seeder
+wp foehn make:seeder events --description="Sample events" --order=20
 ```
 
 ### Global Options
@@ -177,6 +180,7 @@ With no section, `inspect` prints a summary: each section with the names of its 
 | `rewrite-rules`     | `#[AsRewriteRule]` rules: regex, query, query vars and class                                                        |
 | `rest-routes`       | `#[AsRestRoute]` routes: path, HTTP method, permission and handler method                                           |
 | `cli-commands`      | Every `wp foehn` command, the framework's own included                                                              |
+| `seeders`           | `#[AsSeeder]` seeders, in the order `wp foehn seed` runs them: class, order and description                         |
 | `plugins`           | Active, network-activated and must-use plugins, with their versions                                                 |
 | `theme-supports`    | Every `add_theme_support()` feature, with its arguments                                                             |
 | `vite`              | The entry points of the theme build (`dist/.vite/manifest.json`), and the dev server URL while `npm run dev` runs   |
@@ -313,6 +317,21 @@ The skills come from two places:
 The table gives the skill `name`, the `package`, its installed `version` and the first sentence of the `description` (from the `SKILL.md` frontmatter). The JSON gives the full `description` and also the `path` of the file relative to the project root, such as `vendor/studiometa/foehn/skills/foehn/SKILL.md`. An agent can read that path directly when WordPress cannot boot.
 
 When two packages ship a skill with the same name, both are listed and `wp foehn skill <name>` prints the first: Composer packages come before the Vite plugin, in package name order. An unknown skill or reference stops with an error that lists the valid names.
+
+### Seeders
+
+```bash
+# Run every seeder, by order
+wp foehn seed
+
+# Run one seeder, by short or full class name
+wp foehn seed --class=EventsSeeder
+
+# List the seeders, in order, and run nothing
+wp foehn seed --dry-run
+```
+
+`seed` runs the classes with `#[AsSeeder]`, which write the sample content of the site. It stops with exit status 1 at the first seeder that throws an exception. A project with no seeder prints how to create one and exits with status 0. See [Seeders](/guide/seeders).
 
 ### Discovery Commands
 

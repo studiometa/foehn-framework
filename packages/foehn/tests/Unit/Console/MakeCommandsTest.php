@@ -18,6 +18,7 @@ use Studiometa\Foehn\Console\Commands\MakeImageSizeCommand;
 use Studiometa\Foehn\Console\Commands\MakeMenuCommand;
 use Studiometa\Foehn\Console\Commands\MakeModelCommand;
 use Studiometa\Foehn\Console\Commands\MakePostTypeCommand;
+use Studiometa\Foehn\Console\Commands\MakeSeederCommand;
 use Studiometa\Foehn\Console\Commands\MakeShortcodeCommand;
 use Studiometa\Foehn\Console\Commands\MakeTaxonomyCommand;
 use Studiometa\Foehn\Console\Scaffolder;
@@ -526,6 +527,40 @@ describe('make:menu and make:shortcode and make:hooks', function () {
 
         expect($contents)->toContain('class ThemeHooks');
         expect($contents)->not->toContain('DummyHooks');
+    });
+});
+
+describe('make:seeder', function () {
+    it('generates a seeder with its order, description and a post named after it', function () {
+        (new MakeSeederCommand($this->cli, $this->scaffolder))(['sample-events'], [
+            'order' => '30',
+            'description' => 'Sample events',
+        ]);
+
+        $contents = file_get_contents(($this->path)('Seeders', 'SampleEventsSeeder'));
+
+        expect($contents)->toContain('final class SampleEventsSeeder implements SeederInterface');
+        expect($contents)->toContain("#[AsSeeder(order: 30, description: 'Sample events')]");
+        expect($contents)->toContain("Upsert::post('post', 'sample-events', [");
+        expect($contents)->toContain("'post_title' => 'Sample events',");
+        expect($contents)->not->toContain('SkipDiscovery');
+    });
+
+    it('does not add Seeder twice, and describes the content by its name', function () {
+        (new MakeSeederCommand($this->cli, $this->scaffolder))(['MenuSeeder'], []);
+
+        $contents = file_get_contents(($this->path)('Seeders', 'MenuSeeder'));
+
+        expect($contents)->toContain('final class MenuSeeder');
+        expect($contents)->toContain("#[AsSeeder(order: 10, description: 'Menu')]");
+    });
+
+    it('says how to run the seeder', function () {
+        (new MakeSeederCommand($this->cli, $this->scaffolder))(['events'], ['dry-run' => true, 'format' => 'json']);
+
+        $report = json_decode(wp_stub_get_calls('wp_cli_line')[0]['args']['message'], true, flags: JSON_THROW_ON_ERROR);
+
+        expect($report['notes'])->toContain('Run it: wp foehn seed --class=EventsSeeder');
     });
 });
 

@@ -1,8 +1,8 @@
 # Content model
 
-Post types, taxonomies, post meta, dates, model queries, sample content and menus with WP-CLI, and settings pages.
+Post types, taxonomies, post meta, dates, model queries, sample content and menus with WP-CLI, settings pages and seeders.
 
-Docs: [Post types](https://studiometa.github.io/foehn-framework/guide/post-types.md), [Taxonomies](https://studiometa.github.io/foehn-framework/guide/taxonomies.md), [Querying posts](https://studiometa.github.io/foehn-framework/guide/querying-posts.md), [Settings pages](https://studiometa.github.io/foehn-framework/guide/settings-pages.md).
+Docs: [Post types](https://studiometa.github.io/foehn-framework/guide/post-types.md), [Taxonomies](https://studiometa.github.io/foehn-framework/guide/taxonomies.md), [Querying posts](https://studiometa.github.io/foehn-framework/guide/querying-posts.md), [Settings pages](https://studiometa.github.io/foehn-framework/guide/settings-pages.md), [Seeders](https://studiometa.github.io/foehn-framework/guide/seeders.md).
 
 ## `#[AsPostType]`
 
@@ -222,7 +222,7 @@ Scripts and agents write values with `wp post meta update <id> <key> <value>`, o
 
 ## Sample content and menus with WP-CLI
 
-Read the project conventions first (`AGENTS.md`): a project can keep its sample content in a seed script, and an item created by hand is lost when the database is rebuilt.
+Sample content and menus go in a seeder (see [Seeders](#seeders)): an item created by hand is lost when the database is rebuilt. Use these commands to check what a seeder wrote, or to change one item while you work. Read the project conventions first (`AGENTS.md`).
 
 ```bash
 wp post create --post_type=event --post_status=publish --post_title='Opening night' \
@@ -296,3 +296,36 @@ return $context->with('show_banner', Settings::get('theme_show_banner'));
 ```
 
 For repeaters, flexible content or conditional fields, use an ACF options page (the `foehn-acf` skill).
+
+## Seeders
+
+Sample content, menus and the options a site needs to show them go in a seeder, never only in the database. `wp foehn seed` writes them again on an empty or replaced database.
+
+```php
+namespace App\Seeders;
+
+use Studiometa\Foehn\Attributes\AsSeeder;
+use Studiometa\Foehn\Contracts\SeederInterface;
+use Studiometa\Foehn\Seeders\Upsert;
+
+#[AsSeeder(order: 20, description: 'Sample events')]   // order: lower runs first, default 10; ties by class name
+final class EventsSeeder implements SeederInterface
+{
+    public function run(): void
+    {
+        // Updates the post of this type with this slug, in any status, or creates it (status publish).
+        $id = Upsert::post('event', 'spring-fair', [
+            'post_title' => 'Spring fair',
+        ], [
+            'starts_at' => '2026-04-18',
+        ]);
+    }
+}
+```
+
+- Create it with `wp foehn make:seeder events --order=20 --description="Sample events"`, then run `wp foehn discovery:clear`.
+- `wp foehn seed` runs every seeder by order. `--class=EventsSeeder` runs one (short or full class name). `--dry-run` lists them and runs nothing. `wp foehn inspect seeders` lists them with their order and description.
+- `run()` must be idempotent: a second run updates the content and creates nothing. Find posts by slug (`Upsert::post()`), attachments by a meta value you write on them, menus by name (delete their items, then add them again). Run `wp foehn seed` twice and check that the counts do not change.
+- A seeder that needs content of another seeder finds it again by slug or meta, and has a higher `order`.
+- Throw an exception when the seeder cannot do its work. The command stops with exit status 1 and prints the class and the message.
+- Without `SeederInterface`, a class with `#[AsSeeder]` is not discovered.

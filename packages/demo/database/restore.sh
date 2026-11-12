@@ -18,8 +18,8 @@
 # this ddev configuration answers on, so both `.env` and the database are moved onto
 # it first.
 #
-# Without the dump it seeds from scratch instead, which produces the same site and
-# takes longer.
+# Without the dump it seeds from scratch instead with `wp foehn seed`, which runs
+# the seeders in `theme/app/Seeders/`, produces the same site and takes longer.
 
 set -euo pipefail
 
@@ -57,7 +57,7 @@ if [ -f "$dump" ]; then
 	printf '✓ database imported\n'
 else
 	printf '→ no dump found, seeding from scratch\n'
-	ddev exec 'cd /var/www/html && wp eval-file database/seed.php'
+	ddev exec 'cd /var/www/html && wp foehn seed'
 fi
 
 # A dump remembers the host it was taken on, and it is not this one unless the

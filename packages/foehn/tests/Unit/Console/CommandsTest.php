@@ -21,6 +21,7 @@ use Studiometa\Foehn\Console\Commands\MakeMenuCommand;
 use Studiometa\Foehn\Console\Commands\MakeModelCommand;
 use Studiometa\Foehn\Console\Commands\MakePatternCommand;
 use Studiometa\Foehn\Console\Commands\MakePostTypeCommand;
+use Studiometa\Foehn\Console\Commands\MakeSeederCommand;
 use Studiometa\Foehn\Console\Commands\MakeShortcodeCommand;
 use Studiometa\Foehn\Console\Commands\MakeTaxonomyCommand;
 use Studiometa\Foehn\Console\Commands\PageCacheClearCommand;
@@ -47,6 +48,7 @@ describe('Commands', function (): void {
         'MakeContextCommand' => ['class' => MakeContextCommand::class, 'name' => 'make:context'],
         'MakeMenuCommand' => ['class' => MakeMenuCommand::class, 'name' => 'make:menu'],
         'MakeImageSizeCommand' => ['class' => MakeImageSizeCommand::class, 'name' => 'make:image-size'],
+        'MakeSeederCommand' => ['class' => MakeSeederCommand::class, 'name' => 'make:seeder'],
         'DiscoveryClearCommand' => ['class' => DiscoveryClearCommand::class, 'name' => 'discovery:clear'],
         'DiscoveryGenerateCommand' => ['class' => DiscoveryGenerateCommand::class, 'name' => 'discovery:generate'],
         'DiscoveryStatusCommand' => ['class' => DiscoveryStatusCommand::class, 'name' => 'discovery:status'],

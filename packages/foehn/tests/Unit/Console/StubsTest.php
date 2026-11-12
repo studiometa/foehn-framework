@@ -13,6 +13,7 @@ use Studiometa\Foehn\Attributes\AsFilter;
 use Studiometa\Foehn\Attributes\AsImageSize;
 use Studiometa\Foehn\Attributes\AsMenu;
 use Studiometa\Foehn\Attributes\AsPostType;
+use Studiometa\Foehn\Attributes\AsSeeder;
 use Studiometa\Foehn\Attributes\AsShortcode;
 use Studiometa\Foehn\Attributes\AsTaxonomy;
 use Studiometa\Foehn\Attributes\AsTemplateController;
@@ -25,6 +26,7 @@ use Studiometa\Foehn\Console\Stubs\InteractiveBlockStub;
 use Studiometa\Foehn\Console\Stubs\MenuStub;
 use Studiometa\Foehn\Console\Stubs\ModelStub;
 use Studiometa\Foehn\Console\Stubs\PostTypeStub;
+use Studiometa\Foehn\Console\Stubs\SeederStub;
 use Studiometa\Foehn\Console\Stubs\ShortcodeStub;
 use Studiometa\Foehn\Console\Stubs\TaxonomyStub;
 use Studiometa\Foehn\Console\Stubs\TemplateControllerStub;
@@ -32,6 +34,7 @@ use Studiometa\Foehn\Contracts\BlockInterface;
 use Studiometa\Foehn\Contracts\BlockPatternInterface;
 use Studiometa\Foehn\Contracts\ContextProviderInterface;
 use Studiometa\Foehn\Contracts\InteractiveBlockInterface;
+use Studiometa\Foehn\Contracts\SeederInterface;
 use Studiometa\Foehn\Contracts\TemplateControllerInterface;
 use Tempest\Discovery\SkipDiscovery;
 
@@ -179,5 +182,20 @@ describe('Stubs', function (): void {
         expect($attribute->width)->toBe(800);
         expect($attribute->height)->toBe(600);
         expect($attribute->crop)->toBeTrue();
+    });
+
+    it('SeederStub has correct attributes and implements SeederInterface', function (): void {
+        $reflection = new ReflectionClass(SeederStub::class);
+
+        expect($reflection->getAttributes(SkipDiscovery::class))
+            ->toHaveCount(1)
+            ->and($reflection->getAttributes(AsSeeder::class))
+            ->toHaveCount(1)
+            ->and($reflection->implementsInterface(SeederInterface::class))
+            ->toBeTrue();
+
+        $attribute = $reflection->getAttributes(AsSeeder::class)[0]->newInstance();
+        expect($attribute->order)->toBe(10);
+        expect($attribute->description)->toBe('Dummy content');
     });
 });

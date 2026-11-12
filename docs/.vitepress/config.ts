@@ -53,6 +53,7 @@ export default defineConfig({
             { text: "Querying Posts", link: "/guide/querying-posts" },
             { text: "Taxonomies", link: "/guide/taxonomies" },
             { text: "Menus", link: "/guide/menus" },
+            { text: "Seeders", link: "/guide/seeders" },
           ],
         },
         {

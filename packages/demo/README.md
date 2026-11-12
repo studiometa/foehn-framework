@@ -82,6 +82,7 @@ See [the guide](https://studiometa.github.io/foehn-framework/guide/deployment-fl
 | `#[AsMenu]`                   | `theme/app/Menus/`                                                                                                             |
 | `#[AsAction]` / `#[AsFilter]` | `theme/app/Hooks/ThemeHooks.php`                                                                                               |
 | Arrayable DTOs                | `theme/app/Data/HeroContext.php`                                                                                               |
+| `#[AsSeeder]`                 | `theme/app/Seeders/` — the whole portfolio, written by `wp foehn seed`                                                         |
 
 The framework's own cleanup and security hooks are opted into from `theme/app/foehn.config.php`, `S3UploadsEndpoint` among them.
 
