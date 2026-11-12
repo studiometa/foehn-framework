@@ -15,10 +15,10 @@ use Timber\Timber;
 /**
  * The homepage: an index of the work, not a feed of posts.
  *
- * Declared ahead of ArchiveController's `home`, which WordPress otherwise answers
- * with the blog listing.
+ * `front-page` only. The posts live on the Journal page, which is the posts page in
+ * Settings > Reading, so `home` is that listing and ArchiveController renders it.
  */
-#[AsTemplateController(['front-page', 'home'])]
+#[AsTemplateController('front-page')]
 final readonly class FrontPageController implements TemplateControllerInterface
 {
     public function __construct(

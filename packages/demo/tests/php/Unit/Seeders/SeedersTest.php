@@ -83,7 +83,7 @@ describe('Seeders', function () {
 
         $posts = array_column(array_column(wp_stub_get_calls('wp_insert_post'), 'args'), 'postarr');
 
-        expect(array_column($posts, 'post_name'))->toBe(['home', 'about', 'legal']);
+        expect(array_column($posts, 'post_name'))->toBe(['home', 'about', 'journal', 'legal']);
 
         // The About page is block markup: the hero, the reading-time binding and the
         // commission pattern are on a page a visitor sees.

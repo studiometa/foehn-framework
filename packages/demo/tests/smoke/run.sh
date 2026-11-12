@@ -238,6 +238,7 @@ check_page "/notes-on-corridors/" 'class="related-projects"' "a journal post lin
 check_page "/editions-press-kit/" 'press-kit.pdf" download' "a journal post links the PDF picked with a file control"
 # ContentImageHooks rewrites the srcset of an image in content to transformer URLs.
 check_page "/notes-on-corridors/" 'srcset="[^"]*/_image/' "an image in content gets its srcset from the transformer"
+check_page "/journal/" "Notes on Corridors" "the posts page lists the journal"
 check_page "/category/notes/" "index-row__title" "the category archive lists the journal"
 check_page "/tag/film/" "index-row__title" "a tag archive lists its posts"
 check_page "/studio-contact-sheets/" 'name="post_password"' "the seeded protected post asks for its password"

@@ -20,6 +20,7 @@ describe('ArchiveController', function () {
 
         $templates = $attrs[0]->newInstance()->templates;
 
+        expect($templates)->toContain('home');
         expect($templates)->toContain('archive');
         expect($templates)->toContain('archive-*');
         expect($templates)->toContain('category');

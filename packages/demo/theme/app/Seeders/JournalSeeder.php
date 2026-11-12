@@ -34,6 +34,13 @@ final class JournalSeeder implements SeederInterface
         require_once ABSPATH . 'wp-admin/includes/file.php';
         require_once ABSPATH . 'wp-admin/includes/image.php';
 
+        // The sample post `wp core install` writes is not part of the journal.
+        $sample = get_page_by_path('hello-world', OBJECT, 'post');
+
+        if ($sample !== null) {
+            wp_delete_post($sample->ID, true);
+        }
+
         $corridors = Photographs::ofProject('corridors');
         $editions = Photographs::ofProject('editions');
 

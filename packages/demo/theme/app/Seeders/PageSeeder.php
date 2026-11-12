@@ -10,12 +10,12 @@ use Studiometa\Foehn\Seeders\Upsert;
 use WP_Block_Patterns_Registry;
 
 /**
- * The Home, About and Legal pages.
+ * The Home, About, Journal and Legal pages.
  *
  * No "Projects" page: the post type archive at /projects/ is the listing, and a page
  * with that title would take the URL from it through WordPress's canonical redirect.
  */
-#[AsSeeder(order: 30, description: 'The Home, About and Legal pages')]
+#[AsSeeder(order: 30, description: 'The Home, About, Journal and Legal pages')]
 final class PageSeeder implements SeederInterface
 {
     private const string ABOUT_EXCERPT = 'Independent photographer, Strasbourg. Architecture, portraiture and still life, mostly on black and white film.';
@@ -33,6 +33,12 @@ final class PageSeeder implements SeederInterface
             'post_title' => 'About',
             'post_excerpt' => self::ABOUT_EXCERPT,
             'post_content' => self::aboutContent($studio[1] ?? null),
+        ]);
+
+        // The posts page, set in SettingsSeeder: the journal lists here.
+        Upsert::post('page', 'journal', [
+            'post_title' => 'Journal',
+            'post_content' => '',
         ]);
 
         // The Legal menu links here. A demo has no real publisher, so the page says

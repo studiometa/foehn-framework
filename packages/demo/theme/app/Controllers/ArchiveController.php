@@ -10,12 +10,15 @@ use Studiometa\Foehn\Contracts\ViewEngineInterface;
 use Studiometa\Foehn\Views\TemplateContext;
 
 /**
- * Every listing: post type archives, categories, tags and custom taxonomy terms.
+ * Every listing: the journal, post type archives, categories, tags and custom
+ * taxonomy terms.
+ *
+ * `home` is the posts page set in Settings > Reading, the Journal here.
  *
  * A custom taxonomy term page is `taxonomy`, or `taxonomy-<taxonomy>` when a
  * controller declares it, so `taxonomy-*` is what catches the series and the tags.
  */
-#[AsTemplateController(['archive', 'archive-*', 'category', 'tag', 'taxonomy', 'taxonomy-*'])]
+#[AsTemplateController(['home', 'archive', 'archive-*', 'category', 'tag', 'taxonomy', 'taxonomy-*'])]
 final readonly class ArchiveController implements TemplateControllerInterface
 {
     public function __construct(
@@ -31,10 +34,10 @@ final readonly class ArchiveController implements TemplateControllerInterface
             ]));
         }
 
-        $context = $context->with('archive_title', get_the_archive_title())->with(
-            'archive_description',
-            get_the_archive_description(),
-        );
+        // The posts page has no archive title of its own: WordPress gives it "Archives".
+        $title = is_home() ? single_post_title('', false) : get_the_archive_title();
+
+        $context = $context->with('archive_title', $title)->with('archive_description', get_the_archive_description());
 
         // renderFirst rather than render: a post type archive with no template of
         // its own falls back to the generic one instead of throwing.

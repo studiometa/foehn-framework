@@ -22,15 +22,18 @@ final class MenuSeeder implements SeederInterface
     public function run(): void
     {
         $aboutUrl = self::pageUrl('about');
+        $journalUrl = self::pageUrl('journal');
         $legalUrl = self::pageUrl('legal');
 
         $menus = [
             'header' => [
                 ['Projects', '/projects/'],
+                ['Journal',  $journalUrl],
                 ['About',    $aboutUrl],
             ],
             'footer' => [
                 ['Projects', '/projects/'],
+                ['Journal',  $journalUrl],
                 ['About',    $aboutUrl],
             ],
             'legal' => [['Legal', $legalUrl]],

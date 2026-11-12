@@ -28,6 +28,7 @@ final class SettingsSeeder implements SeederInterface
         update_option('blogdescription', 'Architecture, portrait and still-life photography. Strasbourg.');
         update_option('show_on_front', 'page');
         update_option('page_on_front', $home->ID);
+        update_option('page_for_posts', get_page_by_path('journal')?->ID ?? 0);
         update_option('permalink_structure', '/%postname%/');
         update_option('demo_contact_email', 'studio@foehn.test');
         // On, because the public demo has to say that it is one.
