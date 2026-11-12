@@ -144,7 +144,7 @@ Recording starts when the theme boots Føhn. An error raised before, in WordPres
 | `--format=json`    | Every field of each entry, as a JSON array on one line                                    |
 | `--clear`          | Delete the log                                                                            |
 
-The text gives the first 5 lines of the stack. JSON gives all of them.
+The text cuts a message after 300 characters and gives the first 5 lines of the stack. JSON gives the whole message and every frame.
 
 ### The log file
 

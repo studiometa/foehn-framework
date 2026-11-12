@@ -12,6 +12,9 @@ final class EntryText
     /** The stack frames the text shows. JSON has all of them. */
     private const int FRAMES = 5;
 
+    /** The characters of a message the text shows. JSON has the whole message. */
+    private const int MESSAGE = 300;
+
     /**
      * One entry, in a few lines: what failed, where, on which request.
      *
@@ -20,7 +23,11 @@ final class EntryText
      */
     public static function lines(array $entry): array
     {
-        $lines = [sprintf('%s: %s', self::text($entry['class'] ?? null), self::text($entry['message'] ?? null))];
+        $lines = [sprintf(
+            '%s: %s',
+            self::text($entry['class'] ?? null),
+            self::cut(self::text($entry['message'] ?? null)),
+        )];
         $where = self::text($entry['file'] ?? null);
         $lines[] = sprintf(
             '  %s at %s%s',
@@ -34,7 +41,7 @@ final class EntryText
         }
 
         foreach (self::strings($entry['previous'] ?? null) as $previous) {
-            $lines[] = '  caused by ' . $previous;
+            $lines[] = '  caused by ' . self::cut($previous);
         }
 
         $request = array_filter([
@@ -65,6 +72,11 @@ final class EntryText
         }
 
         return $lines;
+    }
+
+    private static function cut(string $text): string
+    {
+        return mb_strlen($text) > self::MESSAGE ? mb_substr($text, 0, self::MESSAGE) . '…' : $text;
     }
 
     private static function labelled(string $label, mixed $value): string

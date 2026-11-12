@@ -102,6 +102,22 @@ describe('wp foehn errors', function () {
         ]);
     });
 
+    it('cuts a long message in the text, and keeps it whole in JSON', function () {
+        $message = str_repeat('a', 1500);
+        $this->log->append(errorEntry(['message' => $message, 'previous' => ['RuntimeException: ' . $message]]));
+
+        ($this->command)([], []);
+        $output = errorsOutput();
+
+        expect($output[0])->toBe('Studiometa\\Foehn\\Views\\ViewRenderingFailed: ' . str_repeat('a', 300) . '…');
+        expect($output[3])->toBe('  caused by ' . mb_substr('RuntimeException: ' . $message, 0, 300) . '…');
+
+        ($this->command)([], ['format' => 'json']);
+        $lines = array_column(array_column(wp_stub_get_calls('wp_cli_line'), 'args'), 'message');
+
+        expect(json_decode((string) end($lines), true, flags: JSON_THROW_ON_ERROR)[0]['message'])->toBe($message);
+    });
+
     it('filters by level and by date', function () {
         $this->log->append(errorEntry([
             'level' => 'warning',

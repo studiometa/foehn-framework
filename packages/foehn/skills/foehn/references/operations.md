@@ -98,7 +98,7 @@ Docs: [Problems and errors](https://studiometa.github.io/foehn-framework/guide/t
 
 Docs: [The error log](https://studiometa.github.io/foehn-framework/guide/troubleshooting.md#the-error-log).
 
-- `wp foehn errors` prints the last entry in a few lines. `--limit=<n>` (newest first), `--level=exception,fatal,warning,notice`, `--since=<date>` (`-10 minutes`), `--format=json` (every field, one line), `--clear`.
+- `wp foehn errors` prints the last entry in a few lines (messages cut at 300 characters, 5 stack lines). `--limit=<n>` (newest first), `--level=exception,fatal,warning,notice`, `--since=<date>` (`-10 minutes`), `--format=json` (every field, one line), `--clear`.
 - Recorded: uncaught exceptions, fatal errors, and the warnings and notices of the theme's own code (PHP files of the theme directory outside `vendor/` and `node_modules/`, and its Twig templates). Not recorded: warnings of WordPress, plugins and packages, warnings that `error_reporting()` leaves out (`@`, notices when `WP_DEBUG` is off), deprecations, caught exceptions, errors raised before the theme boots Føhn. Each error once per request, at most 20 per request.
 - Fields: `time`, `level`, `class`, `message`, `file`, `line`, `twig` (`template:line`), `previous`, `stack` (theme frames, then `+N other frames`), `method`, `url` (or `CLI` and the WP-CLI command), `template` (the WordPress template Føhn matched), `controller`, `view`, `context` (keys), `requestId` (`null` for now).
 - On by default in the `local` and `development` environments. `FoehnConfig(recordErrors: true)` turns it on elsewhere, `false` turns it off.
