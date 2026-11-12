@@ -177,6 +177,15 @@ Two rules worth knowing before you write one:
 - **`sanitize` names a public static method, never a closure.** Discovery items reach the cache through `var_export()`, so a closure works in development and fails only where caching is on. Static because `Timber\Post` has a protected constructor: there is no instance to call.
 - **`array` and `object` types need an explicit `schema`.** WordPress cannot describe their contents, and says so only under `WP_DEBUG`; Føhn refuses the declaration instead.
 
+### Editing the values
+
+`#[AsPostMeta]` registers the key. It adds no field, meta box or form to the admin. WordPress puts `meta` in a post type's REST response only when the type supports `custom-fields`, so add `'custom-fields'` to `supports` for the block editor to read and save the key. With that support:
+
+- the Custom Fields panel (Preferences > General > Advanced) lists the keys that do not start with `_`, as text;
+- a block bound to the key through `core/post-meta` shows the value in the editor and saves an edit to the meta.
+
+Without it, a bound block still prints the value on the front end. For a real form (date picker, select, repeater), use an ACF field group on the same key. `wp post meta update <id> <key> <value>` writes a value from the command line; the `sanitize` method runs there too.
+
 Declaring a key that ACF also manages is fine, and is the migration path: ACF keeps the editing UI, the declaration adds the REST schema. See [#[AsPostMeta]](/api/as-post-meta) for every parameter.
 
 ## Using in Templates
