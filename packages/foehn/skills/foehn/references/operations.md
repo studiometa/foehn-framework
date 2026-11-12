@@ -8,14 +8,14 @@ Docs: [Configuration](https://studiometa.github.io/foehn-framework/guide/configu
 
 Each `theme/app/<name>.config.php` returns one object. Føhn registers it in the container under its class and its interfaces.
 
-| File                       | Class (`Studiometa\Foehn\Config\…`) | Main arguments                                                                                                                                                                                                     |
-| -------------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `foehn.config.php`         | `FoehnConfig`                       | `discoveryCacheStrategy` (`DiscoveryCacheStrategy::NONE`), `discoveryCachePath`, `hooks` (`[]`), `imageTransformer` (`null`), `debug` (`false`), `recordErrors` (`null` = `local` and `development` only)          |
-| `page-cache.config.php`    | `PageCacheConfig`                   | `enabled` (`false`), `ttl`, `environments` (`['production']`), `cacheQueryArgs`, `excludedPaths`, `excludeWhenBodyContains`, `ignoredQueryArgs`, `bypassCookies`, `cacheNotFound`, `browserMaxAge`, `debugHeaders` |
-| `db-export.config.php`     | `DatabaseExportConfig`              | `window` (`'-2 months'`), `safeTables`, `structureOnlyTables`, `columns` (table => column => `Anonymizer`), `allowedEmailDomains`                                                                                  |
-| `query-filters.config.php` | `QueryFiltersConfig`                | `taxonomies`, `publicVars`                                                                                                                                                                                         |
-| `rest.config.php`          | `RestConfig`                        | `defaultCapability` (`'edit_posts'`; `null` = any logged-in user)                                                                                                                                                  |
-| `timber.config.php`        | `TimberConfig`                      | `templatesDir` (`['templates']`)                                                                                                                                                                                   |
+| File                       | Class (`Studiometa\Foehn\Config\…`) | Main arguments                                                                                                                                                                                                             |
+| -------------------------- | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `foehn.config.php`         | `FoehnConfig`                       | `discoveryCacheStrategy` (`DiscoveryCacheStrategy::NONE`), `discoveryCachePath`, `hooks` (`[]`), `imageTransformer` (`null`), `debug` (`false`), `recordErrors`, `traceRequests` (`null` = `local` and `development` only) |
+| `page-cache.config.php`    | `PageCacheConfig`                   | `enabled` (`false`), `ttl`, `environments` (`['production']`), `cacheQueryArgs`, `excludedPaths`, `excludeWhenBodyContains`, `ignoredQueryArgs`, `bypassCookies`, `cacheNotFound`, `browserMaxAge`, `debugHeaders`         |
+| `db-export.config.php`     | `DatabaseExportConfig`              | `window` (`'-2 months'`), `safeTables`, `structureOnlyTables`, `columns` (table => column => `Anonymizer`), `allowedEmailDomains`                                                                                          |
+| `query-filters.config.php` | `QueryFiltersConfig`                | `taxonomies`, `publicVars`                                                                                                                                                                                                 |
+| `rest.config.php`          | `RestConfig`                        | `defaultCapability` (`'edit_posts'`; `null` = any logged-in user)                                                                                                                                                          |
+| `timber.config.php`        | `TimberConfig`                      | `templatesDir` (`['templates']`)                                                                                                                                                                                           |
 
 The file name is free, but follow these names. `DiscoveryCacheStrategy` is `Tempest\Discovery\DiscoveryCacheStrategy` (`FULL`, `PARTIAL`, `NONE`).
 
@@ -98,12 +98,22 @@ Docs: [Problems and errors](https://studiometa.github.io/foehn-framework/guide/t
 
 Docs: [The error log](https://studiometa.github.io/foehn-framework/guide/troubleshooting.md#the-error-log).
 
-- `wp foehn errors` prints the last entry in a few lines (messages cut at 300 characters, 5 stack lines). `--limit=<n>` (newest first), `--level=exception,fatal,warning,notice`, `--since=<date>` (`-10 minutes`), `--format=json` (every field, one line), `--clear`.
+- `wp foehn errors` prints the last entry in a few lines (messages cut at 300 characters, 5 stack lines). `--limit=<n>` (newest first), `--level=exception,fatal,warning,notice`, `--since=<date>` (`-10 minutes`), `--request=<id>` (the entries of one traced request), `--format=json` (every field, one line), `--clear`.
 - Recorded: uncaught exceptions, fatal errors, and the warnings and notices of the theme's own code (PHP files of the theme directory outside `vendor/` and `node_modules/`, and its Twig templates). Not recorded: warnings of WordPress, plugins and packages, warnings that `error_reporting()` leaves out (`@`, notices when `WP_DEBUG` is off), deprecations, caught exceptions, errors raised before the theme boots Føhn. Each error once per request, at most 20 per request.
-- Fields: `time`, `level`, `class`, `message`, `file`, `line`, `twig` (`template:line`), `previous`, `stack` (theme frames, then `+N other frames`), `method`, `url` (or `CLI` and the WP-CLI command), `template` (the WordPress template Føhn matched), `controller`, `view`, `context` (keys), `requestId` (`null` for now).
+- Fields: `time`, `level`, `class`, `message`, `file`, `line`, `twig` (`template:line`), `previous`, `stack` (theme frames, then `+N other frames`), `method`, `url` (or `CLI` and the WP-CLI command), `template` (the WordPress template Føhn matched), `controller`, `view`, `context` (keys), `requestId` (the id of the traced request, from its `X-Foehn-Trace` header, or `null`).
 - On by default in the `local` and `development` environments. `FoehnConfig(recordErrors: true)` turns it on elsewhere, `false` turns it off.
 - File: `wp-content/cache/foehn/errors/errors.jsonl`, rotated at 256 KB, 3 files at most.
 - PHP and WordPress handle the error as before: each handler gives the error to the one before it, an uncaught exception is thrown again so PHP ends the request with its fatal error, and `WP_Fatal_Error_Handler` still shows its page.
+
+## Request trace
+
+Docs: [Request Trace](https://studiometa.github.io/foehn-framework/guide/request-trace.md).
+
+- `wp foehn trace <path>` (`/about/`, or a URL of the site) requests the page with `wp_remote_get()` as an anonymous visitor (no cookies, no redirects followed, certificate not checked), reads the id in its `X-Foehn-Trace` header and prints the stored trace. `last` (the default) is the last traced request, `<id>` one trace, `list` the last requests one per line (`--limit=<n>`, 10 by default). `--format=json` prints every field and the full error entries of the request; `--clear` deletes the traces.
+- A trace holds: `id`, `time`, `method`, `url`, `status`, `location` (a redirect), `durationMs`, `queries`, `hierarchy` (template files WordPress tried), `templateFile` (the file it found), `template` and `controller`, `views` (each with `count`, `keys`, `candidates` from `renderFirst()`, `providers` in the order they ran) and `blocks` (name and count). Lists keep 30 items; the text cuts them after 10.
+- Traced: the requests that reach WordPress's `send_headers` action (front-end pages, feeds, redirects, 404s). Not traced: admin, `admin-ajax.php`, WP-Cron, REST, WP-CLI, `/favicon.ico`, `/robots.txt`, static files and pages the page cache serves. Errors raised after `send_headers` carry the id as `requestId`.
+- On by default in the `local` and `development` environments. `FoehnConfig(traceRequests: true)` turns it on elsewhere, `false` turns it off.
+- Store: `wp-content/cache/foehn/traces`, one JSON file per request, the last 100 kept. The page cache does not store the `X-Foehn-Trace` header.
 
 ## Discovery cache
 

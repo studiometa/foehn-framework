@@ -42,7 +42,7 @@ function testTemplateControllerDiscovery(
     ?\Studiometa\Foehn\Views\Sections\SectionCollector $collector = null,
     ?\Studiometa\Foehn\Config\PageCacheConfig $pageCacheConfig = null,
     ?\Studiometa\Foehn\Discovery\DiscoveryProblems $problems = null,
-    ?\Studiometa\Foehn\Errors\RequestContext $requestContext = null,
+    ?\Studiometa\Foehn\Trace\RequestTrace $requestTrace = null,
 ): \Studiometa\Foehn\Discovery\TemplateControllerDiscovery {
     $request ??= new \Studiometa\Foehn\Views\Sections\SectionRequest('GET', '/');
 
@@ -51,7 +51,7 @@ function testTemplateControllerDiscovery(
         $collector ?? new \Studiometa\Foehn\Views\Sections\SectionCollector(),
         testSectionResponse($request, $pageCacheConfig),
         $problems ?? new \Studiometa\Foehn\Discovery\DiscoveryProblems(),
-        $requestContext ?? new \Studiometa\Foehn\Errors\RequestContext(),
+        $requestTrace ?? new \Studiometa\Foehn\Trace\RequestTrace(),
     );
 }
 

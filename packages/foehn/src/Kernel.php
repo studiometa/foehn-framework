@@ -31,7 +31,6 @@ use Studiometa\Foehn\Discovery\DiscoveryRunner;
 use Studiometa\Foehn\Errors\EntryBuilder;
 use Studiometa\Foehn\Errors\ErrorLog;
 use Studiometa\Foehn\Errors\ErrorRecorder;
-use Studiometa\Foehn\Errors\RequestContext;
 use Studiometa\Foehn\Errors\SourcePaths;
 use Studiometa\Foehn\Images\NullTransformer;
 use Studiometa\Foehn\Indexing\IndexingProtection;
@@ -43,6 +42,9 @@ use Studiometa\Foehn\PageCache\Invalidator;
 use Studiometa\Foehn\PageCache\Purger;
 use Studiometa\Foehn\PageCache\Recorder;
 use Studiometa\Foehn\PageCache\Store;
+use Studiometa\Foehn\Trace\RequestTrace;
+use Studiometa\Foehn\Trace\RequestTracer;
+use Studiometa\Foehn\Trace\TraceStore;
 use Studiometa\Foehn\Verification\Updates\DiagnosticsCollector;
 use Studiometa\Foehn\Views\ContextProviderRegistry;
 use Studiometa\Foehn\Views\Sections\SectionCollector;
@@ -201,6 +203,9 @@ final class Kernel
         // Same reason: an error in Timber or in a lifecycle hook belongs in the error log
         $this->startErrorRecorder();
 
+        // Before discovery registers the controllers and blocks the trace reports
+        $this->startRequestTracer();
+
         // Initialize Timber
         $this->initializeTimber();
 
@@ -341,9 +346,11 @@ final class Kernel
         $this->container->singleton(ErrorLog::class, static fn() => ErrorLog::inContentDirectory());
 
         // The theme's own code is the directory that holds the app directory.
+        $this->container->singleton(SourcePaths::class, fn() => new SourcePaths(dirname($this->appPath)));
+
         $this->container->singleton(ErrorRecorder::class, function (): ErrorRecorder {
-            $paths = new SourcePaths(dirname($this->appPath));
-            $request = $this->container->get(RequestContext::class);
+            $paths = $this->container->get(SourcePaths::class);
+            $request = $this->container->get(RequestTrace::class);
 
             return new ErrorRecorder(
                 $this->container->get(ErrorLog::class),
@@ -352,6 +359,18 @@ final class Kernel
                 $request,
             );
         });
+
+        // Registered whether or not requests are traced, for the same reason as the log.
+        $this->container->singleton(TraceStore::class, static fn() => TraceStore::inContentDirectory());
+
+        $this->container->singleton(
+            RequestTracer::class,
+            fn(): RequestTracer => new RequestTracer(
+                $this->container->get(RequestTrace::class),
+                $this->container->get(TraceStore::class),
+                $this->container->get(SourcePaths::class),
+            ),
+        );
 
         $this->container->singleton(JobRegistry::class, static fn() => new JobRegistry());
 
@@ -364,7 +383,10 @@ final class Kernel
 
         $this->container->singleton(
             ViewEngineInterface::class,
-            fn() => new TimberViewEngine($this->container->get(ContextProviderRegistry::class)),
+            fn() => new TimberViewEngine(
+                $this->container->get(ContextProviderRegistry::class),
+                $this->container->get(RequestTrace::class),
+            ),
         );
 
         // SectionRequest and SectionCollector are request-scoped by the PHP process.
@@ -457,6 +479,19 @@ final class Kernel
         }
 
         $this->container->get(ErrorRecorder::class)->start();
+    }
+
+    /**
+     * Trace front-end requests for `wp foehn trace`, when the config asks for it: by
+     * default in the `local` and `development` environments only.
+     */
+    private function startRequestTracer(): void
+    {
+        if (!$this->foehnConfig->tracesRequests()) {
+            return;
+        }
+
+        $this->container->get(RequestTracer::class)->start();
     }
 
     /**

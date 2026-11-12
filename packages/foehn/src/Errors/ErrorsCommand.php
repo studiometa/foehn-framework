@@ -12,6 +12,7 @@ use Studiometa\Foehn\Config\FoehnConfig;
 use Studiometa\Foehn\Console\CliCommandInterface;
 use Studiometa\Foehn\Console\WpCli;
 use Studiometa\Foehn\Helpers\Env;
+use Studiometa\Foehn\Trace\TraceStore;
 
 #[AsCliCommand(
     name: 'errors',
@@ -44,6 +45,10 @@ use Studiometa\Foehn\Helpers\Env;
         [--since=<date>]
         : Only entries recorded at or after this date. A date or a relative date
           such as `-10 minutes`.
+
+        [--request=<id>]
+        : Only the entries of one traced request: the id in its X-Foehn-Trace
+          header, as `wp foehn trace` prints it.
 
         [--format=<format>]
         : Output format. text (default) or json.
@@ -91,6 +96,7 @@ final readonly class ErrorsCommand implements CliCommandInterface
         $limit = $assocArgs['limit'] ?? '1';
         $levels = $assocArgs['level'] ?? null;
         $since = $assocArgs['since'] ?? null;
+        $request = $assocArgs['request'] ?? null;
 
         if (!is_string($format) || !in_array($format, self::FORMATS, true)) {
             $this->cli->error('Unknown format. Use text or json.');
@@ -100,6 +106,12 @@ final readonly class ErrorsCommand implements CliCommandInterface
 
         if (!is_string($limit) || !ctype_digit($limit) || (int) $limit < 1) {
             $this->cli->error('--limit must be a number of 1 or more.');
+
+            return;
+        }
+
+        if ($request !== null && (!is_string($request) || preg_match(TraceStore::ID_PATTERN, $request) !== 1)) {
+            $this->cli->error('--request must be the id of a traced request: 6 characters such as 3fa2c1.');
 
             return;
         }
@@ -136,6 +148,7 @@ final readonly class ErrorsCommand implements CliCommandInterface
             static fn(array $entry): bool => (
                 ($levels === [] || in_array($entry['level'] ?? null, $levels, true))
                 && ($from === null || is_string($entry['time'] ?? null) && $entry['time'] >= $from)
+                && ($request === null || ($entry['requestId'] ?? null) === $request)
             ),
         ));
         $shown = array_slice($entries, 0, (int) $limit);

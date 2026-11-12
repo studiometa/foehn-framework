@@ -177,4 +177,34 @@ describe('FoehnConfig', function () {
             expect(FoehnConfig::fromArray([])->recordErrors)->toBeNull();
         });
     });
+
+    describe('tracesRequests', function () {
+        afterEach(fn() => wp_stub_reset());
+
+        it('traces requests in the local and development environments by default', function (
+            string $environment,
+            bool $traces,
+        ) {
+            $GLOBALS['wp_stub_environment_type'] = $environment;
+
+            expect(new FoehnConfig()->tracesRequests())->toBe($traces);
+        })->with([
+            'local' => ['local', true],
+            'development' => ['development', true],
+            'staging' => ['staging', false],
+            'production' => ['production', false],
+        ]);
+
+        it('follows traceRequests when a project sets it', function () {
+            $GLOBALS['wp_stub_environment_type'] = 'local';
+
+            expect(new FoehnConfig(traceRequests: false)->tracesRequests())->toBeFalse();
+
+            $GLOBALS['wp_stub_environment_type'] = 'production';
+
+            expect(new FoehnConfig(traceRequests: true)->tracesRequests())->toBeTrue();
+            expect(FoehnConfig::fromArray(['trace_requests' => true])->traceRequests)->toBeTrue();
+            expect(FoehnConfig::fromArray([])->traceRequests)->toBeNull();
+        });
+    });
 });

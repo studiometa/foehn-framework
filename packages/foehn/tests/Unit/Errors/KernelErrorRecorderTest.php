@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use Studiometa\Foehn\Errors\ErrorRecorder;
 use Studiometa\Foehn\Errors\ErrorsCommand;
-use Studiometa\Foehn\Errors\RequestContext;
 use Studiometa\Foehn\Kernel;
+use Studiometa\Foehn\Trace\RequestTrace;
 
 /**
  * When the kernel starts the error recorder, and when it leaves it alone.
@@ -16,6 +16,8 @@ describe('Kernel: the error recorder', function () {
         Kernel::get(ErrorRecorder::class)->stop();
         Kernel::reset();
         wp_stub_reset();
+        // wp_stub_reset() keeps the environment: a later test would boot in `local`.
+        unset($GLOBALS['wp_stub_environment_type']);
     });
 
     it('does not start it in production', function () {
@@ -42,6 +44,6 @@ describe('Kernel: the error recorder', function () {
         Kernel::boot(dirname(__DIR__, 3) . '/src', []);
 
         expect(Kernel::get(ErrorsCommand::class))->toBeInstanceOf(ErrorsCommand::class);
-        expect(Kernel::get(RequestContext::class))->toBe(Kernel::get(RequestContext::class));
+        expect(Kernel::get(RequestTrace::class))->toBe(Kernel::get(RequestTrace::class));
     });
 });

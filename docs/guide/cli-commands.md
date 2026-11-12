@@ -403,6 +403,22 @@ wp foehn errors --clear
 
 Prints the last errors the site recorded in the `local` and `development` environments: uncaught exceptions, fatal errors, and the warnings and notices of the theme's own code. Each entry gives the file and line, the Twig template and line, a short stack, the URL, the WordPress template, the controller, the view and its context keys. See [The error log](/guide/troubleshooting#the-error-log).
 
+### Request Trace
+
+```bash
+# Request a page and print what ran
+wp foehn trace /about/
+
+# The last request a browser made, or one by the id of its X-Foehn-Trace header
+wp foehn trace last
+wp foehn trace 3fa2c1 --format=json
+
+# The last requests, one per line
+wp foehn trace list --limit=20
+```
+
+Prints what a front-end request ran, in the `local` and `development` environments: its status, time and query count, the template files WordPress tried and the one it found, the controller, each Twig view with its context providers and keys, the blocks, and the errors of the request. See [Request Trace](/guide/request-trace).
+
 ### Security Keys
 
 WordPress signs authentication cookies and nonces with eight keys. They live in the environment, so a project keeps them wherever it keeps its other secrets. `composer install` fills them into `.env` on a first install, and the generated `wp-config.php` refuses to serve a production request without them.

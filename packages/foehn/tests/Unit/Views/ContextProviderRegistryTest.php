@@ -18,13 +18,7 @@ class RegistrySiteStub extends Site
 
 function createTestContext(array $extra = []): TemplateContext
 {
-    return new TemplateContext(
-        post: null,
-        posts: null,
-        site: new RegistrySiteStub(),
-        user: null,
-        extra: $extra,
-    );
+    return new TemplateContext(post: null, posts: null, site: new RegistrySiteStub(), user: null, extra: $extra);
 }
 
 describe('ContextProviderRegistry', function () {
@@ -208,6 +202,28 @@ describe('ContextProviderRegistry', function () {
         $registry->register(['single-*', 'archive-*'], $provider);
 
         expect($registry->count())->toBe(2);
+    });
+
+    it('lists the providers of a template in the order provide() runs them', function () {
+        $registry = new ContextProviderRegistry();
+        $late = new class implements ContextProviderInterface {
+            public function provide(TemplateContext $context): TemplateContext
+            {
+                return $context;
+            }
+        };
+        $early = new class implements ContextProviderInterface {
+            public function provide(TemplateContext $context): TemplateContext
+            {
+                return $context;
+            }
+        };
+
+        $registry->register(['single-*'], $late, 20);
+        $registry->register(['single-post'], $early, 5);
+
+        expect($registry->providersFor('single-post'))->toBe([$early, $late]);
+        expect($registry->providersFor('page'))->toBe([]);
     });
 
     it('returns unmodified context when no providers match', function () {

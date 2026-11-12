@@ -33,6 +33,8 @@ it('drops the headers the cache computes for itself', function (string $header) 
     ['Vary: User-Agent'],
     ['Set-Cookie: a=b'],
     ['X-Foehn-Cache: HIT'],
+    // The id of the request that stored the page: `wp foehn trace` would show a trace of another request.
+    ['X-Foehn-Trace: a1b2c3'],
 ]);
 
 it('keeps the headers a page set for itself', function (string $header) {
@@ -53,7 +55,7 @@ it('refuses a header that is not one', function (string $line) {
     'no colon' => ['not a header'],
     'a smuggled second header' => ["X-One: a\r\nX-Two: b"],
     'a bare newline' => ["X-One: a\nX-Two: b"],
-    'an empty line' => ['']
+    'an empty line' => [''],
 ]);
 
 it('round-trips through the stored form', function () {
@@ -64,6 +66,7 @@ it('round-trips through the stored form', function () {
 
 it('re-filters on the way out, not only on the way in', function () {
     // A file somebody edited, or one written by an older version with a wider list.
-    expect(StoredHeaders::decode("Set-Cookie: session=stolen\nX-Robots-Tag: noindex\n"))
-        ->toBe(['X-Robots-Tag: noindex']);
+    expect(StoredHeaders::decode("Set-Cookie: session=stolen\nX-Robots-Tag: noindex\n"))->toBe([
+        'X-Robots-Tag: noindex',
+    ]);
 });

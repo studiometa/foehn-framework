@@ -146,7 +146,21 @@ describe('wp foehn errors', function () {
         ]);
     });
 
-    it('refuses an unknown level, format, limit or date', function (array $options, string $message) {
+    it('filters by the id of a traced request', function () {
+        $this->log->append(errorEntry(['message' => 'Other request', 'requestId' => 'bbbbbb']));
+        $this->log->append(errorEntry(['message' => 'Traced request', 'requestId' => 'aaaaaa']));
+        $this->log->append(errorEntry(['message' => 'Not traced']));
+
+        ($this->command)([], ['format' => 'json', 'limit' => '10', 'request' => 'aaaaaa']);
+
+        $lines = array_column(array_column(wp_stub_get_calls('wp_cli_line'), 'args'), 'message');
+
+        expect(array_column(json_decode($lines[0], true, flags: JSON_THROW_ON_ERROR), 'message'))->toBe([
+            'Traced request',
+        ]);
+    });
+
+    it('refuses an unknown level, format, limit, date or request id', function (array $options, string $message) {
         ($this->command)([], $options);
 
         expect(wp_stub_get_calls('wp_cli_error')[0]['args']['message'])->toBe($message);
@@ -155,6 +169,10 @@ describe('wp foehn errors', function () {
         'format' => [['format' => 'yaml'], 'Unknown format. Use text or json.'],
         'limit' => [['limit' => '0'], '--limit must be a number of 1 or more.'],
         'date' => [['since' => 'not a date'], "'not a date' is not a date."],
+        'request' => [
+            ['request' => 'about'],
+            '--request must be the id of a traced request: 6 characters such as 3fa2c1.',
+        ],
     ]);
 
     it('clears the log', function () {

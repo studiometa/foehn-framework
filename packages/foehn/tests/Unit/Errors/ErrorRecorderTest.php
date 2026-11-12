@@ -5,16 +5,16 @@ declare(strict_types=1);
 use Studiometa\Foehn\Errors\EntryBuilder;
 use Studiometa\Foehn\Errors\ErrorLog;
 use Studiometa\Foehn\Errors\ErrorRecorder;
-use Studiometa\Foehn\Errors\RequestContext;
 use Studiometa\Foehn\Errors\SourcePaths;
+use Studiometa\Foehn\Trace\RequestTrace;
 
 /**
  * A recorder whose own code is the test suite, writing to a temporary log.
  */
-function testErrorRecorder(string $directory, string $root = ''): ErrorRecorder
+function testErrorRecorder(string $directory, string $root = '', ?RequestTrace $request = null): ErrorRecorder
 {
     $paths = new SourcePaths($root === '' ? dirname(__DIR__, 2) : $root);
-    $request = new RequestContext();
+    $request ??= new RequestTrace();
 
     return new ErrorRecorder(new ErrorLog($directory), new EntryBuilder($paths, $request), $paths, $request);
 }
@@ -196,17 +196,18 @@ describe('ErrorRecorder', function () {
         expect($this->log->entries())->toBe([]);
     });
 
-    it('remembers the view Timber renders and its context keys, and leaves the data unchanged', function () {
-        expect($this->recorder->onRenderData(['post' => 1, 'site' => 2], 'pages/page.twig'))->toBe([
-            'post' => 1,
-            'site' => 2,
-        ]);
+    it('writes the view Timber rendered last, its context keys and the id of a traced request', function () {
+        $request = new RequestTrace();
+        $recorder = testErrorRecorder($this->directory, request: $request);
+        $request->begin('a1b2c3');
+        $request->onRenderData(['post' => 1, 'site' => 2], 'pages/page.twig');
 
-        $this->recorder->handleError(E_WARNING, 'In a view', __FILE__, __LINE__);
+        $recorder->handleError(E_WARNING, 'In a view', __FILE__, __LINE__);
         $entry = $this->log->entries()[0];
 
         expect($entry['view'])->toBe('pages/page.twig');
         expect($entry['context'])->toBe(['post', 'site']);
+        expect($entry['requestId'])->toBe('a1b2c3');
     });
 
     it('starts once, and listens to the views Timber renders', function () {
