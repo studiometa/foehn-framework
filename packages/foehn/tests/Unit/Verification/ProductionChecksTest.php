@@ -417,12 +417,27 @@ describe('page cache storage', function () {
         expect(onlyResult(new PageCacheCheck($config, new Store($config)))->status)->toBe(VerificationStatus::Pass);
     });
 
-    it('passes an active cache in the bucket without checking a directory', function () {
+    it('fails an active cache in the bucket when no bucket is defined', function () {
+        // The suite defines no S3_UPLOADS_BUCKET: nothing would be stored.
         $config = new PageCacheConfig(enabled: true, path: '/nonexistent', storage: PageCacheStorage::Bucket);
         $result = onlyResult(new PageCacheCheck($config, BucketStore::forUploads($config)));
 
-        expect($result->status)->toBe(VerificationStatus::Pass);
+        expect($result->status)->toBe(VerificationStatus::Fail);
         expect($result->details['storage'])->toBe('bucket');
+        expect($result->details['bucket_defined'])->toBeFalse();
+    });
+
+    it('passes an active cache in the bucket without checking a directory', function () {
+        $config = new PageCacheConfig(enabled: true, path: '/nonexistent', storage: PageCacheStorage::Bucket);
+        $store = new BucketStore(
+            $config,
+            static fn() => throw new RuntimeException('not used'),
+            's3://media/cache/pages',
+        );
+        $result = onlyResult(new PageCacheCheck($config, $store));
+
+        expect($result->status)->toBe(VerificationStatus::Pass);
+        expect($result->details['bucket_defined'])->toBeTrue();
     });
 
     it('puts no filesystem path in the report', function () {

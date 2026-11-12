@@ -42,11 +42,13 @@ final class BucketStore implements PageStore
 
     /**
      * @param Closure(): FilesystemOperator $factory
+     * @param bool $configured Whether the site names a bucket. Without one, every write fails.
      */
     public function __construct(
         private readonly PageCacheConfig $config,
         private readonly Closure $factory,
         private readonly string $location,
+        private readonly bool $configured = true,
     ) {}
 
     /**
@@ -70,7 +72,16 @@ final class BucketStore implements PageStore
                 return new Filesystem(new AwsS3V3Adapter(UploadsBucket::client(), $bucket, self::PREFIX));
             },
             sprintf('s3://%s/%s', $bucket ?? '(S3_UPLOADS_BUCKET is not defined)', self::PREFIX),
+            $bucket !== null,
         );
+    }
+
+    /**
+     * Whether the site names a bucket to store the pages in.
+     */
+    public function isConfigured(): bool
+    {
+        return $this->configured;
     }
 
     public function root(): string
