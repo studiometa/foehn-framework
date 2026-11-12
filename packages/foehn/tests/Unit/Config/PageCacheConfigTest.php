@@ -114,6 +114,27 @@ describe('PageCacheConfig', function () {
         expect(new PageCacheConfig(debugHeaders: false)->wantsDebugHeaders())->toBeFalse();
     });
 
+    it('warms nothing after a purge until a project opts in', function () {
+        $config = new PageCacheConfig();
+
+        expect($config->warmAfterPurge)->toBeFalse();
+        expect($config->warmSitemap)->toBeNull();
+        expect($config->warmExclude)->toBe([]);
+    });
+
+    it('matches a warmExclude pattern anywhere in the full URL', function () {
+        $config = new PageCacheConfig(warmExclude: ['/test-form/', '^https://example\.com/shop/(.*)/print/$']);
+
+        expect($config->excludesFromWarmup('https://example.com/test-form/'))->toBeTrue();
+        expect($config->excludesFromWarmup('https://example.com/en/test-form/thanks/'))->toBeTrue();
+        expect($config->excludesFromWarmup('https://example.com/shop/a-chair/print/'))->toBeTrue();
+        expect($config->excludesFromWarmup('https://example.com/shop/a-chair/'))->toBeFalse();
+    });
+
+    it('drops a warmExclude pattern that cannot compile, without a warning', function () {
+        expect(new PageCacheConfig(warmExclude: ['(', '#'])->excludesFromWarmup('https://example.com/(#'))->toBeFalse();
+    });
+
     it('keeps 404s out of the cache until a project opts in', function () {
         expect(new PageCacheConfig()->cacheNotFound)->toBeFalse();
     });

@@ -169,7 +169,71 @@ final readonly class PageCacheConfig
 
         /** Emit X-Foehn-Cache headers. Defaults to WP_DEBUG. */
         public ?bool $debugHeaders = null,
+
+        /**
+         * Warm the pages a purge removed, through Action Scheduler.
+         *
+         * After a content change, each purged URL gets a `WarmUrl` job. After a full
+         * flush, one job warms every sitemap URL instead.
+         */
+        public bool $warmAfterPurge = false,
+
+        /**
+         * The sitemap or sitemap index to warm from, as a full URL.
+         *
+         * `null` reads the core WordPress sitemap. Set it when a plugin replaces that
+         * sitemap, for example `https://example.com/sitemap_index.xml`.
+         */
+        public ?string $warmSitemap = null,
+
+        /**
+         * URLs never warmed: regular expressions without delimiters, matched anywhere in
+         * the full URL. `'/test-form/'` excludes every URL that contains that path.
+         *
+         * @var list<string>
+         */
+        public array $warmExclude = [],
     ) {}
+
+    /**
+     * Whether a cache key path is under one of the `excludedPaths` prefixes.
+     *
+     * A prefix matches whole segments: `/contact/` excludes `/contact` and
+     * `/contact/thanks/`, not `/contacts/`.
+     */
+    public function excludesPath(string $path): bool
+    {
+        foreach ($this->excludedPaths as $prefix) {
+            $normalized = '/' . trim($prefix, '/');
+
+            if ($normalized === '/' || str_starts_with(rtrim($path, '/') . '/', $normalized . '/')) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether a URL matches one of the `warmExclude` patterns.
+     *
+     * A pattern that does not compile, or that holds the `#` delimiter, matches
+     * nothing, like an unusable keyed query arg.
+     */
+    public function excludesFromWarmup(string $url): bool
+    {
+        foreach ($this->warmExclude as $pattern) {
+            if (str_contains($pattern, '#') || !self::patternCompiles($pattern)) {
+                continue;
+            }
+
+            if (preg_match('#' . $pattern . '#', $url) === 1) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     /**
      * The name a keyed arg gets when a webserver holds it in a variable: `a-b` becomes `a_b`.

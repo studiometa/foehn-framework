@@ -24,9 +24,11 @@ use Studiometa\Foehn\PageCache\WarmUrl;
 
     ## DESCRIPTION
 
-    Walks WordPress's own sitemap and requests each URL cookie-free with an
-    `X-Foehn-Warm: 1` header, so the first visitor after a deploy is not the one who pays
-    for the render.
+    Walks the sitemap and requests each URL cookie-free with an `X-Foehn-Warm: 1`
+    header, so the first visitor after a deploy is not the one who pays for the render.
+
+    The sitemap is WordPress's own, or the one `PageCacheConfig::$warmSitemap` names. URLs
+    that match `warmExclude`, and URLs the cache would never store, are skipped.
 
     The sitemap is the list the site already publishes for crawlers, which makes it the
     right list to warm: there is no second notion of "important pages" to keep in step
@@ -84,7 +86,9 @@ final class PageCacheWarmCommand implements CliCommandInterface
         }
 
         if ($urls === []) {
-            $this->cli->warning('The sitemap listed no URLs. Are sitemaps disabled?');
+            $this->cli->warning(
+                'The sitemap listed no URLs to warm. Are sitemaps disabled, or does warmExclude match them all?',
+            );
 
             return;
         }

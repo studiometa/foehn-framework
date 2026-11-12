@@ -43,6 +43,7 @@ use Studiometa\Foehn\PageCache\Invalidator;
 use Studiometa\Foehn\PageCache\Purger;
 use Studiometa\Foehn\PageCache\Recorder;
 use Studiometa\Foehn\PageCache\Store;
+use Studiometa\Foehn\PageCache\Warmer;
 use Studiometa\Foehn\Trace\RequestTrace;
 use Studiometa\Foehn\Trace\RequestTracer;
 use Studiometa\Foehn\Trace\TraceStore;
@@ -448,6 +449,8 @@ final class Kernel
             fn() => new Purger(
                 $this->container->get(PageCacheConfig::class),
                 $this->container->get(Invalidator::class),
+                $this->container->get(Warmer::class),
+                $this->container->get(JobDispatcher::class),
             ),
         );
     }

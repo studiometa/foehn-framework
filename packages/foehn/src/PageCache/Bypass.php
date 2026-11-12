@@ -160,15 +160,7 @@ final readonly class Bypass
             return BypassReason::Maintenance;
         }
 
-        foreach ($this->config->excludedPaths as $prefix) {
-            $normalized = '/' . trim($prefix, '/');
-
-            if ($normalized === '/' || str_starts_with(rtrim($key->path, '/') . '/', $normalized . '/')) {
-                return BypassReason::ExcludedPath;
-            }
-        }
-
-        return null;
+        return $this->config->excludesPath($key->path) ? BypassReason::ExcludedPath : null;
     }
 
     /**

@@ -583,6 +583,54 @@ function pageCacheBypass(?\Studiometa\Foehn\Config\PageCacheConfig $config = nul
 }
 
 /**
+ * The warmer, on the given config, with the eligibility rules of that config.
+ */
+function pageCacheWarmer(\Studiometa\Foehn\Config\PageCacheConfig $config): \Studiometa\Foehn\PageCache\Warmer
+{
+    return new \Studiometa\Foehn\PageCache\Warmer($config, new \Studiometa\Foehn\PageCache\Bypass($config));
+}
+
+/**
+ * A job dispatcher that keeps what it was given in `$jobs`, instead of scheduling it.
+ */
+function pageCacheJobs(bool $available = true): \Studiometa\Foehn\Contracts\JobDispatcher
+{
+    return new class($available) implements \Studiometa\Foehn\Contracts\JobDispatcher {
+        /** @var list<object> */
+        public array $jobs = [];
+
+        public function __construct(
+            private readonly bool $available,
+        ) {}
+
+        public function dispatch(object $job, ?int $delay = null): void
+        {
+            $this->jobs[] = $job;
+        }
+
+        public function isAvailable(): bool
+        {
+            return $this->available;
+        }
+    };
+}
+
+/**
+ * A purger on the given config, which queues its warm-up jobs in `$jobs`.
+ */
+function pageCachePurger(
+    \Studiometa\Foehn\Config\PageCacheConfig $config,
+    ?\Studiometa\Foehn\Contracts\JobDispatcher $jobs = null,
+): \Studiometa\Foehn\PageCache\Purger {
+    return new \Studiometa\Foehn\PageCache\Purger(
+        $config,
+        new \Studiometa\Foehn\PageCache\Invalidator($config, new \Studiometa\Foehn\PageCache\Store($config)),
+        pageCacheWarmer($config),
+        $jobs ?? pageCacheJobs(),
+    );
+}
+
+/**
  * A response body long enough and complete enough to be storable.
  */
 function pageCacheBody(string $extra = ''): string
