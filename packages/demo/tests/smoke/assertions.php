@@ -401,6 +401,16 @@ $results->true('the settings form renders from its Twig template', str_contains(
     'hello@example.com',
 ));
 
+// Timber's autoescape is off, so the template escapes each value itself. A quote in
+// the banner text that reached the attribute raw would end it, and the next save
+// would store the text cut at the quote.
+$results->true('the settings form escapes a quote in a text value', str_contains(
+    Kernel::get(ViewEngineInterface::class)->render('settings/theme-settings', [
+        'settings' => ['demo_banner_text' => 'A "demo" site'],
+    ]),
+    'value="A &quot;demo&quot; site"',
+));
+
 // ──────────────────────────────────────────────
 // Block bindings
 // ──────────────────────────────────────────────

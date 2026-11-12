@@ -20,7 +20,7 @@
         id="demo_contact_email"
         name="demo_contact_email"
         class="regular-text"
-        value="{{ settings.demo_contact_email }}" />
+        value="{{ settings.demo_contact_email|esc_attr }}" />
     </td>
   </tr>
 
@@ -49,7 +49,7 @@
         id="demo_banner_text"
         name="demo_banner_text"
         class="large-text"
-        value="{{ settings.demo_banner_text }}" />
+        value="{{ settings.demo_banner_text|esc_attr }}" />
     </td>
   </tr>
 
