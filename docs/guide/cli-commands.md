@@ -164,27 +164,27 @@ wp foehn inspect --all --format=json
 
 With no section, `inspect` prints a summary: each section with the names of its rows (post type names, WordPress templates, Twig views, menu locations, command names…). It is short enough to read whole. It starts with `problems`; `wp foehn inspect problems` gives the reason and the fix of each one (see [Problems and Errors](/guide/troubleshooting)). Name one or more sections to print them in full, or pass `--all` for every section. `--all` cannot be combined with section names.
 
-| Section             | What it lists                                                                                                       |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `problems`          | What will not register: the classes discovery skipped and the type links that point at nothing, with the fix        |
-| `post-types`        | Post types: the Timber model class, the arguments of `#[AsPostType]`, the taxonomies and the `#[AsPostMeta]` fields |
-| `taxonomies`        | Taxonomies: the Timber model class, the arguments of `#[AsTaxonomy]`, the post types and the term meta fields       |
-| `settings`          | `#[AsSettingsPage]` pages and the options they store: option name, type, default and sanitizer                      |
-| `blocks`            | `#[AsBlock]` blocks: name, title, class, category, and each attribute with its type, default and allowed values     |
-| `patterns`          | `#[AsBlockPattern]` patterns: name, title, class and Twig template                                                  |
-| `bindings`          | `#[AsBlockBinding]` sources: name, label, class and the block context they use                                      |
-| `templates`         | Each WordPress template a controller claims: the controller that renders it, and its context keys                   |
-| `views`             | Each Twig file of the theme: the context providers its view name matches, and its context keys                      |
-| `context-providers` | Context providers, the view names they match, and the keys each one adds                                            |
-| `menus`             | Menu locations and the Twig variable of each one (`menus.<location>`)                                               |
-| `image-sizes`       | Image sizes, with the name WordPress registers them under                                                           |
-| `rewrite-rules`     | `#[AsRewriteRule]` rules: regex, query, query vars and class                                                        |
-| `rest-routes`       | `#[AsRestRoute]` routes: path, HTTP method, permission and handler method                                           |
-| `cli-commands`      | Every `wp foehn` command, the framework's own included                                                              |
-| `seeders`           | `#[AsSeeder]` seeders, in the order `wp foehn seed` runs them: class, order and description                         |
-| `plugins`           | Active, network-activated and must-use plugins, with their versions                                                 |
-| `theme-supports`    | Every `add_theme_support()` feature, with its arguments                                                             |
-| `vite`              | The entry points of the theme build (`dist/.vite/manifest.json`), and the dev server URL while `npm run dev` runs   |
+| Section             | What it lists                                                                                                            |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `problems`          | What will not register: the classes discovery skipped and the type links that point at nothing, with the fix             |
+| `post-types`        | Post types: the Timber model class, the arguments of `#[AsPostType]`, the taxonomies and the `#[AsPostMeta]` fields      |
+| `taxonomies`        | Taxonomies: the Timber model class, the arguments of `#[AsTaxonomy]`, the post types and the term meta fields            |
+| `settings`          | `#[AsSettingsPage]` pages and the options they store: option name, type, default and sanitizer                           |
+| `blocks`            | `#[AsBlock]` blocks: name, title, class, category, and each attribute with its type, default and allowed values          |
+| `patterns`          | `#[AsBlockPattern]` patterns: name, title, class and Twig template                                                       |
+| `bindings`          | `#[AsBlockBinding]` sources: name, label, class and the block context they use                                           |
+| `templates`         | Each WordPress template a controller claims: the controller that renders it, a URL to test it with, and its context keys |
+| `views`             | Each Twig file of the theme: the context providers its view name matches, and its context keys                           |
+| `context-providers` | Context providers, the view names they match, and the keys each one adds                                                 |
+| `menus`             | Menu locations and the Twig variable of each one (`menus.<location>`)                                                    |
+| `image-sizes`       | Image sizes, with the name WordPress registers them under                                                                |
+| `rewrite-rules`     | `#[AsRewriteRule]` rules: regex, query, query vars and class                                                             |
+| `rest-routes`       | `#[AsRestRoute]` routes: path, HTTP method, permission and handler method                                                |
+| `cli-commands`      | Every `wp foehn` command, the framework's own included                                                                   |
+| `seeders`           | `#[AsSeeder]` seeders, in the order `wp foehn seed` runs them: class, order and description                              |
+| `plugins`           | Active, network-activated and must-use plugins, with their versions                                                      |
+| `theme-supports`    | Every `add_theme_support()` feature, with its arguments                                                                  |
+| `vite`              | The entry points of the theme build (`dist/.vite/manifest.json`), and the dev server URL while `npm run dev` runs        |
 
 A post type or taxonomy that Føhn does not register, such as `post`, `category` or a plugin's post type, is listed when a `#[AsTimberModel]` maps it to a class or a `#[AsPostMeta]` names it as its subtype. Its `declared` field is then `false`, `model` is `null` when no Timber model maps it, and the arguments only the registering code knows are `null`. A `#[AsPostMeta]` field with no subtype applies to every post type or taxonomy, so it is listed on each of them.
 
@@ -279,6 +279,27 @@ Both sections give the Twig variables that can be known without rendering. What 
 | `views[].providers`        | The other providers whose pattern matches that view, in the order they run. With `everyView`, they run in `priority` order                                                                                                                                                                                                                                                                                                                                                                                  |
 
 The tables give the same data: `base` and the providers in `everyView` with their keys are printed once above the rows, and each row shows the keys of its controller or of its own providers.
+
+#### Test URLs
+
+Each row of `templates` gives `url`, a real URL of the site that renders that template, so you can check a controller after you change it. When no URL renders it, `url` is `null` and `noUrl` gives the reason. The table prints the reason in the `url` column.
+
+`inspect` reads one sample request of each kind from WordPress, and names it as Føhn names the request (`single-{type}-{slug}`, then `single-{type}`, then `single`):
+
+| Sample                                               | Template names                                                                  |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------- |
+| The home URL                                         | `front-page`                                                                    |
+| The posts page, when Settings > Reading sets one     | `home`                                                                          |
+| A search for `test`                                  | `search`                                                                        |
+| `/foehn-not-found/`                                  | `404`                                                                           |
+| The newest published post of each public post type   | `single-…`, or `page-…` for a page that is not the front page or the posts page |
+| The archive of each public post type that has one    | `archive-{type}`                                                                |
+| The author and the month of the newest post          | `author`, `date`                                                                |
+| The term with the most posts of each public taxonomy | `category-…`, `tag-…`, `taxonomy-…`                                             |
+
+A template gets the first sample that it renders, not only one that its name matches: when `single-*` and `single` are both claimed, `single-*` takes every post (it claims `single-post-hello-world`, which comes before `single`), so `single` gets no URL and `noUrl` says `Its sample URLs render 'single-*' instead.` A name that Føhn gives to no request, such as `tax-*` (taxonomy archives are named `taxonomy-…`), gets `Føhn gives no request a template name like this.`
+
+`wp foehn trace <url>` then shows what the request ran. Reading the samples makes a few database queries and writes nothing.
 
 Keys added elsewhere are not listed: a `timber/context` filter from a plugin, `ViewEngine::share()`, a helper class that a controller calls, and the keys a block's `compose()` returns. The controller's keys reach only the views it renders, and a Twig file included with `{% include %}` gets the context of the file that includes it.
 
