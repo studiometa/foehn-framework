@@ -30,7 +30,7 @@ use function Tempest\Support\str;
         : Comma-separated template patterns to match (defaults to name and name-*)
 
         [--force]
-        : Overwrite existing file
+        : Overwrite an existing file. Also lets the command run in the production environment
 
         [--dry-run]
         : Write nothing. Show the file that would be written, or report that it exists
@@ -52,6 +52,7 @@ use function Tempest\Support\str;
             # Preview what would be created
             wp foehn make:context-provider header --dry-run
         DOC,
+    writes: true,
 )]
 final class MakeContextProviderCommand implements CliCommandInterface
 {

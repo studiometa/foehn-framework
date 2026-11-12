@@ -33,7 +33,7 @@ use function Tempest\Support\str;
     : Custom size identifier (defaults to kebab-case of name)
 
     [--force]
-    : Overwrite existing file
+    : Overwrite an existing file. Also lets the command run in the production environment
 
     [--dry-run]
     : Write nothing. Show the file that would be written, or report that it exists
@@ -54,7 +54,7 @@ use function Tempest\Support\str;
 
         # Preview what would be created
         wp foehn make:image-size CardImage --width=400 --dry-run
-    DOC)]
+    DOC, writes: true)]
 final class MakeImageSizeCommand implements CliCommandInterface
 {
     public function __construct(

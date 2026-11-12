@@ -56,4 +56,50 @@ describe('CliCommandDiscovery', function () {
 
         expect($this->discovery->getItems())->not->toHaveCount(0);
     });
+
+    it('checks a command that writes against the environment before it runs it', function () {
+        // apply() registers only under WP-CLI, and defining WP_CLI here would turn it on
+        // for every test after this one: a separate process keeps it to this case.
+        $script = <<<'PHP'
+            require %s;
+            define('WP_CLI', true);
+            $GLOBALS['wp_stub_environment_type'] = 'production';
+            $container = new Tempest\Container\GenericContainer();
+            $discovery = new Studiometa\Foehn\Discovery\CliCommandDiscovery(
+                $container,
+                new Studiometa\Foehn\Discovery\DiscoveryProblems(),
+            );
+            $discovery->discover(
+                new Tempest\Discovery\DiscoveryLocation('App\\', sys_get_temp_dir()),
+                new Tempest\Reflection\ClassReflector(Tests\Fixtures\WritingCliCommandFixture::class),
+            );
+            $discovery->apply();
+            $callback = wp_stub_get_calls('wp_cli_add_command')[0]['args']['callback'];
+            foreach ([[], ['dry-run' => true], ['force' => true]] as $assocArgs) {
+                $GLOBALS['wp_stub_calls'] = [];
+                $callback([], $assocArgs);
+                echo json_encode([
+                    'ran' => count(wp_stub_get_calls('fixture_command_ran')),
+                    'errors' => count(wp_stub_get_calls('wp_cli_error')),
+                ]), "\n";
+            }
+            PHP;
+
+        $output = [];
+        $status = 0;
+        exec(
+            'php -r '
+            . escapeshellarg(sprintf($script, var_export(dirname(__DIR__, 2) . '/bootstrap.php', true)))
+            . ' 2>&1',
+            $output,
+            $status,
+        );
+
+        expect($status)->toBe(0, implode("\n", $output));
+        expect($output)->toBe([
+            '{"ran":0,"errors":1}',
+            '{"ran":1,"errors":0}',
+            '{"ran":1,"errors":0}',
+        ]);
+    });
 });

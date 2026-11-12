@@ -28,7 +28,7 @@ use function Tempest\Support\str;
       Supports wildcards: 'single-*', 'archive-*'
 
     [--force]
-    : Overwrite existing file
+    : Overwrite an existing file. Also lets the command run in the production environment
 
     [--dry-run]
     : Write nothing. Show the file that would be written, or report that it exists
@@ -49,7 +49,7 @@ use function Tempest\Support\str;
 
         # Preview what would be created
         wp foehn make:controller single --dry-run
-    DOC)]
+    DOC, writes: true)]
 final class MakeControllerCommand implements CliCommandInterface
 {
     public function __construct(

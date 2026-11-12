@@ -324,7 +324,7 @@ final class EventsSeeder implements SeederInterface
 ```
 
 - Create it with `wp foehn make:seeder events --order=20 --description="Sample events"`, then run `wp foehn discovery:clear`.
-- `wp foehn seed` runs every seeder by order. `--class=EventsSeeder` runs one (short or full class name). `--dry-run` lists them and runs nothing. `wp foehn inspect seeders` lists them with their order and description.
+- `wp foehn seed` runs every seeder by order. `--class=EventsSeeder` runs one (short or full class name). `--dry-run` lists them and runs nothing. `wp foehn inspect seeders` lists them with their order and description. In production, `seed` runs only with `--force`: do not seed a production site unless the user asks for it.
 - `run()` must be idempotent: a second run updates the content and creates nothing. Find posts by slug (`Upsert::post()`), attachments by a meta value you write on them, menus by name (delete their items, then add them again). Run `wp foehn seed` twice and check that the counts do not change.
 - A seeder that needs content of another seeder finds it again by slug or meta, and has a higher `order`.
 - Throw an exception when the seeder cannot do its work. The command stops with exit status 1 and prints the class and the message.

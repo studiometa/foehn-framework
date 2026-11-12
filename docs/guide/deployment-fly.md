@@ -13,7 +13,7 @@ It is the worked example rather than a template. Everything below is in the repo
 | One bucket      | `foehn-demo-media` on Tigris, public read               | `web/wp-content/uploads/` is the one directory a generated web root cannot rebuild |
 | Sixteen secrets | database, admin, bucket credentials, the eight WP salts | Everything a leak would matter for. Everything else is `[env]` in `fly.toml`       |
 
-The machine builds the site itself. A boot that finds an empty volume installs WordPress, runs `wp foehn seed`, restores the thirty photographs and flushes the rewrite rules; a boot that finds a volume already holding the portfolio does nothing. There is no import step, no first-run wizard and no state anybody has to carry from one deploy to the next.
+The machine builds the site itself. A boot that finds an empty volume installs WordPress, runs `wp foehn seed --force` (the machine sets no `WP_ENVIRONMENT_TYPE`, so the site is `production`, where `seed` needs `--force`), restores the thirty photographs and flushes the rewrite rules; a boot that finds a volume already holding the portfolio does nothing. There is no import step, no first-run wizard and no state anybody has to carry from one deploy to the next.
 
 ## Creating it
 

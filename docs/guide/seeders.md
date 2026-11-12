@@ -56,6 +56,8 @@ wp foehn seed --dry-run             # list the seeders, in order, and run nothin
 wp foehn inspect seeders            # the seeders, with their order and description
 ```
 
+In production, `wp foehn seed` runs only with `--force` or `--dry-run`: it writes content that visitors see. See [Production Environment](/guide/cli-commands#production-environment).
+
 The command stops with exit status 1 at the first seeder that throws an exception, and prints the class and the message. Throw an exception when a seeder cannot do its work, for example when the page it needs does not exist.
 
 When two seeders have the same short class name, `--class` refuses the short name and lists the full names.

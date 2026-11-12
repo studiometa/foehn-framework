@@ -166,8 +166,10 @@ foehn_demo_seed() {
         return 1
     fi
 
-    # The content. Idempotent by slug, though nothing here runs it twice.
-    if ! foehn_demo_run 'wp foehn seed'; then
+    # The content. Idempotent by slug, though nothing here runs it twice. `--force`
+    # because Fly sets no WP_ENVIRONMENT_TYPE, so this site is `production`, where
+    # `wp foehn seed` refuses to run without it — and seeding is the point here.
+    if ! foehn_demo_run 'wp foehn seed --force'; then
         echo "🛑 ERROR ($script_name): the demo content could not be seeded. The container will not start." >&2
         return 1
     fi

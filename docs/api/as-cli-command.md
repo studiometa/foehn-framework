@@ -12,17 +12,19 @@ final readonly class AsCliCommand
         public string $name,
         public string $description,
         public ?string $longDescription = null,
+        public bool $writes = false,
     ) {}
 }
 ```
 
 ## Parameters
 
-| Parameter         | Type      | Default | Description                     |
-| ----------------- | --------- | ------- | ------------------------------- |
-| `name`            | `string`  | —       | Command name (required)         |
-| `description`     | `string`  | —       | Short description (required)    |
-| `longDescription` | `?string` | `null`  | Detailed help (docblock format) |
+| Parameter         | Type      | Default | Description                                                                                                                                                                                                                                                             |
+| ----------------- | --------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`            | `string`  | —       | Command name (required)                                                                                                                                                                                                                                                 |
+| `description`     | `string`  | —       | Short description (required)                                                                                                                                                                                                                                            |
+| `longDescription` | `?string` | `null`  | Detailed help (docblock format)                                                                                                                                                                                                                                         |
+| `writes`          | `bool`    | `false` | The command changes content or files. When `wp_get_environment_type()` is `production`, it runs only with `--force` or `--dry-run`. Declare `[--force]` in `longDescription`, so WP-CLI accepts it. See [Command that Writes](/guide/cli-commands#command-that-writes). |
 
 ## Namespace
 

@@ -7,6 +7,7 @@ use Studiometa\Foehn\Discovery\CliCommandDiscovery;
 use Studiometa\Foehn\Discovery\DiscoveryProblems;
 use Tempest\Container\GenericContainer;
 use Tests\Fixtures\CliCommandFixture;
+use Tests\Fixtures\WritingCliCommandFixture;
 
 beforeEach(function () {
     $this->location = testDiscoveryLocation();
@@ -51,5 +52,18 @@ describe('CliCommandDiscovery caching', function () {
             ->toBe('This is a long description for the test command.')
             ->and($item['className'])
             ->toBe(CliCommandFixture::class);
+    });
+
+    it('restores whether the command writes, so a warm cache still guards it', function () {
+        discoverFixture($this->discovery, WritingCliCommandFixture::class, $this->location);
+
+        $item = restoreThroughCacheFile(
+            $this->discovery,
+            new CliCommandDiscovery(new GenericContainer(), new DiscoveryProblems()),
+        )
+            ->getItems()
+            ->getForLocation($this->location)[0];
+
+        expect($item['attribute']->writes)->toBeTrue();
     });
 });

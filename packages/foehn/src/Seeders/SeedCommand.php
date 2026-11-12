@@ -31,6 +31,9 @@ use Throwable;
     The command stops with exit status 1 at the first seeder that throws an
     exception.
 
+    In the production environment, the command does not run unless --force or
+    --dry-run is given: seeders write content that visitors see.
+
     ## OPTIONS
 
     [--class=<name>]
@@ -38,6 +41,9 @@ use Throwable;
 
     [--dry-run]
     : Run nothing. List the seeders that would run, in order.
+
+    [--force]
+    : Run in the production environment.
 
     ## EXAMPLES
 
@@ -49,7 +55,7 @@ use Throwable;
 
         # List the seeders, in the order they run
         wp foehn seed --dry-run
-    DOC)]
+    DOC, writes: true)]
 final readonly class SeedCommand implements CliCommandInterface
 {
     public function __construct(

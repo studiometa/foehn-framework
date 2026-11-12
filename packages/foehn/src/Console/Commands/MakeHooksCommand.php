@@ -24,7 +24,7 @@ use function Tempest\Support\str;
     : Custom class name (defaults to PascalCase of name + Hooks)
 
     [--force]
-    : Overwrite existing file
+    : Overwrite an existing file. Also lets the command run in the production environment
 
     [--dry-run]
     : Write nothing. Show the file that would be written, or report that it exists
@@ -45,7 +45,7 @@ use function Tempest\Support\str;
 
         # Preview what would be created
         wp foehn make:hooks seo --dry-run
-    DOC)]
+    DOC, writes: true)]
 final class MakeHooksCommand implements CliCommandInterface
 {
     public function __construct(

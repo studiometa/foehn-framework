@@ -37,7 +37,7 @@ use function Tempest\Support\str;
       Example: --fields=text,wysiwyg,image,cta
 
     [--force]
-    : Overwrite existing file
+    : Overwrite an existing file. Also lets the command run in the production environment
 
     [--dry-run]
     : Write nothing. Show the file that would be written, or report that it exists
@@ -61,7 +61,7 @@ use function Tempest\Support\str;
 
         # Preview what would be created
         wp foehn make:acf-block hero --dry-run
-    DOC)]
+    DOC, writes: true)]
 final class MakeAcfBlockCommand implements CliCommandInterface
 {
     /**

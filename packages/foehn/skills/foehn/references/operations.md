@@ -75,9 +75,20 @@ Indexing protection is not opt-in: outside `production`, Føhn always adds `noin
 - `--dry-run --format=json` writes nothing and prints `{"dryRun": true, "files": [{"path", "status", "contents"}], "notes": [...]}`. Read `contents` before you write the file.
 - `--format=json` prints the same object for the real run, without `contents`. `status` is `created`, `overwritten` or `exists` (`would-create` or `would-overwrite` on a dry run). `notes` lists the next steps, for example the Twig template to create. `path` is absolute.
 - A file that exists without `--force` is an error with exit status 1, on a dry run too. The file is left as it is. Use `--force` only for a file you mean to replace.
+- In production, a `make:*` command refuses to run without `--force`. See [Production environment](#production-environment).
 - A generated class goes next to the project's classes of the same kind, from discovery: their directory (the one that holds most of them), their namespace, and the parent class most of them extend. With none, the command's default directory and the stub's parent. The `path` of a dry run shows where it goes.
 - `make:post-type <name> --rewrite-slug=<slug> --meta=<key>[:<type>],…` writes the model with `#[AsPostType]`, one `#[AsPostMeta]` per field and a typed accessor for each (`start_date` gives `startDate(): ?string`). Types: `string` (default), `integer`, `number`, `boolean`. Store dates as `Y-m-d` strings. With `--meta`, `supports` includes `custom-fields`, so the block editor reads and saves the fields. The class extends `Studiometa\Foehn\Models\Post` unless the project's post types share another parent. No accessor is written for a key whose method the parent has (`date`, `link`, `title`…, see [content.md](content.md#method-names-a-model-must-not-reuse)): read it with `post.meta('<key>')`.
 - The `make:post-type` notes give, for `single-<name>` and `archive-<name>`, the controller that claims it and the Twig file to create, next to the theme's views of the same kind (`templates/pages/single-<name>.twig` in the starter). The controller picks the view at runtime: check its `render()`/`renderFirst()` call.
+
+## Production environment
+
+Check the environment before you run a command that writes on a server: `wp eval 'echo wp_get_environment_type();'`.
+
+- When it is `production`, these commands refuse to run: `seed`, every `make:*` (with the `foehn-acf` ones) and `salts:generate`. The error says why and how, and the exit status is 1. Nothing is written.
+- `--dry-run` writes nothing and runs in production. Use it to see what the command would do.
+- `--force` runs the command. On `make:*` it also overwrites a file that exists, and on `salts:generate` it also replaces keys that are set. Use it in production only when the user asks for that change on that site.
+- Not guarded: the commands that only read (`db:export`, `inspect`, `errors`, `log`, `trace`, `verify`, `skill`, `discovery:list`, `discovery:status`, `cache:status`) and the deploy steps (`cache:clear`, `cache:config --write`, `cache:warm`, `discovery:clear`, `discovery:generate`, `rewrite:flush`).
+- A project command opts in with `#[AsCliCommand(writes: true)]`. See [routes-and-commands.md](routes-and-commands.md).
 
 ## Agent skills
 
@@ -225,7 +236,7 @@ wp foehn verify --profile=production                                       # dep
 
 Exit status: `0` pass, `1` something to fix, `2` the gate could not run.
 
-`wp foehn salts:generate` writes the eight WordPress keys to `.env` when they are missing. `--force` rotates them and logs out every user. The generated `wp-config.php` refuses a production request without keys.
+`wp foehn salts:generate` writes the eight WordPress keys to `.env` when they are missing. `--force` rotates them and logs out every user. `--dry-run` names the file and the keys it would replace, and prints no key. The generated `wp-config.php` refuses a production request without keys.
 
 ## Database export
 

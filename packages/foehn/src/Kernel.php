@@ -70,7 +70,7 @@ final class Kernel
      * Bump this whenever an attribute's promoted constructor changes: a cache
      * written against the old signature is then ignored instead of restored.
      */
-    private const DISCOVERY_CACHE_VERSION = 'foehn.discovery.v1';
+    private const DISCOVERY_CACHE_VERSION = 'foehn.discovery.v2';
 
     private static ?self $instance = null;
 

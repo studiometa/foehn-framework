@@ -37,6 +37,8 @@ The starter ships an `AGENTS.md` at the project root, and a `CLAUDE.md` that imp
 
 Its **Project conventions** section says that sample content and menus go in seeders. The project fills in the rest: how editors edit post meta, and which checks to run. Keep it current, because the agent follows what it says.
 
+An agent can also run a command on the wrong site, for example in a shell on a production server. So `wp foehn seed`, the `make:*` commands and `salts:generate` refuse to run when `wp_get_environment_type()` is `production`, unless `--force` or `--dry-run` is given. See [Production Environment](/guide/cli-commands#production-environment).
+
 A project made before this file existed can copy [`AGENTS.md` from the starter](https://github.com/studiometa/foehn-framework/blob/main/packages/starter/AGENTS.md).
 
 ## Install in the agent

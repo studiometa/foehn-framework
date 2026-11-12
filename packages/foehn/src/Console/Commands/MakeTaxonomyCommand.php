@@ -36,7 +36,7 @@ use function Tempest\Support\str;
     : Make the taxonomy hierarchical (like categories)
 
     [--force]
-    : Overwrite existing file
+    : Overwrite an existing file. Also lets the command run in the production environment
 
     [--dry-run]
     : Write nothing. Show the file that would be written, or report that it exists
@@ -57,7 +57,7 @@ use function Tempest\Support\str;
 
         # Preview what would be created
         wp foehn make:taxonomy genre --dry-run
-    DOC)]
+    DOC, writes: true)]
 final class MakeTaxonomyCommand implements CliCommandInterface
 {
     public function __construct(
