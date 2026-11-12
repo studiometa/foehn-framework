@@ -312,6 +312,8 @@ final readonly class PageCacheConfig
      */
     public function getResponseHeaders(): array
     {
+        $seen = [];
+
         foreach ($this->responseHeaders as $name => $value) {
             // A config file can give a list of `Name: value` lines, whose keys are integers.
             // @mago-expect analysis:redundant-logical-operation
@@ -329,6 +331,16 @@ final readonly class PageCacheConfig
                     strtolower($name) === 'cache-control' ? ' Use cacheControl.' : '',
                 ));
             }
+
+            // nginx sends both spellings of one name, and the drop-in only the last one.
+            if (isset($seen[strtolower($name)])) {
+                throw new InvalidArgumentException(sprintf(
+                    'responseHeaders: "%s" is listed twice. Header names do not depend on case.',
+                    $name,
+                ));
+            }
+
+            $seen[strtolower($name)] = true;
 
             self::assertHeaderValue('responseHeaders: ' . $name, $value);
         }

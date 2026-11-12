@@ -248,6 +248,17 @@ describe('the headers of a hit', function () {
             ->toThrow(InvalidArgumentException::class, 'the page cache sets');
     })->with(['Cache-Control', 'vary', 'ETag', 'Content-Type', 'Set-Cookie', 'X-Foehn-Cache', 'X-Robots-Tag']);
 
+    it('refuses one header listed twice in two spellings', function () {
+        // nginx would send both lines, and the drop-in only the last one.
+        expect(
+            fn() => new PageCacheConfig(responseHeaders: [
+                'X-Frame-Options' => 'SAMEORIGIN',
+                'x-frame-options' => 'DENY',
+            ])->getResponseHeaders(),
+        )
+            ->toThrow(InvalidArgumentException::class, 'is listed twice');
+    });
+
     it('points a Cache-Control header to cacheControl', function () {
         expect(fn() => new PageCacheConfig(responseHeaders: ['Cache-Control' => 'no-store'])->getResponseHeaders())
             ->toThrow(InvalidArgumentException::class, 'Use cacheControl.');

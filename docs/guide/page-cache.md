@@ -389,7 +389,7 @@ The snippet writes them into the cache location, and the drop-in sends them too,
 
 `responseHeaders` is for static headers. Some rules apply:
 
-- The names contain letters, digits and hyphens only.
+- The names contain letters, digits and hyphens only. A name is listed once, whatever its case.
 - The values are printable ASCII, without `"`, `\` or `$`, and without spaces at the start or the end. The same rule applies to `cacheControl`.
 - A header that the cache sets itself (`Cache-Control`, `Vary`, `ETag`, `Content-Type`, `Set-Cookie`, `X-Robots-Tag`, `X-Foehn-Cache` and the other [headers that are never stored](#the-headers)) is refused. Use `cacheControl` for `Cache-Control`.
 
