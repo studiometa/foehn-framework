@@ -1,0 +1,67 @@
+{#
+  A contact sheet: thumbnails, and a viewer for one photograph at full size.
+
+  `wp_interactive()` names the store, `wp_context()` gives this sheet its own state, and
+  the other helpers write the directives the store in assets/js/blocks/contact-sheet.js
+  answers. WordPress renders them on the server, so the closed viewer and the first
+  photograph are in the HTML before the module loads.
+#}
+<figure
+  class="contact-sheet"
+  {{ wp_interactive('theme/contact-sheet') }}
+  {{ wp_context(context) }}
+  {{ wp_class('is-open', 'context.isOpen') }}
+  {{ wp_directive('on-window--keydown', 'actions.onKeydown') }}>
+  <ul class="contact-sheet__grid">
+    {% for id in ids %}
+      <li>
+        <button
+          class="contact-sheet__thumb"
+          type="button"
+          data-index="{{ loop.index0 }}"
+          {{ wp_on('click', 'actions.open') }}>
+          {% set image = get_image(id) %}
+          <img
+            src="{{ image_url(image, { w: 400, h: 400, fit: 'crop', fm: 'webp' }) }}"
+            alt="{{ image.alt|esc_attr }}"
+            width="400"
+            height="400"
+            loading="lazy"
+            decoding="async" />
+        </button>
+      </li>
+    {% endfor %}
+  </ul>
+
+  {% if caption %}
+    <figcaption class="label">{{ caption }}</figcaption>
+  {% endif %}
+
+  <div class="contact-sheet__viewer" role="dialog" aria-modal="true" hidden {{ wp_bind('hidden', '!context.isOpen') }}>
+    <img class="contact-sheet__photograph" alt="" {{ wp_bind('src', 'state.photograph.src') }} {{ wp_bind('alt', 'state.photograph.alt') }} />
+
+    <p class="contact-sheet__position label" {{ wp_text('state.position') }}></p>
+
+    <button
+      class="contact-sheet__control contact-sheet__control--previous"
+      type="button"
+      {{ wp_bind('aria-label', 'state.previousLabel') }}
+      {{ wp_on('click', 'actions.previous') }}>
+      &larr;
+    </button>
+    <button
+      class="contact-sheet__control contact-sheet__control--next"
+      type="button"
+      {{ wp_bind('aria-label', 'state.nextLabel') }}
+      {{ wp_on('click', 'actions.next') }}>
+      &rarr;
+    </button>
+    <button
+      class="contact-sheet__control contact-sheet__control--close"
+      type="button"
+      {{ wp_bind('aria-label', 'state.closeLabel') }}
+      {{ wp_on('click', 'actions.close') }}>
+      &times;
+    </button>
+  </div>
+</figure>

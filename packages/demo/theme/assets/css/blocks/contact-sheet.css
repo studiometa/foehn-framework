@@ -1,0 +1,85 @@
+/**
+ * Contact sheet block.
+ *
+ * Static stylesheet, registered per block — see callout.css for why.
+ */
+
+.contact-sheet__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
+  gap: 0.5rem;
+  padding: 0;
+  list-style: none;
+}
+
+.contact-sheet__thumb {
+  display: block;
+  width: 100%;
+  padding: 0;
+  cursor: zoom-in;
+  background: #f4f4f4;
+  border: 0;
+}
+
+.contact-sheet__thumb img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  object-fit: cover;
+}
+
+.contact-sheet figcaption {
+  margin-top: 0.75rem;
+}
+
+.contact-sheet__viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 3rem;
+  background: rgb(255 255 255 / 0.97);
+}
+
+.contact-sheet__viewer[hidden] {
+  display: none;
+}
+
+.contact-sheet__photograph {
+  max-width: 100%;
+  max-height: calc(100vh - 8rem);
+}
+
+.contact-sheet__position {
+  position: absolute;
+  bottom: 1.25rem;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.contact-sheet__control {
+  position: absolute;
+  width: 2.5rem;
+  height: 2.5rem;
+  font-size: 1.25rem;
+  cursor: pointer;
+  background: none;
+  border: 0;
+}
+
+.contact-sheet__control--previous {
+  top: 50%;
+  left: 0.5rem;
+}
+
+.contact-sheet__control--next {
+  top: 50%;
+  right: 0.5rem;
+}
+
+.contact-sheet__control--close {
+  top: 0.5rem;
+  right: 0.5rem;
+}
