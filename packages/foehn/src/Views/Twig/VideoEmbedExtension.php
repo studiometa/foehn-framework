@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Views\Twig;
 
+use Studiometa\Foehn\Attributes\AsTwigExtension;
 use Studiometa\Foehn\Helpers\VideoEmbed;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFilter;
@@ -14,6 +15,7 @@ use Twig\TwigFunction;
  *
  * Provides filters and functions for working with YouTube and Vimeo URLs.
  */
+#[AsTwigExtension]
 final class VideoEmbedExtension extends AbstractExtension
 {
     public function getName(): string

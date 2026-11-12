@@ -2,9 +2,15 @@
 
 declare(strict_types=1);
 
+use Studiometa\Foehn\Attributes\AsTwigExtension;
 use Studiometa\Foehn\Views\Twig\InteractivityExtension;
 
 describe('InteractivityExtension', function () {
+    it('is discovered, so templates can use its functions', function () {
+        expect(new ReflectionClass(InteractivityExtension::class)->getAttributes(AsTwigExtension::class))
+            ->toHaveCount(1);
+    });
+
     beforeEach(function () {
         $this->extension = new InteractivityExtension();
     });

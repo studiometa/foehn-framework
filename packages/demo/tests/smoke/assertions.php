@@ -95,7 +95,16 @@ $twig = new Timber\Loader()->get_twig();
 // vendor/ and were never scanned. The templates use both toolkit and section helpers.
 $results->containsAll(
     'framework Twig functions are registered',
-    ['html_attributes', 'html_classes', 'html_styles', 'foehn_section', 'foehn_section_url'],
+    [
+        'html_attributes',
+        'html_classes',
+        'html_styles',
+        'foehn_section',
+        'foehn_section_url',
+        'wp_interactive',
+        'wp_context',
+        'video_embed',
+    ],
     array_map(static fn(Twig\TwigFunction $function): string => $function->getName(), $twig->getFunctions()),
 );
 

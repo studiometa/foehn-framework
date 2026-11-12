@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Views\Twig;
 
+use Studiometa\Foehn\Attributes\AsTwigExtension;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFilter;
 use Twig\TwigFunction;
@@ -14,6 +15,7 @@ use Twig\TwigFunction;
  * Provides helper functions and filters for working with
  * the WordPress Interactivity API in Twig templates.
  */
+#[AsTwigExtension]
 final class InteractivityExtension extends AbstractExtension
 {
     public function getName(): string
