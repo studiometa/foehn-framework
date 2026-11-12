@@ -147,6 +147,16 @@ final readonly class LogCommand implements CliCommandInterface
         }
 
         $read = $this->log->read();
+
+        if ($read === null && is_file($this->log->path)) {
+            $this->cli->error(sprintf(
+                'Cannot read %s: the user that runs WP-CLI needs read access to it.',
+                $this->paths->relative($this->log->path),
+            ));
+
+            return;
+        }
+
         $groups = $read === null
             ? []
             : LogParser::group(self::matching(LogParser::entries($read['text'], $this->paths), $levels, $from, $grep));

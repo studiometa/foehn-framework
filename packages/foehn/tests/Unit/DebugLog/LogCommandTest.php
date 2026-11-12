@@ -145,6 +145,19 @@ describe('wp foehn log', function () {
         expect(wp_stub_get_calls('wp_cli_warning'))->toBe([]);
     });
 
+    it('says when it cannot read the file', function () {
+        chmod($this->file, 0o000);
+
+        if (is_readable($this->file)) {
+            $this->markTestSkipped('This user reads any file, such as root.');
+        }
+
+        ($this->command)([], []);
+
+        expect(wp_stub_get_calls('wp_cli_error')[0]['args']['message'])
+            ->toBe(sprintf('Cannot read %s: the user that runs WP-CLI needs read access to it.', $this->file));
+    });
+
     it('says when WP_DEBUG is off and WordPress writes nothing new', function () {
         (new LogCommand(new WpCli(), new DebugLog($this->file, false), $this->paths))([], ['limit' => '1']);
 

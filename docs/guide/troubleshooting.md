@@ -196,7 +196,7 @@ Uncaught RuntimeException: Boom
 
 WordPress writes the log when `WP_DEBUG` and `WP_DEBUG_LOG` are on: `wp_debug_mode()` points PHP's `error_log` setting at `wp-content/debug.log`, or at the path `WP_DEBUG_LOG` holds. So the file holds PHP's warnings, notices, deprecations and fatal errors, and the `error_log()` messages of WordPress, plugins and the theme. The `wp-config.php` of a Føhn project sets `WP_DEBUG_LOG` to the value of `WP_DEBUG`: set `WP_DEBUG=true` in `.env` to turn the log on.
 
-When `WP_DEBUG_LOG` is off, the command says how to turn it on and exits with an error. When `WP_DEBUG` is off and the file exists, it prints the entries and says that WordPress writes nothing new to the file.
+When `WP_DEBUG_LOG` is off, the command says how to turn it on and exits with an error. When `WP_DEBUG` is off and the file exists, it prints the entries and says that WordPress writes nothing new to the file. When the user that runs WP-CLI cannot read the file, it says so and exits with an error.
 
 ### Entries and groups
 
