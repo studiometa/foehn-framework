@@ -13,6 +13,10 @@
 /.ddev/config.monorepo.yaml export-ignore
 /.gitattributes export-ignore
 
+# La suite smoke du framework : elle teste Føhn contre le starter dans ddev, et
+# un projet n'a pas à la porter. Le projet garde tests/smoke/, son propre test.
+/tests/framework-smoke export-ignore
+
 # La suite de tests d'empaquetage regarde le paquet depuis le monorepo : elle lit
 # ce fichier-ci, qui ne part pas dans l'archive. Livrée, elle rendait
 # `composer test` rouge dans tout projet créé depuis ce starter.

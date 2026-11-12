@@ -13,7 +13,7 @@
 # drop-in loaded by WordPress before boot (`Server::boot()`), the commands executed
 # through real WP-CLI, the Warmer's HTTP calls, and the generated nginx snippet
 # being read by a real nginx. Only `composer test:smoke` — an HTTP-driven suite
-# against a live WordPress inside ddev (packages/starter/tests/smoke/) — exercises
+# against a live WordPress inside ddev (packages/starter/tests/framework-smoke/) — exercises
 # those paths, and the CI job that runs it, "Integration - Starter in WordPress",
 # uploads no coverage. Doing that honestly needs a coverage driver running inside
 # the ddev web container, a way to collect coverage per HTTP request

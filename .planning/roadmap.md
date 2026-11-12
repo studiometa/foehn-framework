@@ -50,4 +50,4 @@ Written once here because every spec depends on them.
 - **No closures in attribute arguments.** Discovery items reach the cache through `var_export`, so a callback is a method name resolved when `apply()` runs. A closure works in development and fails only in production, where caching is on.
 - **Register on the hook that owns the API**, through the discovery phase — never at boot.
 - **A missing platform function is a skip, not a fatal**, with a notice when `FoehnConfig::debug` is on.
-- **Unit tests over stubs are load-bearing but not sufficient.** The 2026-08-19 fatal error passed 1409 of them. Anything that registers with WordPress needs a line in `packages/starter/tests/smoke/`.
+- **Unit tests over stubs are load-bearing but not sufficient.** The 2026-08-19 fatal error passed 1409 of them. Anything that registers with WordPress needs a line in `packages/starter/tests/framework-smoke/` (the framework suite, run against the starter, not shipped to projects).

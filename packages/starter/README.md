@@ -113,11 +113,12 @@ There is no JavaScript test setup here, because there is no JavaScript to test y
 ## Tests
 
 ```bash
-composer test:starter    # from the monorepo root
-./tests/smoke/run.sh     # against a started ddev
+composer test            # unit tests, against WordPress function stubs
+composer test:smoke      # the site in a started ddev: home page, active theme
+./tests/smoke/run.sh     # the site in a started ddev: boot, discovery cache, assets, password form
 ```
 
-The smoke test asks the one question this package has to answer: does a project created from it boot and serve a page? On 2026-08-19 the answer was no, with 1409 unit tests passing — those run against WordPress function stubs, so a discovery that registers nothing at all still passes them.
+The unit tests pass even when WordPress cannot boot, because they run against function stubs. The smoke tests ask the real site. Add a test to `tests/smoke/` for each page a release must not break.
 
 ## License
 

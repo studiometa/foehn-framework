@@ -120,7 +120,7 @@ describe('admin cache handlers inside a booted WordPress', function () {
         // set as current, the handler can be called for real — and what this asserts is
         // the one property the whole design rests on: the request supplies an id, and the
         // page that goes is the one `get_permalink()` names.
-        $output = Site::wp('wp eval-file tests/smoke/admin-cache-assertions.php');
+        $output = Site::wp('wp eval-file tests/framework-smoke/admin-cache-assertions.php');
 
         expect($output)->not->toBeNull('wp eval-file could not run');
         expect($output)->toContain('assertions passed');
