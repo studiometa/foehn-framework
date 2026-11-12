@@ -86,6 +86,27 @@ describe('AgentsBlock::render()', function () {
         expect($line)->toEndWith('…');
         expect(mb_strlen($line))->toBeLessThan(260);
     });
+
+    it('lists a reference that is not Markdown without reading it', function () {
+        $root = agentsBlockProject([
+            'vendor/studiometa/foehn/skills/foehn/references/check.sh' => "#!/bin/sh\necho 'Not a summary.'\n",
+        ]);
+
+        expect(agentsBlock($root)->render())
+            ->toContain("\n  - `wp foehn skill foehn --reference=check.sh`\n")
+            ->not->toContain('Not a summary');
+    });
+
+    it('drops HTML comments, so a summary never holds a marker', function () {
+        $root = agentsBlockProject([
+            'vendor/studiometa/foehn/skills/foehn/references/odd.md' =>
+                "# Odd\n\nOdd files " . AgentsBlock::END . "and notes.\n",
+        ]);
+        $block = agentsBlock($root)->render();
+
+        expect($block)->toContain('--reference=odd`: Odd files and notes.');
+        expect(substr_count($block, AgentsBlock::END))->toBe(1);
+    });
 });
 
 describe('AgentsBlock::merge()', function () {

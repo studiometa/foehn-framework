@@ -107,9 +107,14 @@ final readonly class Skill
      *
      * A reference starts with a `# Title` and a paragraph that says what it covers.
      * Links keep their text only. The title stands in when no paragraph follows it.
+     * A file that is not Markdown, such as a script or an image, has no summary.
      */
     public function referenceSummary(string $file, int $length): string
     {
+        if (!str_ends_with($file, '.md')) {
+            return '';
+        }
+
         $blocks = array_values(array_filter(
             array_map(trim(...), preg_split('/\R[ \t]*\R/', $this->reference($file) ?? '') ?: []),
             static fn(string $block): bool => $block !== '',
@@ -142,9 +147,13 @@ final readonly class Skill
         ];
     }
 
+    /**
+     * HTML comments are dropped: one could hold a marker of the AGENTS.md block, which
+     * would break the file the next time the block is written.
+     */
     private static function firstSentence(string $text, int $length): string
     {
-        $text = trim((string) preg_replace('/\s+/', ' ', $text));
+        $text = trim((string) preg_replace(['/<!--.*?-->/s', '/\s+/'], ['', ' '], $text));
         $match = [];
         $sentence = preg_match('/^(.+?\.)(?:\s|$)/', $text, $match) === 1 ? $match[1] : $text;
 
