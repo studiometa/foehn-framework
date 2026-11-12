@@ -54,8 +54,9 @@ Indexing protection is not opt-in: outside `production`, Føhn always adds `noin
 
 ## Project model
 
-- `wp foehn inspect --format=json` reports what the project declares, from the discovery items: `post-types`, `taxonomies`, `blocks`, `patterns`, `bindings`, `templates`, `context-providers`, `menus`, `image-sizes`, `rewrite-rules`, `rest-routes`, `cli-commands`, `plugins`, `theme-supports`, `vite`. It registers and writes nothing.
-- `wp foehn inspect <section> --format=json` reads one section. The JSON keeps the section name as its key. An unknown section is an error that lists the valid names.
+- `wp foehn inspect` reports what the project declares, from the discovery items, in these sections: `post-types`, `taxonomies`, `blocks`, `patterns`, `bindings`, `templates`, `context-providers`, `menus`, `image-sizes`, `rewrite-rules`, `rest-routes`, `cli-commands`, `plugins`, `theme-supports`, `vite`. It registers and writes nothing.
+- With no section, `wp foehn inspect --format=json` prints a summary, short enough to read whole: `{"summary": {"<section>": ["<row name>", …]}, "commands": {…}}`. Read it first, then read the sections you need in full in one call: `wp foehn inspect post-types templates menus --format=json`. `--all` prints every section; do not read it when a few sections answer the question.
+- JSON is printed on one line. The full report keeps each section name as its key. An unknown section is an error that lists the valid names.
 - `post-types` gives each type's Timber model class, its `#[AsPostMeta]` fields and its taxonomies, from either side of the link. A type Føhn does not register, such as `post` or a plugin's post type, is listed when a `#[AsTimberModel]` maps it or a `#[AsPostMeta]` names it, with `declared: false` (and `model: null` without a Timber model). A field with no subtype is listed on every type.
 - `templates` lists each controller with the WordPress template names it handles. `context-providers` lists the view names each provider matches. `menus` gives the Twig variable of each location (`menus.<location>`).
 - `vite` lists the entry names `ViteManifest::enqueue()` takes, read from `dist/.vite/manifest.json`, and the dev server URL while `npm run dev` runs.
