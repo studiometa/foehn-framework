@@ -116,8 +116,12 @@ Cache path: /var/www/html/wp-content/cache/foehn/discovery
   ✓ App\
 Locations cached: 2/2
 
+Problems: 0
+
 Discovery cache is active and valid.
 ```
+
+`Problems` lists the classes discovery skipped, with the reason and the fix: see [Problems and Errors](/guide/troubleshooting).
 
 ## Listing what was found
 

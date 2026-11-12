@@ -30,12 +30,12 @@ final readonly class FoehnConfig
 
 ## Properties
 
-| Property                 | Type                     | Default          | Description                        |
-| ------------------------ | ------------------------ | ---------------- | ---------------------------------- |
-| `discoveryCacheStrategy` | `DiscoveryCacheStrategy` | `NONE`           | Cache strategy for discoveries     |
-| `discoveryCachePath`     | `string\|null`           | `null`           | Custom path for cache files        |
-| `hooks`                  | `class-string[]`         | `[]`             | Opt-in hook classes to activate    |
-| `debug`                  | `bool`                   | `WP_DEBUG` value | Enable debug logging for discovery |
+| Property                 | Type                     | Default          | Description                                         |
+| ------------------------ | ------------------------ | ---------------- | --------------------------------------------------- |
+| `discoveryCacheStrategy` | `DiscoveryCacheStrategy` | `NONE`           | Cache strategy for discoveries                      |
+| `discoveryCachePath`     | `string\|null`           | `null`           | Custom path for cache files                         |
+| `hooks`                  | `class-string[]`         | `[]`             | Opt-in hook classes to activate                     |
+| `debug`                  | `bool`                   | `WP_DEBUG` value | Raise each class discovery skipped as a PHP warning |
 
 ## Usage
 

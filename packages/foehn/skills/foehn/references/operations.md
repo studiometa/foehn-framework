@@ -55,7 +55,7 @@ Indexing protection is not opt-in: outside `production`, Føhn always adds `noin
 
 ## Project model
 
-- `wp foehn inspect` reports what the project declares, from the discovery items, in these sections: `post-types`, `taxonomies`, `settings`, `blocks`, `patterns`, `bindings`, `templates`, `views`, `context-providers`, `menus`, `image-sizes`, `rewrite-rules`, `rest-routes`, `cli-commands`, `seeders`, `plugins`, `theme-supports`, `vite`. It registers and writes nothing.
+- `wp foehn inspect` reports what the project declares, from the discovery items, in these sections: `problems`, `post-types`, `taxonomies`, `settings`, `blocks`, `patterns`, `bindings`, `templates`, `views`, `context-providers`, `menus`, `image-sizes`, `rewrite-rules`, `rest-routes`, `cli-commands`, `seeders`, `plugins`, `theme-supports`, `vite`. It registers and writes nothing.
 - With no section, `wp foehn inspect --format=json` prints a summary, short enough to read whole: `{"summary": {"<section>": ["<row name>", …]}, "commands": {…}}`. Read it first, then read the sections you need in full in one call: `wp foehn inspect post-types templates menus --format=json`. `--all` prints every section; do not read it when a few sections answer the question.
 - JSON is printed on one line. The full report keeps each section name as its key. An unknown section is an error that lists the valid names.
 - `post-types` gives each type's Timber model class, its `#[AsPostMeta]` fields and its taxonomies, from either side of the link. A type Føhn does not register, such as `post` or a plugin's post type, is listed when a `#[AsTimberModel]` maps it or a `#[AsPostMeta]` names it, with `declared: false` (and `model: null` without a Timber model). A field with no subtype is listed on every type.
@@ -85,12 +85,21 @@ Indexing protection is not opt-in: outside `production`, Føhn always adds `noin
 - `wp foehn skill <name>` prints its `SKILL.md`. `--list-references` lists its reference files, and `--reference=<file>` prints one (`blocks`, `blocks.md` or `references/blocks.md`). An unknown skill or reference is an error that lists the valid names.
 - The command reads files only. When WordPress cannot boot, read the same files directly: `vendor/studiometa/*/skills/*/SKILL.md` and `node_modules/@studiometa/foehn-vite-plugin/skills/*/SKILL.md`.
 
+## Problems and errors
+
+Docs: [Problems and errors](https://studiometa.github.io/foehn-framework/guide/troubleshooting.md).
+
+- A class whose attribute contract is broken is skipped and recorded, and every other class registers: `#[AsPostType]`/`#[AsTaxonomy]`/`#[AsTimberModel]` without `extends Timber\Post` or `Timber\Term`; `#[AsBlock]`, `#[AsContextProvider]`, `#[AsTemplateController]`, `#[AsBlockBinding]`, `#[AsSettingsPage]`, `#[AsCliCommand]`, `#[AsSeeder]`, `#[AsAcfBlock]`, `#[AsAcfFieldGroup]` without their interface; `#[AsTwigExtension]` without `extends AbstractExtension`; `#[AsCron]` without a public `__invoke()`; `#[AsJob]` whose `__invoke()` does not take one class-typed parameter; `#[AsRewriteRule]` with `after` other than `top`/`bottom`; an invalid `#[AsPostMeta]` (that key only); a class in `hooks` that does not exist.
+- `wp foehn inspect problems --format=json` gives one row per problem: `class`, `attribute`, `reason`, `fix` (`null` when the cause is not known). It also lists a post type naming a taxonomy, or a taxonomy naming a post type, that no attribute declares and WordPress does not register. Apply the `fix`, run `wp foehn discovery:clear`, then check that `problems` is empty.
+- `wp foehn discovery:status` prints the skipped classes, one line each, as `<reason> Fix: <fix>`. The records are in the discovery cache, so a warm cache still reports them. With `debug` on, each one is also a PHP warning on every request.
+- `TimberViewEngine` throws `Studiometa\Foehn\Views\ViewRenderingFailed` (a `RuntimeException`). A Twig error gives the view asked for, the template and line where Twig failed and Twig's message (the Twig error is `getPrevious()`). A missing view gives every view tried, the directories Timber searched and `Fix: create <directory>/<view>.twig`.
+
 ## Discovery cache
 
 - `NONE`: scan on every request. `PARTIAL`: cache vendor packages, scan the app. `FULL`: cache everything.
 - With `FULL` (the starter default), a new or changed attribute is ignored until the cache is cleared: `wp foehn discovery:clear`. The next request writes a new cache. `wp foehn discovery:generate` writes it now.
 - `composer install` clears the discovery cache and the page cache (both under `wp-content/cache/foehn/`, the default location), so a deploy refreshes them. A custom `discoveryCachePath` or `PageCacheConfig::path` is not cleared.
-- `wp foehn discovery:list` shows every item, its location, and whether the location was restored from the cache. `wp foehn discovery:status` shows the cache state per location.
+- `wp foehn discovery:list` shows every item, its location, and whether the location was restored from the cache. `wp foehn discovery:status` shows the cache state per location and the classes discovery skipped.
 - Cache files: `wp-content/cache/foehn/discovery/` by default.
 
 ## Page cache
