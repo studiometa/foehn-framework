@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace Studiometa\Foehn\Console\Commands;
 
 use Studiometa\Foehn\Attributes\AsCliCommand;
-use Studiometa\Foehn\Console\ClassFileGenerator;
 use Studiometa\Foehn\Console\CliCommandInterface;
 use Studiometa\Foehn\Console\GenerationRequest;
+use Studiometa\Foehn\Console\Scaffolder;
 use Studiometa\Foehn\Console\Stubs\MenuStub;
 use Studiometa\Foehn\Console\WpCli;
+use Studiometa\Foehn\Discovery\MenuDiscovery;
 
 use function Tempest\Support\str;
 
@@ -29,7 +30,10 @@ use function Tempest\Support\str;
     : Overwrite existing file
 
     [--dry-run]
-    : Show what would be created without creating
+    : Write nothing. Show the file that would be written, or report that it exists
+
+    [--format=<format>]
+    : Output format. text (default) or json. json prints the written files, their status and the next steps
 
     ## EXAMPLES
 
@@ -49,7 +53,7 @@ final class MakeMenuCommand implements CliCommandInterface
 {
     public function __construct(
         private readonly WpCli $cli,
-        private readonly ClassFileGenerator $generator,
+        private readonly Scaffolder $scaffolder,
     ) {}
 
     public function __invoke(array $args, array $assocArgs): void
@@ -65,45 +69,30 @@ final class MakeMenuCommand implements CliCommandInterface
         $className = str($name)->pascal()->toString();
         $location = $assocArgs['location'] ?? str($name)->replace('Menu', '')->kebab()->toString();
         $description = $assocArgs['description'] ?? str($name)->replace(['-', '_'], ' ')->title()->toString();
-        $force = ($assocArgs['force'] ?? null) !== null;
-        $dryRun = ($assocArgs['dry-run'] ?? null) !== null;
 
-        $file = $this->generator->generate(new GenerationRequest(
-            stub: MenuStub::class,
-            subdirectory: 'Menus',
-            className: $className,
-            attributeArguments: [
-                'location' => $location,
-                'description' => $description,
+        $this->scaffolder->scaffold(
+            new GenerationRequest(
+                stub: MenuStub::class,
+                discovery: MenuDiscovery::class,
+                subdirectory: 'Menus',
+                className: $className,
+                attributeArguments: [
+                    'location' => $location,
+                    'description' => $description,
+                ],
+                bodyReplacements: [
+                    'get' => ["'dummy-menu'" => "'{$location}'"],
+                ],
+                replacements: ['DummyMenu' => $className],
+            ),
+            $assocArgs,
+            'Menu created',
+            [
+                "Location: {$location}",
+                "Description: {$description}",
+                // MenuDiscovery adds every assigned location to the context under `menus`.
+                "Use in Twig: loop over menus['{$location}'].items, or call {$className}::get() in PHP.",
             ],
-            bodyReplacements: [
-                'get' => ["'dummy-menu'" => "'{$location}'"],
-            ],
-            replacements: ['DummyMenu' => $className],
-        ));
-
-        if ($dryRun) {
-            $this->cli->previewGeneratedFile($file);
-
-            return;
-        }
-
-        if (!$this->generator->write($file, $force)) {
-            $this->cli->reportFileExists($file);
-
-            return;
-        }
-
-        $this->cli->success("Menu created: {$this->cli->getRelativePath($file->path)}");
-        $this->cli->line('');
-        $this->cli->log('Menu location registered:');
-        $this->cli->log("  Location: {$location}");
-        $this->cli->log("  Description: {$description}");
-        $this->cli->line('');
-        $this->cli->log('Use in templates:');
-        $this->cli->log("  {% set menu = {$className}::get() %}");
-        $this->cli->log('  {% for item in menu.items %}');
-        $this->cli->log('    <a href="{{ item.link }}">{{ item.title }}</a>');
-        $this->cli->log('  {% endfor %}');
+        );
     }
 }

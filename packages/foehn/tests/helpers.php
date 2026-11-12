@@ -206,6 +206,22 @@ function testDiscoveryRunner(
 }
 
 /**
+ * The conventions of a project whose classes discovery reads from $discoveredPath.
+ *
+ * Discovery runs here, before a test writes into $appPath classes that no autoloader
+ * can load: what the runner holds is the project as it was before the command.
+ */
+function testProjectConventions(
+    string $appPath,
+    ?string $discoveredPath = null,
+): \Studiometa\Foehn\Console\ProjectConventions {
+    $runner = testDiscoveryRunner(bootTestContainer(), $discoveredPath ?? $appPath);
+    $runner->getDiscoveries();
+
+    return new \Studiometa\Foehn\Console\ProjectConventions($appPath, $runner);
+}
+
+/**
  * Delete a directory and everything below it.
  */
 function removeTestDirectory(string $directory): void
@@ -229,8 +245,9 @@ function removeTestDirectory(string $directory): void
 /**
  * Assert the behaviours every make: command shares, once per command.
  *
- * Generate, generate valid PHP, leave no placeholder, preview, refuse, force,
- * and reject a missing name — the same lines in every command. Shared rather
+ * Generate, generate valid PHP, leave no placeholder, preview, report as JSON,
+ * refuse, force, and reject a missing name — the shared Scaffolder and the same
+ * lines in every command. Shared rather
  * than copied because `packages/acf` ships three of these commands and two
  * copies of the contract would drift.
  *
@@ -285,6 +302,42 @@ function makeCommandContractSuite(array $contracts): void
             expect($logged)->toContain('Would create:');
         });
 
+        it("{$label} reports the file it would write as JSON on --dry-run", function () use ($class, $args, $relative) {
+            ($this->make)($class)($args, ['dry-run' => true, 'format' => 'json']);
+
+            $path = "{$this->appPath}/{$relative}";
+            $lines = wp_stub_get_calls('wp_cli_line');
+
+            expect(file_exists($path))->toBeFalse();
+            expect($lines)->toHaveCount(1);
+
+            $report = json_decode($lines[0]['args']['message'], true, flags: JSON_THROW_ON_ERROR);
+
+            expect($report['dryRun'])->toBeTrue();
+            expect($report['files'])->toHaveCount(1);
+            expect($report['files'][0]['path'])->toBe($path);
+            expect($report['files'][0]['status'])->toBe('would-create');
+            expect($report['files'][0]['contents'])->toContain('declare(strict_types=1);');
+            expect(wp_stub_get_calls('wp_cli_error'))->toBeEmpty();
+        });
+
+        it("{$label} reports the file it wrote as JSON", function () use ($class, $args, $relative) {
+            ($this->make)($class)($args, ['format' => 'json']);
+
+            $path = "{$this->appPath}/{$relative}";
+            $lines = wp_stub_get_calls('wp_cli_line');
+
+            expect($path)->toBeFile();
+            expect($lines)->toHaveCount(1);
+
+            $report = json_decode($lines[0]['args']['message'], true, flags: JSON_THROW_ON_ERROR);
+
+            expect($report['dryRun'])->toBeFalse();
+            expect($report['files'])->toBe([['path' => $path, 'status' => 'created']]);
+            expect($report['notes'])->toBeArray();
+            expect(wp_stub_get_calls('wp_cli_success'))->toBeEmpty();
+        });
+
         it("{$label} refuses to overwrite without --force", function () use ($class, $args, $relative) {
             $path = "{$this->appPath}/{$relative}";
 
@@ -296,6 +349,7 @@ function makeCommandContractSuite(array $contracts): void
 
             expect(file_get_contents($path))->toBe('<?php // hand-edited');
             expect(wp_stub_get_calls('wp_cli_error'))->toHaveCount(1);
+            expect(wp_stub_get_calls('wp_cli_error')[0]['args']['exit'])->toBeTrue();
             expect(wp_stub_get_calls('wp_cli_success'))->toBeEmpty();
         });
 
@@ -311,9 +365,12 @@ function makeCommandContractSuite(array $contracts): void
         });
 
         it("{$label} reports a missing name instead of generating", function () use ($class, $case) {
-            ($this->make)($class)([], []);
+            ($this->make)($class)([], ['format' => 'json']);
 
+            // An error that exits, never a question: a run without a terminal must end.
             expect(wp_stub_get_calls('wp_cli_error'))->toHaveCount(1);
+            expect(wp_stub_get_calls('wp_cli_error')[0]['args']['exit'])->toBeTrue();
+            expect(wp_stub_get_calls('wp_cli_line'))->toBeEmpty();
 
             $directory = dirname("{$this->appPath}/{$case['path']}");
 

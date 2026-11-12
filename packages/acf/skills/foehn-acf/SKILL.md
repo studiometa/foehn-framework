@@ -278,7 +278,7 @@ Conditional logic inside a fragment keeps working in a group. Constructor option
 
 ## Scaffolding commands
 
-Run them with WP-CLI. Each accepts `--force` and `--dry-run`. Files go in the theme's `app/` directory, and the namespace comes from the theme's PSR-4 map.
+Run them with WP-CLI. Each accepts `--force`, `--dry-run` and `--format=json`, never prompts, and exits with status 1 when the file exists without `--force`. Files go in the theme's `app/` directory, and the namespace comes from the theme's PSR-4 map.
 
 ```bash
 wp foehn make:acf-block hero --title="Hero Banner" --fields=wysiwyg,image,cta   # app/Blocks/HeroBlock.php

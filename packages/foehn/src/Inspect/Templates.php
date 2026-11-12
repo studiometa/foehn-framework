@@ -243,7 +243,7 @@ final readonly class Templates
      *
      * @return array<array-key, string>
      */
-    private function twigFiles(): array
+    public function twigFiles(): array
     {
         /** @var string|array<mixed> $dirname */
         $dirname = Timber::$dirname;

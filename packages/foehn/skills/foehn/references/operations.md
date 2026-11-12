@@ -68,6 +68,16 @@ Indexing protection is not opt-in: outside `production`, Føhn always adds `noin
 - `vite` lists the entry names `ViteManifest::enqueue()` takes, read from `dist/.vite/manifest.json`, and the dev server URL while `npm run dev` runs.
 - With the `FULL` discovery cache, a class added since the cache was written is missing from the report until `wp foehn discovery:clear`.
 
+## Generators
+
+- Every `make:*` command (and `make:acf-block`, `make:field-group`, `make:options-page` from `foehn-acf`) runs without a prompt. Give the values as options: a missing value takes its default, and a missing name is an error.
+- `--dry-run --format=json` writes nothing and prints `{"dryRun": true, "files": [{"path", "status", "contents"}], "notes": [...]}`. Read `contents` before you write the file.
+- `--format=json` prints the same object for the real run, without `contents`. `status` is `created`, `overwritten` or `exists` (`would-create` or `would-overwrite` on a dry run). `notes` lists the next steps, for example the Twig template to create. `path` is absolute.
+- A file that exists without `--force` is an error with exit status 1, on a dry run too. The file is left as it is. Use `--force` only for a file you mean to replace.
+- A generated class goes next to the project's classes of the same kind, from discovery: their directory (the one that holds most of them), their namespace, and the parent class most of them extend. With none, the command's default directory and the stub's parent. The `path` of a dry run shows where it goes.
+- `make:post-type <name> --rewrite-slug=<slug> --meta=<key>[:<type>],…` writes the model with `#[AsPostType]`, one `#[AsPostMeta]` per field and a typed accessor for each (`start_date` gives `startDate(): ?string`). Types: `string` (default), `integer`, `number`, `boolean`. Store dates as `Y-m-d` strings. With `--meta`, `supports` includes `custom-fields`, so the block editor reads and saves the fields. The class extends `Studiometa\Foehn\Models\Post` unless the project's post types share another parent. No accessor is written for a key whose method the parent has (`date`, `link`, `title`…): read it with `post.meta('<key>')`.
+- The `make:post-type` notes give, for `single-<name>` and `archive-<name>`, the controller that claims it and the Twig file to create, next to the theme's views of the same kind (`templates/pages/single-<name>.twig` in the starter). The controller picks the view at runtime: check its `render()`/`renderFirst()` call.
+
 ## Discovery cache
 
 - `NONE`: scan on every request. `PARTIAL`: cache vendor packages, scan the app. `FULL`: cache everything.

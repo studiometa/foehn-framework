@@ -24,7 +24,9 @@ The terms Føhn's own code uses, so that a name means one thing everywhere. Arch
 
 **Generation request** — `GenerationRequest`: what a command wants generated, described but not performed. Attribute arguments are set by name; only genuine code fragments are substituted textually, and each substitution must find its target or the generation fails.
 
-**Generated file** — `GeneratedFile`: a path and its contents, not yet written. Generating and writing are separate, so `--dry-run` is a command that never writes.
+**Generated file** — `GeneratedFile`: a path and its contents, not yet written. Generating and writing are separate, so `--dry-run` is a command that never writes: `ClassFileGenerator::plan()` tells what `write()` would do. Both return a `GenerationStatus`.
+
+**Scaffolder** — `Scaffolder`: the part every `make:` command shares. It reads `--force`, `--dry-run` and `--format`, generates the file, writes or plans it, and reports the result as text or JSON. A command only reads its own arguments and builds the generation request. Nothing in it asks a question.
 
 ## Views
 

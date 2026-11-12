@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace Studiometa\Foehn\Console\Commands;
 
 use Studiometa\Foehn\Attributes\AsCliCommand;
-use Studiometa\Foehn\Console\ClassFileGenerator;
 use Studiometa\Foehn\Console\CliCommandInterface;
 use Studiometa\Foehn\Console\GenerationRequest;
+use Studiometa\Foehn\Console\Scaffolder;
 use Studiometa\Foehn\Console\Stubs\ContextProviderStub;
 use Studiometa\Foehn\Console\WpCli;
+use Studiometa\Foehn\Discovery\ContextProviderDiscovery;
 
 use function Tempest\Support\str;
 
@@ -32,7 +33,10 @@ use function Tempest\Support\str;
         : Overwrite existing file
 
         [--dry-run]
-        : Show what would be created without creating
+        : Write nothing. Show the file that would be written, or report that it exists
+
+        [--format=<format>]
+        : Output format. text (default) or json. json prints the written files, their status and the next steps
 
         ## EXAMPLES
 
@@ -53,7 +57,7 @@ final class MakeContextProviderCommand implements CliCommandInterface
 {
     public function __construct(
         private readonly WpCli $cli,
-        private readonly ClassFileGenerator $generator,
+        private readonly Scaffolder $scaffolder,
     ) {}
 
     public function __invoke(array $args, array $assocArgs): void
@@ -70,28 +74,17 @@ final class MakeContextProviderCommand implements CliCommandInterface
         $templates = ($assocArgs['templates'] ?? null) !== null
             ? array_map('trim', explode(',', $assocArgs['templates']))
             : [$name, $name . '-*'];
-        $force = ($assocArgs['force'] ?? null) !== null;
-        $dryRun = ($assocArgs['dry-run'] ?? null) !== null;
 
-        $file = $this->generator->generate(new GenerationRequest(
-            stub: ContextProviderStub::class,
-            subdirectory: 'ContextProviders',
-            className: $className,
-            attributeArguments: ['templates' => $templates],
-        ));
-
-        if ($dryRun) {
-            $this->cli->previewGeneratedFile($file);
-
-            return;
-        }
-
-        if (!$this->generator->write($file, $force)) {
-            $this->cli->reportFileExists($file);
-
-            return;
-        }
-
-        $this->cli->success("Context provider created: {$this->cli->getRelativePath($file->path)}");
+        $this->scaffolder->scaffold(
+            new GenerationRequest(
+                stub: ContextProviderStub::class,
+                discovery: ContextProviderDiscovery::class,
+                subdirectory: 'ContextProviders',
+                className: $className,
+                attributeArguments: ['templates' => $templates],
+            ),
+            $assocArgs,
+            'Context provider created',
+        );
     }
 }

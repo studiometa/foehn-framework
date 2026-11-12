@@ -5,15 +5,29 @@ declare(strict_types=1);
 namespace Studiometa\Foehn\Console\Commands;
 
 use Studiometa\Foehn\Attributes\AsCliCommand;
-use Studiometa\Foehn\Console\ClassFileGenerator;
+use Studiometa\Foehn\Attributes\AsPostMeta;
 use Studiometa\Foehn\Console\CliCommandInterface;
 use Studiometa\Foehn\Console\GenerationRequest;
+use Studiometa\Foehn\Console\ProjectConventions;
+use Studiometa\Foehn\Console\Scaffolder;
 use Studiometa\Foehn\Console\Stubs\PostTypeStub;
 use Studiometa\Foehn\Console\WpCli;
+use Studiometa\Foehn\Discovery\PostTypeDiscovery;
 
 use function Tempest\Support\str;
 
 #[AsCliCommand(name: 'make:post-type', description: 'Create a new custom post type class', longDescription: <<<'DOC'
+    ## DESCRIPTION
+
+    Writes a model class that registers the post type with #[AsPostType], and one
+    #[AsPostMeta] with an accessor for each meta field. With meta fields, the
+    post type supports custom-fields.
+
+    The class goes where the project keeps its post types, in their namespace and
+    under their parent class. A project with none gets app/Models/ and
+    Studiometa\Foehn\Models\Post. The next steps name the Twig files the project's
+    template controllers render for the single page and the archive.
+
     ## OPTIONS
 
     <name>
@@ -28,11 +42,20 @@ use function Tempest\Support\str;
     [--plural=<plural>]
     : Plural label (defaults to singular + 's')
 
+    [--rewrite-slug=<slug>]
+    : The URL slug of the single pages and the archive (defaults to the name)
+
+    [--meta=<fields>]
+    : Meta fields, comma-separated, each `key` or `key:type`. The type is string (default), integer, number or boolean. Store a date as a string in Y-m-d, or Y-m-d H:i:s, so a meta_query can compare it with type DATE or DATETIME. The post type then supports custom-fields, so the block editor reads and saves them
+
     [--force]
     : Overwrite existing file
 
     [--dry-run]
-    : Show what would be created without creating
+    : Write nothing. Show the file that would be written, or report that it exists
+
+    [--format=<format>]
+    : Output format. text (default) or json. json prints the written files, their status and the next steps
 
     ## EXAMPLES
 
@@ -42,19 +65,36 @@ use function Tempest\Support\str;
         # Create with custom labels
         wp foehn make:post-type team-member --singular="Team Member" --plural="Team Members"
 
-        # Create with custom class name
-        wp foehn make:post-type event --class=CalendarEvent
+        # Create with meta fields and a plural URL
+        wp foehn make:post-type event --rewrite-slug=events --meta=start_date,venue,ticket_url,capacity:integer
 
-        # Preview what would be created
-        wp foehn make:post-type project --dry-run
+        # Preview what would be created, as a coding agent reads it
+        wp foehn make:post-type project --dry-run --format=json
     DOC)]
 final class MakePostTypeCommand implements CliCommandInterface
 {
+    /**
+     * The meta types an accessor is generated for, with its return type and the
+     * expression that reads `$value`. An array or an object needs a REST schema,
+     * which only the author can write.
+     */
+    private const array ACCESSORS = [
+        'string' => ['?string', "is_string(\$value) && \$value !== '' ? \$value : null"],
+        'integer' => ['?int', 'is_numeric($value) ? (int) $value : null'],
+        'number' => ['?float', 'is_numeric($value) ? (float) $value : null'],
+        'boolean' => ['bool', '(bool) $value'],
+    ];
+
     public function __construct(
         private readonly WpCli $cli,
-        private readonly ClassFileGenerator $generator,
+        private readonly Scaffolder $scaffolder,
+        private readonly ProjectConventions $conventions,
     ) {}
 
+    /**
+     * @param array<int, string> $args
+     * @param array<string, string|true> $assocArgs WP-CLI gives `true` for an option without `=<value>`
+     */
     public function __invoke(array $args, array $assocArgs): void
     {
         $name = $args[0] ?? null;
@@ -65,39 +105,144 @@ final class MakePostTypeCommand implements CliCommandInterface
             return;
         }
 
-        $className = $assocArgs['class'] ?? str($name)->pascal()->toString() . 'Post';
-        $singular = $assocArgs['singular'] ?? str($name)->replace('-', ' ')->title()->toString();
-        $plural = $assocArgs['plural'] ?? $singular . 's';
-        $force = ($assocArgs['force'] ?? null) !== null;
-        $dryRun = ($assocArgs['dry-run'] ?? null) !== null;
+        $options = [];
 
-        $file = $this->generator->generate(new GenerationRequest(
+        foreach (['class', 'singular', 'plural', 'rewrite-slug', 'meta'] as $option) {
+            $value = $assocArgs[$option] ?? null;
+
+            if ($value === true || $value === '') {
+                $this->cli->error("Give --{$option} a value: --{$option}=<value>.");
+
+                return;
+            }
+
+            $options[$option] = $value;
+        }
+
+        $fields = self::parseMeta($options['meta'] ?? '');
+
+        if (is_string($fields)) {
+            $this->cli->error($fields);
+
+            return;
+        }
+
+        $className = $options['class'] ?? str($name)->pascal()->toString();
+        $singular = $options['singular'] ?? str($name)->replace(['-', '_'], ' ')->title()->toString();
+        $plural = $options['plural'] ?? $singular . 's';
+        $attributeArguments = ['name' => $name, 'singular' => $singular, 'plural' => $plural];
+
+        if ($options['rewrite-slug'] !== null) {
+            $attributeArguments['rewriteSlug'] = $options['rewrite-slug'];
+        }
+
+        // WordPress puts meta in the REST response, which the block editor reads
+        // and saves, only for a post type that supports custom-fields.
+        if ($fields !== []) {
+            $attributeArguments['supports'] = ['title', 'editor', 'thumbnail', 'excerpt', 'custom-fields'];
+        }
+
+        $request = static fn(array $methods): GenerationRequest => new GenerationRequest(
             stub: PostTypeStub::class,
-            subdirectory: 'PostTypes',
+            subdirectory: 'Models',
             className: $className,
-            attributeArguments: [
-                'name' => $name,
-                'singular' => $singular,
-                'plural' => $plural,
-            ],
-        ));
+            attributeArguments: $attributeArguments,
+            discovery: PostTypeDiscovery::class,
+            attributes: array_map(static fn(array $field): array => [
+                'name' => AsPostMeta::class,
+                'arguments' => ['key' => $field['key'], 'type' => $field['type']],
+            ], $fields),
+            methods: $methods,
+        );
 
-        if ($dryRun) {
-            $this->cli->previewGeneratedFile($file);
+        $notes = [
+            $this->conventions->view('single', $name)->note(),
+            $this->conventions->view('archive', $name)->note(),
+        ];
+        $methods = [];
+        $accessorOf = [];
+        $parent = $this->conventions->place($request([]))->parent ?? (string) get_parent_class(PostTypeStub::class);
 
-            return;
+        foreach ($fields as $field) {
+            $method = str($field['key'])->camel()->toString();
+
+            // A method the parent has would replace it for every caller, Timber's
+            // own templates included: date() or link() under another meaning breaks them.
+            $conflict = match (true) {
+                preg_match('/^[a-z_][a-zA-Z0-9_]*$/', $method) !== 1 => 'is not a valid method name',
+                method_exists($parent, $method) => "would replace {$parent}::{$method}()",
+                array_key_exists(strtolower($method), $accessorOf) => sprintf(
+                    "is already the accessor of '%s'",
+                    $accessorOf[strtolower($method)],
+                ),
+                default => null,
+            };
+
+            if ($conflict !== null) {
+                $notes[] = sprintf(
+                    "No accessor for '%s': %s() %s. Read it with post.meta('%s'), or add an accessor under another name.",
+                    $field['key'],
+                    $method,
+                    $conflict,
+                    $field['key'],
+                );
+
+                continue;
+            }
+
+            [$returnType, $expression] = self::ACCESSORS[$field['type']];
+            // PHP method names ignore case: startDate() and startdate() are one method.
+            $accessorOf[strtolower($method)] = $field['key'];
+            $methods[$method] = [
+                'returnType' => $returnType,
+                'body' => "\$value = \$this->meta('{$field['key']}');\n\nreturn {$expression};",
+            ];
         }
 
-        if (!$this->generator->write($file, $force)) {
-            $this->cli->reportFileExists($file);
-
-            return;
+        if ($fields !== []) {
+            $notes[] =
+                'Editors edit these fields in the Custom Fields panel (Preferences > General > Advanced > Custom fields), '
+                . 'or in blocks bound to them with the core/post-meta source. ACF gives them a form. '
+                . 'Write them with `wp post meta update <id> <key> <value>`.';
         }
 
-        $this->cli->success("Post type created: {$this->cli->getRelativePath($file->path)}");
-        $this->cli->line('');
-        $this->cli->log("Don't forget to create your Twig template at:");
-        $this->cli->log("  templates/single-{$name}.twig");
-        $this->cli->log("  templates/archive-{$name}.twig (if archive is enabled)");
+        $notes[] = 'Run `wp foehn rewrite:flush` once the class is in place, so the new URLs resolve.';
+
+        $this->scaffolder->scaffold($request($methods), $assocArgs, 'Post type created', $notes);
+    }
+
+    /**
+     * Read `--meta`: `key` or `key:type`, comma-separated.
+     *
+     * @return list<array{key: string, type: string}>|string The fields, or what is wrong with them
+     */
+    private static function parseMeta(string $option): array|string
+    {
+        $fields = [];
+
+        foreach (array_filter(array_map('trim', explode(',', $option))) as $entry) {
+            [$key, $type] = array_pad(array_map('trim', explode(':', $entry, 2)), 2, 'string');
+
+            if (preg_match('/^[A-Za-z0-9_-]+$/', $key) !== 1) {
+                return sprintf("Invalid meta key '%s'. Use letters, digits, '_' and '-'.", $key);
+            }
+
+            if (!array_key_exists($type, self::ACCESSORS)) {
+                return sprintf(
+                    "Invalid type '%s' for meta key '%s'. Use %s. An array or an object needs a REST schema: declare it with #[AsPostMeta] by hand.",
+                    $type,
+                    $key,
+                    implode(', ', array_keys(self::ACCESSORS)),
+                );
+            }
+
+            if (in_array($key, array_column($fields, 'key'), true)) {
+                return sprintf("Meta key '%s' is given twice.", $key);
+            }
+
+            $fields[] = ['key' => $key, 'type' => $type];
+        }
+
+        return $fields;
     }
 }

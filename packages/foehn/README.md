@@ -394,7 +394,7 @@ Føhn provides WP-CLI commands for scaffolding:
 wp foehn make:block Hero --acf
 
 # Generate a new post type
-wp foehn make:post-type Product
+wp foehn make:post-type product
 
 # Generate a new taxonomy
 wp foehn make:taxonomy ProductCategory --post-types=product
