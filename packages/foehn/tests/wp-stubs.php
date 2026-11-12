@@ -30,6 +30,8 @@ function wp_stub_reset(): void
     $GLOBALS['wp_stub_options'] = [];
     $GLOBALS['wp_stub_taxonomies'] = [];
     $GLOBALS['wp_stub_post_types'] = [];
+    $GLOBALS['wp_stub_public_post_types'] = [];
+    $GLOBALS['wp_stub_public_taxonomies'] = [];
     $GLOBALS['wp_stub_site_options'] = [];
     $GLOBALS['wp_stub_plugins'] = [];
     $GLOBALS['wp_stub_mu_plugins'] = [];
@@ -564,6 +566,32 @@ if (!function_exists('post_type_exists')) {
     function post_type_exists(string $postType): bool
     {
         return in_array($postType, ['post', 'page', 'attachment', ...($GLOBALS['wp_stub_post_types'] ?? [])], true);
+    }
+}
+
+if (!function_exists('get_post_types')) {
+    /**
+     * Core's public post types, and the ones a test adds to
+     * $GLOBALS['wp_stub_public_post_types'], keyed by name as WordPress gives them.
+     */
+    function get_post_types(array|string $args = [], string $output = 'names', string $operator = 'and'): array
+    {
+        $types = ['post', 'page', 'attachment', ...($GLOBALS['wp_stub_public_post_types'] ?? [])];
+
+        return array_combine($types, $types);
+    }
+}
+
+if (!function_exists('get_taxonomies')) {
+    /**
+     * Core's public taxonomies, and the ones a test adds to
+     * $GLOBALS['wp_stub_public_taxonomies'], keyed by name as WordPress gives them.
+     */
+    function get_taxonomies(array $args = [], string $output = 'names', string $operator = 'and'): array
+    {
+        $taxonomies = ['category', 'post_tag', ...($GLOBALS['wp_stub_public_taxonomies'] ?? [])];
+
+        return array_combine($taxonomies, $taxonomies);
     }
 }
 
@@ -1666,13 +1694,15 @@ if (!function_exists('update_post_meta')) {
 
 if (!function_exists('get_posts')) {
     /**
-     * Answers with `$GLOBALS['wp_stub_get_posts']`, whatever the arguments.
+     * Answers with `$GLOBALS['wp_stub_get_posts']`, whatever the arguments, or with
+     * what it returns for them when it is a closure.
      */
     function get_posts(array $args = []): array
     {
         wp_stub_record('get_posts', compact('args'));
+        $posts = $GLOBALS['wp_stub_get_posts'] ?? [];
 
-        return $GLOBALS['wp_stub_get_posts'] ?? [];
+        return $posts instanceof Closure ? $posts($args) : $posts;
     }
 }
 

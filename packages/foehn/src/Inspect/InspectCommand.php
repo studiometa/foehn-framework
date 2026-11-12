@@ -18,7 +18,10 @@ use Studiometa\Foehn\Console\WpCli;
     `wp foehn` commands, seeders, active plugins, theme supports and the Vite entry
     points.
 
-    `templates` gives the controller that renders each WordPress template. `views`
+    `templates` gives the controller that renders each WordPress template, and a
+    real URL to check it with: the newest published post of the type, the archive,
+    a term with posts, the front page, a search or a missing page. A template that
+    no such URL renders gives the reason instead. `views`
     gives, for each Twig file, the context providers its name matches. Both give
     the context keys: `base` keys are always set, the `keys` of a controller or a
     provider come from literal `with()` calls in its source and can depend on
@@ -95,7 +98,7 @@ final readonly class InspectCommand implements CliCommandInterface
         'blocks' => ['name', 'title', 'attributes'],
         'patterns' => ['name', 'title', 'template'],
         'bindings' => ['name', 'label', 'class'],
-        'templates' => ['template', 'controller', 'request', 'keys'],
+        'templates' => ['template', 'controller', 'url', 'request', 'keys'],
         'views' => ['view', 'providers', 'keys'],
         'context-providers' => ['class', 'templates', 'keys'],
         'menus' => ['location', 'contextKey', 'class'],
@@ -298,7 +301,8 @@ final readonly class InspectCommand implements CliCommandInterface
 
     /**
      * Templates, with the keys every controller receives above the rows, and the keys
-     * of its controller on each row.
+     * of its controller on each row. A template with no test URL gives the reason in
+     * its place.
      *
      * @param array<mixed> $data
      * @return array{string, list<string>, list<mixed>}
@@ -313,6 +317,7 @@ final readonly class InspectCommand implements CliCommandInterface
             ['every template: ' . self::cell($data['base'] ?? null)],
             array_map(static fn(mixed $row): array => [
                 ...(is_array($row) ? $row : []),
+                'url' => self::field($row, 'url') ?? 'none: ' . self::scalar(self::field($row, 'noUrl')),
                 'keys' => self::field($controllers, self::scalar(self::field($row, 'controller')) . '.keys'),
             ], $rows),
         ];

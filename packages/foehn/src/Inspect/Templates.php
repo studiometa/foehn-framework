@@ -37,7 +37,9 @@ final readonly class Templates
      *
      * What repeats from row to row is given once: `base`, the keys every controller
      * receives, and `controllers`, the priority and the declared keys of each class.
-     * A row keeps only `request`, the keys `Timber::context()` adds for that template.
+     * A row keeps only `request`, the keys `Timber::context()` adds for that template,
+     * and `url`, a real URL that renders it, or `noUrl`, why there is none (see
+     * TestUrls).
      *
      * @return array{
      *     base: list<string>,
@@ -60,14 +62,17 @@ final readonly class Templates
         }
 
         ksort($controllers);
+        $map = TemplateControllerMap::fromItems($items);
+        $urls = TestUrls::sample($map);
         $rows = [];
 
-        foreach (TemplateControllerMap::fromItems($items)->claims() as $claim) {
+        foreach ($map->claims() as $claim) {
             $rows[] = [
                 'template' => $claim['template'],
                 'controller' => $claim['controller']['className'],
                 'overridden' => $claim['overridden'],
                 'request' => ContextKeys::request($claim['template']),
+                ...$urls->of($claim['template']),
             ];
         }
 

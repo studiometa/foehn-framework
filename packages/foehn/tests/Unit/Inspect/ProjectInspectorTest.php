@@ -317,6 +317,8 @@ describe('ProjectInspector', function () {
             // Claims it too, with priority 20: the lower priority wins.
             'overridden' => [LegacyProductController::class],
             'request' => [],
+            'url' => null,
+            'noUrl' => 'No published post renders it.',
         ]);
         expect($templates['controllers'][ProductController::class])->toBe([
             'priority' => 10,

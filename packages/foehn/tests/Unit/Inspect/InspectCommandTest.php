@@ -204,15 +204,29 @@ describe('wp foehn inspect', function () {
         expect($output)->toMatch('/\S+SampleProductsSeeder\s+20\s+Sample products/');
     });
 
-    it('shows the base keys once, and the controller and context keys of each template', function () {
+    it('shows the base keys once, and the controller, test URL and context keys of each template', function () {
+        $GLOBALS['wp_stub_public_post_types'] = ['product'];
+        $redShoe = new WP_Post();
+        $redShoe->ID = 7;
+        $redShoe->post_name = 'red-shoe';
+        $redShoe->post_type = 'product';
+        $GLOBALS['wp_stub_get_posts'] = static fn(array $args): array => (
+            $args['post_type'] === 'product' ? [$redShoe] : []
+        );
+
         inspectCommand()(['templates'], []);
 
         $output = inspectOutput();
 
         expect($output)->toContain('  every template: body_class, http_host');
-        expect($output)->toMatch('/template\s+controller\s+request\s+keys/');
-        expect($output)->toMatch('/single-product\s+\S+ProductController\s+in_stock, related/');
-        expect($output)->toMatch('/taxonomy-brand\s+\S+BrandController\s+term\s+brand_count/');
+        expect($output)->toMatch('/template\s+controller\s+url\s+request\s+keys/');
+        expect($output)->toMatch(
+            '#single-product\s+\S+ProductController\s+http://example.com/red-shoe/\s+in_stock, related#',
+        );
+        // No term has posts: the reason takes the place of the URL.
+        expect($output)->toMatch(
+            '/taxonomy-brand\s+\S+BrandController\s+none: No term with posts renders it\.\s+term\s+brand_count/',
+        );
     });
 
     it('prints what every view receives once, and only what differs on each row', function () {
