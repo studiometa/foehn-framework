@@ -107,9 +107,43 @@ final readonly class TemplateControllerMap
      */
     public function find(string $template): ?array
     {
+        return $this->claim($template)['controller'] ?? null;
+    }
+
+    /**
+     * The claimed pattern that renders a template name: the name itself, a wildcard
+     * pattern, or null when none claims it.
+     */
+    public function pattern(string $template): ?string
+    {
+        return $this->claim($template)['template'] ?? null;
+    }
+
+    /**
+     * The template a request renders, from its names (see TemplateNames): the first
+     * one a controller claims, or the last one when none is claimed.
+     *
+     * @param non-empty-list<string> $names Most specific first
+     */
+    public function resolve(array $names): string
+    {
+        foreach ($names as $name) {
+            if ($this->claim($name) !== null) {
+                return $name;
+            }
+        }
+
+        return $names[array_key_last($names)];
+    }
+
+    /**
+     * @return array{template: string, controller: array{className: class-string, priority: int}, overridden: list<class-string>}|null
+     */
+    private function claim(string $template): ?array
+    {
         foreach ($this->claims as $claim) {
             if ($claim['template'] === $template) {
-                return $claim['controller'];
+                return $claim;
             }
         }
 
@@ -118,7 +152,7 @@ final readonly class TemplateControllerMap
                 continue;
             }
 
-            return $claim['controller'];
+            return $claim;
         }
 
         return null;

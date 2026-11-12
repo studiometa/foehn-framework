@@ -224,53 +224,15 @@ final class TemplateControllerDiscovery implements Discovery
         }
 
         if (is_singular()) {
-            $postType = get_post_type();
+            $post = get_queried_object();
+            $post = $post instanceof \WP_Post ? $post : null;
 
             if (is_single()) {
-                // Check for specific post slug template
-                $post = get_queried_object();
-
-                if ($post instanceof \WP_Post) {
-                    // single-{post-type}-{slug}
-                    $specificTemplate = "single-{$postType}-{$post->post_name}";
-
-                    if ($this->hasController($specificTemplate)) {
-                        return $specificTemplate;
-                    }
-                }
-
-                // single-{post-type}
-                if ($postType !== 'post') {
-                    $cptTemplate = "single-{$postType}";
-
-                    if ($this->hasController($cptTemplate)) {
-                        return $cptTemplate;
-                    }
-                }
-
-                return 'single';
+                return $this->controllers->resolve(TemplateNames::single((string) get_post_type(), $post?->post_name));
             }
 
             if (is_page()) {
-                $post = get_queried_object();
-
-                if ($post instanceof \WP_Post) {
-                    // page-{slug}
-                    $slugTemplate = "page-{$post->post_name}";
-
-                    if ($this->hasController($slugTemplate)) {
-                        return $slugTemplate;
-                    }
-
-                    // page-{id}
-                    $idTemplate = "page-{$post->ID}";
-
-                    if ($this->hasController($idTemplate)) {
-                        return $idTemplate;
-                    }
-                }
-
-                return 'page';
+                return $this->controllers->resolve(TemplateNames::page($post?->post_name, $post?->ID));
             }
 
             if (is_attachment()) {
@@ -291,54 +253,19 @@ final class TemplateControllerDiscovery implements Discovery
                 return "archive-{$postType}";
             }
 
+            $term = get_queried_object();
+            $term = $term instanceof \WP_Term ? $term : null;
+
             if (is_category()) {
-                $category = get_queried_object();
-
-                if ($category instanceof \WP_Term) {
-                    $slugTemplate = "category-{$category->slug}";
-
-                    if ($this->hasController($slugTemplate)) {
-                        return $slugTemplate;
-                    }
-                }
-
-                return 'category';
+                return $this->controllers->resolve(TemplateNames::category($term?->slug));
             }
 
             if (is_tag()) {
-                $tag = get_queried_object();
-
-                if ($tag instanceof \WP_Term) {
-                    $slugTemplate = "tag-{$tag->slug}";
-
-                    if ($this->hasController($slugTemplate)) {
-                        return $slugTemplate;
-                    }
-                }
-
-                return 'tag';
+                return $this->controllers->resolve(TemplateNames::tag($term?->slug));
             }
 
             if (is_tax()) {
-                $term = get_queried_object();
-
-                if ($term instanceof \WP_Term) {
-                    // taxonomy-{taxonomy}-{term}
-                    $termTemplate = "taxonomy-{$term->taxonomy}-{$term->slug}";
-
-                    if ($this->hasController($termTemplate)) {
-                        return $termTemplate;
-                    }
-
-                    // taxonomy-{taxonomy}
-                    $taxTemplate = "taxonomy-{$term->taxonomy}";
-
-                    if ($this->hasController($taxTemplate)) {
-                        return $taxTemplate;
-                    }
-                }
-
-                return 'taxonomy';
+                return $this->controllers->resolve(TemplateNames::taxonomy($term?->taxonomy, $term?->slug));
             }
 
             if (is_author()) {
@@ -353,13 +280,5 @@ final class TemplateControllerDiscovery implements Discovery
         }
 
         return 'index';
-    }
-
-    /**
-     * Check if a controller exists for a template.
-     */
-    private function hasController(string $template): bool
-    {
-        return $this->controllers->find($template) !== null;
     }
 }
