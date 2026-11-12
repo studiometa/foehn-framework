@@ -437,7 +437,7 @@ What changes:
 - **Slower hits.** A hit is a round trip from nginx to the bucket, about 10 to 50 ms in the same region, against about 1 ms from disk.
 - **The write comes after the response.** On a miss, PHP sends the page, then writes the object.
 - **Deploys must clear the cache.** On disk, `composer install` removes the cache. A bucket keeps pages rendered by the old templates, so the release step must run `wp foehn cache:clear`.
-- **The objects are public-read.** nginx reads the bucket without credentials, like the uploads. Anybody can read a cached page from the bucket host. This is the HTML the site sends to anonymous visitors, but it is duplicate content, and a section fragment read from the bucket host has no `noindex` header.
+- **The bucket must allow anonymous reads.** nginx reads the bucket without credentials, like the uploads. The objects are written at the bucket's own visibility, without a `public-read` ACL, as for [image transforms](/guide/images): the bucket policy that lets nginx read the uploads also lets it read the pages. Anybody can read a cached page from the bucket host. This is the HTML the site sends to anonymous visitors, but it is duplicate content, and a section fragment read from the bucket host has no `noindex` header.
 - **No headers sidecar and no stored 404.** Only the drop-in replays recorded headers and serves a stored 404, and it does not read a bucket. `cacheNotFound` has no effect.
 - **The sweep lists the bucket.** With a `ttl`, the hourly sweep reads the age of each object from a listing: one request for each 1,000 objects.
 

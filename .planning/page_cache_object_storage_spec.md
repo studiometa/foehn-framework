@@ -10,13 +10,13 @@ This spec adds a bucket mode: the page cache stores pages in the bucket that `hu
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Activation  | Explicit opt-in: `new PageCacheConfig(storage: PageCacheStorage::Bucket)`. Not automatic when `S3_UPLOADS_BUCKET` is set: hits are slower, and a single-instance site gets nothing for it. |
 | Location    | The uploads bucket, under the `cache/pages/` prefix, as Glide uses `cache/glide/`. No second bucket and no new variables.                                                                  |
-| Public read | Accepted. nginx reads the bucket anonymously, so cache objects are `public-read`, like uploads.                                                                                            |
+| Public read | Accepted. nginx reads the bucket anonymously, through the bucket policy that already allows it for the uploads.                                                                            |
 | Readers     | nginx only. The drop-in does not read in bucket mode, and Apache is not supported.                                                                                                         |
 
 ## Design
 
 1. **Storage seam.** `PageStore` is the interface that the recorder, the invalidator, the sweep, the commands and the dashboard use. `Store` (with `CacheDirectory`) is the disk implementation. `BucketStore` is the bucket implementation, on Flysystem `AwsS3V3Adapter` with the s3-uploads S3 client, the client Glide uses.
-2. **Object keys.** `cache/pages/{host}/{path}/index….html`, the same relative path as on disk. Each object gets `Content-Type: text/html; charset=UTF-8` and the `public-read` ACL. An S3 PUT is atomic, so no temporary object is necessary.
+2. **Object keys.** `cache/pages/{host}/{path}/index….html`, the same relative path as on disk. Each object gets `Content-Type: text/html; charset=UTF-8` and the bucket's own visibility, without a `public-read` ACL, as Glide does: a bucket with Block Public Access or with ACLs turned off refuses that write. An S3 PUT is atomic, so no temporary object is necessary.
 3. **Write after the response.** In bucket mode the recorder writes on shutdown, after `fastcgi_finish_request()`, so a miss does not wait for the PUT.
 4. **nginx.** `wp foehn cache:config --server=nginx` renders a bucket variant. The bypass rules and the key assembly do not change. The variant does not test a file: it rewrites to the object key and proxies to the bucket, and `error_page 403 404` sends a miss to PHP. Scheme, host, path style and resolver come from the `S3_UPLOADS_*` variables that the uploads proxy and `/_image/` use, and they are in the policy hash.
 5. **Drop-in.** In bucket mode the drop-in does not read. Reading the bucket before WordPress loads means loading the AWS SDK and an HTTP round trip, which gives almost nothing. A miss goes to WordPress.

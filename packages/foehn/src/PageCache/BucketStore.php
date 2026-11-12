@@ -10,7 +10,6 @@ use League\Flysystem\FileAttributes;
 use League\Flysystem\Filesystem;
 use League\Flysystem\FilesystemException;
 use League\Flysystem\FilesystemOperator;
-use League\Flysystem\Visibility;
 use RuntimeException;
 use Studiometa\Foehn\Config\PageCacheConfig;
 use Studiometa\Foehn\Helpers\UploadsBucket;
@@ -80,7 +79,12 @@ final class BucketStore implements PageStore
     }
 
     /**
-     * Store a page as a public-read object.
+     * Store a page at the bucket's own visibility.
+     *
+     * No `public-read` ACL, as for Glide's transforms: a bucket with Block Public Access
+     * or with ACLs turned off refuses that write, and every page would then be a miss.
+     * nginx reads the object through the bucket policy that already lets it read the
+     * uploads anonymously.
      *
      * Only a 200 is stored: nginx never serves the 404 filename, and the drop-in does
      * not read a bucket. The headers are not stored either; see the class comment.
@@ -100,10 +104,7 @@ final class BucketStore implements PageStore
         }
 
         try {
-            $this->filesystem()->write($path, $body, [
-                'visibility' => Visibility::PUBLIC,
-                'ContentType' => self::CONTENT_TYPE,
-            ]);
+            $this->filesystem()->write($path, $body, ['ContentType' => self::CONTENT_TYPE]);
         } catch (FilesystemException|RuntimeException) {
             return false;
         }

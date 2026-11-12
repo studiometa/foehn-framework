@@ -68,12 +68,12 @@ describe('BucketStore', function () {
         expect(file_get_contents($this->root . '/example.com/blog/index.html'))->toBe('<html>hello</html>');
     });
 
-    it('writes a public-read HTML object, because nginx reads the bucket anonymously', function () {
+    it('writes an HTML object at the bucket\'s own visibility, because a bucket may refuse a public-read ACL', function () {
         $this->store->put($this->key, '<html>hello</html>');
 
         $config = $this->adapter->writes['example.com/blog/index.html'];
 
-        expect($config->get('visibility'))->toBe('public');
+        expect($config->get('visibility'))->toBeNull();
         expect($config->get('ContentType'))->toBe('text/html; charset=UTF-8');
     });
 
@@ -85,8 +85,12 @@ describe('BucketStore', function () {
     });
 
     it('writes no headers sidecar and no 404, because nothing reads them from a bucket', function () {
-        expect($this->store->put($this->key, '<html>page</html>', 200, ['Link: <https://example.com/>; rel=shortlink']))
-            ->toBeTrue();
+        expect($this->store->put(
+            $this->key,
+            '<html>page</html>',
+            200,
+            ['Link: <https://example.com/>; rel=shortlink'],
+        ))->toBeTrue();
         expect($this->store->put($this->key, '<html>missing</html>', 404))->toBeFalse();
 
         expect(glob($this->root . '/example.com/blog/*'))->toBe([$this->root . '/example.com/blog/index.html']);
