@@ -17,3 +17,20 @@ nodejs_version: "22"
 # The foehn-installer generates web/wp-config.php, web/index.php, and symlinks
 # Environment variables are loaded from .env via vlucas/phpdotenv
 
+# On each start: install the dependencies when vendor/ is missing (a fresh clone),
+# then install WordPress (admin / admin) and activate the theme when WordPress is
+# not installed. An installed site is left as it is.
+hooks:
+  post-start:
+    - exec: '[ -d vendor ] || composer install --no-interaction'
+    - exec: |
+        if ! wp core is-installed 2>/dev/null; then
+          wp core install \
+            --url="${DDEV_PRIMARY_URL}" \
+            --title="${DDEV_SITENAME}" \
+            --admin_user=admin \
+            --admin_password=admin \
+            --admin_email=admin@example.com \
+            --skip-email
+          wp theme activate "$(composer config extra.foehn.theme-name)"
+        fi

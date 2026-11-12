@@ -36,10 +36,6 @@ composer.lock
 /.ddev/web-build/*
 !/.ddev/web-build/prepend.Dockerfile.wp-cli
 !/.ddev/web-build/Dockerfile.wp-cli
-# Écrit à la main, et suivi pour survivre à un clone. Exclu de l'archive
-# Composer par .gitattributes : les hooks qu'il porte supposent les dépôts
-# `path` du monorepo.
-!/.ddev/config.monorepo.yaml
 # Written and removed by smoke tests; left behind on aborted runs.
 # Smoke tests generate this nginx include for testing, then delete it when done.
 /.ddev/nginx/foehn-page-cache.conf

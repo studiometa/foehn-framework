@@ -35,7 +35,7 @@ describe('starter packaging', function () {
     it('exclut de l\'archive les fichiers propres au monorepo', function () use ($racine) {
         $attributs = (string) file_get_contents($racine . '/.gitattributes');
 
-        foreach (['.ddev/config.monorepo.yaml'] as $fichier) {
+        foreach (['.gitattributes', 'tests/framework-smoke', 'tests/php/Unit/StarterPackagingTest.php'] as $fichier) {
             // Les motifs sont ancrés à la racine du paquet, d'où le `/` initial.
             expect($attributs)->toContain('/' . $fichier . ' export-ignore');
         }
@@ -77,7 +77,6 @@ describe('starter packaging', function () {
         $composer = json_decode((string) file_get_contents($racine . '/composer.json'), true);
 
         expect($attributs)->not->toContain('/tests/smoke')->not->toContain('/phpunit.smoke.xml');
-        expect($attributs)->toContain('/tests/framework-smoke export-ignore');
         expect($racine . '/tests/smoke/run.sh')->toBeFile();
         expect($racine . '/tests/smoke/SiteTest.php')->toBeFile();
         expect($composer['autoload-dev']['psr-4'] ?? [])->not->toHaveKey('Studiometa\\Foehn\\Smoke\\');
@@ -115,8 +114,17 @@ describe('starter packaging', function () {
         expect($attributs)->not->toContain('/public');
     });
 
-    // Les hooks du monorepo supposent des dépôts `path` absents d'un projet.
-    it('ne livre pas les hooks ddev du monorepo', function () use ($racine) {
-        expect((string) file_get_contents($racine . '/.ddev/config.yaml'))->not->toContain('hooks:');
+    // `ddev start` installe WordPress et active le thème dans un projet créé :
+    // la documentation le promet. Le hook ne doit rien supposer du monorepo,
+    // comme des dépôts `path` vers ../foehn.
+    it('installe WordPress au démarrage de ddev sans supposer le monorepo', function () use ($racine) {
+        $ddev = (string) file_get_contents($racine . '/.ddev/config.yaml');
+
+        expect($ddev)
+            ->toContain('post-start:')
+            ->toContain('wp core is-installed')
+            ->toContain('wp theme activate')
+            ->not->toContain('../');
+        expect($racine . '/.ddev/config.monorepo.yaml')->not->toBeFile();
     });
 });
