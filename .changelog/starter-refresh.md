@@ -1,5 +1,6 @@
 ### Changed
 
+- The starter `.env.example` sets `DISABLE_WP_CRON=false`, so WordPress cron, `#[AsCron]`, `#[AsJob]` and the page-cache warm-up run in a new local project. Production keeps the default (`true`) and a real cron. Add the line to the `.env` of a local project created from an earlier starter.
 - The starter `theme/app/page-cache.config.php` names the page cache options a project may need, with links to the guide: `browserMaxAge`, `cacheControl`, `responseHeaders`, `warmAfterPurge`, `warmSitemap`, `warmExclude` and bucket `storage`. The active values do not change.
 - The starter enables `DisableFileEditor` in `theme/app/foehn.config.php`: the admin has no theme or plugin file editor. A comment names `SecurityHeaders` and `RestApiAuth`, which stay opt-in.
 - The starter no longer ships the framework smoke suites in `tests/smoke/`: a created project keeps `tests/smoke/run.sh` and a short Pest test, `SiteTest.php`, that `composer test:smoke` runs against the started ddev site (home page with no PHP error, active theme). The starter `composer.json` no longer has the `Studiometa\Foehn\Smoke\` autoload. A project created from an earlier starter can delete the other files in `tests/smoke/` and that autoload entry.
