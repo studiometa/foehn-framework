@@ -17,12 +17,14 @@ The project runs in DDEV. Run WP-CLI as `ddev wp …`. Without DDEV, run `wp …
 
    Read `foehn-vite-plugin` before you change `vite.config.js` or the assets, and `foehn-acf` when the project uses `studiometa/foehn-acf`.
 
-2. Read what the project already declares, before you add a class:
+2. Read what the project already declares, before you add a class. Start with the summary, which gives the names in each section and is short enough to read whole. Then read in full the sections your task needs, in one call:
 
    ```bash
    ddev wp foehn inspect --format=json
-   ddev wp foehn inspect templates --format=json
+   ddev wp foehn inspect post-types templates views menus settings --format=json
    ```
+
+   `post-types` gives the models and meta keys, `templates` the controller of each WordPress template, `views` the Twig files and their context keys, `menus` the menu locations, and `settings` the options. `--all` prints every section; the output is long, so name sections instead.
 
 3. Create classes with the generators. Preview first, then write:
 
