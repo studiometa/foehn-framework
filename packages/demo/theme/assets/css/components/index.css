@@ -718,3 +718,18 @@
   aspect-ratio: 16 / 9;
   border: 0;
 }
+
+/* ── Active filters ─────────────────────────────────────── */
+
+.filters__active {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: baseline;
+  width: 100%;
+}
+
+.filters__chip {
+  padding: 0.125rem 0.5rem;
+  border: var(--rule-width) solid var(--color-ink);
+}

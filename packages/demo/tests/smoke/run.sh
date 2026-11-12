@@ -342,6 +342,19 @@ grep -qE 'value="still-life" +checked' <<<"$bare_form" && fail "the filter form 
 grep -q 'Reset' <<<"$bare_form" && fail "the filter form offers a reset on an unfiltered archive, so it is not tracking the query"
 printf '✓ %s\n' "the filter form is a section the server re-renders for the current URL"
 
+# An active series is a chip whose link removes it and keeps the other one.
+two_series="$(curl -sk "$url/projects/?project_category%5B%5D=still-life&project_category%5B%5D=portrait&foehn_sections=project-filters")"
+grep -q 'class="filters__chip" href="/projects/?project_category=portrait"' <<<"$two_series" ||
+	fail "an active filter chip does not link to the archive without its own series"
+grep -q 'filters__chip' <<<"$bare_form" && fail "the unfiltered archive shows active filter chips"
+printf '✓ %s\n' "query_url_toggle() builds a chip that removes one active series"
+
+search="$(curl -sk "$url/?s=series&post_type=project")"
+grep -q '<input type="hidden" name="post_type" value="project">' <<<"$search" ||
+	fail "a new search from the results page drops the post_type the URL holds"
+grep -q 'href="/?s=series&#038;post_type=post"' <<<"$search" || fail "the search page does not offer the other post types with query_url()"
+printf '✓ %s\n' "the search page keeps and changes its arguments with the query helpers"
+
 # Image transforms, end to end. The plate crops to two ratios, which is where
 # #[AsImageSize] stops being the answer: a registered size is one shape, and one
 # registered today applies to nothing already uploaded. So photograph.twig asks
