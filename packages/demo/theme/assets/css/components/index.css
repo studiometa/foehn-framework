@@ -666,3 +666,14 @@
   border-bottom: var(--rule-width) solid var(--color-ink);
   cursor: pointer;
 }
+
+/* ── Copy link ──────────────────────────────────────────── */
+
+/* A button that reads as a label, like the links beside it. */
+.copy-link {
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  background: none;
+  border: 0;
+}

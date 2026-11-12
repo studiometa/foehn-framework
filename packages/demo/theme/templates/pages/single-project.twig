@@ -54,6 +54,10 @@
         <span class="label">
           {% if post.prev %}<a href="{{ post.prev.link }}">← {{ post.prev.title }}</a>{% endif %}
         </span>
+        {# The theme's own js-toolkit component, mounted by the loader in app.js. #}
+        <button class="label label--ink copy-link" type="button" data-component="CopyLink" data-option-url="{{ post.link }}">
+          <span data-ref="label">Copy link</span>
+        </button>
         <span class="label" style="text-align: right">
           {% if post.next %}<a href="{{ post.next.link }}">{{ post.next.title }} →</a>{% endif %}
         </span>
