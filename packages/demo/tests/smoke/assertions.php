@@ -236,6 +236,15 @@ $results->same(
     $blockTypes->get_registered('theme/contact-sheet')?->view_script_module_ids,
 );
 
+// A pattern is rendered from its Twig template when it is registered, so a template
+// that fails to render is a pattern that is not there.
+$commission = WP_Block_Patterns_Registry::get_instance()->get_registered('theme/commission');
+
+$results->true(
+    'the block pattern is registered, as block markup from its Twig template',
+    is_array($commission) && str_starts_with(trim($commission['content']), '<!-- wp:theme/section'),
+);
+
 // The unit tests run the filter against a stub. This reads the list the editor
 // gets from WordPress itself: the demo's `layout` goes first, and core keeps its
 // own `theme` category, which the demo does not declare.

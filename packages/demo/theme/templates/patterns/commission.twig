@@ -1,0 +1,15 @@
+{#
+  Block markup, not HTML: the editor parses this into a section with three inner
+  blocks. wp_block() writes a whole block, wp_block_start() and wp_block_end() wrap
+  the inner ones. The callout is a dynamic block, so it needs no inner HTML at all.
+#}
+{{ wp_block_start('theme/section', { background: 'light', spacing: 'large' }) }}
+{{ wp_block('heading', { level: 2 }, '<h2 class="wp-block-heading">Commission a series</h2>') }}
+{{ wp_block('paragraph', {}, '<p>A series starts with a conversation about a place, a subject or a book. Tell me what you have in mind, and I will answer with a first idea of the pictures and of the days it takes.</p>') }}
+{{ wp_block('theme/callout', {
+  title: 'Write to the studio',
+  body: 'Answers within two working days. ' ~ (email ? email : 'studio@foehn.test'),
+  tone: 'success',
+  dismissible: true
+}) }}
+{{ wp_block_end('theme/section') }}
