@@ -13,8 +13,9 @@ Føhn includes scaffolding and discovery management commands:
 wp foehn make:model Product
 wp foehn make:model Product --post-type
 
-# Generate a post type
-wp foehn make:post-type Product
+# Generate a post type, with meta fields and a URL slug
+wp foehn make:post-type product
+wp foehn make:post-type event --rewrite-slug=events --meta=start_date,venue,capacity:integer
 
 # Generate a taxonomy
 wp foehn make:taxonomy ProductCategory --post-types=product
@@ -75,8 +76,41 @@ All scaffolding commands, the `foehn-acf` ones included, support these options:
 Example with dry-run:
 
 ```bash
-wp foehn make:model Product --post-type --dry-run
+wp foehn make:post-type product --dry-run
 ```
+
+### Where a Generated Class Goes
+
+A scaffolding command puts its class next to the classes of the same kind the project already declares. It reads them from discovery: a post type goes where the project's `#[AsPostType]` classes are, a block where its `#[AsBlock]` classes are, and so on.
+
+- The directory is the one that holds most of them. When each one has a directory of its own (`Blocks/Hero/HeroBlock.php`, `Blocks/Quote/QuoteBlock.php`), it is the directory that holds them all (`Blocks/`).
+- The namespace is theirs.
+- The parent class is the one most of them extend, when the stub extends a class. A post type of a project whose post types extend `App\Models\BaseContent` extends it too.
+
+Only the classes under the app directory count, not the classes of the framework or of a package. When the project declares nothing of the kind, the command uses its default directory (`Models/` for a post type, `Blocks/` for a block…) and the stub's parent class. Run `wp foehn discovery:clear` first if the discovery cache is older than the classes you just added.
+
+### Post Types
+
+`make:post-type` writes a model that registers the post type and its meta fields:
+
+```bash
+wp foehn make:post-type event --rewrite-slug=events --meta=start_date,venue,capacity:integer
+```
+
+| Option                   | Effect                                                                                                                                                                                                                                |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--class=<class>`        | The class name. Default: the PascalCase name (`event` gives `Event`).                                                                                                                                                                 |
+| `--singular`, `--plural` | The labels. Default: the humanized name, and the singular with `s`.                                                                                                                                                                   |
+| `--rewrite-slug=<slug>`  | The URL slug of the single pages and the archive, as `rewriteSlug` of `#[AsPostType]`. Default: the name.                                                                                                                             |
+| `--meta=<fields>`        | Meta fields, comma-separated, each `key` or `key:type`. The type is `string` (default), `integer`, `number` or `boolean`. Each field gets a `#[AsPostMeta]` and an accessor that reads it: `start_date` gives `startDate(): ?string`. |
+
+The class extends `Studiometa\Foehn\Models\Post`, which adds the query methods to `Timber\Post`, unless the project's post types share another parent (see above).
+
+- Store a date as a string in `Y-m-d`, or `Y-m-d H:i:s`, so a `meta_query` can compare it with the type `DATE` or `DATETIME`.
+- An `array` or `object` field needs a REST schema. Declare it with `#[AsPostMeta]` by hand.
+- No accessor is written when its name is a method of the parent class: a field `date` would replace `Timber\Post::date()`, which Timber and the templates call. The field is declared, and a note says to read it with `post.meta('date')` or to give the accessor another name.
+
+The notes name the Twig files to create. For each of `single-<name>` and `archive-<name>`, they give the template controller that claims it, and a file next to the views of the same kind in the theme: the views of the other post types (`pages/single-project.twig`), or else the generic one (`pages/single.twig`). The controller picks the view at runtime, so read its `render()` or `renderFirst()` call to confirm. The notes also say that WordPress gives editors no form for the meta fields, and that the rewrite rules need `wp foehn rewrite:flush`.
 
 ### Scripts and Coding Agents
 
@@ -106,7 +140,7 @@ wp foehn make:block hero --format=json
 | `files[].path`     | The absolute path of the file.                                                                                         |
 | `files[].status`   | `created`, `overwritten` or `exists` (left as it is). With `--dry-run`: `would-create`, `would-overwrite` or `exists`. |
 | `files[].contents` | With `--dry-run` only: the contents the command would write.                                                           |
-| `notes`            | The next steps, for example the Twig template to create. Can be empty.                                                 |
+| `notes`            | The next steps, for example the Twig file to create. Can be empty.                                                     |
 
 When the status is `exists`, the JSON is printed and the command then fails with status `1`.
 
