@@ -12,6 +12,9 @@ namespace Studiometa\Foehn\Console;
  * and `--format` — are read here, once, so every command takes them the same way and
  * a coding agent can drive any of them without reading its output as prose.
  *
+ * Where the file goes follows the project when ProjectConventions is given: next to
+ * the classes of the same kind, in their namespace, under their parent class.
+ *
  * Nothing here asks a question. A value that is missing is the command's to report
  * as an error, and a file that exists is an error unless `--force` is given, so a run
  * without a terminal ends instead of waiting for an answer.
@@ -25,6 +28,7 @@ final readonly class Scaffolder
     public function __construct(
         private WpCli $cli,
         private ClassFileGenerator $generator,
+        private ?ProjectConventions $conventions = null,
     ) {}
 
     /**
@@ -51,7 +55,7 @@ final readonly class Scaffolder
         $force = ($assocArgs['force'] ?? null) !== null;
         $dryRun = ($assocArgs['dry-run'] ?? null) !== null;
 
-        $file = $this->generator->generate($request);
+        $file = $this->generator->generate($this->conventions?->place($request) ?? $request);
         $status = $dryRun ? $this->generator->plan($file, $force) : $this->generator->write($file, $force);
 
         if ($format === 'json') {

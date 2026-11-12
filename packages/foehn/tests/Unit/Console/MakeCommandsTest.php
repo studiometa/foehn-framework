@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Studiometa\Foehn\Attributes\AsBlock;
 use Studiometa\Foehn\Attributes\AsContextProvider;
 use Studiometa\Foehn\Attributes\AsImageSize;
+use Studiometa\Foehn\Attributes\AsPostMeta;
 use Studiometa\Foehn\Attributes\AsPostType;
 use Studiometa\Foehn\Attributes\AsTaxonomy;
 use Studiometa\Foehn\Attributes\AsTemplateController;
@@ -33,7 +34,8 @@ beforeEach(function () {
 
     $this->cli = new WpCli();
     $this->generator = new ClassFileGenerator($this->appPath);
-    $this->scaffolder = new Scaffolder($this->cli, $this->generator);
+    $this->conventions = testProjectConventions($this->appPath);
+    $this->scaffolder = new Scaffolder($this->cli, $this->generator, $this->conventions);
 
     /**
      * Read the attribute of a class the command just generated.
@@ -64,14 +66,17 @@ beforeEach(function () {
 
 afterEach(function () {
     exec('rm -rf ' . escapeshellarg($this->root));
+    tearDownTestContainer();
 });
 
 describe('make:post-type', function () {
     it('generates a post type carrying the requested configuration', function () {
-        (new MakePostTypeCommand($this->cli, $this->scaffolder))(['product'], ['class' => 'MakeProductPost']);
+        (new MakePostTypeCommand($this->cli, $this->scaffolder, $this->conventions))(['product'], [
+            'class' => 'MakeProductPost',
+        ]);
 
         /** @var AsPostType $attribute */
-        $attribute = ($this->generatedAttribute)(($this->path)('PostTypes', 'MakeProductPost'), AsPostType::class);
+        $attribute = ($this->generatedAttribute)(($this->path)('Models', 'MakeProductPost'), AsPostType::class);
 
         expect($attribute->name)
             ->toBe('product')
@@ -82,37 +87,37 @@ describe('make:post-type', function () {
     });
 
     it('honours explicit singular and plural', function () {
-        (new MakePostTypeCommand($this->cli, $this->scaffolder))(['person'], [
+        (new MakePostTypeCommand($this->cli, $this->scaffolder, $this->conventions))(['person'], [
             'class' => 'MakePersonPost',
             'singular' => 'Person',
             'plural' => 'People',
         ]);
 
         /** @var AsPostType $attribute */
-        $attribute = ($this->generatedAttribute)(($this->path)('PostTypes', 'MakePersonPost'), AsPostType::class);
+        $attribute = ($this->generatedAttribute)(($this->path)('Models', 'MakePersonPost'), AsPostType::class);
 
         expect($attribute->singular)->toBe('Person')->and($attribute->plural)->toBe('People');
     });
 
     it('reports the missing name instead of generating', function () {
-        (new MakePostTypeCommand($this->cli, $this->scaffolder))([], []);
+        (new MakePostTypeCommand($this->cli, $this->scaffolder, $this->conventions))([], []);
 
         expect(wp_stub_get_calls('wp_cli_error'))->toHaveCount(1);
-        expect(glob($this->appPath . '/PostTypes/*.php'))->toBeEmpty();
+        expect(glob($this->appPath . '/Models/*.php'))->toBeEmpty();
     });
 
     it('writes nothing on a dry run', function () {
-        (new MakePostTypeCommand($this->cli, $this->scaffolder))(['product'], ['dry-run' => true]);
+        (new MakePostTypeCommand($this->cli, $this->scaffolder, $this->conventions))(['product'], ['dry-run' => true]);
 
-        expect(glob($this->appPath . '/PostTypes/*.php'))->toBeEmpty();
+        expect(glob($this->appPath . '/Models/*.php'))->toBeEmpty();
         expect(wp_stub_get_calls('wp_cli_log'))->not->toBeEmpty();
     });
 
     it('refuses to overwrite without --force', function () {
-        $command = new MakePostTypeCommand($this->cli, $this->scaffolder);
+        $command = new MakePostTypeCommand($this->cli, $this->scaffolder, $this->conventions);
         $command(['product'], ['class' => 'GuardedPost']);
 
-        $path = ($this->path)('PostTypes', 'GuardedPost');
+        $path = ($this->path)('Models', 'GuardedPost');
         file_put_contents($path, '<?php // hand-edited');
 
         $command(['product'], ['class' => 'GuardedPost']);
@@ -122,15 +127,126 @@ describe('make:post-type', function () {
     });
 
     it('overwrites with --force', function () {
-        $command = new MakePostTypeCommand($this->cli, $this->scaffolder);
+        $command = new MakePostTypeCommand($this->cli, $this->scaffolder, $this->conventions);
         $command(['product'], ['class' => 'ForcedPost']);
 
-        $path = ($this->path)('PostTypes', 'ForcedPost');
+        $path = ($this->path)('Models', 'ForcedPost');
         file_put_contents($path, '<?php // hand-edited');
 
         $command(['product'], ['class' => 'ForcedPost', 'force' => true]);
 
         expect(file_get_contents($path))->toContain('#[AsPostType(');
+    });
+
+    it('names the class after the post type and extends the Føhn post model', function () {
+        (new MakePostTypeCommand($this->cli, $this->scaffolder, $this->conventions))(['make-recital'], []);
+
+        $contents = file_get_contents(($this->path)('Models', 'MakeRecital'));
+
+        expect($contents)
+            ->toContain('use Studiometa\\Foehn\\Models\\Post;')
+            ->toContain('final class MakeRecital extends Post')
+            ->not->toContain('\\Timber\\Post');
+    });
+
+    it('declares each meta field with an accessor, and the rewrite slug', function () {
+        (new MakePostTypeCommand($this->cli, $this->scaffolder, $this->conventions))(['event'], [
+            'class' => 'MakeEventPost',
+            'rewrite-slug' => 'events',
+            'meta' => 'start_date, venue,capacity:integer,price:number,sold_out:boolean',
+        ]);
+
+        $path = ($this->path)('Models', 'MakeEventPost');
+
+        /** @var AsPostType $attribute */
+        $attribute = ($this->generatedAttribute)($path, AsPostType::class);
+        $class = new ReflectionClass('Theme\\Models\\MakeEventPost');
+        $meta = array_map(static fn(ReflectionAttribute $meta): array => [
+            $meta->newInstance()->key,
+            $meta->newInstance()->type,
+        ], $class->getAttributes(AsPostMeta::class));
+        $returnType = static fn(string $method): string => (string) $class->getMethod($method)->getReturnType();
+
+        expect($attribute->rewriteSlug)->toBe('events');
+        expect($meta)->toBe([
+            ['start_date', 'string'],
+            ['venue',      'string'],
+            ['capacity',   'integer'],
+            ['price',      'number'],
+            ['sold_out',   'boolean'],
+        ]);
+        expect([
+            $returnType('startDate'),
+            $returnType('venue'),
+            $returnType('capacity'),
+            $returnType('price'),
+            $returnType('soldOut'),
+        ])->toBe(['?string', '?string', '?int', '?float', 'bool']);
+        expect(file_get_contents($path))->toContain("\$value = \$this->meta('start_date');");
+    });
+
+    it('gives no accessor that would replace a method of the parent', function () {
+        (new MakePostTypeCommand($this->cli, $this->scaffolder, $this->conventions))(['gig'], [
+            'class' => 'MakeGigPost',
+            'meta' => 'date,link,venue',
+            'format' => 'json',
+        ]);
+
+        ($this->generatedAttribute)(($this->path)('Models', 'MakeGigPost'), AsPostType::class);
+
+        $class = new ReflectionClass('Theme\\Models\\MakeGigPost');
+        $report = json_decode(wp_stub_get_calls('wp_cli_line')[0]['args']['message'], true);
+
+        expect($class->getMethod('date')->getDeclaringClass()->getName())->not->toBe($class->getName());
+        expect($class->getMethod('venue')->getDeclaringClass()->getName())->toBe($class->getName());
+        expect(count($class->getAttributes(AsPostMeta::class)))->toBe(3);
+        expect(implode("\n", $report['notes']))
+            ->toContain("No accessor for 'date'")
+            ->toContain("No accessor for 'link'")
+            ->toContain("post.meta('date')");
+    });
+
+    it('rejects a meta type it cannot declare without a schema', function (string $meta) {
+        (new MakePostTypeCommand($this->cli, $this->scaffolder, $this->conventions))(['concert'], ['meta' => $meta]);
+
+        expect(wp_stub_get_calls('wp_cli_error'))->toHaveCount(1);
+        expect(glob($this->appPath . '/Models/*.php'))->toBeEmpty();
+    })->with(['venue:array', 'venue:date', 'bad key', 'venue,venue']);
+
+    it('names the views the controllers render, and the next steps', function () {
+        (new MakePostTypeCommand($this->cli, $this->scaffolder, $this->conventions))(['festival'], [
+            'meta' => 'venue',
+            'dry-run' => true,
+            'format' => 'json',
+        ]);
+
+        $report = json_decode(wp_stub_get_calls('wp_cli_line')[0]['args']['message'], true);
+
+        expect($report['notes'])->toHaveCount(4);
+        expect($report['notes'][0])->toContain('No template controller claims single-festival');
+        expect($report['notes'][1])->toContain('No template controller claims archive-festival');
+        expect($report['notes'][2])->toContain('core/post-meta');
+        expect($report['notes'][3])->toContain('wp foehn rewrite:flush');
+    });
+
+    it('follows the post types the project already declares', function () {
+        $conventions = testProjectConventions(testFixturePath('ConventionsApp'));
+        $command = new MakePostTypeCommand(
+            $this->cli,
+            new Scaffolder($this->cli, new ClassFileGenerator(testFixturePath('ConventionsApp')), $conventions),
+            $conventions,
+        );
+
+        $command(['event'], ['dry-run' => true, 'format' => 'json']);
+
+        $file = json_decode(wp_stub_get_calls('wp_cli_line')[0]['args']['message'], true)['files'][0];
+
+        expect($file['path'])->toBe(testFixturePath('ConventionsApp') . '/Content/Event.php');
+        expect($file['status'])->toBe('would-create');
+        expect($file['contents'])
+            ->toContain('namespace Tests\\Fixtures\\ConventionsApp\\Content;')
+            ->toContain('final class Event extends BaseContent')
+            ->not->toContain('use Tests\\Fixtures\\ConventionsApp\\Content\\BaseContent;');
     });
 });
 
@@ -215,7 +331,7 @@ describe('make:block', function () {
 
 describe('make:model', function () {
     it('generates a plain Timber model by default', function () {
-        (new MakeModelCommand($this->cli, $this->scaffolder))(['MakeWidget'], []);
+        (new MakeModelCommand($this->cli, $this->scaffolder, $this->conventions))(['MakeWidget'], []);
 
         $path = ($this->path)('Models', 'MakeWidget');
         $contents = file_get_contents($path);
@@ -226,7 +342,7 @@ describe('make:model', function () {
     });
 
     it('registers a post type when asked for one', function () {
-        (new MakeModelCommand($this->cli, $this->scaffolder))(['MakeDoohickey'], [
+        (new MakeModelCommand($this->cli, $this->scaffolder, $this->conventions))(['MakeDoohickey'], [
             'post-type' => true,
             'singular' => 'Doohickey',
             'plural' => 'Doohickeys',
@@ -241,7 +357,7 @@ describe('make:model', function () {
     });
 
     it('honours an explicit post type slug', function () {
-        (new MakeModelCommand($this->cli, $this->scaffolder))(['MakeThingamajig'], [
+        (new MakeModelCommand($this->cli, $this->scaffolder, $this->conventions))(['MakeThingamajig'], [
             'post-type' => true,
             'slug' => 'thingy',
         ]);
@@ -378,7 +494,9 @@ describe('make:menu and make:shortcode and make:hooks', function () {
 
 describe('generated files', function () {
     it('are valid PHP for every make command', function () {
-        (new MakePostTypeCommand($this->cli, $this->scaffolder))(['lint-product'], ['class' => 'LintPost']);
+        (new MakePostTypeCommand($this->cli, $this->scaffolder, $this->conventions))(['lint-product'], [
+            'class' => 'LintPost',
+        ]);
         (new MakeTaxonomyCommand($this->cli, $this->scaffolder))(['lint-genre'], ['class' => 'LintTerm']);
         (new MakeBlockCommand($this->cli, $this->scaffolder))(['lint-hero'], ['class' => 'LintBlock']);
         (new MakeBlockCommand($this->cli, $this->scaffolder))(['lint-counter'], [
@@ -414,7 +532,9 @@ describe('generated files', function () {
     });
 
     it('leave no dummy placeholder behind', function () {
-        (new MakePostTypeCommand($this->cli, $this->scaffolder))(['clean-product'], ['class' => 'CleanPost']);
+        (new MakePostTypeCommand($this->cli, $this->scaffolder, $this->conventions))(['clean-product'], [
+            'class' => 'CleanPost',
+        ]);
         (new MakeTaxonomyCommand($this->cli, $this->scaffolder))(['clean-genre'], ['class' => 'CleanTerm']);
         (new MakeBlockCommand($this->cli, $this->scaffolder))(['clean-hero'], ['class' => 'CleanBlock']);
         (new MakeMenuCommand($this->cli, $this->scaffolder))(['CleanMenu'], []);

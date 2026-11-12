@@ -10,6 +10,7 @@ use Studiometa\Foehn\Console\GenerationRequest;
 use Studiometa\Foehn\Console\Scaffolder;
 use Studiometa\Foehn\Console\Stubs\ImageSizeStub;
 use Studiometa\Foehn\Console\WpCli;
+use Studiometa\Foehn\Discovery\ImageSizeDiscovery;
 
 use function Tempest\Support\str;
 
@@ -80,6 +81,7 @@ final class MakeImageSizeCommand implements CliCommandInterface
         $this->scaffolder->scaffold(
             new GenerationRequest(
                 stub: ImageSizeStub::class,
+                discovery: ImageSizeDiscovery::class,
                 subdirectory: 'ImageSizes',
                 className: $className,
                 attributeArguments: [

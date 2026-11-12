@@ -10,6 +10,7 @@ use Studiometa\Foehn\Console\GenerationRequest;
 use Studiometa\Foehn\Console\Scaffolder;
 use Studiometa\Foehn\Console\Stubs\HooksStub;
 use Studiometa\Foehn\Console\WpCli;
+use Studiometa\Foehn\Discovery\HookDiscovery;
 
 use function Tempest\Support\str;
 
@@ -65,9 +66,15 @@ final class MakeHooksCommand implements CliCommandInterface
         $className = $assocArgs['class'] ?? str($name)->pascal()->toString() . 'Hooks';
 
         $this->scaffolder->scaffold(
-            new GenerationRequest(stub: HooksStub::class, subdirectory: 'Hooks', className: $className, replacements: [
-                'DummyHooks' => $className,
-            ]),
+            new GenerationRequest(
+                stub: HooksStub::class,
+                discovery: HookDiscovery::class,
+                subdirectory: 'Hooks',
+                className: $className,
+                replacements: [
+                    'DummyHooks' => $className,
+                ],
+            ),
             $assocArgs,
             'Hooks class created',
             [

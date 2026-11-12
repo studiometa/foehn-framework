@@ -206,6 +206,22 @@ function testDiscoveryRunner(
 }
 
 /**
+ * The conventions of a project whose classes discovery reads from $discoveredPath.
+ *
+ * Discovery runs here, before a test writes into $appPath classes that no autoloader
+ * can load: what the runner holds is the project as it was before the command.
+ */
+function testProjectConventions(
+    string $appPath,
+    ?string $discoveredPath = null,
+): \Studiometa\Foehn\Console\ProjectConventions {
+    $runner = testDiscoveryRunner(bootTestContainer(), $discoveredPath ?? $appPath);
+    $runner->getDiscoveries();
+
+    return new \Studiometa\Foehn\Console\ProjectConventions($appPath, $runner);
+}
+
+/**
  * Delete a directory and everything below it.
  */
 function removeTestDirectory(string $directory): void

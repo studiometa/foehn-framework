@@ -11,6 +11,7 @@ use Studiometa\Foehn\Console\Scaffolder;
 use Studiometa\Foehn\Console\Stubs\BlockStub;
 use Studiometa\Foehn\Console\Stubs\InteractiveBlockStub;
 use Studiometa\Foehn\Console\WpCli;
+use Studiometa\Foehn\Discovery\BlockDiscovery;
 
 use function Tempest\Support\str;
 
@@ -95,6 +96,7 @@ final class MakeBlockCommand implements CliCommandInterface
         $this->scaffolder->scaffold(
             new GenerationRequest(
                 stub: $interactive ? InteractiveBlockStub::class : BlockStub::class,
+                discovery: BlockDiscovery::class,
                 subdirectory: 'Blocks',
                 className: $className,
                 attributeArguments: [

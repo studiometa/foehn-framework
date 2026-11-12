@@ -10,6 +10,7 @@ use Studiometa\Foehn\Console\GenerationRequest;
 use Studiometa\Foehn\Console\Scaffolder;
 use Studiometa\Foehn\Console\Stubs\TaxonomyStub;
 use Studiometa\Foehn\Console\WpCli;
+use Studiometa\Foehn\Discovery\TaxonomyDiscovery;
 
 use function Tempest\Support\str;
 
@@ -85,6 +86,7 @@ final class MakeTaxonomyCommand implements CliCommandInterface
         $this->scaffolder->scaffold(
             new GenerationRequest(
                 stub: TaxonomyStub::class,
+                discovery: TaxonomyDiscovery::class,
                 subdirectory: 'Taxonomies',
                 className: $className,
                 attributeArguments: [

@@ -10,6 +10,7 @@ use Studiometa\Foehn\Console\GenerationRequest;
 use Studiometa\Foehn\Console\Scaffolder;
 use Studiometa\Foehn\Console\Stubs\ContextProviderStub;
 use Studiometa\Foehn\Console\WpCli;
+use Studiometa\Foehn\Discovery\ContextProviderDiscovery;
 
 use function Tempest\Support\str;
 
@@ -77,6 +78,7 @@ final class MakeContextCommand implements CliCommandInterface
         $this->scaffolder->scaffold(
             new GenerationRequest(
                 stub: ContextProviderStub::class,
+                discovery: ContextProviderDiscovery::class,
                 subdirectory: 'Context',
                 className: $className,
                 attributeArguments: ['templates' => $templates],

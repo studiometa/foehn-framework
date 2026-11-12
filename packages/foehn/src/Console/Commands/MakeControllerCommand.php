@@ -10,6 +10,7 @@ use Studiometa\Foehn\Console\GenerationRequest;
 use Studiometa\Foehn\Console\Scaffolder;
 use Studiometa\Foehn\Console\Stubs\TemplateControllerStub;
 use Studiometa\Foehn\Console\WpCli;
+use Studiometa\Foehn\Discovery\TemplateControllerDiscovery;
 
 use function Tempest\Support\str;
 
@@ -80,6 +81,7 @@ final class MakeControllerCommand implements CliCommandInterface
         $this->scaffolder->scaffold(
             new GenerationRequest(
                 stub: TemplateControllerStub::class,
+                discovery: TemplateControllerDiscovery::class,
                 subdirectory: 'Controllers',
                 className: $className,
                 attributeArguments: ['templates' => $templatesArgument],

@@ -10,6 +10,7 @@ use Studiometa\Foehn\Console\GenerationRequest;
 use Studiometa\Foehn\Console\Scaffolder;
 use Studiometa\Foehn\Console\Stubs\MenuStub;
 use Studiometa\Foehn\Console\WpCli;
+use Studiometa\Foehn\Discovery\MenuDiscovery;
 
 use function Tempest\Support\str;
 
@@ -72,6 +73,7 @@ final class MakeMenuCommand implements CliCommandInterface
         $this->scaffolder->scaffold(
             new GenerationRequest(
                 stub: MenuStub::class,
+                discovery: MenuDiscovery::class,
                 subdirectory: 'Menus',
                 className: $className,
                 attributeArguments: [

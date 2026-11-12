@@ -10,6 +10,7 @@ use Studiometa\Foehn\Console\GenerationRequest;
 use Studiometa\Foehn\Console\Scaffolder;
 use Studiometa\Foehn\Console\Stubs\ShortcodeStub;
 use Studiometa\Foehn\Console\WpCli;
+use Studiometa\Foehn\Discovery\ShortcodeDiscovery;
 
 use function Tempest\Support\str;
 
@@ -64,6 +65,7 @@ final class MakeShortcodeCommand implements CliCommandInterface
         $this->scaffolder->scaffold(
             new GenerationRequest(
                 stub: ShortcodeStub::class,
+                discovery: ShortcodeDiscovery::class,
                 subdirectory: 'Shortcodes',
                 className: $className,
                 // The tag lives on a method attribute and in the usage docblock,

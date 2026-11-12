@@ -10,6 +10,7 @@ use Studiometa\Foehn\Console\GenerationRequest;
 use Studiometa\Foehn\Console\Scaffolder;
 use Studiometa\Foehn\Console\Stubs\BlockPatternStub;
 use Studiometa\Foehn\Console\WpCli;
+use Studiometa\Foehn\Discovery\BlockPatternDiscovery;
 
 use function Tempest\Support\str;
 
@@ -86,6 +87,7 @@ final class MakePatternCommand implements CliCommandInterface
         $this->scaffolder->scaffold(
             new GenerationRequest(
                 stub: BlockPatternStub::class,
+                discovery: BlockPatternDiscovery::class,
                 subdirectory: 'Patterns',
                 className: $className,
                 attributeArguments: [

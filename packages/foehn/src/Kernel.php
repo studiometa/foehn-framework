@@ -17,6 +17,7 @@ use Studiometa\Foehn\Config\PageCacheConfig;
 use Studiometa\Foehn\Config\RestConfig;
 use Studiometa\Foehn\Config\TimberConfig;
 use Studiometa\Foehn\Console\ClassFileGenerator;
+use Studiometa\Foehn\Console\ProjectConventions;
 use Studiometa\Foehn\Console\WpCli;
 use Studiometa\Foehn\Contracts\CacheInterface;
 use Studiometa\Foehn\Contracts\ImageTransformer;
@@ -287,6 +288,10 @@ final class Kernel
         );
 
         $this->container->singleton(ClassFileGenerator::class, fn() => new ClassFileGenerator($this->appPath));
+        $this->container->singleton(
+            ProjectConventions::class,
+            fn() => new ProjectConventions($this->appPath, $this->container->get(DiscoveryRunner::class)),
+        );
 
         // The image transformer a project asked for, or none. Bound to the
         // interface so a template, a Twig function and the invalidation hooks all

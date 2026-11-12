@@ -7,10 +7,13 @@ namespace Studiometa\Foehn\Console\Commands;
 use Studiometa\Foehn\Attributes\AsCliCommand;
 use Studiometa\Foehn\Console\CliCommandInterface;
 use Studiometa\Foehn\Console\GenerationRequest;
+use Studiometa\Foehn\Console\ProjectConventions;
 use Studiometa\Foehn\Console\Scaffolder;
 use Studiometa\Foehn\Console\Stubs\ModelStub;
 use Studiometa\Foehn\Console\Stubs\PostTypeStub;
 use Studiometa\Foehn\Console\WpCli;
+use Studiometa\Foehn\Discovery\PostTypeDiscovery;
+use Studiometa\Foehn\Discovery\TimberModelDiscovery;
 
 use function Tempest\Support\str;
 
@@ -21,7 +24,8 @@ use function Tempest\Support\str;
     : The model name (e.g., 'Product', 'Event')
 
     [--post-type]
-    : Include #[AsPostType] attribute to register a custom post type
+    : Include #[AsPostType] attribute to register a custom post type. make:post-type
+      also takes meta fields and a rewrite slug
 
     [--slug=<slug>]
     : Custom post type slug (defaults to kebab-case of name)
@@ -60,6 +64,7 @@ final class MakeModelCommand implements CliCommandInterface
     public function __construct(
         private readonly WpCli $cli,
         private readonly Scaffolder $scaffolder,
+        private readonly ProjectConventions $conventions,
     ) {}
 
     public function __invoke(array $args, array $assocArgs): void
@@ -83,6 +88,7 @@ final class MakeModelCommand implements CliCommandInterface
             ? new GenerationRequest(
                 stub: PostTypeStub::class,
                 subdirectory: 'Models',
+                discovery: PostTypeDiscovery::class,
                 className: $className,
                 attributeArguments: [
                     'name' => $slug,
@@ -93,6 +99,7 @@ final class MakeModelCommand implements CliCommandInterface
             : new GenerationRequest(
                 stub: ModelStub::class,
                 subdirectory: 'Models',
+                discovery: TimberModelDiscovery::class,
                 className: $className,
                 replacements: ['DummyModel' => $className],
             );
@@ -103,7 +110,8 @@ final class MakeModelCommand implements CliCommandInterface
             'Model created',
             $withPostType
                 ? [
-                    "Create the Twig templates: templates/single-{$slug}.twig, templates/archive-{$slug}.twig (if the archive is enabled)",
+                    $this->conventions->view('single', $slug)->note(),
+                    $this->conventions->view('archive', $slug)->note(),
                 ]
                 : [],
         );
