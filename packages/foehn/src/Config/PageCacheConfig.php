@@ -333,7 +333,7 @@ final readonly class PageCacheConfig
             }
 
             // nginx sends both spellings of one name, and the drop-in only the last one.
-            if (isset($seen[strtolower($name)])) {
+            if (array_key_exists(strtolower($name), $seen)) {
                 throw new InvalidArgumentException(sprintf(
                     'responseHeaders: "%s" is listed twice. Header names do not depend on case.',
                     $name,
