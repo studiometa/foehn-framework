@@ -414,3 +414,25 @@ plates="$(curl -sk "$url/projects/corridors/" | grep -c 'class="plate ')"
   credits: $credits"
 
 printf '✓ every photograph is credited\n'
+
+# The seeders in theme/app/Seeders write the whole portfolio, and they must be
+# idempotent: on a site that already holds it, they find every post by slug and
+# every photograph by its Unsplash id, and write no copy. The site here came from
+# the dump, which is a seeded site, so no count may move.
+content_counts() {
+	# shellcheck disable=SC2016  # the container expands $type, not this shell
+	ddev exec 'cd /var/www/html && for type in project testimonial page nav_menu_item; do wp post list --post_type=$type --post_status=any --format=count; done; wp post list --post_type=attachment --post_status=inherit --meta_key=unsplash_id --format=count' 2>/dev/null |
+		tr -d '\r' | grep -xE '[0-9]+' | tr '\n' ' '
+}
+
+before="$(content_counts)"
+seed_output="$(ddev exec 'cd /var/www/html && wp foehn seed' 2>&1)" ||
+	fail "wp foehn seed failed
+$(printf '%s\n' "$seed_output" | grep -v Deprecated | tail -12)"
+after="$(content_counts)"
+
+[ -n "$before" ] && [ "$before" = "$after" ] || fail "a second seed changed the amount of content
+  before: $before (projects, testimonials, pages, menu items, photographs)
+  after:  $after"
+
+printf '✓ wp foehn seed runs again and duplicates nothing\n'
