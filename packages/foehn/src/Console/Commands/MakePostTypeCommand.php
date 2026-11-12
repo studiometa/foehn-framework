@@ -20,7 +20,8 @@ use function Tempest\Support\str;
     ## DESCRIPTION
 
     Writes a model class that registers the post type with #[AsPostType], and one
-    #[AsPostMeta] with an accessor for each meta field.
+    #[AsPostMeta] with an accessor for each meta field. With meta fields, the
+    post type supports custom-fields.
 
     The class goes where the project keeps its post types, in their namespace and
     under their parent class. A project with none gets app/Models/ and
@@ -45,9 +46,7 @@ use function Tempest\Support\str;
     : The URL slug of the single pages and the archive (defaults to the name)
 
     [--meta=<fields>]
-    : Meta fields, comma-separated, each `key` or `key:type`. The type is string
-      (default), integer, number or boolean. Store a date as a string in Y-m-d, or
-      Y-m-d H:i:s, so a meta_query can compare it with type DATE or DATETIME.
+    : Meta fields, comma-separated, each `key` or `key:type`. The type is string (default), integer, number or boolean. Store a date as a string in Y-m-d, or Y-m-d H:i:s, so a meta_query can compare it with type DATE or DATETIME. The post type then supports custom-fields, so the block editor reads and saves them
 
     [--force]
     : Overwrite existing file
@@ -137,6 +136,12 @@ final class MakePostTypeCommand implements CliCommandInterface
             $attributeArguments['rewriteSlug'] = $options['rewrite-slug'];
         }
 
+        // WordPress puts meta in the REST response, which the block editor reads
+        // and saves, only for a post type that supports custom-fields.
+        if ($fields !== []) {
+            $attributeArguments['supports'] = ['title', 'editor', 'thumbnail', 'excerpt', 'custom-fields'];
+        }
+
         $request = static fn(array $methods): GenerationRequest => new GenerationRequest(
             stub: PostTypeStub::class,
             subdirectory: 'Models',
@@ -196,8 +201,8 @@ final class MakePostTypeCommand implements CliCommandInterface
 
         if ($fields !== []) {
             $notes[] =
-                'WordPress gives editors no form for these fields: add custom-fields to supports for the Custom Fields panel, '
-                . 'bind them to blocks with the core/post-meta source, or manage them with ACF. '
+                'Editors edit these fields in the Custom Fields panel (Preferences > General > Advanced > Custom fields), '
+                . 'or in blocks bound to them with the core/post-meta source. ACF gives them a form. '
                 . 'Write them with `wp post meta update <id> <key> <value>`.';
         }
 

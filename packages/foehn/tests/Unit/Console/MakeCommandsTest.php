@@ -143,6 +143,7 @@ describe('make:post-type', function () {
 
         $contents = file_get_contents(($this->path)('Models', 'MakeRecital'));
 
+        expect($contents)->not->toContain('custom-fields');
         expect($contents)
             ->toContain('use Studiometa\\Foehn\\Models\\Post;')
             ->toContain('final class MakeRecital extends Post')
@@ -168,6 +169,7 @@ describe('make:post-type', function () {
         $returnType = static fn(string $method): string => (string) $class->getMethod($method)->getReturnType();
 
         expect($attribute->rewriteSlug)->toBe('events');
+        expect($attribute->supports)->toContain('custom-fields');
         expect($meta)->toBe([
             ['start_date', 'string'],
             ['venue',      'string'],
