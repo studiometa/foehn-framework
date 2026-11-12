@@ -25,21 +25,36 @@ When WordPress cannot boot, `wp foehn skill` cannot run. The agent then reads th
 
 ### Project instructions
 
-The starter ships an `AGENTS.md` at the project root, and a `CLAUDE.md` that imports it for Claude Code. It tells the agent to:
+Agents read `AGENTS.md` at the start of every task, but they load a skill only when they decide that it applies, and they often do not. So the few rules that matter most, and an index of where to read the rest, go in `AGENTS.md`.
 
-1. read the skills with `wp foehn skill`, or from `vendor/` and `node_modules/` when WordPress cannot boot;
-2. run `wp foehn inspect --format=json` to read the summary of what the project already declares, and fix what its `problems` section lists (`wp foehn inspect problems` gives the fix of each one), then `wp foehn inspect post-types templates views menus settings --format=json` to read in full the post types and their meta keys, templates with their controllers and a URL to test each one, Twig views and their context keys, menu locations and settings;
+`wp foehn agents-md` writes them in a block between `<!-- foehn:begin -->` and `<!-- foehn:end -->`, and changes nothing outside the markers. The block tells the agent to:
+
+1. trust the installed skills over what it remembers, and read the skill and the reference of an area before it writes code in it;
+2. run `wp foehn inspect --format=json` to read the summary of what the project already declares, then the sections it needs in full, such as `wp foehn inspect post-types templates views --format=json`;
 3. create classes with the `make:*` commands, first with `--dry-run --format=json`, which writes nothing and prints the file it would write;
-4. run `wp foehn discovery:clear` after it adds a class or changes an attribute;
+4. run `wp foehn discovery:clear` after it adds a class or changes an attribute, then check that `problems` is empty;
 5. put sample content and menus in a seeder made with `make:seeder` and run with `wp foehn seed`, never only in the database. See [Seeders](/guide/seeders);
-6. run `wp foehn errors` after it loads a page that fails, to read the last error with its file, Twig template, controller and view, `wp foehn errors --browser` for the JavaScript errors of the page while `npm run dev` runs, and `wp foehn log` for the warnings of WordPress and plugins. See [The error log](/guide/troubleshooting#the-error-log), [Browser errors](/guide/troubleshooting#browser-errors) and [The debug log](/guide/troubleshooting#the-debug-log);
-7. run `wp foehn trace <path>` when a page renders the wrong template, view or data, to read what the request ran: the templates tried, the controller, the views with their context providers and keys, and the blocks. See [Request Trace](/guide/request-trace).
+6. read `wp foehn errors`, `wp foehn errors --browser` and `wp foehn log` when a page fails. See [The error log](/guide/troubleshooting#the-error-log), [Browser errors](/guide/troubleshooting#browser-errors) and [The debug log](/guide/troubleshooting#the-debug-log);
+7. run `wp foehn trace <path>` when a page renders the wrong template, view or data. See [Request Trace](/guide/request-trace).
 
-Its **Project conventions** section says that sample content and menus go in seeders. The project fills in the rest: how editors edit post meta, and which checks to run. Keep it current, because the agent follows what it says.
+Then it lists every installed skill and each of its reference files on one line, with the command that prints it, such as `wp foehn skill foehn --reference=blocks`, and the first sentence of the file. The block stays under 60 lines with the Føhn packages. See [AGENTS.md Block](./cli-commands.md#agents-md-block) for what the command does with each state of the file.
 
-An agent can also run a command on the wrong site, for example in a shell on a production server. So `wp foehn seed`, the `make:*` commands and `salts:generate` refuse to run when `wp_get_environment_type()` is `production`, unless `--force` or `--dry-run` is given. See [Production Environment](/guide/cli-commands#production-environment).
+The starter ships an `AGENTS.md` with the block already written, and a `CLAUDE.md` that imports it for Claude Code. Outside the block, its **Project conventions** section says that sample content and menus go in seeders. The project fills in the rest: how editors edit post meta, and which checks to run. Keep it current, because the agent follows what it says.
 
-A project made before this file existed can copy [`AGENTS.md` from the starter](https://github.com/studiometa/foehn-framework/blob/main/packages/starter/AGENTS.md).
+#### Refresh the block
+
+Run the command again after `composer update`, `npm update` or the install of another package that ships a skill, such as `studiometa/foehn-acf`, and commit the change:
+
+```bash
+wp foehn agents-md --dry-run   # print the block and say what would change
+wp foehn agents-md
+```
+
+When the block is current, the command writes nothing. Composer does not run it for you: the command needs WordPress, which Composer does not boot, and a deploy that runs `composer install` would change a committed file on the server.
+
+A project made before the block existed runs the same command. It adds the block at the end of the project's `AGENTS.md`, or creates the file.
+
+An agent can also run a command on the wrong site, for example in a shell on a production server. So `wp foehn seed`, the `make:*` commands, `salts:generate` and `agents-md` refuse to run when `wp_get_environment_type()` is `production`, unless `--force` or `--dry-run` is given. See [Production Environment](/guide/cli-commands#production-environment).
 
 ## Install in the agent
 
