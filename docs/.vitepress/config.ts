@@ -95,6 +95,7 @@ export default defineConfig({
             { text: "Page Cache", link: "/guide/page-cache" },
             { text: "Admin Cache Controls", link: "/guide/admin-cache-controls" },
             { text: "Shortcodes", link: "/guide/shortcodes" },
+            { text: "Cron Jobs", link: "/guide/cron" },
             { text: "CLI Commands", link: "/guide/cli-commands" },
             { text: "Discovery Cache", link: "/guide/discovery-cache" },
             { text: "Custom Discovery", link: "/guide/custom-discovery" },
