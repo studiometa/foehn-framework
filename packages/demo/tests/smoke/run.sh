@@ -528,7 +528,7 @@ printf '✓ %s\n' "a tagged cache entry is flushed when a project is saved"
 # The same save queued a #[AsJob]: dispatch() stores it in Action Scheduler, and the
 # real cron runs it. Run here by hand, it requests the plates of the project.
 # shellcheck disable=SC2016  # the container expands it, not this shell
-queued="$(ddev exec "cd /var/www/html && wp action-scheduler action list --hook=foehn/demo/jobs/warm_plates --status=pending --format=json" 2>/dev/null | tr -d '\r' | tail -n1)"
+queued="$(ddev exec "cd /var/www/html && wp action-scheduler action list --hook=foehn/demo/jobs/warm_plates --status=pending --fields=args --format=json" 2>/dev/null | tr -d '\r' | tail -n1)"
 grep -q "\"projectId\":$corridors_id}" <<<"$queued" || fail "saving a project did not queue the WarmPlates job
 $queued"
 ddev exec 'cd /var/www/html && wp action-scheduler run --hooks=foehn/demo/jobs/warm_plates' >/dev/null 2>&1 ||
