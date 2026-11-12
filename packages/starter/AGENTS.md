@@ -42,6 +42,13 @@ The project runs in DDEV. Run WP-CLI as `ddev wp …`. Without DDEV, run `wp …
    ddev wp foehn errors --limit=5 --format=json
    ```
 
+   The warnings of WordPress and plugins, and `error_log()` messages, are in the debug log. Read it as grouped entries, not with `tail`:
+
+   ```bash
+   ddev wp foehn log
+   ddev wp foehn log --level=fatal,warning --since=-1hour --format=json
+   ```
+
 6. When a page renders the wrong template, view or data, trace it. It requests the page and prints the template files WordPress tried, the controller, each view with its context providers and keys, the blocks and the errors of that request:
 
    ```bash

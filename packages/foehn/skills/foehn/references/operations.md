@@ -105,6 +105,17 @@ Docs: [The error log](https://studiometa.github.io/foehn-framework/guide/trouble
 - File: `wp-content/cache/foehn/errors/errors.jsonl`, rotated at 256 KB, 3 files at most.
 - PHP and WordPress handle the error as before: each handler gives the error to the one before it, an uncaught exception is thrown again so PHP ends the request with its fatal error, and `WP_Fatal_Error_Handler` still shows its page.
 
+## Debug log
+
+Docs: [The debug log](https://studiometa.github.io/foehn-framework/guide/troubleshooting.md#the-debug-log).
+
+- `wp foehn log` reads the file WordPress gives to PHP's `error_log` when `WP_DEBUG` and `WP_DEBUG_LOG` are on: `wp-content/debug.log`, or the path `WP_DEBUG_LOG` holds. A Føhn `wp-config.php` sets `WP_DEBUG_LOG` from `WP_DEBUG`: `WP_DEBUG=true` in `.env` turns it on. When it is off, the command says so and exits with an error.
+- It holds what the error log leaves out: warnings of WordPress, plugins and packages, `_doing_it_wrong()` notices, deprecations, `error_log()` messages, errors raised before the theme boots.
+- Levels: `fatal`, `warning`, `notice`, `deprecated`, `log` (a message without a PHP error type). The lines without a date after an entry are its stack trace (after `Stack trace:`) or the rest of its message.
+- Entries with the same level, message, file and line are one group: `level`, `message`, `file`, `line`, `count`, `first`, `last` (UTC), `trace` (of the last entry, 50 lines at most). The groups seen last come first.
+- Default: the last 20 groups, two lines each and 3 trace lines. `--limit=<n>`, `--level=fatal,warning`, `--since=<date>` (`-10 minutes`), `--grep=<text>` (message, file or trace, case does not matter), `--format=json` (every field, one line). Filters apply before grouping.
+- Reads the last 8 MB of the file only, and says so (on stderr with `--format=json`). It never deletes or rotates the file.
+
 ## Request trace
 
 Docs: [Request Trace](https://studiometa.github.io/foehn-framework/guide/request-trace.md).

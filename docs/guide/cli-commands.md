@@ -403,6 +403,21 @@ wp foehn errors --clear
 
 Prints the last errors the site recorded in the `local` and `development` environments: uncaught exceptions, fatal errors, and the warnings and notices of the theme's own code. Each entry gives the file and line, the Twig template and line, a short stack, the URL, the WordPress template, the controller, the view and its context keys. See [The error log](/guide/troubleshooting#the-error-log).
 
+### Debug Log
+
+```bash
+# The last 20 groups of the WordPress debug log
+wp foehn log
+
+# The fatal errors and warnings of the last hour, for an agent
+wp foehn log --level=fatal,warning --since=-1hour --format=json
+
+# Every entry about one class
+wp foehn log --grep=ProductController --limit=5
+```
+
+Reads `wp-content/debug.log`, or the file `WP_DEBUG_LOG` names, as entries with their level, message, file and line, and the stack trace of a fatal error. Entries that repeat are one group, with a count and the time of the first and the last. See [The debug log](/guide/troubleshooting#the-debug-log).
+
 ### Request Trace
 
 ```bash
