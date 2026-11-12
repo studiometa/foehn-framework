@@ -588,13 +588,14 @@ The name is one word of lowercase letters, digits, `-` and `_`. It cannot be `fo
 namespace App\Console;
 
 use Studiometa\Foehn\Attributes\AsCliCommand;
+use Studiometa\Foehn\Console\CliCommandInterface;
 use WP_CLI;
 
 #[AsCliCommand(
     name: 'import:products',
     description: 'Import products from CSV file',
 )]
-final class ImportProductsCommand
+final class ImportProductsCommand implements CliCommandInterface
 {
     /**
      * Import products from a CSV file.
@@ -709,13 +710,14 @@ final class ImportProductsCommand implements CliCommandInterface
 namespace App\Console;
 
 use Studiometa\Foehn\Attributes\AsCliCommand;
+use Studiometa\Foehn\Console\CliCommandInterface;
 use WP_CLI;
 
 #[AsCliCommand(
     name: 'images:optimize',
     description: 'Optimize all media library images',
 )]
-final class OptimizeImagesCommand
+final class OptimizeImagesCommand implements CliCommandInterface
 {
     public function __invoke(array $args, array $assocArgs): void
     {
@@ -856,7 +858,7 @@ wp app cache warm --post-types=product
     name: 'products:list',
     description: 'List all products',
 )]
-final class ListProductsCommand
+final class ListProductsCommand implements CliCommandInterface
 {
     public function __invoke(array $args, array $assocArgs): void
     {
@@ -897,13 +899,14 @@ namespace App\Console;
 
 use App\Services\ExportService;
 use Studiometa\Foehn\Attributes\AsCliCommand;
+use Studiometa\Foehn\Console\CliCommandInterface;
 use WP_CLI;
 
 #[AsCliCommand(
     name: 'export:orders',
     description: 'Export orders to CSV',
 )]
-final class ExportOrdersCommand
+final class ExportOrdersCommand implements CliCommandInterface
 {
     public function __construct(
         private readonly ExportService $export,

@@ -26,6 +26,10 @@ final readonly class AsCliCommand
 | `longDescription` | `?string` | `null`  | Detailed help (docblock format)                                                                                                                                                                                                                                         |
 | `writes`          | `bool`    | `false` | The command changes content or files. When `wp_get_environment_type()` is `production`, it runs only with `--force` or `--dry-run`. Declare `[--force]` in `longDescription`, so WP-CLI accepts it. See [Command that Writes](/guide/cli-commands#command-that-writes). |
 
+## Requirements
+
+The class must implement `Studiometa\Foehn\Console\CliCommandInterface`, which declares `__invoke(array $args, array $assocArgs): void`. Discovery skips a class without it and reports it in `wp foehn discovery:status`.
+
 ## Namespace
 
 A command of your project is registered as `wp app <name>`. A command of Føhn, or of another package, is registered as `wp foehn <name>`. `FoehnConfig::$cliNamespace` changes `app` to another name. See [Command Namespace](/guide/cli-commands#command-namespace).
@@ -40,13 +44,14 @@ A command of your project is registered as `wp app <name>`. A command of Føhn, 
 namespace App\Console;
 
 use Studiometa\Foehn\Attributes\AsCliCommand;
+use Studiometa\Foehn\Console\CliCommandInterface;
 use WP_CLI;
 
 #[AsCliCommand(
     name: 'hello',
     description: 'Say hello',
 )]
-final class HelloCommand
+final class HelloCommand implements CliCommandInterface
 {
     public function __invoke(array $args, array $assocArgs): void
     {
@@ -65,7 +70,7 @@ final class HelloCommand
     name: 'import:products',
     description: 'Import products from CSV',
 )]
-final class ImportCommand
+final class ImportCommand implements CliCommandInterface
 {
     /**
      * ## OPTIONS
