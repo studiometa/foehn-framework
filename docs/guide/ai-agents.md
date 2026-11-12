@@ -32,6 +32,8 @@ The starter ships an `AGENTS.md` at the project root, and a `CLAUDE.md` that imp
 3. create classes with the `make:*` commands, first with `--dry-run --format=json`, which writes nothing and prints the file it would write;
 4. run `wp foehn discovery:clear` after it adds a class or changes an attribute.
 
+Its **Project conventions** section is for the project to fill in: where sample content and menu items are created, how editors edit post meta, and which checks to run. Keep it current, because the agent follows what it says.
+
 A project made before this file existed can copy [`AGENTS.md` from the starter](https://github.com/studiometa/foehn-framework/blob/main/packages/starter/AGENTS.md).
 
 ## Install in the agent
