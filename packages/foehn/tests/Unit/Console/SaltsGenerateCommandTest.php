@@ -168,4 +168,33 @@ describe('salts:generate', function () {
 
         expect($this->env)->toBeFile();
     });
+
+    it('writes nothing on a dry run, and says where the keys would go', function () {
+        ($this->command)([], ['dry-run' => true]);
+
+        $log = implode("\n", array_column(array_column(wp_stub_get_calls('wp_cli_log'), 'args'), 'message'));
+
+        expect($this->env)->not->toBeFile();
+        expect($log)->toBe("Would write 8 security keys to {$this->env}.");
+    });
+
+    it('names the keys a forced dry run would replace, and keeps them', function () {
+        file_put_contents($this->env, "AUTH_KEY=\"mine\"\n");
+
+        ($this->command)([], ['dry-run' => true, 'force' => true]);
+
+        $log = implode("\n", array_column(array_column(wp_stub_get_calls('wp_cli_log'), 'args'), 'message'));
+
+        expect($log)->toContain('It would replace AUTH_KEY, which logs every user out.');
+        expect(file_get_contents($this->env))->toBe("AUTH_KEY=\"mine\"\n");
+        expect(wp_stub_get_calls('wp_cli_success'))->toBe([]);
+    });
+
+    it('writes no PHP file on a dry run', function () {
+        ($this->command)([], ['dry-run' => true, 'path' => 'config/wordpress-salts.config.php']);
+
+        expect($this->php)->not->toBeFile();
+        expect(wp_stub_get_calls('wp_cli_log')[0]['args']['message'])
+            ->toBe("Would write 8 security keys to {$this->php}.");
+    });
 });

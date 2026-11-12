@@ -38,6 +38,9 @@ use Studiometa\Foehn\Security\Salts;
     [--force]
     : Replace keys that are already set.
 
+    [--dry-run]
+    : Write nothing. Say which file would get the keys, and which keys it would replace.
+
     [--yes]
     : Skip the confirmation prompt.
 
@@ -51,6 +54,9 @@ use Studiometa\Foehn\Security\Salts;
 
         # Write a PHP file instead
         wp foehn salts:generate --path=config/wordpress-salts.config.php
+
+        # See where the keys would go
+        wp foehn salts:generate --dry-run
     DOC)]
 final readonly class SaltsGenerateCommand implements CliCommandInterface
 {
@@ -74,15 +80,16 @@ final readonly class SaltsGenerateCommand implements CliCommandInterface
         }
 
         $force = ($assocArgs['force'] ?? null) !== null;
+        $dryRun = ($assocArgs['dry-run'] ?? null) !== null;
         $salts = Salts::generate();
 
         if (str_ends_with($path, '.php')) {
-            $this->writePhpFile($path, $salts, $force, $assocArgs);
+            $this->writePhpFile($path, $salts, $force, $dryRun, $assocArgs);
 
             return;
         }
 
-        $this->writeEnvFile($path, $salts, $force, $assocArgs, $root);
+        $this->writeEnvFile($path, $salts, $force, $dryRun, $assocArgs, $root);
     }
 
     /**
@@ -90,8 +97,14 @@ final readonly class SaltsGenerateCommand implements CliCommandInterface
      *
      * @param array<string, string> $assocArgs
      */
-    private function writeEnvFile(string $path, Salts $salts, bool $force, array $assocArgs, ?string $root): void
-    {
+    private function writeEnvFile(
+        string $path,
+        Salts $salts,
+        bool $force,
+        bool $dryRun,
+        array $assocArgs,
+        ?string $root,
+    ): void {
         $contents = is_file($path) ? (string) file_get_contents($path) : '';
         $present = array_values(array_filter(
             Salts::NAMES,
@@ -104,6 +117,17 @@ final readonly class SaltsGenerateCommand implements CliCommandInterface
                 $path,
                 implode(', ', $present),
             ));
+
+            return;
+        }
+
+        if ($dryRun) {
+            $this->planned(
+                $path,
+                $present === []
+                    ? ''
+                    : sprintf('It would replace %s, which logs every user out.', implode(', ', $present)),
+            );
 
             return;
         }
@@ -155,13 +179,19 @@ final readonly class SaltsGenerateCommand implements CliCommandInterface
      *
      * @param array<string, string> $assocArgs
      */
-    private function writePhpFile(string $path, Salts $salts, bool $force, array $assocArgs): void
+    private function writePhpFile(string $path, Salts $salts, bool $force, bool $dryRun, array $assocArgs): void
     {
         if (is_file($path) && !$force) {
             $this->cli->error(sprintf(
                 'Keys already exist at %s. Pass --force to replace them, which logs every user out.',
                 $path,
             ));
+
+            return;
+        }
+
+        if ($dryRun) {
+            $this->planned($path, is_file($path) ? 'It would replace the keys in it, which logs every user out.' : '');
 
             return;
         }
@@ -188,6 +218,15 @@ final readonly class SaltsGenerateCommand implements CliCommandInterface
 
         $this->cli->success(sprintf('Wrote %d security keys to %s.', count(Salts::NAMES), $path));
         $this->cli->log('Keep this file out of version control.');
+    }
+
+    /**
+     * Report what a run without `--dry-run` would write. The keys themselves stay unprinted:
+     * a dry run's output ends up in terminals and logs that a secret should not.
+     */
+    private function planned(string $path, string $replaced): void
+    {
+        $this->cli->log(trim(sprintf('Would write %d security keys to %s. %s', count(Salts::NAMES), $path, $replaced)));
     }
 
     /**
