@@ -240,8 +240,17 @@ final class PublicFiles
             }
 
             $path = $webRoot . '/' . $relative;
+            $directory = realpath(dirname($path));
 
-            if (!is_link($path) && !is_file($path)) {
+            // The installer copies regular files only. A symlink in their place, or a
+            // directory on the way that is now a symlink, belongs to someone else, and
+            // the file it reaches may be outside the web root.
+            if (
+                $directory === false
+                || $directory !== $webRoot && !self::isInside($directory, $webRoot)
+                || is_link($path)
+                || !is_file($path)
+            ) {
                 continue;
             }
 

@@ -176,6 +176,37 @@ describe('PublicFiles', function () {
         expect(file_exists($this->root . '/web/index.php'))->toBeTrue();
     });
 
+    it('never removes a file through a symlink of the web root', function () {
+        writeProjectFile($this->root, 'public/.well-known/security.txt', 'security');
+
+        ($this->generate)();
+
+        writeProjectFile($this->root, 'elsewhere/security.txt', 'keep me');
+        removeDirectory($this->root . '/web/.well-known');
+        symlink($this->root . '/elsewhere', $this->root . '/web/.well-known');
+        removeDirectory($this->root . '/public/.well-known');
+
+        ($this->generate)();
+
+        expect(file_get_contents($this->root . '/elsewhere/security.txt'))->toBe('keep me');
+        expect(is_link($this->root . '/web/.well-known'))->toBeTrue();
+    });
+
+    it('never removes a symlink it finds in place of a copied file', function () {
+        writeProjectFile($this->root, 'public/robots.txt', 'robots');
+
+        ($this->generate)();
+
+        writeProjectFile($this->root, 'robots.txt', 'project robots');
+        unlink($this->root . '/web/robots.txt');
+        symlink($this->root . '/robots.txt', $this->root . '/web/robots.txt');
+        unlink($this->root . '/public/robots.txt');
+
+        ($this->generate)();
+
+        expect(is_link($this->root . '/web/robots.txt'))->toBeTrue();
+    });
+
     it('updates a copied file whose source changed', function () {
         writeProjectFile($this->root, 'public/robots.txt', 'first');
 
