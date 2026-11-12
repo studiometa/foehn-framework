@@ -43,6 +43,8 @@ use Studiometa\Foehn\PageCache\Purger;
 use Studiometa\Foehn\PageCache\Recorder;
 use Studiometa\Foehn\PageCache\Store;
 use Studiometa\Foehn\Trace\RequestTrace;
+use Studiometa\Foehn\Trace\RequestTracer;
+use Studiometa\Foehn\Trace\TraceStore;
 use Studiometa\Foehn\Verification\Updates\DiagnosticsCollector;
 use Studiometa\Foehn\Views\ContextProviderRegistry;
 use Studiometa\Foehn\Views\Sections\SectionCollector;
@@ -201,6 +203,9 @@ final class Kernel
         // Same reason: an error in Timber or in a lifecycle hook belongs in the error log
         $this->startErrorRecorder();
 
+        // Before discovery registers the controllers and blocks the trace reports
+        $this->startRequestTracer();
+
         // Initialize Timber
         $this->initializeTimber();
 
@@ -355,6 +360,18 @@ final class Kernel
             );
         });
 
+        // Registered whether or not requests are traced, for the same reason as the log.
+        $this->container->singleton(TraceStore::class, static fn() => TraceStore::inContentDirectory());
+
+        $this->container->singleton(
+            RequestTracer::class,
+            fn(): RequestTracer => new RequestTracer(
+                $this->container->get(RequestTrace::class),
+                $this->container->get(TraceStore::class),
+                $this->container->get(SourcePaths::class),
+            ),
+        );
+
         $this->container->singleton(JobRegistry::class, static fn() => new JobRegistry());
 
         $this->container->singleton(
@@ -462,6 +479,19 @@ final class Kernel
         }
 
         $this->container->get(ErrorRecorder::class)->start();
+    }
+
+    /**
+     * Trace front-end requests for `wp foehn trace`, when the config asks for it: by
+     * default in the `local` and `development` environments only.
+     */
+    private function startRequestTracer(): void
+    {
+        if (!$this->foehnConfig->tracesRequests()) {
+            return;
+        }
+
+        $this->container->get(RequestTracer::class)->start();
     }
 
     /**

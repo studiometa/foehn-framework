@@ -50,6 +50,8 @@ final readonly class StoredHeaders
         'x-foehn-cache',
         'x-foehn-cache-via',
         'x-foehn-cache-reason',
+        // The id of the request that stored the page, not of a request it serves.
+        'x-foehn-trace',
     ];
 
     /**

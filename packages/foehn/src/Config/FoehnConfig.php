@@ -77,6 +77,12 @@ final readonly class FoehnConfig
          * Null records them when the environment is `local` or `development`.
          */
         public ?bool $recordErrors = null,
+
+        /**
+         * Trace front-end requests for `wp foehn trace`.
+         * Null traces them when the environment is `local` or `development`.
+         */
+        public ?bool $traceRequests = null,
     ) {}
 
     /**
@@ -108,6 +114,7 @@ final readonly class FoehnConfig
             imageTransformer: $transformer,
             debug: (bool) $debug,
             recordErrors: ($config['record_errors'] ?? null) === null ? null : (bool) $config['record_errors'],
+            traceRequests: ($config['trace_requests'] ?? null) === null ? null : (bool) $config['trace_requests'],
         );
     }
 
@@ -128,6 +135,17 @@ final readonly class FoehnConfig
     public function recordsErrors(): bool
     {
         return $this->recordErrors ?? in_array(Env::get(), ['local', 'development'], true);
+    }
+
+    /**
+     * Whether front-end requests are traced for `wp foehn trace`.
+     *
+     * Off in production unless a project turns it on: each request then writes a file
+     * and sends its id in a response header.
+     */
+    public function tracesRequests(): bool
+    {
+        return $this->traceRequests ?? in_array(Env::get(), ['local', 'development'], true);
     }
 
     /**
