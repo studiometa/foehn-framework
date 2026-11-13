@@ -128,7 +128,7 @@ final class SingleController implements TemplateControllerInterface
         return $this->view->render('single', $context);
     }
 
-    private function getRelatedPosts($post): array
+    private function getRelatedPosts($post): ?\Timber\PostCollectionInterface
     {
         return \Timber\Timber::get_posts([
             'post_type' => $post->post_type,

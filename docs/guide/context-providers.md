@@ -190,6 +190,8 @@ When using `#[AsMenu]` attributes, menus are automatically added to the context 
 ### Archive Provider
 
 ```php
+use Studiometa\Foehn\Helpers\WP;
+
 #[AsContextProvider('pages/archive*')]
 final class ArchiveContextProvider implements ContextProviderInterface
 {
@@ -230,6 +232,7 @@ final class SearchContextProvider implements ContextProviderInterface
 ```php
 use Studiometa\Foehn\Contracts\Arrayable;
 use Studiometa\Foehn\Concerns\HasToArray;
+use Studiometa\Foehn\Helpers\WP;
 
 final readonly class ArchiveData implements Arrayable
 {

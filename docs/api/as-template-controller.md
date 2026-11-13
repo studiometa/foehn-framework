@@ -52,6 +52,7 @@ namespace App\Controllers;
 use Studiometa\Foehn\Attributes\AsTemplateController;
 use Studiometa\Foehn\Contracts\TemplateControllerInterface;
 use Studiometa\Foehn\Contracts\ViewEngineInterface;
+use Studiometa\Foehn\Views\TemplateContext;
 
 #[AsTemplateController('single')]
 final class SingleController implements TemplateControllerInterface
@@ -60,13 +61,9 @@ final class SingleController implements TemplateControllerInterface
         private readonly ViewEngineInterface $view,
     ) {}
 
-    public function handle(): ?string
+    public function handle(TemplateContext $context): ?string
     {
-        $post = \Timber\Timber::get_post();
-
-        return $this->view->render('single', [
-            'post' => $post,
-        ]);
+        return $this->view->render('single', $context);
     }
 }
 ```
@@ -79,18 +76,14 @@ Return `null` to let WordPress handle the template:
 #[AsTemplateController('single')]
 final class SingleController implements TemplateControllerInterface
 {
-    public function handle(): ?string
+    public function handle(TemplateContext $context): ?string
     {
-        $post = \Timber\Timber::get_post();
-
         // Only handle products
-        if ($post->post_type !== 'product') {
+        if ($context->post?->post_type !== 'product') {
             return null;
         }
 
-        return $this->view->render('single-product', [
-            'post' => $post,
-        ]);
+        return $this->view->render('single-product', $context);
     }
 }
 ```
@@ -101,11 +94,9 @@ final class SingleController implements TemplateControllerInterface
 #[AsTemplateController(['home', 'front-page'])]
 final class HomeController implements TemplateControllerInterface
 {
-    public function handle(): ?string
+    public function handle(TemplateContext $context): ?string
     {
-        return $this->view->render('pages/home', [
-            'featured' => $this->getFeaturedPosts(),
-        ]);
+        return $this->view->render('pages/home', $context->with('featured', $this->getFeaturedPosts()));
     }
 }
 ```
@@ -116,12 +107,11 @@ final class HomeController implements TemplateControllerInterface
 #[AsTemplateController('archive-*')]
 final class ArchiveController implements TemplateControllerInterface
 {
-    public function handle(): ?string
+    public function handle(TemplateContext $context): ?string
     {
-        return $this->view->render('archive', [
-            'posts' => \Timber\Timber::get_posts(),
-            'pagination' => \Timber\Timber::get_pagination(),
-        ]);
+        // $context->posts holds the posts of the main query.
+        // In Twig, use {{ posts.pagination }} for the pagination.
+        return $this->view->render('archive', $context);
     }
 }
 ```
@@ -133,7 +123,7 @@ Classes must implement `TemplateControllerInterface`:
 ```php
 interface TemplateControllerInterface
 {
-    public function handle(): ?string;
+    public function handle(TemplateContext $context): ?string;
 }
 ```
 
