@@ -6,9 +6,9 @@ Føhn provides `#[AsShortcode]` for registering shortcode handlers.
 
 ```php
 <?php
-// app/Hooks/Shortcodes.php
+// app/Shortcodes/Shortcodes.php
 
-namespace App\Hooks;
+namespace App\Shortcodes;
 
 use Studiometa\Foehn\Attributes\AsShortcode;
 
@@ -47,7 +47,7 @@ For complex shortcodes, use templates:
 ```php
 <?php
 
-namespace App\Hooks;
+namespace App\Shortcodes;
 
 use Studiometa\Foehn\Attributes\AsShortcode;
 use Studiometa\Foehn\Contracts\ViewEngineInterface;
@@ -96,7 +96,7 @@ final class Shortcodes
 ```php
 <?php
 
-namespace App\Hooks;
+namespace App\Shortcodes;
 
 use Studiometa\Foehn\Attributes\AsShortcode;
 
@@ -270,19 +270,20 @@ public function tab(array $atts, ?string $content = null): string
 
 ## Organizing Shortcodes
 
+`wp foehn make:shortcode Button` writes `app/Shortcodes/ButtonShortcode.php`. Keep one class for each shortcode in this directory:
+
 ```
-app/Hooks/
-├── Shortcodes/
-│   ├── ButtonShortcode.php
-│   ├── AlertShortcode.php
-│   ├── FormShortcodes.php
-│   └── ContentShortcodes.php
+app/Shortcodes/
+├── ButtonShortcode.php
+├── AlertShortcode.php
+├── FormShortcodes.php
+└── ContentShortcodes.php
 ```
 
 Or group related shortcodes:
 
 ```php
-// app/Hooks/UIShortcodes.php
+// app/Shortcodes/UIShortcodes.php
 final class UIShortcodes
 {
     #[AsShortcode('button')]
@@ -295,7 +296,7 @@ final class UIShortcodes
     public function card() {}
 }
 
-// app/Hooks/ContentShortcodes.php
+// app/Shortcodes/ContentShortcodes.php
 final class ContentShortcodes
 {
     #[AsShortcode('recent_posts')]
@@ -339,13 +340,13 @@ public function profile(array $atts, ?string $content = null): string
 
 ### Escaping Function Reference
 
-| Function         | Use For                     | Example Context                    |
-| ---------------- | --------------------------- | ---------------------------------- |
-| `esc_html()`     | Plain text                  | Text inside tags                   |
-| `esc_attr()`     | Attribute values            | `class=""`, `data-*=""`            |
-| `esc_url()`      | URLs                        | `href=""`, `src=""`                |
-| `wp_kses_post()` | HTML allowing safe tags     | User-provided rich content         |
-| `wp_kses()`      | HTML with custom whitelist  | Restricted formatting              |
+| Function         | Use For                    | Example Context            |
+| ---------------- | -------------------------- | -------------------------- |
+| `esc_html()`     | Plain text                 | Text inside tags           |
+| `esc_attr()`     | Attribute values           | `class=""`, `data-*=""`    |
+| `esc_url()`      | URLs                       | `href=""`, `src=""`        |
+| `wp_kses_post()` | HTML allowing safe tags    | User-provided rich content |
+| `wp_kses()`      | HTML with custom whitelist | Restricted formatting      |
 
 ### Common Mistakes
 

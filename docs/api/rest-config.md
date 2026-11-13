@@ -22,9 +22,9 @@ final readonly class RestConfig
 
 ## Properties
 
-| Property            | Type           | Default        | Description                                        |
-| ------------------- | -------------- | -------------- | -------------------------------------------------- |
-| `defaultCapability` | `string\|null` | `'edit_posts'` | Default WordPress capability for protected routes  |
+| Property            | Type           | Default        | Description                                       |
+| ------------------- | -------------- | -------------- | ------------------------------------------------- |
+| `defaultCapability` | `string\|null` | `'edit_posts'` | Default WordPress capability for protected routes |
 
 ## Usage
 
@@ -45,19 +45,19 @@ return new RestConfig(
 
 The `defaultCapability` controls what happens when a `#[AsRestRoute]` does not specify an explicit `permission`:
 
-| `defaultCapability` | Result                                                        |
-| ------------------- | ------------------------------------------------------------- |
-| `'edit_posts'`      | User must have the `edit_posts` capability (default)          |
-| `'manage_options'`  | User must be an administrator                                 |
-| `null`              | Any authenticated user (`is_user_logged_in()`)                |
+| `defaultCapability` | Result                                               |
+| ------------------- | ---------------------------------------------------- |
+| `'edit_posts'`      | User must have the `edit_posts` capability (default) |
+| `'manage_options'`  | User must be an administrator                        |
+| `null`              | Any authenticated user (`is_user_logged_in()`)       |
 
 Individual routes can override this with the `permission` parameter:
 
 ```php
-#[AsRestRoute(route: '/public-data', permission: 'public')]
+#[AsRestRoute(namespace: 'theme/v1', route: '/public-data', permission: 'public')]
 public function publicEndpoint(): array { /* ... */ }
 
-#[AsRestRoute(route: '/admin-only', permission: 'canManage')]
+#[AsRestRoute(namespace: 'theme/v1', route: '/admin-only', permission: 'canManage')]
 public function adminEndpoint(): array { /* ... */ }
 ```
 

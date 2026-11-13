@@ -15,6 +15,16 @@ composer require studiometa/foehn-acf
 
 Nothing registers when ACF is absent: each discovery guards on the function it needs. The classes keep their `Studiometa\Foehn\` namespaces, so a project upgrading from 0.4 changes one Composer requirement and no imports.
 
+## Generate a block
+
+The `foehn-acf` package adds a generator for the class:
+
+```bash
+wp foehn-acf make:acf-block Hero --dry-run
+```
+
+Remove `--dry-run` to write the file. See [CLI Commands](/guide/cli-commands).
+
 ## Basic ACF Block
 
 ```php
@@ -348,7 +358,7 @@ public static function fields(): FieldsBuilder
                 'choices' => ['default', 'featured', 'minimal'],
             ])
             ->addColorPicker('background_color')
-            ->addTrueFalse('show_shadow');
+            ->addTrueFalse('show_shadow')
 
         ->addTab('Link')
             ->addLink('link');

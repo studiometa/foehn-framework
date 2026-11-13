@@ -23,6 +23,7 @@ The `admin-ajax.php` endpoint should be considered legacy. Use `permission: 'pub
 
 namespace App\Rest;
 
+use App\Models\Product;
 use Studiometa\Foehn\Attributes\AsRestRoute;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -36,11 +37,11 @@ final class ProductsApi
     )]
     public function list(WP_REST_Request $request): WP_REST_Response
     {
-        $products = \Timber\Timber::get_posts([
-            'post_type' => 'product',
-            'posts_per_page' => $request->get_param('per_page') ?? 10,
-            'paged' => $request->get_param('page') ?? 1,
-        ]);
+        // get() returns a list of Product models.
+        $products = Product::query()
+            ->limit((int) ($request->get_param('per_page') ?? 10))
+            ->page((int) ($request->get_param('page') ?? 1))
+            ->get();
 
         $data = array_map(fn($product) => [
             'id' => $product->ID,
@@ -141,19 +142,21 @@ public function listDrafts(WP_REST_Request $request): WP_REST_Response
 }
 ```
 
-This default can be changed via configuration:
+To change this default, set `defaultCapability` in `app/rest.config.php`:
 
 ```php
-// functions.php
-Kernel::boot(__DIR__, [
-    'rest_default_capability' => 'manage_options', // Require admin for all routes
-]);
+<?php
+// app/rest.config.php
 
-// Or use null to only require authentication (is_user_logged_in)
-Kernel::boot(__DIR__, [
-    'rest_default_capability' => null,
-]);
+use Studiometa\Foehn\Config\RestConfig;
+
+return new RestConfig(
+    defaultCapability: 'manage_options', // Require admin for all routes
+    // Or null to only require authentication (is_user_logged_in)
+);
 ```
+
+See [RestConfig](/api/rest-config).
 
 ### Custom Permission Callbacks
 

@@ -30,17 +30,16 @@ function app(?string $class = null): object
 
 ## config()
 
-Get a configuration value from the kernel.
+Get a top-level key of the legacy array that the theme gave to `Kernel::boot()`. There is no dot notation: `config('a.b')` looks for the key `'a.b'`.
 
 ```php
 use function Studiometa\Foehn\config;
 
-// Get a config value
-$viewsPath = config('timber.views');
-
-// With default
-$debug = config('app.debug', false);
+// Kernel::boot(__DIR__ . '/app', ['debug' => true]);
+$debug = config('debug', false);
 ```
+
+A theme that boots with `Kernel::boot(__DIR__ . '/app')` and a `foehn.config.php` has no array, so `config()` always gives the default. To read settings, inject the config class, for example `FoehnConfig` or `TimberConfig`, or use `app(FoehnConfig::class)`. See [Configuration](/guide/configuration).
 
 ### Signature
 
@@ -113,11 +112,12 @@ $isBooted = $kernel->isBooted();
 ### Configuration Access
 
 ```php
-use function Studiometa\Foehn\config;
+use Studiometa\Foehn\Config\FoehnConfig;
 
-// Access nested configuration
-$apiKey = config('services.stripe.key');
-$timeout = config('http.timeout', 30);
+use function Studiometa\Foehn\app;
+
+$config = app(FoehnConfig::class);
+$debug = $config->isDebugEnabled();
 ```
 
 ## Namespace
@@ -145,7 +145,7 @@ Get the WordPress database instance.
 ```php
 use Studiometa\Foehn\Helpers\WP;
 
-$results = WP::db()->get_results("SELECT * FROM {$wpdb->posts} LIMIT 10");
+$results = WP::db()->get_results('SELECT * FROM ' . WP::db()->posts . ' LIMIT 10');
 $prefix = WP::db()->prefix;
 ```
 
@@ -186,6 +186,16 @@ $user = WP::user();
 if ($user !== null) {
     echo "Hello, {$user->display_name}";
 }
+```
+
+### withPost()
+
+Run a callback with the global `$post` set to a given post, then put back the previous value. Some WordPress functions, such as `get_adjacent_post()`, read the global and do not take a post.
+
+```php
+use Studiometa\Foehn\Helpers\WP;
+
+$next = WP::withPost($post, static fn() => get_adjacent_post(false, '', false));
 ```
 
 ### Why Use This?
@@ -405,7 +415,7 @@ VideoEmbed::extractId('https://example.com/video');
 Detect the video platform from a URL.
 
 ```php
-VideoEmbed::detectPlatform('https://youtube.com/watch?v=xxx');
+VideoEmbed::detectPlatform('https://youtube.com/watch?v=dQw4w9WgXcQ');
 // → 'youtube'
 
 VideoEmbed::detectPlatform('https://vimeo.com/123');
@@ -420,25 +430,34 @@ VideoEmbed::detectPlatform('https://example.com');
 Check if a URL is a supported video platform.
 
 ```php
-VideoEmbed::isSupported('https://youtube.com/watch?v=xxx');
+VideoEmbed::isSupported('https://youtube.com/watch?v=dQw4w9WgXcQ');
 // → true
 
 VideoEmbed::isSupported('https://example.com/video');
 // → false
 ```
 
-### Twig Filters
+### Twig Functions and Filters
 
-VideoEmbed also provides Twig filters:
+VideoEmbed is also available in Twig, as functions and as filters with the same names: `video_embed`, `video_id`, `video_platform` and `video_is_supported`.
 
 ```twig
 {% verbatim %}{# Convert URL to embed URL #}
+{{ video_embed(video_url, {autoplay: true}) }}
 {{ video_url|video_embed }}
 {{ video_url|video_embed({autoplay: true, loop: true}) }}
 
+{# Get the video ID #}
+{{ video_id(video_url) }}
+
 {# Get platform name #}
 {{ video_url|video_platform }}
-{# → 'youtube' or 'vimeo' or null #}{% endverbatim %}
+{# → 'youtube' or 'vimeo' or null #}
+
+{# Print the player only for a supported URL #}
+{% if video_is_supported(video_url) %}
+  <iframe src="{{ video_embed(video_url) }}"></iframe>
+{% endif %}{% endverbatim %}
 ```
 
 ### Usage in ACF Blocks
@@ -464,25 +483,13 @@ public function compose(array $block, array $fields): array
 
 ## Logging
 
-For logging, use Tempest's built-in logger via dependency injection:
+Føhn ships no logger. `error_log()` writes to the WordPress debug log when `WP_DEBUG` and `WP_DEBUG_LOG` are on, and `wp foehn log` reads that log. See [The debug log](/guide/troubleshooting#the-debug-log).
 
 ```php
-use Tempest\Log\Logger;
-
-final readonly class MyService
-{
-    public function __construct(
-        private Logger $logger,
-    ) {}
-
-    public function doSomething(): void
-    {
-        $this->logger->info('Something happened', ['key' => 'value']);
-    }
-}
+error_log('Import finished: ' . $count . ' products');
 ```
 
-See [Tempest Logger documentation](https://tempestphp.com/docs/logging/) for details.
+To use a logger class, install a package for it, for example `tempest/log`, and configure it first. Føhn does not install it.
 
 ## Validation
 

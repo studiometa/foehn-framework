@@ -258,13 +258,14 @@ Located in `Studiometa\Foehn\Hooks\Cleanup`:
 
 Located in `Studiometa\Foehn\Hooks\Security`:
 
-| Class                      | Description                                                           |
-| -------------------------- | --------------------------------------------------------------------- |
-| `DisableFileEditor`        | Disable theme/plugin editor in admin                                  |
-| `DisableVersionDisclosure` | Remove WordPress version from head, feeds, and scripts                |
-| `DisableXmlRpc`            | Disable XML-RPC completely                                            |
-| `RestApiAuth`              | Require authentication for REST API requests                          |
-| `SecurityHeaders`          | Send security headers (X-Content-Type-Options, X-Frame-Options, etc.) |
+| Class                      | Description                                                                                          |
+| -------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `DisableFileEditor`        | Disable theme/plugin editor in admin                                                                 |
+| `DisableVersionDisclosure` | Remove WordPress version from head, feeds, and scripts                                               |
+| `DisableXmlRpc`            | Disable XML-RPC completely                                                                           |
+| `GenericLoginErrors`       | Show one generic message for every failed login, so a login form does not tell which usernames exist |
+| `RestApiAuth`              | Remove the `/wp/v2/users` REST endpoints for anonymous requests; other endpoints stay public         |
+| `SecurityHeaders`          | Send security headers (X-Content-Type-Options, X-Frame-Options, etc.)                                |
 
 ### Query Hooks
 
@@ -283,6 +284,15 @@ Located in `Studiometa\Foehn\Hooks`:
 | Class                  | Description                                      |
 | ---------------------- | ------------------------------------------------ |
 | `YouTubeNoCookieHooks` | Replace YouTube embeds with youtube-nocookie.com |
+
+### Integration Hooks
+
+| Class                                       | Description                                                                                                                                                                                                        |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `Studiometa\Foehn\Hooks\S3UploadsEndpoint`  | Point `humanmade/s3-uploads` at an S3-compatible endpoint that is not AWS. Reads `S3_UPLOADS_ENDPOINT`, `S3_UPLOADS_PATH_STYLE` and `S3_UPLOADS_CHECKSUMS`. See [Uploads](/guide/uploads#anything-that-is-not-aws) |
+| `Studiometa\Foehn\Hooks\StudiometaUi`       | Register the `@ui` and `@svg` Twig namespaces of `studiometa/ui`. Does nothing when the package is not installed. See [Assets](/guide/assets#twig-components)                                                      |
+| `Studiometa\Foehn\Images\ContentImageHooks` | Build the `srcset` of images in post content with the configured image transformer. Does nothing without a transformer. See [Images](/guide/images)                                                                |
+| `Studiometa\Foehn\Images\ImageCacheHooks`   | Forget the transforms of an image when the image changes or is deleted. Use it with an image transformer. See [Images](/guide/images)                                                                              |
 
 ### Example: Production Configuration
 

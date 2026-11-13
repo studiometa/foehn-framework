@@ -31,7 +31,7 @@ final class SingleController implements TemplateControllerInterface
         return $this->view->render('single', $context);
     }
 
-    private function getRelatedPosts($post): array
+    private function getRelatedPosts($post): ?\Timber\PostCollectionInterface
     {
         return \Timber\Timber::get_posts([
             'post_type' => $post->post_type,
@@ -335,7 +335,7 @@ final class HomeController implements TemplateControllerInterface
         ];
     }
 
-    private function getFeaturedProducts(): array
+    private function getFeaturedProducts(): ?\Timber\PostCollectionInterface
     {
         return \Timber\Timber::get_posts([
             'post_type' => 'product',
@@ -345,7 +345,7 @@ final class HomeController implements TemplateControllerInterface
         ]);
     }
 
-    private function getTestimonials(): array
+    private function getTestimonials(): ?\Timber\PostCollectionInterface
     {
         return \Timber\Timber::get_posts([
             'post_type' => 'testimonial',
@@ -354,7 +354,7 @@ final class HomeController implements TemplateControllerInterface
         ]);
     }
 
-    private function getLatestPosts(): array
+    private function getLatestPosts(): ?\Timber\PostCollectionInterface
     {
         return \Timber\Timber::get_posts([
             'post_type' => 'post',

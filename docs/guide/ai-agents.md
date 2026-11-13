@@ -84,19 +84,19 @@ Without a ref, the CLI installs the skills from `main`. `main` can describe attr
 
 ```bash
 composer show studiometa/foehn | grep versions
-npx skills add studiometa/foehn-framework#0.6.2
+npx skills add studiometa/foehn-framework#0.8.1
 ```
 
-Tags have no `v` prefix: use `#0.6.2`, not `#v0.6.2`. A tree URL works too:
+Replace `0.8.1` with your version. Tags have no `v` prefix: use `#0.8.1`, not `#v0.8.1`. A tree URL works too:
 
 ```bash
-npx skills add https://github.com/studiometa/foehn-framework/tree/0.6.2
+npx skills add https://github.com/studiometa/foehn-framework/tree/0.8.1
 ```
 
 The CLI records the ref in `skills-lock.json`. `npx skills update` keeps that ref. To move to a new release, after `composer update studiometa/foehn`, run `add` again with the new tag:
 
 ```bash
-npx skills add studiometa/foehn-framework#0.7.0
+npx skills add studiometa/foehn-framework#<new version>
 ```
 
 Commit `skills-lock.json` with the rest of the project, so every developer and agent reads the same skills.

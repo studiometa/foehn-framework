@@ -15,8 +15,10 @@ A modern WordPress framework powered by [Tempest Framework](https://tempestphp.c
 ## Installation
 
 ```bash
-composer require studiometa/foehn
+composer require "nette/php-generator:4.2.3 as 4.2.1" studiometa/foehn
 ```
+
+The `nette/php-generator` alias is necessary until Tempest fixes its requirement. See [Installation](https://studiometa.github.io/foehn-framework/guide/installation).
 
 ## Quick Start
 
@@ -110,7 +112,7 @@ final class ProductCategory {}
 
 ### ACF Blocks
 
-Create ACF blocks with dependency injection:
+ACF blocks, field groups and options pages come from the separate [`studiometa/foehn-acf`](https://github.com/studiometa/foehn-framework/tree/main/packages/acf) package. Install it with the same version as `studiometa/foehn`. Create ACF blocks with dependency injection:
 
 ```php
 <?php
@@ -245,6 +247,11 @@ final readonly class AccordionBlock implements InteractiveBlockInterface
         ];
     }
 
+    public function compose(array $attributes, string $content, WP_Block $block): array
+    {
+        return ['items' => $attributes['items'] ?? []];
+    }
+
     public function render(array $attributes, string $content, WP_Block $block): string
     {
         // ...
@@ -254,25 +261,25 @@ final readonly class AccordionBlock implements InteractiveBlockInterface
 
 ### Context Providers
 
-Inject data into specific templates:
+Inject data into the views that match a view name, such as `pages/single`:
 
 ```php
 <?php
 
 use Studiometa\Foehn\Attributes\AsContextProvider;
 use Studiometa\Foehn\Contracts\ContextProviderInterface;
+use Studiometa\Foehn\Views\TemplateContext;
 
-#[AsContextProvider(templates: ['single', 'single-*'])]
+#[AsContextProvider(['pages/single', 'pages/single-*'])]
 final readonly class SingleContext implements ContextProviderInterface
 {
-    public function provide(array $context): array
+    public function provide(TemplateContext $context): TemplateContext
     {
-        $post = $context['post'] ?? null;
+        $post = $context->post;
 
-        $context['reading_time'] = $this->calculateReadingTime($post->content());
-        $context['related_posts'] = $this->getRelatedPosts($post);
-
-        return $context;
+        return $context
+            ->with('reading_time', $this->calculateReadingTime($post->content()))
+            ->with('related_posts', $this->getRelatedPosts($post));
     }
 }
 ```
@@ -285,22 +292,21 @@ Handle template rendering with full control:
 <?php
 
 use Studiometa\Foehn\Attributes\AsTemplateController;
+use Studiometa\Foehn\Contracts\TemplateControllerInterface;
 use Studiometa\Foehn\Contracts\ViewEngineInterface;
-use Timber\Timber;
+use Studiometa\Foehn\Views\TemplateContext;
 
-#[AsTemplateController('single', 'single-*')]
-final readonly class SingleController
+#[AsTemplateController(['single', 'single-*'])]
+final readonly class SingleController implements TemplateControllerInterface
 {
     public function __construct(
         private ViewEngineInterface $view,
     ) {}
 
-    public function __invoke(): string
+    public function handle(TemplateContext $context): ?string
     {
-        $context = Timber::context();
-
         return $this->view->renderFirst([
-            "pages/single-{$context['post']->post_type}",
+            "pages/single-{$context->post?->post_type}",
             'pages/single',
         ], $context);
     }
@@ -344,13 +350,13 @@ use WP_REST_Request;
 
 final class ProductsApi
 {
-    #[AsRestRoute('theme/v1', '/products', methods: ['GET'])]
+    #[AsRestRoute('theme/v1', '/products', method: 'GET', permission: 'public')]
     public function index(WP_REST_Request $request): array
     {
         return ['products' => []];
     }
 
-    #[AsRestRoute('theme/v1', '/products/(?P<id>\d+)', methods: ['GET'])]
+    #[AsRestRoute('theme/v1', '/products/(?P<id>\d+)', method: 'GET', permission: 'public')]
     public function show(WP_REST_Request $request): array
     {
         return ['product' => []];
@@ -390,8 +396,11 @@ final class ButtonShortcode
 Føhn provides WP-CLI commands for scaffolding:
 
 ```bash
-# Generate a new block
-wp foehn make:block Hero --acf
+# Generate a new native block
+wp foehn make:block Hero
+
+# Generate a new ACF block (needs studiometa/foehn-acf)
+wp foehn-acf make:acf-block Hero
 
 # Generate a new post type
 wp foehn make:post-type product
@@ -402,9 +411,11 @@ wp foehn make:taxonomy ProductCategory --post-types=product
 # Clear discovery cache
 wp foehn discovery:clear
 
-# Warm discovery cache
-wp foehn discovery:cache
+# Scan every location and write the discovery cache
+wp foehn discovery:generate
 ```
+
+See [CLI Commands](https://studiometa.github.io/foehn-framework/guide/cli-commands) for every command.
 
 ## Dependency Injection
 
@@ -419,7 +430,6 @@ final readonly class NewsletterHooks
 {
     public function __construct(
         private NewsletterService $newsletter,
-        private LoggerInterface $logger,
     ) {}
 
     #[AsAction('user_register')]
@@ -427,38 +437,33 @@ final readonly class NewsletterHooks
     {
         $user = get_user_by('id', $userId);
         $this->newsletter->subscribe($user->user_email);
-        $this->logger->info('User subscribed to newsletter', ['user_id' => $userId]);
     }
 }
 ```
 
 ## Configuration
 
-Føhn can be configured in your theme:
+Føhn reads each `*.config.php` file of the `app/` directory. `app/foehn.config.php` returns the core configuration:
 
 ```php
 <?php
-// config/foehn.php
+// app/foehn.config.php
 
-return [
-    'cache' => [
-        'enabled' => wp_get_environment_type() === 'production',
-        'path' => get_template_directory() . '/storage/cache',
-    ],
+use Studiometa\Foehn\Config\FoehnConfig;
+use Studiometa\Foehn\Hooks\Cleanup\CleanHeadTags;
+use Tempest\Discovery\DiscoveryCacheStrategy;
 
-    'views' => [
-        'paths' => ['templates'],
-    ],
-
-    'blocks' => [
-        'namespace' => 'theme',
-    ],
-];
+return new FoehnConfig(
+    discoveryCacheStrategy: DiscoveryCacheStrategy::FULL,
+    hooks: [CleanHeadTags::class],
+);
 ```
+
+Other files configure Timber, REST routes, query filters, the page cache and more. See [Configuration](https://studiometa.github.io/foehn-framework/guide/configuration).
 
 ## Documentation
 
-For complete documentation, see the [Føhn documentation](https://github.com/studiometa/foehn-framework).
+For complete documentation, see the [Føhn documentation](https://studiometa.github.io/foehn-framework/).
 
 For AI agents, this package ships the `foehn` [Agent Skill](https://agentskills.io/) in [`skills/foehn/SKILL.md`](skills/foehn/SKILL.md). See [AI Agents](https://studiometa.github.io/foehn-framework/guide/ai-agents) to install it.
 

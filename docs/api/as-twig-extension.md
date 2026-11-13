@@ -154,8 +154,16 @@ final class PriceExtension extends AbstractExtension
 
 Føhn provides built-in extensions that you can use as examples:
 
+- `TwigToolkitExtension` — HTML helpers from `studiometa/twig-toolkit`
 - `InteractivityExtension` — Helpers for WordPress Interactivity API
 - `VideoEmbedExtension` — Video URL transformation utilities
+- `QueryExtension` — URL query helpers for filter UIs (`query_get`, `query_url`, …)
+- `BlockMarkupExtension` — Block markup helpers (`wp_block`, `wp_block_start`, `wp_block_end`)
+- `ImageExtension` — Image transformation (`image_url`)
+- `FacetExtension` — Taxonomy filter options with counts (`facet`)
+- `SectionExtension` — Sections rendered on their own (`foehn_section`, `foehn_section_url`)
+
+See [Guide: Built-in Extensions](/guide/twig-extensions#built-in-extensions).
 
 ## Related
 
