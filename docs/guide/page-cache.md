@@ -406,8 +406,10 @@ Neither nginx's `try_files` nor `mod_rewrite` can look at a file's age, so on th
 ## Deploying
 
 ```bash
-composer install && wp foehn cache:config --write && wp foehn cache:clear
+composer install && wp foehn cache:config --server=nginx --write && wp foehn cache:clear
 ```
+
+Use `--server=apache` on Apache. `cache:config` stops with an error when `--server` is missing.
 
 `composer install` already removes `wp-content/cache/foehn/` through the installer plugin, so `cache:clear` is belt and braces on a deploy that ran it. With [bucket storage](#storing-pages-in-the-bucket), `cache:clear` is necessary: the bucket keeps the pages through a deploy. Traffic refills the cache; `wp foehn cache:warm` fills it up front if you would rather the first visitor did not pay for a render.
 

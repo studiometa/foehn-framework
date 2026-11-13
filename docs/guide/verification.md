@@ -180,7 +180,7 @@ For the same reason it carries no filesystem paths and no timestamps. The heartb
 
 ```bash
 composer install --no-dev --optimize-autoloader
-wp foehn cache:config --write
+wp foehn cache:config --server=nginx --write
 wp foehn cache:clear
 
 # Refuse to finish the deploy on unsafe production configuration.
