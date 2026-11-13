@@ -45,6 +45,7 @@ describe('InstallerConfig', function () {
         expect($config->themeName)->toBe('theme');
         expect($config->muPluginsDir)->toBe('mu-plugins');
         expect($config->configDir)->toBe('config');
+        expect($config->publicDir)->toBe('public');
     });
 
     it('reads every key from extra.foehn', function () {
@@ -55,6 +56,7 @@ describe('InstallerConfig', function () {
             'theme-name' => 'starter-theme',
             'mu-plugins-dir' => 'plugins/mu',
             'config-dir' => 'conf',
+            'public-dir' => 'static',
         ], $this->root);
 
         expect($config->webDir)->toBe('public');
@@ -63,5 +65,6 @@ describe('InstallerConfig', function () {
         expect($config->themeName)->toBe('starter-theme');
         expect($config->muPluginsDir)->toBe('plugins/mu');
         expect($config->configDir)->toBe('conf');
+        expect($config->publicDir)->toBe('static');
     });
 });

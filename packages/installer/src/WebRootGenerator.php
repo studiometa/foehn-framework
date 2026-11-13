@@ -20,6 +20,7 @@ use SplFileInfo;
  * - web/wp-content/mu-plugins/00-loader.php
  * - web/wp-content/mu-plugins/_custom → symlink to ../../mu-plugins/
  * - web/wp-content/foehn/editor.js ← copied from the studiometa/foehn package
+ * - web/{file} ← copied from the project's public directory, see {@see PublicFiles}
  *
  * Generates the WordPress security keys into .env on a first install, and removes
  * web/wp-content/cache/foehn/, whose contents describe the code that has just been
@@ -70,6 +71,7 @@ final class WebRootGenerator
         $this->generateMuPluginLoader();
         $this->generateAdvancedCache();
         $this->generateEditorScript();
+        new PublicFiles($this->io, $this->projectRoot, $this->config)->sync();
         $this->generateSalts();
         $this->clearCaches();
 

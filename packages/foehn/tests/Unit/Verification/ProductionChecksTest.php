@@ -12,6 +12,7 @@ use Studiometa\Foehn\Verification\Production\DebugCheck;
 use Studiometa\Foehn\Verification\Production\EnvironmentCheck;
 use Studiometa\Foehn\Verification\Production\IndexingCheck;
 use Studiometa\Foehn\Verification\Production\PageCacheCheck;
+use Studiometa\Foehn\Verification\Production\PublicFilesCheck;
 use Studiometa\Foehn\Verification\Production\SaltsCheck;
 use Studiometa\Foehn\Verification\VerificationStatus;
 
@@ -419,6 +420,84 @@ describe('page cache storage', function () {
         $result = onlyResult(new PageCacheCheck($config, new Store($config)));
 
         expect(json_encode($result->toArray(), JSON_THROW_ON_ERROR))->not->toContain($this->root);
+    });
+});
+
+describe('public files', function () {
+    beforeEach(function () {
+        $this->project = sys_get_temp_dir() . '/foehn-tests/' . uniqid('public-files-', true);
+        mkdir($this->project . '/public/.well-known', 0o777, true);
+        mkdir($this->project . '/web/.well-known', 0o777, true);
+
+        $this->write = function (string $path, string $content): void {
+            file_put_contents($this->project . '/' . $path, $content);
+        };
+
+        $this->check = fn(): PublicFilesCheck => new PublicFilesCheck(
+            'public',
+            $this->project . '/public',
+            $this->project . '/web',
+        );
+    });
+
+    afterEach(function () {
+        removeTestDirectory($this->project);
+    });
+
+    it('passes when every file of the public directory is in the web root', function () {
+        ($this->write)('public/robots.txt', 'robots');
+        ($this->write)('public/.well-known/security.txt', 'security');
+        ($this->write)('web/robots.txt', 'robots');
+        ($this->write)('web/.well-known/security.txt', 'security');
+
+        $result = onlyResult(($this->check)());
+
+        expect($result->status)->toBe(VerificationStatus::Pass);
+        expect($result->details)->toBe([
+            'directory' => 'public',
+            'files' => 2,
+            'missing' => [],
+            'different' => [],
+        ]);
+    });
+
+    it('fails on a file missing from the web root, and names it', function () {
+        ($this->write)('public/.user.ini', 'auto_prepend_file = waf.php');
+        ($this->write)('public/robots.txt', 'robots');
+        ($this->write)('web/robots.txt', 'robots');
+
+        $result = onlyResult(($this->check)());
+
+        expect($result->status)->toBe(VerificationStatus::Fail);
+        expect($result->details['missing'])->toBe(['.user.ini']);
+        expect($result->summary)->toContain('composer install');
+    });
+
+    it('fails on a file the web root holds in another version', function () {
+        // A deploy that changed public/ and skipped `composer install`, or a public file
+        // the installer refused because the installer owns its name.
+        ($this->write)('public/index.php', '<?php echo "project";');
+        ($this->write)('web/index.php', '<?php require "wp/wp-blog-header.php";');
+
+        $result = onlyResult(($this->check)());
+
+        expect($result->status)->toBe(VerificationStatus::Fail);
+        expect($result->details['different'])->toBe(['index.php']);
+    });
+
+    it('passes a project without a public directory', function () {
+        $result = onlyResult(new PublicFilesCheck('public', null, $this->project . '/web'));
+
+        expect($result->status)->toBe(VerificationStatus::Pass);
+        expect($result->details['files'])->toBe(0);
+    });
+
+    it('puts no filesystem path in the report', function () {
+        ($this->write)('public/robots.txt', 'robots');
+
+        $result = onlyResult(($this->check)());
+
+        expect(json_encode($result->toArray(), JSON_THROW_ON_ERROR))->not->toContain($this->project);
     });
 });
 

@@ -108,7 +108,7 @@ describe('verify: the arguments', function () {
     it('runs the production profile now that every check it promises exists', function () {
         // It used to be refused with "not available yet", because a gate that ran a
         // subset of the checks its name promises would report a pass nobody should
-        // trust. All eight are implemented, so the name resolves.
+        // trust. All nine are implemented, so the name resolves.
         ($this->command)([], ['profile' => 'production', 'output' => $this->output]);
 
         $report = json_decode((string) file_get_contents($this->output), true, flags: JSON_THROW_ON_ERROR);
@@ -121,6 +121,7 @@ describe('verify: the arguments', function () {
             'environment',
             'indexing',
             'page-cache-storage',
+            'public-files',
             'real-cron',
             'salts',
         ]);

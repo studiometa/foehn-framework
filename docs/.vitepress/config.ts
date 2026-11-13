@@ -91,6 +91,7 @@ export default defineConfig({
             { text: "Settings Pages", link: "/guide/settings-pages" },
             { text: "Section Rendering", link: "/guide/section-rendering" },
             { text: "Uploads", link: "/guide/uploads" },
+            { text: "Public Files", link: "/guide/public-files" },
             { text: "Caching", link: "/guide/caching" },
             { text: "Page Cache", link: "/guide/page-cache" },
             { text: "Admin Cache Controls", link: "/guide/admin-cache-controls" },

@@ -238,6 +238,16 @@ wp foehn verify --profile=production                                       # dep
 
 Exit status: `0` pass, `1` something to fix, `2` the gate could not run.
 
+The `production` profile has a `public-files` check: each file of `public/` (`extra.foehn.public-dir`) must be in the web root with the same content. To fix it, run `composer install`.
+
+## Public files
+
+- `web/` is generated again by each `composer install`. Do not write a file in `web/`. Put a file that must be at the document root (`.user.ini`, `robots.txt`, `favicon.ico`, `.well-known/`, `ads.txt`, verification files) in `public/`. The installer copies it into `web/`, dotfiles included.
+- The installer does not copy to `index.php`, `wp-config.php`, `wp/` or `wp-content/`, and does not copy symlinks. It shows a warning.
+- A file removed from `public/` is removed from `web/` on the next `composer install`.
+- Uploads, caches and secrets do not go in `public/`.
+- A `robots.txt` in `public/` is served in each environment, so on staging it replaces the `Disallow: /` of the indexing protection.
+
 `wp foehn salts:generate` writes the eight WordPress keys to `.env` when they are missing. `--force` rotates them and logs out every user. `--dry-run` names the file and the keys it would replace, and prints no key. The generated `wp-config.php` refuses a production request without keys.
 
 ## Database export

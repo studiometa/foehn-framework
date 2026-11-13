@@ -348,4 +348,4 @@ Run `wp help foehn <command>` for the options of one command. See https://studio
 - [references/views.md](references/views.md): `TemplateContext`, controllers and the generic single and archive controllers, context providers, DTOs, sections, Twig functions.
 - [references/blocks.md](references/blocks.md): native blocks, sidebar controls, containers, Interactivity API, patterns, bindings, categories.
 - [references/routes-and-commands.md](references/routes-and-commands.md): REST routes, rewrite rules, shortcodes, CLI commands, jobs and cron, Twig extensions, custom discoveries.
-- [references/operations.md](references/operations.md): config files, opt-in hooks, project model (`inspect`), generators (`make:*` without prompts, as JSON), agent skills (`skill`), discovery cache, page cache, query filters, images, verification.
+- [references/operations.md](references/operations.md): config files, opt-in hooks, project model (`inspect`), generators (`make:*` without prompts, as JSON), agent skills (`skill`), discovery cache, page cache, query filters, images, verification, public files (`public/`).

@@ -117,7 +117,7 @@ The hook-based sources carry no file or line of their own, so Føhn derives them
 wp foehn verify --profile=production
 ```
 
-Eight checks, and the profile exists only because all eight do — a gate shipped with some of its checks missing would report a pass that means less than the name on it.
+Nine checks, and the profile exists only because all nine do — a gate shipped with some of its checks missing would report a pass that means less than the name on it.
 
 | Check                | Passes when                                                                                                                      |
 | -------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
@@ -129,6 +129,7 @@ Eight checks, and the profile exists only because all eight do — a gate shippe
 | `cron-heartbeat`     | [`foehn_cron_last_run`](#the-real-cron) is a timestamp inside the window this cadence allows.                                    |
 | `cron-backlog`       | No scheduled event is overdue past that same window.                                                                             |
 | `page-cache-storage` | If caching is on for production, its root resolves inside itself and is writable.                                                |
+| `public-files`       | Each file of the [public directory](./public-files) is in the web root, with the same content.                                   |
 
 **It does not adapt to the environment it finds.** Run against staging, it fails at the first check, on purpose: a gate that relaxed its rules when the site said `staging` would wave through a production machine whose `WP_ENVIRONMENT_TYPE` was simply wrong — and that is the misconfiguration most worth catching, because the page cache and the indexing guard key off the same value.
 
