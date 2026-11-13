@@ -85,6 +85,7 @@ return new FoehnConfig(
 | `discoveryCacheStrategy` | `DiscoveryCacheStrategy` | `NONE`  | Discovery cache strategy                                                                                            |
 | `discoveryCachePath`     | `?string`                | `null`  | Custom cache path                                                                                                   |
 | `hooks`                  | `class-string[]`         | `[]`    | Opt-in hook classes                                                                                                 |
+| `imageTransformer`       | `?class-string`          | `null`  | The `ImageTransformer` class `image_url()` uses. `null` gives back the URL unchanged. See [Images](/guide/images)   |
 | `debug`                  | `bool`                   | `false` | Raise PHP warnings: each class discovery skips, a discovery cache it cannot write, a missing block editor registrar |
 | `recordErrors`           | `?bool`                  | `null`  | Write errors to the log `wp foehn errors` reads. `null` records them in the `local` and `development` environments  |
 | `traceRequests`          | `?bool`                  | `null`  | Store a trace of each front-end request for `wp foehn trace`. `null` traces them in `local` and `development`       |
@@ -115,7 +116,7 @@ See [TimberConfig API](/api/timber-config) for details.
 
 ### AcfConfig — ACF Integration
 
-Controls how ACF fields are handled in blocks.
+Controls how ACF fields are handled in blocks. The class comes from `studiometa/foehn-acf`, which also ships its default. Without that package, `app/acf.config.php` fails with a class-not-found error.
 
 ```php
 <?php
@@ -178,6 +179,39 @@ return new QueryFiltersConfig(
 
 See [Guide: Query Filters](/guide/query-filters) for details.
 
+### PageCacheConfig — Page Cache
+
+Controls the static page cache: when it is on, how long a page stays, and where pages are stored.
+
+```php
+<?php
+// app/page-cache.config.php
+
+use Studiometa\Foehn\Config\PageCacheConfig;
+
+return new PageCacheConfig(enabled: true, ttl: 8 * HOUR_IN_SECONDS, environments: ['production']);
+```
+
+See [PageCacheConfig API](/api/page-cache-config) and [Guide: Page Cache](/guide/page-cache) for details.
+
+### DatabaseExportConfig — Database Export
+
+Controls what `wp foehn db:export` keeps: the tables to export with or without rows, and the columns to anonymize.
+
+```php
+<?php
+// app/db-export.config.php
+
+use Studiometa\Foehn\Config\DatabaseExportConfig;
+
+return new DatabaseExportConfig(
+    structureOnlyTables: ['actionscheduler_*'],
+    allowedEmailDomains: ['example.com'],
+);
+```
+
+See [Guide: Database Export](/guide/database-export#declaring-your-tables) for details.
+
 ## Override Priority
 
 When multiple sources provide the same config:
@@ -219,6 +253,8 @@ theme/
 │   ├── acf.config.php           # ACF settings
 │   ├── rest.config.php          # REST API defaults
 │   ├── query-filters.config.php # Query filter rules
+│   ├── page-cache.config.php    # Page cache
+│   ├── db-export.config.php     # Database export
 │   ├── foehn.production.config.php # Read in production only
 │   ├── Hooks/
 │   ├── Models/
@@ -232,5 +268,6 @@ theme/
 - [API: TimberConfig](/api/timber-config)
 - [API: AcfConfig](/api/acf-config)
 - [API: RestConfig](/api/rest-config)
+- [API: PageCacheConfig](/api/page-cache-config)
 - [Guide: Section Rendering](/guide/section-rendering)
 - [Guide: Theme Conventions](/guide/theme-conventions)
