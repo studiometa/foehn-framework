@@ -55,14 +55,14 @@
     "vite": "^6.0.0 || ^7.0.0 || ^8.0.0"
   },
   "devDependencies": {
-    "@microsoft/api-extractor": "^7.58.12",
-    "@types/node": "^26.0.0",
-    "@typescript/typescript6": "^6.0.2",
-    "oxfmt": "^0.63.0",
-    "oxlint": "^1.78.0",
-    "typescript": "^7.0.2",
-    "vite": "^8.0.0",
-    "vite-plugin-dts": "^5.0.0",
-    "vitest": "^4.1.0"
+    "@microsoft/api-extractor": "7.60.1",
+    "@types/node": "26.6.6",
+    "@typescript/typescript6": "6.0.2",
+    "oxfmt": "0.63.0",
+    "oxlint": "1.93.0",
+    "typescript": "7.0.2",
+    "vite": "8.3.8",
+    "vite-plugin-dts": "5.1.2",
+    "vitest": "4.1.12"
   }
 }
