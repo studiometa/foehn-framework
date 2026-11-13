@@ -25,7 +25,7 @@ final readonly class Sweeper
 {
     public function __construct(
         private PageCacheConfig $config,
-        private Store $store,
+        private PageStore $store,
     ) {}
 
     /**

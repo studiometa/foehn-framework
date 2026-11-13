@@ -6,6 +6,7 @@ namespace Studiometa\Foehn\PageCache;
 
 use Studiometa\Foehn\Config\ConfigLoader;
 use Studiometa\Foehn\Config\PageCacheConfig;
+use Studiometa\Foehn\Config\PageCacheStorage;
 use Throwable;
 
 /**
@@ -91,6 +92,12 @@ final readonly class Server
      */
     public static function serve(PageCacheConfig $config): void
     {
+        // In a bucket, a read before WordPress loads means the AWS SDK and an HTTP round
+        // trip, which gives almost nothing over a render. nginx serves the hits.
+        if ($config->storage === PageCacheStorage::Bucket) {
+            return;
+        }
+
         $bypass = new Bypass($config);
         $reason = $bypass->forRequest($_SERVER, $_COOKIE, $_POST);
 

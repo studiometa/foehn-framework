@@ -3,10 +3,12 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Config\PageCacheConfig;
+use Studiometa\Foehn\Config\PageCacheStorage;
 use Studiometa\Foehn\Console\Commands\PageCacheClearCommand;
 use Studiometa\Foehn\Console\Commands\PageCacheConfigCommand;
 use Studiometa\Foehn\Console\Commands\PageCacheStatusCommand;
 use Studiometa\Foehn\Console\WpCli;
+use Studiometa\Foehn\PageCache\BucketStore;
 use Studiometa\Foehn\PageCache\CacheKey;
 use Studiometa\Foehn\PageCache\Invalidator;
 use Studiometa\Foehn\PageCache\ServerConfig\ApacheSnippet;
@@ -154,6 +156,37 @@ describe('cache:config', function () {
         expect(wp_stub_get_calls('wp_cli_line'))->toBe([]);
     })->with(['nginx', 'apache']);
 
+    it('refuses Apache in bucket storage, which only nginx serves', function () {
+        $bucket = new PageCacheConfig(enabled: true, storage: PageCacheStorage::Bucket);
+
+        (new PageCacheConfigCommand(new WpCli(), $bucket))([], ['server' => 'apache']);
+
+        expect(wp_stub_get_calls('wp_cli_error')[0]['args']['message'])->toContain('nginx only');
+        expect(wp_stub_get_calls('wp_cli_line'))->toBe([]);
+    });
+
+    it('prints the bucket variant of the nginx snippet', function () {
+        pageCacheBucketEnv(['S3_UPLOADS_BUCKET' => 'uploads', 'S3_UPLOADS_ENDPOINT' => 'https://s3.example.com']);
+        $bucket = new PageCacheConfig(enabled: true, storage: PageCacheStorage::Bucket);
+
+        (new PageCacheConfigCommand(new WpCli(), $bucket))([], ['server' => 'nginx']);
+        pageCacheBucketEnv();
+
+        $printed = implode("\n", array_column(array_column(wp_stub_get_calls('wp_cli_line'), 'args'), 'message'));
+
+        expect($printed)->toContain('proxy_pass $foehn_page_upstream;')->toContain('uploads.s3.example.com');
+    });
+
+    it('says which variables are missing rather than printing a bucket snippet without a bucket', function () {
+        pageCacheBucketEnv();
+        $bucket = new PageCacheConfig(enabled: true, storage: PageCacheStorage::Bucket);
+
+        (new PageCacheConfigCommand(new WpCli(), $bucket))([], ['server' => 'nginx']);
+
+        expect(wp_stub_get_calls('wp_cli_error')[0]['args']['message'])->toContain('S3_UPLOADS_BUCKET');
+        expect(wp_stub_get_calls('wp_cli_line'))->toBe([]);
+    });
+
     it('says so rather than generating a snippet no server could use', function () {
         // A cache outside the document root has no filename a web server can reach. The
         // drop-in still serves it, which is worth saying out loud.
@@ -204,6 +237,21 @@ describe('cache:status', function () {
         (new PageCacheStatusCommand(new WpCli(), $unsafe, new Store($unsafe)))([], []);
 
         expect(wp_stub_get_calls('wp_cli_warning')[0]['args']['message'])->toContain('cacheControl');
+        expect(wp_stub_get_calls('wp_cli_success'))->toBe([]);
+    });
+
+    it('says what bucket storage does not do, and warns when the bucket is not configured', function () {
+        // The suite defines no S3_UPLOADS_BUCKET: the store writes nothing, and saying the
+        // cache is active would send somebody looking in the wrong place.
+        $bucket = new PageCacheConfig(enabled: true, storage: PageCacheStorage::Bucket);
+
+        (new PageCacheStatusCommand(new WpCli(), $bucket, BucketStore::forUploads($bucket)))([], []);
+
+        expect(($this->logged)())
+            ->toContain('Storage: bucket')
+            ->toContain('drop-in (does not read in bucket storage)')
+            ->toContain('apache (not supported in bucket storage)');
+        expect(wp_stub_get_calls('wp_cli_warning')[0]['args']['message'])->toContain('S3_UPLOADS_BUCKET');
         expect(wp_stub_get_calls('wp_cli_success'))->toBe([]);
     });
 

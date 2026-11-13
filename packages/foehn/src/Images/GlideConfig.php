@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Images;
 
-use Aws\S3\S3Client;
 use League\Flysystem\AwsS3V3\AwsS3V3Adapter;
 use League\Flysystem\Filesystem;
 use League\Flysystem\FilesystemOperator;
 use League\Flysystem\Local\LocalFilesystemAdapter;
 use League\Glide\Server;
 use League\Glide\ServerFactory;
+use Studiometa\Foehn\Helpers\UploadsBucket;
 
 /**
  * Where Glide reads originals, where it writes results, and with what.
@@ -249,7 +249,7 @@ final class GlideConfig
     public function sourceFilesystem(): FilesystemOperator
     {
         if ($this->usesObjectStorage()) {
-            return new Filesystem(new AwsS3V3Adapter($this->s3(), $this->bucket(), 'uploads'));
+            return new Filesystem(new AwsS3V3Adapter(UploadsBucket::client(), $this->bucket(), 'uploads'));
         }
 
         return new Filesystem(new LocalFilesystemAdapter($this->uploadsBaseDir()));
@@ -265,7 +265,9 @@ final class GlideConfig
         }
 
         if ($this->usesObjectStorage()) {
-            return $this->cache = new Filesystem(new AwsS3V3Adapter($this->s3(), $this->bucket(), self::CACHE_PREFIX));
+            return $this->cache = new Filesystem(
+                new AwsS3V3Adapter(UploadsBucket::client(), $this->bucket(), self::CACHE_PREFIX),
+            );
         }
 
         return $this->cache = new Filesystem(
@@ -307,12 +309,12 @@ final class GlideConfig
      */
     private function usesObjectStorage(): bool
     {
-        return defined('S3_UPLOADS_BUCKET') && (string) constant('S3_UPLOADS_BUCKET') !== '';
+        return UploadsBucket::name() !== null;
     }
 
     private function bucket(): string
     {
-        return (string) constant('S3_UPLOADS_BUCKET');
+        return (string) UploadsBucket::name();
     }
 
     /**
@@ -321,57 +323,5 @@ final class GlideConfig
     private function uploadsBaseDir(): string
     {
         return (string) (wp_get_upload_dir()['basedir'] ?? '');
-    }
-
-    /**
-     * A client for the same bucket `s3-uploads` writes to.
-     *
-     * Its own, rather than a second one built from constants. The bucket and the
-     * region are constants, but everything that makes a non-AWS bucket reachable
-     * is not: the plugin takes its endpoint, its path-style addressing and its
-     * checksum settings from the `s3_uploads_s3_client_params` filter, which is
-     * where Føhn's own `S3UploadsEndpoint` supplies them, and where a site adds
-     * whatever R2 or Scaleway needs.
-     *
-     * Reading only the constants produced a client pointed at AWS while the
-     * uploads went to MinIO — and the symptom was every transform 404ing with the
-     * originals plainly present in the media library.
-     */
-    private function s3(): S3Client
-    {
-        // `class_exists` and not a `use`: the plugin is a dependency of the site,
-        // never of the framework.
-        if (class_exists('S3_Uploads\Plugin')) {
-            /** @var S3Client */
-            return call_user_func(['S3_Uploads\Plugin', 'get_instance'])->s3();
-        }
-
-        $config = [
-            'version' => 'latest',
-            'region' => defined('S3_UPLOADS_REGION') ? (string) constant('S3_UPLOADS_REGION') : 'us-east-1',
-        ];
-
-        if (defined('S3_UPLOADS_KEY') && defined('S3_UPLOADS_SECRET')) {
-            $config['credentials'] = [
-                'key' => (string) constant('S3_UPLOADS_KEY'),
-                'secret' => (string) constant('S3_UPLOADS_SECRET'),
-            ];
-        }
-
-        // Anything that is not AWS — MinIO, R2, Scaleway — needs its endpoint, and
-        // path-style addressing because a bucket is not a subdomain there.
-        if (defined('S3_UPLOADS_ENDPOINT') && (string) constant('S3_UPLOADS_ENDPOINT') !== '') {
-            $config['endpoint'] = (string) constant('S3_UPLOADS_ENDPOINT');
-            $config['use_path_style_endpoint'] = true;
-        }
-
-        // The plugin's own extension point, applied to the client Glide will use,
-        // so one filter configures both.
-        if (function_exists('apply_filters')) {
-            /** @var array<string, mixed> $config */
-            $config = apply_filters('s3_uploads_s3_client_params', $config);
-        }
-
-        return new S3Client($config);
     }
 }

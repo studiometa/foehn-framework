@@ -98,9 +98,10 @@ ACF is **not** demonstrated here. It needs ACF Pro, a paid plugin CI cannot inst
 composer test:demo                # the PHP suite, from the monorepo root
 npm run -w @studiometa/foehn-demo test:run   # browser tests
 ./tests/smoke/run.sh              # against a started ddev
+./tests/smoke/page-cache-bucket.sh # the page cache in the RustFS bucket, served by nginx
 ```
 
-`tests/smoke/` is the important one. The PHP suite runs against WordPress function stubs, so a discovery that registers nothing at all still passes it — on 2026-08-19 that was 1409 passing tests and a fatal error on every front-end page. The smoke test drives real requests against a real WordPress and asserts inside it, and CI runs it twice: on a cold discovery cache and again on a warm one.
+`tests/smoke/` is the important one. The PHP suite runs against WordPress function stubs, so a discovery that registers nothing at all still passes it — on 2026-08-19 that was 1409 passing tests and a fatal error on every front-end page. The smoke test drives real requests against a real WordPress and asserts inside it, and CI runs it twice: on a cold discovery cache and again on a warm one. `page-cache-bucket.sh` turns bucket storage on for its run and puts the demo back when it ends.
 
 Every assertion in there was checked to fail when its feature is removed. An assertion that cannot fail is worse than none.
 

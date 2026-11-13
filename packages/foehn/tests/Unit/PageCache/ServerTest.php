@@ -122,6 +122,19 @@ describe('Server: serving', function () {
         expect($result['output'])->not->toContain('BOOTED');
     });
 
+    it('does not read in bucket storage, where nginx serves the hits', function () {
+        // A file on disk at the same key proves the drop-in did not look: it would have
+        // served it.
+        $result = pageCacheServeInProcess(
+            $this->root,
+            ['REQUEST_METHOD' => 'GET', 'HTTP_HOST' => 'example.com', 'REQUEST_URI' => '/blog/'],
+            '<html>stored</html>',
+            options: 'storage: Studiometa\Foehn\Config\PageCacheStorage::Bucket,',
+        );
+
+        expect($result['output'])->toBe('BOOTED');
+    });
+
     it('lets WordPress boot when nothing is stored', function () {
         $result = pageCacheServeInProcess($this->root, [
             'REQUEST_METHOD' => 'GET',

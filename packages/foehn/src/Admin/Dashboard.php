@@ -8,7 +8,7 @@ use Studiometa\Foehn\Config\PageCacheConfig;
 use Studiometa\Foehn\Cron\Heartbeat;
 use Studiometa\Foehn\Helpers\Env;
 use Studiometa\Foehn\PageCache\Invalidator;
-use Studiometa\Foehn\PageCache\Store;
+use Studiometa\Foehn\PageCache\PageStore;
 
 /**
  * One admin page saying what state this installation is actually in.
@@ -38,7 +38,7 @@ final readonly class Dashboard
 {
     public function __construct(
         private PageCacheConfig $config,
-        private Store $store,
+        private PageStore $store,
         private Heartbeat $heartbeat,
     ) {}
 

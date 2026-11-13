@@ -16,6 +16,7 @@ final readonly class PageCacheConfig
     public function __construct(
         public bool $enabled = false,
         public ?string $path = null,
+        public PageCacheStorage $storage = PageCacheStorage::Disk,
         public int $ttl = 0,
         public int $browserMaxAge = 0,
         public ?string $cacheControl = null,
@@ -44,6 +45,7 @@ final readonly class PageCacheConfig
 | ------------------------- | ------------------------------------- | ------------------------ | -------------------------------------------------------------------------------- |
 | `enabled`                 | `bool`                                | `false`                  | Master switch. Nothing is written or served while this is false.                 |
 | `path`                    | `string\|null`                        | `null`                   | Cache root. Defaults to `WP_CONTENT_DIR . '/cache/foehn/pages'`.                 |
+| `storage`                 | `PageCacheStorage`                    | `PageCacheStorage::Disk` | Where pages are stored: local disk, or the s3-uploads bucket.                    |
 | `ttl`                     | `int`                                 | `0`                      | Seconds a stored page stays servable. `0` = until something purges it.           |
 | `browserMaxAge`           | `int`                                 | `0`                      | `max-age` sent to the browser for cached HTML.                                   |
 | `cacheControl`            | `string\|null`                        | `null`                   | The whole `Cache-Control` value of a hit. `null` builds it from `browserMaxAge`. |
@@ -99,6 +101,10 @@ Warning: The page cache is enabled but inert in the 'local' environment.
 ### `path`
 
 A path outside the document root is a legitimate choice, and the drop-in serves it happily — but no web server can reach a file by name from outside its own root, so `cache:config` refuses to generate a snippet and says why rather than emitting a broken one.
+
+### `storage`
+
+`PageCacheStorage::Disk` stores pages under `path`. `PageCacheStorage::Bucket` stores them in the `humanmade/s3-uploads` bucket, under `cache/pages/`, and `path` is not used. Use the bucket only when the site runs on more than one instance: hits are slower, only nginx serves them, and a deploy must run `wp foehn cache:clear`. See [Storing pages in the bucket](/guide/page-cache#storing-pages-in-the-bucket).
 
 ### `ttl`
 

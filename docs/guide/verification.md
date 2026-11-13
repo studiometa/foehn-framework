@@ -119,17 +119,17 @@ wp foehn verify --profile=production
 
 Nine checks, and the profile exists only because all nine do — a gate shipped with some of its checks missing would report a pass that means less than the name on it.
 
-| Check                | Passes when                                                                                                                      |
-| -------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `environment`        | Resolved `WP_ENVIRONMENT_TYPE` is exactly `production`.                                                                          |
-| `debug`              | `WP_DEBUG` and `WP_DEBUG_DISPLAY` are both off.                                                                                  |
-| `indexing`           | WordPress indexing is enabled (`blog_public`) and Føhn's [non-production guard](./security#non-production-indexing) is inactive. |
-| `salts`              | All eight keys and salts exist, are unique, are long enough, and are not generated placeholders.                                 |
-| `real-cron`          | `DISABLE_WP_CRON` is on, so scheduled events do not depend on uncached traffic.                                                  |
-| `cron-heartbeat`     | [`foehn_cron_last_run`](#the-real-cron) is a timestamp inside the window this cadence allows.                                    |
-| `cron-backlog`       | No scheduled event is overdue past that same window.                                                                             |
-| `page-cache-storage` | If caching is on for production, its root resolves inside itself and is writable.                                                |
-| `public-files`       | Each file of the [public directory](./public-files) is in the web root, with the same content.                                   |
+| Check                | Passes when                                                                                                                          |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `environment`        | Resolved `WP_ENVIRONMENT_TYPE` is exactly `production`.                                                                              |
+| `debug`              | `WP_DEBUG` and `WP_DEBUG_DISPLAY` are both off.                                                                                      |
+| `indexing`           | WordPress indexing is enabled (`blog_public`) and Føhn's [non-production guard](./security#non-production-indexing) is inactive.     |
+| `salts`              | All eight keys and salts exist, are unique, are long enough, and are not generated placeholders.                                     |
+| `real-cron`          | `DISABLE_WP_CRON` is on, so scheduled events do not depend on uncached traffic.                                                      |
+| `cron-heartbeat`     | [`foehn_cron_last_run`](#the-real-cron) is a timestamp inside the window this cadence allows.                                        |
+| `cron-backlog`       | No scheduled event is overdue past that same window.                                                                                 |
+| `page-cache-storage` | If caching is on for production, its root resolves inside itself and is writable. In bucket storage, `S3_UPLOADS_BUCKET` is defined. |
+| `public-files`       | Each file of the [public directory](./public-files) is in the web root, with the same content.                                       |
 
 **It does not adapt to the environment it finds.** Run against staging, it fails at the first check, on purpose: a gate that relaxed its rules when the site said `staging` would wave through a production machine whose `WP_ENVIRONMENT_TYPE` was simply wrong — and that is the misconfiguration most worth catching, because the page cache and the indexing guard key off the same value.
 

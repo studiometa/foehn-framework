@@ -28,7 +28,7 @@ use Studiometa\Foehn\PageCache\Invalidator;
  * rather than a per-page one, so the one on "clear everything" cannot authorise "clear
  * this post". Then, when one is present, the post id.
  *
- * **Nothing but {@see Invalidator} is called.** No {@see \Studiometa\Foehn\PageCache\Store},
+ * **Nothing but {@see Invalidator} is called.** No {@see \Studiometa\Foehn\PageCache\PageStore},
  * no `unlink()`, no path handling. The invalidator is the one place that turns a URL into
  * the files it owns, and a second implementation here is how an admin button and an
  * automatic purge come to disagree about which files a page owns.

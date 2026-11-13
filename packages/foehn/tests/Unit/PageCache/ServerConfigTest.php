@@ -3,8 +3,10 @@
 declare(strict_types=1);
 
 use Studiometa\Foehn\Config\PageCacheConfig;
+use Studiometa\Foehn\Config\PageCacheStorage;
 use Studiometa\Foehn\PageCache\QueryKey;
 use Studiometa\Foehn\PageCache\ServerConfig\ApacheSnippet;
+use Studiometa\Foehn\PageCache\ServerConfig\BucketOrigin;
 use Studiometa\Foehn\PageCache\ServerConfig\NginxSnippet;
 use Studiometa\Foehn\PageCache\ServerConfig\SnippetPolicy;
 use Studiometa\Foehn\Views\Sections\SectionRequest;
@@ -752,5 +754,171 @@ describe('ApacheSnippet', function () {
         expect(ApacheSnippet::wordPressBlock())
             ->toContain('# BEGIN WordPress')
             ->toContain('RewriteRule . /index.php [L]');
+    });
+});
+
+describe('BucketOrigin', function () {
+    afterEach(function () {
+        pageCacheBucketEnv();
+    });
+
+    it('puts the bucket in the path when the endpoint is path-style, as RustFS is', function () {
+        pageCacheBucketEnv([
+            'S3_UPLOADS_BUCKET' => 'uploads',
+            'S3_UPLOADS_ENDPOINT' => 'http://rustfs:9000',
+            'S3_UPLOADS_PATH_STYLE' => 'true',
+        ]);
+
+        expect(BucketOrigin::fromEnvironment()?->toArray())->toBe([
+            'scheme' => 'http',
+            'host' => 'rustfs:9000',
+            'prefix' => '/uploads',
+            'resolver' => '1.1.1.1 8.8.8.8',
+        ]);
+    });
+
+    it('puts the bucket in the hostname otherwise, as Tigris and OVH are', function () {
+        pageCacheBucketEnv([
+            'S3_UPLOADS_BUCKET' => 'site',
+            'S3_UPLOADS_ENDPOINT' => 'https://fly.storage.tigris.dev/',
+            'S3_UPLOADS_PROXY_RESOLVER' => '[fdaa::3]',
+        ]);
+
+        expect(BucketOrigin::fromEnvironment()?->toArray())->toBe([
+            'scheme' => 'https',
+            'host' => 'site.fly.storage.tigris.dev',
+            'prefix' => '',
+            'resolver' => '[fdaa::3]',
+        ]);
+    });
+
+    it('goes through the proxy host when one is set, as the uploads proxy does', function () {
+        pageCacheBucketEnv([
+            'S3_UPLOADS_BUCKET' => 'site',
+            'S3_UPLOADS_ENDPOINT' => 'https://s3.example.com',
+            'S3_UPLOADS_PROXY_HOST' => 'cdn.example.com',
+        ]);
+
+        expect(BucketOrigin::fromEnvironment()?->toArray())->toMatchArray([
+            'scheme' => 'https',
+            'host' => 'cdn.example.com',
+            'prefix' => '',
+        ]);
+    });
+
+    it('has no origin without a bucket, or without a way to reach it', function (array $variables) {
+        pageCacheBucketEnv($variables);
+
+        expect(BucketOrigin::fromEnvironment())->toBeNull();
+    })->with([
+        'no bucket' => [['S3_UPLOADS_ENDPOINT' => 'https://s3.example.com']],
+        'no endpoint and no proxy host' => [['S3_UPLOADS_BUCKET' => 'site']],
+    ]);
+
+    it('has no origin for a value that would end an nginx directive', function (array $variables) {
+        pageCacheBucketEnv(['S3_UPLOADS_BUCKET' => 'site', ...$variables]);
+
+        expect(BucketOrigin::fromEnvironment())->toBeNull();
+    })->with([
+        'a semicolon in the host' => [['S3_UPLOADS_PROXY_HOST' => 'cdn.example.com; return 200']],
+        'a variable in the resolver' => [[
+            'S3_UPLOADS_ENDPOINT' => 'https://s3.example.com',
+            'S3_UPLOADS_PROXY_RESOLVER' => '$host',
+        ]],
+        'a scheme nginx cannot proxy to' => [[
+            'S3_UPLOADS_PROXY_HOST' => 'cdn.example.com',
+            'S3_UPLOADS_PROXY_SCHEME' => 'ftp',
+        ]],
+    ]);
+});
+
+describe('NginxSnippet in bucket storage', function () {
+    beforeEach(function () {
+        pageCacheBucketEnv([
+            'S3_UPLOADS_BUCKET' => 'uploads',
+            'S3_UPLOADS_ENDPOINT' => 'http://rustfs:9000',
+            'S3_UPLOADS_PATH_STYLE' => 'true',
+        ]);
+
+        $this->bucket = new PageCacheConfig(enabled: true, storage: PageCacheStorage::Bucket);
+        $this->snippet = (string) new NginxSnippet($this->bucket)->render();
+    });
+
+    afterEach(function () {
+        pageCacheBucketEnv();
+    });
+
+    it('proxies an accepted request to the object PHP wrote', function () {
+        expect($this->snippet)
+            ->toContain('set $foehn_key "$host${uri}index$foehn_variant.html";')
+            ->toContain('set $foehn_key "$host${uri}/index$foehn_variant.html";')
+            ->toContain('rewrite ^ /_foehn_page_cache last;')
+            ->toContain('rewrite ^ "/uploads/cache/pages/$foehn_key" break;')
+            ->toContain('set $foehn_page_upstream "http://rustfs:9000";')
+            ->toContain('proxy_pass $foehn_page_upstream;')
+            ->toContain('proxy_set_header Host rustfs:9000;');
+    });
+
+    it('sends a missing object or a failing bucket to PHP, which renders the page', function () {
+        expect($this->snippet)
+            ->toContain('proxy_intercept_errors on;')
+            ->toContain('error_page 403 404 500 502 503 504 = @foehn_page_miss;')
+            ->toContain("location @foehn_page_miss {\n    rewrite ^ /index.php last;\n}");
+    });
+
+    it('cannot test a file, so it never does', function () {
+        expect($this->snippet)->not->toContain('-f "$document_root$foehn_url"');
+    });
+
+    it('keeps the bypass rules and the section noindex of the disk variant', function () {
+        $disk = (string) new NginxSnippet(new PageCacheConfig(
+            enabled: true,
+            path: constant('WP_CONTENT_DIR') . '/cache/foehn/pages',
+        ))->render();
+
+        foreach ([
+            'if ($request_method != GET) {',
+            'if ($http_cookie ~* "(',
+            'set $foehn_robots "noindex, nofollow";',
+            'add_header X-Robots-Tag $foehn_robots;',
+            'set $foehn_val_foehn_sections $arg_foehn_sections;',
+        ] as $rule) {
+            expect($disk)->toContain($rule);
+            expect($this->snippet)->toContain($rule);
+        }
+    });
+
+    it('sends the headers of a hit and hides those of the bucket', function () {
+        expect($this->snippet)
+            ->toContain('add_header X-Foehn-Cache HIT;')
+            ->toContain('add_header Cache-Control "public, max-age=0, must-revalidate";')
+            ->toContain('proxy_hide_header Set-Cookie;')
+            ->toContain('proxy_set_header Cookie "";');
+    });
+
+    it('changes its policy hash when the bucket moves', function () {
+        $before = new NginxSnippet($this->bucket)->hash();
+
+        pageCacheBucketEnv(['S3_UPLOADS_BUCKET' => 'other', 'S3_UPLOADS_ENDPOINT' => 'http://rustfs:9000']);
+
+        expect(new NginxSnippet($this->bucket)->hash())->not->toBe($before);
+    });
+
+    it('leaves the hash of a disk snippet alone', function () {
+        // Bucket variables are set here, and an include generated for disk before
+        // bucket storage existed must still read as current.
+        $disk = new PageCacheConfig(enabled: true, path: constant('WP_CONTENT_DIR') . '/cache/foehn/pages');
+        $hash = new NginxSnippet($disk)->hash();
+
+        pageCacheBucketEnv();
+
+        expect(new NginxSnippet($disk)->hash())->toBe($hash);
+    });
+
+    it('refuses to render when the bucket cannot be reached', function () {
+        pageCacheBucketEnv(['S3_UPLOADS_BUCKET' => 'uploads']);
+
+        expect(fn() => new NginxSnippet($this->bucket)->render())
+            ->toThrow(InvalidArgumentException::class, 'S3_UPLOADS_ENDPOINT or S3_UPLOADS_PROXY_HOST');
     });
 });

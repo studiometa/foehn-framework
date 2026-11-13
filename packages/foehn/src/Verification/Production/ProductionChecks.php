@@ -8,7 +8,7 @@ use Studiometa\Foehn\Config\PageCacheConfig;
 use Studiometa\Foehn\Cron\Heartbeat;
 use Studiometa\Foehn\Helpers\Env;
 use Studiometa\Foehn\Indexing\IndexingProtection;
-use Studiometa\Foehn\PageCache\Store;
+use Studiometa\Foehn\PageCache\PageStore;
 use Studiometa\Foehn\Security\Salts;
 use Studiometa\Foehn\Verification\VerificationProfile;
 use Studiometa\Foehn\Verification\VerificationReport;
@@ -54,7 +54,7 @@ final readonly class ProductionChecks
 
     public function __construct(
         private PageCacheConfig $config,
-        private Store $store,
+        private PageStore $store,
         private IndexingProtection $indexing,
     ) {}
 
