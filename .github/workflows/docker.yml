@@ -126,37 +126,40 @@ jobs:
           set -euo pipefail
 
           run() { docker run --rm --entrypoint sh foehn-wordpress:check -c "$1"; }
+          # Every check below reads the whole output: `grep -q` and `head` stop
+          # early, `docker run` then writes into a closed pipe, and pipefail
+          # turns that broken pipe into a random failure.
 
           echo "PHP is the version the framework requires"
-          run 'php -v' | head -1 | grep -q 'PHP 8\.5\.'
+          run 'php -v' | sed -n 1p | grep 'PHP 8\.5\.' >/dev/null
 
           echo "WP-CLI is installed"
-          run 'wp --allow-root --version --skip-plugins --skip-themes 2>/dev/null' | grep -q 'WP-CLI'
+          run 'wp --allow-root --version --skip-plugins --skip-themes 2>/dev/null' | grep 'WP-CLI' >/dev/null
 
           echo "WP-CLI raises no deprecation of its own on this PHP"
           # The two the published 2.12.0 phar raises on PHP 8.5, and the reason
           # the Dockerfile builds its own: one per colourised fragment from
           # `php-cli-tools`, one per process from `react/promise`. `colorize()`
           # exercises the first; any command at all exercises the second.
-          ! run 'wp --allow-root --skip-wordpress eval "echo WP_CLI::colorize(\"%Gok%n\");" 2>&1' | grep -q 'Deprecated'
+          ! run 'wp --allow-root --skip-wordpress eval "echo WP_CLI::colorize(\"%Gok%n\");" 2>&1' | grep 'Deprecated' >/dev/null
 
           echo "The extensions a WordPress site needs are present"
           for ext in mysqli gd exif intl; do
-            run "php -m" | grep -qx "$ext"
+            run "php -m" | grep -x "$ext" >/dev/null
           done
 
           echo "HTTPS is derived from the forwarded scheme, not from \$https alone"
-          run 'cat /etc/nginx/fastcgi_params' | grep -q 'HTTPS .*\$fcgi_https'
+          run 'cat /etc/nginx/fastcgi_params' | grep 'HTTPS .*\$fcgi_https' >/dev/null
 
           echo "Every entrypoint is executable"
-          ! run 'ls -l /opt/docker/provision/entrypoint.d/*.sh' | grep -q -- '-rw-'
+          ! run 'ls -l /opt/docker/provision/entrypoint.d/*.sh' | grep -- '-rw-' >/dev/null
 
           echo "The entrypoints are sourced, so none of them may exit or set shell options"
           # Every `*.sh` in the directory, not a list of prefixes: the previous
           # form named `[567]0-` and so stopped covering `40-` the day it landed.
           # A check that has to be edited to keep working is one that quietly
           # stops working.
-          ! run 'grep -hE "^(set |exit )" /opt/docker/provision/entrypoint.d/*.sh' | grep -q .
+          ! run 'grep -hE "^(set |exit )" /opt/docker/provision/entrypoint.d/*.sh' | grep . >/dev/null
 
           echo "The backup jobs are executable, and the file they source is not"
           for job in foehn-backup foehn-backup-maintenance foehn-backup-verify; do
@@ -166,19 +169,19 @@ jobs:
 
           echo "The backup jobs are run, not sourced, so they must fail loudly"
           for job in foehn-backup foehn-backup-maintenance foehn-backup-verify; do
-            run "head -n 30 /opt/docker/bin/$job" | grep -q 'set -eu'
+            run "head -n 30 /opt/docker/bin/$job" | grep 'set -eu' >/dev/null
           done
 
           echo "What a backup needs is installed"
-          run 'restic version' | grep -q 'restic '
+          run 'restic version' | grep 'restic ' >/dev/null
           # `wp db` shells out to the legacy names, so those are the ones that
           # have to exist — `mariadb-dump` being present is not the same thing.
           for binary in mysql mysqldump mariadb-dump; do
-            run "command -v $binary" | grep -q "/$binary"
+            run "command -v $binary" | grep "/$binary" >/dev/null
           done
           # util-linux's, not busybox's: the weekly jobs wait on the lock with
           # `-w`, which the busybox applet does not have.
-          run 'flock -V' | grep -q 'util-linux'
+          run 'flock -V' | grep 'util-linux' >/dev/null
 
       - name: Check it boots and serves
         run: |
@@ -196,7 +199,7 @@ jobs:
           curl -fsS -o /dev/null http://localhost:8080/healthcheck
 
           echo "NGINX started without an emergency"
-          ! docker logs check 2>&1 | grep -q 'emerg'
+          ! docker logs check 2>&1 | grep 'emerg' >/dev/null
 
           docker rm -f check
 
@@ -247,7 +250,7 @@ jobs:
           ! docker run --name backup-broken \
               -e BACKUP_ENABLED=true -e BACKUP_SCHEDULE=fortnightly \
               foehn-wordpress:check >/dev/null 2>&1
-          docker logs backup-broken 2>&1 | grep -q 'BACKUP_SCHEDULE="fortnightly" is not one of'
+          docker logs backup-broken 2>&1 | grep 'BACKUP_SCHEDULE="fortnightly" is not one of' >/dev/null
           docker rm -f backup-broken
 
       # Until this existed, CI proved the backup was *scheduled* and never that
@@ -299,14 +302,14 @@ jobs:
           # at all; after it, it is a couple of seconds.
           timeout 120 docker exec backupsite /opt/docker/bin/foehn-backup | tee /tmp/first.log
           grep -q 'created one' /tmp/first.log
-          docker exec backupsite restic snapshots --json | grep -q short_id
+          docker exec backupsite restic snapshots --json | grep short_id >/dev/null
 
           echo "The second run finds the repository and does not claim to create it"
           timeout 120 docker exec backupsite /opt/docker/bin/foehn-backup | tee /tmp/second.log
           ! grep -q 'created one' /tmp/second.log
 
           echo "The restore drill agrees the snapshot is a database"
-          docker exec backupsite /opt/docker/bin/foehn-backup-verify | grep -q 'restores and is recognisable'
+          docker exec backupsite /opt/docker/bin/foehn-backup-verify | grep 'restores and is recognisable' >/dev/null
 
           echo "A broken dump stores no snapshot — the reason for --stdin-from-command"
           before=$(docker exec backupsite restic snapshots --json | grep -o short_id | wc -l)
@@ -363,8 +366,8 @@ jobs:
               --admin_user=a --admin_password=p --admin_email=a@b.test --allow-root --quiet
             chown -R application:application /app/web'
           docker exec cronsite wp cron event schedule foehn_ci_event now --path=/app/web/wp --allow-root
-          docker exec cronsite run-parts /etc/periodic/15min | grep -q 'Executed a total of'
-          ! docker exec cronsite wp cron event list --path=/app/web/wp --allow-root --fields=hook | grep -q foehn_ci_event
+          docker exec cronsite run-parts /etc/periodic/15min | grep 'Executed a total of' >/dev/null
+          ! docker exec cronsite wp cron event list --path=/app/web/wp --allow-root --fields=hook | grep foehn_ci_event >/dev/null
 
           # Føhn schedules `foehn_cron_heartbeat` every minute, so it is due on
           # every tick. Nobody listens to it on this bare WordPress, which is
@@ -405,7 +408,7 @@ jobs:
             sleep 1
           done
           docker exec cronsite test -e /run/foehn/held
-          docker exec cronsite /opt/docker/bin/foehn-cron | grep -q 'skipping this tick'
+          docker exec cronsite /opt/docker/bin/foehn-cron | grep 'skipping this tick' >/dev/null
           # The `sleep` inherits the locked descriptor, so killing `flock` alone
           # would leave the lock held for another five minutes. `-f` matches the
           # whole command line, which is every process in that chain.
@@ -421,7 +424,7 @@ jobs:
 
           echo "A cadence busybox never calls stops the boot rather than pretending"
           ! docker run --name cronbad -e FOEHN_CRON_SCHEDULE=every-5-minutes foehn-wordpress:check >/dev/null 2>&1
-          docker logs cronbad 2>&1 | grep -q 'is not one of'
+          docker logs cronbad 2>&1 | grep 'is not one of' >/dev/null
 
           docker rm -f cronsite crondb cronbad
           docker network rm cronnet
@@ -477,14 +480,14 @@ jobs:
 
           echo "The provisioning database was handed over exactly once, before supervisord"
           test "$(docker logs variant 2>&1 | grep -c 'provisioning database stopped')" = "1"
-          ! docker logs variant 2>&1 | grep -q 'already listening, stopping it first'
+          ! docker logs variant 2>&1 | grep 'already listening, stopping it first' >/dev/null
 
           echo "It listens on a socket and on no port at all"
           docker exec variant test -S /run/mysqld/mysqld.sock
           ! docker exec variant mariadb --no-defaults --protocol=tcp -h 127.0.0.1 -u wp -psecret -e 'SELECT 1' >/dev/null 2>&1
 
           echo "The legacy client name WP-CLI shells out to reaches it too"
-          docker exec variant mysql --no-defaults -u wp -psecret -N -B -e 'SELECT 1' wordpress | grep -qx 1
+          docker exec variant mysql --no-defaults -u wp -psecret -N -B -e 'SELECT 1' wordpress | grep -x 1 >/dev/null
 
           echo "Data survives a restart, and comes back without crash recovery"
           docker exec variant mariadb --no-defaults -u wp -psecret wordpress \
@@ -500,7 +503,7 @@ jobs:
           done
 
           test "$(docker exec variant mariadb --no-defaults -u wp -psecret -N -B -e 'SELECT id FROM persisted' wordpress)" = "42"
-          ! docker logs --since 2m variant 2>&1 | grep -qi 'crash recovery'
+          ! docker logs --since 2m variant 2>&1 | grep -i 'crash recovery' >/dev/null
 
           echo "And it initialised once, on the first boot only"
           test "$(docker logs variant 2>&1 | grep -c 'empty data directory, initialising')" = "1"
