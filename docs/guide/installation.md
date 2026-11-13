@@ -115,7 +115,7 @@ your-theme/
 
 ## Configuration Options
 
-You can pass configuration options when booting the kernel:
+The recommended way to configure Føhn is an `app/foehn.config.php` file. See [Configuration](/guide/configuration). You can also pass a legacy array when you boot the kernel:
 
 ```php
 Kernel::boot(__DIR__ . '/app', [
@@ -134,7 +134,7 @@ Kernel::boot(__DIR__ . '/app', [
 
 When `debug` is enabled, Føhn will log discovery failures (e.g., classes that cannot be reflected) via `trigger_error()` with `E_USER_WARNING`. This helps identify misconfigured classes during development.
 
-By default, debug mode follows the `WP_DEBUG` constant value.
+With the `Kernel::boot()` array, debug mode follows the `WP_DEBUG` constant when the array has no `'debug'` key. With `foehn.config.php`, the default is `false`: write `debug: WP_DEBUG` to follow the constant.
 
 For production deployments, enable the discovery cache and generate it after deployment:
 
@@ -154,11 +154,13 @@ Føhn is designed to work seamlessly with Timber. It automatically:
 
 ## Using with ACF
 
-For ACF blocks, ensure ACF Pro is installed. Føhn uses `stoutlogic/acf-builder` for defining fields:
+ACF blocks, field groups and options pages come from the separate `studiometa/foehn-acf` package. It requires the exact same version as `studiometa/foehn`, and it installs `stoutlogic/acf-builder`:
 
 ```bash
-composer require stoutlogic/acf-builder
+composer require studiometa/foehn-acf:<version of studiometa/foehn>
 ```
+
+ACF Pro is a WordPress plugin, not a Composer dependency: install it too. The commands of the package run as `wp foehn-acf <name>`, for example `wp foehn-acf make:acf-block`. See [ACF Blocks](/guide/acf-blocks).
 
 ## Verify Installation
 
