@@ -15,6 +15,16 @@ composer require studiometa/foehn-acf
 
 Nothing registers when ACF is absent: each discovery guards on the function it needs. The classes keep their `Studiometa\Foehn\` namespaces, so a project upgrading from 0.4 changes one Composer requirement and no imports.
 
+## Generate an options page
+
+The `foehn-acf` package adds a generator for the class:
+
+```bash
+wp foehn-acf make:options-page ThemeSettings --dry-run
+```
+
+Remove `--dry-run` to write the file. See [CLI Commands](/guide/cli-commands).
+
 ## Basic Options Page
 
 ```php
@@ -190,10 +200,12 @@ $fieldObject = $options->getObject('field_name', 'options-page-slug');
     <p>{{ footer_text }}</p>
 
     {% if logo %}
-        <img src="{{ logo.src }}" alt="{{ site_name }}">
+        <img src="{{ logo.url }}" alt="{{ site_name }}">
     {% endif %}
 </footer>
 ```
+
+An ACF image field gives an array by default, so use `logo.url`. To get a Timber image, convert the value in the provider with `Timber::get_image()`.
 
 ## Related
 
