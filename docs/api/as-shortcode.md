@@ -27,7 +27,7 @@ final readonly class AsShortcode
 ```php
 <?php
 
-namespace App\Hooks;
+namespace App\Shortcodes;
 
 use Studiometa\Foehn\Attributes\AsShortcode;
 
