@@ -73,13 +73,13 @@ Menus are automatically available in Timber context under `menus.<location>`:
             <ul>
                 {% for item in menus.primary.items %}
                     <li class="{{ item.classes|join(' ') }}">
-                        <a 
+                        <a
                             href="{{ item.link }}"
                             {% if item.current %}aria-current="page"{% endif %}
                         >
                             {{ item.title }}
                         </a>
-                        
+
                         {# Nested menu items #}
                         {% if item.children %}
                             <ul class="submenu">
@@ -119,21 +119,29 @@ Menus are automatically available in Timber context under `menus.<location>`:
 
 Timber's `MenuItem` class provides these useful properties:
 
-| Property      | Type          | Description                           |
-| ------------- | ------------- | ------------------------------------- |
-| `title`       | `string`      | Menu item title                       |
-| `link`        | `string`      | URL                                   |
-| `current`     | `bool`        | Is current page                       |
-| `current_item_parent` | `bool` | Is parent of current page           |
-| `current_item_ancestor` | `bool` | Is ancestor of current page       |
-| `children`    | `MenuItem[]`  | Child menu items                      |
-| `classes`     | `string[]`    | CSS classes                           |
-| `target`      | `string`      | Link target (`_blank`, etc.)          |
-| `description` | `string`      | Menu item description                 |
+| Property                | Type         | Description                  |
+| ----------------------- | ------------ | ---------------------------- |
+| `title`                 | `string`     | Menu item title              |
+| `link`                  | `string`     | URL                          |
+| `current`               | `bool`       | Is current page              |
+| `current_item_parent`   | `bool`       | Is parent of current page    |
+| `current_item_ancestor` | `bool`       | Is ancestor of current page  |
+| `children`              | `MenuItem[]` | Child menu items             |
+| `classes`               | `string[]`   | CSS classes                  |
+| `target`                | `string`     | Link target (`_blank`, etc.) |
+| `description`           | `string`     | Menu item description        |
 
 ## Checking Menu Assignment
 
-Menus only appear in context when assigned in WordPress admin (Appearance → Menus):
+Menus only appear in context when a menu is assigned to the location, in WordPress admin (Appearance → Menus) or in code.
+
+Create and assign the menus of a site in a [seeder](./seeders), not by hand, so `wp foehn seed` builds them again on an empty database. The starter declares the `header`, `footer` and `legal` locations, and its `MenusSeeder` creates and assigns one menu for each:
+
+```bash
+wp foehn seed
+```
+
+Check the assignment in Twig:
 
 ```twig
 {% if menus.primary %}
@@ -161,10 +169,10 @@ app/
 
 ## Attribute Parameters
 
-| Parameter     | Type     | Default    | Description                        |
-| ------------- | -------- | ---------- | ---------------------------------- |
-| `location`    | `string` | _required_ | Menu location slug                 |
-| `description` | `string` | _required_ | Label shown in WordPress admin     |
+| Parameter     | Type     | Default    | Description                    |
+| ------------- | -------- | ---------- | ------------------------------ |
+| `location`    | `string` | _required_ | Menu location slug             |
+| `description` | `string` | _required_ | Label shown in WordPress admin |
 
 ## See Also
 
