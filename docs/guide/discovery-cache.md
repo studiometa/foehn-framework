@@ -8,38 +8,43 @@ You do not have to run anything. `composer install` clears the cache, and the fi
 
 ## Configuration
 
-Enable discovery caching by passing configuration when booting the kernel:
+Set the strategy in `app/foehn.config.php`. The starter ships this file with the `FULL` strategy:
 
 ```php
 <?php
-// functions.php
+// app/foehn.config.php
 
-use Studiometa\Foehn\Kernel;
+use Studiometa\Foehn\Config\FoehnConfig;
+use Tempest\Discovery\DiscoveryCacheStrategy;
 
-Kernel::boot(__DIR__ . '/app', [
-    'discovery_cache' => 'full',  // or 'partial', 'none', true, false
-]);
+return new FoehnConfig(
+    discoveryCacheStrategy: DiscoveryCacheStrategy::FULL,
+);
 ```
+
+Without a `foehn.config.php`, the strategy is `NONE`. See [Configuration](/guide/configuration) for the other config files.
+
+::: warning Legacy boot array
+`Kernel::boot(__DIR__ . '/app', ['discovery_cache' => 'full'])` also sets the strategy. A `foehn.config.php` replaces this array completely, so in a starter project the array has no effect. Use `foehn.config.php`.
+:::
 
 ### Cache Strategies
 
-| Strategy    | Description                                          |
-| ----------- | ---------------------------------------------------- |
-| `'full'`    | Cache all discoveries (vendor + app) - best for prod |
-| `'partial'` | Cache only vendor discoveries - good for staging     |
-| `'none'`    | Disable caching - use in development                 |
-| `true`      | Alias for `'full'`                                   |
-| `false`     | Alias for `'none'`                                   |
+| Strategy                          | Description                                          |
+| --------------------------------- | ---------------------------------------------------- |
+| `DiscoveryCacheStrategy::FULL`    | Cache all discoveries (vendor + app) - best for prod |
+| `DiscoveryCacheStrategy::PARTIAL` | Cache only vendor discoveries - good for staging     |
+| `DiscoveryCacheStrategy::NONE`    | Disable caching - use in development (the default)   |
 
 ### Custom Cache Path
 
 By default, cache files are stored in `wp-content/cache/foehn/discovery/`. You can customize this:
 
 ```php
-Kernel::boot(__DIR__ . '/app', [
-    'discovery_cache' => 'full',
-    'discovery_cache_path' => WP_CONTENT_DIR . '/cache/my-theme/discovery',
-]);
+return new FoehnConfig(
+    discoveryCacheStrategy: DiscoveryCacheStrategy::FULL,
+    discoveryCachePath: WP_CONTENT_DIR . '/cache/my-theme/discovery',
+);
 ```
 
 ## CLI Commands
@@ -222,40 +227,31 @@ php wp-cli.phar cache flush
 
 ## Environment-Based Configuration
 
-Use environment variables for different environments:
+Add a config file for each environment. A file such as `foehn.local.config.php` or `foehn.staging.config.php` loads after `foehn.config.php` in that environment, and replaces it. It does not merge with it, so start from the shared file and change only the strategy:
 
 ```php
 <?php
-// functions.php
+// app/foehn.local.config.php
 
-use Studiometa\Foehn\Kernel;
+use Studiometa\Foehn\Config\FoehnConfig;
+use Tempest\Discovery\DiscoveryCacheStrategy;
 
-$cacheStrategy = match (wp_get_environment_type()) {
-    'production' => 'full',
-    'staging' => 'partial',
-    default => 'none',
-};
+/** @var FoehnConfig $shared */
+$shared = require __DIR__ . '/foehn.config.php';
 
-Kernel::boot(__DIR__ . '/app', [
-    'discovery_cache' => $cacheStrategy,
-]);
+return new FoehnConfig(
+    discoveryCacheStrategy: DiscoveryCacheStrategy::NONE,
+    discoveryCachePath: $shared->discoveryCachePath,
+    hooks: $shared->hooks,
+    imageTransformer: $shared->imageTransformer,
+    debug: $shared->debug,
+    recordErrors: $shared->recordErrors,
+    traceRequests: $shared->traceRequests,
+    cliNamespace: $shared->cliNamespace,
+);
 ```
 
-Or use a constant in `wp-config.php`:
-
-```php
-// wp-config.php
-define('FOEHN_DISCOVERY_CACHE', 'full');
-```
-
-```php
-// functions.php
-Kernel::boot(__DIR__ . '/app', [
-    'discovery_cache' => defined('FOEHN_DISCOVERY_CACHE')
-        ? FOEHN_DISCOVERY_CACHE
-        : 'none',
-]);
-```
+The suffix comes from `wp_get_environment_type()`: `.local` for `local`, `.dev` or `.development` for `development`, `.staging` or `.stg` for `staging`, `.production` or `.prod` for `production`.
 
 ## How It Works
 
@@ -328,13 +324,7 @@ If your code changes aren't taking effect:
 
 ### Development Mode
 
-Always disable caching in development to see changes immediately:
-
-```php
-Kernel::boot(__DIR__ . '/app', [
-    'discovery_cache' => WP_DEBUG ? 'none' : 'full',
-]);
-```
+Disable caching in development to see changes immediately. Set `DiscoveryCacheStrategy::NONE` in `foehn.local.config.php`, as shown in [Environment-Based Configuration](#environment-based-configuration).
 
 ## Performance Impact
 
