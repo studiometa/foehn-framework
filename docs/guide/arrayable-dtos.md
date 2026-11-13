@@ -151,14 +151,15 @@ final readonly class HeroBlock implements AcfBlockInterface
 ```php
 use Studiometa\Foehn\Attributes\AsBlockPattern;
 use Studiometa\Foehn\Contracts\BlockPatternInterface;
+use Studiometa\Foehn\Models\Post;
 
 #[AsBlockPattern(name: 'theme/featured', title: 'Featured Section')]
 final class FeaturedPattern implements BlockPatternInterface
 {
-    public function context(): FeaturedContext
+    public function compose(): FeaturedContext
     {
         return new FeaturedContext(
-            posts: \Timber\Timber::get_posts(['posts_per_page' => 3]),
+            posts: Post::query()->limit(3)->get(),
         );
     }
 }
