@@ -117,13 +117,15 @@ final class Skill extends Term implements ConfiguresTaxonomy
     public static function configureTaxonomy(TaxonomyBuilder $builder): TaxonomyBuilder
     {
         return $builder
-            ->setCapabilities([
-                'manage_terms' => 'manage_skills',
-                'edit_terms' => 'edit_skills',
-                'delete_terms' => 'delete_skills',
-                'assign_terms' => 'assign_skills',
+            ->mergeExtraArgs([
+                'capabilities' => [
+                    'manage_terms' => 'manage_skills',
+                    'edit_terms' => 'edit_skills',
+                    'delete_terms' => 'delete_skills',
+                    'assign_terms' => 'assign_skills',
+                ],
             ])
-            ->setLabels([
+            ->setCustomLabels([
                 'add_new_item' => 'Add New Skill',
                 'search_items' => 'Search Skills',
             ]);
