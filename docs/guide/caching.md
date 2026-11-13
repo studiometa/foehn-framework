@@ -124,10 +124,10 @@ $cache->flushTags(['products', 'categories']);
 
 ### Tagged Cache Methods
 
-All standard cache methods are available on tagged cache:
+A tagged cache has five methods. It has no `get()`, `set()`, `has()`, `increment()` or `decrement()`: read a tagged key with `remember()`, or with `get()` on the cache itself.
 
 ```php
-$cache->tags(['products'])->set('key', $value, 3600);
+$cache->tags(['products'])->put('key', $value, 3600);
 $cache->tags(['products'])->forever('key', $value);
 $cache->tags(['products'])->remember('key', 3600, fn() => compute());
 $cache->tags(['products'])->rememberForever('key', fn() => compute());
