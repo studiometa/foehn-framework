@@ -157,6 +157,27 @@ The name `starter-theme` or `foehn-starter` is in these files. Change each one:
 
 Then run `composer install` to regenerate the symlinks, `ddev restart`, and `ddev wp theme activate <your-theme-name>`.
 
+### Installer Options
+
+`studiometa/foehn-installer` generates `web/` on each `composer install` and `composer update`. Its options go in `extra.foehn` of `composer.json`. Each option is optional:
+
+| Option           | Default      | Description                                      |
+| ---------------- | ------------ | ------------------------------------------------ |
+| `web-dir`        | `web`        | The document root it generates                   |
+| `wp-dir`         | `wp`         | The WordPress core directory in the web root     |
+| `theme-dir`      | `theme`      | The theme source directory it links              |
+| `theme-name`     | `theme`      | The theme directory name in `wp-content/themes/` |
+| `mu-plugins-dir` | `mu-plugins` | The must-use plugins directory it links          |
+| `config-dir`     | `config`     | The directory of the WordPress config files      |
+| `public-dir`     | `public`     | The directory it copies into the web root        |
+
+The generated `web/wp-config.php` reads `.env`, then loads two optional files from the config directory:
+
+1. `config/wordpress.config.php`, in every environment.
+2. `config/wordpress.<environment>.config.php`, for example `config/wordpress.staging.config.php`. The environment is `WP_ENVIRONMENT_TYPE`, or `WP_ENV` when it is empty, or `production`.
+
+Put `define()` calls there for the constants that `wp-config.php` does not define, for example `S3_UPLOADS_USE_INSTANCE_PROFILE`. The files run before the rest of `wp-config.php`, so a constant it defines too, such as `DB_NAME` or `WP_DEBUG`, gives a PHP warning: set these in the environment instead. Do not edit `web/wp-config.php`: the next `composer install` writes it again. See the [installer README](https://github.com/studiometa/foehn-framework/tree/main/packages/installer).
+
 ### Add Plugins
 
 Add WordPress plugins via Composer using [wpackagist](https://wpackagist.org/):
