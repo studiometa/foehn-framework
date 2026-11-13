@@ -165,6 +165,16 @@ Read through `Settings::get()` rather than `get_option()`. Two reasons, both of 
 
 A settings page's own template gets them without asking, in `settings`. Elsewhere in Twig, read them through a [context provider](/guide/context-providers) rather than reaching for a global.
 
+## From the command line
+
+`wp foehn inspect settings` lists each `#[AsSettingsPage]` with the options it stores: option name, type, default and sanitizer.
+
+```bash
+wp foehn inspect settings
+```
+
+Føhn registers the settings on `init`, so the sanitizer also runs under WP-CLI. `wp option update theme_contact_email …` saves the value as the admin form does.
+
 ## Where the page appears
 
 | `parent`                          | Result                                             |
