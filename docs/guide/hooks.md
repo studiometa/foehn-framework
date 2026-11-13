@@ -292,6 +292,7 @@ Located in `Studiometa\Foehn\Hooks`:
 | `Studiometa\Foehn\Hooks\S3UploadsEndpoint`  | Point `humanmade/s3-uploads` at an S3-compatible endpoint that is not AWS. Reads `S3_UPLOADS_ENDPOINT`, `S3_UPLOADS_PATH_STYLE` and `S3_UPLOADS_CHECKSUMS`. See [Uploads](/guide/uploads#anything-that-is-not-aws) |
 | `Studiometa\Foehn\Hooks\StudiometaUi`       | Register the `@ui` and `@svg` Twig namespaces of `studiometa/ui`. Does nothing when the package is not installed. See [Assets](/guide/assets#twig-components)                                                      |
 | `Studiometa\Foehn\Images\ContentImageHooks` | Build the `srcset` of images in post content with the configured image transformer. Does nothing without a transformer. See [Images](/guide/images)                                                                |
+| `Studiometa\Foehn\Images\ImageCacheHooks`   | Forget the transforms of an image when the image changes or is deleted. Use it with an image transformer. See [Images](/guide/images)                                                                              |
 
 ### Example: Production Configuration
 
