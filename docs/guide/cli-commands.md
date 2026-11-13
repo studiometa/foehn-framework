@@ -184,27 +184,27 @@ wp foehn inspect --all --format=json
 
 With no section, `inspect` prints a summary: each section with the names of its rows (post type names, WordPress templates, Twig views, menu locations, command names…). It is short enough to read whole. It starts with `problems`; `wp foehn inspect problems` gives the reason and the fix of each one (see [Problems and Errors](/guide/troubleshooting)). Name one or more sections to print them in full, or pass `--all` for every section. `--all` cannot be combined with section names.
 
-| Section             | What it lists                                                                                                            |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `problems`          | What will not register: the classes discovery skipped and the type links that point at nothing, with the fix             |
-| `post-types`        | Post types: the Timber model class, the arguments of `#[AsPostType]`, the taxonomies and the `#[AsPostMeta]` fields      |
-| `taxonomies`        | Taxonomies: the Timber model class, the arguments of `#[AsTaxonomy]`, the post types and the term meta fields            |
-| `settings`          | `#[AsSettingsPage]` pages and the options they store: option name, type, default and sanitizer                           |
-| `blocks`            | `#[AsBlock]` blocks: name, title, class, category, and each attribute with its type, default and allowed values          |
-| `patterns`          | `#[AsBlockPattern]` patterns: name, title, class and Twig template                                                       |
-| `bindings`          | `#[AsBlockBinding]` sources: name, label, class and the block context they use                                           |
-| `templates`         | Each WordPress template a controller claims: the controller that renders it, a URL to test it with, and its context keys |
-| `views`             | Each Twig file of the theme: the context providers its view name matches, and its context keys                           |
-| `context-providers` | Context providers, the view names they match, and the keys each one adds                                                 |
-| `menus`             | Menu locations and the Twig variable of each one (`menus.<location>`)                                                    |
-| `image-sizes`       | Image sizes, with the name WordPress registers them under                                                                |
-| `rewrite-rules`     | `#[AsRewriteRule]` rules: regex, query, query vars and class                                                             |
-| `rest-routes`       | `#[AsRestRoute]` routes: path, HTTP method, permission and handler method                                                |
-| `cli-commands`      | Every `wp foehn` command, the framework's own included                                                                   |
-| `seeders`           | `#[AsSeeder]` seeders, in the order `wp foehn seed` runs them: class, order and description                              |
-| `plugins`           | Active, network-activated and must-use plugins, with their versions                                                      |
-| `theme-supports`    | Every `add_theme_support()` feature, with its arguments                                                                  |
-| `vite`              | The entry points of the theme build (`dist/.vite/manifest.json`), and the dev server URL while `npm run dev` runs        |
+| Section             | What it lists                                                                                                                              |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `problems`          | What will not register: the classes discovery skipped and the type links that point at nothing, with the fix                               |
+| `post-types`        | Post types: the Timber model class, the arguments of `#[AsPostType]`, the taxonomies and the `#[AsPostMeta]` fields                        |
+| `taxonomies`        | Taxonomies: the Timber model class, the arguments of `#[AsTaxonomy]`, the post types and the term meta fields                              |
+| `settings`          | `#[AsSettingsPage]` pages and the options they store: option name, type, default and sanitizer                                             |
+| `blocks`            | `#[AsBlock]` blocks: name, title, class, category, and each attribute with its type, default and allowed values                            |
+| `patterns`          | `#[AsBlockPattern]` patterns: name, title, class and Twig template                                                                         |
+| `bindings`          | `#[AsBlockBinding]` sources: name, label, class and the block context they use                                                             |
+| `templates`         | Each WordPress template a controller claims: the controller that renders it, a URL to test it with, and its context keys                   |
+| `views`             | Each Twig file of the theme: the context providers its view name matches, and its context keys                                             |
+| `context-providers` | Context providers, the view names they match, and the keys each one adds                                                                   |
+| `menus`             | Menu locations and the Twig variable of each one (`menus.<location>`)                                                                      |
+| `image-sizes`       | Image sizes, with the name WordPress registers them under                                                                                  |
+| `rewrite-rules`     | `#[AsRewriteRule]` rules: regex, query, query vars and class                                                                               |
+| `rest-routes`       | `#[AsRestRoute]` routes: path, HTTP method, permission and handler method                                                                  |
+| `cli-commands`      | Every WP-CLI command that discovery registered, with the full line that runs it: `wp app <name>`, `wp foehn <name>`, `wp foehn-acf <name>` |
+| `seeders`           | `#[AsSeeder]` seeders, in the order `wp foehn seed` runs them: class, order and description                                                |
+| `plugins`           | Active, network-activated and must-use plugins, with their versions                                                                        |
+| `theme-supports`    | Every `add_theme_support()` feature, with its arguments                                                                                    |
+| `vite`              | The entry points of the theme build (`dist/.vite/manifest.json`), and the dev server URL while `npm run dev` runs                          |
 
 A post type or taxonomy that Føhn does not register, such as `post`, `category` or a plugin's post type, is listed when a `#[AsTimberModel]` maps it to a class or a `#[AsPostMeta]` names it as its subtype. Its `declared` field is then `false`, `model` is `null` when no Timber model maps it, and the arguments only the registering code knows are `null`. A `#[AsPostMeta]` field with no subtype applies to every post type or taxonomy, so it is listed on each of them.
 
@@ -453,6 +453,32 @@ wp foehn verify --profile=production
 
 Runs one named release gate and writes a deterministic JSON report. It exits `0` on a pass, `1` on actionable diagnostics or a failed check, and `2` when the gate could not run at all — so a CI job can tell a regression from a broken step. The profile is required and there is no flag to select individual checks. See [Verification](/guide/verification) for both profiles, the report schema, and what each gate cannot observe.
 
+### Page Cache
+
+```bash
+# Print the nginx rules that serve the cached pages, then write them
+wp foehn cache:config --server=nginx
+wp foehn cache:config --server=nginx --write
+
+# Merge the Apache rules into web/.htaccess
+wp foehn cache:config --server=apache --write
+
+# Clear the whole cache, or one URL and its page/** subtree
+wp foehn cache:clear
+wp foehn cache:clear --url=https://example.com/blog/
+
+# Say if the cache is on, where it stores pages, and what it holds
+wp foehn cache:status
+
+# Fill the cache from the sitemap: queue the URLs, or request them now
+wp foehn cache:warm
+wp foehn cache:warm --sync --limit=50
+```
+
+`cache:config` needs `--server=nginx` or `--server=apache`. With `--write`, it writes `config/nginx/foehn-page-cache.conf`, or merges a block into `web/.htaccess`. Run it again after you change `app/page-cache*.config.php`. `cache:warm` queues the URLs through Action Scheduler; without Action Scheduler, use `--sync`.
+
+A deploy runs `wp foehn cache:config --server=nginx --write && wp foehn cache:clear` after `composer install`. With `storage: PageCacheStorage::Bucket`, every deploy must run `wp foehn cache:clear`. See [Static Page Cache](/guide/page-cache#commands) and [Storing pages in the bucket](/guide/page-cache#storing-pages-in-the-bucket).
+
 ### Database Export
 
 ```bash
@@ -532,7 +558,7 @@ wp foehn salts:generate --force
 wp foehn salts:generate --dry-run
 ```
 
-Rotating replaces the keys the current cookies were signed with, so every session ends. In production, the command runs only with `--force` or `--dry-run`. A dry run never prints a key.
+Rotating replaces the keys the current cookies were signed with, so every session ends. In production, the command runs only with `--force` or `--dry-run`. A dry run never prints a key. Before it replaces keys that are set, the command asks for confirmation. `--yes` skips the question, for a script.
 
 #### Where the keys come from
 
@@ -632,27 +658,26 @@ use WP_CLI;
 #[AsCliCommand(
     name: 'import:products',
     description: 'Import products from CSV file',
+    longDescription: <<<'DOC'
+        ## OPTIONS
+
+        <file>
+        : Path to the CSV file
+
+        [--dry-run]
+        : Preview without importing
+
+        ## EXAMPLES
+
+            wp app import:products products.csv
+            wp app import:products products.csv --dry-run
+        DOC,
 )]
 final class ImportProductsCommand implements CliCommandInterface
 {
     /**
-     * Import products from a CSV file.
-     *
-     * ## OPTIONS
-     *
-     * <file>
-     * : Path to the CSV file
-     *
-     * [--dry-run]
-     * : Preview without importing
-     *
-     * ## EXAMPLES
-     *
-     *     wp app import:products products.csv
-     *     wp app import:products products.csv --dry-run
-     *
-     * @param array $args Positional arguments
-     * @param array $assocArgs Named arguments
+     * @param array<int, string> $args Positional arguments
+     * @param array<string, string> $assocArgs Named arguments
      */
     public function __invoke(array $args, array $assocArgs): void
     {
@@ -797,7 +822,7 @@ final class OptimizeImagesCommand implements CliCommandInterface
 
 ## Command with Subcommands
 
-For complex commands, use separate methods:
+A command class has one entry point, `__invoke()`. Føhn does not register other public methods as subcommands. For a command with more than one action, read the action from the first positional argument, and declare it in `longDescription`:
 
 ```php
 <?php
@@ -805,88 +830,62 @@ For complex commands, use separate methods:
 namespace App\Console;
 
 use Studiometa\Foehn\Attributes\AsCliCommand;
+use Studiometa\Foehn\Console\CliCommandInterface;
 use WP_CLI;
 
 #[AsCliCommand(
-    name: 'cache',
-    description: 'Manage application cache',
+    name: 'object-cache',
+    description: 'Manage the object cache',
+    longDescription: <<<'DOC'
+        ## OPTIONS
+
+        <action>
+        : What to do.
+        ---
+        options:
+          - clear
+          - stats
+        ---
+
+        ## EXAMPLES
+
+            wp app object-cache clear
+            wp app object-cache stats
+        DOC,
 )]
-final class CacheCommand
+final class ObjectCacheCommand implements CliCommandInterface
 {
-    /**
-     * Clear all caches.
-     *
-     * ## EXAMPLES
-     *
-     *     wp app cache clear
-     */
-    public function clear(): void
+    public function __invoke(array $args, array $assocArgs): void
+    {
+        match ($args[0]) {
+            'clear' => $this->clear(),
+            'stats' => $this->stats(),
+        };
+    }
+
+    private function clear(): void
     {
         wp_cache_flush();
         WP_CLI::success('Cache cleared');
     }
 
-    /**
-     * Show cache statistics.
-     *
-     * ## EXAMPLES
-     *
-     *     wp app cache stats
-     */
-    public function stats(): void
+    private function stats(): void
     {
         global $wp_object_cache;
 
-        WP_CLI::log('Cache Statistics:');
-        WP_CLI::log('  Hits: ' . ($wp_object_cache->cache_hits ?? 'N/A'));
-        WP_CLI::log('  Misses: ' . ($wp_object_cache->cache_misses ?? 'N/A'));
-    }
-
-    /**
-     * Warm up the cache.
-     *
-     * ## OPTIONS
-     *
-     * [--post-types=<types>]
-     * : Comma-separated post types to warm
-     *
-     * ## EXAMPLES
-     *
-     *     wp app cache warm
-     *     wp app cache warm --post-types=post,page,product
-     */
-    public function warm(array $args, array $assocArgs): void
-    {
-        $postTypes = isset($assocArgs['post-types'])
-            ? explode(',', $assocArgs['post-types'])
-            : ['post', 'page'];
-
-        foreach ($postTypes as $type) {
-            $posts = get_posts([
-                'post_type' => $type,
-                'posts_per_page' => -1,
-                'fields' => 'ids',
-            ]);
-
-            foreach ($posts as $id) {
-                get_post($id);
-                get_post_meta($id);
-            }
-
-            WP_CLI::log("Warmed {$type}: " . count($posts) . ' posts');
-        }
-
-        WP_CLI::success('Cache warmed');
+        WP_CLI::log('Hits: ' . ($wp_object_cache->cache_hits ?? 'N/A'));
+        WP_CLI::log('Misses: ' . ($wp_object_cache->cache_misses ?? 'N/A'));
     }
 }
 ```
 
+WP-CLI refuses an action that is not in the `options` list, so `match` gets only `clear` or `stats`. To give each action its own options, write one class for each action instead, for example `object-cache:clear` and `object-cache:stats`.
+
 **Usage:**
 
 ```bash
-wp app cache clear
-wp app cache stats
-wp app cache warm --post-types=product
+wp app object-cache clear
+wp app object-cache stats
 ```
 
 ## Command with Tables
@@ -995,7 +994,13 @@ This command requires API credentials in wp-config.php:
 - INVENTORY_API_SECRET
 DOC,
 )]
-final class SyncInventoryCommand {}
+final class SyncInventoryCommand implements CliCommandInterface
+{
+    public function __invoke(array $args, array $assocArgs): void
+    {
+        // ...
+    }
+}
 ```
 
 ## Attribute Parameters
