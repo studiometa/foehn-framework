@@ -17,11 +17,9 @@ export default defineConfig({
 
   base: "/foehn-framework/",
 
-  head: [["link", { rel: "icon", type: "image/svg+xml", href: "/foehn/favicon.svg" }]],
+  head: [["link", { rel: "icon", type: "image/svg+xml", href: "/foehn-framework/favicon.svg" }]],
 
   themeConfig: {
-    logo: "/logo.svg",
-
     nav: [
       { text: "Guide", link: "/guide/getting-started" },
       { text: "API Reference", link: "/api/" },
@@ -40,6 +38,7 @@ export default defineConfig({
             { text: "Starter Theme", link: "/guide/starter-theme" },
             { text: "Demo Project", link: "/guide/demo" },
             { text: "Manual Installation", link: "/guide/installation" },
+            { text: "Configuration", link: "/guide/configuration" },
             { text: "AI Agents", link: "/guide/ai-agents" },
           ],
         },
@@ -144,6 +143,7 @@ export default defineConfig({
             { text: "#[AsTemplateController]", link: "/api/as-template-controller" },
             { text: "#[AsBlock]", link: "/api/as-block" },
             { text: "#[AsAcfBlock]", link: "/api/as-acf-block" },
+            { text: "#[AsAcfFieldGroup]", link: "/api/as-acf-field-group" },
             { text: "#[AsBlockPattern]", link: "/api/as-block-pattern" },
             { text: "#[AsBlockCategory]", link: "/api/as-block-category" },
             { text: "#[AsBlockBinding]", link: "/api/as-block-binding" },
@@ -153,6 +153,9 @@ export default defineConfig({
             { text: "#[AsSettingsPage]", link: "/api/as-settings-page" },
             { text: "#[AsShortcode]", link: "/api/as-shortcode" },
             { text: "#[AsCliCommand]", link: "/api/as-cli-command" },
+            { text: "#[AsCron]", link: "/api/as-cron" },
+            { text: "#[AsJob]", link: "/api/as-job" },
+            { text: "#[AsSeeder]", link: "/api/as-seeder" },
             { text: "#[AsImageSize]", link: "/api/as-image-size" },
             { text: "#[AsTwigExtension]", link: "/api/as-twig-extension" },
             { text: "#[AsDiscovery]", link: "/api/as-discovery" },
@@ -164,12 +167,14 @@ export default defineConfig({
             { text: "BlockInterface", link: "/api/block-interface" },
             { text: "InteractiveBlockInterface", link: "/api/interactive-block-interface" },
             { text: "AcfBlockInterface", link: "/api/acf-block-interface" },
+            { text: "AcfFieldGroupInterface", link: "/api/acf-field-group-interface" },
             { text: "AcfOptionsPageInterface", link: "/api/acf-options-page-interface" },
             { text: "ContextProviderInterface", link: "/api/context-provider-interface" },
             { text: "TemplateControllerInterface", link: "/api/template-controller-interface" },
             { text: "BlockPatternInterface", link: "/api/block-pattern-interface" },
             { text: "Arrayable", link: "/api/arrayable" },
             { text: "CacheInterface", link: "/api/cache-interface" },
+            { text: "ViewEngineInterface", link: "/api/view-engine-interface" },
           ],
         },
         {
@@ -190,8 +195,19 @@ export default defineConfig({
             { text: "Kernel", link: "/api/kernel" },
             { text: "DiscoveryRunner", link: "/api/discovery-runner" },
             { text: "Helpers", link: "/api/helpers" },
+            { text: "ViteManifest", link: "/api/vite-manifest" },
             { text: "WebpackManifest", link: "/api/webpack-manifest" },
+          ],
+        },
+        {
+          text: "Configuration",
+          items: [
+            { text: "FoehnConfig", link: "/api/foehn-config" },
+            { text: "TimberConfig", link: "/api/timber-config" },
+            { text: "AcfConfig", link: "/api/acf-config" },
+            { text: "RestConfig", link: "/api/rest-config" },
             { text: "PageCacheConfig", link: "/api/page-cache-config" },
+            { text: "GlideConfig", link: "/api/glide-config" },
           ],
         },
       ],
