@@ -100,7 +100,7 @@ public static function attributes(): array
 }
 ```
 
-These four keys are stripped before the schema reaches WordPress: `register_block_type()` and `block.json` only ever see the attributes WordPress itself understands.
+These six keys are stripped before the schema reaches WordPress: `register_block_type()` and `block.json` only ever see the attributes WordPress itself understands.
 
 ## Containers
 
@@ -149,7 +149,7 @@ final readonly class HeroBlock implements BlockInterface
 
 ```twig
 {# templates/blocks/hero.twig #}
-<section class="hero hero--{{ align }}" style="--hero-image: url('{{ image(imageId).src }}')">
+<section class="hero hero--{{ align }}" style="--hero-image: url('{{ get_image(imageId).src }}')">
     <div class="hero__content">{{ content|raw }}</div>
 </section>
 ```
