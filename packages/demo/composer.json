@@ -25,9 +25,9 @@
         "league/flysystem-aws-s3-v3": "^3.0",
         "league/glide": "^4.0",
         "nette/php-generator": "4.2.3 as 4.2.1",
-        "studiometa/foehn": "0.8.0",
-        "studiometa/foehn-acf": "0.8.0",
-        "studiometa/foehn-installer": "0.8.0",
+        "studiometa/foehn": "0.8.1",
+        "studiometa/foehn-acf": "0.8.1",
+        "studiometa/foehn-installer": "0.8.1",
         "studiometa/ui": "^1.10",
         "wpackagist-plugin/action-scheduler": "^3.9",
         "wpackagist-plugin/advanced-custom-fields": "^6.7"
