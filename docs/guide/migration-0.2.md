@@ -2,6 +2,10 @@
 
 This guide helps you migrate from Føhn v0.1.x to v0.2.0.
 
+::: info Historical page
+This page describes the v0.2.0 release. The examples below use the current API. For a current feature, read its own guide.
+:::
+
 ## Breaking Changes
 
 ### ViewComposer → ContextProvider
@@ -158,9 +162,13 @@ Register menus declaratively with `#[AsMenu]`:
 use Studiometa\Foehn\Attributes\AsMenu;
 
 #[AsMenu(location: 'primary', description: 'Main Navigation')]
+final class PrimaryMenu {}
+
 #[AsMenu(location: 'footer', description: 'Footer Links')]
-final class NavigationMenus {}
+final class FooterMenu {}
 ```
+
+Each class declares one menu location.
 
 See [Menus Guide](/guide/menus) for details.
 
@@ -172,19 +180,24 @@ Register custom image sizes with `#[AsImageSize]`:
 use Studiometa\Foehn\Attributes\AsImageSize;
 
 #[AsImageSize(name: 'card', width: 400, height: 300, crop: true)]
+final class CardImage {}
+
 #[AsImageSize(name: 'hero', width: 1920, height: 800, crop: true)]
-final class ImageSizes {}
+final class HeroImage {}
 ```
+
+Each class declares one image size.
 
 See [API: #[AsImageSize]](/api/as-image-size) for details.
 
 ### ACF Options Pages
 
-Create options pages with `#[AsAcfOptionsPage]`:
+Create options pages with `#[AsAcfOptionsPage]`. Since the ACF split, this attribute comes from the `studiometa/foehn-acf` package:
 
 ```php
 use Studiometa\Foehn\Attributes\AsAcfOptionsPage;
 use Studiometa\Foehn\Contracts\AcfOptionsPageInterface;
+use StoutLogic\AcfBuilder\FieldsBuilder;
 
 #[AsAcfOptionsPage(
     pageTitle: 'Theme Settings',
@@ -204,13 +217,14 @@ See [ACF Options Pages Guide](/guide/acf-options-pages) for details.
 
 ### ACF Field Groups (Non-Block)
 
-Register field groups for posts, pages, etc. with `#[AsAcfFieldGroup]`:
+Register field groups for posts, pages, etc. with `#[AsAcfFieldGroup]`, from `studiometa/foehn-acf`:
 
 ```php
 use Studiometa\Foehn\Attributes\AsAcfFieldGroup;
 use Studiometa\Foehn\Contracts\AcfFieldGroupInterface;
+use StoutLogic\AcfBuilder\FieldsBuilder;
 
-#[AsAcfFieldGroup(location: 'post_type == page')]
+#[AsAcfFieldGroup(name: 'page_settings', title: 'Page settings', location: ['post_type' => 'page'])]
 final class PageSettings implements AcfFieldGroupInterface
 {
     public static function fields(): FieldsBuilder
@@ -226,14 +240,11 @@ final class PageSettings implements AcfFieldGroupInterface
 Dequeue Gutenberg block styles for themes not using blocks:
 
 ```php
-use Studiometa\Foehn\Kernel;
+// app/foehn.config.php
+use Studiometa\Foehn\Config\FoehnConfig;
 use Studiometa\Foehn\Hooks\Cleanup\DisableBlockStyles;
 
-Kernel::boot(__DIR__ . '/app', [
-    'hooks' => [
-        DisableBlockStyles::class,
-    ],
-]);
+return new FoehnConfig(hooks: [DisableBlockStyles::class]);
 ```
 
 ### Enhanced CLI Commands
