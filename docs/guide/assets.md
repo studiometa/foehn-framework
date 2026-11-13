@@ -45,6 +45,19 @@ Entry names are the paths given to the plugin's `input` in `vite.config.js`, bec
 
 **A missing build.** No manifest and no hot file means nothing is enqueued, rather than a fatal error. `exists()` reports which case you are in, and `isDevServer()` whether the dev server is running.
 
+### Reading the build
+
+`devServer()` gives the URL of the dev server, or `null` when it does not run. `entries()` lists the entry points of the build: each item has the `entry` name that `enqueue()` takes, the built `file`, and the `css` files it imports. The list is empty when the project was never built.
+
+```php
+$manifest = ViteManifest::fromTheme();
+
+$manifest->devServer(); // 'https://localhost:5173' or null
+$manifest->entries();   // [['entry' => 'theme/assets/js/app.js', 'file' => 'assets/app-B2x9k1.js', 'css' => [...]]]
+```
+
+See [`ViteManifest`](/api/vite-manifest) for the full API.
+
 ### Where the build has to go
 
 `dist/` must be **inside** the theme. Only the theme directory is served, so a build written beside it is never reachable from a browser:
