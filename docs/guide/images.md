@@ -127,6 +127,33 @@ GD by default, and not for lack of ambition. Measured on a 2777x1973 photograph:
 
 GD is about twice as fast _and_ produces smaller files here, and it is the extension that is always present. Pass `imagick` to `GlideConfig` if a format or a colour profile needs it.
 
+### Configuring Glide
+
+Return a `GlideConfig` from a config file in the app directory. Føhn registers every object that an `app/*.config.php` file returns:
+
+```php
+<?php
+// app/glide.config.php
+
+use Studiometa\Foehn\Images\GlideConfig;
+
+return new GlideConfig(
+    driver: 'imagick',
+    quality: 82,
+    step: 100,
+    maxSize: 2600,
+);
+```
+
+| Option    | Default | Description                                                          |
+| --------- | ------- | -------------------------------------------------------------------- |
+| `driver`  | `'gd'`  | `gd` or `imagick`                                                    |
+| `quality` | `82`    | Quality of lossy formats. A URL cannot change it                     |
+| `step`    | `100`   | Widths and heights round up to a multiple of this value              |
+| `maxSize` | `2600`  | The largest width or height. A multiple of `step`. Larger is refused |
+
+See [GlideConfig](/api/glide-config) for the full reference.
+
 ### Invalidation
 
 A cache key is built from the path and the transform, never from the content. Crop an image in the media library and every transform derived from it would keep serving the old pixels, indefinitely, because nothing else would invalidate them.
@@ -139,6 +166,23 @@ return new FoehnConfig(
     hooks: [ImageCacheHooks::class],
 );
 ```
+
+### Images in post content
+
+`ContentImageHooks` sizes the images in post content with the transformer. WordPress builds the `srcset` of an image in the editor from the sizes it cut at upload time. When those files are missing, or the sizes are old, the `srcset` points to files that do not exist.
+
+The hook rewrites `src`, `srcset` and, when WordPress did not set one, `sizes` of each `<img>` that is a media library attachment. Each candidate comes from the original, through the transformer, at the widths 400, 800, 1200, 1600, 2000 and 2400. It never offers a width larger than the original. An image that is not in the media library stays as it is.
+
+Enable it with the driver, next to `ImageCacheHooks`:
+
+```php
+return new FoehnConfig(
+    imageTransformer: GlideTransformer::class,
+    hooks: [ImageCacheHooks::class, ContentImageHooks::class],
+);
+```
+
+With `NullTransformer`, the hook does nothing: every candidate would be the original URL, so it does not change the tag.
 
 ## What a driver may not do
 
