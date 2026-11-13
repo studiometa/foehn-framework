@@ -1,6 +1,6 @@
 # Querying Posts
 
-Føhn provides a fluent `PostQueryBuilder` and a `QueriesPostType` trait for type-safe, null-safe post queries integrated with Timber.
+Føhn provides a fluent `PostQueryBuilder` and a `QueriesPostType` trait for type-safe post queries integrated with Timber.
 
 ## Base Models
 
@@ -254,9 +254,16 @@ Product::query()
     ->get();
 ```
 
-## Null-Safety
+## Empty Input
 
-All filtering methods are **null-safe** — they silently skip empty or null values. This makes it safe to pass user input directly:
+Some filtering methods skip an empty value, so you can pass user input directly:
+
+- `whereTax()` skips `null`, `''` and `[]`.
+- `search()` skips `''`.
+- `include()`, `exclude()`, `parentIn()` and `parentNotIn()` skip an empty list.
+- `page()` skips a value of `0` or less.
+
+The other methods always add their value: `whereMeta()`, `status()`, `byAuthor()`, `dateQuery()` and `parent()`. Check the input before you call them.
 
 ```php
 $category = $request->get('category');  // might be null or ''
@@ -266,7 +273,7 @@ $products = Product::query()
     ->whereTax('product_category', $category)  // Skipped if $category is null/empty
     ->search($search ?? '')                     // Skipped if empty string
     ->limit(12)
-    ->page($request->get('page') ?? 1)
+    ->page((int) ($request->get('page') ?? 1))
     ->get();
 ```
 
