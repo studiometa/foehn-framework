@@ -9,9 +9,8 @@ declare(strict_types=1);
  * stubs, so a discovery that never registers anything still passes it. Every check
  * here failed at some point against a real install.
  *
- * The starter's job is to boot. What each attribute does once it has booted is
- * asserted in packages/demo, which is where the features are — this file checks
- * that the machinery underneath them is running at all.
+ * They check that the machinery under the theme runs at all: the config files,
+ * the discovery of the framework and of the theme, and the security keys.
  *
  * Exits non-zero on the first failure so CI stops with a readable message.
  */
@@ -70,9 +69,9 @@ $results = new class {
 
 $config = Kernel::get(FoehnConfig::class);
 
-// theme/app/foehn.config.php opts into 9 hook classes. Before config files were
+// theme/app/foehn.config.php opts into hook classes. Before config files were
 // loaded this was 0, and every security hook in the theme was silently inert.
-$results->same('foehn.config.php is loaded (opt-in hooks)', 9, count($config->hooks));
+$results->true('foehn.config.php is loaded (opt-in hooks)', $config->hooks !== []);
 
 $results->true('opt-in security hooks are applied', has_filter('xmlrpc_enabled') !== false);
 

@@ -76,7 +76,7 @@ describe('a non-production site', function () {
         // `do_robots()`, in a booted site, through the hook chain a request would use.
         //
         // The script prints one line because `Site::wp()` hands back the last one.
-        $script = 'tests/smoke/fixtures/do-robots.php';
+        $script = 'tests/framework-smoke/fixtures/do-robots.php';
         $reported = Site::wp('wp eval-file ' . escapeshellarg($script));
 
         expect($reported)->toBe(

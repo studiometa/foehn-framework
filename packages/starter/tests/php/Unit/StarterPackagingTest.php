@@ -35,26 +35,24 @@ describe('starter packaging', function () {
     it('exclut de l\'archive les fichiers propres au monorepo', function () use ($racine) {
         $attributs = (string) file_get_contents($racine . '/.gitattributes');
 
-        foreach (['composer.local.json', 'composer.local.lock', '.ddev/config.monorepo.yaml'] as $fichier) {
+        foreach (['.gitattributes', 'tests/framework-smoke', 'tests/php/Unit/StarterPackagingTest.php'] as $fichier) {
             // Les motifs sont ancrés à la racine du paquet, d'où le `/` initial.
             expect($attributs)->toContain('/' . $fichier . ' export-ignore');
         }
     });
 
-    // La suite smoke doit tourner dans un projet créé depuis ce starter, pas
-    // seulement ici. Elle a été livrée longtemps sans pouvoir démarrer : ni Pest,
-    // ni mapping PSR-4 pour ses classes de support, et un bootstrap qui remontait
-    // de quatre niveaux — juste depuis `packages/starter/tests/smoke/`, hors du
-    // projet partout ailleurs. Un projet réel l'a portée cassée depuis le jour de
-    // son initialisation sans que rien ne le signale.
+    // La suite smoke du projet doit tourner dans un projet créé depuis ce
+    // starter, pas seulement ici. Elle a été livrée longtemps sans pouvoir
+    // démarrer : ni Pest, ni autoloader joignable depuis le projet.
     it('livre de quoi lancer ses deux suites', function () use ($racine) {
         $composer = json_decode((string) file_get_contents($racine . '/composer.json'), true);
+        $smoke = (string) file_get_contents($racine . '/phpunit.smoke.xml');
 
         expect($composer['require-dev'] ?? [])->toHaveKey('pestphp/pest');
-        expect($composer['autoload-dev']['psr-4'] ?? [])->toHaveKey('Studiometa\\Foehn\\Smoke\\');
         expect($composer['scripts'] ?? [])->toHaveKey('test')->toHaveKey('test:smoke');
         // Sans cette autorisation, `composer install` s'arrête sur le plugin de Pest.
         expect($composer['config']['allow-plugins'] ?? [])->toHaveKey('pestphp/pest-plugin');
+        expect($smoke)->toContain('bootstrap="vendor/autoload.php"');
     });
 
     // Une version exacte, pas une plage : `composer create-project` doit installer
@@ -71,24 +69,21 @@ describe('starter packaging', function () {
         }
     });
 
-    // Le fichier sert deux dispositions : quatre niveaux ici, deux dans un projet.
-    // Un nombre en dur ne peut pas servir les deux, et c'est le défaut d'origine.
-    it('trouve son autoloader dans les deux dispositions', function () use ($racine) {
-        $bootstrap = (string) file_get_contents($racine . '/tests/smoke/bootstrap.php');
-
-        expect($bootstrap)->toContain('dirname(__DIR__, 4)')->toContain('dirname(__DIR__, 2)');
-        // Le monorepo reconnu à son nom : un projet installé dans un autre projet
-        // PHP aurait aussi un vendor/ quatre niveaux plus haut.
-        expect($bootstrap)->toContain('studiometa/foehn-monorepo');
-    });
-
-    // Ce que l'archive doit contenir pour que la suite soit lançable chez le
-    // projet : les fichiers Pest comme le shell.
-    it('n\'exclut pas la suite smoke de l\'archive', function () use ($racine) {
+    // Le projet garde tests/smoke/ : run.sh et un test court qu'il peut
+    // compléter. La suite du framework teste Føhn, pas le projet : elle reste
+    // dans le monorepo, avec ses classes de support.
+    it('livre la suite smoke du projet et pas celle du framework', function () use ($racine) {
         $attributs = (string) file_get_contents($racine . '/.gitattributes');
+        $composer = json_decode((string) file_get_contents($racine . '/composer.json'), true);
 
-        expect($attributs)->not->toContain('/tests/smoke');
-        expect($attributs)->not->toContain('/phpunit.smoke.xml');
+        expect($attributs)->not->toContain('/tests/smoke')->not->toContain('/phpunit.smoke.xml');
+        expect($racine . '/tests/smoke/run.sh')->toBeFile();
+        expect($racine . '/tests/smoke/SiteTest.php')->toBeFile();
+        expect($composer['autoload-dev']['psr-4'] ?? [])->not->toHaveKey('Studiometa\\Foehn\\Smoke\\');
+
+        foreach (glob($racine . '/tests/smoke/*') ?: [] as $fichier) {
+            expect((string) file_get_contents($fichier))->not->toContain('Studiometa\\Foehn\\Smoke');
+        }
     });
 
     // Un agent de code lit AGENTS.md (Claude Code lit CLAUDE.md, qui l'importe)
@@ -119,8 +114,17 @@ describe('starter packaging', function () {
         expect($attributs)->not->toContain('/public');
     });
 
-    // Les hooks du monorepo supposent des dépôts `path` absents d'un projet.
-    it('ne livre pas les hooks ddev du monorepo', function () use ($racine) {
-        expect((string) file_get_contents($racine . '/.ddev/config.yaml'))->not->toContain('hooks:');
+    // `ddev start` installe WordPress et active le thème dans un projet créé :
+    // la documentation le promet. Le hook ne doit rien supposer du monorepo,
+    // comme des dépôts `path` vers ../foehn.
+    it('installe WordPress au démarrage de ddev sans supposer le monorepo', function () use ($racine) {
+        $ddev = (string) file_get_contents($racine . '/.ddev/config.yaml');
+
+        expect($ddev)
+            ->toContain('post-start:')
+            ->toContain('wp core is-installed')
+            ->toContain('wp theme activate')
+            ->not->toContain('../');
+        expect($racine . '/.ddev/config.monorepo.yaml')->not->toBeFile();
     });
 });

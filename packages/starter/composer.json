@@ -71,11 +71,6 @@
     "require-dev": {
         "pestphp/pest": "^5.1"
     },
-    "autoload-dev": {
-        "psr-4": {
-            "Studiometa\\Foehn\\Smoke\\": "tests/smoke/"
-        }
-    },
     "scripts": {
         "test": "pest --configuration=phpunit.xml --test-directory=tests/php",
         "test:smoke": "pest --configuration=phpunit.smoke.xml --test-directory=tests/smoke"

@@ -1,19 +1,16 @@
 #!/usr/bin/env bash
 #
-# Integration smoke test for the starter theme against a real WordPress.
+# Smoke test of the project against its real WordPress.
 #
-# Run from packages/starter with a started ddev project:
+# Run from the project root with a started ddev project:
 #
 #     ./tests/smoke/run.sh
 #
-# This asks the one question the starter has to answer: does a project created
-# from it boot and serve a page? On 2026-08-19 the answer was no, with 1409 unit
-# tests passing — those run against WordPress function stubs, so a discovery that
-# registers nothing at all still passes them.
-#
-# Everything else Foehn can do is exercised in packages/demo, which is where the
-# features live. This file stays short on purpose: it is the check that has to
-# keep working when the starter has almost nothing in it.
+# It checks that the site boots and serves pages: the home page, the discovery
+# cache, the framework wiring (assertions.php), the built assets and the
+# password form. The unit tests run against WordPress function stubs, so they
+# pass even when WordPress cannot boot. `composer test:smoke` runs the Pest
+# tests beside this file.
 
 set -euo pipefail
 
@@ -35,7 +32,7 @@ $(ddev exec "cd /var/www/html && wp option get home" 2>&1 | grep -v Deprecated |
 printf '→ %s\n' "$url"
 
 # A warm page cache would answer every request below with HTML rendered before the
-# change under test, so the run would pass on yesterday's page. The demo ships the
+# change under test, so the run would pass on yesterday's page. The starter ships the
 # cache production-only and .env.example says local, but an .env that drifted is
 # exactly the sort of thing that makes a smoke suite lie.
 ddev exec 'cd /var/www/html && wp foehn cache:clear' >/dev/null 2>&1 || true
