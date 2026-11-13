@@ -112,3 +112,8 @@ When an instance runs, it has no pending action. Føhn then waits: Action Schedu
 | `hook`   | A name made from the class name | The action hook that runs the job                  |
 
 Føhn looks for pending actions of the hook in this group only.
+
+## See Also
+
+- [#[AsCron]](/api/as-cron): every argument of the attribute
+- [#[AsJob]](/api/as-job): jobs queued with `dispatch()`
