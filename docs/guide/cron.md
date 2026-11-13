@@ -2,6 +2,19 @@
 
 Føhn provides `#[AsCron]` for jobs that run again and again. Action Scheduler runs them. Without Action Scheduler, Føhn schedules nothing.
 
+For a job that runs one time, in the background, use `#[AsJob]` and [`dispatch()`](/api/helpers#dispatch).
+
+## Installing Action Scheduler
+
+The starter does not ship Action Scheduler. Install it from WordPress Packagist, then activate it:
+
+```bash
+composer require wpackagist-plugin/action-scheduler
+wp plugin activate action-scheduler
+```
+
+Action Scheduler runs its queue on WordPress cron passes. If no cron pass runs, no job runs. In production, a real cron must run the scheduled events: see [The real cron](/guide/verification#the-real-cron).
+
 ## Basic Cron Job
 
 Put `#[AsCron]` on a class with a public `__invoke()` method. The method must not have required arguments.
