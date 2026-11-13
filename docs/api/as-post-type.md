@@ -110,8 +110,10 @@ final class Event extends Post implements ConfiguresPostType
     public static function configurePostType(PostTypeBuilder $builder): PostTypeBuilder
     {
         return $builder
-            ->setCapabilityType('event')
-            ->setMapMetaCap(true);
+            ->mergeExtraArgs([
+                'capability_type' => 'event',
+                'map_meta_cap' => true,
+            ]);
     }
 }
 ```

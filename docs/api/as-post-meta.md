@@ -83,12 +83,14 @@ final class Product extends Post
 
 `register_meta('post', 'price', […])` without an `object_subtype` registers the key for **every** post type. A model declaring a key on itself never means that, so the subtype is read off the class:
 
-| Declared on a class carrying     | Subtype              |
-| -------------------------------- | -------------------- |
-| `#[AsPostType(name: 'product')]` | `product`            |
-| `#[AsTaxonomy(name: 'genre')]`   | `genre`              |
-| `#[AsTimberModel('post')]`       | `post`               |
-| none of the above                | `''` — every subtype |
+| Declared on a class carrying                              | Subtype              |
+| --------------------------------------------------------- | -------------------- |
+| `#[AsPostType(name: 'product')]`                          | `product`            |
+| `#[AsTaxonomy(name: 'genre')]`, with `objectType: 'term'` | `genre`              |
+| `#[AsTimberModel('post')]`                                | `post`               |
+| none of the above                                         | `''` — every subtype |
+
+Term meta needs `objectType: 'term'`. With the default `objectType: 'post'`, a key declared on a taxonomy class registers for every post type.
 
 `objectType: 'user'` and `objectType: 'comment'` have no subtypes in WordPress and are always registered globally. An explicit `objectSubtype` always wins.
 
