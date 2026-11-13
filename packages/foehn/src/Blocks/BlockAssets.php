@@ -28,13 +28,21 @@ final class BlockAssets
     /** Theme-relative front-end script module path, by block slug. */
     private const string SCRIPT_PATH = 'assets/js/blocks/%s.js';
 
+    /** The module an interactive block's view script imports its store from. */
+    private const string INTERACTIVITY_MODULE = '@wordpress/interactivity';
+
     /**
      * Register whichever assets exist for a block, and return the
      * register_block_type() arguments that attach them.
      *
+     * An interactive block's script depends on `@wordpress/interactivity`. WordPress
+     * prints an import map entry only for the dependencies of the modules on the
+     * page, so without it `import { store } from '@wordpress/interactivity'` does
+     * not resolve, unless a core interactive block happens to be on the same page.
+     *
      * @return array<string, list<string>>
      */
-    public static function register(string $blockName): array
+    public static function register(string $blockName, bool $interactive = false): array
     {
         $slug = self::slug($blockName);
         $handle = str_replace('/', '-', $blockName);
@@ -46,7 +54,11 @@ final class BlockAssets
             $args['style_handles'] = [$style];
         }
 
-        $script = self::registerScriptModule(sprintf(self::SCRIPT_PATH, $slug), $blockName . '/view');
+        $script = self::registerScriptModule(
+            sprintf(self::SCRIPT_PATH, $slug),
+            $blockName . '/view',
+            $interactive ? [['id' => self::INTERACTIVITY_MODULE]] : [],
+        );
 
         if ($script !== null) {
             // A view script module loads only when the block is on the page, which
@@ -91,8 +103,10 @@ final class BlockAssets
      * `@wordpress/interactivity`, which WordPress resolves through the import map
      * it prints for registered modules. Modules are deferred and run in strict
      * mode, so nothing has to be said about load order.
+     *
+     * @param list<array{id: string}> $dependencies The modules it imports, such as `@wordpress/interactivity`
      */
-    private static function registerScriptModule(string $relativePath, string $id): ?string
+    private static function registerScriptModule(string $relativePath, string $id, array $dependencies): ?string
     {
         $path = self::existingPath($relativePath);
 
@@ -100,7 +114,7 @@ final class BlockAssets
             return null;
         }
 
-        wp_register_script_module($id, get_theme_file_uri($relativePath), [], (string) filemtime($path));
+        wp_register_script_module($id, get_theme_file_uri($relativePath), $dependencies, (string) filemtime($path));
 
         return $id;
     }

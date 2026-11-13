@@ -7,7 +7,7 @@ use Timber\Post;
 
 /*
  |--------------------------------------------------------------------------
- | Pest Configuration for Foehn Starter
+ | Pest Configuration for the Føhn demo
  |--------------------------------------------------------------------------
  */
 

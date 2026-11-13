@@ -252,12 +252,18 @@ jobs:
       # ddev mounts packages/demo alone, so Composer inside the container cannot
       # read path repositories pointing outside it. The install runs here instead,
       # and the container picks up the vendor directory that comes out of it.
+      # Each path repository says it is the version the demo pins, the version of the
+      # root package.json. A @dev require does not work here: foehn-acf requires the
+      # exact framework version, which a dev branch of the path repository is not.
       - name: Point the demo at this checkout of the packages
         working-directory: packages/demo
         run: |
-          composer config repositories.foehn '{"type":"path","url":"../foehn","options":{"symlink":false}}'
-          composer config repositories.foehn-installer '{"type":"path","url":"../installer","options":{"symlink":false}}'
-          composer require --no-update studiometa/foehn:@dev studiometa/foehn-installer:@dev
+          version="$(node -p 'require("../../package.json").version')"
+          for package in foehn:foehn foehn-installer:installer foehn-acf:acf; do
+            name="${package%%:*}"
+            directory="${package##*:}"
+            composer config "repositories.$name" "{\"type\":\"path\",\"url\":\"../$directory\",\"options\":{\"symlink\":false,\"versions\":{\"studiometa/$name\":\"$version\"}}}"
+          done
 
       - name: Install demo dependencies
         working-directory: packages/demo

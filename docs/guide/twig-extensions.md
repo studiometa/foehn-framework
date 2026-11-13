@@ -220,20 +220,20 @@ Føhn bundles [`studiometa/twig-toolkit`](https://github.com/studiometa/twig-too
 }) }}>
 ```
 
-The `{% element %}` tag allows dynamic element rendering:
+The `{% html_element %}` tag allows dynamic element rendering:
 
 ```twig
-{% element tag|default('div') with { class: 'wrapper' } %}
+{% html_element tag|default('div') with { class: 'wrapper' } %}
     Content here
-{% endelement %}
+{% end_html_element %}
 ```
 
-| Function          | Description                         |
-| ----------------- | ----------------------------------- |
-| `html_classes`    | Build class attribute conditionally |
-| `html_styles`     | Build style attribute conditionally |
-| `html_attributes` | Render multiple HTML attributes     |
-| `{% element %}`   | Dynamic element tag with attributes |
+| Function             | Description                         |
+| -------------------- | ----------------------------------- |
+| `html_classes`       | Build class attribute conditionally |
+| `html_styles`        | Build style attribute conditionally |
+| `html_attributes`    | Render multiple HTML attributes     |
+| `{% html_element %}` | Dynamic element tag with attributes |
 
 ### InteractivityExtension
 

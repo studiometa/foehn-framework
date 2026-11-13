@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
-# Integration smoke test for the starter theme against a real WordPress.
+# Integration smoke test for the demo theme against a real WordPress.
 #
-# Run from packages/starter with a started ddev project:
+# Run from packages/demo with a started ddev project:
 #
 #     ./tests/smoke/run.sh
 #
@@ -59,11 +59,10 @@ printf '✓ homepage returns 200 with no PHP error\n'
 # whole pipeline as failed even though the match succeeded.
 cache_status="$(ddev exec 'cd /var/www/html && wp foehn discovery:status' 2>/dev/null || true)"
 
-case "$cache_status" in
-*"Locations cached: 2/2"*) ;;
-*) fail "the request did not warm the discovery cache
-$cache_status" ;;
-esac
+# Every location: the framework, foehn-acf and the theme. Counted rather than named, so
+# a package added to the demo does not make this a false failure.
+grep -qE 'Locations cached: ([0-9]+)/\1$' <<<"$(tr -d '\r' <<<"$cache_status")" || fail "the request did not warm the discovery cache
+$cache_status"
 
 printf '✓ the request warmed the discovery cache\n'
 
@@ -99,6 +98,17 @@ ddev exec 'cd /var/www/html && wp foehn discovery:status' >/dev/null 2>&1 ||
 
 printf '✓ wp foehn commands are registered\n'
 
+# AGENTS.md carries the block `wp foehn agents-md` writes, and the command reads it
+# back: a block whose markers were edited away would be appended a second time.
+grep -q '<!-- foehn:begin -->' AGENTS.md || fail "AGENTS.md has no block from wp foehn agents-md"
+agents="$(ddev exec 'cd /var/www/html && wp foehn agents-md --dry-run' 2>/dev/null || true)"
+case "$agents" in
+*"Updated the Føhn block"* | *"current"*) ;;
+*) fail "wp foehn agents-md does not find the block in AGENTS.md
+$agents" ;;
+esac
+printf '✓ AGENTS.md carries the generated Føhn block\n'
+
 # discovery:list is the only thing that can say what discovery found, so a run
 # against stubs proves nothing about it. This asserts the whole path at once: the
 # command is registered, the filter matches, the item is described and the
@@ -107,7 +117,7 @@ listing="$(ddev exec 'cd /var/www/html && wp foehn discovery:list --discovery=Po
 
 case "$listing" in
 *"AsPostType(name: project"*) ;;
-*) fail "wp foehn discovery:list did not describe the starter's post types
+*) fail "wp foehn discovery:list did not describe the demo's post types
 $listing" ;;
 esac
 
@@ -202,10 +212,71 @@ $head"
 }
 
 check_page "/" "card__title" "the homepage lists a selection of projects"
+check_page "/" "All 6 series, " "the homepage counts the series with Project::count()"
+if curl -sk "$url/" | grep -q 'global-styles-inline-css'; then
+	fail "the homepage prints the theme.json global styles DisableGlobalStyles removes"
+fi
+printf '✓ %s\n' "DisableGlobalStyles removes the global styles of a theme with no theme.json"
+# CleanContent strips the type from an archive title.
+check_page "/category/notes/" '<h1 class="title"[^>]*>Notes</h1>' "CleanContent removes the Category: prefix from an archive title"
+
+# SecurityHeaders sends its headers on every page PHP renders.
+home_headers="$(curl -sk -D- -o /dev/null "$url/" | tr -d '\r')"
+grep -qi '^x-content-type-options: nosniff$' <<<"$home_headers" || fail "the homepage has no X-Content-Type-Options header from SecurityHeaders
+$home_headers"
+grep -qi '^permissions-policy: ' <<<"$home_headers" || fail "the homepage has no Permissions-Policy header from SecurityHeaders"
+printf '✓ %s\n' "SecurityHeaders sends its headers"
+
+# RestApiAuth hides the user list from visitors, and only that list.
+users_status="$(curl -sk -o /dev/null -w '%{http_code}' "$url/wp-json/wp/v2/users")"
+[ "$users_status" = "404" ] || fail "GET /wp-json/wp/v2/users answered a visitor with HTTP $users_status, not 404"
+printf '✓ %s\n' "RestApiAuth removes the users route for a visitor"
+
+# The footer prints Env::get(), the environment that also picks foehn.local.config.php.
+check_page "/" '>Environment: local<' "the footer prints the environment"
+# SettingsSeeder turns the banner on, so the public demo says it is one.
+check_page "/" 'class="banner' "the banner from the theme settings is on every page"
 check_page "/projects/" "index-row__title" "the projects index lists the series"
 check_page "/projects/page/2/" "<html" "project pagination keeps a full-page fallback"
+# /projects/series/<slug>/ was taken by the rule WordPress adds for the attachments
+# of a project, so a series archive was a 404. It lives at /series/<slug>/ now.
+check_page "/series/architecture/" "index-row__title" "a series archive lists its projects"
+check_page "/project-tags/commission/" "index-row__title" "a project tag archive lists its projects"
+# video_embed() turns the watch URL in the `film` meta into a no-cookie embed.
+check_page "/projects/editions/" 'src="https://www.youtube-nocookie.com/embed/aqz-KE-bpKQ' "a project's film is embedded with video_embed()"
 check_page "/projects/corridors/" "plate--" "a project page shows its photographs"
+# The theme's own js-toolkit components are mounted by file name, from app.js.
+check_page "/projects/corridors/" 'data-component="CopyLink"' "a project page mounts a component of the theme"
+check_page "/projects/corridors/" 'href="https://example.com/contrejour/corridors"' "a project page shows its press quote from the ACF field group"
 check_page "/about/" "prose" "the about page renders its copy"
+# The blocks, the binding and the pattern are only worth registering if a visitor
+# sees them: PageSeeder writes the About page as block markup.
+check_page "/about/" 'class="hero hero--small"' "the about page opens with the hero block"
+check_page "/about/" 'callout callout--success' "the about page holds the commission pattern, callout included"
+check_page "/about/" 'minute read' "the reading-time binding computes its value on the about page"
+check_page "/projects/corridors/" '<p class="wp-block-paragraph">Hasselblad 500C/M' "core/post-meta binds the camera meta in a project's content"
+# The footer links every page to it, so a missing page is a 404 on every page.
+check_page "/legal/" "Unsplash licence" "the legal page the footer links to exists"
+
+# The journal is where the content blocks are seen. Each needle is the block's own
+# markup, so a block that rendered nothing fails here.
+check_page "/notes-on-corridors/" 'data-wp-interactive="theme/contact-sheet"' "a journal post holds the interactive contact sheet"
+check_page "/notes-on-corridors/" "data-wp-context=" "the contact sheet carries its per-instance context"
+check_page "/notes-on-corridors/" 'class="facts__row"' "a journal post holds a facts block with its fact rows"
+check_page "/notes-on-corridors/" 'class="related-projects"' "a journal post links projects picked with a posts control"
+check_page "/editions-press-kit/" '\.pdf" download' "a journal post links the PDF picked with a file control"
+# ContentImageHooks rewrites the srcset of an image in content to transformer URLs.
+check_page "/notes-on-corridors/" 'srcset="[^"]*/_image/' "an image in content gets its srcset from the transformer"
+check_page "/journal/" "Notes on Corridors" "the posts page lists the journal"
+check_page "/category/notes/" "index-row__title" "the category archive lists the journal"
+check_page "/tag/film/" "index-row__title" "a tag archive lists its posts"
+check_page "/studio-contact-sheets/" 'name="post_password"' "the seeded protected post asks for its password"
+
+# The contact sheet only works if its module can import the Interactivity API, which
+# WordPress maps only for a declared dependency.
+grep -q '"@wordpress/interactivity"' <<<"$(curl -sk "$url/notes-on-corridors/")" ||
+	fail "the contact sheet's view module cannot import @wordpress/interactivity: it is not in the import map"
+printf '✓ %s\n' "the import map gives the contact sheet the Interactivity API"
 
 # A password-protected post has to answer with WordPress's password form and with
 # nothing the password guards. Both controllers send it to pages/password, which
@@ -241,6 +312,18 @@ $(head -c 400 "$body")"
 check_protected post
 check_protected page
 
+# #[AsRestRoute]: a public list, and a route whose own permission method refuses a
+# visitor. The list goes through Project::query(), so it is also the end-to-end check
+# that the builder returns a list.
+projects_json="$(curl -sk "$url/wp-json/demo/v1/projects")"
+[ "$(grep -o '"id":' <<<"$projects_json" | wc -l | tr -d ' ')" = "6" ] ||
+	fail "GET /wp-json/demo/v1/projects did not list the six projects
+$(head -c 400 <<<"$projects_json")"
+grep -q '"year":2024' <<<"$projects_json" || fail "the projects route does not give each project its year"
+drafts_status="$(curl -sk -o /dev/null -w '%{http_code}' "$url/wp-json/demo/v1/projects/drafts")"
+[ "$drafts_status" = "401" ] || fail "the drafts route answered a visitor with HTTP $drafts_status, not 401"
+printf '✓ %s\n' "the REST routes answer, the public one to everyone and the drafts one to editors only"
+
 home="$(curl -sk "$url/")"
 grep -q 'data-foehn-lazy-section' <<<"$home" || fail "the homepage does not demonstrate a lazy section"
 grep -q 'data-option-src="/?foehn_sections=testimonials"' <<<"$home" || fail "the lazy testimonial section has no section request URL"
@@ -248,6 +331,7 @@ grep -q 'data-option-src="/?foehn_sections=testimonials"' <<<"$home" || fail "th
 testimonials_section="$(curl -sk "$url/?foehn_sections=testimonials")"
 grep -q 'id="foehn-section-testimonials"' <<<"$testimonials_section" || fail "the testimonial section request returned no wrapper"
 grep -q '>Words<' <<<"$testimonials_section" || fail "the testimonial section request returned no testimonials"
+grep -q 'Rated 5 out of 5' <<<"$testimonials_section" || fail "the testimonial section does not show the rating meta"
 printf '✓ %s\n' "the homepage lazy-loads its testimonial section"
 
 projects_index="$(curl -sk "$url/projects/")"
@@ -297,6 +381,19 @@ bare_form="$(curl -sk "$url/projects/?foehn_sections=project-filters" | tr '\n' 
 grep -qE 'value="still-life" +checked' <<<"$bare_form" && fail "the filter form shows a filter the URL did not ask for"
 grep -q 'Reset' <<<"$bare_form" && fail "the filter form offers a reset on an unfiltered archive, so it is not tracking the query"
 printf '✓ %s\n' "the filter form is a section the server re-renders for the current URL"
+
+# An active series is a chip whose link removes it and keeps the other one.
+two_series="$(curl -sk "$url/projects/?project_category%5B%5D=still-life&project_category%5B%5D=portrait&foehn_sections=project-filters")"
+grep -q 'class="filters__chip" href="/projects/?project_category=portrait"' <<<"$two_series" ||
+	fail "an active filter chip does not link to the archive without its own series"
+grep -q 'filters__chip' <<<"$bare_form" && fail "the unfiltered archive shows active filter chips"
+printf '✓ %s\n' "query_url_toggle() builds a chip that removes one active series"
+
+search="$(curl -sk "$url/?s=series&post_type=project")"
+grep -q '<input type="hidden" name="post_type" value="project">' <<<"$search" ||
+	fail "a new search from the results page drops the post_type the URL holds"
+grep -q 'href="/?s=series&#038;post_type=post"' <<<"$search" || fail "the search page does not offer the other post types with query_url()"
+printf '✓ %s\n' "the search page keeps and changes its arguments with the query helpers"
 
 # Image transforms, end to end. The plate crops to two ratios, which is where
 # #[AsImageSize] stops being the answer: a registered size is one shape, and one
@@ -415,13 +512,83 @@ plates="$(curl -sk "$url/projects/corridors/" | grep -c 'class="plate ')"
 
 printf '✓ every photograph is credited\n'
 
+# The counts on the homepage are cached under a tag, and saving a project flushes it.
+# shellcheck disable=SC2016  # the container expands it, not this shell
+cached_stats() {
+	ddev exec 'cd /var/www/html && wp eval "echo Studiometa\\Foehn\\Kernel::get(Studiometa\\Foehn\\Contracts\\CacheInterface::class)->has(Demo\\Controllers\\FrontPageController::STATS_KEY) ? \"yes\" : \"no\";"' 2>/dev/null | tr -d '\r' | tail -n1
+}
+
+curl -sk -o /dev/null "$url/"
+[ "$(cached_stats)" = "yes" ] || fail "the homepage did not cache its counts under the projects tag"
+corridors_id="$(ddev exec "cd /var/www/html && wp eval 'echo get_page_by_path(\"corridors\", OBJECT, \"project\")->ID;'" 2>/dev/null | tr -d '\r' | tail -n1)"
+ddev exec "cd /var/www/html && wp post update $corridors_id --menu_order=1" >/dev/null 2>&1
+[ "$(cached_stats)" = "no" ] || fail "saving a project did not flush the projects cache tag"
+printf '✓ %s\n' "a tagged cache entry is flushed when a project is saved"
+
+# The same save queued a #[AsJob]: dispatch() stores it in Action Scheduler, and the
+# real cron runs it. Run here by hand, it requests the plates of the project.
+# shellcheck disable=SC2016  # the container expands it, not this shell
+queued="$(ddev exec "cd /var/www/html && wp action-scheduler action list --hook=foehn/demo/jobs/warm_plates --status=pending --fields=args --format=json" 2>/dev/null | tr -d '\r' | tail -n1)"
+grep -q "\"projectId\":$corridors_id}" <<<"$queued" || fail "saving a project did not queue the WarmPlates job
+$queued"
+ddev exec 'cd /var/www/html && wp action-scheduler run --hooks=foehn/demo/jobs/warm_plates' >/dev/null 2>&1 ||
+	fail "the WarmPlates job did not run"
+[ "$(ddev exec 'cd /var/www/html && wp action-scheduler action list --hook=foehn/demo/jobs/warm_plates --status=failed --format=count' 2>/dev/null | tr -d '\r' | tail -n1)" = "0" ] ||
+	fail "a WarmPlates job failed: see Tools > Scheduled Actions"
+printf '✓ %s\n' "saving a project queues a job that warms its plates, and the job runs"
+
+# public/ is copied into web/ by the installer, and served from the site's root.
+check_page "/robots.txt" '^Sitemap: https://' "robots.txt from public/ names the sitemap"
+check_page "/.well-known/security.txt" '^Contact: ' "security.txt from public/ is served"
+favicon_type="$(curl -sk -o /dev/null -w '%{http_code} %{content_type}' "$url/favicon.ico")"
+[ "$favicon_type" = "200 image/x-icon" ] || fail "GET /favicon.ico answered $favicon_type"
+# The other checks of the profile fail here on purpose: this is not production.
+verify="$(ddev exec 'cd /var/www/html && wp foehn verify --profile=production' 2>/dev/null | tr -d '\r' || true)"
+grep -qE '^pass +public-files ' <<<"$verify" || fail "wp foehn verify finds the web root out of step with public/
+$(grep -E 'public-files' <<<"$verify")"
+printf '✓ %s\n' "the web root holds the files of public/, as verify checks"
+
+# The project's own commands go under `wp app`, the default cliNamespace.
+stats="$(ddev exec 'cd /var/www/html && wp app projects:stats' 2>/dev/null | tr -d '\r' || true)"
+grep -q '^6 series, [0-9]* photographs\.$' <<<"$stats" || fail "wp app projects:stats did not list the six series
+$stats"
+printf '✓ %s\n' "a project command runs under wp app"
+
+# A command that writes stops in production unless it is asked for a dry run. The
+# environment variable wins over .env, which Dotenv does not let overwrite it.
+order_before="$(ddev exec "cd /var/www/html && wp post list --post_type=project --orderby=ID --order=ASC --field=menu_order" 2>/dev/null | tr -d '\r' | tr '\n' ' ')"
+refused="$(ddev exec 'cd /var/www/html && WP_ENVIRONMENT_TYPE=production wp app projects:reorder' 2>&1 | tr -d '\r' || true)"
+grep -q '`wp app projects:reorder` changes content or files' <<<"$refused" || fail "wp app projects:reorder ran in production without --force or --dry-run
+$(tail -5 <<<"$refused")"
+dry_run="$(ddev exec 'cd /var/www/html && WP_ENVIRONMENT_TYPE=production wp app projects:reorder --dry-run' 2>&1 | tr -d '\r' || true)"
+grep -q 'Nothing was written' <<<"$dry_run" || fail "wp app projects:reorder --dry-run did not run in production
+$(tail -5 <<<"$dry_run")"
+order_after="$(ddev exec "cd /var/www/html && wp post list --post_type=project --orderby=ID --order=ASC --field=menu_order" 2>/dev/null | tr -d '\r' | tr '\n' ' ')"
+[ "$order_before" = "$order_after" ] || fail "a refused run or a dry run of projects:reorder changed the order"
+printf '✓ %s\n' "a command that writes stops in production, and runs there with --dry-run"
+
+# Discovery reports every class it skips, and the reason. The demo has none.
+problems="$(ddev exec 'cd /var/www/html && wp foehn inspect problems --format=json' 2>/dev/null | tr -d '\r' | tail -n1)"
+[ "$problems" = '{"problems":[]}' ] || fail "wp foehn inspect problems is not empty
+$problems"
+printf '✓ %s\n' "wp foehn inspect problems reports nothing"
+
+# foehn.local.config.php traces every request: the response names its trace, and the
+# trace names the controller that rendered the page.
+trace_id="$(curl -sk -D- -o /dev/null "$url/about/" | tr -d '\r' | grep -i '^x-foehn-trace:' | cut -d' ' -f2)"
+[ -n "$trace_id" ] || fail "GET /about/ has no X-Foehn-Trace header"
+trace="$(ddev exec "cd /var/www/html && wp foehn trace $trace_id --format=json" 2>/dev/null | tr -d '\r' | tail -n1)"
+grep -q '"controller":"Demo\\\\Controllers\\\\PageController"' <<<"$trace" || fail "wp foehn trace $trace_id does not name PageController
+$(head -c 400 <<<"$trace")"
+printf '✓ %s\n' "a request trace names the controller that rendered the page"
+
 # The seeders in theme/app/Seeders write the whole portfolio, and they must be
 # idempotent: on a site that already holds it, they find every post by slug and
 # every photograph by its Unsplash id, and write no copy. The site here came from
 # the dump, which is a seeded site, so no count may move.
 content_counts() {
 	# shellcheck disable=SC2016  # the container expands $type, not this shell
-	ddev exec 'cd /var/www/html && for type in project testimonial page nav_menu_item; do wp post list --post_type=$type --post_status=any --format=count; done; wp post list --post_type=attachment --post_status=inherit --meta_key=unsplash_id --format=count' 2>/dev/null |
+	ddev exec 'cd /var/www/html && for type in project testimonial page post nav_menu_item; do wp post list --post_type=$type --post_status=any --format=count; done; wp post list --post_type=attachment --post_status=inherit --meta_key=unsplash_id --format=count' 2>/dev/null |
 		tr -d '\r' | grep -xE '[0-9]+' | tr '\n' ' '
 }
 
@@ -432,7 +599,7 @@ $(printf '%s\n' "$seed_output" | grep -v Deprecated | tail -12)"
 after="$(content_counts)"
 
 [ -n "$before" ] && [ "$before" = "$after" ] || fail "a second seed changed the amount of content
-  before: $before (projects, testimonials, pages, menu items, photographs)
+  before: $before (projects, testimonials, pages, posts, menu items, photographs)
   after:  $after"
 
 printf '✓ wp foehn seed runs again and duplicates nothing\n'

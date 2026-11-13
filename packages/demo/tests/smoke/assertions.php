@@ -70,11 +70,21 @@ $results = new class {
 
 $config = Kernel::get(FoehnConfig::class);
 
-// theme/app/foehn.config.php opts into 10 hook classes. Before config files were
-// loaded this was 0, and every security hook in the theme was silently inert.
-$results->same('foehn.config.php is loaded (opt-in hooks)', 11, count($config->hooks));
+// The hooks the kernel runs are the ones theme/app/foehn.config.php names. Before
+// config files were loaded this list was empty, and every security hook in the theme
+// was silently inert.
+$declared = require get_template_directory() . '/app/foehn.config.php';
+
+$results->same('foehn.config.php is loaded (opt-in hooks)', $declared->hooks, $config->hooks);
+
+// In ddev and CI the environment is `local`, so foehn.local.config.php replaces the
+// shared file: it starts from it and turns the developer options on.
+$results->true('foehn.local.config.php is the one loaded in local', $config->debug && $config->tracesRequests());
 
 $results->true('opt-in security hooks are applied', has_filter('xmlrpc_enabled') !== false);
+
+// DisableFileEditor defines the constant on `init`, which has run by now.
+$results->true('DisableFileEditor turns off the file editor', defined('DISALLOW_FILE_EDIT') && DISALLOW_FILE_EDIT);
 
 // The config also names a driver, and naming one is the whole of the opt-in: with
 // none, image_url() hands back the source URL and every page still renders — so
@@ -92,9 +102,24 @@ $twig = new Timber\Loader()->get_twig();
 // vendor/ and were never scanned. The templates use both toolkit and section helpers.
 $results->containsAll(
     'framework Twig functions are registered',
-    ['html_attributes', 'html_classes', 'html_styles', 'foehn_section', 'foehn_section_url'],
+    [
+        'html_attributes',
+        'html_classes',
+        'html_styles',
+        'foehn_section',
+        'foehn_section_url',
+        'wp_interactive',
+        'wp_context',
+        'video_embed',
+    ],
     array_map(static fn(Twig\TwigFunction $function): string => $function->getName(), $twig->getFunctions()),
 );
+
+// The theme's own #[AsTwigExtension], found in theme/app like any other class.
+$results->containsAll('the theme Twig filter is registered', ['plural'], array_map(
+    static fn(Twig\TwigFilter $filter): string => $filter->getName(),
+    $twig->getFilters(),
+));
 
 // Nothing lists the discovery classes any more: each is found because it
 // implements Discovery inside a scanned location. A location that stops being
@@ -124,16 +149,16 @@ $results->containsAll(
     array_keys(Kernel::get(DiscoveryRunner::class)->getDiscoveries()),
 );
 
-// Nothing here needs ACF. The demo's only ACF block was the one thing that
-// needed a paid plugin to run, so that path was never exercised: ACF Pro is not
-// installed in CI. `studiometa/foehn-acf` carries its own examples instead.
-$results->same(
-    'the demo needs no ACF package',
-    [],
-    array_values(array_filter(
-        array_keys(Kernel::get(DiscoveryRunner::class)->getDiscoveries()),
-        static fn(string $discovery): bool => str_contains($discovery, 'Acf'),
-    )),
+// studiometa/foehn-acf runs on the free ACF plugin: a field group and its fragments
+// need no Pro feature, so this path runs in CI like every other.
+$results->true('ACF is active', function_exists('acf_get_field_group'));
+$results->true(
+    'the #[AsAcfFieldGroup] on projects is registered with ACF',
+    function_exists('acf_get_field_group') && is_array(acf_get_field_group('group_project_press')),
+);
+$results->true(
+    'the ButtonLinkBuilder fragment adds its link field inside the group',
+    function_exists('acf_get_field') && is_array(acf_get_field('field_project_press_press_link_link')),
 );
 
 // The framework's #[AsCliCommand] classes live in the same vendor package. WP-CLI
@@ -191,8 +216,46 @@ $results->containsAll(
 
 $results->containsAll(
     'demo blocks are registered',
-    ['theme/section', 'theme/callout', 'theme/hero'],
+    [
+        'theme/section',
+        'theme/callout',
+        'theme/hero',
+        'theme/contact-sheet',
+        'theme/related-projects',
+        'theme/press-kit',
+        'theme/facts',
+        'theme/fact',
+    ],
     array_keys(WP_Block_Type_Registry::get_instance()->get_all_registered()),
+);
+
+$blockTypes = WP_Block_Type_Registry::get_instance();
+
+// `parent` keeps a fact out of the inserter everywhere but inside a facts block.
+$results->same(
+    'a fact goes in a facts block only',
+    ['theme/facts'],
+    $blockTypes->get_registered('theme/fact')?->parent,
+);
+
+$results->true(
+    'the contact sheet declares interactivity support',
+    ($blockTypes->get_registered('theme/contact-sheet')?->supports['interactivity'] ?? false) === true,
+);
+
+$results->same(
+    'the contact sheet loads its own view script module',
+    ['theme/contact-sheet/view'],
+    $blockTypes->get_registered('theme/contact-sheet')?->view_script_module_ids,
+);
+
+// A pattern is rendered from its Twig template when it is registered, so a template
+// that fails to render is a pattern that is not there.
+$commission = WP_Block_Patterns_Registry::get_instance()->get_registered('theme/commission');
+
+$results->true(
+    'the block pattern is registered, as block markup from its Twig template',
+    is_array($commission) && str_starts_with(trim($commission['content']), '<!-- wp:theme/section'),
 );
 
 // The unit tests run the filter against a stub. This reads the list the editor
@@ -223,8 +286,20 @@ $results->containsAll(
 // than the key alone.
 $results->containsAll(
     'demo post meta is registered against its post type',
-    ['client', 'year', 'location', 'camera'],
+    ['client', 'year', 'location', 'camera', 'film'],
     array_keys(get_registered_meta_keys('post', 'project')),
+);
+
+$results->containsAll(
+    'testimonial meta is registered against its post type',
+    ['author_name', 'author_role', 'company', 'rating'],
+    array_keys(get_registered_meta_keys('post', 'testimonial')),
+);
+
+$results->same(
+    'the testimonial rating is an integer meta',
+    'integer',
+    get_registered_meta_keys('post', 'testimonial')['rating']['type'] ?? null,
 );
 
 // The point of registering it: without show_in_rest the key is invisible to the
@@ -232,6 +307,25 @@ $results->containsAll(
 $results->true(
     'demo post meta is exposed to REST',
     (get_registered_meta_keys('post', 'project')['client']['show_in_rest'] ?? false) !== false,
+);
+
+// #[AsTimberModel] maps a type the theme does not register: every attachment Timber
+// builds is a Photograph, with the credit the templates print.
+$photographId = (int) (
+    get_posts([
+        'post_type' => 'attachment',
+        'post_status' => 'inherit',
+        'meta_key' => 'unsplash_id',
+        'posts_per_page' => 1,
+        'fields' => 'ids',
+    ])[0] ?? 0
+);
+$photograph = Timber\Timber::get_post($photographId);
+
+$results->true('an attachment is built as the Photograph model', $photograph instanceof Demo\Models\Photograph);
+$results->true(
+    'a photograph carries its credit',
+    $photograph instanceof Demo\Models\Photograph && $photograph->credit()?->title !== null,
 );
 
 // ──────────────────────────────────────────────
@@ -245,7 +339,7 @@ $registered = get_registered_settings();
 
 $results->containsAll(
     'demo settings are registered',
-    ['demo_contact_email', 'demo_show_banner', 'demo_posts_per_archive'],
+    ['demo_contact_email', 'demo_show_banner', 'demo_banner_text', 'demo_posts_per_archive'],
     array_keys($registered),
 );
 
@@ -257,7 +351,15 @@ $results->same(
 
 // The declared default, which get_option() alone does not answer with until the
 // option has been saved once.
-$results->same('a declared default is readable before any save', 12, Settings::get('demo_posts_per_archive'));
+$results->same('a declared default is readable before any save', 3, Settings::get('demo_posts_per_archive'));
+
+// A sanitizer named as a method of the page class is that method: a page size the
+// archive does not offer is refused on save, not stored.
+$results->same(
+    'a page size outside the list is refused on save',
+    3,
+    apply_filters('sanitize_option_demo_posts_per_archive', '999', 'demo_posts_per_archive', '999'),
+);
 
 // Settings are configuration, sometimes credentials. Exposure is opt-in, which
 // is the opposite of what #[AsPostMeta] does.
@@ -265,7 +367,7 @@ $results->same(
     'demo settings are not exposed through REST',
     [],
     array_values(array_filter(
-        ['demo_contact_email', 'demo_show_banner', 'demo_posts_per_archive'],
+        ['demo_contact_email', 'demo_show_banner', 'demo_banner_text', 'demo_posts_per_archive'],
         static fn(string $name): bool => ($registered[$name]['show_in_rest'] ?? false) !== false,
     )),
 );
@@ -297,6 +399,16 @@ $results->true('the settings form renders from its Twig template', str_contains(
         'settings' => ['demo_contact_email' => 'hello@example.com'],
     ]),
     'hello@example.com',
+));
+
+// Timber's autoescape is off, so the template escapes each value itself. A quote in
+// the banner text that reached the attribute raw would end it, and the next save
+// would store the text cut at the quote.
+$results->true('the settings form escapes a quote in a text value', str_contains(
+    Kernel::get(ViewEngineInterface::class)->render('settings/theme-settings', [
+        'settings' => ['demo_banner_text' => 'A "demo" site'],
+    ]),
+    'value="A &quot;demo&quot; site"',
 ));
 
 // ──────────────────────────────────────────────
@@ -540,6 +652,57 @@ $results->same(
 
 $results->true('an allowed page size passes', $filtersConfig->validatePublicVar('posts_per_page', '6'));
 $results->true('one outside the list does not', !$filtersConfig->validatePublicVar('posts_per_page', '999'));
+
+// ──────────────────────────────────────────────
+// Cron jobs, on Action Scheduler
+//
+// Discovery schedules each #[AsCron] class once, on the first request that finds it
+// missing. Without Action Scheduler it schedules nothing and says nothing, so the
+// plugin is checked first.
+// ──────────────────────────────────────────────
+
+$results->true('Action Scheduler is active', function_exists('as_get_scheduled_actions'));
+
+/** The pending action of a cron job of the demo, or null. */
+$pendingCron = static function (string $hook): ?ActionScheduler_Action {
+    $actions = as_get_scheduled_actions(['hook' => $hook, 'group' => 'demo', 'status' => 'pending']);
+
+    return $actions === [] ? null : array_values($actions)[0];
+};
+
+$warmAll = $pendingCron('foehn/demo/jobs/warm_all_plates');
+
+$results->true('WarmAllPlates is scheduled', $warmAll instanceof ActionScheduler_Action);
+$results->same(
+    'WarmAllPlates recurs every day, on an interval',
+    DAY_IN_SECONDS,
+    (int) $warmAll?->get_schedule()->get_recurrence(),
+);
+
+$newYear = $pendingCron('foehn/demo/jobs/flush_page_cache_at_new_year');
+$newYearSchedule = $newYear?->get_schedule();
+
+$results->true(
+    'FlushPageCacheAtNewYear is scheduled on the site timezone',
+    $newYearSchedule instanceof Studiometa\Foehn\Jobs\SiteTimezoneCronSchedule,
+);
+
+// A schedule built now, from the stored one's expression. The stored date can be an
+// hour off: it was computed at the first request, which can come before SettingsSeeder
+// sets the timezone, and a date already scheduled does not move with it.
+$results->same(
+    'its expression runs at midnight on 1 January in Europe/Paris',
+    '01-01 00:00 Europe/Paris',
+    $newYearSchedule === null
+        ? null
+        : new Studiometa\Foehn\Jobs\SiteTimezoneCronSchedule(
+            as_get_datetime_object(),
+            $newYearSchedule->get_recurrence(),
+        )
+            ->get_date()
+            ?->setTimezone(wp_timezone())
+            ->format('m-d H:i e'),
+);
 
 // ──────────────────────────────────────────────
 // Report

@@ -21,29 +21,41 @@ final class MenuSeeder implements SeederInterface
 {
     public function run(): void
     {
-        $about = get_page_by_path('about');
-
-        if ($about === null) {
-            throw new RuntimeException('the About page does not exist. Run PageSeeder first.');
-        }
-
-        $aboutUrl = (string) get_permalink($about);
+        $aboutUrl = self::pageUrl('about');
+        $journalUrl = self::pageUrl('journal');
+        $legalUrl = self::pageUrl('legal');
 
         $menus = [
             'header' => [
                 ['Projects', '/projects/'],
+                ['Journal',  $journalUrl],
                 ['About',    $aboutUrl],
             ],
             'footer' => [
                 ['Projects', '/projects/'],
+                ['Journal',  $journalUrl],
                 ['About',    $aboutUrl],
             ],
-            'legal' => [['Legal', '/legal/']],
+            'legal' => [['Legal', $legalUrl]],
         ];
 
         foreach ($menus as $location => $items) {
             $this->writeMenu($location, $items);
         }
+    }
+
+    /**
+     * The URL of a page PageSeeder wrote.
+     */
+    private static function pageUrl(string $slug): string
+    {
+        $page = get_page_by_path($slug);
+
+        if ($page === null) {
+            throw new RuntimeException("the {$slug} page does not exist. Run PageSeeder first.");
+        }
+
+        return (string) get_permalink($page);
     }
 
     /**

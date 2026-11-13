@@ -74,6 +74,16 @@ final readonly class HeroBlock implements BlockInterface
                     'full' => 'Full screen',
                 ],
             ],
+            // h1 when the hero opens the page and carries its title, h2 further down.
+            'headingLevel' => [
+                'type' => 'string',
+                'default' => 'h1',
+                'label' => 'Heading level',
+                'options' => [
+                    'h1' => 'Page title (h1)',
+                    'h2' => 'Section title (h2)',
+                ],
+            ],
             'ctaLabel' => [
                 'type' => 'string',
                 'default' => '',
@@ -109,9 +119,12 @@ final readonly class HeroBlock implements BlockInterface
         return new HeroContext(
             title: (string) ($attributes['title'] ?? ''),
             subtitle: $subtitle === '' ? null : $subtitle,
-            background: ImageData::fromAttachmentId($attributes['backgroundId'] ?? null),
+            // The `hero` size HeroImageSize registers, 1920x1080 cropped. WordPress falls
+            // back to the original for a photograph too small to be cut to it.
+            background: ImageData::fromAttachmentId($attributes['backgroundId'] ?? null, 'hero'),
             cta: self::cta($attributes),
             height: (string) ($attributes['height'] ?? 'medium'),
+            headingLevel: ($attributes['headingLevel'] ?? 'h1') === 'h2' ? 'h2' : 'h1',
         );
     }
 

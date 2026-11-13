@@ -133,7 +133,7 @@
     <span class="label label--ink">Per page</span>
     <select name="posts_per_page">
       {% for size in [3, 6, 12] %}
-        <option value="{{ size }}" {{ query_get('posts_per_page', 3) == size ? 'selected' }}>{{ size }}</option>
+        <option value="{{ size }}" {{ query_get('posts_per_page', posts_per_archive) == size ? 'selected' }}>{{ size }}</option>
       {% endfor %}
     </select>
   </label>
@@ -150,6 +150,24 @@
     form in that response is what unticks the boxes — a reset that only swapped the
     results would leave every filter looking as if it were still applied.
   #}
+  {#
+    The series in the URL, each as a link that removes it. query_url_toggle() takes
+    the value out of either spelling of the parameter and keeps every other one. A
+    chip is a plain link: it reloads the page, filtered one series less.
+  #}
+  {% if query_has('project_category') %}
+    <p class="filters__active label">
+      Active:
+      {% for option in facet('project_category') %}
+        {% if query_contains('project_category', option.term.slug) %}
+          <a class="filters__chip" href="{{ query_url_toggle('project_category', option.term.slug) }}">
+            {{ option.term.name }} &times;
+          </a>
+        {% endif %}
+      {% endfor %}
+    </p>
+  {% endif %}
+
   <div class="filters__actions">
     <button type="submit">Filter</button>
     {% if query_all() is not empty %}

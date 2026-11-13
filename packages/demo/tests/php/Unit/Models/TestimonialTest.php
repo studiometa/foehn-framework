@@ -25,7 +25,7 @@ describe('Testimonial', function () {
         expect($attr->public)->toBeFalse();
         expect($attr->showInRest)->toBeTrue();
         expect($attr->menuIcon)->toBe('dashicons-format-quote');
-        expect($attr->supports)->toBe(['title', 'editor', 'thumbnail']);
+        expect($attr->supports)->toBe(['title', 'editor', 'thumbnail', 'custom-fields']);
     });
 
     it('declares expected accessor methods', function () {

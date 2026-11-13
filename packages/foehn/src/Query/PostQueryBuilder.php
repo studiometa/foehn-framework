@@ -385,8 +385,11 @@ final class PostQueryBuilder
      */
     public function get(): array
     {
+        // Timber answers with a collection object, not the list this method promises.
+        $posts = Timber::get_posts($this->params);
+
         /** @var list<\Timber\Post> */
-        return Timber::get_posts($this->params);
+        return $posts === null ? [] : array_values($posts->to_array());
     }
 
     /**

@@ -2,6 +2,9 @@
 /vendor/
 /node_modules/
 composer.lock
+# Local Composer files that point the demo at the monorepo packages
+/composer.inspect.*
+/composer.monorepo.*
 
 # Generated web root
 /web/

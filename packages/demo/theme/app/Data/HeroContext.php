@@ -18,6 +18,7 @@ use Studiometa\Foehn\Data\LinkData;
  * - $background → {{ background.src }}, {{ background.alt }}, etc.
  * - $cta        → {{ cta.url }}, {{ cta.title }}, {{ cta.target }}
  * - $height     → {{ height }}
+ * - $headingLevel → {{ heading_level }}
  */
 final readonly class HeroContext implements Arrayable
 {
@@ -29,5 +30,6 @@ final readonly class HeroContext implements Arrayable
         public ?ImageData $background = null,
         public ?LinkData $cta = null,
         public string $height = 'medium',
+        public string $headingLevel = 'h1',
     ) {}
 }

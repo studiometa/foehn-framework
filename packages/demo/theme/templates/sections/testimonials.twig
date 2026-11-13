@@ -10,10 +10,16 @@
             {{ testimonial.content|striptags|trim }}
           </p>
           <footer class="quote__source label">
-            {{ testimonial.authorName }}{% if testimonial.authorRole %}
-              , {{ testimonial.authorRole }}
-            {% endif %}
+            {{- testimonial.authorName -}}
+            {%- if testimonial.authorRole %}, {{ testimonial.authorRole }}{% endif -%}
+            {%- if testimonial.company %} — {{ testimonial.company }}{% endif -%}
           </footer>
+          {% if testimonial.rating is not null %}
+            {% set max = constant('Demo\\Models\\Testimonial::MAX_RATING') %}
+            <p class="quote__rating label" aria-label="Rated {{ testimonial.rating }} out of {{ max }}">
+              {%- for star in 1..max -%}{{ star <= testimonial.rating ? '★' : '☆' }}{%- endfor -%}
+            </p>
+          {% endif %}
         </blockquote>
       </div>
     {% endfor %}

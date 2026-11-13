@@ -1,0 +1,6 @@
+# The demo of the Føhn framework. Report a vulnerability in Føhn or in this demo
+# through a private advisory on the repository.
+Contact: https://github.com/studiometa/foehn-framework/security/advisories/new
+Expires: 2027-11-12T00:00:00.000Z
+Preferred-Languages: en, fr
+Canonical: https://foehn-demo.fly.dev/.well-known/security.txt

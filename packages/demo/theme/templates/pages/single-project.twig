@@ -5,9 +5,9 @@
     <header class="shell masthead">
       <p class="label label--ink">
         <a href="{{ site.url }}/projects/">Projects</a>
-        {% if post.categories %}
-          / {{ post.categories|map(term => term.title)|join(', ') }}
-        {% endif %}
+        {% for term in post.categories %}
+          {{ loop.first ? '/' : ',' }} <a href="{{ term.link }}">{{ term.title }}</a>
+        {% endfor %}
       </p>
 
       <h1 class="title" style="margin-top: 0.75rem">{{ post.title }}</h1>
@@ -42,10 +42,46 @@
       {% endfor %}
     </div>
 
+    {#
+      `video_embed()` turns the watch URL an editor pasted into an embed URL, on
+      youtube-nocookie.com for YouTube. `video_platform()` names the player.
+    #}
+    {% if post.film and video_is_supported(post.film) %}
+      <figure class="shell film" style="margin-top: clamp(3rem, 8vw, 6rem)">
+        <iframe
+          src="{{ video_embed(post.film) }}"
+          title="{{ post.title }} — film on {{ video_platform(post.film)|capitalize }}"
+          loading="lazy"
+          allow="fullscreen; picture-in-picture"
+          allowfullscreen></iframe>
+      </figure>
+    {% endif %}
+
+    {# From the ACF field group Demo\Fields\ProjectPressFields. #}
+    {% set press = post.press %}
+    {% if press %}
+      <blockquote class="shell quote press" style="margin-top: clamp(3rem, 8vw, 6rem)">
+        <p class="quote__text">{{ press.quote }}</p>
+        <footer class="quote__source label">
+          {{- press.source -}}
+          {%- if press.link %} — <a class="press__link press__link--{{ press.style }}" href="{{ press.link.url }}"{% if press.link.target %} target="{{ press.link.target }}" rel="noopener"{% endif %}>{{ press.link.title }}</a>
+          {%- endif -%}
+        </footer>
+      </blockquote>
+    {% endif %}
+
     {% if post.content|striptags|trim %}
       <div class="shell prose" style="margin-top: clamp(3rem, 8vw, 6rem)">
         {{ post.content }}
       </div>
+    {% endif %}
+
+    {% if post.projectTags %}
+      <p class="shell label" style="margin-top: 2rem">
+        {% for term in post.projectTags %}
+          <a href="{{ term.link }}">#{{ term.name }}</a>
+        {% endfor %}
+      </p>
     {% endif %}
 
     <nav class="shell" style="margin-top: clamp(3rem, 8vw, 6rem)" aria-label="Projects">
@@ -54,6 +90,10 @@
         <span class="label">
           {% if post.prev %}<a href="{{ post.prev.link }}">← {{ post.prev.title }}</a>{% endif %}
         </span>
+        {# The theme's own js-toolkit component, mounted by the loader in app.js. #}
+        <button class="label label--ink copy-link" type="button" data-component="CopyLink" data-option-url="{{ post.link }}">
+          <span data-ref="label">Copy link</span>
+        </button>
         <span class="label" style="text-align: right">
           {% if post.next %}<a href="{{ post.next.link }}">{{ post.next.title }} →</a>{% endif %}
         </span>

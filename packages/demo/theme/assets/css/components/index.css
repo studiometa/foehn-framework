@@ -81,6 +81,15 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* ── Banner ─────────────────────────────────────────────── */
+
+/* The announcement from Appearance > Theme settings. Tint, not colour: the
+   photographs are the only thing here allowed to carry tone. */
+.banner {
+  padding: 0.625rem var(--gutter);
+  background: var(--color-tint);
+}
+
 /* ── Header ─────────────────────────────────────────────── */
 
 .site-header {
@@ -656,4 +665,71 @@
   border: 0;
   border-bottom: var(--rule-width) solid var(--color-ink);
   cursor: pointer;
+}
+
+/* ── Copy link ──────────────────────────────────────────── */
+
+/* A button that reads as a label, like the links beside it. */
+.copy-link {
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  background: none;
+  border: 0;
+}
+
+/* ── Block pages ────────────────────────────────────────── */
+
+/* A page laid out by its blocks: the hero and the sections run the full width,
+   everything else keeps the measure of the prose column. */
+.blocks > :not(.hero, .section) {
+  max-width: 62ch;
+  margin-inline: var(--gutter);
+}
+
+.blocks > * + * {
+  margin-top: 1.25rem;
+}
+
+.blocks > .hero + * {
+  margin-top: clamp(1.5rem, 4vw, 3rem);
+}
+
+.blocks h2 {
+  margin-top: 2.5rem;
+  font-size: var(--text-lead);
+  font-weight: 500;
+}
+
+.blocks .section__inner {
+  max-width: 62ch;
+  padding-inline: var(--gutter);
+}
+
+.blocks .section__inner > * + * {
+  margin-top: 1rem;
+}
+
+/* ── Film ───────────────────────────────────────────────── */
+
+.film iframe {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 0;
+}
+
+/* ── Active filters ─────────────────────────────────────── */
+
+.filters__active {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: baseline;
+  width: 100%;
+}
+
+.filters__chip {
+  padding: 0.125rem 0.5rem;
+  border: var(--rule-width) solid var(--color-ink);
 }

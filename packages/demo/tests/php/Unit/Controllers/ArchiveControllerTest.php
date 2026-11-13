@@ -20,11 +20,13 @@ describe('ArchiveController', function () {
 
         $templates = $attrs[0]->newInstance()->templates;
 
+        expect($templates)->toContain('home');
         expect($templates)->toContain('archive');
         expect($templates)->toContain('archive-*');
         expect($templates)->toContain('category');
         expect($templates)->toContain('tag');
-        expect($templates)->toContain('tax-*');
+        expect($templates)->toContain('taxonomy');
+        expect($templates)->toContain('taxonomy-*');
     });
 
     it('requires ViewEngineInterface via constructor', function () {

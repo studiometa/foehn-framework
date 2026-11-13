@@ -79,6 +79,7 @@ jobs:
               "packages/starter/composer.json studiometa/foehn-installer",
               "packages/demo/composer.json studiometa/foehn",
               "packages/demo/composer.json studiometa/foehn-installer",
+              "packages/demo/composer.json studiometa/foehn-acf",
               "packages/starter/package.json @studiometa/foehn-vite-plugin",
               "packages/demo/package.json @studiometa/foehn-vite-plugin",
               "composer.json studiometa/foehn",

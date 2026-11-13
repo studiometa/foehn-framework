@@ -39,4 +39,8 @@ hooks:
     # Uploads go to the RustFS service, so the bucket has to exist and be readable
     # before the first one. See tests/smoke/provision-bucket.php.
     - exec: wp plugin activate s3-uploads
+    # The free ACF plugin, which the field group in theme/app/Fields/ needs.
+    - exec: wp plugin activate advanced-custom-fields
+    # Action Scheduler runs the #[AsCron] and #[AsJob] classes in theme/app/Jobs/.
+    - exec: wp plugin activate action-scheduler
     - exec: wp eval-file tests/smoke/provision-bucket.php

@@ -9,7 +9,7 @@ use Studiometa\Foehn\Contracts\SeederInterface;
 use Studiometa\Foehn\Seeders\Upsert;
 
 /**
- * The six series, each with its gallery, cover and category.
+ * The six series, each with its gallery, cover, series and tags.
  *
  * Runs after MediaSeeder: a gallery is the attachments of its series.
  */
@@ -26,6 +26,7 @@ final class ProjectSeeder implements SeederInterface
             'location' => 'Strasbourg, Basel',
             'camera' => 'Hasselblad 500C/M — Ilford HP5+',
             'category' => 'Architecture',
+            'tags' => ['film', 'self-initiated'],
         ],
         'silhouettes' => [
             'title' => 'Silhouettes',
@@ -36,6 +37,7 @@ final class ProjectSeeder implements SeederInterface
             'location' => 'Studio, Strasbourg',
             'camera' => 'Nikon FM2 — Kodak Tri-X 400',
             'category' => 'Portrait',
+            'tags' => ['film', 'commission'],
         ],
         'winter' => [
             'title' => 'Winter',
@@ -46,6 +48,7 @@ final class ProjectSeeder implements SeederInterface
             'location' => 'Vosges',
             'camera' => 'Mamiya 7 — Fuji Acros 100',
             'category' => 'Landscape',
+            'tags' => ['film', 'self-initiated'],
         ],
         'objects' => [
             'title' => 'Objects',
@@ -56,6 +59,7 @@ final class ProjectSeeder implements SeederInterface
             'location' => 'Studio, Strasbourg',
             'camera' => 'Digital — 100 mm macro',
             'category' => 'Still life',
+            'tags' => ['digital', 'commission'],
         ],
         'osaka' => [
             'title' => 'Osaka',
@@ -66,18 +70,30 @@ final class ProjectSeeder implements SeederInterface
             'location' => 'Osaka, Japan',
             'camera' => 'Leica M6 — Kodak Tri-X 400',
             'category' => 'Documentary',
+            'tags' => ['film', 'self-initiated'],
         ],
         'editions' => [
             'title' => 'Editions',
             'excerpt' => 'Commissioned work for independent publishers: books, journals, stationery.',
-            'content' => '<p>Photographing printed paper means solving one simple, tedious problem: the white of the paper is never the white of the backdrop. The series documents a method as much as a set of objects.</p>',
+            'content' => '<p>Photographing printed paper means solving one simple, tedious problem: the white of the paper is never the white of the backdrop. The series documents a method as much as a set of objects.</p><p>The film below stands in for a making-of: Big Buck Bunny, by the Blender Foundation, under CC BY 3.0.</p>',
             'client' => 'Water Journal, Grille Editions',
             'year' => 2025,
             'location' => 'Studio, Strasbourg',
             'camera' => 'Digital — copy stand',
             'category' => 'Still life',
+            'tags' => ['digital', 'commission'],
+            // A stand-in: Big Buck Bunny, by the Blender Foundation, under CC BY 3.0.
+            'film' => 'https://www.youtube.com/watch?v=aqz-KE-bpKQ',
         ],
     ];
+
+    /**
+     * A paragraph bound to the `camera` meta through core's `core/post-meta` source.
+     *
+     * The value is stored once, as meta, and the page prints it twice: in the facts
+     * beside the title, and here in the content, with no binding source of our own.
+     */
+    private const string CAMERA_BINDING = "\n<!-- wp:paragraph {\"className\":\"label\"} -->\n<p class=\"label\">Shot on</p>\n<!-- /wp:paragraph -->\n<!-- wp:paragraph {\"metadata\":{\"bindings\":{\"content\":{\"source\":\"core/post-meta\",\"args\":{\"key\":\"camera\"}}}}} -->\n<p></p>\n<!-- /wp:paragraph -->";
 
     public function run(): void
     {
@@ -92,7 +108,7 @@ final class ProjectSeeder implements SeederInterface
                 [
                     'post_title' => $project['title'],
                     'post_excerpt' => $project['excerpt'],
-                    'post_content' => $project['content'],
+                    'post_content' => $project['content'] . self::CAMERA_BINDING,
                     'menu_order' => ++$order,
                 ],
                 [
@@ -101,6 +117,7 @@ final class ProjectSeeder implements SeederInterface
                     'location' => $project['location'],
                     'camera' => $project['camera'],
                     'gallery' => $gallery,
+                    'film' => $project['film'] ?? '',
                 ],
             );
 
@@ -109,6 +126,7 @@ final class ProjectSeeder implements SeederInterface
             }
 
             wp_set_object_terms($id, $project['category'], 'project_category');
+            wp_set_object_terms($id, $project['tags'], 'project_tag');
         }
     }
 }

@@ -130,6 +130,14 @@ The ordering is the interesting part. `packages/demo/Dockerfile` builds `FROM gh
 fly deploy --ha=false
 ```
 
+After the deploy, the workflow runs three commands on the machine over `fly ssh console`, as the `application` user:
+
+1. `wp cron event run --due-now`, one pass of the real cron. The image runs it every 15 minutes, so a machine that started a minute ago may not have run it yet. The pass records the heartbeat that the `cron-heartbeat` check reads.
+2. `wp foehn cache:warm --sync`. The page cache is on the machine's disk, and a deploy replaces the disk.
+3. `wp foehn verify --profile=production`. A failed check fails the job. See [Verification](./verification).
+
+The deploy token must allow `fly ssh console` on the app.
+
 A deploy replaces the machine's filesystem and restarts MariaDB with it. The volume survives, so the site comes back with its content and the seeding script does nothing; `kill_timeout = '30s'` is what gives InnoDB time to finish flushing, and cutting it short moves that work to the next boot as crash recovery — measured on this image, a 1 s grace period produced `Starting crash recovery from checkpoint LSN=…` on the following start and a 30 s one did not.
 
 ## Checking it

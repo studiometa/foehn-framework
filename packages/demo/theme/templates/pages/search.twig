@@ -5,7 +5,31 @@
     <p class="label label--ink">Search</p>
     <h1 class="title" style="margin-top: 0.75rem">« {{ search_query }} »</h1>
     <p class="label" style="margin-top: 1.5rem">
-      {{ found_posts }} result{{ found_posts > 1 ? 's' : '' }}
+      {{ found_posts|plural('result') }}
+    </p>
+
+    {#
+      A new search keeps the other arguments of the URL: query_hidden_inputs() writes
+      them as hidden fields, all but `s`, which the text field carries.
+    #}
+    <form class="search-form" method="get" action="{{ site.url }}/" style="margin-top: 1.5rem">
+      <label class="label label--ink" for="search-again">Search again</label>
+      <input id="search-again" type="search" name="s" value="{{ search_query }}" />
+      {{ query_hidden_inputs(['s', 'paged']) }}
+      <button type="submit">Search</button>
+    </form>
+
+    {# Narrow to one type with query_url(), widen again with query_url_without(). #}
+    <p class="label" style="margin-top: 1rem">
+      {% for type, label in { project: 'Projects', post: 'Journal', page: 'Pages' } %}
+        {% if query_get('post_type') == type %}
+          <span aria-current="true">{{ label }}</span>
+        {% else %}
+          <a href="{{ query_url({ post_type: type }) }}">{{ label }}</a>
+        {% endif %}
+        /
+      {% endfor %}
+      <a href="{{ query_url_without('post_type') }}">All types</a>
     </p>
   </section>
 

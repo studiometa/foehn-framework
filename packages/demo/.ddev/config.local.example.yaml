@@ -6,7 +6,7 @@ hooks:
     - exec-host: |
         set -e
         cd "$DDEV_APPROOT"
-        for pkg in foehn:foehn foehn-installer:installer; do
+        for pkg in foehn:foehn foehn-installer:installer foehn-acf:acf; do
           name="${pkg%%:*}"
           src="${pkg##*:}"
           rsync -a --delete --exclude vendor/ --exclude node_modules/ \

@@ -28,15 +28,27 @@ describe('BlockAssets', function () {
         $style = wp_stub_get_calls('wp_register_style')[0]['args'];
         $script = wp_stub_get_calls('wp_register_script_module')[0]['args'];
 
-        expect($style['src'])
-            ->toBe('https://example.test/wp-content/themes/theme/assets/css/blocks/callout.css');
-        expect($script['src'])
-            ->toBe('https://example.test/wp-content/themes/theme/assets/js/blocks/callout.js');
+        expect($style['src'])->toBe('https://example.test/wp-content/themes/theme/assets/css/blocks/callout.css');
+        expect($script['src'])->toBe('https://example.test/wp-content/themes/theme/assets/js/blocks/callout.js');
 
         $themeDir = $GLOBALS['wp_stub_template_directory'];
 
         expect($style['ver'])->toBe((string) filemtime($themeDir . '/assets/css/blocks/callout.css'));
         expect($script['version'])->toBe((string) filemtime($themeDir . '/assets/js/blocks/callout.js'));
+    });
+
+    it('makes the view script of an interactive block depend on the Interactivity API', function () {
+        BlockAssets::register('theme/callout', interactive: true);
+
+        expect(wp_stub_get_calls('wp_register_script_module')[0]['args']['deps'])->toBe([[
+            'id' => '@wordpress/interactivity',
+        ]]);
+    });
+
+    it('gives the view script of any other block no dependency', function () {
+        BlockAssets::register('theme/callout');
+
+        expect(wp_stub_get_calls('wp_register_script_module')[0]['args']['deps'])->toBe([]);
     });
 
     it('attaches only what exists', function () {

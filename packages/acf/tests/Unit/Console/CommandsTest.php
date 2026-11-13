@@ -44,11 +44,12 @@ describe('ACF commands', function (): void {
             try {
                 expect($attribute->writes)->toBeTrue();
                 expect($attribute->longDescription)->toContain('[--force]')->toContain('[--dry-run]');
-                expect($guard->allows($attribute, []))->toBeFalse();
+                $command = "foehn-acf {$data['name']}";
+                expect($guard->allows($command, $attribute, []))->toBeFalse();
                 expect(wp_stub_get_calls('wp_cli_error')[0]['args']['message'])
-                    ->toStartWith("`wp foehn {$data['name']}` changes content or files");
-                expect($guard->allows($attribute, ['force' => true]))->toBeTrue();
-                expect($guard->allows($attribute, ['dry-run' => true]))->toBeTrue();
+                    ->toStartWith("`wp foehn-acf {$data['name']}` changes content or files");
+                expect($guard->allows($command, $attribute, ['force' => true]))->toBeTrue();
+                expect($guard->allows($command, $attribute, ['dry-run' => true]))->toBeTrue();
             } finally {
                 unset($GLOBALS['wp_stub_environment_type']);
             }

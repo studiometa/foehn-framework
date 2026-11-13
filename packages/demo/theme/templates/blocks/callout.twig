@@ -1,5 +1,6 @@
+{# html_classes() and html_styles() from twig-toolkit build the attributes from data. #}
 <div
-  class="callout callout--{{ tone }}"
+  class="{{ html_classes(['callout', 'callout--' ~ tone, { 'callout--dismissible': dismissible }]) }}"
   {{
   html_attributes({
     data_dismissible: dismissible
@@ -17,7 +18,7 @@
     {% endif %}
 
     {% if body %}
-      <p class="callout__body" style="column-count: {{ columns }}">
+      <p class="callout__body" {{ html_attributes({ style: columns > 1 ? html_styles({ column_count: columns }) : null }) }}>
         {{ body }}
       </p>
     {% endif %}

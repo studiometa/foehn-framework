@@ -20,8 +20,9 @@ describe('ProjectTag', function () {
         $attr = $attrs[0]->newInstance();
 
         expect($attr->name)->toBe('project_tag');
-        expect($attr->singular)->toBe('Étiquette');
-        expect($attr->plural)->toBe('Étiquettes');
+        expect($attr->singular)->toBe('Tag');
+        expect($attr->plural)->toBe('Tags');
+        expect($attr->rewriteSlug)->toBe('project-tags');
         expect($attr->postTypes)->toBe(['project']);
         expect($attr->hierarchical)->toBeFalse();
         expect($attr->showInRest)->toBeTrue();

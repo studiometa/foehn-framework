@@ -10,16 +10,16 @@ ddev start
 
 ## What is here
 
-| File                | What it holds                                                      |
-| ------------------- | ------------------------------------------------------------------ |
-| `demo.sql.gz`       | Posts, meta, options, menus, settings — the whole database, ~23 KB |
-| `media/`            | The 30 photographs as originals, plus `credits.json`               |
-| `restore-media.php` | Puts the photographs back where the database says they are         |
-| `fix-urls.php`      | Moves the site onto the URL this ddev project serves. Idempotent   |
-| `restore.sh`        | The steps, in order                                                |
-| `fetch-media.py`    | How `media/` was produced, so the set is reproducible              |
+| File                | What it holds                                                          |
+| ------------------- | ---------------------------------------------------------------------- |
+| `demo.sql.gz`       | Posts, meta, options, menus, settings — the whole database, ~25 KB     |
+| `media/`            | The 30 photographs as originals, `credits.json`, and the press kit PDF |
+| `restore-media.php` | Puts the photographs back where the database says they are             |
+| `fix-urls.php`      | Moves the site onto the URL this ddev project serves. Idempotent       |
+| `restore.sh`        | The steps, in order                                                    |
+| `fetch-media.py`    | How `media/` was produced, so the set is reproducible                  |
 
-The content itself is written by the seeders in `theme/app/Seeders/` — photographs, projects, pages, testimonials, settings and menus, in that order. `wp foehn seed` runs them and builds the same site from nothing; they find what they write by slug or by Unsplash id, so a second run updates the content instead of duplicating it. `wp foehn seed --dry-run` lists them.
+The content itself is written by the seeders in `theme/app/Seeders/` — photographs, projects, press quotes (in ACF fields), pages, journal posts, testimonials, settings and menus, in that order. `wp foehn seed` runs them and builds the same site from nothing; they find what they write by slug or by Unsplash id, so a second run updates the content instead of duplicating it. `wp foehn seed --dry-run` lists them.
 
 ## Why three steps and not one
 
@@ -80,6 +80,22 @@ ddev exec 'cd /var/www/html && wp foehn rewrite:flush'
 
 Slower, and the result is the same site — `demo.sql.gz` is a dump of a site seeded
 exactly this way. `restore.sh` falls back to it when the dump is missing.
+
+## Making the dump
+
+`demo.sql.gz` is made with `wp foehn db:export`, from a site seeded from nothing:
+
+```bash
+ddev exec 'cd /var/www/html && wp db reset --yes'
+ddev exec 'cd /var/www/html && wp core install --url="$DDEV_PRIMARY_URL" --title="Foehn Demo" --admin_user=admin --admin_password=admin --admin_email=admin@example.com --skip-email'
+ddev exec 'cd /var/www/html && wp theme activate demo-theme && wp plugin activate s3-uploads advanced-custom-fields action-scheduler'
+ddev exec 'cd /var/www/html && wp foehn seed && wp foehn rewrite:flush'
+ddev exec 'cd /var/www/html && wp foehn db:export database/demo.sql.gz'
+```
+
+The export follows `theme/app/db-export.config.php`. It anonymizes users, keeps no password hash, and leaves out transients. The administrator keeps its `admin` login because its email is on `example.com`, and `restore.sh` sets its password again. The Action Scheduler tables are exported empty: the cron jobs are scheduled again on the first request.
+
+The same command makes a light copy of a production database. See [Database Export](https://studiometa.github.io/foehn-framework/guide/database-export).
 
 ## The photographs
 

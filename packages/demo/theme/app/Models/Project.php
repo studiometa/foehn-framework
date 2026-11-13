@@ -7,9 +7,10 @@ namespace Demo\Models;
 use Studiometa\Foehn\Attributes\AsPostMeta;
 use Studiometa\Foehn\Attributes\AsPostType;
 use Studiometa\Foehn\Contracts\ConfiguresPostType;
+use Studiometa\Foehn\Data\LinkData;
 use Studiometa\Foehn\Models\Post;
 use Studiometa\Foehn\PostTypes\PostTypeBuilder;
-use Timber\Image;
+use Timber\Timber;
 
 /**
  * A body of work — one series of photographs, shown on its own page.
@@ -33,6 +34,7 @@ use Timber\Image;
 #[AsPostMeta(key: 'year', type: 'integer', description: 'Year the series was shot')]
 #[AsPostMeta(key: 'location', type: 'string', description: 'Where it was shot')]
 #[AsPostMeta(key: 'camera', type: 'string', description: 'Camera body and film stock')]
+#[AsPostMeta(key: 'film', type: 'string', description: 'YouTube or Vimeo URL of a film shown with the series')]
 final class Project extends Post implements ConfiguresPostType
 {
     public static function configurePostType(PostTypeBuilder $builder): PostTypeBuilder
@@ -69,6 +71,58 @@ final class Project extends Post implements ConfiguresPostType
     }
 
     /**
+     * The URL of the film shown with the series, as an editor pastes it.
+     *
+     * Stored as the watch URL, not the embed URL: the template turns it into a
+     * privacy-friendly embed with `video_embed()`, and a Vimeo URL works the same way.
+     */
+    public function film(): ?string
+    {
+        $film = $this->meta('film');
+
+        return is_string($film) && $film !== '' ? $film : null;
+    }
+
+    /**
+     * What the press said, from the ACF field group Demo\Fields\ProjectPressFields.
+     *
+     * Null when ACF is not active or the quote is empty, so the page prints nothing
+     * rather than an empty quote.
+     *
+     * @return array{quote: string, source: string, link: ?LinkData, style: string}|null
+     */
+    public function press(): ?array
+    {
+        if (!function_exists('get_field')) {
+            return null;
+        }
+
+        $quote = get_field('press_quote', $this->ID);
+
+        if (!is_string($quote) || $quote === '') {
+            return null;
+        }
+
+        $link = get_field('press_link', $this->ID);
+        $link = is_array($link) ? $link : [];
+
+        return [
+            'quote' => $quote,
+            'source' => (string) get_field('press_source', $this->ID),
+            'link' => LinkData::fromAcf(is_array($link['link'] ?? null) ? $link['link'] : null),
+            'style' => (string) ($link['style'] ?? 'link'),
+        ];
+    }
+
+    /**
+     * @return list<\Timber\Term>
+     */
+    public function projectTags(): array
+    {
+        return $this->terms('project_tag');
+    }
+
+    /**
      * The facts listed beside the title, in the order the page prints them.
      *
      * Built here rather than in the template so the single page and the card agree
@@ -91,7 +145,7 @@ final class Project extends Post implements ConfiguresPostType
     /**
      * Every photograph in the series, the cover included.
      *
-     * @return list<Image>
+     * @return list<Photograph>
      */
     public function photographs(): array
     {
@@ -104,9 +158,10 @@ final class Project extends Post implements ConfiguresPostType
         $photographs = [];
 
         foreach ($ids as $id) {
-            $image = Image::build(get_post((int) $id));
+            // Through the class map, so each one is a Photograph.
+            $image = Timber::get_post((int) $id);
 
-            if ($image instanceof Image) {
+            if ($image instanceof Photograph) {
                 $photographs[] = $image;
             }
         }

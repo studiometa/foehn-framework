@@ -15,6 +15,9 @@ name: Deploy the demo
 # The pinned `ARG` still means what it says: it is what a local `docker build`
 # gets, and what a manual dispatch below deploys.
 #
+# After the deploy, it warms the page cache and runs
+# `wp foehn verify --profile=production` on the machine.
+#
 # @see .github/workflows/release.yml
 # @see .github/workflows/docker.yml
 # @see docs/guide/deployment-fly.md
@@ -110,3 +113,19 @@ jobs:
         run: |
           # shellcheck disable=SC2086 # split into words on purpose
           flyctl deploy --ha=false $BUILD_ARGS
+
+      # The new machine starts with an empty page cache: it is on the machine's disk,
+      # which a deploy replaces. Then the release gate, which fails this job on an
+      # unsafe production site. Over SSH, as the user PHP runs as, like the entrypoint.
+      #
+      # The real cron runs first. The image runs it every 15 minutes, so a machine that
+      # booted a minute ago may not have run it yet, and the cron-heartbeat check would
+      # judge the time since the deploy and not the cron. One pass records the
+      # heartbeat. `--sync` because the warm-up is the point of this step: queued, it
+      # would wait for the next cron pass.
+      - name: Warm the page cache and verify the site
+        working-directory: packages/demo
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          flyctl ssh console --command "su -s /bin/sh application -c 'cd /app && wp cron event run --due-now --quiet && wp foehn cache:warm --sync && wp foehn verify --profile=production'"

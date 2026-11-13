@@ -2,9 +2,15 @@
 
 declare(strict_types=1);
 
+use Studiometa\Foehn\Attributes\AsTwigExtension;
 use Studiometa\Foehn\Views\Twig\InteractivityExtension;
 
 describe('InteractivityExtension', function () {
+    it('is discovered, so templates can use its functions', function () {
+        expect(new ReflectionClass(InteractivityExtension::class)->getAttributes(AsTwigExtension::class))
+            ->toHaveCount(1);
+    });
+
     beforeEach(function () {
         $this->extension = new InteractivityExtension();
     });
@@ -56,6 +62,12 @@ describe('InteractivityExtension', function () {
             // Should use hex escaping for inner quotes, outer quote is the attribute delimiter
             expect($result)->toContain('\u0027'); // Escaped single quote
             expect($result)->toContain('\u0022'); // Escaped double quote
+        });
+
+        it('escapes the characters that end a tag or start an entity, as WordPress does', function () {
+            $result = $this->extension->wpContext(['text' => 'a > b < c & d']);
+
+            expect($result)->toBe("data-wp-context='{\"text\":\"a \\u003E b \\u003C c \\u0026 d\"}'");
         });
     });
 

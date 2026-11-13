@@ -9,7 +9,7 @@
 # The demo ships its cache on disk and production-only, so this turns bucket storage
 # on for the run, and puts everything back when it ends, failed or not:
 #
-# 1. app/page-cache.local.config.php with `storage: PageCacheStorage::Bucket`;
+# 1. app/page-cache.local.config.php, from examples/page-cache.production.config.php;
 # 2. the generated nginx include in .ddev/nginx/, read through Docker's own DNS,
 #    because the snippet resolves the bucket host per request;
 # 3. a miss that PHP renders and writes to the bucket after the response, a hit that
@@ -49,19 +49,10 @@ trap cleanup EXIT
 url="$(ddev exec 'cd /var/www/html && wp option get home' 2>/dev/null | tail -n1 | tr -d '\r' || true)"
 [ -n "$url" ] || fail 'could not read the site URL — WordPress did not boot'
 
-cat >"$local_config" <<'PHP'
-<?php
-
-declare(strict_types=1);
-
-// Written by tests/smoke/page-cache-bucket.sh, removed when it finishes.
-return new Studiometa\Foehn\Config\PageCacheConfig(
-    enabled: true,
-    storage: Studiometa\Foehn\Config\PageCacheStorage::Bucket,
-    environments: ['local'],
-    debugHeaders: true,
-);
-PHP
+# The example a project copies to turn bucket storage on, read here in `local` rather
+# than in `production`. The run tests the file the README points at, not a copy of it.
+sed "s/environments: \['production'\]/environments: ['local']/" examples/page-cache.production.config.php >"$local_config"
+grep -q "environments: \['local'\]" "$local_config" || fail "examples/page-cache.production.config.php no longer names its environments on one line"
 
 # opcache.file_update_protection: PHP-FPM ignores a file younger than 2 seconds.
 sleep 3
@@ -123,7 +114,14 @@ esac
 
 grep -q 'foehn cache:' <(curl -sk "$url/about/") || fail 'the page from the bucket has no cache marker'
 
+# nginx sends what the configuration says on a hit, since PHP never sees it.
+[ "$(header "$hit" Cache-Control)" = "public, max-age=60" ] || fail "a hit does not carry the cacheControl of page-cache.config.php
+$hit"
+[ "$(header "$hit" X-Content-Type-Options)" = "nosniff" ] || fail "a hit lost the security headers that responseHeaders repeats
+$hit"
+
 printf '✓ a miss is stored in the bucket, and nginx serves the next request from it\n'
+printf '✓ a hit carries cacheControl and the responseHeaders\n'
 
 ddev exec "cd /var/www/html && wp foehn cache:clear --url=$url/about/" >/dev/null 2>&1 || fail 'cache:clear --url failed'
 purged="$(headers "$url/about/")"
@@ -131,6 +129,35 @@ purged="$(headers "$url/about/")"
 $purged"
 
 printf '✓ a purge removes the object, and the next request reaches PHP\n'
+
+# A content change purges the pages it shows on, with no command: edit a project,
+# and its page is a miss that shows the new title. With warmAfterPurge, the same
+# save queues a warm-up of each purged URL.
+project="$url/projects/corridors/"
+headers "$project" >/dev/null
+for _ in $(seq 1 20); do
+	[ "$(header "$(headers "$project")" X-Foehn-Cache-Via)" = "nginx" ] && break
+	sleep 0.25
+done
+[ "$(header "$(headers "$project")" X-Foehn-Cache-Via)" = "nginx" ] || fail "nginx did not serve the project page from the bucket"
+
+corridors_id="$(ddev exec "cd /var/www/html && wp eval 'echo get_page_by_path(\"corridors\", OBJECT, \"project\")->ID;'" 2>/dev/null | tr -d '\r' | tail -n1)"
+restore_title() {
+	ddev exec "cd /var/www/html && wp post update $corridors_id --post_title=Corridors" >/dev/null 2>&1 || true
+}
+trap 'restore_title; cleanup' EXIT
+ddev exec "cd /var/www/html && wp post update $corridors_id --post_title='Corridors II'" >/dev/null 2>&1 || fail 'could not edit the project'
+
+edited="$(curl -sk -D- "$project" | tr -d '\r')"
+[ "$(header "$edited" X-Foehn-Cache)" = "MISS" ] || fail "the project page was not purged when the project changed
+$(head -12 <<<"$edited")"
+grep -q 'Corridors II' <<<"$edited" || fail "the project page after the edit does not show the new title"
+
+warm="$(ddev exec 'cd /var/www/html && wp action-scheduler action list --group=foehn-page-cache --status=pending --fields=args --format=json' 2>/dev/null | tr -d '\r' | tail -n1)"
+grep -q 'projects\\/corridors' <<<"$warm" || fail "the purge queued no warm-up of the project page
+$warm"
+
+printf '✓ editing a project purges its page and queues its warm-up\n'
 
 headers "$url/?foehn_sections=testimonials" >/dev/null
 section=""

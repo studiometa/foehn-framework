@@ -29,9 +29,10 @@ final readonly class ProductionGuard
     /**
      * Whether the command may run; when it may not, say why and how, and end with an error.
      *
+     * @param string $commandName The command as WP-CLI registers it, with its namespace: `app import:products`
      * @param array<string, mixed> $assocArgs The command's named arguments
      */
-    public function allows(AsCliCommand $command, array $assocArgs): bool
+    public function allows(string $commandName, AsCliCommand $command, array $assocArgs): bool
     {
         if (!$command->writes || !Env::isProduction()) {
             return true;
@@ -48,8 +49,8 @@ final readonly class ProductionGuard
             : 'Run it on a local or staging copy, or add --force to run it here.';
 
         $this->cli->error(sprintf(
-            "`wp foehn %s` changes content or files, and wp_get_environment_type() is 'production', so it did not run. %s",
-            $command->name,
+            "`wp %s` changes content or files, and wp_get_environment_type() is 'production', so it did not run. %s",
+            $commandName,
             $how,
         ));
 

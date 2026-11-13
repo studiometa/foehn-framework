@@ -16,37 +16,17 @@
   gives the right shape by downloading the whole photograph and discarding
   whatever falls outside the ratio.
 #}
-{% set orientation = image.height > image.width ? 'portrait' : 'landscape' %}
-{% set photographer = image.meta('credit_photographer') %}
-{% set photographer_url = image.meta('credit_url') %}
+{# `image` is a Demo\Models\Photograph, the #[AsTimberModel] class of attachments. #}
+{% set orientation = image.orientation %}
+{% set credit = image.credit %}
 
-{# The height of the plate per unit of width: 3:4 standing, 3:2 lying down. #}
-{% set ratio = orientation == 'portrait' ? 4 / 3 : 2 / 3 %}
-
-{# Two widths rather than 1x/2x: 1200 is the widest crop every original here can
-   fill without being upscaled, which a density descriptor would hide. #}
-{% set src =
-  image_url(
-    image,
-    {
-      w: 600,
-      h: (600 * ratio)|round,
-      fit: 'crop',
-      fm: 'webp'
-    }
-  )
-%}
-{% set src_wide =
-  image_url(
-    image,
-    {
-      w: 1200,
-      h: (1200 * ratio)|round,
-      fit: 'crop',
-      fm: 'webp'
-    }
-  )
-%}
+{# The crop: 3:4 standing, 3:2 lying down, at two widths rather than 1x/2x. 1200
+   is the widest crop every original here can fill without being upscaled, which a
+   density descriptor would hide. Photograph::plate() builds it, so the job that
+   warms the plates of a project asks for the same URLs. #}
+{% set plate = image.plate(600) %}
+{% set src = image_url(image, plate) %}
+{% set src_wide = image_url(image, image.plate(1200)) %}
 
 <figure>
   <div class="plate plate--{{ orientation }}">
@@ -56,7 +36,7 @@
         srcset="{{ src }} 600w, {{ src_wide }} 1200w"
         sizes="{{ sizes|default('(min-width: 48rem) 60vw, 100vw') }}"
         width="600"
-        height="{{ (600 * ratio)|round }}"
+        height="{{ plate.h }}"
         alt="{{ image.alt ? : caption|default('') }}"
         loading="{{ loading|default('lazy') }}"
         decoding="async" />
@@ -68,14 +48,14 @@
       <span>{{ caption }}</span>
     {% endif %}
 
-    {% if photographer %}
+    {% if credit %}
       <span>
-        Photo&nbsp;:{% if photographer_url %}
-          <a href="{{ photographer_url }}" rel="noopener nofollow" target="_blank">
-            {{ photographer }}
+        Photo&nbsp;:{% if credit.url %}
+          <a href="{{ credit.url }}" rel="noopener nofollow" target="_blank">
+            {{ credit.title }}
           </a>
         {% else %}
-          {{ photographer }}
+          {{ credit.title }}
         {% endif %}/ Unsplash
       </span>
     {% endif %}

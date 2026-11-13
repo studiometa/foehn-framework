@@ -1,0 +1,15 @@
+{% if projects is not empty %}
+  <nav class="related-projects" aria-label="{{ title ?: 'Related projects' }}">
+    {% if title %}
+      <p class="label label--ink">{{ title }}</p>
+    {% endif %}
+
+    {% for project in projects %}
+      <a class="index-row" href="{{ project.link }}">
+        <span class="label index-number">{{ '%02d'|format(loop.index) }}</span>
+        <span class="index-row__title">{{ project.title }}</span>
+        <span class="index-row__aside label index-number">{{ project.year }}</span>
+      </a>
+    {% endfor %}
+  </nav>
+{% endif %}

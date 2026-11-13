@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Demo\Models\Project;
+use Studiometa\Foehn\Attributes\AsPostMeta;
 use Studiometa\Foehn\Attributes\AsPostType;
 use Studiometa\Foehn\Contracts\ConfiguresPostType;
 use Studiometa\Foehn\Models\Post;
@@ -45,5 +46,14 @@ describe('Project', function () {
         expect($args['rewrite']['slug'])->toBe('projects');
         expect($args['rewrite']['with_front'])->toBeFalse();
         expect($args['menu_position'])->toBe(5);
+    });
+
+    it('declares the film URL as string meta, so it is in REST and bindable', function () {
+        $keys = array_map(
+            static fn(ReflectionAttribute $attribute): string => $attribute->newInstance()->key,
+            new ReflectionClass(Project::class)->getAttributes(AsPostMeta::class),
+        );
+
+        expect($keys)->toBe(['client', 'year', 'location', 'camera', 'film']);
     });
 });

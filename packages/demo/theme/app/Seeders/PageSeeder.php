@@ -7,30 +7,53 @@ namespace Demo\Seeders;
 use Studiometa\Foehn\Attributes\AsSeeder;
 use Studiometa\Foehn\Contracts\SeederInterface;
 use Studiometa\Foehn\Seeders\Upsert;
+use WP_Block_Patterns_Registry;
 
 /**
- * The Home and About pages.
+ * The Home, About, Journal and Legal pages.
  *
  * No "Projects" page: the post type archive at /projects/ is the listing, and a page
  * with that title would take the URL from it through WordPress's canonical redirect.
  */
-#[AsSeeder(order: 30, description: 'The Home and About pages')]
+#[AsSeeder(order: 30, description: 'The Home, About, Journal and Legal pages')]
 final class PageSeeder implements SeederInterface
 {
+    private const string ABOUT_EXCERPT = 'Independent photographer, Strasbourg. Architecture, portraiture and still life, mostly on black and white film.';
+
     public function run(): void
     {
+        // The sample page `wp core install` writes is not part of the site.
+        $sample = get_page_by_path('sample-page');
+
+        if ($sample !== null) {
+            wp_delete_post($sample->ID, true);
+        }
+
         Upsert::post('page', 'home', [
             'post_title' => 'Home',
             'post_content' => '',
         ]);
 
+        $studio = Photographs::ofProject('_studio');
+
         $about = Upsert::post('page', 'about', [
             'post_title' => 'About',
-            'post_excerpt' => 'Independent photographer, Strasbourg. Architecture, portraiture and still life, mostly on black and white film.',
-            'post_content' => "<p>I have been photographing since 2016, first for architects, now mostly for publishers and institutions. My personal work and my commissioned work look much the same: same equipment, same light, same refusal of colour.</p>\n<p>Black and white is not nostalgia. It is a way of removing a variable — the colour of a wall, the colour of a sky — so that only structure and light are left. On a building site or in a studio it comes down to the same question: where is the line, and where is the light coming from?</p>\n<h2>Services</h2>\n<p>Architectural reportage, editorial portraiture, still life and artwork reproduction. Prints available on request, in numbered limited editions.</p>\n<h2>Selected clients</h2>\n<p>Water Journal, Grille Editions, Contrejour Review, and several architecture practices across the Rhine valley.</p>",
+            'post_excerpt' => self::ABOUT_EXCERPT,
+            'post_content' => self::aboutContent($studio[1] ?? null),
         ]);
 
-        $studio = Photographs::ofProject('_studio');
+        // The posts page, set in SettingsSeeder: the journal lists here.
+        Upsert::post('page', 'journal', [
+            'post_title' => 'Journal',
+            'post_content' => '',
+        ]);
+
+        // The Legal menu links here. A demo has no real publisher, so the page says
+        // what a legal notice holds and gives example values only.
+        Upsert::post('page', 'legal', [
+            'post_title' => 'Legal',
+            'post_content' => "<p>This site is a demonstration of the Føhn framework. The photographer, the clients and the testimonials are invented.</p>\n<h2>Publisher</h2>\n<p>Føhn demo, studio@foehn.test.</p>\n<h2>Photographs</h2>\n<p>The photographs come from Unsplash and are published under the Unsplash licence. Each one is credited to its author under the image.</p>\n<h2>Personal data</h2>\n<p>The site sets no tracking cookie and keeps no visitor data.</p>",
+        ]);
 
         if ($studio !== []) {
             set_post_thumbnail($about, $studio[0]);
@@ -56,5 +79,54 @@ final class PageSeeder implements SeederInterface
                 'content' => 'From any series, in numbered editions of fifteen, printed on baryta paper at 40x50 cm. Larger formats on request.',
             ],
         ]);
+    }
+
+    /**
+     * The About page as blocks: what the theme's blocks, its binding and its pattern
+     * look like on a page an editor wrote.
+     *
+     * A hero with the studio photograph, a paragraph bound to `theme/reading-time`,
+     * the copy in core blocks, and the `theme/commission` pattern as the editor
+     * inserts it.
+     */
+    private static function aboutContent(?int $background): string
+    {
+        $hero = BlockMarkup::block('theme/hero', [
+            'title' => 'About',
+            'subtitle' => self::ABOUT_EXCERPT,
+            'backgroundId' => $background,
+            'height' => 'small',
+            'ctaLabel' => 'See the work',
+            'ctaUrl' => '/projects/',
+        ]);
+
+        $readingTime = BlockMarkup::block(
+            'paragraph',
+            ['className' => 'label', 'metadata' => ['bindings' => ['content' => ['source' => 'theme/reading-time']]]],
+            '<p class="label"></p>',
+        );
+
+        $copy = [
+            BlockMarkup::paragraph(
+                'I have been photographing since 2016, first for architects, now mostly for publishers and institutions. My personal work and my commissioned work look much the same: same equipment, same light, same refusal of colour.',
+            ),
+            BlockMarkup::paragraph(
+                'Black and white is not nostalgia. It is a way of removing a variable — the colour of a wall, the colour of a sky — so that only structure and light are left. On a building site or in a studio it comes down to the same question: where is the line, and where is the light coming from?',
+            ),
+            BlockMarkup::block('heading', ['level' => 2], '<h2 class="wp-block-heading">Services</h2>'),
+            BlockMarkup::paragraph(
+                'Architectural reportage, editorial portraiture, still life and artwork reproduction. Prints available on request, in numbered limited editions.',
+            ),
+            // The theme's #[AsShortcode], in the block editor's own shortcode block.
+            BlockMarkup::block('shortcode', [], '[edition size="15" paper="baryta" format="40x50 cm"]'),
+            BlockMarkup::block('heading', ['level' => 2], '<h2 class="wp-block-heading">Selected clients</h2>'),
+            BlockMarkup::paragraph(
+                'Water Journal, Grille Editions, Contrejour Review, and several architecture practices across the Rhine valley.',
+            ),
+        ];
+
+        $pattern = WP_Block_Patterns_Registry::get_instance()->get_registered('theme/commission');
+
+        return implode("\n\n", [$hero, $readingTime, ...$copy, is_array($pattern) ? $pattern['content'] : '']);
     }
 }
