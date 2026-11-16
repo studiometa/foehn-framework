@@ -216,8 +216,8 @@ final readonly class TestUrls
             $requests[] = [
                 'url' => get_permalink($post),
                 'names' => $type === 'page'
-                    ? TemplateNames::page($post->post_name, $post->ID)
-                    : TemplateNames::single($type, $post->post_name),
+                    ? TemplateNames::page($post->post_name, $post->ID, self::pageTemplate($post))
+                    : TemplateNames::single($type, $post->post_name, self::pageTemplate($post)),
             ];
 
             if ($type === 'post') {
@@ -295,5 +295,15 @@ final readonly class TestUrls
         }
 
         return $requests;
+    }
+
+    /**
+     * The page template a post selects, or null for the default one.
+     */
+    private static function pageTemplate(WP_Post $post): ?string
+    {
+        $template = get_page_template_slug($post);
+
+        return is_string($template) && $template !== '' ? $template : null;
     }
 }

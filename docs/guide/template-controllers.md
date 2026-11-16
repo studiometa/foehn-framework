@@ -253,6 +253,25 @@ final class CategoryController implements TemplateControllerInterface {}
 final class NotFoundController implements TemplateControllerInterface {}
 ```
 
+### Page Templates
+
+When a page selects a page template (the `_wp_page_template` meta, set in the **Template** panel of the editor), the template name is the file of that template without `.php`. It comes first, before the names of the slug and the ID, as in the WordPress hierarchy:
+
+| Request                                           | Names, most specific first                               |
+| ------------------------------------------------- | -------------------------------------------------------- |
+| Page `contact` (ID 5), template `page-wide.php`   | `page-wide`, `page-contact`, `page-5`, `page`            |
+| Post `red` of type `product`, template `wide.php` | `wide`, `single-product-red`, `single-product`, `single` |
+| Page `contact`, template `templates/landing.php`  | `templates/landing`, `page-contact`, `page-5`, `page`    |
+
+A request renders the first name that a controller claims:
+
+```php
+#[AsTemplateController('page-wide')]
+final class WidePageController implements TemplateControllerInterface {}
+```
+
+A wildcard such as `page-*` also matches the name of a page template that starts with `page-`.
+
 ### Wildcard Patterns
 
 ```php

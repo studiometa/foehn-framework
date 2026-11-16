@@ -234,12 +234,19 @@ final class TemplateControllerDiscovery implements Discovery
             $post = get_queried_object();
             $post = $post instanceof \WP_Post ? $post : null;
 
+            $pageTemplate = $post !== null ? get_page_template_slug($post) : null;
+            $pageTemplate = is_string($pageTemplate) ? $pageTemplate : null;
+
             if (is_single()) {
-                return $this->controllers->resolve(TemplateNames::single((string) get_post_type(), $post?->post_name));
+                return $this->controllers->resolve(TemplateNames::single(
+                    (string) get_post_type(),
+                    $post?->post_name,
+                    $pageTemplate,
+                ));
             }
 
             if (is_page()) {
-                return $this->controllers->resolve(TemplateNames::page($post?->post_name, $post?->ID));
+                return $this->controllers->resolve(TemplateNames::page($post?->post_name, $post?->ID, $pageTemplate));
             }
 
             if (is_attachment()) {
