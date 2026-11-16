@@ -275,3 +275,49 @@ describe('TimberViewEngine errors', function () {
         $this->fail('Rendering a template that includes a missing one did not throw.');
     });
 });
+
+describe('TimberViewEngine: a view rendered with Timber directly', function () {
+    beforeEach(function () {
+        wp_stub_reset();
+        $this->registry = new ContextProviderRegistry();
+        $this->registry->register(['components/footer'], new class implements ContextProviderInterface {
+            public function provide(TemplateContext $context): TemplateContext
+            {
+                return $context->with('current_year', '2026');
+            }
+        });
+        $this->engine = new TimberViewEngine($this->registry, new RequestTrace());
+    });
+
+    it('runs the providers of its view name, and keeps the data it was given', function () {
+        // What a `footer.php` of a plugin gets from `Timber::render('components/footer.twig', Timber::context())`.
+        $data = $this->engine->provideTimberData(['menu' => 'main'], 'components/footer.twig');
+
+        expect($data['current_year'] ?? null)->toBe('2026');
+        expect($data['menu'])->toBe('main');
+    });
+
+    it('leaves the data of a view no provider matches alone', function () {
+        expect($this->engine->provideTimberData(['menu' => 'main'], 'components/header.twig'))->toBe([
+            'menu' => 'main',
+        ]);
+    });
+
+    it('does not run the providers twice for a view the engine renders itself', function () {
+        $seen = null;
+        // Applied inside Timber::compile(), while the engine renders.
+        add_filter('timber/compile/file', function (mixed $file) use (&$seen): mixed {
+            $seen = $this->engine->provideTimberData([], 'components/footer.twig');
+
+            return $file;
+        });
+
+        try {
+            $this->engine->render('components/footer');
+        } catch (\Studiometa\Foehn\Views\ViewRenderingFailed) {
+            // No such file here: Timber has already fired its action.
+        }
+
+        expect($seen)->toBe([]);
+    });
+});

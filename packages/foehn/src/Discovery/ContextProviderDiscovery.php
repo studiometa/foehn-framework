@@ -7,8 +7,10 @@ namespace Studiometa\Foehn\Discovery;
 use Studiometa\Foehn\Attributes\AsContextProvider;
 use Studiometa\Foehn\Attributes\AsDiscovery;
 use Studiometa\Foehn\Contracts\ContextProviderInterface;
+use Studiometa\Foehn\Contracts\ViewEngineInterface;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
 use Studiometa\Foehn\Views\ContextProviderRegistry;
+use Studiometa\Foehn\Views\TimberViewEngine;
 use Tempest\Discovery\Discovery;
 use Tempest\Discovery\DiscoveryLocation;
 use Tempest\Reflection\ClassReflector;
@@ -84,5 +86,23 @@ final class ContextProviderDiscovery implements Discovery
 
             $registry->register($attribute->getTemplates(), $provider, $attribute->priority);
         }
+
+        if ($registry->count() === 0) {
+            return;
+        }
+
+        // A view rendered with Timber directly, not through the view engine, gets its
+        // providers too: see TimberViewEngine::provideTimberData(). The engine is
+        // resolved when Timber renders, not at boot.
+        $provide = static function (mixed $data, mixed $file): mixed {
+            $engine = get(ViewEngineInterface::class);
+
+            return $engine instanceof TimberViewEngine && is_array($data) && is_string($file)
+                ? $engine->provideTimberData($data, $file)
+                : $data;
+        };
+
+        add_filter('timber/compile/data', $provide, 10, 2);
+        add_filter('timber/render/data', $provide, 10, 2);
     }
 }
