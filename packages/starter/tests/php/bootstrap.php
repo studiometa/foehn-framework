@@ -29,5 +29,9 @@ if ($autoload === null) {
 
 require_once $autoload;
 
-// Les stubs des fonctions WordPress sont livrés avec studiometa/foehn.
+// Les stubs du projet d'abord : ceux de studiometa/foehn ne définissent une
+// fonction que si elle n'existe pas encore, donc une fonction déclarée dans
+// stubs.php l'emporte toujours, même quand une version de Føhn en ajoute une
+// du même nom.
+require_once __DIR__ . '/stubs.php';
 require_once dirname($autoload) . '/studiometa/foehn/tests/wp-stubs.php';

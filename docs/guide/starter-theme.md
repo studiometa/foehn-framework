@@ -142,6 +142,29 @@ ddev wp <cmd>           # Run WP-CLI commands
 ddev describe           # Show URLs and info
 ```
 
+## Unit Tests
+
+`composer test` runs the Pest suite in `tests/php/` without WordPress. `tests/php/bootstrap.php` loads two files of WordPress function stubs, in this order:
+
+1. `tests/php/stubs.php`: the stubs of your project.
+2. `vendor/studiometa/foehn/tests/wp-stubs.php`: the stubs of Føhn.
+
+Each WordPress function in the Føhn file is defined only when it does not exist yet. So a function that you define in `tests/php/stubs.php` is the one your tests call. A Føhn release that adds a stub with the same name does not change this:
+
+```php
+<?php
+// tests/php/stubs.php
+
+function get_posts(array $args = []): array
+{
+    return $GLOBALS['test_posts'] ?? [];
+}
+```
+
+Do not load your stubs after the Føhn file. A function that Føhn already defined then stops your suite with "Cannot redeclare".
+
+The Føhn stubs record their calls. `wp_stub_reset()` clears the recorded calls and the stored values, `wp_stub_get_calls('add_action')` returns the calls of one function, and `wp_stub_set_conditional('is_single', true)` sets the answer of a conditional tag. The other `wp_stub_*` helpers and the values that the stubs return can change in a release. When a test depends on one exact return value, define that function in `tests/php/stubs.php`.
+
 ## Customizing the Starter
 
 ### Rename the Theme
