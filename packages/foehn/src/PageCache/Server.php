@@ -175,8 +175,7 @@ final readonly class Server
             http_response_code($status);
         }
 
-        // Each one replaces a stored header of the same name, so a configured
-        // `responseHeaders` value wins over the one the page recorded.
+        // Each one replaces a stored header of the same name.
         foreach ($headers as $header) {
             header($header);
         }
@@ -193,22 +192,20 @@ final readonly class Server
     }
 
     /**
-     * The headers of a hit that do not come from the stored entry.
+     * The headers of a hit that do not come from the stored entry: the ones this cache
+     * owns.
      *
-     * The project's `responseHeaders`, then the ones this cache owns. The nginx snippet
-     * writes the same values; see {@see ServerConfig\NginxSnippet}.
+     * Not the project's `responseHeaders`. They are a copy of the server-level headers,
+     * for the nginx snippet, whose cache location drops them. A hit from here is a PHP
+     * response, and the web server adds its server-level headers to it as it does to a
+     * page PHP renders: sending the copy too would send each of them twice.
      *
      * @return list<string>
-     * @throws \InvalidArgumentException When the configured headers cannot be sent safely.
+     * @throws \InvalidArgumentException When the configured `Cache-Control` cannot be sent safely.
      */
     public static function hitHeaders(PageCacheConfig $config, int $modified, string $etag): array
     {
         $headers = [];
-
-        foreach ($config->getResponseHeaders() as $name => $value) {
-            $headers[] = $name . ': ' . $value;
-        }
-
         $headers[] = 'Content-Type: text/html; charset=UTF-8';
         $headers[] = 'Last-Modified: ' . gmdate('D, d M Y H:i:s', $modified) . ' GMT';
         $headers[] = 'ETag: ' . $etag;

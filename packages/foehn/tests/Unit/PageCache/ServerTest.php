@@ -224,30 +224,26 @@ describe('Server: the headers of a hit', function () {
             ->toContain('Cache-Control: no-cache, no-store, must-revalidate');
     });
 
-    it('sends the response headers the project listed, before the ones the cache owns', function () {
-        // Sent with `header()`'s replace, after the stored headers: a configured value wins
-        // over the one the page recorded, and none can replace a freshness header, because
-        // the configuration refuses those names.
+    it('does not send the response headers the project listed', function () {
+        // A hit from the drop-in is a PHP response. The web server adds its server-level
+        // headers to it, as it does to a page PHP renders, so the drop-in sending the
+        // copy in `responseHeaders` too would send each of them twice.
         $config = new PageCacheConfig(responseHeaders: [
             'X-Frame-Options' => 'SAMEORIGIN',
             'X-XSS-Protection' => '1; mode=block',
         ]);
 
-        expect(array_slice(Server::hitHeaders($config, 0, '"abc"'), 0, 3))->toBe([
-            'X-Frame-Options: SAMEORIGIN',
-            'X-XSS-Protection: 1; mode=block',
-            'Content-Type: text/html; charset=UTF-8',
-        ]);
+        expect(Server::hitHeaders($config, 0, '"abc"'))->toBe(Server::hitHeaders(new PageCacheConfig(), 0, '"abc"'));
     });
 
-    it('lets WordPress render the page when a configured header is unsafe', function () {
+    it('lets WordPress render the page when the configured Cache-Control is unsafe', function () {
         // `boot()` catches the exception. What matters is that it comes before any byte
         // of the stored page is sent.
         $result = pageCacheServeInProcess(
             $this->root,
             ['REQUEST_METHOD' => 'GET', 'HTTP_HOST' => 'example.com', 'REQUEST_URI' => '/blog/'],
             '<html>stored</html>',
-            options: 'responseHeaders: ["X-Frame-Options" => "SAMEORIGIN\\r\\nSet-Cookie: a=b"],',
+            options: 'cacheControl: "no-cache\\r\\nSet-Cookie: a=b",',
         );
 
         expect($result['output'])->toBe('THROWN BOOTED');
