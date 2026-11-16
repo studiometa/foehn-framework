@@ -21,6 +21,8 @@ Føhn registers the returned instance in the container, under its own class and 
 
 Installed packages are read before your own files, so a package can ship defaults that your project overrides.
 
+To read a setting, inject its config class in a constructor, or get it from the container with `app(TimberConfig::class)`. Føhn has no `config('key')` helper.
+
 ### Per-environment files
 
 A file can be named for an environment, and is then read only in that one, as reported by [`wp_get_environment_type()`](https://developer.wordpress.org/reference/functions/wp_get_environment_type/):

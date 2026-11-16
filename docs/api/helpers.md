@@ -28,23 +28,16 @@ $myService = app(MyService::class);
 function app(?string $class = null): object
 ```
 
-## config()
+### Reading configuration
 
-Get a top-level key of the legacy array that the theme gave to `Kernel::boot()`. There is no dot notation: `config('a.b')` looks for the key `'a.b'`.
-
-```php
-use function Studiometa\Foehn\config;
-
-// Kernel::boot(__DIR__ . '/app', ['debug' => true]);
-$debug = config('debug', false);
-```
-
-A theme that boots with `Kernel::boot(__DIR__ . '/app')` and a `foehn.config.php` has no array, so `config()` always gives the default. To read settings, inject the config class, for example `FoehnConfig` or `TimberConfig`, or use `app(FoehnConfig::class)`. See [Configuration](/guide/configuration).
-
-### Signature
+Føhn has no `config()` helper. Each config file returns a typed config class, and Føhn registers it in the container (see [Configuration](/guide/configuration)). Inject the class in a constructor, or get it with `app()`:
 
 ```php
-function config(string $key, mixed $default = null): mixed
+use Studiometa\Foehn\Config\TimberConfig;
+
+use function Studiometa\Foehn\app;
+
+$templatesDir = app(TimberConfig::class)->templatesDir;
 ```
 
 ## dispatch()
@@ -127,11 +120,9 @@ The helpers are in the `Studiometa\Foehn` namespace:
 ```php
 // Full namespace
 \Studiometa\Foehn\app();
-\Studiometa\Foehn\config('key');
 
 // Or import
 use function Studiometa\Foehn\app;
-use function Studiometa\Foehn\config;
 ```
 
 ## WP

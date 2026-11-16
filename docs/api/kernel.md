@@ -48,11 +48,6 @@ final class Kernel
     public function getAppPath(): string;
 
     /**
-     * Get a configuration value.
-     */
-    public function getConfig(string $key, mixed $default = null): mixed;
-
-    /**
      * Get the Foehn configuration.
      */
     public function getFoehnConfig(): FoehnConfig;
@@ -144,15 +139,6 @@ Retrieve a service from the container.
 ```php
 $viewEngine = Kernel::get(ViewEngineInterface::class);
 $myService = Kernel::get(MyService::class);
-```
-
-### getConfig()
-
-Get configuration values.
-
-```php
-$viewsPath = Kernel::getInstance()->getConfig('timber.views');
-$default = Kernel::getInstance()->getConfig('missing.key', 'default');
 ```
 
 ## Lifecycle Hooks

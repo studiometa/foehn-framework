@@ -159,14 +159,6 @@ final class Kernel
     }
 
     /**
-     * Get a configuration value.
-     */
-    public function getConfig(string $key, mixed $default = null): mixed
-    {
-        return $this->config[$key] ?? $default;
-    }
-
-    /**
      * Get the Foehn configuration.
      */
     public function getFoehnConfig(): FoehnConfig

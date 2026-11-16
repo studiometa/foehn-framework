@@ -43,19 +43,6 @@ describe('Kernel configuration', function () {
         expect($kernel->getAppPath())->toBe('/path/to/app');
     });
 
-    it('returns config values with defaults', function () {
-        $reflection = new ReflectionClass(Kernel::class);
-        $kernel = $reflection->newInstanceWithoutConstructor();
-
-        $configProperty = $reflection->getProperty('config');
-        $configProperty->setValue($kernel, ['key' => 'value', 'nested' => ['a' => 1]]);
-
-        expect($kernel->getConfig('key'))->toBe('value');
-        expect($kernel->getConfig('nested'))->toBe(['a' => 1]);
-        expect($kernel->getConfig('missing'))->toBeNull();
-        expect($kernel->getConfig('missing', 'default'))->toBe('default');
-    });
-
     it('returns the Foehn config', function () {
         $reflection = new ReflectionClass(Kernel::class);
         $kernel = $reflection->newInstanceWithoutConstructor();
