@@ -166,7 +166,7 @@ The editor draws a Foehn block from its own Twig template, the same markup as th
 
 The registrar asks the `block-renderer` REST endpoint for the block's render with the `foehn_canvas` flag, and turns the HTML into editor elements. Two things in a template change in that render, and become live editor components:
 
-- **`content`.** A container receives a marker as `content`. Where the template prints it, the editor mounts the block's inner blocks. When `content` is the only thing in an element, as in `<div class="hero__content">{{ content|raw }}</div>`, the inner blocks are the direct children of that element, exactly as a core container block holds them: a grid or a flex layout in the template applies to them unchanged.
+- **`content`.** A container receives a marker as `content`. Where the template prints it, the editor mounts the block's inner blocks. When `content` is the only thing in an element, as in `<div class="hero__content">{{ content|raw }}</div>`, the inner blocks are the direct children of that element, exactly as a core container block holds them: a grid or a flex layout in the template applies to them unchanged. Print `content` once and do not change it with a filter: the editor mounts the inner blocks at the first marker only, and adds them at the end of the root element when it finds no marker. It warns in the console in both cases.
 - **`block_editable()`.** An element marked with `{{ block_editable('<attribute>') }}` becomes a `RichText` bound to that attribute. The author clicks the heading and types. The attribute has no sidebar field any more.
 
 ```twig

@@ -1236,9 +1236,7 @@
         }
 
         if (tag === INNER_BLOCKS_TAG) {
-            context.found.innerBlocks = true;
-
-            return context.innerBlocksProps ? el(InnerBlocks, context.innerBlocksProps) : null;
+            return claimInnerBlocks(context) && context.innerBlocksProps ? el(InnerBlocks, context.innerBlocksProps) : null;
         }
 
         let props = toProps(node);
@@ -1258,9 +1256,7 @@
             return renderEditable(tag, props, key, field, context);
         }
 
-        if (context.innerBlocksProps && useInnerBlocksProps && hostsInnerBlocks(node)) {
-            context.found.innerBlocks = true;
-
+        if (context.innerBlocksProps && useInnerBlocksProps && hostsInnerBlocks(node) && claimInnerBlocks(context)) {
             return el(InnerBlocksHost, {
                 tagName: tag,
                 elementProps: props,
@@ -1325,6 +1321,35 @@
         }
 
         return el.apply(null, ['div', blockProps].concat(children));
+    }
+
+    /**
+     * Take the place of the inner blocks for the first marker of a render.
+     *
+     * A block has one list of inner blocks, so it mounts once. A template that prints
+     * `content` twice keeps the first place, and the editor warns about the others.
+     *
+     * @param {Object} context Conversion context.
+     * @return {boolean} Whether this marker mounts the inner blocks.
+     */
+    function claimInnerBlocks(context) {
+        if (!context.found.innerBlocks) {
+            context.found.innerBlocks = true;
+
+            return true;
+        }
+
+        if (!context.found.duplicate && logger && logger.warn) {
+            logger.warn(
+                '[foehn] The template of "' +
+                    context.name +
+                    '" prints `content` more than once, so the editor shows the inner blocks at the first place only.',
+            );
+        }
+
+        context.found.duplicate = true;
+
+        return false;
     }
 
     /**
@@ -1552,7 +1577,7 @@
                 setAttributes: props.setAttributes,
                 fields: definition.attributes || {},
                 innerBlocksProps: innerBlocksProps,
-                found: { innerBlocks: false, editables: {} },
+                found: { innerBlocks: false, duplicate: false, editables: {} },
             };
 
             let canvas;

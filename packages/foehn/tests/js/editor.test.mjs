@@ -376,6 +376,30 @@ test('a container whose template never prints content still shows its inner bloc
     assert.equal(console.warn.mock.callCount(), 1);
 });
 
+test('a template that prints content twice mounts the inner blocks at the first place only', (t) => {
+    t.mock.method(console, 'warn', () => {});
+
+    const canvas = render(
+        h('section', {}, h('div', { class: 'a' }, h('foehn-inner-blocks')), h('div', { class: 'b' }, h('foehn-inner-blocks'))),
+    );
+    const { registered, InnerBlocks } = register(
+        [{ name: 'test/section', attributes: {}, innerBlocks: CONTAINER }],
+        {},
+        canvas,
+    );
+    const { elements } = edit(registered['test/section'], {});
+
+    const hosts = elements.filter((element) => typeof element.type === 'function' && element.props.tagName === 'div');
+    const second = find(elements, 'div');
+
+    assert.equal(hosts.length, 1);
+    assert.equal(hosts[0].props.elementProps.className, 'a');
+    assert.ok(!find(elements, InnerBlocks), 'no second InnerBlocks');
+    assert.equal(second.props.className, 'b');
+    assert.deepEqual(second.children, [null]);
+    assert.equal(console.warn.mock.callCount(), 1);
+});
+
 test('a container whose render failed still shows and saves its inner blocks', () => {
     const { registered } = register([{ name: 'test/section', attributes: {}, innerBlocks: CONTAINER }], {}, {
         error: 'Nope',
