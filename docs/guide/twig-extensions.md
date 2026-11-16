@@ -317,6 +317,31 @@ A YouTube URL must contain a video ID of 11 characters. Other URLs give `null`. 
 
 See [Images](/guide/images).
 
+### BreadcrumbsExtension
+
+`breadcrumbs()` gives the breadcrumb trail of the current request as a list of items, each with a `label` and a `url`. The current page, the last item, has no URL. You write the markup:
+
+```twig
+{% set items = breadcrumbs() %}
+{% if items %}
+    <nav aria-label="Breadcrumb">
+        <ol>
+            {% for item in items %}
+                <li>
+                    {% if item.url %}
+                        <a href="{{ item.url }}">{{ item.label }}</a>
+                    {% else %}
+                        <span aria-current="page">{{ item.label }}</span>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ol>
+    </nav>
+{% endif %}
+```
+
+The items come from Rank Math. The list is empty when Rank Math or its breadcrumbs are off. See [Rank Math](/guide/rank-math#breadcrumbs).
+
 ### FacetExtension
 
 `facet()` gives the options of a taxonomy filter, with the number of results for each term:
