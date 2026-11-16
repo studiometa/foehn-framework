@@ -369,6 +369,29 @@ describe('WebRootGenerator', function () {
         expect(implode("\n", $output))->not->toContain('wp foehn salts:generate');
     });
 
+    it('trusts X-Forwarded-Proto only when the project opts in', function () {
+        // Behind a load balancer that terminates TLS, PHP is reached over HTTP and
+        // `is_ssl()` is false unless HTTPS is set from the header of the proxy.
+        linkRealAutoloader($this->root);
+        stubWordPress($this->root, "echo 'HTTPS:' . (\$_SERVER['HTTPS'] ?? 'unset') . PHP_EOL;\n");
+
+        ($this->generate)();
+
+        $run = fn(array $environment): string => runWpConfig($this->root, [
+            'WP_ENVIRONMENT_TYPE' => 'development',
+            ...$environment,
+        ]);
+
+        expect($run(['HTTP_X_FORWARDED_PROTO' => 'https']))->toContain('HTTPS:unset');
+        expect($run(['HTTP_X_FORWARDED_PROTO' => 'https', 'FOEHN_TRUST_FORWARDED_PROTO' => 'true']))
+            ->toContain('HTTPS:on');
+        // A chain of proxies: the first value is the one the client used.
+        expect($run(['HTTP_X_FORWARDED_PROTO' => 'https, http', 'FOEHN_TRUST_FORWARDED_PROTO' => 'true']))
+            ->toContain('HTTPS:on');
+        expect($run(['HTTP_X_FORWARDED_PROTO' => 'http', 'FOEHN_TRUST_FORWARDED_PROTO' => 'true']))
+            ->toContain('HTTPS:unset');
+    });
+
     it('loads .env before the project configuration', function () {
         linkRealAutoloader($this->root);
 
