@@ -495,7 +495,7 @@ return new PageCacheConfig(
 - **A content change**: on `shutdown`, after the purge, Føhn queues one `WarmUrl` job for each purged URL. The `page/**` pages of an archive are not warmed; traffic fills them again.
 - **A full flush**: Føhn queues one `WarmSitemap` job and no job for each URL. That job reads the sitemap later and queues one `WarmUrl` job for each URL. The sitemap is not read during the request that flushed the cache. Every full flush does this: a flush after a menu or option change, `wp foehn cache:clear`, and the **Clear** button of the Føhn dashboard. `wp foehn cache:clear --url=<url>` queues no warm-up.
 
-The jobs go through Action Scheduler, in the `foehn-page-cache` group. Each URL is queued once for each request, and the same `warmExclude` and storage rules apply. Without Action Scheduler, nothing is queued: Føhn does not make warm requests during the request that saved the post.
+The jobs go through Action Scheduler, in the `foehn-page-cache` group. Each URL is queued once for each request, and the same `warmExclude` and storage rules apply. Without Action Scheduler, nothing is queued: Føhn does not make warm requests during the request that saved the post. In an environment that `environments` does not list, nothing is queued either: `wp foehn cache:clear` still empties the cache there, but it does not queue a warm-up.
 
 ## Commands
 

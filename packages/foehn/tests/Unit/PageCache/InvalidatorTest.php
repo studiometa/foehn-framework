@@ -66,20 +66,32 @@ describe('Invalidator: clearing everything', function () {
         expect($jobs->jobs)->toEqual([new WarmSitemap()]);
     });
 
-    it('queues no warm-up with warmAfterPurge off, with the cache disabled, or without a queue', function () {
-        foreach ([
-            [new PageCacheConfig(enabled: true, path: $this->root), pageCacheJobs()],
-            [new PageCacheConfig(enabled: false, path: $this->root, warmAfterPurge: true), pageCacheJobs()],
-            [
-                new PageCacheConfig(enabled: true, path: $this->root, warmAfterPurge: true),
-                pageCacheJobs(available: false),
-            ],
-        ] as [$config, $jobs]) {
-            new Invalidator($config, new Store($config), $jobs)->flush();
+    it(
+        'queues no warm-up with warmAfterPurge off, with the cache disabled, in an environment it does not list, or without a queue',
+        function () {
+            foreach ([
+                [new PageCacheConfig(enabled: true, path: $this->root), pageCacheJobs()],
+                [new PageCacheConfig(enabled: false, path: $this->root, warmAfterPurge: true), pageCacheJobs()],
+                [
+                    new PageCacheConfig(
+                        enabled: true,
+                        path: $this->root,
+                        warmAfterPurge: true,
+                        environments: ['an-environment-this-site-is-not-in'],
+                    ),
+                    pageCacheJobs(),
+                ],
+                [
+                    new PageCacheConfig(enabled: true, path: $this->root, warmAfterPurge: true),
+                    pageCacheJobs(available: false),
+                ],
+            ] as [$config, $jobs]) {
+                new Invalidator($config, new Store($config), $jobs)->flush();
 
-            expect($jobs->jobs)->toBe([]);
-        }
-    });
+                expect($jobs->jobs)->toBe([]);
+            }
+        },
+    );
 
     it('has nothing to remove from a cache nobody has written to', function () {
         expect($this->invalidator->flush())->toBe(0);
