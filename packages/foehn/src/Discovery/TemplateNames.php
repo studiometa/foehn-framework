@@ -19,15 +19,18 @@ namespace Studiometa\Foehn\Discovery;
 final class TemplateNames
 {
     /**
-     * A single post: `single-{type}-{slug}`, `single-{type}`, `single`.
+     * A single post: its page template, `single-{type}-{slug}`, `single-{type}`, `single`.
      *
      * A post of type `post` has no `single-post`: it renders `single`.
      *
+     * @param string|null $template The page template the post selects, as
+     *                              `get_page_template_slug()` gives it.
      * @return non-empty-list<string>
      */
-    public static function single(string $postType, ?string $slug): array
+    public static function single(string $postType, ?string $slug, ?string $template): array
     {
         return [
+            ...self::pageTemplate($template),
             ...($slug !== null ? ["single-{$postType}-{$slug}"] : []),
             ...($postType !== 'post' ? ["single-{$postType}"] : []),
             'single',
@@ -35,13 +38,16 @@ final class TemplateNames
     }
 
     /**
-     * A page: `page-{slug}`, `page-{id}`, `page`.
+     * A page: its page template, `page-{slug}`, `page-{id}`, `page`.
      *
+     * @param string|null $template The page template the page selects, as
+     *                              `get_page_template_slug()` gives it.
      * @return non-empty-list<string>
      */
-    public static function page(?string $slug, ?int $id): array
+    public static function page(?string $slug, ?int $id, ?string $template): array
     {
         return [
+            ...self::pageTemplate($template),
             ...($slug !== null ? ["page-{$slug}"] : []),
             ...($id !== null ? ["page-{$id}"] : []),
             'page',
@@ -85,5 +91,21 @@ final class TemplateNames
             "taxonomy-{$taxonomy}",
             'taxonomy',
         ];
+    }
+
+    /**
+     * The name of a page template: its file without `.php`, such as `page-full-width`
+     * for `page-full-width.php`. WordPress looks for that file first, before the
+     * slug, so it comes first here too. Nothing for the default template.
+     *
+     * @return list<string>
+     */
+    private static function pageTemplate(?string $template): array
+    {
+        if ($template === null || $template === '' || $template === 'default') {
+            return [];
+        }
+
+        return [str_ends_with($template, '.php') ? substr($template, 0, -4) : $template];
     }
 }

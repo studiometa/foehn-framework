@@ -46,3 +46,32 @@ it('leaves an oEmbed request to the embed template of WordPress', function () {
 
     Site::wp("wp post delete {$id} --force");
 });
+
+/**
+ * The template a request matched, as `wp foehn trace` recorded it.
+ */
+function templateControllersMatched(string $url): ?string
+{
+    $id = Client::get($url)->header('X-Foehn-Trace');
+    $output = Site::run("wp foehn trace {$id} --format=json")['output'];
+
+    foreach (array_reverse(explode("\n", $output)) as $line) {
+        $trace = json_decode(trim($line), true);
+
+        if (is_array($trace)) {
+            return $trace['template'] ?? null;
+        }
+    }
+
+    return null;
+}
+
+it('matches the page template a page selects before its slug', function () {
+    $id = templateControllersPost('page', 'smoke-page-template');
+    Site::wp("wp post meta update {$id} _wp_page_template page-full-width.php");
+
+    // The starter's PageController claims `page-*`, so the first name of the list wins.
+    expect(templateControllersMatched((string) Site::wp("wp post url {$id}")))->toBe('page-full-width');
+
+    Site::wp("wp post delete {$id} --force");
+});

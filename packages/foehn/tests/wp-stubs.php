@@ -857,6 +857,16 @@ if (!function_exists('is_single')) {
     }
 }
 
+if (!function_exists('get_page_template_slug')) {
+    function get_page_template_slug(int|WP_Post|null $post = null): string|false
+    {
+        $id = $post instanceof WP_Post ? $post->ID : (int) $post;
+        $template = $GLOBALS['wp_stub_post_meta'][$id]['_wp_page_template'] ?? '';
+
+        return $template === 'default' ? '' : (string) $template;
+    }
+}
+
 if (!function_exists('is_page')) {
     function is_page(): bool
     {
