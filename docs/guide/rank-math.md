@@ -79,3 +79,27 @@ The list is empty when Rank Math is not active, or when its breadcrumbs are off 
 ```
 
 Labels are plain text: Twig escapes them. Rank Math also adds a `BreadcrumbList` to its schema. The function does not change it.
+
+### Author sitemap
+
+The author sitemap of Rank Math (`/author-sitemap.xml`) lists the archive URL of each author. That URL holds the user slug, which is usually the login: the sitemap gives a list of logins to anybody who tries to guess passwords. Rank Math lists authors only when their archives are indexed (by default, Rank Math sets `noindex` on them).
+
+The opt-in hook `DisableAuthorSitemap` removes it. It also removes the core author sitemap (`/wp-sitemap-users-1.xml`), for a site without Rank Math:
+
+```php
+use Studiometa\Foehn\Hooks\Security\DisableAuthorSitemap;
+
+return new FoehnConfig(
+    hooks: [
+        DisableAuthorSitemap::class,
+    ],
+);
+```
+
+With the hook:
+
+- the sitemap index of Rank Math does not list the author sitemap. Føhn turns the setting off for each request only: the settings screen of Rank Math still shows the saved value;
+- a request for `/author-sitemap.xml` answers 404 at once, also when Rank Math has the sitemap in its cache;
+- the sitemap index that Rank Math has in its cache can still list the author sitemap until Rank Math builds the index again (when content changes). Save the sitemap settings of Rank Math once to build it at once.
+
+The author archives are not changed. `RestApiAuth` closes the same list on the REST API (`/wp/v2/users`). See [Hooks](/guide/hooks#security-hooks).

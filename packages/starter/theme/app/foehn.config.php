@@ -35,8 +35,9 @@ return new FoehnConfig(discoveryCacheStrategy: DiscoveryCacheStrategy::FULL, hoo
     StudiometaUi::class,
     YouTubeNoCookieHooks::class,
     // Opt-in, per project: SecurityHeaders (set the same headers in the page
-    // cache `responseHeaders`, or a cache hit served by nginx does not send them)
-    // and RestApiAuth (removes the `/wp/v2/users` REST endpoints for anonymous
-    // requests, which some front-end code reads).
+    // cache `responseHeaders`, or a cache hit served by nginx does not send them),
+    // RestApiAuth (removes the `/wp/v2/users` REST endpoints for anonymous
+    // requests, which some front-end code reads) and DisableAuthorSitemap
+    // (removes the author sitemaps of core and Rank Math, which list user slugs).
     // See https://studiometa.github.io/foehn-framework/guide/hooks#security-hooks
 ]);
