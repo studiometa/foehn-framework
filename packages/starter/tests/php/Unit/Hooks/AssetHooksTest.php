@@ -14,6 +14,14 @@ describe('AssetHooks', function () {
         expect($attrs[0]->newInstance()->hook)->toBe('wp_enqueue_scripts');
     });
 
+    it('enqueues the theme assets in the block editor canvas on enqueue_block_assets', function () {
+        $ref = new ReflectionMethod(AssetHooks::class, 'enqueueEditor');
+        $attrs = $ref->getAttributes(AsAction::class);
+
+        expect($attrs)->toHaveCount(1);
+        expect($attrs[0]->newInstance()->hook)->toBe('enqueue_block_assets');
+    });
+
     it('asks for the entries vite.config.js declares as inputs', function () {
         // The manifest is keyed by the input paths, so these two strings have to
         // match vite.config.js exactly. Nothing errors when they do not — the page

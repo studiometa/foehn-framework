@@ -66,7 +66,8 @@ describe('BlockEditorAssets', function () {
             'wp-element',
             'wp-block-editor',
             'wp-components',
-            'wp-server-side-render',
+            'wp-api-fetch',
+            'wp-data',
         ]);
         expect($scripts[0]['args']['in_footer'])->toBeTrue();
     });

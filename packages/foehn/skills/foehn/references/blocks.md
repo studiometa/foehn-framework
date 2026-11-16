@@ -8,7 +8,7 @@ Docs: [Native blocks](https://studiometa.github.io/foehn-framework/guide/native-
 
 - A block is a class with `#[AsBlock]` that implements `Studiometa\Foehn\Contracts\BlockInterface` (or `InteractiveBlockInterface`).
 - `attributes()` is the schema. WordPress gets the standard keys (`type`, `default`, `enum`, `items`, …). The editor gets the control keys.
-- Every block is dynamic: it renders through `render_callback` on the front end, and through `ServerSideRender` in the editor. There is no `save()` and no static markup in post content. You can change the Twig template at any time without a block validation error.
+- Every block is dynamic: it renders through `render_callback` on the front end and in the editor, where the editor draws the block from that Twig output and makes it editable in place (see [The canvas](#the-canvas)). There is no `save()` and no static markup in post content. You can change the Twig template at any time without a block validation error.
 - One generic script, `wp-content/foehn/editor.js`, registers all Føhn blocks in the editor from their schemas. The `studiometa/foehn-installer` Composer plugin copies it there on `composer install`. You write no block JavaScript and no `block.json`.
 - `supports.html` is `false` by default.
 
@@ -37,6 +37,7 @@ The control comes from `type`, or from an explicit `control`:
 | `'type' => 'boolean'`                         | toggle                                                    |
 | `'type' => 'number'` or `'integer'`           | number field (an `integer` is rounded before it is saved) |
 | `'type' => 'string', 'control' => 'textarea'` | textarea                                                  |
+| `'type' => 'string', 'control' => 'richtext'` | formatted text, edited on the canvas (HTML value)         |
 | `'type' => 'integer', 'control' => 'image'`   | media picker, stores the attachment ID                    |
 | `'type' => 'array', 'control' => 'gallery'`   | multiple media picker                                     |
 | `'type' => 'integer', 'control' => 'file'`    | any file                                                  |
@@ -44,21 +45,22 @@ The control comes from `type`, or from an explicit `control`:
 
 Extra keys, removed before the schema goes to WordPress:
 
-| Key            | Use                                                                                      |
-| -------------- | ---------------------------------------------------------------------------------------- |
-| `control`      | `text`, `textarea`, `toggle`, `number`, `select`, `image`, `gallery`, `file`, `posts`    |
-| `label`        | Field label. Default: the humanized key (`ctaLabel` gives "Cta label").                  |
-| `help`         | Help text under the field.                                                               |
-| `options`      | Select choices: a list of values, a `value => label` map, or a list of `{label, value}`. |
-| `allowedTypes` | MIME or top-level types for `file` and `gallery`, for example `['audio']`.               |
-| `postTypes`    | Post types the `posts` control searches. Default: every viewable type.                   |
+| Key            | Use                                                                                               |
+| -------------- | ------------------------------------------------------------------------------------------------- |
+| `control`      | `text`, `textarea`, `richtext`, `toggle`, `number`, `select`, `image`, `gallery`, `file`, `posts` |
+| `label`        | Field label. Default: the humanized key (`ctaLabel` gives "Cta label").                           |
+| `help`         | Help text under the field.                                                                        |
+| `placeholder`  | Text an empty in-place field shows on the canvas. Default: the label.                             |
+| `options`      | Select choices: a list of values, a `value => label` map, or a list of `{label, value}`.          |
+| `allowedTypes` | MIME or top-level types for `file` and `gallery`, for example `['audio']`.                        |
+| `postTypes`    | Post types the `posts` control searches. Default: every viewable type.                            |
 
 - `array`, `object` or untyped attributes without a `control` get no sidebar field. They still reach `compose()`.
 - Declare `gallery` and `posts` as arrays: `['type' => 'array', 'items' => ['type' => 'integer'], 'default' => []]`. As a scalar, WordPress keeps only the first value.
 
 ## Containers and prose
 
-Prose (headings, paragraphs) goes in inner blocks with core blocks, because a server-rendered preview cannot be edited in place. Structured data (image, variant, link) goes in sidebar controls.
+Free-form prose (several headings, paragraphs, lists, buttons) goes in inner blocks with core blocks. Text the template places itself (a section title, a caption) is an attribute marked with `block_editable()`. Structured data (image, variant, link) goes in sidebar controls.
 
 ```php
 #[AsBlock(
@@ -105,6 +107,17 @@ final readonly class SectionBlock implements BlockInterface
 ```
 
 Any of `allowedBlocks`, `innerBlocksTemplate` or `innerBlocksTemplateLock` makes the block a container. `innerBlocksTemplateLock` takes WordPress `templateLock` values: `'all'`, `'insert'`, `'contentOnly'`, or `false`.
+
+## The canvas
+
+The editor draws each Føhn block from its Twig output (`block-renderer` with `foehn_canvas=1`) and turns it into editor elements:
+
+- The root element of the template is the block element: it gets `useBlockProps`, with no wrapper. Several root nodes get one wrapper.
+- `{{ content|raw }}` prints a marker in the editor. The inner blocks mount there, as direct children of the element when `content` is its only child. Keep `content` alone in its element when the layout (grid, flex, `divide-y`) must apply to the inner blocks.
+- `{{ block_editable('title') }}` on an element makes it a `RichText` for that attribute, and removes the sidebar field. A plain string stays plain text (print `{{ title }}`); `'control' => 'richtext'` keeps formatting as HTML (print `{{ caption|e('wp_kses_post')|raw }}`).
+- `is_block_editor()` is true only in that render. Use it to keep an empty editable element (`{% if title or is_block_editor() %}`), to show a placeholder for a missing image, and to keep a component that hides editable content from mounting (an accordion item: no `data-component`, panel open, a `<div>` trigger instead of a `<button>`).
+- Links, forms, scripts and `on*` attributes are inert. Each `image` attribute also gets a replace button in the block toolbar.
+- The theme stylesheet and script reach the editor iframe only from the `enqueue_block_assets` action: `ViteManifest::fromTheme()->enqueue('theme/assets/css/app.css', handle: 'theme-styles')->enqueue('theme/assets/js/app.js', handle: 'theme-app', inFooter: true)` there, guarded by `is_admin()`. js-toolkit components mount on the canvas, and mount again when a block renders again.
 
 ## Typed context
 
@@ -287,5 +300,6 @@ public function blockCategories(array $categories): array
 ## Troubleshooting
 
 - A new block is not in the inserter: run `wp foehn discovery:clear` (discovery cache), and check that `wp-content/foehn/editor.js` exists (`composer install`). The browser console shows a message when the registrar is missing.
-- A sidebar field is missing: the attribute has no derived control (`array`, `object`, no `type`). Add a `control`.
+- A sidebar field is missing: the attribute has no derived control (`array`, `object`, no `type`). Add a `control`. Or the template marks it with `block_editable()`: it is edited on the canvas.
+- The block looks unstyled in the editor, or its components do not work there: the theme stylesheet or script is not enqueued on `enqueue_block_assets`.
 - An integer or array attribute resets to its default: its value does not match the declared `type`.

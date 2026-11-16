@@ -261,6 +261,23 @@ Available functions:
 | `wp_class`       | Generate `data-wp-class--{class}`         |
 | `wp_text`        | Generate `data-wp-text` directive         |
 
+### BlockEditorExtension
+
+Functions for a block drawn on the block editor canvas. See [Block Editor: the canvas](./block-editor#the-canvas).
+
+```twig
+{% if title or is_block_editor() %}
+  <h2 {{ block_editable('title') }}>{{ title }}</h2>
+{% endif %}
+```
+
+| Function                    | Description                                                                      |
+| --------------------------- | -------------------------------------------------------------------------------- |
+| `block_editable(attribute)` | Marks the element the editor turns into the in-place editor of a block attribute |
+| `is_block_editor()`         | Whether the block renders for the editor canvas                                  |
+
+Both print nothing and return false on the site.
+
 ### VideoEmbedExtension
 
 Video URL utilities:

@@ -21,6 +21,7 @@ final class BlockRenderer
      * @param string $content Inner block content
      * @param WP_Block $wpBlock WordPress block instance
      * @param string|null $interactivityNamespace Namespace for interactivity API
+     * @param bool $isContainer Whether the block holds inner blocks
      * @return string Rendered HTML
      */
     public function render(
@@ -29,14 +30,28 @@ final class BlockRenderer
         string $content,
         WP_Block $wpBlock,
         ?string $interactivityNamespace = null,
+        bool $isContainer = false,
     ): string {
         // Handle interactivity state registration
         if ($block instanceof InteractiveBlockInterface && $interactivityNamespace !== null) {
             $this->registerInteractivityState($block, $interactivityNamespace);
         }
 
-        // Render the block
-        return $block->render($attributes, $content, $wpBlock);
+        return EditorCanvas::render(static function (bool $canvas) use (
+            $block,
+            $attributes,
+            $content,
+            $wpBlock,
+            $isContainer,
+        ): string {
+            // On the editor canvas the inner blocks are live editor components, not
+            // saved markup: the template prints a marker where the editor mounts them.
+            if ($canvas && $isContainer) {
+                $content = EditorCanvas::INNER_BLOCKS;
+            }
+
+            return $block->render($attributes, $content, $wpBlock);
+        });
     }
 
     /**

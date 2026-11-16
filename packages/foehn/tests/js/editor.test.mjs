@@ -29,8 +29,10 @@ function createElement(type, props, ...children) {
  * @param {Array} definitions Payload the PHP side would print as `window.foehnBlocks`.
  * @return {Object} Registered block settings, keyed by block name.
  */
-function register(definitions, entities = {}) {
+function register(definitions, entities = {}, canvas = {}) {
     const registered = {};
+    const effects = [];
+    const requests = [];
 
     const InnerBlocks = function InnerBlocks() {};
     InnerBlocks.Content = function Content() {};
@@ -65,15 +67,39 @@ function register(definitions, entities = {}) {
         },
         element: {
             createElement,
-            cloneElement(element, props) {
-                return { ...element, props: { ...element.props, ...props } };
+            cloneElement(element, props, ...children) {
+                return {
+                    ...element,
+                    props: { ...element.props, ...props },
+                    children: children.length > 0 ? children : element.children,
+                };
             },
             Fragment: 'Fragment',
             // One render per call, so the setter only has to exist: nothing in these
             // tests depends on a state change surviving to a second render.
             useState(initial) {
+                // The canvas render state: a test hands over the server render it wants
+                // the block drawn from, as if the request had already come back.
+                if (initial && typeof initial === 'object' && 'html' in initial) {
+                    return [{ html: canvas.html ?? null, error: canvas.error ?? null }, () => {}];
+                }
+
                 return [initial, () => {}];
             },
+            useEffect(effect) {
+                effects.push(effect);
+            },
+            useMemo(factory) {
+                return factory();
+            },
+            useRef(initial) {
+                return { current: initial };
+            },
+        },
+        apiFetch(request) {
+            requests.push(request);
+
+            return new Promise(() => {});
         },
         data: {
             useSelect(callback) {
@@ -81,30 +107,46 @@ function register(definitions, entities = {}) {
             },
         },
         blockEditor: {
+            BlockControls: 'BlockControls',
             InspectorControls: 'InspectorControls',
             InnerBlocks,
+            MediaReplaceFlow: 'MediaReplaceFlow',
             MediaUpload: 'MediaUpload',
             MediaUploadCheck: 'MediaUploadCheck',
-            useBlockProps: () => ({ className: 'wp-block' }),
+            RichText: 'RichText',
+            useBlockProps: () => ({ className: 'wp-block', 'data-block': 'client-id' }),
+            useInnerBlocksProps: (props, innerBlocksProps) => ({ ...props, innerBlocksProps }),
         },
         components: {
             BaseControl: 'BaseControl',
             Button: 'Button',
-            Disabled: 'Disabled',
             PanelBody: 'PanelBody',
+            Spinner: 'Spinner',
             ComboboxControl: 'ComboboxControl',
             SelectControl: 'SelectControl',
             TextControl: 'TextControl',
             TextareaControl: 'TextareaControl',
             ToggleControl: 'ToggleControl',
         },
-        serverSideRender: { ServerSideRender: 'ServerSideRender' },
     };
+
+    // The registrar parses the server render with DOMParser. Node has none, so the
+    // test hands over the parsed document itself; any other string is read as
+    // text, which is what the plain text conversion of an in-place field needs.
+    class DOMParser {
+        parseFromString(html) {
+            if (canvas.document && html === canvas.html) {
+                return canvas.document;
+            }
+
+            return { body: { textContent: String(html).replace(/<[^>]+>/g, '') } };
+        }
+    }
 
     // Run in this context rather than a fresh one: a new context has its own
     // intrinsics, and every object the registrar builds would then fail a strict
     // deep comparison against a host object for reasons that say nothing about the code.
-    globalThis.window = { wp, foehnBlocks: definitions, console };
+    globalThis.window = { wp, foehnBlocks: definitions, console, DOMParser };
 
     try {
         vm.runInThisContext(SOURCE);
@@ -112,8 +154,46 @@ function register(definitions, entities = {}) {
         delete globalThis.window;
     }
 
-    return { registered, InnerBlocks };
+    return { registered, InnerBlocks, effects, requests };
 }
+
+const SVG = 'http://www.w3.org/2000/svg';
+
+/**
+ * A DOM element, as DOMParser would hand it over: enough of the interface for the
+ * registrar to walk it.
+ */
+function h(tag, attributes = {}, ...children) {
+    return {
+        nodeType: 1,
+        localName: tag,
+        namespaceURI: tag === 'svg' || tag === 'path' ? SVG : 'http://www.w3.org/1999/xhtml',
+        attributes: Object.entries(attributes).map(([name, value]) => ({ name, value })),
+        childNodes: children.map(toNode),
+        getAttribute: (name) => (name in attributes ? attributes[name] : null),
+        hasAttribute: (name) => name in attributes,
+    };
+}
+
+function toNode(child) {
+    return typeof child === 'string' ? { nodeType: 3, nodeValue: child } : child;
+}
+
+/**
+ * A parsed server render, and the HTML string the registrar is told it came from.
+ */
+let renders = 0;
+
+function render(...children) {
+    renders++;
+
+    return {
+        html: '<render ' + renders + '>',
+        document: { body: { childNodes: children.map(toNode) } },
+    };
+}
+
+const CONTAINER = { allowedBlocks: ['core/paragraph'], template: [], templateLock: null };
 
 /**
  * Collect every element of a tree, depth first.
@@ -199,48 +279,251 @@ test('a container saves InnerBlocks.Content so the inner markup reaches the temp
     assert.equal(registered['test/section'].save().type, InnerBlocks.Content);
 });
 
-test('the server rendered preview is wrapped in Disabled so it cannot be clicked or tabbed into', () => {
-    const { registered } = register([{ name: 'test/hero', attributes: {}, innerBlocks: null }]);
-    const { elements } = edit(registered['test/hero'], {});
-
-    const preview = elements.find((element) => element.type === 'ServerSideRender');
-    const disabled = elements.find((element) => element.type === 'Disabled');
-
-    assert.ok(disabled, 'the preview must be rendered inside Disabled');
-    assert.ok(flatten(disabled.children).includes(preview));
-});
-
-test('a container renders InnerBlocks with the payload props and no preview', () => {
-    const { registered, InnerBlocks } = register([
-        {
-            name: 'test/section',
-            attributes: {},
-            innerBlocks: {
-                allowedBlocks: ['core/heading'],
-                template: [['core/heading', { level: 2 }]],
-                templateLock: 'insert',
-            },
-        },
-    ]);
-    const { elements } = edit(registered['test/section'], {});
-
-    const inner = elements.find((element) => element.type === InnerBlocks);
-
-    assert.ok(!elements.some((element) => element.type === 'ServerSideRender'));
-    assert.deepEqual(inner.props, {
-        allowedBlocks: ['core/heading'],
-        template: [['core/heading', { level: 2 }]],
-        templateLock: 'insert',
-    });
-});
-
-test('the block wrapper spreads useBlockProps, as apiVersion 3 requires', () => {
+test('until the first render comes back, the block shows a spinner in its wrapper', () => {
     const { registered } = register([{ name: 'test/hero', attributes: {}, innerBlocks: null }]);
     const { elements } = edit(registered['test/hero'], {});
 
     const wrapper = elements.find((element) => element.type === 'div');
 
     assert.equal(wrapper.props.className, 'wp-block');
+    assert.ok(find(elements, 'Spinner'));
+});
+
+test('the canvas asks for the canvas render of the block, with its attributes', (t) => {
+    t.mock.timers.enable({ apis: ['setTimeout'] });
+
+    const { registered, effects, requests } = register([{ name: 'test/hero', attributes: {}, innerBlocks: null }]);
+
+    edit(registered['test/hero'], { title: 'Hello' });
+    effects.forEach((effect) => effect());
+    t.mock.timers.tick(0);
+
+    assert.equal(requests.length, 1);
+    assert.equal(requests[0].method, 'POST');
+    assert.match(requests[0].path, /^\/wp\/v2\/block-renderer\/test\/hero\?context=edit&foehn_canvas=1/);
+    assert.deepEqual(requests[0].data, { attributes: { title: 'Hello' } });
+});
+
+test('the root element of the render becomes the block element, with no wrapper around it', () => {
+    const canvas = render('\n', h('section', { class: 'hero', id: 'top' }, 'Hi'), '\n');
+    const { registered } = register([{ name: 'test/hero', attributes: {}, innerBlocks: null }], {}, canvas);
+    const { elements } = edit(registered['test/hero'], {});
+
+    const section = find(elements, 'section');
+
+    assert.ok(!elements.some((element) => element.type === 'div'), 'no wrapper div');
+    assert.equal(section.props.className, 'hero wp-block');
+    assert.equal(section.props.id, 'top');
+    assert.equal(section.props['data-block'], 'client-id');
+    assert.deepEqual(section.children, ['Hi']);
+});
+
+test('a render with several root nodes is wrapped once, in the block element', () => {
+    const canvas = render(h('h2', {}, 'A'), h('p', {}, 'B'));
+    const { registered } = register([{ name: 'test/hero', attributes: {}, innerBlocks: null }], {}, canvas);
+    const { elements } = edit(registered['test/hero'], {});
+
+    const wrapper = find(elements, 'div');
+
+    assert.equal(wrapper.props.className, 'wp-block');
+    assert.deepEqual(
+        wrapper.children.map((child) => child.type),
+        ['h2', 'p'],
+    );
+});
+
+test('the inner blocks are mounted on the element that holds the marker, as its direct children', () => {
+    const canvas = render(h('section', {}, h('div', { class: 'richtext' }, ' ', h('foehn-inner-blocks'), ' ')));
+    const { registered } = register([{ name: 'test/section', attributes: {}, innerBlocks: CONTAINER }], {}, canvas);
+    const { elements } = edit(registered['test/section'], {});
+
+    const host = elements.find((element) => typeof element.type === 'function' && element.props.tagName === 'div');
+
+    assert.ok(host, 'the marker parent hosts the inner blocks');
+    assert.equal(host.props.elementProps.className, 'richtext');
+    assert.deepEqual(host.props.innerBlocksProps, { allowedBlocks: ['core/paragraph'] });
+
+    const hosted = host.type(host.props);
+
+    assert.equal(hosted.type, 'div');
+    assert.deepEqual(hosted.props.innerBlocksProps, { allowedBlocks: ['core/paragraph'] });
+});
+
+test('a marker that shares its parent with other content becomes an InnerBlocks element', () => {
+    const canvas = render(h('section', {}, h('h2', {}, 'Title'), h('foehn-inner-blocks')));
+    const { registered, InnerBlocks } = register(
+        [{ name: 'test/section', attributes: {}, innerBlocks: CONTAINER }],
+        {},
+        canvas,
+    );
+    const { elements } = edit(registered['test/section'], {});
+
+    assert.ok(find(elements, InnerBlocks));
+});
+
+test('a container whose template never prints content still shows its inner blocks', (t) => {
+    t.mock.method(console, 'warn', () => {});
+
+    const canvas = render(h('section', {}, h('h2', {}, 'Title')));
+    const { registered, InnerBlocks } = register(
+        [{ name: 'test/section', attributes: {}, innerBlocks: CONTAINER }],
+        {},
+        canvas,
+    );
+    const { elements } = edit(registered['test/section'], {});
+
+    assert.ok(find(elements, InnerBlocks));
+    assert.equal(console.warn.mock.callCount(), 1);
+});
+
+test('a container whose render failed still shows and saves its inner blocks', () => {
+    const { registered } = register([{ name: 'test/section', attributes: {}, innerBlocks: CONTAINER }], {}, {
+        error: 'Nope',
+    });
+    const { elements } = edit(registered['test/section'], {});
+
+    const host = elements.find((element) => typeof element.type === 'function' && element.props.tagName === 'div');
+
+    assert.ok(host);
+    assert.equal(host.props.elementProps.className, 'wp-block');
+});
+
+test('a marked element becomes a plain text RichText bound to its attribute', () => {
+    const canvas = render(h('section', {}, h('h2', { 'data-foehn-editable': 'title', class: 'big' }, 'old')));
+    const { registered } = register(
+        [{ name: 'test/hero', attributes: { title: field('text', 'string', { placeholder: 'Type' }) }, innerBlocks: null }],
+        {},
+        canvas,
+    );
+    const { elements, changes } = edit(registered['test/hero'], { title: 'Fish & <chips>' });
+
+    const editable = find(elements, 'RichText');
+
+    assert.equal(editable.props.tagName, 'h2');
+    assert.equal(editable.props.className, 'big');
+    assert.equal(editable.props.value, 'Fish &amp; &lt;chips&gt;');
+    assert.equal(editable.props.placeholder, 'Type');
+    assert.deepEqual(editable.props.allowedFormats, []);
+    assert.equal(editable.props.disableLineBreaks, true);
+    assert.equal(editable.props['data-foehn-editable'], undefined);
+
+    editable.props.onChange('Fish <b>and</b> chips');
+
+    assert.deepEqual(changes, [{ title: 'Fish and chips' }]);
+});
+
+test('a marked root element is the block element and the RichText, with no wrapper', () => {
+    const canvas = render(h('h2', { 'data-foehn-editable': 'title', class: 'big' }, 'old'));
+    const { registered } = register(
+        [{ name: 'test/heading', attributes: { title: field('text', 'string') }, innerBlocks: null }],
+        {},
+        canvas,
+    );
+    const { elements } = edit(registered['test/heading'], { title: 'Hi' });
+
+    const editable = find(elements, 'RichText');
+
+    assert.ok(!elements.some((element) => element.type === 'div'), 'no wrapper div');
+    assert.equal(editable.props.tagName, 'h2');
+    assert.equal(editable.props.className, 'big wp-block');
+    assert.equal(editable.props['data-block'], 'client-id');
+    assert.equal(editable.props.value, 'Hi');
+});
+
+test('a richtext attribute keeps its formatting as HTML', () => {
+    const canvas = render(h('figure', {}, h('figcaption', { 'data-foehn-editable': 'caption' })));
+    const { registered } = register(
+        [{ name: 'test/image', attributes: { caption: field('richtext', 'string') }, innerBlocks: null }],
+        {},
+        canvas,
+    );
+    const { elements, changes } = edit(registered['test/image'], { caption: 'A <strong>b</strong>' });
+
+    const editable = find(elements, 'RichText');
+
+    assert.equal(editable.props.value, 'A <strong>b</strong>');
+    assert.equal(editable.props.allowedFormats, undefined);
+
+    editable.props.onChange('A <em>c</em>');
+
+    assert.deepEqual(changes, [{ caption: 'A <em>c</em>' }]);
+});
+
+test('an attribute edited on the canvas has no sidebar field; an unmarked one keeps it', () => {
+    const canvas = render(h('section', {}, h('h2', { 'data-foehn-editable': 'title' })));
+    const { registered } = register(
+        [
+            {
+                name: 'test/hero',
+                attributes: { title: field('text', 'string'), caption: field('richtext', 'string') },
+                innerBlocks: null,
+            },
+        ],
+        {},
+        canvas,
+    );
+    const { elements } = edit(registered['test/hero'], {});
+
+    assert.ok(!find(elements, 'TextControl'), 'title is edited in place');
+    assert.ok(find(elements, 'TextareaControl'), 'caption falls back to the sidebar');
+});
+
+test('the render is drawn inert: links stay, handlers and scripts go', () => {
+    const canvas = render(
+        h(
+            'div',
+            { onclick: 'alert(1)', style: "background: url('data:image/png;base64,AA;BB') ; --gap: 2px; margin-top: 1px" },
+            h('a', { href: '/somewhere', tabindex: '0' }, 'Go'),
+            h('script', {}, 'alert(1)'),
+            h('svg', { viewBox: '0 0 24 24', 'stroke-width': '2' }, h('path', { d: 'M0' })),
+            h('video', { controls: '', playsinline: '' }),
+        ),
+    );
+    const { registered } = register([{ name: 'test/hero', attributes: {}, innerBlocks: null }], {}, canvas);
+    const { elements } = edit(registered['test/hero'], {});
+
+    const root = find(elements, 'div');
+    const link = find(elements, 'a');
+    const svg = find(elements, 'svg');
+    const video = find(elements, 'video');
+
+    assert.equal(root.props.onclick, undefined);
+    assert.deepEqual(root.props.style, {
+        background: "url('data:image/png;base64,AA;BB')",
+        '--gap': '2px',
+        marginTop: '1px',
+    });
+    assert.ok(!find(elements, 'script'));
+    assert.equal(link.props.href, '/somewhere');
+    assert.equal(link.props.tabIndex, '0');
+
+    let prevented = false;
+
+    link.props.onClick({ preventDefault: () => (prevented = true) });
+    assert.ok(prevented, 'a link cannot leave the editor');
+
+    assert.equal(svg.props.viewBox, '0 0 24 24');
+    assert.equal(svg.props.strokeWidth, '2');
+    assert.equal(video.props.controls, true);
+    assert.equal(video.props.playsInline, true);
+});
+
+test('an image attribute gets a replace button in the block toolbar', () => {
+    const { registered } = register([
+        { name: 'test/hero', attributes: { imageId: field('image', 'integer', { label: 'Background' }) }, innerBlocks: null },
+    ]);
+    const { elements, changes } = edit(registered['test/hero'], { imageId: 12 });
+
+    const toolbar = find(elements, 'BlockControls');
+    const replace = find(elements, 'MediaReplaceFlow');
+
+    assert.equal(toolbar.props.group, 'other');
+    assert.equal(replace.props.mediaId, 12);
+    assert.equal(replace.props.name, 'Replace background');
+
+    replace.props.onSelect({ id: 34 });
+
+    assert.deepEqual(changes, [{ imageId: 34 }]);
 });
 
 test('an integer attribute is truncated instead of storing a float WordPress rejects', () => {

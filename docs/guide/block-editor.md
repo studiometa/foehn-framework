@@ -1,12 +1,12 @@
 # Block Editor
 
-Every `#[AsBlock]` class is authorable in the block editor with no JavaScript and no build step: write a PHP class and a Twig template, and Føhn derives the sidebar controls and a real, server-rendered preview from them.
+Every `#[AsBlock]` class is authorable in the block editor with no JavaScript and no build step: write a PHP class and a Twig template, and Føhn derives the sidebar controls from them, and draws the block in the editor from its own Twig template, editable in place.
 
 ## The model
 
 A Foehn block already declares an attribute schema in `attributes()` and renders itself server-side through `render()` and `compose()`. That schema is the only input the block editor needs.
 
-Føhn ships one generic script — the registrar — that reads the schema of every discovered block and, for each one, registers an `edit` component built from the schema alone: a sidebar field per attribute, and a preview powered by the block's own `render_callback`. There is no per-block script to write, no `edit.js`, and nothing to compile.
+Føhn ships one generic script — the registrar — that reads the schema of every discovered block and, for each one, registers an `edit` component built from the schema alone: a sidebar field per attribute, and a canvas drawn from the block's own `render_callback`. There is no per-block script to write, no `edit.js`, and nothing to compile.
 
 ```php
 #[AsBlock(
@@ -29,7 +29,7 @@ final readonly class AlertBlock implements BlockInterface
 }
 ```
 
-This class alone is enough to get a working sidebar with two fields, `type` and `message`, and a preview that shows the real Twig output. Nothing else needs to change.
+This class alone is enough to get a working sidebar with two fields, `type` and `message`, and a canvas that shows the real Twig output. Nothing else needs to change.
 
 ## Core's default styles win on load order
 
@@ -43,17 +43,18 @@ With no `theme.json`, those are core's own defaults — including `body { paddin
 
 The control for an attribute is derived from its `type`, with an optional `control` override for cases the type alone cannot express:
 
-| Schema                                                        | Control    | Component                       |
-| ------------------------------------------------------------- | ---------- | ------------------------------- |
-| `'type' => 'string'`                                          | `text`     | `TextControl`                   |
-| `'type' => 'string', 'options' => [...]` or `'enum' => [...]` | `select`   | `SelectControl`                 |
-| `'type' => 'boolean'`                                         | `toggle`   | `ToggleControl`                 |
-| `'type' => 'number'` or `'type' => 'integer'`                 | `number`   | `TextControl` (`type="number"`) |
-| `'type' => 'string', 'control' => 'textarea'`                 | `textarea` | `TextareaControl`               |
-| `'type' => 'integer', 'control' => 'image'`                   | `image`    | `MediaUpload`                   |
-| `'type' => 'array', 'control' => 'gallery'`                   | `gallery`  | `MediaUpload` (`multiple`)      |
-| `'type' => 'integer', 'control' => 'file'`                    | `file`     | `MediaUpload` (any type)        |
-| `'type' => 'array', 'control' => 'posts'`                     | `posts`    | `ComboboxControl` + core-data   |
+| Schema                                                        | Control    | Component                                |
+| ------------------------------------------------------------- | ---------- | ---------------------------------------- |
+| `'type' => 'string'`                                          | `text`     | `TextControl`                            |
+| `'type' => 'string', 'options' => [...]` or `'enum' => [...]` | `select`   | `SelectControl`                          |
+| `'type' => 'boolean'`                                         | `toggle`   | `ToggleControl`                          |
+| `'type' => 'number'` or `'type' => 'integer'`                 | `number`   | `TextControl` (`type="number"`)          |
+| `'type' => 'string', 'control' => 'textarea'`                 | `textarea` | `TextareaControl`                        |
+| `'type' => 'string', 'control' => 'richtext'`                 | `richtext` | `RichText`, [on the canvas](#the-canvas) |
+| `'type' => 'integer', 'control' => 'image'`                   | `image`    | `MediaUpload`                            |
+| `'type' => 'array', 'control' => 'gallery'`                   | `gallery`  | `MediaUpload` (`multiple`)               |
+| `'type' => 'integer', 'control' => 'file'`                    | `file`     | `MediaUpload` (any type)                 |
+| `'type' => 'array', 'control' => 'posts'`                     | `posts`    | `ComboboxControl` + core-data            |
 
 A string or number attribute gets a control from `type` alone; nothing else is required. `number` and `integer` share the same component, but the declared type still matters: an `integer` field rounds its value before calling `setAttributes`, because WordPress rejects a float against an `integer` schema and silently falls back to the default.
 
@@ -65,16 +66,17 @@ An attribute of a type with no derived control — `array`, `object`, or no `typ
 
 `posts` is the one control with no core equivalent. It stores post ids **in the order the author arranged them**, offers move-up and move-down, and searches across the post types `postTypes` names — or every viewable type when it names none.
 
-Six keys beyond the WordPress ones (`type`, `default`, `enum`, ...) describe how the attribute shows up in the sidebar:
+Seven keys beyond the WordPress ones (`type`, `default`, `enum`, ...) describe how the attribute shows up in the sidebar:
 
-| Key            | Description                                                                                                                                                                                                                                                                             |
-| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `control`      | Explicit control name: `text`, `textarea`, `toggle`, `number`, `select`, `image`, `gallery`, `file`, `posts`. Overrides the type-derived choice. An unsupported value falls back to the type-derived control and logs a warning in debug mode, rather than silently dropping the field. |
-| `label`        | Field label in the sidebar. Defaults to a humanized version of the attribute key — `ctaLabel` becomes "Cta label".                                                                                                                                                                      |
-| `help`         | Help text shown under the field.                                                                                                                                                                                                                                                        |
-| `options`      | Choices for a `select` control: a list of raw values, a `value => label` map, or an already normalized list of `{label, value}` pairs.                                                                                                                                                  |
-| `allowedTypes` | Media types the `file` or `gallery` picker offers, as MIME types or top-level types — `['audio']`, `['image']`. Omit it and a `gallery` offers images while a `file` offers anything.                                                                                                   |
-| `postTypes`    | Post types the `posts` control searches — `['termes', 'liens']`. Omit it and every viewable post type is searched.                                                                                                                                                                      |
+| Key            | Description                                                                                                                                                                                                                                                                                         |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `control`      | Explicit control name: `text`, `textarea`, `richtext`, `toggle`, `number`, `select`, `image`, `gallery`, `file`, `posts`. Overrides the type-derived choice. An unsupported value falls back to the type-derived control and logs a warning in debug mode, rather than silently dropping the field. |
+| `label`        | Field label in the sidebar. Defaults to a humanized version of the attribute key — `ctaLabel` becomes "Cta label".                                                                                                                                                                                  |
+| `help`         | Help text shown under the field.                                                                                                                                                                                                                                                                    |
+| `placeholder`  | Text an empty [in-place field](#the-canvas) shows. Defaults to the label.                                                                                                                                                                                                                           |
+| `options`      | Choices for a `select` control: a list of raw values, a `value => label` map, or an already normalized list of `{label, value}` pairs.                                                                                                                                                              |
+| `allowedTypes` | Media types the `file` or `gallery` picker offers, as MIME types or top-level types — `['audio']`, `['image']`. Omit it and a `gallery` offers images while a `file` offers anything.                                                                                                               |
+| `postTypes`    | Post types the `posts` control searches — `['termes', 'liens']`. Omit it and every viewable post type is searched.                                                                                                                                                                                  |
 
 ```php
 public static function attributes(): array
@@ -100,11 +102,11 @@ public static function attributes(): array
 }
 ```
 
-These six keys are stripped before the schema reaches WordPress: `register_block_type()` and `block.json` only ever see the attributes WordPress itself understands.
+These seven keys are stripped before the schema reaches WordPress: `register_block_type()` and `block.json` only ever see the attributes WordPress itself understands.
 
 ## Containers
 
-A block accepts inner blocks as soon as one of three `#[AsBlock]` parameters is set — `allowedBlocks`, `innerBlocksTemplate`, or `innerBlocksTemplateLock`. Setting any of them turns the block into a container: the editor renders `InnerBlocks` in the canvas instead of a server-side preview, and the inner markup reaches the Twig template as `content`, exactly as it does today for a block with child blocks.
+A block accepts inner blocks as soon as one of three `#[AsBlock]` parameters is set — `allowedBlocks`, `innerBlocksTemplate`, or `innerBlocksTemplateLock`. Setting any of them turns the block into a container: the editor mounts the inner blocks where the template prints `content` (see [The canvas](#the-canvas)), and on the site the inner markup reaches the Twig template as `content`.
 
 ```php
 #[AsBlock(
@@ -158,21 +160,45 @@ final readonly class HeroBlock implements BlockInterface
 
 `innerBlocksTemplate` and `innerBlocksTemplateLock` are editor-only: they configure the `InnerBlocks` component and never reach `block.json` or `register_block_type()`, unlike `allowedBlocks`, which WordPress also validates server-side.
 
-## Why prose lives in InnerBlocks
+## The canvas
 
-**Prose lives in `InnerBlocks` using core blocks. Structured data lives in sidebar controls.**
+The editor draws a Foehn block from its own Twig template, the same markup as the site, and makes it editable in place. **There is no preview to look at and a sidebar to type into: the author edits the block where it is shown.**
 
-This is a constraint, not a style preference, and it is worth understanding why. The block editor's in-canvas `RichText` editing — click a heading, type into it — works by editing DOM the editor itself rendered. A Foehn block's canvas is not that: it is `ServerSideRender`, an iframe-like preview that re-runs the block's own PHP `render_callback` and Twig template on every keystroke that changes an attribute. There is no editable DOM to click into, because the DOM shown is not the editor's to own — it is the site's actual markup, rendered by the site's own code.
+The registrar asks the `block-renderer` REST endpoint for the block's render with the `foehn_canvas` flag, and turns the HTML into editor elements. Two things in a template change in that render, and become live editor components:
 
-A sidebar `TextControl` or `TextareaControl` works fine there because it is a plain form field with no requirement to be the thing on screen. It is an acceptable way to edit a label, a CTA, an alt text, or any short string. It is a poor way to edit a paragraph or a heading, because sidebar fields have no live-preview typing feedback, no formatting, and no place for a second heading and three paragraphs to coexist.
+- **`content`.** A container receives a marker as `content`. Where the template prints it, the editor mounts the block's inner blocks. When `content` is the only thing in an element, as in `<div class="hero__content">{{ content|raw }}</div>`, the inner blocks are the direct children of that element, exactly as a core container block holds them: a grid or a flex layout in the template applies to them unchanged.
+- **`block_editable()`.** An element marked with `{{ block_editable('<attribute>') }}` becomes a `RichText` bound to that attribute. The author clicks the heading and types. The attribute has no sidebar field any more.
 
-`InnerBlocks` solves this the way WordPress core already does: hand paragraph- and heading-shaped content to `core/paragraph` and `core/heading`, which have their own real, click-to-edit `RichText` implementations, and let a Foehn block own only the structure and the data around that content — an image, an alignment, a variant, a link target. A hero block is the clearest example: its heading and body are `InnerBlocks` using core blocks, and its background image and alignment are sidebar controls.
+```twig
+{# templates/blocks/gallery.twig #}
+<section class="gallery">
+  {% if title or is_block_editor() %}
+    <h2 {{ block_editable('title') }}>{{ title }}</h2>
+  {% endif %}
+  …
+</section>
+```
+
+On the site, `block_editable()` prints nothing and `is_block_editor()` is false: the markup does not change. Use `is_block_editor()` to keep an empty editable element in the markup, so the author has a place to type.
+
+The theme script runs on the canvas when the theme enqueues it on `enqueue_block_assets`, as the starter does. js-toolkit components mount by themselves, and mount again when the editor renders a block again, so a carousel or a video cover works as on the site. A component that hides content the author must edit, such as an accordion panel, must not mount in the editor: render the element without `data-component` and in its open state when `is_block_editor()` is true.
+
+A string attribute edited in place stays plain text: no formatting, and the template prints it escaped, `{{ title }}`. Declare `'control' => 'richtext'` to let the author apply bold, italic and links. The value is then HTML, which the template prints with `{{ caption|e('wp_kses_post')|raw }}`. A `richtext` attribute that no element marks falls back to a textarea in the sidebar, so it is never out of reach.
+
+The rest of the render follows the editor's rules for its own blocks:
+
+- **The root element is the block.** When the template has one root element, it receives the block wrapper props (`useBlockProps`): the block toolbar, the selection outline and the block supports land on the template's own `<section>`, with no wrapper `<div>` around it. A template with several root nodes gets one wrapper.
+- **The render is inert.** Links do not navigate, forms do not submit, scripts and `on*` attributes are dropped, and iframes do not take the clicks that select the block.
+- **Images have a toolbar button.** Each `image` attribute adds a replace button to the block toolbar, as on core's image block. The sidebar control stays.
+- **A change re-renders.** A sidebar change asks for a new render after a short pause. Typing in an editable element does not: `RichText` already shows the text.
+
+Use inner blocks for free-form prose: several paragraphs, headings, lists and buttons, in an order the author chooses. Use `block_editable()` for text the template places itself: a section title, a caption, an item label. Use sidebar controls for the data around them: an image, a variant, a link target.
 
 ## Blocks are dynamic by construction
 
 A Foehn block has no `save` parameter, and there is no static-block code path anywhere in the framework: `#[AsBlock]` carries no `save`, `BlockJsonGenerator` never emits one, and `BlockDiscovery` registers every block exclusively through `render_callback`. This is a guarantee, not an accident of the current implementation.
 
-It is also what makes the rest of this page possible. `ServerSideRender` can only show a real preview because every block re-renders through PHP on every request, in the editor and on the front end alike. And because there is no serialized markup to keep in sync, a Twig template can be rewritten years from now — new markup, new class names, an entirely different structure — without invalidating a single piece of existing content. The post content stores attributes, not HTML.
+It is also what makes the rest of this page possible. The canvas can show the real markup because every block re-renders through PHP on every request, in the editor and on the front end alike. And because there is no serialized markup to keep in sync, a Twig template can be rewritten years from now — new markup, new class names, an entirely different structure — without invalidating a single piece of existing content. The post content stores attributes, not HTML.
 
 Every Foehn block also gets `supports.html` set to `false` by default, for the same reason: "Edit as HTML" lets an author hand-edit the serialized block markup, which only makes sense for a block with real saved output to edit. A dynamic block has none, so the option can only ever produce an invalid block. An explicit `supports: ['html' => true]` on a block still wins if a project genuinely needs it.
 
@@ -199,7 +225,7 @@ A block's own CSS and JS are named after the block, and are loaded when the file
 | `assets/css/blocks/callout.css` | front end and editor                                           |
 | `assets/js/blocks/callout.js`   | front end, when the block is used, as a `type="module"` script |
 
-Nothing declares them — `theme/callout` finds `callout.css` and `callout.js` because of their names. Both are attached to the block type, so WordPress loads them only on pages that render the block, and loads the stylesheet into the editor too. That last part is what makes the sidebar worth using: the server-rendered preview is styled exactly like the front end, because it is the same markup with the same stylesheet.
+Nothing declares them — `theme/callout` finds `callout.css` and `callout.js` because of their names. Both are attached to the block type, so WordPress loads them only on pages that render the block, and loads the stylesheet into the editor too. That last part is what makes the canvas look like the site: it is the same markup with the same stylesheet. A theme stylesheet that holds the block styles, such as a Tailwind build, and the theme script go into the editor through the `enqueue_block_assets` action, which WordPress loads inside the editor iframe.
 
 The script is a script module, so `import` works in it — including `@wordpress/interactivity`, which WordPress resolves through its import map. These files are served as they are, so they are also outside any build pipeline. Keep them plain CSS and plain JS, and a block stays self-contained — it works in a checkout that has never run `npm install`. Anything that needs Tailwind or bundling belongs in the theme's main stylesheet instead.
 

@@ -21,7 +21,7 @@ final class BlockAttributeSchema
     /**
      * UI-only keys, stripped before the schema reaches WordPress.
      */
-    private const array UI_KEYS = ['control', 'label', 'help', 'options', 'allowedTypes', 'postTypes'];
+    private const array UI_KEYS = ['control', 'label', 'help', 'placeholder', 'options', 'allowedTypes', 'postTypes'];
 
     /**
      * Controls the editor knows how to render.
@@ -29,6 +29,9 @@ final class BlockAttributeSchema
     private const array SUPPORTED_CONTROLS = [
         'text',
         'textarea',
+        // Formatted text (bold, italic, links), stored as HTML. Edited in place
+        // on the canvas where the template marks it with block_editable().
+        'richtext',
         'toggle',
         'number',
         'select',
@@ -72,7 +75,7 @@ final class BlockAttributeSchema
      * to round an integer attribute rather than store a float WordPress would reject.
      *
      * @param array<string, array<string, mixed>> $attributes
-     * @return array<string, array{control: string|null, type: string|null, label: string, help: string|null, options: list<array{label: string, value: string|int|float|bool}>|null, allowedTypes: list<string>|null, postTypes: list<string>|null}>
+     * @return array<string, array{control: string|null, type: string|null, label: string, help: string|null, placeholder: string|null, options: list<array{label: string, value: string|int|float|bool}>|null, allowedTypes: list<string>|null, postTypes: list<string>|null}>
      */
     public static function toEditorFields(array $attributes): array
     {
@@ -88,6 +91,8 @@ final class BlockAttributeSchema
                 'type' => is_string($schema['type'] ?? null) ? $schema['type'] : null,
                 'label' => is_string($schema['label'] ?? null) ? $schema['label'] : self::humanize($name),
                 'help' => is_string($schema['help'] ?? null) ? $schema['help'] : null,
+                // Shown in an empty in-place editor on the canvas.
+                'placeholder' => is_string($schema['placeholder'] ?? null) ? $schema['placeholder'] : null,
                 'options' => $control === 'select' ? self::resolveOptions($schema) : null,
                 // Which media the picker offers, for `file` and `gallery`. Null lets
                 // the editor apply its own default — images for a gallery, anything

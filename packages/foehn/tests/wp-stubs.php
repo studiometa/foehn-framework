@@ -370,6 +370,21 @@ if (!class_exists('WP_REST_Request')) {
     {
         private array $params = [];
 
+        public function __construct(
+            private string $method = '',
+            private string $route = '',
+        ) {}
+
+        public function get_method(): string
+        {
+            return $this->method;
+        }
+
+        public function get_route(): string
+        {
+            return $this->route;
+        }
+
         public function get_param(string $key): mixed
         {
             return $this->params[$key] ?? null;
