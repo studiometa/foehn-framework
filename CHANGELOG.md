@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file. Each pull r
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.10.2 - 2026-11-16
+
+### Added
+
+- The block editor draws a Føhn block from its own Twig template and makes it editable in place: the template's root element is the block element, the inner blocks of a container mount where the template prints `content`, and an element marked with `{{ block_editable('<attribute>') }}` is edited on the canvas. `is_block_editor()` tells a template it renders for the editor. ([#297])
+- A `richtext` control for a string attribute that keeps bold, italic and links as HTML, and a `placeholder` key for an empty in-place field. ([#297])
+- An `image` attribute gets a replace button in the block toolbar. ([#297])
+- The starter and the demo load the theme stylesheet and script in the block editor, on `enqueue_block_assets`, so blocks with js-toolkit components work on the canvas too. ([#297])
+
+### Changed
+
+- The editor no longer shows a container's inner blocks without its template, and no longer shows a non-container block as an inert `ServerSideRender` preview. To keep editing a string attribute in the sidebar, do not mark it with `block_editable()`. ([#297])
+- The editor script depends on `wp-api-fetch` and `wp-data` instead of `wp-server-side-render`. ([#297])
+
+[#297]: https://github.com/studiometa/foehn-framework/pull/297
+
 ## 0.10.1 - 2026-11-16
 
 ### Fixed
