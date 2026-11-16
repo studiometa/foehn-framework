@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file. Each pull r
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.8.2 - 2026-11-16
+
+### Dependencies
+
+- Update docs devDependencies ([#231])
+- Update rustfs/rustfs Docker tag to v1.0.5 ([#246])
+- Update symplify/monorepo-split-github-action action to v2.4.5 ([#247])
+- Update devDependencies ([#255])
+- Update weareikko/code-review action to v0.11.1 ([#256])
+
+[#231]: https://github.com/studiometa/foehn-framework/pull/231
+[#246]: https://github.com/studiometa/foehn-framework/pull/246
+[#247]: https://github.com/studiometa/foehn-framework/pull/247
+[#255]: https://github.com/studiometa/foehn-framework/pull/255
+[#256]: https://github.com/studiometa/foehn-framework/pull/256
+
 ## 0.8.1 - 2026-11-13
 
 ### Added
