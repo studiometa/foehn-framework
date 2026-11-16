@@ -7,7 +7,6 @@ namespace Studiometa\Foehn\Views;
 use Studiometa\Foehn\Contracts\ViewEngineInterface;
 use Studiometa\Foehn\Trace\RequestTrace;
 use Timber\Loader;
-use Timber\Site;
 use Timber\Timber;
 use Twig\Error\Error as TwigError;
 
@@ -118,13 +117,7 @@ final class TimberViewEngine implements ViewEngineInterface
             default => get_object_vars($context),
         };
 
-        return new TemplateContext(
-            post: $array['post'] ?? null,
-            posts: $array['posts'] ?? null,
-            site: $array['site'] ?? new Site(),
-            user: $array['user'] ?? null,
-            extra: array_diff_key($array, array_flip(['post', 'posts', 'site', 'user'])),
-        );
+        return TemplateContext::fromTimberContext($array);
     }
 
     /**

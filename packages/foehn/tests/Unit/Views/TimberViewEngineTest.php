@@ -190,6 +190,19 @@ describe('TimberViewEngine errors', function () {
         expect($this->engine->exists('nowhere'))->toBeFalse();
     });
 
+    it('renders a context whose post, posts, site and user are not the typed objects', function () {
+        // Timber gives `user => false` to an anonymous visitor.
+        $html = $this->engine->render('hello', [
+            'title' => 'Hi',
+            'post' => false,
+            'posts' => [],
+            'site' => 'not a site',
+            'user' => false,
+        ]);
+
+        expect($html)->toContain('<h1>Hi</h1>');
+    });
+
     it('names the view, the directories it searched and the file to create', function () {
         expect(fn() => $this->engine->render('pages/single'))
             ->toThrow(
