@@ -35,6 +35,12 @@ beforeAll(function () {
                 . " \\RankMath\\Installer::create_tables(['redirections']);",
             ),
     );
+    // Rank Math serves its sitemaps through rewrite rules, read only after a flush.
+    Site::wp('wp rewrite flush');
+    // A page of this file's own, so the test does not depend on the content of the site.
+    Site::wp(
+        'wp post create --post_type=page --post_status=publish --post_name=rank-math-smoke --post_title="Rank Math smoke"',
+    );
     Site::enableCache();
 });
 
@@ -45,6 +51,8 @@ afterAll(function () {
 
     Site::wp('wp plugin uninstall seo-by-rank-math --deactivate');
     Site::wp('wp option delete rank_math_registration_skip');
+    Site::wp('wp post delete $(wp post list --post_type=page --name=rank-math-smoke --field=ID) --force');
+    Site::wp('wp rewrite flush');
     Site::disableCache();
     Site::clearCache();
 });
@@ -58,8 +66,11 @@ beforeEach(function () {
 
 it('warms the pages of the Rank Math sitemap when the project names no sitemap', function () {
     $output = (string) Site::wp('wp foehn cache:warm --sync');
+    // The warm-up reads the sitemap over HTTP, from inside the container.
+    $sitemap = Site::wp("wp eval 'echo wp_remote_retrieve_response_code(wp_remote_get(rank_math_get_sitemap_url()));'");
 
-    expect(is_file(Site::cacheFile('/hello-world/')))->toBeTrue('not warmed — ' . $output);
+    expect(is_file(Site::cacheFile('/hello-world/')))
+        ->toBeTrue(sprintf('not warmed — %s The sitemap index answered %s.', $output, $sitemap));
 });
 
 it('purges the stored page of the source of a new redirection', function () {
@@ -73,13 +84,13 @@ it('purges the stored page of the source of a new redirection', function () {
 });
 
 it('purges the stored page of the source of a redirection that is turned on', function () {
-    $id = (string) Site::wp(RANK_MATH_REDIRECTION . ' create embed-me /contact/ exact inactive');
-    smokeWarm('/embed-me/');
-    expect(is_file(Site::cacheFile('/embed-me/')))->toBeTrue('nothing was stored to purge');
+    $id = (string) Site::wp(RANK_MATH_REDIRECTION . ' create rank-math-smoke /contact/ exact inactive');
+    smokeWarm('/rank-math-smoke/');
+    expect(is_file(Site::cacheFile('/rank-math-smoke/')))->toBeTrue('nothing was stored to purge');
 
     Site::wp(RANK_MATH_REDIRECTION . ' status ' . $id . ' active');
 
-    $response = smokeGet('/embed-me/');
+    $response = smokeGet('/rank-math-smoke/');
     expect($response->status)->toBe(301, $response->describe());
 });
 
