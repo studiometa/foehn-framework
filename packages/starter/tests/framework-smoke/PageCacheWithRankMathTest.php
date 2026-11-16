@@ -1,0 +1,94 @@
+<?php
+
+declare(strict_types=1);
+
+use Studiometa\Foehn\Smoke\Support\Site;
+
+/**
+ * The page cache, with Rank Math active.
+ *
+ * Two things Rank Math changes for the cache:
+ *
+ * - it turns off the core sitemap and publishes its own index, so the warm-up must read
+ *   that index when the project names no sitemap;
+ * - its redirections run in PHP, so a page stored before a redirection hides it until the
+ *   page is purged.
+ *
+ * The plugin is installed from wordpress.org for this file and removed afterwards.
+ */
+
+const RANK_MATH_REDIRECTION = 'wp eval-file tests/framework-smoke/fixtures/rank-math-redirection.php';
+
+beforeAll(function () {
+    if (!Site::isRunning()) {
+        return;
+    }
+
+    Site::wp('wp plugin install seo-by-rank-math --activate');
+    // Rank Math loads its front end only once the registration is done or skipped.
+    Site::wp('wp option update rank_math_registration_skip 1');
+    // The redirections module is off on a new install, and its tables come with it.
+    Site::wp(
+        'wp eval '
+            . escapeshellarg(
+                "update_option('rank_math_modules', array_merge(get_option('rank_math_modules', []), ['redirections']));"
+                . " \\RankMath\\Installer::create_tables(['redirections']);",
+            ),
+    );
+    Site::enableCache();
+});
+
+afterAll(function () {
+    if (!Site::isRunning()) {
+        return;
+    }
+
+    Site::wp('wp plugin uninstall seo-by-rank-math --deactivate');
+    Site::wp('wp option delete rank_math_registration_skip');
+    Site::disableCache();
+    Site::clearCache();
+});
+
+beforeEach(function () {
+    Site::isRunning() || $this->markTestSkipped('ddev is not running — run `ddev start` and try again.');
+
+    Site::wp(RANK_MATH_REDIRECTION . ' reset');
+    Site::clearCache();
+});
+
+it('warms the pages of the Rank Math sitemap when the project names no sitemap', function () {
+    $output = (string) Site::wp('wp foehn cache:warm --sync');
+
+    expect(is_file(Site::cacheFile('/hello-world/')))->toBeTrue('not warmed — ' . $output);
+});
+
+it('purges the stored page of the source of a new redirection', function () {
+    smokeWarm('/sample-page/');
+    expect(is_file(Site::cacheFile('/sample-page/')))->toBeTrue('nothing was stored to purge');
+
+    Site::wp(RANK_MATH_REDIRECTION . ' create sample-page /contact/');
+
+    $response = smokeGet('/sample-page/');
+    expect($response->status)->toBe(301, $response->describe());
+});
+
+it('purges the stored page of the source of a redirection that is turned on', function () {
+    $id = (string) Site::wp(RANK_MATH_REDIRECTION . ' create embed-me /contact/ exact inactive');
+    smokeWarm('/embed-me/');
+    expect(is_file(Site::cacheFile('/embed-me/')))->toBeTrue('nothing was stored to purge');
+
+    Site::wp(RANK_MATH_REDIRECTION . ' status ' . $id . ' active');
+
+    $response = smokeGet('/embed-me/');
+    expect($response->status)->toBe(301, $response->describe());
+});
+
+it('empties the cache for a redirection whose source is a pattern', function () {
+    smokeWarm('/hello-world/');
+    expect(is_file(Site::cacheFile('/hello-world/')))->toBeTrue('nothing was stored to purge');
+
+    Site::wp(RANK_MATH_REDIRECTION . ' create ' . escapeshellarg('^hello-') . ' /contact/ regex');
+
+    $response = smokeGet('/hello-world/');
+    expect($response->status)->toBe(301, $response->describe());
+});
