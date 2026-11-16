@@ -128,7 +128,7 @@ See [Configuration](/guide/configuration) for how Føhn loads these files.
 | --------------------------------------- | -------------------------- |
 | [`Kernel`](./kernel)                    | Main bootstrap class       |
 | [`Helpers`](./helpers)                  | Global helper functions    |
-| [`CacheInterface`](./cache-interface)   | Injectable cache service   |
+| [`CacheInterface`](./cache-interface)   | Injectable PSR-16 cache    |
 | [`ViteManifest`](./vite-manifest)       | Vite asset manifest helper |
 | [`WebpackManifest`](./webpack-manifest) | Asset manifest helper      |
 

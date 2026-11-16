@@ -66,7 +66,7 @@ final class ThemeHooks
 - **Block Patterns** — `#[AsBlockPattern]` with Twig templates
 - **REST API** — `#[AsRestRoute]` for custom endpoints
 - **Shortcodes** — `#[AsShortcode]` for shortcode handlers
-- **Caching** — Injectable `CacheInterface` with tagged cache support
+- **Caching** — Injectable PSR-16 `CacheInterface` with tagged cache support
 - **CLI** — `#[AsCliCommand]` for WP-CLI commands
 - **Seeders** — `#[AsSeeder]` classes that write sample content with `wp foehn seed`
 - **Page cache** — static HTML pages that nginx or Apache serves, with `PageCacheConfig`

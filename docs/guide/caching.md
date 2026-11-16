@@ -2,6 +2,8 @@
 
 Føhn provides an injectable caching service built on WordPress transients. Use it to cache expensive operations like database queries, API calls, or computed data.
 
+The service is a [PSR-16](https://www.php-fig.org/psr/psr-16/) cache (`Psr\SimpleCache\CacheInterface`). Any library that takes a PSR-16 cache can use it.
+
 ## Getting the Cache Service
 
 Føhn registers `CacheInterface` as a singleton in the DI container. Inject it into any discovered class:
@@ -43,10 +45,15 @@ $cache = app(CacheInterface::class);
 // Store a value (TTL in seconds)
 $cache->set('my_key', $value, 3600); // 1 hour
 
+// Store a value with no expiration
+$cache->set('my_key', $value);
+
 // Retrieve a value
 $value = $cache->get('my_key');
 $value = $cache->get('my_key', 'default'); // With default
 ```
+
+A key must not be empty or contain `{}()/\@:`. The TTL is a number of seconds or a `DateInterval`. A `null` TTL (the default) stores the value with no expiration. A TTL of `0` or less deletes the entry.
 
 ### Remember Pattern
 
@@ -73,13 +80,18 @@ if ($cache->has('my_key')) {
 }
 
 // Delete a key
-$cache->forget('my_key');
+$cache->delete('my_key');
 
-// Store forever (no expiration)
-$cache->forever('my_key', $value);
+// Remember with no expiration
+$cache->remember('my_key', null, fn() => expensive_computation());
 
-// Remember forever
-$cache->rememberForever('my_key', fn() => expensive_computation());
+// Several keys at once
+$cache->setMultiple(['a' => 1, 'b' => 2], 3600);
+$values = $cache->getMultiple(['a', 'b']);
+$cache->deleteMultiple(['a', 'b']);
+
+// Remove every entry of Føhn's cache
+$cache->clear();
 
 // Increment/decrement counters
 $cache->increment('page_views');
@@ -124,14 +136,15 @@ $cache->flushTags(['products', 'categories']);
 
 ### Tagged Cache Methods
 
-A tagged cache has five methods. It has no `get()`, `set()`, `has()`, `increment()` or `decrement()`: read a tagged key with `remember()`, or with `get()` on the cache itself.
+A tagged cache is a PSR-16 cache too. It shares the keys of the cache, and records each key it writes under its tags:
 
 ```php
-$cache->tags(['products'])->put('key', $value, 3600);
-$cache->tags(['products'])->forever('key', $value);
+$cache->tags(['products'])->set('key', $value, 3600);
+$cache->tags(['products'])->set('key', $value); // No expiration
 $cache->tags(['products'])->remember('key', 3600, fn() => compute());
-$cache->tags(['products'])->rememberForever('key', fn() => compute());
-$cache->tags(['products'])->forget('key');
+$cache->tags(['products'])->remember('key', null, fn() => compute());
+$cache->tags(['products'])->delete('key');
+$cache->tags(['products'])->clear(); // Flushes the 'products' tag
 ```
 
 ## Cache Invalidation with Hooks
@@ -264,7 +277,9 @@ Under the hood, `TransientCache` uses WordPress transients:
 
 - `set()` → `set_transient()`
 - `get()` → `get_transient()`
-- `forget()` → `delete_transient()`
+- `delete()` → `delete_transient()`
+
+Each transient name holds the prefix, a version number and the key, for example `foehn_1_products_list`. `clear()` increments the version, kept in the `foehn_cache_version` option: the entries of the previous version are never read again. Without a persistent object cache, `clear()` also deletes the transients of the prefix from `wp_options`.
 
 Tag-to-key mappings are stored in a WordPress option (`foehn_cache_tags`). When you flush a tag, all associated transients are deleted and the mapping is cleaned up automatically.
 

@@ -17,7 +17,7 @@ describe('ProjectCacheHooks', function () {
 
     it('flushes the projects tag', function () {
         $cache = new TransientCache();
-        $cache->tags(['projects'])->put('portfolio-stats', ['series' => 6]);
+        $cache->tags(['projects'])->set('portfolio-stats', ['series' => 6]);
 
         new ProjectCacheHooks($cache)->flush();
 

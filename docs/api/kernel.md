@@ -48,11 +48,6 @@ final class Kernel
     public function getAppPath(): string;
 
     /**
-     * Get a configuration value.
-     */
-    public function getConfig(string $key, mixed $default = null): mixed;
-
-    /**
      * Get the Foehn configuration.
      */
     public function getFoehnConfig(): FoehnConfig;
@@ -108,16 +103,16 @@ See [FoehnConfig](./foehn-config), [Discovery Cache](/guide/discovery-cache), an
 
 The kernel automatically registers these services as singletons:
 
-| Service                   | Implementation     | Description                     |
-| ------------------------- | ------------------ | ------------------------------- |
-| `CacheInterface`          | `TransientCache`   | WordPress transient-based cache |
-| `ViewEngineInterface`     | `TimberViewEngine` | Twig template rendering         |
-| `ContextProviderRegistry` | —                  | Context provider management     |
-| `DiscoveryRunner`         | —                  | Discovery orchestration         |
-| `AcfBlockRenderer`        | —                  | ACF block rendering             |
-| `SectionRequest`          | —                  | Current section selection       |
-| `SectionCollector`        | —                  | Page-local section declarations |
-| `SectionRenderer`         | —                  | Atomic section HTML rendering   |
+| Service                   | Implementation     | Description                          |
+| ------------------------- | ------------------ | ------------------------------------ |
+| `CacheInterface`          | `TransientCache`   | PSR-16 cache on WordPress transients |
+| `ViewEngineInterface`     | `TimberViewEngine` | Twig template rendering              |
+| `ContextProviderRegistry` | —                  | Context provider management          |
+| `DiscoveryRunner`         | —                  | Discovery orchestration              |
+| `AcfBlockRenderer`        | —                  | ACF block rendering                  |
+| `SectionRequest`          | —                  | Current section selection            |
+| `SectionCollector`        | —                  | Page-local section declarations      |
+| `SectionRenderer`         | —                  | Atomic section HTML rendering        |
 
 ### getInstance()
 
@@ -144,15 +139,6 @@ Retrieve a service from the container.
 ```php
 $viewEngine = Kernel::get(ViewEngineInterface::class);
 $myService = Kernel::get(MyService::class);
-```
-
-### getConfig()
-
-Get configuration values.
-
-```php
-$viewsPath = Kernel::getInstance()->getConfig('timber.views');
-$default = Kernel::getInstance()->getConfig('missing.key', 'default');
 ```
 
 ## Lifecycle Hooks

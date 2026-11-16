@@ -4,71 +4,30 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Contracts;
 
+use DateInterval;
+use Psr\SimpleCache\CacheInterface as SimpleCacheInterface;
 use Studiometa\Foehn\Cache\TaggedCache;
 
 /**
- * Cache interface using WordPress transients as backend.
+ * Føhn's cache: a PSR-16 cache, with helpers to compute values, count and group keys by tag.
+ *
+ * A `null` TTL stores the value with no expiration. A TTL of zero or less deletes the entry.
  */
-interface CacheInterface
+interface CacheInterface extends SimpleCacheInterface
 {
-    /**
-     * Get a value from cache.
-     *
-     * @template T
-     * @param string $key Cache key
-     * @param T $default Default value if not found
-     * @return T|mixed
-     */
-    public function get(string $key, mixed $default = null): mixed;
-
-    /**
-     * Store a value in cache.
-     *
-     * @param string $key Cache key
-     * @param mixed $value Value to cache
-     * @param int $ttl Time to live in seconds (0 = no expiration)
-     * @return bool True on success
-     */
-    public function set(string $key, mixed $value, int $ttl = 0): bool;
-
-    /**
-     * Check if a key exists in cache.
-     */
-    public function has(string $key): bool;
-
-    /**
-     * Remove a value from cache.
-     */
-    public function forget(string $key): bool;
-
     /**
      * Get a value from cache, or compute and store it.
      *
      * @template T
      * @param string $key Cache key
-     * @param int $ttl Time to live in seconds
+     * @param null|int|DateInterval $ttl Time to live (`null` = no expiration)
      * @param callable(): T $callback Function to compute value if not cached
      * @return T
      */
-    public function remember(string $key, int $ttl, callable $callback): mixed;
+    public function remember(string $key, int|DateInterval|null $ttl, callable $callback): mixed;
 
     /**
-     * Get a value from cache, or compute and store it forever.
-     *
-     * @template T
-     * @param string $key Cache key
-     * @param callable(): T $callback Function to compute value if not cached
-     * @return T
-     */
-    public function rememberForever(string $key, callable $callback): mixed;
-
-    /**
-     * Store a value forever (no expiration).
-     */
-    public function forever(string $key, mixed $value): bool;
-
-    /**
-     * Increment a numeric value.
+     * Increment a numeric value. The entry has no expiration.
      *
      * @param string $key Cache key
      * @param int $amount Amount to increment by
@@ -77,7 +36,7 @@ interface CacheInterface
     public function increment(string $key, int $amount = 1): int;
 
     /**
-     * Decrement a numeric value.
+     * Decrement a numeric value. The entry has no expiration.
      *
      * @param string $key Cache key
      * @param int $amount Amount to decrement by

@@ -37,13 +37,3 @@ if (!function_exists('Studiometa\Foehn\dispatch')) {
         app(Contracts\JobDispatcher::class)->dispatch($job, $delay);
     }
 }
-
-if (!function_exists('Studiometa\Foehn\config')) {
-    /**
-     * Get a configuration value from the kernel.
-     */
-    function config(string $key, mixed $default = null): mixed
-    {
-        return Kernel::getInstance()->getConfig($key, $default);
-    }
-}
