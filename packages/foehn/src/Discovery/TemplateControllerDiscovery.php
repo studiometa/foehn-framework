@@ -116,6 +116,12 @@ final class TemplateControllerDiscovery implements Discovery
         $templateType = $this->getTemplateType();
         $controller = $this->controllers->find($templateType);
 
+        // The supported way to leave one request to the template file WordPress chose:
+        // a plugin's own page, a request a project renders with PHP templates.
+        if ($controller !== null && $this->skips($templateType, $controller['className'])) {
+            $controller = null;
+        }
+
         // What an error entry and the request trace say this request rendered.
         $this->requestTrace->matchTemplate($templateType, $controller['className'] ?? null);
 
@@ -153,6 +159,17 @@ final class TemplateControllerDiscovery implements Discovery
 
         // Return empty string to prevent WordPress from including the template
         return '';
+    }
+
+    /**
+     * Whether the `foehn/template_controller/skip` filter skips the controller of this
+     * request.
+     *
+     * @param class-string $controller
+     */
+    private function skips(string $template, string $controller): bool
+    {
+        return (bool) apply_filters('foehn/template_controller/skip', false, $template, $controller);
     }
 
     /**

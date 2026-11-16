@@ -75,3 +75,21 @@ it('matches the page template a page selects before its slug', function () {
 
     Site::wp("wp post delete {$id} --force");
 });
+
+it('skips the controllers for a request that the skip filter names', function () {
+    $plugin = Site::path('web/wp-content/mu-plugins/smoke-skip-template-controller.php');
+    copy(__DIR__ . '/fixtures/skip-template-controller.php', $plugin);
+
+    try {
+        $url = (string) Site::url() . '/';
+
+        // The starter's controllers render the layout with its header.
+        expect(Client::get($url)->body)->toContain('class="site-header"');
+        // Skipped, WordPress includes the index.php of the theme instead.
+        expect(Client::get($url . '?smoke-skip-controllers=1')->body)
+            ->toContain('No template controller matched this request.')
+            ->not->toContain('class="site-header"');
+    } finally {
+        unlink($plugin);
+    }
+});
