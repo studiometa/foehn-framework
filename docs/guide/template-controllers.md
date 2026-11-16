@@ -295,6 +295,12 @@ final class HomeController implements TemplateControllerInterface {}
 
 An oEmbed request, such as `/my-post/embed/`, goes to the embed template of WordPress. Other sites show this template in an iframe when they embed a link to your post, so the full page of the theme is not rendered there. `is_embed()` is true for these requests.
 
+### How a Controller Takes Over the Request
+
+Føhn finds the controller on the `template_include` filter, at priority 5, and returns the path of its own template file, `vendor/studiometa/foehn/resources/templates/template-controller.php`. WordPress fires `wp_before_include_template` and includes that file, which runs the controller and prints the page. So the template enhancement output buffer of WordPress 6.9 and later is open while the page renders: the styles of the blocks that the page prints late are moved into the head. When `handle()` returns `null`, the file includes the template that WordPress chose.
+
+A `template_include` callback with a priority higher than 5 that returns another file replaces the template file of Føhn: the controller then does not run.
+
 ### Skipping the Controllers for One Request
 
 Return `true` from the `foehn/template_controller/skip` filter to leave a request to the template file that WordPress chose, for example a page that a plugin renders with its own PHP template:

@@ -31,6 +31,20 @@ final class TemplateControllerDiscovery implements Discovery
 {
     use IsWpDiscovery;
 
+    /** The template file WordPress includes for a request a controller handles. */
+    public const string TEMPLATE = __DIR__ . '/../../resources/templates/template-controller.php';
+
+    /**
+     * The controller of the current request and the template file WordPress chose, kept
+     * from `template_include` until WordPress includes {@see self::TEMPLATE}.
+     *
+     * Static, because that file is included from the global scope and has no other way
+     * to reach this instance. There is one main request per PHP request.
+     *
+     * @var array{controller: TemplateControllerInterface, template: string}|null
+     */
+    private static ?array $pending = null;
+
     private TemplateControllerMap $controllers;
 
     public function __construct(
@@ -147,18 +161,43 @@ final class TemplateControllerDiscovery implements Discovery
                 : $this->sectionResponse->send($rendered);
         }
 
-        $context = TemplateContext::fromTimberContext(Timber::context());
-        $result = $instance->handle($context);
+        // Rendered by the template file below, not here: WordPress fires
+        // `wp_before_include_template`, and starts its template enhancement output
+        // buffer, only for a template file `template_include` returns. A page rendered
+        // here would be printed before that buffer, which moves the styles of the blocks
+        // printed late into the head.
+        self::$pending = ['controller' => $instance, 'template' => $template];
 
-        if ($result === null) {
-            return $template;
+        return self::TEMPLATE;
+    }
+
+    /**
+     * Run the controller `handleTemplateInclude()` kept for this request, and print the
+     * page it renders.
+     *
+     * Called by the template file WordPress includes ({@see self::TEMPLATE}).
+     *
+     * @return string|null The template file WordPress chose, to include when the
+     *                     controller returns null; null when the page was printed.
+     */
+    public static function renderPending(): ?string
+    {
+        $pending = self::$pending;
+        self::$pending = null;
+
+        if ($pending === null) {
+            return null;
         }
 
-        // Output the result and prevent WordPress from loading the template
+        $result = $pending['controller']->handle(TemplateContext::fromTimberContext(Timber::context()));
+
+        if ($result === null) {
+            return $pending['template'] !== '' ? $pending['template'] : null;
+        }
+
         echo $result;
 
-        // Return empty string to prevent WordPress from including the template
-        return '';
+        return null;
     }
 
     /**
