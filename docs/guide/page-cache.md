@@ -330,9 +330,9 @@ A hit sends these headers, from nginx and from the drop-in alike:
 | `ETag`, `Last-Modified`    | Computed for the stored file                                                        |
 | `X-Robots-Tag`             | `noindex, nofollow` on a section response only                                      |
 | `X-Foehn-Cache`, `-Via`    | `HIT` and the reader. nginx always sends them; the drop-in only with `debugHeaders` |
-| Each `responseHeaders` one | The value you set                                                                   |
+| Each `responseHeaders` one | The value you set. nginx only, see below                                            |
 
-The drop-in also replays the headers the page recorded ([see above](#the-headers)). A `responseHeaders` value replaces a recorded header with the same name.
+The drop-in also replays the headers the page recorded ([see above](#the-headers)).
 
 The Apache block sets `X-Foehn-Cache`, `X-Foehn-Cache-Via` and `Vary` only. It does not write `cacheControl` or `responseHeaders`. Apache merges the headers of the server configuration into the `.htaccess` ones, so a server-level header is not lost on an Apache hit.
 
@@ -383,7 +383,7 @@ return new PageCacheConfig(
 );
 ```
 
-The snippet writes them into the cache location, and the drop-in sends them too, so a hit has the same headers as a miss. When you change a server-level header, change it here too: `wp foehn cache:status` shows the snippet as outdated until you regenerate it.
+The snippet writes them into the cache location, so a hit from nginx has the same headers as a miss. When you change a server-level header, change it here too: `wp foehn cache:status` shows the snippet as outdated until you regenerate it.
 
 **2. Do not install the nginx snippet.** The drop-in then serves every hit through the PHP location, which keeps the server-level headers. A hit costs a few milliseconds instead of one, and the cache directory is not protected by the snippet.
 
@@ -393,9 +393,9 @@ The snippet writes them into the cache location, and the drop-in sends them too,
 - The values are printable ASCII, without `"`, `\` or `$`, and without spaces at the start or the end. The same rule applies to `cacheControl`.
 - A header that the cache sets itself (`Cache-Control`, `Vary`, `ETag`, `Content-Type`, `Set-Cookie`, `X-Robots-Tag`, `X-Foehn-Cache` and the other [headers that are never stored](#the-headers)) is refused. Use `cacheControl` for `Cache-Control`.
 
-A value that breaks these rules makes `wp foehn cache:config` fail, for nginx and for Apache, and stops the drop-in from serving hits. `wp foehn cache:status` then shows a warning in place of "The page cache is active". It never stops WordPress: the page is rendered by PHP.
+A value that breaks these rules makes `wp foehn cache:config` fail, for nginx and for Apache. A `cacheControl` value that breaks them also stops the drop-in from serving hits, and `wp foehn cache:status` then shows a warning in place of "The page cache is active". It never stops WordPress: the page is rendered by PHP.
 
-The headers are not added to a page that PHP renders. That page already gets the server-level headers from the web server, and adding them from PHP too would send each one twice. For the same reason, a drop-in hit behind nginx can send a configured header twice with the same value: once from PHP, once from the server level. Browsers accept a repeated identical value for these headers.
+PHP never sends the `responseHeaders`: not on a page that PHP renders, and not on a hit from the drop-in. Both are PHP responses, and the web server adds its server-level headers to them. Sending them from PHP too would send each one twice.
 
 ## TTL and the sweep
 

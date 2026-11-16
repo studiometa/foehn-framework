@@ -49,7 +49,7 @@ final readonly class PageCacheConfig
 | `ttl`                     | `int`                                               | `0`                      | Seconds a stored page stays servable. `0` = until something purges it.           |
 | `browserMaxAge`           | `int`                                               | `0`                      | `max-age` sent to the browser for cached HTML.                                   |
 | `cacheControl`            | `string\|null`                                      | `null`                   | The whole `Cache-Control` value of a hit. `null` builds it from `browserMaxAge`. |
-| `responseHeaders`         | `array<string, string>`                             | `[]`                     | Static headers sent on every hit, by nginx and by the drop-in.                   |
+| `responseHeaders`         | `array<string, string>`                             | `[]`                     | Static headers that nginx sends on every hit.                                    |
 | `environments`            | `list<string>`                                      | `['production']`         | Environments where caching is allowed at all.                                    |
 | `bypassCookies`           | `list<string>`                                      | three WordPress prefixes | A request carrying one of these cookie prefixes is never served or written.      |
 | `ignoredQueryArgs`        | `list<string>`                                      | thirteen tracking args   | Stripped before the filename is computed, so tracking links still hit.           |
@@ -124,7 +124,7 @@ cacheControl: 'no-cache, no-store, must-revalidate',
 
 ### `responseHeaders`
 
-Static headers that a hit sends, as `name => value`. Use it for the headers your server sets at server level: an nginx `location` with its own `add_header` drops them, and the cache location has its own. They are not added to a page that PHP renders. See [The headers of a hit](/guide/page-cache#the-headers-of-a-hit).
+Static headers that a hit from nginx sends, as `name => value`. Use it for the headers your server sets at server level: an nginx `location` with its own `add_header` drops them, and the cache location has its own. PHP does not send them, on a page that it renders or on a hit from the drop-in: the server adds its server-level headers to these responses. See [The headers of a hit](/guide/page-cache#the-headers-of-a-hit).
 
 ```php
 responseHeaders: [
@@ -133,7 +133,7 @@ responseHeaders: [
 ],
 ```
 
-A name contains letters, digits and hyphens, and is listed once, whatever its case. A value, and `cacheControl`, is printable ASCII without `"`, `\` or `$`. A header the cache sets itself is refused. The getters `getCacheControl()` and `getResponseHeaders()` throw an `InvalidArgumentException` for a value that breaks these rules: `wp foehn cache:config` fails, `wp foehn cache:status` shows a warning, and the drop-in lets WordPress render the page. Re-run `wp foehn cache:config --server=nginx --write` (or `--server=apache`) after a change.
+A name contains letters, digits and hyphens, and is listed once, whatever its case. A value, and `cacheControl`, is printable ASCII without `"`, `\` or `$`. A header the cache sets itself is refused. The getters `getCacheControl()` and `getResponseHeaders()` throw an `InvalidArgumentException` for a value that breaks these rules: `wp foehn cache:config` fails. For a `cacheControl` value, `wp foehn cache:status` also shows a warning, and the drop-in lets WordPress render the page. Re-run `wp foehn cache:config --server=nginx --write` (or `--server=apache`) after a change.
 
 ### `bypassCookies`
 

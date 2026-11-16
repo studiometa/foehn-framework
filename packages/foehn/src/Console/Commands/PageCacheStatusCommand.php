@@ -81,11 +81,10 @@ final class PageCacheStatusCommand implements CliCommandInterface
             return;
         }
 
-        // The drop-in validates the headers of a hit on each request and, when they are
-        // refused, lets WordPress render the page: the cache looks on and serves nothing.
+        // The drop-in validates the Cache-Control of a hit on each request and, when it
+        // is refused, lets WordPress render the page: the cache looks on and serves nothing.
         try {
             $this->config->getCacheControl();
-            $this->config->getResponseHeaders();
         } catch (InvalidArgumentException $exception) {
             $this->cli->warning('The drop-in serves no page: ' . $exception->getMessage());
 
