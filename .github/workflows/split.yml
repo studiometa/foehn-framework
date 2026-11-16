@@ -66,7 +66,7 @@ jobs:
 
       - name: Split (tag)
         if: inputs.tag != ''
-        uses: symplify/monorepo-split-github-action@f10477258c88013cc5902388ec47fe9457837041 # v2.4.4
+        uses: symplify/monorepo-split-github-action@14e42e2437f674b8987c1f50ca3689116aea1893 # v2.4.5
         with:
           package_directory: ${{ matrix.package.local }}
           repository_organization: studiometa
@@ -79,7 +79,7 @@ jobs:
 
       - name: Split (branch)
         if: inputs.tag == ''
-        uses: symplify/monorepo-split-github-action@f10477258c88013cc5902388ec47fe9457837041 # v2.4.4
+        uses: symplify/monorepo-split-github-action@14e42e2437f674b8987c1f50ca3689116aea1893 # v2.4.5
         with:
           package_directory: ${{ matrix.package.local }}
           repository_organization: studiometa
