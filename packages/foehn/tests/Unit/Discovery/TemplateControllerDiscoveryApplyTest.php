@@ -44,6 +44,21 @@ describe('TemplateControllerDiscovery apply', function () {
         expect($result)->toBe('/path/to/404.php');
     });
 
+    it('leaves an oEmbed request to WordPress, which renders its embed template', function () {
+        $this->discovery->discover(
+            $this->location,
+            new \Tempest\Reflection\ClassReflector(TemplateControllerFixture::class),
+        );
+        $this->discovery->apply();
+
+        // The fixture claims `single`: an embed of a post is a single post too.
+        $GLOBALS['wp_stub_template'] = 'single';
+        wp_stub_set_conditional('is_embed', true);
+
+        expect($this->discovery->handleTemplateInclude('/wp/wp-includes/theme-compat/embed.php'))
+            ->toBe('/wp/wp-includes/theme-compat/embed.php');
+    });
+
     it('registers filter even when no items discovered', function () {
         $this->discovery->apply();
 
