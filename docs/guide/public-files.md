@@ -41,6 +41,7 @@ Files that must be at the document root, and that you keep in the repository:
 - The installer does not copy a symlink of `public/`. It shows a warning. Put the file itself in `public/`.
 - When you remove a file from `public/`, the next `composer install` removes it from `web/`. The installer keeps the list of the files it copied in `web/wp-content/foehn/public-files.php`. It removes only files of this list.
 - When you change a file in `web/` after the copy, the next `composer install` writes the file of `public/` again.
+- Vite does not use `public/`. Vite takes `public/` as its public directory by default, and copies its files into the build. `@studiometa/foehn-vite-plugin` sets `publicDir: false`, so the files of `public/` are not in the theme build, and the dev server lets the site serve them. A project that sets `publicDir` in its Vite config keeps its value.
 
 ## Another directory
 
