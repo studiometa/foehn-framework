@@ -248,6 +248,20 @@ For each release in production:
 
 The discovery cache is already on (`DiscoveryCacheStrategy::FULL`). `composer install` clears it, and the first request writes it again.
 
+### Behind a Proxy That Terminates TLS
+
+When a load balancer or a CDN terminates TLS and sends the requests to nginx and PHP-FPM over HTTP, WordPress does not know that the visitor uses HTTPS: `is_ssl()` is false, and WordPress writes `http://` URLs and redirects. Set this variable in the environment:
+
+```ini
+FOEHN_TRUST_FORWARDED_PROTO=true
+```
+
+The generated `wp-config.php` then sets `$_SERVER['HTTPS']` to `on` when the `X-Forwarded-Proto` header of the request says `https`. With a list such as `https, http`, the first value counts.
+
+**Only trust the header from the proxy.** A client can send `X-Forwarded-Proto` itself. Turn this on only when the server accepts requests from the proxy alone (a firewall or a private network), and the proxy replaces the header with its own value. It is off by default.
+
+The [Docker image](./docker-image.md) maps the header in its nginx configuration and does not need this variable.
+
 ## Next Steps
 
 - Read [the demo](/guide/demo) for one worked example of every attribute

@@ -214,6 +214,24 @@ final class WebRootGenerator
             define('WP_HOME', \$env('WP_HOME', 'http://localhost'));
             define('WP_SITEURL', \$env('WP_SITEURL', WP_HOME . '/{$wpDir}'));
 
+            // HTTPS behind a proxy that terminates TLS (a load balancer, a CDN).
+            //
+            // PHP is then reached over HTTP, so WordPress's is_ssl() is false and
+            // WordPress writes http:// URLs and redirects. With
+            // FOEHN_TRUST_FORWARDED_PROTO=true, the X-Forwarded-Proto header of the proxy
+            // sets HTTPS. Off by default: a client can send this header itself, so turn
+            // it on only when every request comes through the proxy, and the proxy
+            // replaces the header. The Docker image maps the header in nginx and does
+            // not need this.
+            if (filter_var(\$env('FOEHN_TRUST_FORWARDED_PROTO', false), FILTER_VALIDATE_BOOLEAN)) {
+                \$forwardedProto = \$_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '';
+                \$forwardedProto = is_string(\$forwardedProto) ? strtolower(trim(explode(',', \$forwardedProto)[0])) : '';
+
+                if (\$forwardedProto === 'https') {
+                    \$_SERVER['HTTPS'] = 'on';
+                }
+            }
+
             // Content directory
             define('WP_CONTENT_DIR', __DIR__ . '/wp-content');
             define('WP_CONTENT_URL', WP_HOME . '/wp-content');
