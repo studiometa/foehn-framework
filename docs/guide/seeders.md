@@ -12,7 +12,7 @@ wp foehn make:seeder events --description="Sample events"
 wp foehn discovery:clear
 ```
 
-The command writes `app/Seeders/EventsSeeder.php`:
+The command writes `app/Seeders/EventsSeeder.php`. Its `run()` upserts one `post` with the slug `events`. Edit `run()` to write the content, for example:
 
 ```php
 <?php
@@ -40,7 +40,7 @@ final class EventsSeeder implements SeederInterface
 }
 ```
 
-A seeder has the `#[AsSeeder]` attribute and implements `SeederInterface`. A class with the attribute and without the interface is not discovered. A seeder registers nothing with WordPress: it runs only when `wp foehn seed` runs it.
+A seeder has the `#[AsSeeder]` attribute and implements `SeederInterface`. A class with the attribute and without the interface is skipped. `wp foehn inspect problems` and `wp foehn discovery:status` report it, with the fix. A seeder registers nothing with WordPress: it runs only when `wp foehn seed` runs it.
 
 | Argument      | Default | Description                                                                 |
 | ------------- | ------- | --------------------------------------------------------------------------- |
@@ -77,19 +77,30 @@ Run `wp foehn seed` two times and count the posts after each run. The counts mus
 
 Use `order` when a seeder reads what another seeder writes. A seeder finds that content again, by slug or by meta, and does not receive it from the other seeder. So each seeder can also run alone with `--class`, on a site that has the content of the seeders before it.
 
-The [demo](/guide/demo) writes its whole portfolio with six seeders in `theme/app/Seeders/`:
+The [demo](/guide/demo) writes its whole portfolio with eight seeders in `theme/app/Seeders/`:
 
-| Order | Seeder              | Writes                                                  |
-| ----- | ------------------- | ------------------------------------------------------- |
-| 10    | `MediaSeeder`       | The photographs, found again by their Unsplash ID       |
-| 20    | `ProjectSeeder`     | The projects, with the photographs of each as a gallery |
-| 30    | `PageSeeder`        | The Home and About pages                                |
-| 40    | `TestimonialSeeder` | The testimonials                                        |
-| 50    | `SettingsSeeder`    | The site options, with the Home page as the front page  |
-| 60    | `MenuSeeder`        | The menus, with a link to the About page                |
+| Order | Seeder              | Writes                                                          |
+| ----- | ------------------- | --------------------------------------------------------------- |
+| 10    | `MediaSeeder`       | The photographs, found again by their Unsplash ID               |
+| 20    | `ProjectSeeder`     | The projects, with the photographs of each as a gallery         |
+| 25    | `PressSeeder`       | Press quotes on two projects, in ACF fields                     |
+| 30    | `PageSeeder`        | The Home, About, Journal and Legal pages                        |
+| 35    | `JournalSeeder`     | Three journal posts, one of them password-protected             |
+| 40    | `TestimonialSeeder` | The testimonials                                                |
+| 50    | `SettingsSeeder`    | Site title, front page, permalinks, timezone and theme settings |
+| 60    | `MenuSeeder`        | The header, footer and legal menus                              |
+
+## The starter's menus
+
+The [starter theme](/guide/starter-theme) ships `App\Seeders\MenusSeeder` (order `10`). It creates the Header, Footer and Legal menus, each with a Home link, and assigns them to the `header`, `footer` and `legal` locations. It finds each menu by name and creates it only when it is missing, so a second run creates nothing and keeps the items that editors added.
+
+```bash
+wp foehn seed --class=MenusSeeder
+```
 
 ## See Also
 
+- [`#[AsSeeder]`](/api/as-seeder)
 - [CLI Commands](/guide/cli-commands)
 - [AI Agents](/guide/ai-agents)
 - [Demo Project](/guide/demo)

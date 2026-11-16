@@ -18,6 +18,8 @@ final readonly class FoehnConfig
         public ?string $discoveryCachePath = null,
         /** @var list<class-string> */
         public array $hooks = [],
+        /** @var class-string|null */
+        public ?string $imageTransformer = null,
         public bool $debug = false,
         public ?bool $recordErrors = null,
         public ?bool $traceRequests = null,
@@ -35,15 +37,16 @@ final readonly class FoehnConfig
 
 ## Properties
 
-| Property                 | Type                     | Default          | Description                                                                                                         |
-| ------------------------ | ------------------------ | ---------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `discoveryCacheStrategy` | `DiscoveryCacheStrategy` | `NONE`           | Cache strategy for discoveries                                                                                      |
-| `discoveryCachePath`     | `string\|null`           | `null`           | Custom path for cache files                                                                                         |
-| `hooks`                  | `class-string[]`         | `[]`             | Opt-in hook classes to activate                                                                                     |
-| `debug`                  | `bool`                   | `WP_DEBUG` value | Raise PHP warnings: each class discovery skips, a discovery cache it cannot write, a missing block editor registrar |
-| `recordErrors`           | `bool\|null`             | `null`           | Write errors to the log `wp foehn errors` reads. `null` records them in the `local` and `development` environments  |
-| `traceRequests`          | `bool\|null`             | `null`           | Store a trace of each front-end request for `wp foehn trace`. `null` traces them in `local` and `development`       |
-| `cliNamespace`           | `string`                 | `'app'`          | The WP-CLI command the project's `#[AsCliCommand]` classes go under: `wp app <name>`                                |
+| Property                 | Type                     | Default | Description                                                                                                                                              |
+| ------------------------ | ------------------------ | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `discoveryCacheStrategy` | `DiscoveryCacheStrategy` | `NONE`  | Cache strategy for discoveries                                                                                                                           |
+| `discoveryCachePath`     | `string\|null`           | `null`  | Custom path for cache files                                                                                                                              |
+| `hooks`                  | `class-string[]`         | `[]`    | Opt-in hook classes to activate                                                                                                                          |
+| `imageTransformer`       | `class-string\|null`     | `null`  | The `ImageTransformer` class `image_url()` uses, for example `GlideTransformer::class`. `null` gives back the URL unchanged. See [Images](/guide/images) |
+| `debug`                  | `bool`                   | `false` | Raise PHP warnings: each class discovery skips, a discovery cache it cannot write, a missing block editor registrar                                      |
+| `recordErrors`           | `bool\|null`             | `null`  | Write errors to the log `wp foehn errors` reads. `null` records them in the `local` and `development` environments                                       |
+| `traceRequests`          | `bool\|null`             | `null`  | Store a trace of each front-end request for `wp foehn trace`. `null` traces them in `local` and `development`                                            |
+| `cliNamespace`           | `string`                 | `'app'` | The WP-CLI command the project's `#[AsCliCommand]` classes go under: `wp app <name>`                                                                     |
 
 ## Usage
 
@@ -127,7 +130,11 @@ When enabled, discovery failures (reflection errors, missing classes) are logged
 'debug' => true,
 ```
 
-Defaults to the value of `WP_DEBUG` when not explicitly set.
+The default is `false`. To follow `WP_DEBUG`, write `debug: WP_DEBUG` in `foehn.config.php`. Only the legacy `Kernel::boot()` array uses `WP_DEBUG` when it has no `'debug'` key.
+
+### Image Transformer
+
+`imageTransformer` is the class that `image_url()` uses to resize images. Give a class that implements `ImageTransformer`, for example `GlideTransformer::class`. `null`, the default, gives back the URL unchanged. The array config takes `'image_transformer' => GlideTransformer::class`. See [Images](/guide/images).
 
 ### Error Log
 
@@ -145,12 +152,18 @@ Defaults to the value of `WP_DEBUG` when not explicitly set.
 
 All Føhn config classes follow the same pattern — discoverable via `*.config.php` files:
 
-| Config Class   | Config file             | Purpose                  |
-| -------------- | ----------------------- | ------------------------ |
-| `FoehnConfig`  | `app/foehn.config.php`  | Core bootstrap settings  |
-| `TimberConfig` | `app/timber.config.php` | Template directories     |
-| `AcfConfig`    | `app/acf.config.php`    | ACF field transformation |
-| `RestConfig`   | `app/rest.config.php`   | REST API permissions     |
+| Config Class           | Config file                    | Purpose                                                         |
+| ---------------------- | ------------------------------ | --------------------------------------------------------------- |
+| `FoehnConfig`          | `app/foehn.config.php`         | Core bootstrap settings                                         |
+| `TimberConfig`         | `app/timber.config.php`        | Template directories                                            |
+| `AcfConfig`            | `app/acf.config.php`           | ACF field transformation. Needs `studiometa/foehn-acf`          |
+| `RestConfig`           | `app/rest.config.php`          | REST API permissions                                            |
+| `QueryFiltersConfig`   | `app/query-filters.config.php` | [Query filters](/guide/query-filters#queryfiltersconfig)        |
+| `PageCacheConfig`      | `app/page-cache.config.php`    | [Page cache](./page-cache-config)                               |
+| `DatabaseExportConfig` | `app/db-export.config.php`     | [Database export](/guide/database-export#declaring-your-tables) |
+| `GlideConfig`          | `app/glide.config.php`         | [Image transforms](/guide/images)                               |
+
+The file name is free: Føhn loads every `*.config.php` file of the app directory and binds each object it returns. The names above are the convention.
 
 ## Related
 

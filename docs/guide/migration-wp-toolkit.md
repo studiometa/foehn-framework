@@ -44,8 +44,16 @@ These wp-toolkit patterns are intentionally not carried over:
 ## Step 1: Install Føhn
 
 ```bash
-composer require studiometa/foehn
+composer require "nette/php-generator:4.2.3 as 4.2.1" studiometa/foehn
 composer remove studiometa/wp-toolkit
+```
+
+The `nette/php-generator` alias is necessary until Tempest releases a fix. See [Installation](/guide/installation).
+
+If the theme uses ACF blocks, field groups or options pages, also install the ACF package. It contains `#[AsAcfBlock]`, `#[AsAcfFieldGroup]` and `#[AsAcfOptionsPage]`:
+
+```bash
+composer require studiometa/foehn-acf
 ```
 
 > **Important**: Keep both packages installed temporarily if you need a gradual migration.
@@ -451,7 +459,7 @@ namespace App\Controllers;
 use Studiometa\Foehn\Attributes\AsTemplateController;
 use Studiometa\Foehn\Contracts\TemplateControllerInterface;
 use Studiometa\Foehn\Contracts\ViewEngineInterface;
-use Timber\Timber;
+use Studiometa\Foehn\Views\TemplateContext;
 
 #[AsTemplateController(templates: ['single-product'])]
 final readonly class ProductController implements TemplateControllerInterface
@@ -460,13 +468,9 @@ final readonly class ProductController implements TemplateControllerInterface
         private ViewEngineInterface $view,
     ) {}
 
-    public function handle(): ?string
+    public function handle(TemplateContext $context): ?string
     {
-        $product = Timber::get_post();
-
-        return $this->view->render('pages/single-product', [
-            'product' => $product,
-        ]);
+        return $this->view->render('pages/single-product', $context->with('product', $context->post));
     }
 }
 ```
@@ -552,7 +556,7 @@ final class ProductsEndpoint
 
         return array_map(
             fn($p) => ['id' => $p->ID, 'title' => $p->title],
-            $posts,
+            $posts->to_array(),
         );
     }
 }
@@ -596,19 +600,17 @@ If you still want to encapsulate queries, use a plain service class with DI:
 
 namespace App\Services;
 
-use App\Models\Product;
+use Timber\PostCollectionInterface;
 use Timber\Timber;
 
 final class ProductService
 {
-    /** @return Product[] */
-    public function findAll(): array
+    public function findAll(): ?PostCollectionInterface
     {
         return Timber::get_posts(['post_type' => 'product', 'posts_per_page' => -1]);
     }
 
-    /** @return Product[] */
-    public function findByCategory(string $category): array
+    public function findByCategory(string $category): ?PostCollectionInterface
     {
         return Timber::get_posts([
             'post_type' => 'product',

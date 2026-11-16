@@ -153,7 +153,7 @@ edited="$(curl -sk -D- "$project" | tr -d '\r')"
 $(head -12 <<<"$edited")"
 grep -q 'Corridors II' <<<"$edited" || fail "the project page after the edit does not show the new title"
 
-warm="$(ddev exec 'cd /var/www/html && wp action-scheduler action list --group=foehn-page-cache --status=pending --fields=args --format=json' 2>/dev/null | tr -d '\r' | tail -n1)"
+warm="$(ddev exec 'cd /var/www/html && wp action-scheduler action list --group=foehn-page-cache --status=pending --per_page=1000 --fields=args --format=json' 2>/dev/null | tr -d '\r' | tail -n1)"
 grep -q 'projects\\/corridors' <<<"$warm" || fail "the purge queued no warm-up of the project page
 $warm"
 

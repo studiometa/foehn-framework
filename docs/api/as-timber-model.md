@@ -69,30 +69,27 @@ final class Article extends Post
 
 ### Extending Pages
 
+Føhn already maps `page` to `Studiometa\Foehn\Models\Page`. To add methods to pages, extend that class, not `Timber\Post`, so the class keeps `query()`, `find()` and the other query methods:
+
 ```php
 <?php
 
 namespace App\Models;
 
 use Studiometa\Foehn\Attributes\AsTimberModel;
-use Timber\Post;
+use Studiometa\Foehn\Models\Page as BasePage;
 
 #[AsTimberModel(name: 'page')]
-final class Page extends Post
+final class Page extends BasePage
 {
     /**
      * Get child pages.
      *
-     * @return Page[]
+     * @return list<Page>
      */
     public function children(): array
     {
-        return \Timber\Timber::get_posts([
-            'post_type' => 'page',
-            'post_parent' => $this->ID,
-            'orderby' => 'menu_order',
-            'order' => 'ASC',
-        ]);
+        return static::query()->parent($this->ID)->orderBy('menu_order', 'ASC')->get();
     }
 
     /**
@@ -100,7 +97,7 @@ final class Page extends Post
      */
     public function hasChildren(): bool
     {
-        return count($this->children()) > 0;
+        return static::query()->parent($this->ID)->exists();
     }
 }
 ```

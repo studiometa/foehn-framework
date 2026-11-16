@@ -24,6 +24,8 @@ theme/
 │   │   ├── ThemeHooks.php
 │   │   ├── AssetHooks.php
 │   │   └── AdminHooks.php
+│   ├── Menus/                    # Navigation menus
+│   │   └── HeaderMenu.php
 │   ├── Models/                   # Custom post types (Timber models)
 │   │   ├── Product.php
 │   │   ├── Event.php
@@ -32,6 +34,8 @@ theme/
 │   │   └── HeroPattern.php
 │   ├── Rest/                     # REST API endpoints
 │   │   └── ProductsEndpoint.php
+│   ├── Seeders/                  # Content seeders
+│   │   └── MenusSeeder.php
 │   ├── Services/                 # Business logic services
 │   │   ├── CartService.php
 │   │   └── NewsletterService.php
@@ -56,11 +60,15 @@ theme/
 │   ├── pages/                    # Page-specific templates
 │   │   ├── home.twig
 │   │   └── contact.twig
+│   ├── sections/                 # Sections rendered on their own
+│   │   └── results.twig
 │   └── patterns/                 # Block pattern templates
 │       └── hero.twig
 ├── assets/                       # Source assets
-│   ├── scripts/
-│   └── styles/
+│   ├── css/
+│   │   └── blocks/               # Block styles, loaded with the block
+│   └── js/
+│       └── blocks/               # Block scripts, loaded with the block
 ├── dist/                         # Compiled assets
 ├── functions.php                 # Kernel bootstrap
 └── style.css                     # Theme metadata
@@ -184,7 +192,7 @@ final class GlobalContextProvider implements ContextProviderInterface {}
 final class NavigationContextProvider implements ContextProviderInterface {}
 
 // app/ContextProviders/ProductContextProvider.php
-#[AsContextProvider('single-product')]
+#[AsContextProvider('pages/single-product')]
 final class ProductContextProvider implements ContextProviderInterface {}
 ```
 
@@ -227,7 +235,7 @@ final class ProductsEndpoint {
 
 // app/Rest/NewsletterEndpoint.php
 final class NewsletterEndpoint {
-    #[AsRestRoute(namespace: 'theme/v1', route: '/newsletter', methods: ['POST'])]
+    #[AsRestRoute(namespace: 'theme/v1', route: '/newsletter', method: 'POST')]
     public function subscribe(WP_REST_Request $request): WP_REST_Response {}
 }
 ```
@@ -259,17 +267,18 @@ final class ButtonShortcode {
 ```php
 // app/Console/ImportProductsCommand.php
 #[AsCliCommand(name: 'import:products', description: 'Import products from CSV')]
-final class ImportProductsCommand {
+final class ImportProductsCommand implements CliCommandInterface {
     public function __invoke(array $args, array $assocArgs): void {}
 }
 
-// app/Console/CacheCommand.php
-#[AsCliCommand(name: 'cache', description: 'Manage application cache')]
-final class CacheCommand {
-    public function clear(): void {}
-    public function warm(): void {}
+// app/Console/ClearCacheCommand.php
+#[AsCliCommand(name: 'cache:clear', description: 'Clear the application cache')]
+final class ClearCacheCommand implements CliCommandInterface {
+    public function __invoke(array $args, array $assocArgs): void {}
 }
 ```
+
+Write one class for each command. These commands run as `wp app import:products` and `wp app cache:clear`. See [Command Namespace](/guide/cli-commands#command-namespace).
 
 ### Block Patterns
 
@@ -325,12 +334,16 @@ return new TimberConfig(
 
 Environment-specific configs are also supported:
 
-| File                           | Environment |
-| ------------------------------ | ----------- |
-| `{name}.config.php`            | All         |
-| `{name}.local.config.php`      | Development |
-| `{name}.production.config.php` | Production  |
-| `{name}.staging.config.php`    | Staging     |
+| File                            | Environment |
+| ------------------------------- | ----------- |
+| `{name}.config.php`             | All         |
+| `{name}.local.config.php`       | Local       |
+| `{name}.dev.config.php`         | Development |
+| `{name}.development.config.php` | Development |
+| `{name}.staging.config.php`     | Staging     |
+| `{name}.stg.config.php`         | Staging     |
+| `{name}.production.config.php`  | Production  |
+| `{name}.prod.config.php`        | Production  |
 
 ## Twig Template Conventions
 
@@ -424,9 +437,11 @@ Use a consistent namespace structure:
 | `app/ContextProviders/` | `App\ContextProviders` |
 | `app/Controllers/`      | `App\Controllers`      |
 | `app/Hooks/`            | `App\Hooks`            |
+| `app/Menus/`            | `App\Menus`            |
 | `app/Models/`           | `App\Models`           |
 | `app/Patterns/`         | `App\Patterns`         |
 | `app/Rest/`             | `App\Rest`             |
+| `app/Seeders/`          | `App\Seeders`          |
 | `app/Services/`         | `App\Services`         |
 | `app/Shortcodes/`       | `App\Shortcodes`       |
 | `app/Taxonomies/`       | `App\Taxonomies`       |

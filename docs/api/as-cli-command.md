@@ -65,22 +65,24 @@ final class HelloCommand implements CliCommandInterface
 
 ### With Options
 
+Declare the arguments and options in `longDescription`. WP-CLI reads them from there, not from the docblock of `__invoke()`.
+
 ```php
 #[AsCliCommand(
     name: 'import:products',
     description: 'Import products from CSV',
+    longDescription: <<<'DOC'
+        ## OPTIONS
+
+        <file>
+        : Path to CSV file
+
+        [--dry-run]
+        : Preview without importing
+        DOC,
 )]
 final class ImportCommand implements CliCommandInterface
 {
-    /**
-     * ## OPTIONS
-     *
-     * <file>
-     * : Path to CSV file
-     *
-     * [--dry-run]
-     * : Preview without importing
-     */
     public function __invoke(array $args, array $assocArgs): void
     {
         $file = $args[0];
@@ -93,33 +95,49 @@ final class ImportCommand implements CliCommandInterface
 
 **Usage:** `wp app import:products data.csv --dry-run`
 
-### With Subcommands
+### With More Than One Action
+
+Føhn calls only `__invoke()`. Other public methods are not subcommands. Read the action from a positional argument:
 
 ```php
 #[AsCliCommand(
-    name: 'cache',
-    description: 'Manage cache',
+    name: 'object-cache',
+    description: 'Manage the object cache',
+    longDescription: <<<'DOC'
+        ## OPTIONS
+
+        <action>
+        : What to do.
+        ---
+        options:
+          - clear
+          - warm
+        ---
+        DOC,
 )]
-final class CacheCommand
+final class ObjectCacheCommand implements CliCommandInterface
 {
-    public function clear(): void
+    public function __invoke(array $args, array $assocArgs): void
     {
-        wp_cache_flush();
-        WP_CLI::success('Cache cleared');
+        match ($args[0]) {
+            'clear' => wp_cache_flush(),
+            'warm' => $this->warm(),
+        };
+
+        WP_CLI::success('Done');
     }
 
-    public function warm(): void
+    private function warm(): void
     {
         // Warm cache
-        WP_CLI::success('Cache warmed');
     }
 }
 ```
 
 **Usage:**
 
-- `wp app cache clear`
-- `wp app cache warm`
+- `wp app object-cache clear`
+- `wp app object-cache warm`
 
 ### With Long Description
 
@@ -143,6 +161,13 @@ Synchronizes data from the external API.
     wp app sync --force
 DOC,
 )]
+final class SyncCommand implements CliCommandInterface
+{
+    public function __invoke(array $args, array $assocArgs): void
+    {
+        // ...
+    }
+}
 ```
 
 ## Related

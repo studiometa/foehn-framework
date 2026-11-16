@@ -137,8 +137,10 @@ Create a tagged cache instance for batch invalidation.
 
 ```php
 $cache->tags(['products'])->remember('list', 3600, fn() => get_products());
-$cache->tags(['products', 'featured'])->set('featured_list', $data, 3600);
+$cache->tags(['products', 'featured'])->put('featured_list', $data, 3600);
 ```
+
+The returned `TaggedCache` has `put()`, `forever()`, `remember()`, `rememberForever()` and `forget()`. It has no `set()`.
 
 ### flushTag() / flushTags()
 

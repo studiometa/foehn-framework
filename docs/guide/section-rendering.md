@@ -162,8 +162,6 @@ registerComponent(Fetch);
 
 Leave `selector` at its default of `[id]` for a section request. The response holds only the wrappers of the sections that were asked for, so nothing else on the page can match — while a fetch of the whole page also matches the layout's own `id`s and replaces the form the visitor is using with the server's copy of it. Keep `history` on: `Fetch` pushes the element's own `action` or `href`, so `?foehn_sections=…` stays out of the address bar.
 
-The current `Fetch` history option records the fetched URL as-is. If you enable Fetch history, the browser history entry includes `?foehn_sections=...`. Do not enable it when the address must stay a normal full-page URL, or update history in application code after the fetch.
-
 ## Lazy sections
 
 Pass `lazy: true` to defer a section on a normal page request:

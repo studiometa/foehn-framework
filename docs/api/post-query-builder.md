@@ -113,9 +113,9 @@ $query->exists(): bool           // Any matching post?
 $query->getParameters(): array   // Raw WP_Query params (debug)
 ```
 
-## Null-Safety
+## Empty Input
 
-All filtering methods silently skip empty/null values, making it safe to pass user input directly:
+`whereTax()` (`null`, `''`, `[]`), `search()` (`''`), `include()`, `exclude()`, `parentIn()`, `parentNotIn()` (empty list) and `page()` (`0` or less) skip an empty value, so you can pass user input directly. `whereMeta()`, `status()`, `byAuthor()`, `dateQuery()` and `parent()` always add their value.
 
 ```php
 Product::query()

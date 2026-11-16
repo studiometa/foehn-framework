@@ -267,15 +267,19 @@ Video URL utilities:
 
 ```twig
 {# Convert watch URL to embed URL #}
-{{ 'https://youtube.com/watch?v=abc123' | video_embed }}
-{# https://www.youtube.com/embed/abc123 #}
+{{ 'https://youtube.com/watch?v=dQw4w9WgXcQ' | video_embed }}
+{# https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ #}
+
+{# Use the youtube.com domain #}
+{{ 'https://youtube.com/watch?v=dQw4w9WgXcQ' | video_embed({ nocookie: false }) }}
+{# https://www.youtube.com/embed/dQw4w9WgXcQ #}
 
 {# Extract video ID #}
 {{ 'https://vimeo.com/123456789' | video_id }}
 {# 123456789 #}
 
 {# Detect platform #}
-{{ 'https://youtube.com/watch?v=abc' | video_platform }}
+{{ 'https://youtu.be/dQw4w9WgXcQ' | video_platform }}
 {# youtube #}
 
 {# Check if URL is supported #}
@@ -283,6 +287,41 @@ Video URL utilities:
     <iframe src="{{ url | video_embed }}"></iframe>
 {% endif %}
 ```
+
+A YouTube URL must contain a video ID of 11 characters. Other URLs give `null`. By default, `video_embed` gives a `youtube-nocookie.com` URL.
+
+### ImageExtension
+
+`image_url()` gives the URL of an image at a size, from the configured image transformer. With no transformer, it gives the source URL:
+
+```twig
+<img src="{{ image_url(post.thumbnail, { w: 400, h: 267, fit: 'crop' }) }}" alt="" />
+```
+
+See [Images](/guide/images).
+
+### FacetExtension
+
+`facet()` gives the options of a taxonomy filter, with the number of results for each term:
+
+```twig
+{% for option in facet('project_category') %}
+    {{ option.term.name }}
+    {% if option.count is not null %}({{ option.count }}){% endif %}
+{% endfor %}
+```
+
+See [Query Filters](/guide/query-filters).
+
+### SectionExtension
+
+`foehn_section()` declares a part of the page that a request can render alone. `foehn_section_url()` gives the URL of that request:
+
+```twig
+{{ foehn_section('archive-results', { posts }) }}
+```
+
+See [Section Rendering](/guide/section-rendering).
 
 ### QueryExtension
 

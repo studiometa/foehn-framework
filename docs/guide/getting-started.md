@@ -61,13 +61,16 @@ final class ThemeHooks
 - **Post Types** — `#[AsPostType]` with Timber integration and fluent queries
 - **Taxonomies** — `#[AsTaxonomy]` with hierarchical support
 - **Views** — `#[AsContextProvider]` and `#[AsTemplateController]`
-- **ACF Blocks** — `#[AsAcfBlock]` with FieldsBuilder and Arrayable DTOs
+- **ACF** — `#[AsAcfBlock]`, `#[AsAcfFieldGroup]` and `#[AsAcfOptionsPage]`, from the separate `studiometa/foehn-acf` package
 - **Native Blocks** — `#[AsBlock]` with Interactivity API support
 - **Block Patterns** — `#[AsBlockPattern]` with Twig templates
 - **REST API** — `#[AsRestRoute]` for custom endpoints
 - **Shortcodes** — `#[AsShortcode]` for shortcode handlers
 - **Caching** — Injectable `CacheInterface` with tagged cache support
 - **CLI** — `#[AsCliCommand]` for WP-CLI commands
+- **Seeders** — `#[AsSeeder]` classes that write sample content with `wp foehn seed`
+- **Page cache** — static HTML pages that nginx or Apache serves, with `PageCacheConfig`
+- **Debugging** — `wp foehn inspect`, `errors`, `log` and `trace` show what the project declares and what a request ran
 
 ## Requirements
 

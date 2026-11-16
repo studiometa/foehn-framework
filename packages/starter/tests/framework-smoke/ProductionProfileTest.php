@@ -120,6 +120,18 @@ beforeAll(function () {
     Site::run('wp option update blog_public 1');
 });
 
+beforeEach(function () {
+    if (!Site::isRunning()) {
+        return;
+    }
+
+    // The starter runs WordPress cron on page loads. A wp-cron.php that an earlier request
+    // started can write a real heartbeat between the value a test sets and `verify`. A
+    // fresh `doing_cron` lock stops WordPress from starting another run for a minute, and
+    // makes a run in progress stop before its next event, because its lock no longer matches.
+    Site::run(sprintf('wp transient set doing_cron %s', sprintf('%.22F', microtime(true))));
+});
+
 afterAll(function () {
     if (!Site::isRunning()) {
         return;
@@ -129,6 +141,7 @@ afterAll(function () {
     // writes it, so its real value is "absent" and leaving one behind would make the
     // dashboard of a developer's own site claim a cron runner it does not have.
     Site::run('wp option delete foehn_cron_last_run');
+    Site::run('wp transient delete doing_cron');
 
     $public = $GLOBALS['foehn_production_blog_public'] ?? null;
 

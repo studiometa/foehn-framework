@@ -66,6 +66,8 @@ Generated rather than shipped, because they are not fixed: the cache path, the q
 
 If generating fails — a database that is not up yet, most likely — the site falls back to the drop-in Føhn installs at `wp-content/advanced-cache.php`, which serves the same stored files a few milliseconds slower and needs no webserver configuration at all. Measured on one site: 0.9 ms through NGINX against 2.8 ms through the drop-in, both against ~100 ms of network. The fast path is worth having and worth nobody's afternoon.
 
+With [bucket storage](./page-cache#storing-pages-in-the-bucket) (`storage: PageCacheStorage::Bucket`), the generated rules read hits from the s3-uploads bucket. They use the same `S3_UPLOADS_*` variables as the media proxy below. The drop-in does not read a bucket, so if generating fails, PHP renders every page. A bucket keeps its pages through a deploy, so the release step must run `wp foehn cache:clear`.
+
 Set `FOEHN_PAGE_CACHE_CONFIG=false` to leave it to the drop-in. A project that generates the rules itself into `config/nginx/` keeps them: the image generates none when it finds one, because two copies of the same `location` is a configuration NGINX refuses to start with.
 
 ## Media and image transforms
@@ -184,8 +186,8 @@ Physical backups are deliberately out of scope — volume snapshots cover that l
 A second tag, `-db`, adds MariaDB to the image and starts it beside PHP. A site using it is one app instead of an `<app>`/`<app>-db` pair: one machine, one deploy, one thing to reason about.
 
 ```dockerfile
-FROM ghcr.io/studiometa/foehn-wordpress:0.5.10-db    # its own database
-FROM ghcr.io/studiometa/foehn-wordpress:0.5.10       # an external one
+FROM ghcr.io/studiometa/foehn-wordpress:0.8.1-db    # its own database
+FROM ghcr.io/studiometa/foehn-wordpress:0.8.1       # an external one
 ```
 
 That is the only difference in the project's Dockerfile. The variant reads the same `DB_NAME`, `DB_USER` and `DB_PASSWORD` a site already defines, creates the database and the user on first boot, and points `DB_HOST` at its own socket — so a site keeps its secrets, its `wp-config.php` and its backups exactly as they were.
@@ -252,17 +254,18 @@ Anything in the project's `config/nginx/*.conf` is included in the `server` bloc
 
 Read from the same variables WordPress and `humanmade/s3-uploads` already read.
 
-| Variable                    | Default             | Role                                                                 |
-| --------------------------- | ------------------- | -------------------------------------------------------------------- |
-| `S3_UPLOADS_BUCKET`         | —                   | The site's bucket. Unset means media is served from local disk       |
-| `S3_UPLOADS_ENDPOINT`       | —                   | The S3 endpoint, from which the bucket's host is derived             |
-| `S3_UPLOADS_PATH_STYLE`     | `false`             | `true` addresses `<endpoint>/<bucket>/<key>` — RustFS in development |
-| `S3_UPLOADS_PROXY_ENABLE`   | `true`              | `false` turns the media proxy off                                    |
-| `S3_UPLOADS_PROXY_HOST`     | derived             | To go through a CDN, or an endpoint that follows neither style       |
-| `S3_UPLOADS_PROXY_RESOLVER` | `1.1.1.1 8.8.8.8`   | The resolver NGINX uses for the bucket's host                        |
-| `FOEHN_PAGE_CACHE_CONFIG`   | —                   | `false` generates no page cache rules and leaves it to the drop-in   |
-| `FOEHN_CRON_SCHEDULE`       | `15min`             | How often scheduled events run                                       |
-| `FOEHN_NGINX_CONF_DIR`      | `/app/config/nginx` | Where the project's own NGINX rules are read from                    |
+| Variable                    | Default             | Role                                                                                                                  |
+| --------------------------- | ------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `S3_UPLOADS_BUCKET`         | —                   | The site's bucket. Unset means media is served from local disk                                                        |
+| `S3_UPLOADS_ENDPOINT`       | —                   | The S3 endpoint, from which the bucket's host is derived                                                              |
+| `S3_UPLOADS_PATH_STYLE`     | `false`             | `true` addresses `<endpoint>/<bucket>/<key>` — RustFS in development                                                  |
+| `S3_UPLOADS_PROXY_ENABLE`   | `true`              | `false` turns the media proxy off                                                                                     |
+| `S3_UPLOADS_PROXY_HOST`     | derived             | To go through a CDN, or an endpoint that follows neither style                                                        |
+| `S3_UPLOADS_PROXY_SCHEME`   | `https`             | The scheme NGINX uses with `S3_UPLOADS_PROXY_HOST`. Without a proxy host, the scheme comes from `S3_UPLOADS_ENDPOINT` |
+| `S3_UPLOADS_PROXY_RESOLVER` | `1.1.1.1 8.8.8.8`   | The resolver NGINX uses for the bucket's host                                                                         |
+| `FOEHN_PAGE_CACHE_CONFIG`   | —                   | `false` generates no page cache rules and leaves it to the drop-in                                                    |
+| `FOEHN_CRON_SCHEDULE`       | `15min`             | How often scheduled events run                                                                                        |
+| `FOEHN_NGINX_CONF_DIR`      | `/app/config/nginx` | Where the project's own NGINX rules are read from                                                                     |
 
 The `DB_*` and `BACKUP_*` variables are listed above, with the features that read them.
 

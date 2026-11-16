@@ -72,20 +72,20 @@ URLs follow WordPress conventions:
 
 ## Enabling Query Filters
 
-Add the `QueryFiltersHook` to your configuration:
+Add the `QueryFiltersHook` to the `hooks` of `app/foehn.config.php`:
 
 ```php
 <?php
-// functions.php
+// app/foehn.config.php
 
-use Studiometa\Foehn\Kernel;
+use Studiometa\Foehn\Config\FoehnConfig;
 use Studiometa\Foehn\Hooks\QueryFiltersHook;
 
-Kernel::boot(__DIR__ . '/app', [
-    'hooks' => [
+return new FoehnConfig(
+    hooks: [
         QueryFiltersHook::class,
     ],
-]);
+);
 ```
 
 ## Twig Helpers
@@ -380,23 +380,30 @@ new QueryFiltersConfig(
 
 ## A worked example
 
-The demo's projects archive is the whole path in one page — `packages/demo/theme/templates/pages/archive-project.twig`:
+The demo's projects archive is the whole path in one page. `packages/demo/theme/templates/pages/archive-project.twig` renders three [sections](/guide/section-rendering): `project-count`, `project-filters` and `project-index`. The form is in `templates/sections/project-filters.twig`, shortened here:
 
 ```twig
+{% set archive_url = fn('get_post_type_archive_link', 'project') %}
+{% set filter_sections = 'project-count,project-filters,project-index' %}
+
 <form
   method="get"
-  action="{{ fn('get_post_type_archive_link', 'project') }}"
+  action="{{ archive_url }}"
   data-component="Fetch Action"
   data-option-history
-  data-on:change="Fetch.fetch()">
-  {% for term in series %}
+  data-option-mode="morph"
+  data-option-src="{{ foehn_section_url(filter_sections, archive_url) }}"
+  data-on:change="() => { Fetch.abort(); Fetch.fetch() }">
+  {% for option in facet('project_category') %}
     <label>
       <input
         type="checkbox"
         name="project_category[]"
-        value="{{ term.slug }}"
-        {{ query_contains('project_category', term.slug) ? 'checked' }} />
-      {{ term.title }}
+        value="{{ option.term.slug }}"
+        {{ option.active ? 'checked' }}
+        {{ option.isEmpty and not option.active ? 'disabled' }} />
+      {{ option.term.name }}
+      <span>{{ option.count }}</span>
     </label>
   {% endfor %}
   <button type="submit">Filter</button>
@@ -405,11 +412,11 @@ The demo's projects archive is the whole path in one page — `packages/demo/the
 
 Three things about it are the point:
 
-**It uses no framework feature to filter.** `project_category` is the taxonomy's own query var, `orderby` is a public one, and there is no config file, no hook and no custom parameter. `query_contains()` reads the state back, and that is all Føhn contributes.
+**WordPress does the filtering.** `project_category` is the taxonomy's own query var, and `orderby` and `order` are public ones. Føhn adds `facet()`, which gives each option its count, and `QueryFiltersHook`, which accepts `posts_per_page` only from the allowlist in `app/query-filters.config.php`.
 
-**It works without JavaScript.** The form submits, the page reloads filtered, the checkboxes come back checked. `Fetch` from `@studiometa/ui` enhances that: it fetches the same URL and swaps the elements whose `id` it finds in the response.
+**It works without JavaScript.** The form submits, the page reloads filtered, and the checkboxes come back checked. `Fetch` from `@studiometa/ui` enhances that. It requests the three sections that a filter changes and swaps them. `abort()` before each request makes the last change the one that wins. `morph` keeps the form element, so the visitor keeps the focus.
 
-**The enhanced request is still cached.** `Fetch` is given no `data-option-src`, so it fetches the whole filtered page — which the page cache serves without starting PHP — and keeps the one element it needs. Pointing it at a [section](/guide/section-rendering) URL instead is also cached, and sends fewer bytes; the trade is that each filter combination then occupies two stored files rather than one, because the page and the fragment are separate responses.
+**The enhanced request is still cached.** `foehn_section_url()` gives the archive URL with `?foehn_sections=project-count,project-filters,project-index`. `foehn_sections` is a cache-key query argument, so the page cache serves the sections like a page. Each filter combination then has two cache files: the page and the sections. The address bar shows the plain URL, without `foehn_sections`.
 
 ## Caching filtered pages
 

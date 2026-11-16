@@ -33,8 +33,10 @@ composer create-project studiometa/foehn-starter my-project
 ### Add to existing theme
 
 ```bash
-composer require studiometa/foehn
+composer require "nette/php-generator:4.2.3 as 4.2.1" studiometa/foehn
 ```
+
+The `nette/php-generator` alias is necessary until Tempest fixes its requirement. See [Installation](https://studiometa.github.io/foehn-framework/guide/installation).
 
 ```php
 <?php
@@ -56,23 +58,37 @@ Kernel::boot(__DIR__ . '/app');
 
 ## Available Attributes
 
-| Attribute                 | Description                       |
-| ------------------------- | --------------------------------- |
-| `#[AsAction]`             | Register a WordPress action hook  |
-| `#[AsFilter]`             | Register a WordPress filter hook  |
-| `#[AsPostType]`           | Register a custom post type       |
-| `#[AsTaxonomy]`           | Register a custom taxonomy        |
-| `#[AsBlock]`              | Register a native Gutenberg block |
-| `#[AsAcfBlock]`           | Register an ACF block             |
-| `#[AsBlockPattern]`       | Register a block pattern          |
-| `#[AsContextProvider]`    | Add data to specific views        |
-| `#[AsTemplateController]` | Handle template rendering         |
-| `#[AsShortcode]`          | Register a shortcode              |
-| `#[AsRestRoute]`          | Register a REST API endpoint      |
-| `#[AsCliCommand]`         | Register a WP-CLI command         |
-| `#[AsTimberModel]`        | Register a Timber class map       |
-| `#[AsMenu]`               | Register a navigation menu        |
-| `#[AsImageSize]`          | Register a custom image size      |
+| Attribute                 | Description                                           |
+| ------------------------- | ----------------------------------------------------- |
+| `#[AsAction]`             | Register a WordPress action hook                      |
+| `#[AsFilter]`             | Register a WordPress filter hook                      |
+| `#[AsPostType]`           | Register a custom post type                           |
+| `#[AsTaxonomy]`           | Register a custom taxonomy                            |
+| `#[AsPostMeta]`           | Register a meta key, with its REST schema             |
+| `#[AsTimberModel]`        | Register a Timber class map                           |
+| `#[AsBlock]`              | Register a native Gutenberg block                     |
+| `#[AsBlockCategory]`      | Register a block category                             |
+| `#[AsBlockBinding]`       | Register a block bindings source                      |
+| `#[AsBlockPattern]`       | Register a block pattern                              |
+| `#[AsContextProvider]`    | Add data to specific views                            |
+| `#[AsTemplateController]` | Handle template rendering                             |
+| `#[AsTwigExtension]`      | Register a Twig extension                             |
+| `#[AsShortcode]`          | Register a shortcode                                  |
+| `#[AsRestRoute]`          | Register a REST API endpoint                          |
+| `#[AsRewriteRule]`        | Register a rewrite rule and the class that answers    |
+| `#[AsSettingsPage]`       | Register an admin page with the Settings API          |
+| `#[AsMenu]`               | Register a navigation menu                            |
+| `#[AsImageSize]`          | Register a custom image size                          |
+| `#[AsCliCommand]`         | Register a WP-CLI command                             |
+| `#[AsCron]`               | Run a class on a schedule                             |
+| `#[AsJob]`                | Handle a queued job                                   |
+| `#[AsSeeder]`             | Write the sample content of a site                    |
+| `#[AsDiscovery]`          | Declare when a custom discovery applies               |
+| `#[AsAcfBlock]`           | Register an ACF block (`studiometa/foehn-acf`)        |
+| `#[AsAcfFieldGroup]`      | Register an ACF field group (`studiometa/foehn-acf`)  |
+| `#[AsAcfOptionsPage]`     | Register an ACF options page (`studiometa/foehn-acf`) |
+
+See the [API Reference](https://studiometa.github.io/foehn-framework/api/) for each attribute.
 
 ## Architecture
 
@@ -85,6 +101,7 @@ my-project/                     # What is VERSIONED
 │   └── style.css               # Theme header
 ├── config/                     # Configuration files
 ├── mu-plugins/                 # Custom mu-plugins (if needed)
+├── public/                     # Copied into web/ (robots.txt, .well-known/)
 ├── .env                        # Environment variables
 └── composer.json               # Dependencies
 
@@ -95,6 +112,7 @@ web/                            # GENERATED (100% gitignored)
 │   ├── plugins/                # Composer-managed plugins
 │   └── mu-plugins/             # Auto-loaded mu-plugins
 ├── index.php                   # Generated front controller
+├── robots.txt                  # Copied from public/
 └── wp-config.php               # Generated from config/
 ```
 

@@ -59,8 +59,9 @@ When rendering a template, contexts are merged in this order (later wins):
 
 1. **Timber global context** — site, theme, user, etc. (`Timber::context_global()`)
 2. **Shared data** — registered via `share()`
-3. **Context providers** — matched by template name
-4. **Explicit context** — passed to `render()`
+3. **Explicit context** — passed to `render()`, after the matching context providers ran on it
+
+The context providers get the explicit context and return a new one. They run in priority order, and a provider can overwrite a key that the caller passed to `render()`.
 
 ## Usage
 

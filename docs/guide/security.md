@@ -178,7 +178,7 @@ Only use `|raw` for content that:
 When building REST endpoints, validate and sanitize all input:
 
 ```php
-#[AsRestRoute('/contact', methods: ['POST'])]
+#[AsRestRoute('theme/v1', '/contact', method: 'POST', permission: 'public')]
 public function handleContact(\WP_REST_Request $request): \WP_REST_Response
 {
     // ✅ Validate required fields
@@ -190,6 +190,8 @@ public function handleContact(\WP_REST_Request $request): \WP_REST_Response
     }
 
     // Process the sanitized data...
+
+    return new \WP_REST_Response(['sent' => true]);
 }
 ```
 

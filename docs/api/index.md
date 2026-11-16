@@ -66,6 +66,14 @@ Attributes are PHP 8 annotations that enable auto-discovery and registration of 
 | ----------------------------------------- | ------------------------------------------- |
 | [`#[AsSettingsPage]`](./as-settings-page) | An admin page on the WordPress Settings API |
 
+### Jobs & Content
+
+| Attribute                    | Description                                                                      |
+| ---------------------------- | -------------------------------------------------------------------------------- |
+| [`#[AsCron]`](./as-cron)     | A recurring job on an interval or a cron expression, run by Action Scheduler     |
+| [`#[AsJob]`](./as-job)       | The handler of a job queued with `dispatch()`                                    |
+| [`#[AsSeeder]`](./as-seeder) | Sample content that `wp foehn seed` writes (`SeederInterface`, `Upsert::post()`) |
+
 ### API & CLI
 
 | Attribute                               | Description                            |
@@ -85,6 +93,7 @@ Interfaces define contracts for classes used with specific attributes.
 | [`AcfBlockInterface`](./acf-block-interface)                           | `#[AsAcfBlock]`                  |
 | [`AcfFieldGroupInterface`](./acf-field-group-interface)                | `#[AsAcfFieldGroup]`             |
 | [`AcfOptionsPageInterface`](./acf-options-page-interface)              | `#[AsAcfOptionsPage]` (optional) |
+| [`SeederInterface`](./as-seeder)                                       | `#[AsSeeder]`                    |
 | [`ContextProviderInterface`](./context-provider-interface)             | `#[AsContextProvider]`           |
 | [`TemplateControllerInterface`](./template-controller-interface)       | `#[AsTemplateController]`        |
 | [`RewriteHandlerInterface`](./as-rewrite-rule#rewritehandlerinterface) | `#[AsRewriteRule]` (optional)    |
@@ -92,12 +101,18 @@ Interfaces define contracts for classes used with specific attributes.
 
 ## Configuration
 
-| Config Class                      | Config File             | Description              |
-| --------------------------------- | ----------------------- | ------------------------ |
-| [`FoehnConfig`](./foehn-config)   | `app/foehn.config.php`  | Core bootstrap settings  |
-| [`TimberConfig`](./timber-config) | `app/timber.config.php` | Template directories     |
-| [`AcfConfig`](./acf-config)       | `app/acf.config.php`    | ACF field transformation |
-| [`RestConfig`](./rest-config)     | `app/rest.config.php`   | REST API permissions     |
+| Config Class                                                           | Config File                    | Description                                       |
+| ---------------------------------------------------------------------- | ------------------------------ | ------------------------------------------------- |
+| [`FoehnConfig`](./foehn-config)                                        | `app/foehn.config.php`         | Core bootstrap settings                           |
+| [`TimberConfig`](./timber-config)                                      | `app/timber.config.php`        | Template directories                              |
+| [`AcfConfig`](./acf-config)                                            | `app/acf.config.php`           | ACF field transformation (`studiometa/foehn-acf`) |
+| [`RestConfig`](./rest-config)                                          | `app/rest.config.php`          | REST API permissions                              |
+| [`PageCacheConfig`](./page-cache-config)                               | `app/page-cache.config.php`    | Full-page cache                                   |
+| [`GlideConfig`](./glide-config)                                        | `app/glide.config.php`         | Glide image driver: library, quality, size grid   |
+| [`QueryFiltersConfig`](/guide/query-filters#queryfiltersconfig)        | `app/query-filters.config.php` | Query filters of archive pages                    |
+| [`DatabaseExportConfig`](/guide/database-export#declaring-your-tables) | `app/db-export.config.php`     | Tables and rules of `wp foehn db:export`          |
+
+See [Configuration](/guide/configuration) for how Føhn loads these files.
 
 ## Discovery
 
@@ -109,12 +124,13 @@ Interfaces define contracts for classes used with specific attributes.
 
 ## Core
 
-| Class                                   | Description              |
-| --------------------------------------- | ------------------------ |
-| [`Kernel`](./kernel)                    | Main bootstrap class     |
-| [`Helpers`](./helpers)                  | Global helper functions  |
-| [`CacheInterface`](./cache-interface)   | Injectable cache service |
-| [`WebpackManifest`](./webpack-manifest) | Asset manifest helper    |
+| Class                                   | Description                |
+| --------------------------------------- | -------------------------- |
+| [`Kernel`](./kernel)                    | Main bootstrap class       |
+| [`Helpers`](./helpers)                  | Global helper functions    |
+| [`CacheInterface`](./cache-interface)   | Injectable cache service   |
+| [`ViteManifest`](./vite-manifest)       | Vite asset manifest helper |
+| [`WebpackManifest`](./webpack-manifest) | Asset manifest helper      |
 
 ## DTOs & Traits
 

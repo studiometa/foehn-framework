@@ -13,7 +13,7 @@ It is the worked example rather than a template. Everything below is in the repo
 | One bucket      | `foehn-demo-media` on Tigris, public read               | `web/wp-content/uploads/` is the one directory a generated web root cannot rebuild |
 | Sixteen secrets | database, admin, bucket credentials, the eight WP salts | Everything a leak would matter for. Everything else is `[env]` in `fly.toml`       |
 
-The machine builds the site itself. A boot that finds an empty volume installs WordPress, runs `wp foehn seed --force` (the machine sets no `WP_ENVIRONMENT_TYPE`, so the site is `production`, where `seed` needs `--force`), restores the thirty photographs and flushes the rewrite rules; a boot that finds a volume already holding the portfolio does nothing. There is no import step, no first-run wizard and no state anybody has to carry from one deploy to the next.
+The machine builds the site itself. A boot that finds an empty volume installs WordPress, activates the theme and the ACF and Action Scheduler plugins (and `s3-uploads` when a bucket is set), runs `wp foehn seed --force` (the machine sets no `WP_ENVIRONMENT_TYPE`, so the site is `production`, where `seed` needs `--force`), restores the thirty photographs and flushes the rewrite rules. A boot that finds a volume seeded at the current content revision does nothing. A volume seeded at an older revision runs these steps again. There is no import step, no first-run wizard and no state anybody has to carry from one deploy to the next.
 
 ## Creating it
 
@@ -108,12 +108,14 @@ It is read by [`Studiometa\Foehn\Hooks\S3UploadsEndpoint`](./uploads#anything-th
 
 The seeding script first asked `wp core is-installed` before deciding whether to build the portfolio. That is the wrong question, and the difference is a state the first real deployment reached: `wp core install` succeeded, a later step failed, the machine restarted — and `core is-installed` was now true on a site with no content. Every boot after that skipped the content steps. The container came up healthy, `/healthcheck` answered, and Fly reported a successful deploy of a portfolio site with no portfolio.
 
-The guard is now a marker option, written after the **last** step and nowhere else:
+The guard is now a marker option, written after the **last** step and nowhere else. Its value is the content revision, `foehn_demo_revision` in the script:
 
 ```sh
 wp option get foehn_demo_seeded          # "did this finish", not "is there a WordPress"
-wp option update foehn_demo_seeded 1 --autoload=no
+wp option update foehn_demo_seeded "$foehn_demo_revision" --autoload=no
 ```
+
+The script seeds when the stored value is not the current revision. Increase `foehn_demo_revision` when the seeders write new content or the script activates a new plugin: the next deploy then seeds the volume again.
 
 Installed-but-unmarked is treated as the interrupted case it is, and the steps run again — they are idempotent, finding their posts by slug and their photographs by Unsplash id, so recovering costs a boot rather than a clean volume somebody has to produce by hand.
 
@@ -151,7 +153,7 @@ curl -s -o /dev/null -w '%{http_code}\n' https://foehn-demo.fly.dev/_health
 # 200 — the site's own #[AsRewriteRule], which only answers once the rules are flushed
 ```
 
-`x-foehn-cache-via: nginx` is the one worth reading. It says the [page cache](./page-cache) rules were generated at boot and PHP is not starting for that request; `drop-in` there would mean generating them failed and the site fell back to `advanced-cache.php`, which serves the same HTML a few milliseconds slower.
+`x-foehn-cache-via: nginx` is the one worth reading. It says the [page cache](./page-cache) rules were generated at boot and PHP is not starting for that request; `php` there would mean generating them failed and the site fell back to the `advanced-cache.php` drop-in, which serves the same HTML a few milliseconds slower.
 
 `fly logs -a foehn-demo` shows the seeding decision on every boot, in one line either way — the volume already holds the portfolio, or an empty volume is being built and it takes about half a minute.
 

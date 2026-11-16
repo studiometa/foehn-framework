@@ -204,26 +204,24 @@ Patterns use standard WordPress categories or custom ones:
 
 ### Custom Categories
 
-Register custom categories using filters:
+Register custom categories on `init`:
 
 ```php
 <?php
 
 namespace App\Hooks;
 
-use Studiometa\Foehn\Attributes\AsFilter;
+use Studiometa\Foehn\Attributes\AsAction;
 
 final class PatternHooks
 {
-    #[AsFilter('block_pattern_categories_all')]
-    public function registerCategories(array $categories): array
+    #[AsAction('init')]
+    public function registerCategories(): void
     {
-        $categories['theme-layouts'] = [
+        register_block_pattern_category('theme-layouts', [
             'label' => 'Theme Layouts',
             'description' => 'Custom layouts for this theme',
-        ];
-
-        return $categories;
+        ]);
     }
 }
 ```

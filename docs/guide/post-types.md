@@ -29,6 +29,24 @@ This registers a post type with sensible defaults, maps it in Timber's classmap,
 Extend `Studiometa\Foehn\Models\Post` instead of `Timber\Post` to get built-in query methods like `Product::query()`, `Product::all()`, `Product::find()`, etc. See [Querying Posts](./querying-posts) for details.
 :::
 
+## Generate a Post Type
+
+`wp foehn make:post-type` writes the model in `app/Models/`:
+
+```bash
+wp foehn make:post-type event --rewrite-slug=events --meta=start_date,venue,capacity:integer
+```
+
+The class extends `Studiometa\Foehn\Models\Post`. Each `--meta` field gets a `#[AsPostMeta]` and a typed accessor. See [CLI Commands](./cli-commands#post-types) for every option.
+
+After you add a post type, or change its `rewriteSlug`, flush the rewrite rules:
+
+```bash
+wp foehn rewrite:flush
+```
+
+`wp foehn inspect post-types` lists each post type with its model, taxonomies and meta keys.
+
 ## Full Configuration
 
 ```php
@@ -193,8 +211,8 @@ Declaring a key that ACF also manages is fine, and is the migration path: ACF ke
 Your custom methods are available in Twig templates:
 
 ```twig
-{# templates/single-product.twig #}
-{% extends 'base.twig' %}
+{# templates/pages/single-product.twig #}
+{% extends 'layouts/base.twig' %}
 
 {% block content %}
 <article class="product">
@@ -255,9 +273,11 @@ final class Event extends Post implements ConfiguresPostType
     public static function configurePostType(PostTypeBuilder $builder): PostTypeBuilder
     {
         return $builder
-            ->setCapabilityType('event')
-            ->setMapMetaCap(true)
-            ->setLabels([
+            ->mergeExtraArgs([
+                'capability_type' => 'event',
+                'map_meta_cap' => true,
+            ])
+            ->setCustomLabels([
                 'menu_name' => 'Calendar',
                 'all_items' => 'All Events',
             ]);
