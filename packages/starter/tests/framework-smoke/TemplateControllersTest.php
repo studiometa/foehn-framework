@@ -93,3 +93,24 @@ it('skips the controllers for a request that the skip filter names', function ()
         unlink($plugin);
     }
 });
+
+it('renders inside the template enhancement output buffer of WordPress', function () {
+    // WordPress 6.9 starts the buffer on `wp_before_include_template`, which fires only
+    // when `template_include` returns a template file. In it, the styles of the blocks
+    // that a page prints late are moved into the head.
+    $id = templateControllersPost(
+        'page',
+        'smoke-late-styles',
+        '<!-- wp:paragraph {"backgroundColor":"vivid-red"} --><p class="has-vivid-red-background-color has-background">Late</p><!-- /wp:paragraph -->',
+    );
+
+    $body = Client::get((string) Site::wp("wp post url {$id}"))->body;
+    $head = strpos($body, '</head>');
+    $style = strpos($body, 'id="wp-block-paragraph-inline-css"');
+
+    expect($head)->toBeInt();
+    expect($style)->toBeInt();
+    expect($style)->toBeLessThan($head);
+
+    Site::wp("wp post delete {$id} --force");
+});

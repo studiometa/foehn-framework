@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Studiometa\Foehn\Discovery\TemplateControllerDiscovery;
 use Studiometa\Foehn\Trace\RequestTrace;
 use Tests\Fixtures\TemplateControllerFixture;
 
@@ -84,6 +85,23 @@ describe('TemplateControllerDiscovery apply', function () {
         expect($seen)->toBe([false, 'page', TemplateControllerFixture::class]);
     });
 
+    it('hands WordPress a template file that runs the controller, so WordPress includes it', function () {
+        $this->discovery->discover(
+            $this->location,
+            new \Tempest\Reflection\ClassReflector(TemplateControllerFixture::class),
+        );
+        $this->discovery->apply();
+
+        $GLOBALS['wp_stub_template'] = 'page';
+
+        // Nothing is rendered yet: the controller would need Timber::context().
+        $file = $this->discovery->handleTemplateInclude('/theme/page.php');
+
+        expect($file)->toBe(TemplateControllerDiscovery::TEMPLATE);
+        // WordPress includes only a readable `.php` file, after realpath().
+        expect(realpath($file))->toEndWith('/resources/templates/template-controller.php');
+    });
+
     it('registers filter even when no items discovered', function () {
         $this->discovery->apply();
 
@@ -101,9 +119,7 @@ describe('TemplateControllerDiscovery apply', function () {
 
         $GLOBALS['wp_stub_template'] = 'page';
 
-        // The controller then needs Timber::context(), which needs WordPress. The
-        // match is recorded before it runs.
-        expect(fn() => $discovery->handleTemplateInclude('/index.php'))->toThrow(Error::class);
+        $discovery->handleTemplateInclude('/index.php');
 
         expect($context->toArray()['template'])->toBe('page');
         expect($context->toArray()['controller'])->toBe(TemplateControllerFixture::class);
