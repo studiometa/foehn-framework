@@ -5,6 +5,40 @@ All notable changes to this project will be documented in this file. Each pull r
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.9.0 - 2026-11-16
+
+### Added
+
+- `CacheInterface` extends `Psr\SimpleCache\CacheInterface` (PSR-16), so any library that takes a PSR-16 cache can use Føhn's cache. `studiometa/foehn` now requires `psr/simple-cache` `^3` ([#265])
+- `CacheInterface::clear()`, `getMultiple()`, `setMultiple()` and `deleteMultiple()`. `clear()` removes only the entries of Føhn's cache, also with a persistent object cache ([#265])
+- `TaggedCache` implements PSR-16 too: `get()`, `has()`, `clear()` (flushes its tags) and the `*Multiple()` methods ([#265])
+- An invalid key (empty, or with one of `{}()/\@:`) throws `Studiometa\Foehn\Cache\InvalidArgumentException`, which implements `Psr\SimpleCache\InvalidArgumentException` ([#265])
+
+### Changed
+
+- **Breaking:** a TTL of `0` or less deletes the entry, as PSR-16 requires. It no longer stores the value with no expiration. Pass `null` (or no TTL) to `set()` and `remember()` to store a value with no expiration ([#265])
+- **Breaking:** `CacheInterface::set()` and `remember()` take `null|int|\DateInterval` as TTL, and the TTL of `set()` defaults to `null`. A class that implements `CacheInterface` must implement the PSR-16 methods and these signatures ([#265])
+- **Breaking:** `TaggedCache::put()` is renamed `set()`. Replace `$cache->tags([...])->put(...)` with `$cache->tags([...])->set(...)` ([#265])
+- **Breaking:** `TransientCache` names its transients `<prefix><version>_<key>`, and stores each value wrapped in an array, so that `false` and `null` are read back as they were stored. Entries written by an earlier release are not read anymore: they expire, or `wp transient delete --all` removes them ([#265])
+- `flushTag()` and `flushTags()` count the entries that were in the cache. A key whose entry had already expired is not counted ([#265])
+- Each `TransientCache` prefix keeps its tag mapping in its own `<prefix>cache_tags` option. The default prefix still uses `foehn_cache_tags` ([#265])
+
+### Removed
+
+- **Breaking:** `CacheInterface::forget()` and `TaggedCache::forget()` are removed. Use `delete()` ([#265])
+- **Breaking:** `CacheInterface::forever()`, `rememberForever()` and the same methods of `TaggedCache` are removed. Use `set($key, $value)` and `remember($key, null, $callback)` ([#265])
+- **Breaking:** the `Studiometa\Foehn\config()` helper and `Kernel::getConfig()` are removed. They only read the legacy `Kernel::boot($path, [...])` array. Read a setting from its typed config class instead: inject it in a constructor, or call `app(TimberConfig::class)` (or `FoehnConfig`, `PageCacheConfig`, …) ([#265])
+
+### Fixed
+
+- `render()` and `renderFirst()` of the view engine no longer stop with a `TypeError` when an array context holds a `post`, `posts`, `site` or `user` value of another type, such as the `user => false` Timber gives to an anonymous visitor: such a value is now dropped, as in template controllers. ([#263])
+- `wp help foehn cache:clear` now gives a deploy line that works: `wp foehn cache:config --server=nginx --write`. `cache:config` stops without `--server`. ([#263])
+- The docblock of `FoehnConfig::$debug` now says it defaults to `false`; only `FoehnConfig::fromArray()` falls back to `WP_DEBUG`. ([#263])
+- The docblock of `QueryFiltersHook` now enables it in the `hooks` list of `app/foehn.config.php`, not with the old `Kernel::boot()` array. ([#263])
+
+[#263]: https://github.com/studiometa/foehn-framework/pull/263
+[#265]: https://github.com/studiometa/foehn-framework/pull/265
+
 ## 0.8.2 - 2026-11-16
 
 ### Dependencies
