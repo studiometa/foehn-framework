@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file. Each pull r
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.10.1 - 2026-11-16
+
+### Fixed
+
+- `@studiometa/foehn-vite-plugin` sets `publicDir: false`. Vite took the `public/` directory of the project, which `studiometa/foehn-installer` copies to the document root, as its own public directory: it copied its files (`.user.ini`, `wordfence-waf.php`, `robots.txt`…) into the theme build, and its dev server served them. A project that sets `publicDir` keeps its value. Delete the copied files from the theme build directory, or build again from a clean directory ([#296])
+
+[#296]: https://github.com/studiometa/foehn-framework/pull/296
+
 ## 0.10.0 - 2026-11-16
 
 ### Added
