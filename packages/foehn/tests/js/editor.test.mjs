@@ -412,6 +412,24 @@ test('a marked element becomes a plain text RichText bound to its attribute', ()
     assert.deepEqual(changes, [{ title: 'Fish and chips' }]);
 });
 
+test('a marked root element is the block element and the RichText, with no wrapper', () => {
+    const canvas = render(h('h2', { 'data-foehn-editable': 'title', class: 'big' }, 'old'));
+    const { registered } = register(
+        [{ name: 'test/heading', attributes: { title: field('text', 'string') }, innerBlocks: null }],
+        {},
+        canvas,
+    );
+    const { elements } = edit(registered['test/heading'], { title: 'Hi' });
+
+    const editable = find(elements, 'RichText');
+
+    assert.ok(!elements.some((element) => element.type === 'div'), 'no wrapper div');
+    assert.equal(editable.props.tagName, 'h2');
+    assert.equal(editable.props.className, 'big wp-block');
+    assert.equal(editable.props['data-block'], 'client-id');
+    assert.equal(editable.props.value, 'Hi');
+});
+
 test('a richtext attribute keeps its formatting as HTML', () => {
     const canvas = render(h('figure', {}, h('figcaption', { 'data-foehn-editable': 'caption' })));
     const { registered } = register(

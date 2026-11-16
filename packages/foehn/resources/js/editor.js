@@ -1250,9 +1250,9 @@
         const key = node.getAttribute(EDITABLE_ATTRIBUTE);
         const field = key ? context.fields[key] : null;
 
-        // RichText cannot take the wrapper ref, so a marked root element keeps its
-        // markup and the caller wraps it.
-        if (field && RichText && !root) {
+        // A marked root element is a RichText with the wrapper props, as core/paragraph
+        // spreads useBlockProps on its RichText.
+        if (field && RichText) {
             context.found.editables[key] = true;
 
             return renderEditable(tag, props, key, field, context);
@@ -1290,10 +1290,9 @@
     function renderCanvas(document, context, blockProps) {
         const nodes = significantNodes(document.body.childNodes);
         const single = nodes.length === 1 && nodes[0].nodeType === 1 ? nodes[0] : null;
-        // A root the editor replaces, drops or cannot give children to keeps a wrapper.
+        // A root the editor drops or cannot give children to keeps a wrapper.
         const mergeable =
             single &&
-            !single.hasAttribute(EDITABLE_ATTRIBUTE) &&
             !DROPPED_ELEMENTS[single.localName] &&
             !VOID_ELEMENTS[single.localName] &&
             single.localName !== INNER_BLOCKS_TAG;
@@ -1316,7 +1315,7 @@
             });
         }
 
-        // Several root nodes, or a root the editor replaces: one wrapper around them.
+        // Several root nodes, or a root the editor drops: one wrapper around them.
         const children = Array.prototype.map.call(document.body.childNodes, function (child) {
             return toReact(child, context);
         });
