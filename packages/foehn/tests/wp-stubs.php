@@ -28,6 +28,8 @@ function wp_stub_reset(): void
     $GLOBALS['wp_stub_acf_field_types'] = [];
     $GLOBALS['wp_stub_acf_stores'] = [];
     $GLOBALS['wp_stub_options'] = [];
+    $GLOBALS['wp_stub_transients'] = [];
+    $GLOBALS['wp_stub_ext_object_cache'] = false;
     $GLOBALS['wp_stub_taxonomies'] = [];
     $GLOBALS['wp_stub_post_types'] = [];
     $GLOBALS['wp_stub_public_post_types'] = [];
@@ -467,6 +469,18 @@ if (!class_exists('wpdb')) {
         public function prepare(string $query, mixed ...$args): string
         {
             return sprintf($query, ...$args);
+        }
+
+        public function query(string $query): int|bool
+        {
+            $this->queries[] = $query;
+
+            return 0;
+        }
+
+        public function esc_like(string $text): string
+        {
+            return addcslashes($text, '_%\\');
         }
     }
 }
@@ -1182,9 +1196,22 @@ if (!function_exists('set_transient')) {
     function set_transient(string $transient, mixed $value, int $expiration = 0): bool
     {
         wp_stub_record('set_transient', compact('transient', 'value', 'expiration'));
+
+        // A test sets this to false to get the answer WordPress gives for an unchanged value.
+        if (($GLOBALS['wp_stub_set_transient_result'] ?? true) === false) {
+            return false;
+        }
+
         $GLOBALS['wp_stub_transients'][$transient] = $value;
 
         return true;
+    }
+}
+
+if (!function_exists('wp_using_ext_object_cache')) {
+    function wp_using_ext_object_cache(?bool $using = null): bool
+    {
+        return $GLOBALS['wp_stub_ext_object_cache'] ?? false;
     }
 }
 

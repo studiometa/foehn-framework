@@ -4,96 +4,140 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Cache;
 
-use Studiometa\Foehn\Contracts\CacheInterface;
+use DateInterval;
+use Psr\SimpleCache\CacheInterface;
+use Psr\SimpleCache\InvalidArgumentException as PsrInvalidArgumentException;
 
 /**
  * Tagged cache wrapper for grouping cache keys by tags.
  *
- * Allows flushing multiple cache keys at once by tag.
- * Tag-to-key mappings are stored in a WordPress option.
+ * A PSR-16 cache over another one: keys are shared with the wrapped cache, and each key
+ * written here is recorded under the tags, so that flushing a tag deletes all of them.
+ * `clear()` flushes the tags of this instance only. Tag-to-key mappings are stored in a
+ * WordPress option.
  */
-final class TaggedCache
+final class TaggedCache implements CacheInterface
 {
     /**
-     * Option name for storing tag → keys mapping.
+     * Option name for storing tag → keys mapping, for the default cache prefix.
      */
     private const string TAGS_OPTION = 'foehn_cache_tags';
 
     /**
      * @param CacheInterface $cache The underlying cache instance
      * @param list<string> $tags Tags to associate with cached keys
+     * @param string $option Option that stores the tag → keys mapping
      */
     public function __construct(
         private readonly CacheInterface $cache,
         private readonly array $tags,
+        private readonly string $option = self::TAGS_OPTION,
     ) {}
+
+    public function get(string $key, mixed $default = null): mixed
+    {
+        return $this->cache->get($key, $default);
+    }
+
+    /**
+     * Store a value in cache with tags. A TTL of zero or less deletes the entry.
+     */
+    public function set(string $key, mixed $value, int|DateInterval|null $ttl = null): bool
+    {
+        if (Ttl::isExpired($ttl)) {
+            return $this->delete($key);
+        }
+
+        $this->registerKeyWithTags(InvalidArgumentException::assertValidKey($key));
+
+        return $this->cache->set($key, $value, $ttl);
+    }
+
+    /**
+     * Remove a value from cache and its tag associations.
+     */
+    public function delete(string $key): bool
+    {
+        $deleted = $this->cache->delete($key);
+        $this->unregisterKeyFromTags($key);
+
+        return $deleted;
+    }
+
+    /**
+     * Flush the tags of this instance.
+     */
+    public function clear(): bool
+    {
+        foreach ($this->tags as $tag) {
+            self::flush($this->cache, $tag, $this->option);
+        }
+
+        return true;
+    }
+
+    public function has(string $key): bool
+    {
+        return $this->cache->has($key);
+    }
+
+    public function getMultiple(iterable $keys, mixed $default = null): iterable
+    {
+        return $this->cache->getMultiple($keys, $default);
+    }
+
+    /**
+     * @param iterable<mixed, mixed> $values
+     */
+    public function setMultiple(iterable $values, int|DateInterval|null $ttl = null): bool
+    {
+        $stored = true;
+
+        foreach ($values as $key => $value) {
+            // PHP turns a numeric string array key into an integer.
+            $key = InvalidArgumentException::assertValidKey(is_int($key) ? (string) $key : $key);
+            $stored = $this->set($key, $value, $ttl) && $stored;
+        }
+
+        return $stored;
+    }
+
+    /**
+     * @param iterable<mixed> $keys
+     */
+    public function deleteMultiple(iterable $keys): bool
+    {
+        $deleted = true;
+
+        foreach ($keys as $key) {
+            $deleted = $this->delete(InvalidArgumentException::assertValidKey($key)) && $deleted;
+        }
+
+        return $deleted;
+    }
 
     /**
      * Get a value from cache, or compute and store it.
      *
      * @template T
      * @param string $key Cache key
-     * @param int $ttl Time to live in seconds
+     * @param null|int|DateInterval $ttl Time to live (`null` = no expiration)
      * @param callable(): T $callback Function to compute value if not cached
      * @return T
      */
-    public function remember(string $key, int $ttl, callable $callback): mixed
+    public function remember(string $key, int|DateInterval|null $ttl, callable $callback): mixed
     {
-        $value = $this->cache->get($key);
+        $miss = new \stdClass();
+        $value = $this->cache->get($key, $miss);
 
-        if ($value !== null) {
+        if ($value !== $miss) {
             return $value;
         }
 
         $value = $callback();
-        $this->put($key, $value, $ttl);
+        $this->set($key, $value, $ttl);
 
         return $value;
-    }
-
-    /**
-     * Get a value from cache, or compute and store it forever.
-     *
-     * @template T
-     * @param string $key Cache key
-     * @param callable(): T $callback Function to compute value if not cached
-     * @return T
-     */
-    public function rememberForever(string $key, callable $callback): mixed
-    {
-        return $this->remember($key, 0, $callback);
-    }
-
-    /**
-     * Store a value in cache with tags.
-     *
-     * @param string $key Cache key
-     * @param mixed $value Value to cache
-     * @param int $ttl Time to live in seconds (0 = no expiration)
-     */
-    public function put(string $key, mixed $value, int $ttl = 0): bool
-    {
-        $this->registerKeyWithTags($key);
-
-        return $this->cache->set($key, $value, $ttl);
-    }
-
-    /**
-     * Store a value forever (no expiration).
-     */
-    public function forever(string $key, mixed $value): bool
-    {
-        return $this->put($key, $value, 0);
-    }
-
-    /**
-     * Remove a value from cache and its tag associations.
-     */
-    public function forget(string $key): bool
-    {
-        $this->unregisterKeyFromTags($key);
-
-        return $this->cache->forget($key);
     }
 
     /**
@@ -101,11 +145,12 @@ final class TaggedCache
      *
      * @param CacheInterface $cache The cache instance to use for deletion
      * @param string $tag Tag to flush
-     * @return int Number of keys flushed
+     * @param string $option Option that stores the tag → keys mapping
+     * @return int Number of entries flushed
      */
-    public static function flush(CacheInterface $cache, string $tag): int
+    public static function flush(CacheInterface $cache, string $tag, string $option = self::TAGS_OPTION): int
     {
-        $mapping = self::getTagsMapping();
+        $mapping = self::getTagsMapping($option);
 
         if (($mapping[$tag] ?? null) === null) {
             return 0;
@@ -115,7 +160,13 @@ final class TaggedCache
         $flushed = 0;
 
         foreach ($keys as $key) {
-            if (!$cache->forget($key)) {
+            try {
+                if (!$cache->has($key) || !$cache->delete($key)) {
+                    continue;
+                }
+            } catch (PsrInvalidArgumentException) {
+                // A mapping written before keys were checked can hold a key PSR-16 does not
+                // allow. No entry can exist under it: drop it with the tag.
                 continue;
             }
 
@@ -124,10 +175,10 @@ final class TaggedCache
 
         // Remove the tag from mapping
         unset($mapping[$tag]);
-        self::saveTagsMapping($mapping);
+        self::saveTagsMapping($option, $mapping);
 
         // Also remove this tag's keys from other tags
-        self::cleanupOrphanedKeys($keys, $mapping);
+        self::cleanupOrphanedKeys($option, $keys, $mapping);
 
         return $flushed;
     }
@@ -137,9 +188,9 @@ final class TaggedCache
      *
      * @return array<string, list<string>>
      */
-    public static function getTagsMapping(): array
+    public static function getTagsMapping(string $option = self::TAGS_OPTION): array
     {
-        $mapping = get_option(self::TAGS_OPTION, []);
+        $mapping = get_option($option, []);
 
         return is_array($mapping) ? $mapping : [];
     }
@@ -147,9 +198,9 @@ final class TaggedCache
     /**
      * Clear all tag mappings.
      */
-    public static function clearTagsMapping(): void
+    public static function clearTagsMapping(string $option = self::TAGS_OPTION): void
     {
-        delete_option(self::TAGS_OPTION);
+        delete_option($option);
     }
 
     /**
@@ -157,7 +208,7 @@ final class TaggedCache
      */
     private function registerKeyWithTags(string $key): void
     {
-        $mapping = self::getTagsMapping();
+        $mapping = self::getTagsMapping($this->option);
 
         foreach ($this->tags as $tag) {
             if (($mapping[$tag] ?? null) === null) {
@@ -169,7 +220,7 @@ final class TaggedCache
             }
         }
 
-        self::saveTagsMapping($mapping);
+        self::saveTagsMapping($this->option, $mapping);
     }
 
     /**
@@ -177,7 +228,7 @@ final class TaggedCache
      */
     private function unregisterKeyFromTags(string $key): void
     {
-        $mapping = self::getTagsMapping();
+        $mapping = self::getTagsMapping($this->option);
 
         foreach ($mapping as $tag => $keys) {
             $mapping[$tag] = array_values(array_filter($keys, static fn(string $k) => $k !== $key));
@@ -187,16 +238,17 @@ final class TaggedCache
             }
         }
 
-        self::saveTagsMapping($mapping);
+        self::saveTagsMapping($this->option, $mapping);
     }
 
     /**
      * Remove keys from all tags after a flush.
      *
+     * @param string $option Option that stores the mapping
      * @param list<string> $keysToRemove Keys to remove
      * @param array<string, list<string>> $mapping Current mapping
      */
-    private static function cleanupOrphanedKeys(array $keysToRemove, array $mapping): void
+    private static function cleanupOrphanedKeys(string $option, array $keysToRemove, array $mapping): void
     {
         $updated = false;
 
@@ -217,7 +269,7 @@ final class TaggedCache
         }
 
         if ($updated) {
-            self::saveTagsMapping($mapping);
+            self::saveTagsMapping($option, $mapping);
         }
     }
 
@@ -226,8 +278,8 @@ final class TaggedCache
      *
      * @param array<string, list<string>> $mapping
      */
-    private static function saveTagsMapping(array $mapping): void
+    private static function saveTagsMapping(string $option, array $mapping): void
     {
-        update_option(self::TAGS_OPTION, $mapping, false);
+        update_option($option, $mapping, false);
     }
 }

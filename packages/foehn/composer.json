@@ -29,6 +29,7 @@
     "require": {
         "php": "^8.5",
         "druidfi/mysqldump-php": "^2",
+        "psr/simple-cache": "^3",
         "studiometa/twig-toolkit": "^2.1",
         "tempest/container": "^3.18",
         "tempest/discovery": "^3.18",

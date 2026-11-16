@@ -214,7 +214,7 @@ With no transformer, `image_url()` returns the source URL. To transform, `compos
 
 ## Object cache
 
-Inject `Studiometa\Foehn\Contracts\CacheInterface` (a transient-backed implementation):
+Inject `Studiometa\Foehn\Contracts\CacheInterface`. It is a PSR-16 cache (`Psr\SimpleCache\CacheInterface`) backed by transients, so it also fits any library that takes a PSR-16 cache:
 
 ```php
 $projects = $this->cache->remember('featured_projects', HOUR_IN_SECONDS, fn() => Project::query()->limit(3)->get());
@@ -223,7 +223,7 @@ $this->cache->tags(['projects'])->remember('project_count', DAY_IN_SECONDS, fn()
 $this->cache->flushTag('projects'); // for example in a save_post action
 ```
 
-Other methods: `get`, `set`, `has`, `forget`, `rememberForever`, `forever`, `increment`, `decrement`, `flushTags`.
+Other methods: the PSR-16 ones (`get`, `set`, `has`, `delete`, `clear`, `getMultiple`, `setMultiple`, `deleteMultiple`), and `increment`, `decrement`, `flushTags`. A `null` TTL stores with no expiration. A TTL of `0` or less deletes the entry. A tagged cache (`tags([...])`) is a PSR-16 cache too: its `clear()` flushes its tags. Keys must not be empty or contain `{}()/\@:`.
 
 ## Environment helpers
 
