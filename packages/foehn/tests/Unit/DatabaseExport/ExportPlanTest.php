@@ -193,6 +193,85 @@ describe('ExportPlan', function () {
         expect($plan->tables['wp_redirection_items']->rows)->toBeTrue();
     });
 
+    it('keeps the WPML translation tables, and leaves out its jobs and queues', function () {
+        // Emptied, `icl_translations` and `icl_languages` break every multilingual page
+        // of the imported site.
+        $plan = ExportPlan::resolve(
+            exportTables([
+                'icl_translations',
+                'icl_languages',
+                'icl_languages_translations',
+                'icl_locale_map',
+                'icl_flags',
+                'icl_strings',
+                'icl_string_translations',
+                'icl_string_packages',
+                'icl_string_positions',
+                'icl_translation_status',
+                'icl_translate_job',
+                'icl_translate',
+                'icl_translation_batches',
+                'icl_background_task',
+            ]),
+            'wp_',
+            EXPORT_FROM,
+            new DatabaseExportConfig(),
+        );
+
+        expect($plan->presets)->toContain('WPML');
+        expect($plan->uncovered)->toBe([]);
+        expect($plan->structureOnly())->toBe([
+            'wp_icl_translate_job',
+            'wp_icl_translate',
+            'wp_icl_translation_batches',
+            'wp_icl_background_task',
+        ]);
+    });
+
+    it('keeps the Rank Math redirections and links, and leaves out its 404 log and analytics', function () {
+        $plan = ExportPlan::resolve(
+            exportTables([
+                'rank_math_redirections',
+                'rank_math_redirections_cache',
+                'rank_math_internal_links',
+                'rank_math_internal_meta',
+                'rank_math_404_logs',
+                'rank_math_analytics_gsc',
+                'rank_math_analytics_objects',
+            ]),
+            'wp_',
+            EXPORT_FROM,
+            new DatabaseExportConfig(),
+        );
+
+        expect($plan->presets)->toContain('Rank Math');
+        expect($plan->uncovered)->toBe([]);
+        expect($plan->structureOnly())->toBe([
+            'wp_rank_math_404_logs',
+            'wp_rank_math_analytics_gsc',
+            'wp_rank_math_analytics_objects',
+        ]);
+    });
+
+    it('exports the tables of Action Scheduler without WooCommerce as structure only', function () {
+        // The arguments of an action can hold an email or an order: fail-closed.
+        $plan = ExportPlan::resolve(
+            exportTables([
+                'actionscheduler_actions',
+                'actionscheduler_claims',
+                'actionscheduler_groups',
+                'actionscheduler_logs',
+            ]),
+            'wp_',
+            EXPORT_FROM,
+            new DatabaseExportConfig(),
+        );
+
+        expect($plan->presets)->toBe(['Action Scheduler']);
+        expect($plan->uncovered)->toBe([]);
+        expect($plan->structureOnly())->toHaveCount(4);
+    });
+
     it('takes the safe, structure-only and column rules of the project config', function () {
         $plan = ExportPlan::resolve(
             exportTables([

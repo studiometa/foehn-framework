@@ -98,7 +98,14 @@ final readonly class BuiltInRules
      */
     public function presets(array $tables): array
     {
-        return [$this->wooCommerce($tables), $this->gravityForms(), $this->logs()];
+        return [
+            $this->wooCommerce($tables),
+            $this->actionScheduler(),
+            $this->gravityForms(),
+            $this->wpml(),
+            $this->rankMath(),
+            $this->logs(),
+        ];
     }
 
     /**
@@ -191,6 +198,93 @@ final readonly class BuiltInRules
         ];
 
         return new Preset('WooCommerce', ['woocommerce_order_items', 'wc_orders'], $rules);
+    }
+
+    /**
+     * Action Scheduler on its own, as a library of a plugin other than WooCommerce.
+     *
+     * The arguments of an action can hold an email, an order or a form entry, and the
+     * logs repeat them, so nothing of it leaves production. A plugin schedules its
+     * recurring actions again on its own.
+     */
+    private function actionScheduler(): Preset
+    {
+        return new Preset(
+            'Action Scheduler',
+            ['actionscheduler_actions'],
+            [
+                'actionscheduler_*' => TableRule::structureOnly(),
+            ],
+        );
+    }
+
+    /**
+     * WPML: which post is the translation of which, the languages and the string
+     * translations, without which a multilingual site breaks after import.
+     *
+     * Translation jobs and batches, and the queues, are left out: they repeat post
+     * content for translators and belong to the work in progress on production. The
+     * WPML licence key is in the `wp_installer_settings` option, which is exported with
+     * the other options.
+     */
+    private function wpml(): Preset
+    {
+        $structureOnly = [
+            'icl_translate_job',
+            'icl_translate',
+            'icl_translation_batches',
+            'icl_translation_downloads',
+            'icl_background_task',
+            'icl_message_status',
+            'icl_reminders',
+            'icl_string_batches',
+            'icl_core_status',
+            'icl_content_status',
+            'icl_node',
+        ];
+        $kept = [
+            'icl_translations',
+            'icl_translation_status',
+            'icl_languages',
+            'icl_languages_translations',
+            'icl_locale_map',
+            'icl_flags',
+            'icl_strings',
+            'icl_string_translations',
+            'icl_string_packages',
+            'icl_string_positions',
+            'icl_string_pages',
+            'icl_string_urls',
+            'icl_string_status',
+            'icl_mo_files_domains',
+        ];
+
+        return new Preset(
+            'WPML',
+            ['icl_translations'],
+            array_fill_keys($kept, new TableRule()) + array_fill_keys($structureOnly, TableRule::structureOnly()),
+        );
+    }
+
+    /**
+     * Rank Math: redirections and internal links are kept. The 404 log holds the
+     * referrers and browsers of visitors, and the analytics are copies of Google data
+     * that Rank Math downloads again.
+     */
+    private function rankMath(): Preset
+    {
+        return new Preset(
+            'Rank Math',
+            ['rank_math_*'],
+            [
+                'rank_math_redirections' => new TableRule(),
+                'rank_math_redirections_cache' => new TableRule(),
+                'rank_math_internal_links' => new TableRule(),
+                'rank_math_internal_meta' => new TableRule(),
+                'rank_math_404_logs' => TableRule::structureOnly(),
+                'rank_math_analytics_*' => TableRule::structureOnly(),
+            ],
+        );
     }
 
     private function gravityForms(): Preset
