@@ -27,7 +27,7 @@ use Tests\Fixtures\HookFixture;
  * discovery to restore — and Tempest treats a location whose entry is missing any
  * of them as unusable and scans it instead.
  */
-function seedDiscoveryCache(DiscoveryCache $cache, ArrayAdapter $pool): void
+function seedDiscoveryCache(DiscoveryCache $cache, ArrayAdapter $pool, string $hookClass = HookFixture::class): void
 {
     $location = testDiscoveryLocation();
 
@@ -38,7 +38,7 @@ function seedDiscoveryCache(DiscoveryCache $cache, ArrayAdapter $pool): void
     $hooks->setItems(new DiscoveryItems()->addForLocation($location, [
         [
             'attribute' => new AsAction('init'),
-            'className' => HookFixture::class,
+            'className' => $hookClass,
             'methodName' => 'onInit',
         ],
     ]));
@@ -106,6 +106,26 @@ describe('DiscoveryRunner integration', function () {
         // scanned one.
         expect($hooks->getItems())->toHaveCount(1);
         expect(wp_stub_get_calls('add_action'))->toHaveCount(1);
+    });
+
+    it('scans again when the cache names a class that was deleted', function () {
+        // A deleted class used to throw a ReflectionException while the cache was
+        // applied, before `wp foehn discovery:clear` could run to empty it.
+        $pool = new ArrayAdapter();
+        $cache = new DiscoveryCache(DiscoveryCacheStrategy::FULL, $pool);
+
+        seedDiscoveryCache($cache, $pool, 'Tests\\Fixtures\\DeletedHookFixture');
+
+        $runner = new DiscoveryRunner(createTestContainer(), $cache, $pool, new DiscoveryLocations(testAppPath()));
+        $runner->runEarlyDiscoveries();
+        $runner->runMainDiscoveries();
+        $runner->runLateDiscoveries();
+
+        // The app directory is empty, so the scan finds nothing, and the cache it
+        // writes no longer names the deleted class.
+        expect($runner->getDiscoveries())->toBe([]);
+        expect(wp_stub_get_calls('add_action'))->toBeEmpty();
+        expect($pool->getItem(testDiscoveryLocation()->key)->get())->not->toHaveKey(HookDiscovery::class);
     });
 
     it('ignores what the cache holds when caching is disabled', function () {
