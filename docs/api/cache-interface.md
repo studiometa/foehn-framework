@@ -184,7 +184,7 @@ $cache->tags(['products'])->delete('list');
 $cache->tags(['products'])->clear(); // Same as $cache->flushTag('products')
 ```
 
-The returned `TaggedCache` has `put()`, `forever()`, `remember()`, `rememberForever()` and `forget()`. It has no `set()`.
+The returned `TaggedCache` implements `Psr\SimpleCache\CacheInterface` (`get()`, `set()`, `delete()`, `clear()`, `has()` and the `*Multiple()` methods) and has `remember()`.
 
 ### flushTag() / flushTags()
 
