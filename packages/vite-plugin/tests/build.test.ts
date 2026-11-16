@@ -1,4 +1,4 @@
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -62,5 +62,46 @@ describe("foehn build", () => {
         });
 
         expect(entryCode(themeDir)).toMatch(/return["'`]\/static\/["'`]\+/);
+    });
+    it("does not copy the public directory of the project into the build", async () => {
+        // `studiometa/foehn-installer` copies `public/` to the document root. Vite
+        // takes the same directory as its own public directory, and would copy its
+        // files into the theme build.
+        const projectDir = mkdtempSync(join(tmpdir(), "foehn-vite-project-"));
+        const theme = join(projectDir, "theme");
+
+        mkdirSync(join(projectDir, "public"));
+        writeFileSync(join(projectDir, "public/robots.txt"), "User-agent: *\n");
+        mkdirSync(join(theme, "src"), { recursive: true });
+        writeFileSync(join(theme, "src/app.js"), "export const app = 1;\n");
+
+        try {
+            await build({
+                root: projectDir,
+                configFile: false,
+                logLevel: "silent",
+                plugins: [foehn({ input: "src/app.js", themeDir: theme })],
+            });
+
+            expect(existsSync(join(theme, "dist/.vite/manifest.json"))).toBe(true);
+            expect(existsSync(join(theme, "dist/robots.txt"))).toBe(false);
+        } finally {
+            rmSync(projectDir, { recursive: true, force: true });
+        }
+    });
+
+    it("keeps the public directory of a project that sets one", async () => {
+        mkdirSync(join(themeDir, "static"));
+        writeFileSync(join(themeDir, "static/font.txt"), "font\n");
+
+        await build({
+            root: themeDir,
+            configFile: false,
+            logLevel: "silent",
+            publicDir: "static",
+            plugins: [foehn({ input: "src/app.js", themeDir })],
+        });
+
+        expect(existsSync(join(themeDir, "dist/font.txt"))).toBe(true);
     });
 });

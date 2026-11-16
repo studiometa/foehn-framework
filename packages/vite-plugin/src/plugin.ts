@@ -58,6 +58,10 @@ export function foehn(options: FoehnPluginOptions): Plugin[] {
                 // `modulepreload` hints, from the URL of the bundle that imports them.
                 // `ViteManifest` builds the URLs of the entries itself.
                 base: userConfig.base ?? (command === "build" ? "./" : undefined),
+                // `public/` holds the files `studiometa/foehn-installer` copies to the
+                // document root. As the Vite public directory, its files would be copied
+                // into the theme build and served by the dev server.
+                publicDir: userConfig.publicDir ?? false,
                 build: {
                     manifest: true,
                     outDir,

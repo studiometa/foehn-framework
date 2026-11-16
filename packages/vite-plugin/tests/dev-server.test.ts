@@ -162,11 +162,17 @@ describe("dev server", () => {
         ["a CSS entry", "/theme/assets/css/app.css", "color: red"],
         ["a CSS module import", "/theme/assets/css/app.css?import", "color: red"],
         ["the Vite client", "/@vite/client", "createHotContext"],
-        ["a public file", "/robots.txt", "from-public"],
     ])("serves %s from Vite", async (_label, path, expected) => {
         const body = await (await fetch(`${origin()}${path}`)).text();
         expect(body).not.toContain("from-ddev");
         expect(body).toContain(expected);
+    });
+
+    it("lets the site answer a file of the project public directory", async () => {
+        // `studiometa/foehn-installer` copies `public/` to the document root: the site
+        // serves these files, not Vite.
+        const body = await (await fetch(`${origin()}/robots.txt`)).text();
+        expect(body).toBe("from-ddev /robots.txt");
     });
 
     it("lets a page of the DDEV site load the Vite client", async () => {
