@@ -104,6 +104,10 @@ export default defineConfig({
           ],
         },
         {
+          text: "Plugins",
+          items: [{ text: "Rank Math", link: "/guide/rank-math" }],
+        },
+        {
           text: "Deployment",
           items: [
             { text: "Docker Image", link: "/guide/docker-image" },

@@ -263,6 +263,8 @@ Hooked for you: `save_post`, `deleted_post`, `before_delete_post`, `wp_trash_pos
 
 The whole cache is flushed on `switch_theme`, `customize_save_after`, `wp_update_nav_menu`, `activated_plugin`, `deactivated_plugin`, a permalink structure change, an ACF options save, and an update to `home`, `siteurl`, `blogname`, `blogdescription`, `page_on_front`, `page_for_posts`, `show_on_front` or `posts_per_page`.
 
+With the redirections module of Rank Math on, a redirection that is created, changed or turned on purges the stored page of its source, or empties the cache when its source is a pattern. See [Rank Math](/guide/rank-math#redirections).
+
 ### Reaching it from your own code
 
 ```php
@@ -453,7 +455,7 @@ A warm request is a real HTTP request, with no cookies and an `X-Foehn-Warm: 1` 
 
 ### The URL list
 
-`wp foehn cache:warm` and the warm-up after a full flush read the home page and the sitemap. By default this is the core WordPress sitemap. Rank Math and Yoast turn the core sitemap off, so set `warmSitemap` to the sitemap that the plugin publishes:
+`wp foehn cache:warm` and the warm-up after a full flush read the home page and the sitemap. By default this is the core WordPress sitemap, or the sitemap index of Rank Math when its sitemap module is on. Yoast and other SEO plugins also turn the core sitemap off, so set `warmSitemap` to the sitemap that the plugin publishes:
 
 ```php
 return new PageCacheConfig(
