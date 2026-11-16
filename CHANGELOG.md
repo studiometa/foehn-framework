@@ -5,6 +5,49 @@ All notable changes to this project will be documented in this file. Each pull r
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.10.0 - 2026-11-16
+
+### Added
+
+- `PageCacheConfig::$warmSitemap` accepts a path on the site, such as `'/sitemap_index.xml'`. Føhn reads it from `home_url()`, so one configuration works on every host. A full URL is still read as it is ([#280])
+- `wp foehn verify --profile=production` has a `page-cache-snippet` check. It fails when an nginx page cache snippet of the project carries the policy hash of another config or of an older release. A deploy that runs the production profile now fails until the snippet is generated again with `wp foehn cache:config --server=nginx` ([#282])
+- The `foehn/template_controller/skip` filter skips the template controllers for one request: return `true` and WordPress includes the template file that it chose. It receives `false`, the template name and the class name of the controller. Use it in place of removing `TemplateControllerDiscovery::handleTemplateInclude` from `template_include` ([#285])
+- `wp foehn db:export` has three more presets. **WPML**: the translation links, the languages and the string translations keep their rows, so a multilingual site still works after import. Before, these `icl_*` tables had no rule and were exported empty. Translation jobs, batches and queues are structure only. **Rank Math**: redirections and internal links keep their rows; the 404 log and the analytics are structure only. **Action Scheduler** without WooCommerce: `actionscheduler_*` is structure only, as with WooCommerce, because the arguments and the logs of an action can hold personal data ([#293])
+- `FOEHN_TRUST_FORWARDED_PROTO=true` in the environment makes the generated `wp-config.php` set `$_SERVER['HTTPS']` to `on` when the `X-Forwarded-Proto` header says `https`. Use it on a host behind a load balancer or a CDN that terminates TLS, where `is_ssl()` was false and WordPress wrote `http://` URLs. Off by default: turn it on only when every request comes through the proxy and the proxy replaces the header. Run `composer install` to generate `wp-config.php` again ([#294])
+
+### Changed
+
+- The test bootstrap of the starter loads `tests/php/stubs.php`, the stubs of the project, before `vendor/studiometa/foehn/tests/wp-stubs.php`. Each WordPress function in the Føhn stubs is defined only when it does not exist yet, so a stub of the project now wins, also after a Føhn release adds a stub with the same name. A project created from an earlier starter must load its own stubs before the Føhn file in `tests/php/bootstrap.php`. See [Unit tests](https://studiometa.github.io/foehn-framework/guide/starter-theme#unit-tests) ([#279])
+- **Breaking:** the constructor of `Studiometa\Foehn\PageCache\Invalidator` takes a third argument, the `JobDispatcher`. Code that builds an `Invalidator` itself must pass it; code that gets it from the container changes nothing ([#280])
+- **Breaking:** `TemplateNames::single()` and `TemplateNames::page()` take a third argument, the page template of the post (`get_page_template_slug()`), or `null` ([#284])
+- **Breaking:** a `template_include` callback with a priority higher than 5 now receives the path of the Føhn template file, not an empty string, for a request that a template controller handles. A callback that returns another file replaces the controller. To keep a request away from the controllers, use the `foehn/template_controller/skip` filter ([#286])
+
+### Fixed
+
+- A hit from the page cache drop-in no longer sends the `responseHeaders`. The web server already adds its server-level headers to this PHP response, as to a page that PHP renders, so nginx sent each of these headers twice (for example `X-Frame-Options`). nginx hits still send them. An invalid `responseHeaders` value no longer stops the drop-in from serving hits: only `wp foehn cache:config` refuses it ([#281])
+- With `warmAfterPurge` on, every full flush of the page cache now queues the warm-up of the sitemap: `wp foehn cache:clear` and the **Clear** button of the Føhn dashboard and of the admin bar too, not only a flush that a WordPress event started. A deploy that runs `wp foehn cache:clear` now warms the site again ([#280])
+- `wp foehn cache:status` finds each nginx page cache snippet in `config/nginx/` and `.ddev/nginx/` by the comment that the generator writes, whatever its file name. Before, it read only `foehn-page-cache.conf`, so a snippet committed under another name went stale after an upgrade without a warning ([#282])
+- Template controllers no longer render an oEmbed request (`/my-post/embed/`, `is_embed()`). WordPress renders its embed template, so another site that embeds a link to a post shows the embed card, not the full page of the theme ([#283])
+- Template controllers take the page template that a page or a post selects (`_wp_page_template`) into account. Its file name without `.php`, such as `page-wide` for `page-wide.php`, is the first template name of the request, before `page-{slug}`, `page-{id}` and `page`, as in the WordPress hierarchy. A controller can claim it with `#[AsTemplateController('page-wide')]`. A controller that claims `page-*` now also gets the page templates whose file starts with `page-` ([#284])
+- Context providers now run for a view that a template renders with Timber directly, such as `Timber::render('components/footer.twig', Timber::context())` in a `footer.php` that a plugin loads. The view name is the file name without `.twig`. Before, they ran only for a view rendered with `ViewEngine::render()`, so `current_year` and the other values of a `*` provider were missing. A plugin that renders its own Twig files with Timber now gets the `*` providers too ([#287])
+- A page that a template controller renders now goes through the template enhancement output buffer of WordPress 6.9 and later. Føhn printed the page inside the `template_include` filter and returned an empty string, so `wp_before_include_template` never fired, the buffer never started, and the styles of the blocks printed late (`wp-block-*-inline-css`, `core-block-supports-inline-css`) stayed at the end of the body. `template_include` now returns the path of a Føhn template file, `resources/templates/template-controller.php`, and WordPress includes it: that file runs the controller ([#286])
+- Outside production, a page now carries `noindex, nofollow` in its robots meta tag when Rank Math is active. Rank Math removes every `wp_robots` filter and printed `index, follow`, so a staging page was indexable from its HTML (the `X-Robots-Tag` header still said `noindex`). Føhn now also filters `rank_math/frontend/robots`. Yoast SEO needed no change ([#288])
+- `@studiometa/foehn-vite-plugin` sets Vite's `base` to `'./'` in a build. With the default `base: '/'`, the chunks of a dynamic `import()` and their `modulepreload` hints pointed at the site root and answered 404, because WordPress serves the build from the theme. A project that set `base: command === 'build' ? './' : '/'` by hand can remove it. A `base` set in `vite.config.js` still wins ([#295])
+
+[#279]: https://github.com/studiometa/foehn-framework/pull/279
+[#280]: https://github.com/studiometa/foehn-framework/pull/280
+[#281]: https://github.com/studiometa/foehn-framework/pull/281
+[#282]: https://github.com/studiometa/foehn-framework/pull/282
+[#283]: https://github.com/studiometa/foehn-framework/pull/283
+[#284]: https://github.com/studiometa/foehn-framework/pull/284
+[#285]: https://github.com/studiometa/foehn-framework/pull/285
+[#286]: https://github.com/studiometa/foehn-framework/pull/286
+[#287]: https://github.com/studiometa/foehn-framework/pull/287
+[#288]: https://github.com/studiometa/foehn-framework/pull/288
+[#293]: https://github.com/studiometa/foehn-framework/pull/293
+[#294]: https://github.com/studiometa/foehn-framework/pull/294
+[#295]: https://github.com/studiometa/foehn-framework/pull/295
+
 ## 0.9.0 - 2026-11-16
 
 ### Added

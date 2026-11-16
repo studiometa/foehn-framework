@@ -1,3 +1,0 @@
-### Added
-
-- `wp foehn db:export` has three more presets. **WPML**: the translation links, the languages and the string translations keep their rows, so a multilingual site still works after import. Before, these `icl_*` tables had no rule and were exported empty. Translation jobs, batches and queues are structure only. **Rank Math**: redirections and internal links keep their rows; the 404 log and the analytics are structure only. **Action Scheduler** without WooCommerce: `actionscheduler_*` is structure only, as with WooCommerce, because the arguments and the logs of an action can hold personal data
