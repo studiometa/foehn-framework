@@ -93,6 +93,8 @@ Read paths:
   · apache
 ```
 
+`cache:status` and the `page-cache-snippet` check of [`wp foehn verify --profile=production`](./verification) read every `*.conf` file in `config/nginx/` and `.ddev/nginx/` of the project, whatever its name. A file is a Føhn snippet when it contains the `# Foehn page cache` comment that the generator writes. So you can commit the snippet under another name, such as `config/nginx/page-cache.conf`: an update that changes the policy then makes `verify` fail until you replace it. Keep the comment block at the top of the file. A snippet outside these two directories, for example in the server configuration, is not checked.
+
 ## What is never cached
 
 A request has to pass all of these. When one fails, the response carries the reason (see [debugging](#debugging)).

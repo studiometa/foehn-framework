@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Verification\Production;
 
+use InvalidArgumentException;
 use Studiometa\Foehn\Config\PageCacheConfig;
 use Studiometa\Foehn\Cron\Heartbeat;
 use Studiometa\Foehn\Helpers\Env;
 use Studiometa\Foehn\Indexing\IndexingProtection;
 use Studiometa\Foehn\PageCache\PageStore;
+use Studiometa\Foehn\PageCache\ServerConfig\InstalledSnippets;
+use Studiometa\Foehn\PageCache\ServerConfig\NginxSnippet;
+use Studiometa\Foehn\PageCache\ServerConfig\SnippetPolicy;
 use Studiometa\Foehn\Security\Salts;
 use Studiometa\Foehn\Verification\VerificationProfile;
 use Studiometa\Foehn\Verification\VerificationReport;
@@ -72,6 +76,7 @@ final readonly class ProductionChecks
                 self::overdueEvents(),
             ),
             new PageCacheCheck($this->config, $this->store),
+            new PageCacheSnippetCheck($this->installedSnippets()),
             self::publicFiles(),
         ];
 
@@ -84,6 +89,31 @@ final readonly class ProductionChecks
         }
 
         return new VerificationReport(VerificationProfile::Production, $results);
+    }
+
+    /**
+     * The nginx page-cache snippets of the project, and whether each one is current.
+     *
+     * A config the snippet generator refuses has no current hash, so every snippet
+     * found reads as stale: `wp foehn cache:config` would say why.
+     *
+     * @return array<string, bool>
+     */
+    private function installedSnippets(): array
+    {
+        $root = SnippetPolicy::documentRoot();
+
+        if ($root === null) {
+            return [];
+        }
+
+        try {
+            $hash = new NginxSnippet($this->config)->hash();
+        } catch (InvalidArgumentException) {
+            $hash = '';
+        }
+
+        return InstalledSnippets::nginx(dirname($root), $hash);
     }
 
     /**

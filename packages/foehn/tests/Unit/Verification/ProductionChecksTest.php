@@ -14,6 +14,7 @@ use Studiometa\Foehn\Verification\Production\DebugCheck;
 use Studiometa\Foehn\Verification\Production\EnvironmentCheck;
 use Studiometa\Foehn\Verification\Production\IndexingCheck;
 use Studiometa\Foehn\Verification\Production\PageCacheCheck;
+use Studiometa\Foehn\Verification\Production\PageCacheSnippetCheck;
 use Studiometa\Foehn\Verification\Production\PublicFilesCheck;
 use Studiometa\Foehn\Verification\Production\SaltsCheck;
 use Studiometa\Foehn\Verification\VerificationStatus;
@@ -445,6 +446,32 @@ describe('page cache storage', function () {
         $result = onlyResult(new PageCacheCheck($config, new Store($config)));
 
         expect(json_encode($result->toArray(), JSON_THROW_ON_ERROR))->not->toContain($this->root);
+    });
+});
+
+describe('page cache snippet', function () {
+    it('fails when a snippet carries another policy', function () {
+        $result = onlyResult(new PageCacheSnippetCheck([
+            'config/nginx/page-cache.conf' => false,
+            '.ddev/nginx/foehn-page-cache.conf' => true,
+        ]));
+
+        expect($result->status)->toBe(VerificationStatus::Fail);
+        expect($result->summary)->toContain('config/nginx/page-cache.conf was generated from a different config');
+        expect($result->details['stale'])->toBe(['config/nginx/page-cache.conf']);
+    });
+
+    it('passes when every snippet is current', function () {
+        $result = onlyResult(new PageCacheSnippetCheck(['config/nginx/page-cache.conf' => true]));
+
+        expect($result->status)->toBe(VerificationStatus::Pass);
+    });
+
+    it('passes a project with no snippet', function () {
+        $result = onlyResult(new PageCacheSnippetCheck([]));
+
+        expect($result->status)->toBe(VerificationStatus::Pass);
+        expect($result->summary)->toContain('No nginx page cache snippet');
     });
 });
 
