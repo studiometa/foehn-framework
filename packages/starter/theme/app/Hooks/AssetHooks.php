@@ -28,4 +28,22 @@ final class AssetHooks
             ->enqueue('theme/assets/css/app.css', handle: 'starter-styles')
             ->enqueue('theme/assets/js/app.js', handle: 'starter-app', inFooter: true);
     }
+
+    /**
+     * Put the theme styles and scripts in the block editor canvas, so blocks look
+     * and behave as they do on the site. WordPress loads what this action enqueues
+     * inside the editor iframe, so the assets do not reach the admin interface
+     * around it. The components mount again by themselves when a block renders again.
+     */
+    #[AsAction('enqueue_block_assets')]
+    public function enqueueEditor(): void
+    {
+        if (!is_admin()) {
+            return;
+        }
+
+        ViteManifest::fromTheme()
+            ->enqueue('theme/assets/css/app.css', handle: 'starter-styles')
+            ->enqueue('theme/assets/js/app.js', handle: 'starter-app', inFooter: true);
+    }
 }

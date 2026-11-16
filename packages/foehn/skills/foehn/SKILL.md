@@ -249,7 +249,7 @@ final readonly class CalloutBlock implements BlockInterface
 ```
 
 - Template: `templates/blocks/callout.twig`. Optional assets by name: `assets/css/blocks/callout.css` (front end and editor) and `assets/js/blocks/callout.js` (front end, as a script module).
-- Prose goes in inner blocks with core blocks. Set `allowedBlocks`, `innerBlocksTemplate` or `innerBlocksTemplateLock` to make a container. The inner markup reaches Twig as `content` (print it with `|raw`).
+- The editor draws the block from this Twig template and makes it editable in place. Free-form prose goes in inner blocks with core blocks: set `allowedBlocks`, `innerBlocksTemplate` or `innerBlocksTemplateLock` to make a container, and print `{{ content|raw }}` where the inner blocks go. Text the template places itself goes in a string attribute marked with `{{ block_editable('title') }}`; the author types it on the canvas. See [The canvas](references/blocks.md#the-canvas).
 - `compose()` can return an `Arrayable` DTO instead of an array.
 
 Controls, containers, interactive blocks, patterns, bindings and categories: [references/blocks.md](references/blocks.md).

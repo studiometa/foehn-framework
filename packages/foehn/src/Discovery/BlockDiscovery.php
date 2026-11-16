@@ -9,6 +9,7 @@ use Studiometa\Foehn\Attributes\AsDiscovery;
 use Studiometa\Foehn\Blocks\BlockAssets;
 use Studiometa\Foehn\Blocks\BlockAttributeSchema;
 use Studiometa\Foehn\Blocks\BlockRenderer;
+use Studiometa\Foehn\Blocks\EditorCanvas;
 use Studiometa\Foehn\Contracts\BlockInterface;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
 use Tempest\Discovery\Discovery;
@@ -76,6 +77,8 @@ final class BlockDiscovery implements Discovery
      */
     public function apply(): void
     {
+        add_filter('rest_request_before_callbacks', [EditorCanvas::class, 'capture'], 10, 3);
+
         add_action('init', function (): void {
             foreach ($this->getItems() as $item) {
                 /** @var AsBlock $attribute */
@@ -109,7 +112,15 @@ final class BlockDiscovery implements Discovery
             'api_version' => 3,
             'title' => $attribute->title,
             'category' => $attribute->category,
-            'render_callback' => $this->createRenderCallback($className, $interactivityNamespace),
+            'render_callback' => $this->createRenderCallback(
+                $className,
+                $interactivityNamespace,
+                AsBlock::hasInnerBlocks(
+                    $attribute->allowedBlocks,
+                    $attribute->innerBlocksTemplate,
+                    $attribute->innerBlocksTemplateLock,
+                ),
+            ),
             // Every Foehn block is dynamic, so "Edit as HTML" can only ever invalidate it:
             // there is no static save output for the editor to validate the markup against.
             // Seeded rather than forced, so an author who really wants it can opt back in.
@@ -159,11 +170,15 @@ final class BlockDiscovery implements Discovery
      * @param class-string<BlockInterface> $className
      * @return callable
      */
-    private function createRenderCallback(string $className, ?string $interactivityNamespace): callable
-    {
+    private function createRenderCallback(
+        string $className,
+        ?string $interactivityNamespace,
+        bool $isContainer,
+    ): callable {
         return static function (array $attributes, string $content, WP_Block $block) use (
             $className,
             $interactivityNamespace,
+            $isContainer,
         ): string {
             /** @var BlockInterface $instance */
             $instance = get($className);
@@ -171,7 +186,7 @@ final class BlockDiscovery implements Discovery
             /** @var BlockRenderer $renderer */
             $renderer = get(BlockRenderer::class);
 
-            return $renderer->render($instance, $attributes, $content, $block, $interactivityNamespace);
+            return $renderer->render($instance, $attributes, $content, $block, $interactivityNamespace, $isContainer);
         };
     }
 

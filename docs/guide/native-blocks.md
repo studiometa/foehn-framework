@@ -2,7 +2,7 @@
 
 Føhn provides `#[AsBlock]` for creating native Gutenberg blocks with optional WordPress Interactivity API support.
 
-For how a block's `attributes()` schema becomes sidebar controls and a real editor preview, with no JavaScript to write, see the [Block Editor](./block-editor) guide.
+For how a block's `attributes()` schema becomes sidebar controls, and how the editor draws the block from its own template and makes it editable in place, with no JavaScript to write, see the [Block Editor](./block-editor) guide.
 
 ## Basic Native Block
 
@@ -344,7 +344,7 @@ A block's assets are named after the block and loaded when they exist — nothin
 | `innerBlocksTemplate`     | `array`              | `[]`          | InnerBlocks template      |
 | `innerBlocksTemplateLock` | `string\|bool\|null` | `null`        | InnerBlocks lock          |
 
-No editor JavaScript is needed. Foehn derives the sidebar controls from the block's `attributes()` schema and previews the block with its own server-side rendering, so a block is a PHP class plus a Twig template and nothing else. See the [Block Editor](./block-editor) guide for the control table and how `allowedBlocks` / `innerBlocksTemplate` / `innerBlocksTemplateLock` turn a block into a container.
+No editor JavaScript is needed. Foehn derives the sidebar controls from the block's `attributes()` schema and draws the block in the editor from its own server-side rendering, so a block is a PHP class plus a Twig template and nothing else. See the [Block Editor](./block-editor) guide for the control table and how `allowedBlocks` / `innerBlocksTemplate` / `innerBlocksTemplateLock` turn a block into a container.
 
 ## See Also
 

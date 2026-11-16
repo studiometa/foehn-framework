@@ -56,7 +56,7 @@ final readonly class AsBlock
 | `innerBlocksTemplate`     | `array`              | `[]`          | InnerBlocks template                                              |
 | `innerBlocksTemplateLock` | `string\|bool\|null` | `null`        | InnerBlocks lock: `'all'`, `'insert'`, `'contentOnly'` or `false` |
 
-Setting any of the three `allowedBlocks` / `innerBlocksTemplate` / `innerBlocksTemplateLock` parameters makes the block a container: the editor renders `InnerBlocks` instead of a server-rendered preview, and the inner markup reaches the Twig template as `content`.
+Setting any of the three `allowedBlocks` / `innerBlocksTemplate` / `innerBlocksTemplateLock` parameters makes the block a container: the editor mounts the inner blocks where the Twig template prints `content`, and on the site the inner markup reaches the template as `content`.
 
 ## Assets
 
@@ -69,7 +69,7 @@ There is no parameter for a block's stylesheet or script. Both are found by nami
 
 For a block named `theme/callout`, the file name is the part after the namespace — `callout`. Both paths are theme-relative and resolved with `get_theme_file_path()`, so a child theme can override either file.
 
-Because the assets are attached to the block type rather than enqueued globally, WordPress loads them only on pages that actually render the block, and loads the stylesheet into the editor as well — which is what makes the server-rendered preview look like the front end.
+Because the assets are attached to the block type rather than enqueued globally, WordPress loads them only on pages that actually render the block, and loads the stylesheet into the editor as well — which is what makes the editor canvas look like the front end.
 
 The script is registered as a [script module](https://developer.wordpress.org/reference/functions/wp_register_script_module/), so it is served with `type="module"`. It can use `import`, including bare specifiers such as `@wordpress/interactivity`, which WordPress resolves through the import map it prints for registered modules. Modules are deferred and run in strict mode, so load order needs no thought.
 

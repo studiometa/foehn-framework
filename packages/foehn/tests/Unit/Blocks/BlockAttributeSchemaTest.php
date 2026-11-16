@@ -265,6 +265,7 @@ describe('BlockAttributeSchema::toEditorFields', function () {
             'type',
             'label',
             'help',
+            'placeholder',
             'options',
             'allowedTypes',
             'postTypes',
@@ -340,5 +341,22 @@ describe('BlockAttributeSchema media and relation controls', function () {
             'items' => ['type' => 'integer'],
             'default' => [],
         ]);
+    });
+});
+
+describe('BlockAttributeSchema richtext and placeholder', function () {
+    it('accepts the richtext control', function () {
+        $fields = BlockAttributeSchema::toEditorFields([
+            'caption' => ['type' => 'string', 'control' => 'richtext'],
+        ]);
+
+        expect($fields['caption']['control'])->toBe('richtext');
+    });
+
+    it('passes the placeholder to the editor and keeps it out of the registration', function () {
+        $schema = ['title' => ['type' => 'string', 'placeholder' => 'Type a title']];
+
+        expect(BlockAttributeSchema::toEditorFields($schema)['title']['placeholder'])->toBe('Type a title');
+        expect(BlockAttributeSchema::toRegistration($schema)['title'])->toBe(['type' => 'string']);
     });
 });

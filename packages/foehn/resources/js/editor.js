@@ -30,18 +30,26 @@
     const el = wp.element.createElement;
     const cloneElement = wp.element.cloneElement;
     const Fragment = wp.element.Fragment;
+    const useEffect = wp.element.useEffect;
+    const useMemo = wp.element.useMemo;
+    const useRef = wp.element.useRef;
+    const useState = wp.element.useState;
     const registerBlockType = wp.blocks.registerBlockType;
+    const BlockControls = wp.blockEditor.BlockControls;
     const InspectorControls = wp.blockEditor.InspectorControls;
     const InnerBlocks = wp.blockEditor.InnerBlocks;
+    const MediaReplaceFlow = wp.blockEditor.MediaReplaceFlow;
     const MediaUpload = wp.blockEditor.MediaUpload;
     const MediaUploadCheck = wp.blockEditor.MediaUploadCheck;
+    const RichText = wp.blockEditor.RichText;
     const useBlockProps = wp.blockEditor.useBlockProps;
+    const useInnerBlocksProps = wp.blockEditor.useInnerBlocksProps;
     const BaseControl = wp.components.BaseControl;
     const Button = wp.components.Button;
     const ComboboxControl = wp.components.ComboboxControl;
-    const Disabled = wp.components.Disabled;
     const PanelBody = wp.components.PanelBody;
     const SelectControl = wp.components.SelectControl;
+    const Spinner = wp.components.Spinner;
     const TextControl = wp.components.TextControl;
     const TextareaControl = wp.components.TextareaControl;
     const ToggleControl = wp.components.ToggleControl;
@@ -51,14 +59,19 @@
     // `wp.data` ships with the editor; guarding anyway keeps this file harmless
     // wherever it is loaded.
     const useSelect = wp.data && wp.data.useSelect;
-    const useState = wp.element.useState;
+    const apiFetch = wp.apiFetch;
+    const DOMParser = window.DOMParser;
+    const logger = window.console;
 
-    // The global is the module exports object, so the component sits under a named or a
-    // default export depending on the WordPress version. The bare namespace is the last
-    // resort: older builds exposed the component itself as the global.
-    const ServerSideRender =
-        wp.serverSideRender &&
-        (wp.serverSideRender.ServerSideRender || wp.serverSideRender.default || wp.serverSideRender);
+    // Must match the constants of `Studiometa\Foehn\Blocks\EditorCanvas`.
+    const CANVAS_PARAM = 'foehn_canvas';
+    const INNER_BLOCKS_TAG = 'foehn-inner-blocks';
+    const EDITABLE_ATTRIBUTE = 'data-foehn-editable';
+
+    // How long the canvas waits after the last attribute change before it asks the
+    // server for a new render. Long enough to not render once per keystroke in a
+    // sidebar field, short enough to feel live.
+    const RENDER_DELAY = 300;
 
     /**
      * Coerce a value for a text input, which cannot hold null or undefined.
@@ -125,6 +138,12 @@
                 value: toInputValue(value),
                 onChange: setValue,
             });
+        },
+
+        // The sidebar fallback of a `richtext` attribute, for a template that does
+        // not mark it with block_editable(). The value stays HTML.
+        richtext(field, value, setValue) {
+            return CONTROLS.textarea(field, value, setValue);
         },
 
         toggle(field, value, setValue) {
@@ -733,13 +752,19 @@
      * @param {Object}   definition    Block definition from the payload.
      * @param {Object}   attributes    Current block attributes.
      * @param {Function} setAttributes Attribute setter given to `edit`.
+     * @param {Object}   [onCanvas]    Attribute names edited in place on the canvas.
      * @return {Array} Control elements, possibly empty.
      */
-    function renderFields(definition, attributes, setAttributes) {
+    function renderFields(definition, attributes, setAttributes, onCanvas) {
         const fields = definition.attributes || {};
 
         return Object.keys(fields).reduce(function (elements, key) {
             const field = fields[key] || {};
+
+            // An attribute the author types on the canvas needs no second field.
+            if (onCanvas && onCanvas[key]) {
+                return elements;
+            }
             const render = field.control ? CONTROLS[field.control] : null;
 
             // An attribute with no supported control is skipped in silence: it still
@@ -790,12 +815,714 @@
         return props;
     }
 
+    /*
+     * The canvas.
+     *
+     * The editor draws a Foehn block from the same Twig template as the front end:
+     * the server renders it with the `foehn_canvas` flag, and the HTML it returns is
+     * turned into React elements here. Two kinds of elements become live editor
+     * components on the way:
+     *
+     * - the inner blocks marker, printed where the template prints `content`,
+     *   becomes the block's InnerBlocks — mounted on the marker's parent element
+     *   when it is that element's only child, so the inner blocks are direct
+     *   children of the template's own element, with no wrapper;
+     * - an element marked with `block_editable('<attribute>')` becomes a RichText
+     *   bound to that attribute, so the author types where the text is shown.
+     *
+     * The template's root element receives the block wrapper props, as a core block
+     * spreads useBlockProps on its own root: selection, the toolbar and the block
+     * supports land on the template's markup instead of on a wrapper around it.
+     *
+     * The HTML is never inserted with innerHTML: it goes through React, so nothing in
+     * it runs, and the editor components inside it keep their state across renders.
+     */
+
+    // Elements with no children in HTML.
+    const VOID_ELEMENTS = {
+        area: true,
+        base: true,
+        br: true,
+        col: true,
+        embed: true,
+        hr: true,
+        img: true,
+        input: true,
+        link: true,
+        meta: true,
+        source: true,
+        track: true,
+        wbr: true,
+    };
+
+    // Elements dropped from the canvas: nothing in a server render runs in the editor.
+    const DROPPED_ELEMENTS = { script: true, noscript: true, template: true };
+
+    // HTML attribute names whose React prop name differs by more than the case.
+    const PROP_NAMES = {
+        class: 'className',
+        for: 'htmlFor',
+        accesskey: 'accessKey',
+        allowfullscreen: 'allowFullScreen',
+        autocomplete: 'autoComplete',
+        autofocus: 'autoFocus',
+        autoplay: 'autoPlay',
+        colspan: 'colSpan',
+        contenteditable: 'contentEditable',
+        crossorigin: 'crossOrigin',
+        datetime: 'dateTime',
+        enctype: 'encType',
+        frameborder: 'frameBorder',
+        inputmode: 'inputMode',
+        maxlength: 'maxLength',
+        minlength: 'minLength',
+        novalidate: 'noValidate',
+        playsinline: 'playsInline',
+        readonly: 'readOnly',
+        referrerpolicy: 'referrerPolicy',
+        rowspan: 'rowSpan',
+        spellcheck: 'spellCheck',
+        srcdoc: 'srcDoc',
+        srclang: 'srcLang',
+        srcset: 'srcSet',
+        tabindex: 'tabIndex',
+        usemap: 'useMap',
+        'xlink:href': 'xlinkHref',
+        'xml:lang': 'xmlLang',
+        'xml:space': 'xmlSpace',
+    };
+
+    // Boolean attributes: present means true, whatever the value.
+    const BOOLEAN_PROPS = {
+        allowFullScreen: true,
+        async: true,
+        autoFocus: true,
+        autoPlay: true,
+        checked: true,
+        controls: true,
+        default: true,
+        defer: true,
+        disabled: true,
+        hidden: true,
+        inert: true,
+        loop: true,
+        multiple: true,
+        muted: true,
+        noValidate: true,
+        open: true,
+        playsInline: true,
+        readOnly: true,
+        required: true,
+        reversed: true,
+        selected: true,
+    };
+
+    const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
+
+    /**
+     * Turn a kebab-case name into camelCase.
+     *
+     * @param {string} name Name such as `stroke-width` or `-webkit-line-clamp`.
+     * @return {string} Name such as `strokeWidth` or `WebkitLineClamp`.
+     */
+    function camelCase(name) {
+        return name.replace(/^-ms-/, 'ms-').replace(/-([a-z])/g, function (match, letter) {
+            return letter.toUpperCase();
+        });
+    }
+
+    /**
+     * Parse an inline `style` attribute into a React style object.
+     *
+     * Declarations are split on the semicolons outside parentheses, so a data URI
+     * in a `url()` survives. Custom properties keep their name as is.
+     *
+     * @param {string} css Value of the style attribute.
+     * @return {Object} Style object.
+     */
+    function parseStyle(css) {
+        const style = {};
+        const declarations = [];
+        let depth = 0;
+        let current = '';
+
+        for (let index = 0; index < css.length; index++) {
+            const character = css[index];
+
+            if (character === '(') {
+                depth++;
+            } else if (character === ')') {
+                depth = Math.max(0, depth - 1);
+            }
+
+            if (character === ';' && depth === 0) {
+                declarations.push(current);
+                current = '';
+            } else {
+                current += character;
+            }
+        }
+
+        declarations.push(current);
+
+        declarations.forEach(function (declaration) {
+            const colon = declaration.indexOf(':');
+
+            if (colon === -1) {
+                return;
+            }
+
+            const property = declaration.slice(0, colon).trim();
+            const value = declaration.slice(colon + 1).trim();
+
+            if (property === '' || value === '') {
+                return;
+            }
+
+            style[property.indexOf('--') === 0 ? property : camelCase(property.toLowerCase())] = value;
+        });
+
+        return style;
+    }
+
+    /**
+     * Stop a click from leaving the editor.
+     *
+     * @param {Event} event Click or submit event.
+     */
+    function preventDefault(event) {
+        event.preventDefault();
+    }
+
+    /**
+     * Read the attributes of a DOM element as React props.
+     *
+     * Event handler attributes are dropped: they would be strings React refuses, and
+     * nothing from a server render should run in the editor anyway.
+     *
+     * @param {Element} node DOM element.
+     * @return {Object} Props.
+     */
+    function toProps(node) {
+        const props = {};
+        const svg = node.namespaceURI === SVG_NAMESPACE;
+        const attributes = node.attributes || [];
+
+        for (let index = 0; index < attributes.length; index++) {
+            const name = attributes[index].name;
+            const value = attributes[index].value;
+            const lower = name.toLowerCase();
+
+            if (lower.indexOf('on') === 0 || lower === EDITABLE_ATTRIBUTE) {
+                continue;
+            }
+
+            if (lower === 'style') {
+                props.style = parseStyle(value);
+                continue;
+            }
+
+            let prop = PROP_NAMES[lower];
+
+            if (!prop) {
+                // `data-*` and `aria-*` stay as they are in HTML and in SVG; the other
+                // dashed SVG presentation attributes are camelCase props in React.
+                const dashed = lower.indexOf('data-') !== 0 && lower.indexOf('aria-') !== 0;
+
+                prop = svg && dashed ? camelCase(name) : name;
+            }
+
+            props[prop] = BOOLEAN_PROPS[prop] ? true : value;
+        }
+
+        const tag = node.localName;
+
+        // A form value in the markup is the initial value, not a controlled one.
+        if (tag === 'input' || tag === 'textarea' || tag === 'select') {
+            if ('value' in props) {
+                props.defaultValue = props.value;
+                delete props.value;
+            }
+
+            if ('checked' in props) {
+                props.defaultChecked = props.checked;
+                delete props.checked;
+            }
+        }
+
+        // A link or a form in the template must not navigate away from the editor.
+        if (tag === 'a') {
+            props.onClick = preventDefault;
+        }
+
+        if (tag === 'form') {
+            props.onSubmit = preventDefault;
+        }
+
+        // An iframe swallows the clicks that select the block, as it does in core's
+        // own embed previews.
+        if (tag === 'iframe') {
+            props.style = Object.assign({}, props.style, { pointerEvents: 'none' });
+        }
+
+        return props;
+    }
+
+    /**
+     * Merge the block wrapper props onto the props of the template's root element.
+     *
+     * The classes and styles of both are kept. Everything else comes from the
+     * wrapper props: the ref, id, tabIndex, role and data attributes are what the
+     * editor relies on to select and move the block.
+     *
+     * @param {Object} props      Props of the root element.
+     * @param {Object} blockProps Props from useBlockProps.
+     * @return {Object} Merged props.
+     */
+    function mergeBlockProps(props, blockProps) {
+        const merged = Object.assign({}, props, blockProps);
+        const classes = [props.className, blockProps.className].filter(Boolean);
+
+        if (classes.length > 0) {
+            merged.className = classes.join(' ');
+        }
+
+        if (props.style || blockProps.style) {
+            merged.style = Object.assign({}, props.style, blockProps.style);
+        }
+
+        return merged;
+    }
+
+    /**
+     * Whether a node is text with something to show, or an element.
+     *
+     * Whitespace between elements and comments are not content: they must not stop
+     * an element from counting as the only child, or as the root.
+     *
+     * @param {Node} node DOM node.
+     * @return {boolean} Whether the node counts.
+     */
+    function isSignificant(node) {
+        if (node.nodeType === 1) {
+            return true;
+        }
+
+        return node.nodeType === 3 && node.nodeValue.trim() !== '';
+    }
+
+    /**
+     * The nodes of a list that count, in order.
+     *
+     * @param {NodeList|Array} nodes DOM nodes.
+     * @return {Array} Significant nodes.
+     */
+    function significantNodes(nodes) {
+        return Array.prototype.filter.call(nodes || [], isSignificant);
+    }
+
+    /**
+     * Whether an element's only content is the inner blocks marker.
+     *
+     * @param {Element} node DOM element.
+     * @return {boolean} Whether the element hosts the inner blocks directly.
+     */
+    function hostsInnerBlocks(node) {
+        const children = significantNodes(node.childNodes);
+
+        return children.length === 1 && children[0].localName === INNER_BLOCKS_TAG;
+    }
+
+    /**
+     * The template's element that holds the inner blocks, as a core container
+     * block's own element does: the inner blocks are its direct children.
+     *
+     * @param {Object} props Tag name, element props and InnerBlocks props.
+     * @return {Object} Element.
+     */
+    function InnerBlocksHost(props) {
+        return el(props.tagName, useInnerBlocksProps(props.elementProps, props.innerBlocksProps));
+    }
+
+    /**
+     * Convert a plain string attribute to the HTML a RichText holds.
+     *
+     * @param {*} value Attribute value.
+     * @return {string} Escaped HTML.
+     */
+    function textToHtml(value) {
+        return toInputValue(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/\n/g, '<br>');
+    }
+
+    /**
+     * Convert the HTML a RichText hands back to a plain string attribute.
+     *
+     * @param {string} html RichText value.
+     * @return {string} Text, with line breaks as newlines.
+     */
+    function htmlToText(html) {
+        const document = new DOMParser().parseFromString(
+            String(html).replace(/<br\s*\/?>/gi, '\n'),
+            'text/html',
+        );
+
+        return document.body.textContent || '';
+    }
+
+    /**
+     * The in-place editor of one attribute.
+     *
+     * A `richtext` attribute keeps the formatting the author applies, as HTML. Any
+     * other string attribute is plain text: RichText edits it, but without
+     * formatting, and the value goes back to the attribute as text, so a template
+     * that prints it escaped keeps working.
+     *
+     * @param {string}   tagName  Tag of the marked element.
+     * @param {Object}   props    Props of the marked element.
+     * @param {string}   key      Attribute name.
+     * @param {Object}   field    Editor field descriptor of the attribute.
+     * @param {Object}   context  Conversion context.
+     * @return {Object} RichText element.
+     */
+    function renderEditable(tagName, props, key, field, context) {
+        const rich = field.control === 'richtext';
+        const value = context.attributes[key];
+
+        return el(
+            RichText,
+            Object.assign({}, props, {
+                tagName: tagName,
+                identifier: key,
+                value: rich ? toInputValue(value) : textToHtml(value),
+                placeholder: field.placeholder || field.label,
+                allowedFormats: rich ? undefined : [],
+                withoutInteractiveFormatting: !rich,
+                disableLineBreaks: field.control === 'text',
+                onChange: function (next) {
+                    const patch = {};
+
+                    patch[key] = rich ? next : htmlToText(next);
+                    context.setAttributes(patch);
+                },
+            }),
+        );
+    }
+
+    /**
+     * Convert one DOM node of the server render to a React node.
+     *
+     * @param {Node}    node    DOM node.
+     * @param {Object}  context Conversion context.
+     * @param {Object}  [root]  Block wrapper props, for the template's root element.
+     * @return {*} React node, or null.
+     */
+    function toReact(node, context, root) {
+        if (node.nodeType === 3) {
+            return node.nodeValue;
+        }
+
+        if (node.nodeType !== 1) {
+            return null;
+        }
+
+        const tag = node.localName;
+
+        if (DROPPED_ELEMENTS[tag]) {
+            return null;
+        }
+
+        if (tag === INNER_BLOCKS_TAG) {
+            context.found.innerBlocks = true;
+
+            return context.innerBlocksProps ? el(InnerBlocks, context.innerBlocksProps) : null;
+        }
+
+        let props = toProps(node);
+
+        if (root) {
+            props = mergeBlockProps(props, root);
+        }
+
+        const key = node.getAttribute(EDITABLE_ATTRIBUTE);
+        const field = key ? context.fields[key] : null;
+
+        // RichText cannot take the wrapper ref, so a marked root element keeps its
+        // markup and the caller wraps it.
+        if (field && RichText && !root) {
+            context.found.editables[key] = true;
+
+            return renderEditable(tag, props, key, field, context);
+        }
+
+        if (context.innerBlocksProps && useInnerBlocksProps && hostsInnerBlocks(node)) {
+            context.found.innerBlocks = true;
+
+            return el(InnerBlocksHost, {
+                tagName: tag,
+                elementProps: props,
+                innerBlocksProps: context.innerBlocksProps,
+            });
+        }
+
+        if (VOID_ELEMENTS[tag]) {
+            return el(tag, props);
+        }
+
+        const children = Array.prototype.map.call(node.childNodes, function (child) {
+            return toReact(child, context);
+        });
+
+        return el.apply(null, [tag, props].concat(children));
+    }
+
+    /**
+     * Draw a server render on the canvas.
+     *
+     * @param {Document} document   Parsed server render.
+     * @param {Object}   context    Conversion context.
+     * @param {Object}   blockProps Props from useBlockProps.
+     * @return {Object} Element.
+     */
+    function renderCanvas(document, context, blockProps) {
+        const nodes = significantNodes(document.body.childNodes);
+        const single = nodes.length === 1 && nodes[0].nodeType === 1 ? nodes[0] : null;
+        // A root the editor replaces, drops or cannot give children to keeps a wrapper.
+        const mergeable =
+            single &&
+            !single.hasAttribute(EDITABLE_ATTRIBUTE) &&
+            !DROPPED_ELEMENTS[single.localName] &&
+            !VOID_ELEMENTS[single.localName] &&
+            single.localName !== INNER_BLOCKS_TAG;
+
+        if (mergeable) {
+            const element = toReact(single, context, blockProps);
+
+            return context.found.innerBlocks || !context.innerBlocksProps
+                ? element
+                : withMissingInnerBlocks(element, context);
+        }
+
+        // A template that is nothing but `content`: the block element holds the inner
+        // blocks directly, as a core container does.
+        if (single && single.localName === INNER_BLOCKS_TAG && context.innerBlocksProps && useInnerBlocksProps) {
+            return el(InnerBlocksHost, {
+                tagName: 'div',
+                elementProps: blockProps,
+                innerBlocksProps: context.innerBlocksProps,
+            });
+        }
+
+        // Several root nodes, or a root the editor replaces: one wrapper around them.
+        const children = Array.prototype.map.call(document.body.childNodes, function (child) {
+            return toReact(child, context);
+        });
+
+        if (context.innerBlocksProps && !context.found.innerBlocks) {
+            children.push(el(InnerBlocks, context.innerBlocksProps));
+        }
+
+        return el.apply(null, ['div', blockProps].concat(children));
+    }
+
+    /**
+     * Add the inner blocks to a root element whose template never printed them.
+     *
+     * Without this, a container whose template forgot `content` would lose its inner
+     * blocks in the editor, and saving would erase them.
+     *
+     * @param {Object} element Root element.
+     * @param {Object} context Conversion context.
+     * @return {Object} Element.
+     */
+    function withMissingInnerBlocks(element, context) {
+        if (logger && logger.warn) {
+            logger.warn(
+                '[foehn] The template of "' +
+                    context.name +
+                    '" does not print `content`, so the editor adds the inner blocks at the end of its root element.',
+            );
+        }
+
+        const children = [].concat(element.props.children === undefined ? [] : element.props.children);
+
+        return cloneElement.apply(null, [element, {}].concat(children, [el(InnerBlocks, context.innerBlocksProps)]));
+    }
+
+    /**
+     * The attributes a canvas render depends on, as a comparable string.
+     *
+     * @param {Object} attributes Block attributes.
+     * @param {Object} onCanvas   Attribute names edited in place, left out.
+     * @return {string} Signature.
+     */
+    function awaitedSignature(attributes, onCanvas) {
+        const awaited = {};
+
+        Object.keys(attributes || {}).forEach(function (key) {
+            if (!onCanvas[key]) {
+                awaited[key] = attributes[key];
+            }
+        });
+
+        return JSON.stringify(awaited);
+    }
+
+    /**
+     * Fetch the canvas render of a block, again each time its attributes change.
+     *
+     * The render of the attributes edited in place is not awaited: RichText already
+     * shows what the author types, and a request per keystroke would redraw the
+     * block under the cursor.
+     *
+     * @param {string} name       Block name.
+     * @param {Object} attributes Current attributes.
+     * @param {Object} onCanvas   Attribute names edited in place.
+     * @return {Object} `html` (null until the first render) and `error`.
+     */
+    function useCanvasRender(name, attributes, onCanvas) {
+        const postId = useSelect
+            ? useSelect(function (select) {
+                  const editor = select('core/editor');
+
+                  return editor && editor.getCurrentPostId ? editor.getCurrentPostId() : null;
+              }, [])
+            : null;
+
+        const state = useState({ html: null, error: null });
+        const render = state[0];
+        const setRender = state[1];
+        const request = useRef(0);
+        const requested = useRef(null);
+        const hasRender = render.html !== null;
+
+        const signature = awaitedSignature(attributes, onCanvas);
+
+        useEffect(
+            function () {
+                // Learning which attributes are edited in place changes the signature
+                // without any change worth a render.
+                if (requested.current && awaitedSignature(requested.current.attributes, onCanvas) === signature
+                    && requested.current.postId === postId) {
+                    return undefined;
+                }
+
+                const id = ++request.current;
+                const timer = setTimeout(
+                    function () {
+                        // Noted when sent, not when scheduled: a cancelled timer sent nothing.
+                        requested.current = { attributes: attributes, postId: postId };
+
+                        apiFetch({
+                            path:
+                                '/wp/v2/block-renderer/' +
+                                name +
+                                '?context=edit&' +
+                                CANVAS_PARAM +
+                                '=1' +
+                                (postId ? '&post_id=' + postId : ''),
+                            method: 'POST',
+                            data: { attributes: attributes },
+                        }).then(
+                            function (response) {
+                                if (id === request.current) {
+                                    setRender({ html: (response && response.rendered) || '', error: null });
+                                }
+                            },
+                            function (error) {
+                                if (id === request.current) {
+                                    setRender(function (previous) {
+                                        return {
+                                            html: previous.html,
+                                            error: (error && error.message) || 'The block could not be rendered.',
+                                        };
+                                    });
+                                }
+                            },
+                        );
+                    },
+                    hasRender ? RENDER_DELAY : 0,
+                );
+
+                return function () {
+                    clearTimeout(timer);
+                };
+            },
+            [signature, postId],
+        );
+
+        // A response that lands after the block is gone has nothing to update.
+        useEffect(function () {
+            return function () {
+                request.current = -1;
+            };
+        }, []);
+
+        return render;
+    }
+
+    /**
+     * The toolbar button that replaces an image, as on core's image block.
+     *
+     * @param {Object}   field    Editor field descriptor.
+     * @param {*}        value    Current attachment id.
+     * @param {Function} setValue Setter for the attribute.
+     * @return {Object|null} Element.
+     */
+    function renderMediaReplace(field, value, setValue) {
+        if (!MediaReplaceFlow) {
+            return null;
+        }
+
+        return el(MediaReplaceFlow, {
+            mediaId: value || undefined,
+            allowedTypes: ['image'],
+            accept: 'image/*',
+            name: (value ? 'Replace ' : 'Add ') + field.label.toLowerCase(),
+            onSelect: function (media) {
+                setValue(media && media.id ? media.id : undefined);
+            },
+        });
+    }
+
+    /**
+     * Build the toolbar controls of a block: one media button per image attribute.
+     *
+     * @param {Object}   definition    Block definition from the payload.
+     * @param {Object}   attributes    Current block attributes.
+     * @param {Function} setAttributes Attribute setter given to `edit`.
+     * @return {Object|null} Element.
+     */
+    function renderToolbar(definition, attributes, setAttributes) {
+        const fields = definition.attributes || {};
+        const buttons = Object.keys(fields)
+            .filter(function (key) {
+                return fields[key] && fields[key].control === 'image';
+            })
+            .map(function (key) {
+                const button = renderMediaReplace(fields[key], attributes[key], function (value) {
+                    const patch = {};
+
+                    patch[key] = value;
+                    setAttributes(patch);
+                });
+
+                return button ? cloneElement(button, { key: definition.name + '/' + key }) : null;
+            })
+            .filter(Boolean);
+
+        if (!BlockControls || buttons.length === 0) {
+            return null;
+        }
+
+        return el.apply(null, [BlockControls, { group: 'other' }].concat(buttons));
+    }
+
     /**
      * Build the `edit` component for one block.
-     *
-     * Whether the block is a container is fixed at registration, so the branch is taken
-     * once here rather than inside the component. That keeps the hook calls
-     * unconditional, which React requires.
      *
      * @param {Object} definition Block definition from the payload.
      * @return {Function} Edit component.
@@ -804,36 +1531,57 @@
         const innerBlocksProps = definition.innerBlocks ? toInnerBlocksProps(definition.innerBlocks) : null;
 
         return function FoehnBlockEdit(props) {
-            // apiVersion 3 blocks must spread useBlockProps onto their wrapper element,
-            // otherwise selection, alignment and the iframe styles never apply.
             const blockProps = useBlockProps();
-            const fields = renderFields(definition, props.attributes, props.setAttributes);
 
-            let canvas = null;
+            // Which attributes the last render let the author edit in place. Read
+            // before the render to decide what a new request waits for.
+            const onCanvas = useRef({});
+            const render = useCanvasRender(definition.name, props.attributes, onCanvas.current);
 
-            if (innerBlocksProps) {
-                canvas = el(InnerBlocks, innerBlocksProps);
-            } else if (ServerSideRender) {
-                // Every Føhn block is dynamic, so the block's own render_callback gives the
-                // editor the real Twig output for free.
-                canvas = el(ServerSideRender, { block: definition.name, attributes: props.attributes });
+            const document = useMemo(
+                function () {
+                    return render.html === null
+                        ? null
+                        : new DOMParser().parseFromString(render.html, 'text/html');
+                },
+                [render.html],
+            );
 
-                // That output is real DOM: a link in the template would navigate away from
-                // the editor, and every focusable element in every preview would sit in the
-                // tab order. `Disabled` renders it inert, the same guard core uses on its own
-                // server-rendered previews.
-                if (Disabled) {
-                    canvas = el(Disabled, null, canvas);
-                }
+            const context = {
+                name: definition.name,
+                attributes: props.attributes,
+                setAttributes: props.setAttributes,
+                fields: definition.attributes || {},
+                innerBlocksProps: innerBlocksProps,
+                found: { innerBlocks: false, editables: {} },
+            };
+
+            let canvas;
+
+            if (document) {
+                canvas = renderCanvas(document, context, blockProps);
+                onCanvas.current = context.found.editables;
+            } else if (innerBlocksProps && render.error) {
+                // Without a render, a container still shows and saves its inner blocks.
+                canvas = el(InnerBlocksHost, {
+                    tagName: 'div',
+                    elementProps: blockProps,
+                    innerBlocksProps: innerBlocksProps,
+                });
+            } else {
+                canvas = el('div', blockProps, render.error ? el('p', null, render.error) : Spinner ? el(Spinner) : null);
             }
+
+            const fields = renderFields(definition, props.attributes, props.setAttributes, context.found.editables);
 
             return el(
                 Fragment,
                 null,
+                renderToolbar(definition, props.attributes, props.setAttributes),
                 fields.length > 0
                     ? el(InspectorControls, null, el(PanelBody, { title: 'Settings' }, fields))
                     : null,
-                el('div', blockProps, canvas),
+                canvas,
             );
         };
     }

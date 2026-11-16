@@ -43,7 +43,8 @@ final readonly class BlockEditorAssets
         'wp-element',
         'wp-block-editor',
         'wp-components',
-        'wp-server-side-render',
+        'wp-api-fetch',
+        'wp-data',
     ];
 
     public function __construct(
