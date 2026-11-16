@@ -210,6 +210,8 @@ Føhn applies four measures as soon as `wp_get_environment_type()` reports anyth
 
 Contradictory `index` and `follow` directives are removed from the robots array, so an SEO plugin that adds them cannot produce `content="follow, noindex, nofollow"`. Directives about how to present an indexed page, such as `max-image-preview`, are left alone.
 
+**SEO plugins.** Yoast SEO builds its robots tag through `wp_robots`, where the Føhn filter runs last. Rank Math removes every `wp_robots` filter and prints its own tag, so Føhn also sets `noindex` and `nofollow` through its `rank_math/frontend/robots` filter. Rank Math and Yoast publish their own sitemap (`/sitemap_index.xml`), which Føhn does not turn off: `robots.txt` disallows the whole host, and both plugins send `X-Robots-Tag: noindex` on their sitemaps.
+
 **The meta tag is the protection that matters, not `robots.txt`.** Føhn serves cached pages from a file: nginx or the drop-in answers and PHP does not run at all on later requests, so a rule carried only by a header PHP sends applies to the first visitor and to nobody after. The directive in the document is stored with the page and is still there whichever reader hands the file over. `robots.txt` is advisory and is fetched once for the whole host.
 
 **Nothing here is configurable.** There is no option, no filter and no opt-in: an indexing guard that a project can forget to enable is a staging site in the search results.
