@@ -168,6 +168,22 @@ describe('Warmer', function () {
         expect(array_column(wp_stub_get_calls('wp_remote_get'), 'args'))->toHaveCount(4);
     });
 
+    it('reads a site-relative warmSitemap from the home URL of the site', function () {
+        // One config for every host: production, staging and a local copy.
+        $GLOBALS['wp_stub_home_url'] = 'https://staging.example.com';
+        $config = new PageCacheConfig(enabled: true, path: pageCacheRoot(), warmSitemap: '/sitemap_index.xml');
+        $GLOBALS['wp_stub_remote_bodies'] = [
+            'https://staging.example.com/sitemap_index.xml' => <<<'XML'
+                <urlset><url><loc>https://staging.example.com/about/</loc></url></urlset>
+                XML,
+        ];
+
+        pageCacheWarmer($config)->urls();
+
+        expect(wp_stub_get_calls('wp_remote_get')[0]['args']['url'])
+            ->toBe('https://staging.example.com/sitemap_index.xml');
+    });
+
     it('decodes the XML entities of a location', function () {
         $config = new PageCacheConfig(
             enabled: true,

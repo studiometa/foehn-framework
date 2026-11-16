@@ -59,7 +59,7 @@ final readonly class PageCacheConfig
 | `cacheNotFound`           | `bool`                                              | `false`                  | Store 404s as well as 200s.                                                      |
 | `debugHeaders`            | `bool\|null`                                        | `null`                   | Emit the `X-Foehn-Cache` headers. `null` follows `WP_DEBUG`.                     |
 | `warmAfterPurge`          | `bool`                                              | `false`                  | Queue the warm-up of the pages a purge removed.                                  |
-| `warmSitemap`             | `string\|null`                                      | `null`                   | Sitemap or sitemap index URL to warm from. `null` reads the core sitemap.        |
+| `warmSitemap`             | `string\|null`                                      | `null`                   | Sitemap or sitemap index to warm from: a path on the site, or a full URL.        |
 | `warmExclude`             | `list<string>`                                      | `[]`                     | Regular expressions, matched in the full URL, of URLs never warmed.              |
 
 ## Usage
@@ -183,7 +183,7 @@ The warm-up settings. See [Warming](/guide/page-cache#warming) in the guide.
 
 ```php
 warmAfterPurge: true,
-warmSitemap: 'https://example.com/sitemap_index.xml',
+warmSitemap: '/sitemap_index.xml',
 warmExclude: ['/test-form/'],
 ```
 

@@ -456,9 +456,11 @@ A warm request is a real HTTP request, with no cookies and an `X-Foehn-Warm: 1` 
 ```php
 return new PageCacheConfig(
     enabled: true,
-    warmSitemap: 'https://example.com/sitemap_index.xml',
+    warmSitemap: '/sitemap_index.xml',
 );
 ```
+
+A path that starts with `/` is read from `home_url()`, so the same configuration works in production, in staging and on a local copy. A full URL (`https://example.com/sitemap_index.xml`) is read as it is.
 
 Føhn reads that URL with the WordPress HTTP API. It follows a sitemap index to its sitemaps, at most two levels down, and reads the `<loc>` of each page. It stops at 50,000 URLs. A sitemap that does not answer `200` adds no URLs.
 
@@ -487,7 +489,7 @@ return new PageCacheConfig(
 ```
 
 - **A content change**: on `shutdown`, after the purge, Føhn queues one `WarmUrl` job for each purged URL. The `page/**` pages of an archive are not warmed; traffic fills them again.
-- **A full flush**: Føhn queues one `WarmSitemap` job and no job for each URL. That job reads the sitemap later and queues one `WarmUrl` job for each URL. The sitemap is not read during the request that flushed the cache.
+- **A full flush**: Føhn queues one `WarmSitemap` job and no job for each URL. That job reads the sitemap later and queues one `WarmUrl` job for each URL. The sitemap is not read during the request that flushed the cache. Every full flush does this: a flush after a menu or option change, `wp foehn cache:clear`, and the **Clear** button of the Føhn dashboard. `wp foehn cache:clear --url=<url>` queues no warm-up.
 
 The jobs go through Action Scheduler, in the `foehn-page-cache` group. Each URL is queued once for each request, and the same `warmExclude` and storage rules apply. Without Action Scheduler, nothing is queued: Føhn does not make warm requests during the request that saved the post.
 

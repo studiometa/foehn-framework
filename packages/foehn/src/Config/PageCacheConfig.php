@@ -210,10 +210,11 @@ final readonly class PageCacheConfig
         public bool $warmAfterPurge = false,
 
         /**
-         * The sitemap or sitemap index to warm from, as a full URL.
+         * The sitemap or sitemap index to warm from: a path on the site, such as
+         * `/sitemap_index.xml`, read from `home_url()`, or a full URL.
          *
          * `null` reads the core WordPress sitemap. Set it when a plugin replaces that
-         * sitemap, for example `https://example.com/sitemap_index.xml`.
+         * sitemap.
          */
         public ?string $warmSitemap = null,
 

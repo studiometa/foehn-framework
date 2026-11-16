@@ -420,6 +420,7 @@ final class Kernel
             fn() => new Invalidator(
                 $this->container->get(PageCacheConfig::class),
                 $this->container->get(PageStore::class),
+                $this->container->get(JobDispatcher::class),
             ),
         );
 

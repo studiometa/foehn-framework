@@ -76,14 +76,14 @@ final readonly class Warmer
      * The sitemap is the list the site already publishes for crawlers, which makes it the
      * right list to warm: no separate notion of "important pages" to keep in step with
      * the one search engines are given. It is the core WordPress sitemap, or the one
-     * `warmSitemap` names when a plugin replaces it.
+     * `warmSitemap` names when a plugin replaces it: a full URL, or a path on the site.
      *
      * @return list<string>
      */
     public function urls(): array
     {
         $sitemap = $this->config->warmSitemap;
-        $listed = $sitemap === null ? $this->coreSitemapUrls() : $this->remoteSitemapUrls($sitemap);
+        $listed = $sitemap === null ? $this->coreSitemapUrls() : $this->remoteSitemapUrls(self::absolute($sitemap));
 
         return $this->warmable([home_url('/'), ...$listed]);
     }
@@ -123,6 +123,15 @@ final readonly class Warmer
         ]);
 
         return $key !== null && !$this->config->excludesPath($key->path);
+    }
+
+    /**
+     * A sitemap URL, with a site-relative path such as `/sitemap_index.xml` resolved
+     * against the home URL, so one config works on every host.
+     */
+    private static function absolute(string $sitemap): string
+    {
+        return str_starts_with($sitemap, '/') && !str_starts_with($sitemap, '//') ? home_url($sitemap) : $sitemap;
     }
 
     /**

@@ -27,8 +27,8 @@ use WP_Term;
  *
  * With `PageCacheConfig::$warmAfterPurge` on, the commit also queues the warm-up, after
  * the deletion, so a warm request cannot reach a page before it is gone: one
- * {@see WarmUrl} job for each purged URL, or one {@see WarmSitemap} job after a full
- * flush. Nothing is queued when Action Scheduler is missing.
+ * {@see WarmUrl} job for each purged URL. After a full flush, {@see Invalidator::flush()}
+ * queues one {@see WarmSitemap} job. Nothing is queued when Action Scheduler is missing.
  *
  * Two escape hatches are actions rather than methods, so a plugin, a CDN integration or
  * a project's own code can reach them without a class reference:
@@ -229,12 +229,9 @@ final class Purger
     public function commit(): void
     {
         if ($this->flushQueued) {
+            // The invalidator queues the sitemap warm-up of a full flush itself.
             $this->flushQueued = false;
             $this->invalidator->flush();
-
-            if ($this->warmsAfterPurge()) {
-                $this->dispatcher->dispatch(new WarmSitemap());
-            }
 
             return;
         }
