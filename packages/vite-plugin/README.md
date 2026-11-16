@@ -52,6 +52,10 @@ foehn({
 
 The plugin enables Vite's native manifest generation (`build.manifest: true`). The manifest is written to `.vite/manifest.json` in the output directory.
 
+### Build Base
+
+In a build, the plugin sets Vite's `base` to `'./'`, so the chunks of a dynamic `import()` and their `modulepreload` hints load from the URL of the bundle, under the theme. A `base` set in `vite.config.js` wins.
+
 ### Hot Reload
 
 During development, the plugin writes a `hot` file inside `outDir` containing the dev server URL. It creates `outDir` when needed, so the dev server works before the first build. `ViteManifest::fromTheme()` reads the same file to detect dev mode and inject the Vite client script. If you change `hotFile`, pass the same name as the second argument of `fromTheme()`. The plugin removes the file when the dev server stops, also on Ctrl+C, and at the end of a build.
