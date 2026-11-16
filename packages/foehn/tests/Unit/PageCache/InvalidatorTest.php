@@ -6,6 +6,7 @@ use Studiometa\Foehn\Config\PageCacheConfig;
 use Studiometa\Foehn\PageCache\CacheKey;
 use Studiometa\Foehn\PageCache\Invalidator;
 use Studiometa\Foehn\PageCache\Store;
+use Studiometa\Foehn\PageCache\WarmSitemap;
 use Studiometa\Foehn\Views\Sections\SectionRequest;
 
 /**
@@ -31,7 +32,7 @@ beforeEach(function () {
     $this->root = pageCacheRoot();
     $this->config = new PageCacheConfig(enabled: true, path: $this->root);
     $this->store = new Store($this->config);
-    $this->invalidator = new Invalidator($this->config, $this->store);
+    $this->invalidator = new Invalidator($this->config, $this->store, pageCacheJobs());
 
     $this->files = fn(): array => array_map(fn(string $file): string => substr(
         $file,
@@ -52,6 +53,32 @@ describe('Invalidator: clearing everything', function () {
         expect($this->invalidator->flush())->toBe(4);
         expect($this->store->stats()['files'])->toBe(0);
         expect(($this->files)())->toBe([]);
+    });
+
+    it('queues the sitemap warm-up with warmAfterPurge on', function () {
+        // `wp foehn cache:clear` and the dashboard button flush through here, not
+        // through the purger.
+        $config = new PageCacheConfig(enabled: true, path: $this->root, warmAfterPurge: true);
+        $jobs = pageCacheJobs();
+
+        new Invalidator($config, new Store($config), $jobs)->flush();
+
+        expect($jobs->jobs)->toEqual([new WarmSitemap()]);
+    });
+
+    it('queues no warm-up with warmAfterPurge off, with the cache disabled, or without a queue', function () {
+        foreach ([
+            [new PageCacheConfig(enabled: true, path: $this->root), pageCacheJobs()],
+            [new PageCacheConfig(enabled: false, path: $this->root, warmAfterPurge: true), pageCacheJobs()],
+            [
+                new PageCacheConfig(enabled: true, path: $this->root, warmAfterPurge: true),
+                pageCacheJobs(available: false),
+            ],
+        ] as [$config, $jobs]) {
+            new Invalidator($config, new Store($config), $jobs)->flush();
+
+            expect($jobs->jobs)->toBe([]);
+        }
     });
 
     it('has nothing to remove from a cache nobody has written to', function () {
@@ -76,7 +103,7 @@ describe('Invalidator: clearing everything', function () {
             $config = new PageCacheConfig(enabled: true, path: $root);
             invalidatorFixture(new Store($config));
 
-            expect(new Invalidator($config, new Store($config))->flush())->toBe(4);
+            expect(new Invalidator($config, new Store($config), pageCacheJobs())->flush())->toBe(4);
 
             expect($foehn . '/discovery/items.php')->toBeFile();
             expect($foehn . '/images/photo.jpg')->toBeFile();
@@ -153,7 +180,7 @@ describe('Invalidator: clearing the section cache only', function () {
         $key = CacheKey::create('example.com', '/blog/', 'my_foehn_sections=posts&');
         $store->put($key, '<html>a project variant</html>');
 
-        expect(new Invalidator($config, $store)->flushSections())->toBe(0);
+        expect(new Invalidator($config, $store, pageCacheJobs())->flushSections())->toBe(0);
         expect($store->has($key))->toBeTrue();
     });
 

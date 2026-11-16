@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Studiometa\Foehn\PageCache;
 
 use Studiometa\Foehn\Config\PageCacheConfig;
+use Studiometa\Foehn\Contracts\JobDispatcher;
 
 /**
  * The one way anything at runtime deletes a stored page.
@@ -57,10 +58,16 @@ final readonly class Invalidator
     public function __construct(
         private PageCacheConfig $config,
         private PageStore $store,
+        private JobDispatcher $dispatcher,
     ) {}
 
     /**
      * Empty the page cache.
+     *
+     * With `PageCacheConfig::$warmAfterPurge` on, it then queues one {@see WarmSitemap}
+     * job, whoever asked for the flush: the purger, `wp foehn cache:clear` or the
+     * dashboard. Nothing is queued while the cache is disabled, or without Action
+     * Scheduler.
      *
      * @return int Stored response bodies removed.
      */
@@ -69,6 +76,10 @@ final readonly class Invalidator
         $removed = $this->store->flush();
 
         $this->recordFlush();
+
+        if ($this->config->enabled && $this->config->warmAfterPurge && $this->dispatcher->isAvailable()) {
+            $this->dispatcher->dispatch(new WarmSitemap());
+        }
 
         return $removed;
     }

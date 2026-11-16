@@ -536,7 +536,11 @@ function pageCacheInvalidator(string $root, bool $enabled = true): \Studiometa\F
 {
     $config = new \Studiometa\Foehn\Config\PageCacheConfig(enabled: $enabled, path: $root);
 
-    return new \Studiometa\Foehn\PageCache\Invalidator($config, new \Studiometa\Foehn\PageCache\Store($config));
+    return new \Studiometa\Foehn\PageCache\Invalidator(
+        $config,
+        new \Studiometa\Foehn\PageCache\Store($config),
+        pageCacheJobs(),
+    );
 }
 
 /**
@@ -622,11 +626,13 @@ function pageCachePurger(
     \Studiometa\Foehn\Config\PageCacheConfig $config,
     ?\Studiometa\Foehn\Contracts\JobDispatcher $jobs = null,
 ): \Studiometa\Foehn\PageCache\Purger {
+    $jobs ??= pageCacheJobs();
+
     return new \Studiometa\Foehn\PageCache\Purger(
         $config,
-        new \Studiometa\Foehn\PageCache\Invalidator($config, new \Studiometa\Foehn\PageCache\Store($config)),
+        new \Studiometa\Foehn\PageCache\Invalidator($config, new \Studiometa\Foehn\PageCache\Store($config), $jobs),
         pageCacheWarmer($config),
-        $jobs ?? pageCacheJobs(),
+        $jobs,
     );
 }
 

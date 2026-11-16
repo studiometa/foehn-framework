@@ -16,7 +16,7 @@ describe('Purger: what a post invalidates', function () {
         $this->root = sys_get_temp_dir() . '/foehn-tests/purger-' . uniqid('', true);
         $this->config = new PageCacheConfig(enabled: true, path: $this->root);
         $this->store = new Store($this->config);
-        $this->invalidator = new Invalidator($this->config, $this->store);
+        $this->invalidator = new Invalidator($this->config, $this->store, pageCacheJobs());
         $this->purger = new Purger($this->config, $this->invalidator, pageCacheWarmer($this->config), pageCacheJobs());
     });
 
@@ -164,7 +164,7 @@ describe('Purger: batching', function () {
         $this->root = sys_get_temp_dir() . '/foehn-tests/purger-' . uniqid('', true);
         $this->config = new PageCacheConfig(enabled: true, path: $this->root);
         $this->store = new Store($this->config);
-        $this->invalidator = new Invalidator($this->config, $this->store);
+        $this->invalidator = new Invalidator($this->config, $this->store, pageCacheJobs());
         $this->purger = new Purger($this->config, $this->invalidator, pageCacheWarmer($this->config), pageCacheJobs());
     });
 
@@ -262,9 +262,9 @@ describe('Purger: batching', function () {
             define('WP_IMPORTING', true);
             $config = new Studiometa\Foehn\Config\PageCacheConfig(enabled: true, path: sys_get_temp_dir() . '/foehn-import');
             $store = new Studiometa\Foehn\PageCache\Store($config);
-            $invalidator = new Studiometa\Foehn\PageCache\Invalidator($config, $store);
-            $warmer = new Studiometa\Foehn\PageCache\Warmer($config, new Studiometa\Foehn\PageCache\Bypass($config));
             $jobs = new Studiometa\Foehn\Jobs\ActionSchedulerJobDispatcher(new Studiometa\Foehn\Jobs\JobRegistry());
+            $invalidator = new Studiometa\Foehn\PageCache\Invalidator($config, $store, $jobs);
+            $warmer = new Studiometa\Foehn\PageCache\Warmer($config, new Studiometa\Foehn\PageCache\Bypass($config));
             $purger = new Studiometa\Foehn\PageCache\Purger($config, $invalidator, $warmer, $jobs);
             $post = new WP_Post();
             $post->ID = 12;

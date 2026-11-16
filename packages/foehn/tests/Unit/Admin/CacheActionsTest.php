@@ -41,7 +41,7 @@ beforeEach(function () {
     $this->root = pageCacheRoot();
     $this->config = new PageCacheConfig(enabled: true, path: $this->root);
     $this->store = new Store($this->config);
-    $this->actions = adminCacheActions(new Invalidator($this->config, $this->store));
+    $this->actions = adminCacheActions(new Invalidator($this->config, $this->store, pageCacheJobs()));
 
     cacheActionsFixture($this->store, '/blog/');
     cacheActionsFixture($this->store, '/hello-world/');
@@ -275,7 +275,7 @@ describe('CacheActions: clearing one post', function () {
     it('refuses a post id that is missing, zero or not a number', function () {
         foreach ([null, 0, -41] as $id) {
             wp_stub_reset();
-            $actions = adminCacheActions(new Invalidator($this->config, $this->store));
+            $actions = adminCacheActions(new Invalidator($this->config, $this->store, pageCacheJobs()));
             adminCacheRequest(nonce: wp_create_nonce(CacheActions::FORGET_POST), postId: $id);
 
             $actions->forgetPost();
@@ -285,7 +285,7 @@ describe('CacheActions: clearing one post', function () {
 
         foreach (['', 'abc', '41; DROP TABLE', '../../etc/passwd'] as $raw) {
             wp_stub_reset();
-            $actions = adminCacheActions(new Invalidator($this->config, $this->store));
+            $actions = adminCacheActions(new Invalidator($this->config, $this->store, pageCacheJobs()));
             adminCacheRequest(nonce: wp_create_nonce(CacheActions::FORGET_POST));
             $_POST[CacheActions::POST_ID_FIELD] = $raw;
 

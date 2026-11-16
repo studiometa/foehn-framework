@@ -30,7 +30,7 @@ The **Effective** row is worth reading before anything else. `enabled: true` in 
 
 ## The two buttons on the page
 
-- **Clear the whole page cache** — every stored response, pages and fragments alike.
+- **Clear the whole page cache** — every stored response, pages and fragments alike. With `warmAfterPurge` on, it then queues the warm-up of the sitemap, as every full flush does. See [Warming after a purge](./page-cache#warming-after-a-purge).
 - **Clear the section cache only** — the variants keyed by `foehn_sections`, leaving whole pages and unrelated keyed variants where they are.
 
 Both are plain `POST` forms. **This page is the no-JavaScript path**: it works with scripting off, which is what makes it the one to rely on when something else on the site is broken.

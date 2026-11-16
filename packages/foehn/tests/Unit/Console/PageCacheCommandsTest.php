@@ -15,6 +15,7 @@ use Studiometa\Foehn\PageCache\ServerConfig\ApacheSnippet;
 use Studiometa\Foehn\PageCache\ServerConfig\NginxSnippet;
 use Studiometa\Foehn\PageCache\ServerConfig\SnippetPolicy;
 use Studiometa\Foehn\PageCache\Store;
+use Studiometa\Foehn\PageCache\WarmSitemap;
 
 beforeEach(function () {
     wp_stub_reset();
@@ -23,7 +24,7 @@ beforeEach(function () {
     $this->root = pageCacheRoot();
     $this->config = new PageCacheConfig(enabled: true, path: $this->root);
     $this->store = new Store($this->config);
-    $this->invalidator = new Invalidator($this->config, $this->store);
+    $this->invalidator = new Invalidator($this->config, $this->store, pageCacheJobs());
 
     $this->logged = static fn(): string => implode("\n", array_column(
         array_column(wp_stub_get_calls('wp_cli_log'), 'args'),
@@ -46,6 +47,15 @@ describe('cache:clear', function () {
         // Pages, not files. An entry is a body and usually a headers sidecar, so the
         // file count is about double and is a number nobody can act on.
         expect(wp_stub_get_calls('wp_cli_success')[0]['args']['message'])->toContain('2 pages');
+    });
+
+    it('queues the sitemap warm-up with warmAfterPurge on', function () {
+        $config = new PageCacheConfig(enabled: true, path: $this->root, warmAfterPurge: true);
+        $jobs = pageCacheJobs();
+
+        (new PageCacheClearCommand(new WpCli(), $config, new Invalidator($config, $this->store, $jobs)))([], []);
+
+        expect($jobs->jobs)->toEqual([new WarmSitemap()]);
     });
 
     it('clears one URL and its pagination, leaving the rest', function () {
@@ -88,7 +98,11 @@ describe('cache:clear', function () {
         $store = new Store($disabled);
         $store->put(CacheKey::create('example.com', '/'), '<html>home</html>');
 
-        (new PageCacheClearCommand(new WpCli(), $disabled, new Invalidator($disabled, $store)))([], []);
+        (new PageCacheClearCommand(
+            new WpCli(),
+            $disabled,
+            new Invalidator($disabled, $store, pageCacheJobs()),
+        ))([], []);
 
         expect($store->stats()['files'])->toBe(0);
         expect(wp_stub_get_calls('wp_cli_warning'))->toHaveCount(1);
