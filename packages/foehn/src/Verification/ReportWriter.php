@@ -61,9 +61,12 @@ final readonly class ReportWriter
     /**
      * Where a `--output` value points.
      *
-     * Relative paths resolve from `ABSPATH` rather than from the working directory: a
-     * deployment script and a CI job run the command from wherever they happen to be,
-     * and a report that lands in a different place each time is not an artifact.
+     * Relative paths resolve from the working directory, as for any other command:
+     * WP-CLI does not change it, so `build/report.json` lands under the directory the
+     * command ran from. A CI job that runs `mkdir -p build` first then finds the report
+     * in the directory it made.
+     *
+     * @throws VerificationFailure When the working directory cannot be read
      */
     public function resolve(string $path): string
     {
@@ -71,7 +74,15 @@ final readonly class ReportWriter
             return $path;
         }
 
-        return $this->base() . ltrim($path, '/');
+        $directory = getcwd();
+
+        if ($directory === false) {
+            throw new VerificationFailure(
+                "Cannot write the report: the working directory to resolve {$path} from cannot be read.",
+            );
+        }
+
+        return rtrim($directory, '/') . '/' . ltrim($path, '/');
     }
 
     /**
@@ -106,15 +117,5 @@ final readonly class ReportWriter
     private function isAbsolute(string $path): bool
     {
         return str_starts_with($path, '/') || preg_match('#^[A-Za-z]:[\\\\/]#', $path) === 1;
-    }
-
-    /**
-     * `ABSPATH` with its trailing slash, or the working directory outside WordPress.
-     */
-    private function base(): string
-    {
-        $base = defined('ABSPATH') ? (string) constant('ABSPATH') : (string) getcwd();
-
-        return rtrim($base, '/') . '/';
     }
 }

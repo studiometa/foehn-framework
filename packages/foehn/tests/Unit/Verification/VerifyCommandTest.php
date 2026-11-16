@@ -187,20 +187,21 @@ describe('verify: a clean run', function () {
         expect($report['checks'][0]['details'])->toBe(['diagnostics' => [], 'ignored' => []]);
     });
 
-    it('writes a relative output path under ABSPATH', function () {
-        $base = constant('ABSPATH') . 'build';
-
-        if (!is_dir($base)) {
-            mkdir($base, 0o777, true);
-        }
+    it('writes a relative output path under the working directory, not under ABSPATH', function () {
+        // `mkdir -p build && wp foehn verify --output=build/…` from the project root
+        // has to find the report in that `build`, not in the WordPress directory.
+        $previous = (string) getcwd();
+        mkdir($this->directory . '/build');
+        chdir($this->directory);
 
         try {
             ($this->command)([], ['profile' => 'updates', 'output' => 'build/verify-relative.json']);
-
-            expect($base . '/verify-relative.json')->toBeFile();
         } finally {
-            removeTestDirectory($base);
+            chdir($previous);
         }
+
+        expect($this->directory . '/build/verify-relative.json')->toBeFile();
+        expect(constant('ABSPATH') . 'build/verify-relative.json')->not->toBeFile();
     });
 });
 
