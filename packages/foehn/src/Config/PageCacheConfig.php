@@ -214,8 +214,9 @@ final readonly class PageCacheConfig
          * The sitemap or sitemap index to warm from: a path on the site, such as
          * `/sitemap_index.xml`, read from `home_url()`, or a full URL.
          *
-         * `null` reads the core WordPress sitemap. Set it when a plugin replaces that
-         * sitemap.
+         * `null` reads the sitemap index of Rank Math when its sitemap module is on, and
+         * the core WordPress sitemap otherwise. Set it when another plugin replaces the
+         * core sitemap.
          */
         public ?string $warmSitemap = null,
 

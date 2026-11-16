@@ -184,6 +184,33 @@ describe('Warmer', function () {
             ->toBe('https://staging.example.com/sitemap_index.xml');
     });
 
+    it('reads the sitemap index of Rank Math when its sitemap module is on', function () {
+        // Rank Math turns the core sitemap off: the core one would list no page at all.
+        $GLOBALS['rank_math_stub_modules'] = ['sitemap'];
+        $GLOBALS['wp_stub_remote_bodies'] = [
+            'http://example.com/sitemap_index.xml' => <<<'XML'
+                <urlset><url><loc>http://example.com/about/</loc></url></urlset>
+                XML,
+        ];
+
+        expect(pageCacheWarmer($this->config)->urls())->toBe(['http://example.com/', 'http://example.com/about/']);
+    });
+
+    it('reads the warmSitemap of the project before the sitemap of Rank Math', function () {
+        $GLOBALS['rank_math_stub_modules'] = ['sitemap'];
+        $config = new PageCacheConfig(enabled: true, path: pageCacheRoot(), warmSitemap: '/custom-sitemap.xml');
+
+        pageCacheWarmer($config)->urls();
+
+        expect(wp_stub_get_calls('wp_remote_get')[0]['args']['url'])->toBe('http://example.com/custom-sitemap.xml');
+    });
+
+    it('reads the core sitemap when the sitemap module of Rank Math is off', function () {
+        pageCacheWarmer($this->config)->urls();
+
+        expect(wp_stub_get_calls('wp_remote_get'))->toBe([]);
+    });
+
     it('decodes the XML entities of a location', function () {
         $config = new PageCacheConfig(
             enabled: true,

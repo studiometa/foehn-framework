@@ -27,8 +27,10 @@ use Studiometa\Foehn\PageCache\WarmUrl;
     Walks the sitemap and requests each URL cookie-free with an `X-Foehn-Warm: 1`
     header, so the first visitor after a deploy is not the one who pays for the render.
 
-    The sitemap is WordPress's own, or the one `PageCacheConfig::$warmSitemap` names. URLs
-    that match `warmExclude`, and URLs the cache would never store, are skipped.
+    The sitemap is the one `PageCacheConfig::$warmSitemap` names. Without it, it is the
+    sitemap index of Rank Math when its sitemap module is on, and WordPress's own
+    otherwise. URLs that match `warmExclude`, and URLs the cache would never store, are
+    skipped.
 
     The sitemap is the list the site already publishes for crawlers, which makes it the
     right list to warm: there is no second notion of "important pages" to keep in step
