@@ -106,6 +106,13 @@ final class TemplateControllerDiscovery implements Discovery
             return $this->sectionResponse->error($this->sectionRequest->errorStatus());
         }
 
+        // An oEmbed request (`/my-post/embed/`) is also a single post or a page. WordPress
+        // answers it with its embed template, which other sites show in an iframe: the
+        // full page of the theme has nothing to do there.
+        if (is_embed()) {
+            return $template;
+        }
+
         $templateType = $this->getTemplateType();
         $controller = $this->controllers->find($templateType);
 

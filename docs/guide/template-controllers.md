@@ -272,6 +272,10 @@ final class AllArchivesController implements TemplateControllerInterface {}
 final class HomeController implements TemplateControllerInterface {}
 ```
 
+### Requests That Controllers Do Not Handle
+
+An oEmbed request, such as `/my-post/embed/`, goes to the embed template of WordPress. Other sites show this template in an iframe when they embed a link to your post, so the full page of the theme is not rendered there. `is_embed()` is true for these requests.
+
 ## Returning Null
 
 Return `null` to let WordPress handle the template normally:
