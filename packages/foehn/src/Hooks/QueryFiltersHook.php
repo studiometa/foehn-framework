@@ -15,15 +15,11 @@ use WP_Query;
  * This hook registers custom query vars and applies taxonomy/var filters
  * to the main WordPress query based on URL parameters.
  *
- * 1. Add this class to your hooks configuration:
+ * 1. Add this class to the `hooks` list of your Føhn config:
  *
  * ```php
- * // functions.php
- * Kernel::boot(__DIR__, [
- *     'hooks' => [
- *         QueryFiltersHook::class,
- *     ],
- * ]);
+ * // app/foehn.config.php
+ * return new FoehnConfig(hooks: [QueryFiltersHook::class]);
  * ```
  *
  * 2. Create a config file to define allowed filters:
