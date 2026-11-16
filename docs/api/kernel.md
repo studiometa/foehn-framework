@@ -103,16 +103,16 @@ See [FoehnConfig](./foehn-config), [Discovery Cache](/guide/discovery-cache), an
 
 The kernel automatically registers these services as singletons:
 
-| Service                   | Implementation     | Description                     |
-| ------------------------- | ------------------ | ------------------------------- |
-| `CacheInterface`          | `TransientCache`   | WordPress transient-based cache |
-| `ViewEngineInterface`     | `TimberViewEngine` | Twig template rendering         |
-| `ContextProviderRegistry` | —                  | Context provider management     |
-| `DiscoveryRunner`         | —                  | Discovery orchestration         |
-| `AcfBlockRenderer`        | —                  | ACF block rendering             |
-| `SectionRequest`          | —                  | Current section selection       |
-| `SectionCollector`        | —                  | Page-local section declarations |
-| `SectionRenderer`         | —                  | Atomic section HTML rendering   |
+| Service                   | Implementation     | Description                          |
+| ------------------------- | ------------------ | ------------------------------------ |
+| `CacheInterface`          | `TransientCache`   | PSR-16 cache on WordPress transients |
+| `ViewEngineInterface`     | `TimberViewEngine` | Twig template rendering              |
+| `ContextProviderRegistry` | —                  | Context provider management          |
+| `DiscoveryRunner`         | —                  | Discovery orchestration              |
+| `AcfBlockRenderer`        | —                  | ACF block rendering                  |
+| `SectionRequest`          | —                  | Current section selection            |
+| `SectionCollector`        | —                  | Page-local section declarations      |
+| `SectionRenderer`         | —                  | Atomic section HTML rendering        |
 
 ### getInstance()
 
