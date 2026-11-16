@@ -70,7 +70,8 @@ final readonly class FoehnConfig
         /**
          * Enable debug mode for discovery.
          * When enabled, reflection failures are logged via trigger_error().
-         * Defaults to WP_DEBUG constant value.
+         * Defaults to false. `fromArray()` falls back to the `WP_DEBUG` constant
+         * when the array has no `debug` key.
          */
         public bool $debug = false,
 
