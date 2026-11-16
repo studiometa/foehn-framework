@@ -32,6 +32,20 @@ describe('starter packaging', function () {
         expect($oxlint)->not->toContain('../../node_modules');
     });
 
+    // Les stubs de Føhn ne définissent une fonction que si elle n'existe pas
+    // encore. Chargés avant ceux du projet, chaque nouvelle version de Føhn qui
+    // ajoutait un stub du même nom remplaçait celui du projet sans rien dire.
+    it('charge les stubs du projet avant ceux de Føhn', function () use ($racine) {
+        $bootstrap = (string) file_get_contents($racine . '/tests/php/bootstrap.php');
+        $projet = strpos($bootstrap, "require_once __DIR__ . '/stubs.php';");
+        $foehn = strpos($bootstrap, '/studiometa/foehn/tests/wp-stubs.php');
+
+        expect($projet)->toBeInt();
+        expect($foehn)->toBeInt();
+        expect($projet)->toBeLessThan($foehn);
+        expect(is_file($racine . '/tests/php/stubs.php'))->toBeTrue();
+    });
+
     it('exclut de l\'archive les fichiers propres au monorepo', function () use ($racine) {
         $attributs = (string) file_get_contents($racine . '/.gitattributes');
 
