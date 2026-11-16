@@ -113,6 +113,18 @@ final class HomeContextProvider implements ContextProviderInterface
 }
 ```
 
+### A View Rendered With Timber Directly
+
+Providers also run when a template renders a view with Timber itself, and not through `ViewEngine::render()`. For example, a `footer.php` that a plugin loads with `get_footer()`:
+
+```php
+Timber::render('components/footer.twig', Timber::context());
+```
+
+The view name is the file name without `.twig`, here `components/footer`, so a `*` provider and a `components/footer` provider run. Føhn hooks the `timber/compile/data` and `timber/render/data` filters of Timber for this. `Timber::context()` alone has no view name, so no provider runs when it is called: they run when the view is rendered.
+
+A plugin that renders its own Twig files with Timber gets the `*` providers too. Keep a `*` provider cheap, or name the views it is for.
+
 ### See What Applies
 
 `wp foehn inspect views` lists each Twig file of the theme with the providers its view name matches, in the order they run, and the keys they add. See [Template context](./cli-commands#template-context).

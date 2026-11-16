@@ -28,6 +28,9 @@ final class TimberViewEngine implements ViewEngineInterface
     /** @var array<string, mixed> */
     private array $shared = [];
 
+    /** How many renders of this engine are running, so its own compile is not provided twice. */
+    private int $rendering = 0;
+
     public function __construct(
         private readonly ContextProviderRegistry $contextProviders,
         private readonly RequestTrace $trace,
@@ -56,10 +59,14 @@ final class TimberViewEngine implements ViewEngineInterface
         // Convert to array and merge with Timber globals and shared data
         $contextArray = array_merge(Timber::context_global(), $this->shared, $templateContext->toArray());
 
+        $this->rendering++;
+
         try {
             $result = Timber::compile($resolved, $contextArray);
         } catch (TwigError $error) {
             throw ViewRenderingFailed::inTwig($template, $error);
+        } finally {
+            $this->rendering--;
         }
 
         // Timber answers false, and logs, when no directory holds the file.
@@ -97,6 +104,35 @@ final class TimberViewEngine implements ViewEngineInterface
         }
 
         throw $this->notFound($files);
+    }
+
+    /**
+     * Run the context providers for a view that something else renders with Timber.
+     *
+     * Hooked on `timber/compile/data` and `timber/render/data`, so a template that calls
+     * `Timber::render('footer.twig', Timber::context())` itself, such as the
+     * `footer.php` of a plugin, gets the providers of its view name (`footer`) as a view
+     * rendered with {@see self::render()} does. A render of this engine has already run
+     * them, and is left alone.
+     *
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    public function provideTimberData(array $data, string $file): array
+    {
+        if ($this->rendering > 0) {
+            return $data;
+        }
+
+        $template = str_ends_with($file, '.twig') ? substr($file, 0, -5) : $file;
+
+        if (!$this->contextProviders->hasProviders($template)) {
+            return $data;
+        }
+
+        $context = $this->contextProviders->provide($template, TemplateContext::fromTimberContext($data));
+
+        return array_merge($data, $context->toArray());
     }
 
     /**
