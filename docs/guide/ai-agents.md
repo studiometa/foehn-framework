@@ -39,7 +39,7 @@ Agents read `AGENTS.md` at the start of every task, but they load a skill only w
 
 Then it lists every installed skill and each of its reference files on one line, with the command that prints it, such as `wp foehn skill foehn --reference=blocks`, and the first sentence of the file. The block stays under 60 lines with the Føhn packages. See [AGENTS.md Block](./cli-commands.md#agents-md-block) for what the command does with each state of the file.
 
-The starter ships an `AGENTS.md` with the block already written, and a `CLAUDE.md` that imports it for Claude Code. Outside the block, its **Project conventions** section says that sample content and menus go in seeders. The project fills in the rest: how editors edit post meta, and which checks to run. Keep it current, because the agent follows what it says.
+The starter ships an `AGENTS.md` with the block already written. Claude Code, Codex and the other coding agents read it. Outside the block, its **Project conventions** section says that sample content and menus go in seeders. The project fills in the rest: how editors edit post meta, and which checks to run. Keep it current, because the agent follows what it says.
 
 #### Refresh the block
 
