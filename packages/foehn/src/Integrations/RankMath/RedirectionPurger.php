@@ -77,6 +77,9 @@ final class RedirectionPurger
 
         $wpdb = WP::db();
 
+        // `>=` and not `>`: `updated` has a precision of one second, and a write in the
+        // second the request started must be read. A row that another request wrote in
+        // that second is read too, and purged again, which costs one render.
         /** @var list<string> $rows */
         $rows = $wpdb->get_col($wpdb->prepare(
             "SELECT sources FROM {$wpdb->prefix}" . self::TABLE . " WHERE status = 'active' AND updated >= %s",
