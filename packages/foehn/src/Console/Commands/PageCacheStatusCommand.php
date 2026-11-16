@@ -14,6 +14,7 @@ use Studiometa\Foehn\Helpers\UploadsBucket;
 use Studiometa\Foehn\PageCache\PageStore;
 use Studiometa\Foehn\PageCache\ServerConfig\ApacheSnippet;
 use Studiometa\Foehn\PageCache\ServerConfig\BucketOrigin;
+use Studiometa\Foehn\PageCache\ServerConfig\InstalledSnippets;
 use Studiometa\Foehn\PageCache\ServerConfig\NginxSnippet;
 use Studiometa\Foehn\PageCache\ServerConfig\SnippetPolicy;
 
@@ -140,20 +141,8 @@ final class PageCacheStatusCommand implements CliCommandInterface
         );
 
         $root = SnippetPolicy::documentRoot();
-        $project = $root === null ? null : dirname($root);
 
-        $this->reportSnippet(
-            'nginx',
-            new NginxSnippet($this->config)->hash(),
-            $project === null
-                ? []
-                : [
-                    $project . '/' . PageCacheConfigCommand::NGINX_PATH,
-                    // Where the starter keeps it, because ddev includes .ddev/nginx/*.conf
-                    // inside its server block.
-                    $project . '/.ddev/nginx/foehn-page-cache.conf',
-                ],
-        );
+        $this->reportNginx($root === null ? null : dirname($root));
 
         if ($bucket) {
             $this->cli->log('  · apache (not supported in bucket storage)');
@@ -176,6 +165,32 @@ final class PageCacheStatusCommand implements CliCommandInterface
                 ', ',
                 array_keys($this->config->getCacheQueryArgs()),
             )));
+        }
+    }
+
+    /**
+     * Report every nginx snippet of the project, whatever its file name, and whether
+     * each one still matches the loaded config. See {@see InstalledSnippets}.
+     */
+    private function reportNginx(?string $project): void
+    {
+        $snippets = $project === null
+            ? []
+            : InstalledSnippets::nginx($project, new NginxSnippet($this->config)->hash());
+
+        if ($project === null || $snippets === []) {
+            $this->cli->log('  · nginx');
+
+            return;
+        }
+
+        foreach ($snippets as $path => $current) {
+            $this->cli->log(sprintf(
+                '  %s nginx (%s)%s',
+                $current ? '✓' : '!',
+                $project . '/' . $path,
+                $current ? '' : ' — generated from a different config or an older release, re-run cache:config',
+            ));
         }
     }
 

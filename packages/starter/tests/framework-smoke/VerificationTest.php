@@ -268,6 +268,7 @@ describe('verify --profile=production: a site that is not production', function 
             'debug',
             'environment',
             'indexing',
+            'page-cache-snippet',
             'page-cache-storage',
             'public-files',
             'real-cron',
