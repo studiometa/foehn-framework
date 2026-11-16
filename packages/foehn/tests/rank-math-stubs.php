@@ -7,7 +7,9 @@ declare(strict_types=1);
  *
  * Loaded for every test, like the WordPress stubs: a class cannot be unloaded, so the
  * plugin is "installed" for the whole suite and a test turns its modules on with
- * `$GLOBALS['rank_math_stub_modules']`. `wp_stub_reset()` turns them all off.
+ * `$GLOBALS['rank_math_stub_modules']`, its settings with `rank_math_stub_settings` and
+ * its breadcrumbs with `rank_math_stub_crumbs` (null: breadcrumbs off).
+ * `wp_stub_reset()` turns them all off.
  */
 
 namespace RankMath {
@@ -17,6 +19,28 @@ namespace RankMath {
             public static function is_module_active(string $id, bool $check_registered = true): bool
             {
                 return in_array($id, $GLOBALS['rank_math_stub_modules'] ?? [], true);
+            }
+
+            public static function get_settings(string $field_id = '', mixed $default_value = false): mixed
+            {
+                return $GLOBALS['rank_math_stub_settings'][$field_id] ?? $default_value;
+            }
+        }
+    }
+}
+
+namespace RankMath\Frontend {
+    if (!class_exists(Breadcrumbs::class)) {
+        class Breadcrumbs
+        {
+            public static function get(): self|false
+            {
+                return ($GLOBALS['rank_math_stub_crumbs'] ?? null) === null ? false : new self();
+            }
+
+            public function get_crumbs(): array
+            {
+                return $GLOBALS['rank_math_stub_crumbs'];
             }
         }
     }

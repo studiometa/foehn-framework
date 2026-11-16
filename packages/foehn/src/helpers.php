@@ -37,3 +37,19 @@ if (!function_exists('Studiometa\Foehn\dispatch')) {
         app(Contracts\JobDispatcher::class)->dispatch($job, $delay);
     }
 }
+
+if (!function_exists('Studiometa\Foehn\breadcrumbs')) {
+    /**
+     * The breadcrumb trail of the current request, for the theme to write its own markup.
+     *
+     * Each item has a plain-text `label` and a `url`. The current page, the last item,
+     * has no URL. The items come from Rank Math, and the list is empty when Rank Math or
+     * its breadcrumbs are off.
+     *
+     * @return list<array{label: string, url: string|null}>
+     */
+    function breadcrumbs(): array
+    {
+        return Integrations\RankMath\RankMath::breadcrumbs();
+    }
+}

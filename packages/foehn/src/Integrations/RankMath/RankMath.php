@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Integrations\RankMath;
 
+use RankMath\Frontend\Breadcrumbs;
 use RankMath\Helper;
 
 /**
@@ -47,5 +48,46 @@ final class RankMath
         }
 
         return rank_math_get_sitemap_url();
+    }
+
+    /**
+     * The breadcrumb trail of the current request, as Rank Math builds it.
+     *
+     * Plain-text labels, so the theme escapes them as any other text. The items follow
+     * Rank Math's own markup: the current page has no URL, and the "remove post title"
+     * setting drops it from the trail of a post or a page. Empty when Rank Math or its
+     * breadcrumbs are off.
+     *
+     * @return list<array{label: string, url: string|null}>
+     */
+    public static function breadcrumbs(): array
+    {
+        $breadcrumbs = self::isActive() ? Breadcrumbs::get() : false;
+
+        if ($breadcrumbs === false) {
+            return [];
+        }
+
+        $crumbs = array_values($breadcrumbs->get_crumbs());
+        $titleRemoved =
+            (is_single() || is_page()) && (bool) Helper::get_settings('general.breadcrumbs_remove_post_title');
+
+        if ($titleRemoved) {
+            array_pop($crumbs);
+        }
+
+        $last = count($crumbs) - 1;
+        $items = [];
+
+        foreach ($crumbs as $index => $crumb) {
+            $url = (string) ($crumb[1] ?? '');
+
+            $items[] = [
+                'label' => html_entity_decode((string) ($crumb[0] ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8'),
+                'url' => $url === '' || $index === $last && !$titleRemoved ? null : $url,
+            ];
+        }
+
+        return $items;
     }
 }

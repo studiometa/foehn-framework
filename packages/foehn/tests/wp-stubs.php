@@ -86,8 +86,10 @@ function wp_stub_reset(): void
         $GLOBALS['wp_stub_num_queries'],
     );
 
-    // Rank Math, as tests/rank-math-stubs.php answers for it: no module on.
+    // Rank Math, as tests/rank-math-stubs.php answers for it: no module on, no breadcrumbs.
     $GLOBALS['rank_math_stub_modules'] = [];
+    $GLOBALS['rank_math_stub_settings'] = [];
+    $GLOBALS['rank_math_stub_crumbs'] = null;
     $GLOBALS['wp_stub_current_time'] = '2026-11-16 10:00:00';
 
     // The admin controls read all four. A referer left behind would make a redirect land

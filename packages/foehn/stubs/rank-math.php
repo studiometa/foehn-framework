@@ -17,6 +17,28 @@ namespace RankMath {
          * @param bool $check_registered Whether the module must also be registered
          */
         public static function is_module_active(string $id, bool $check_registered = true): bool {}
+
+        /**
+         * @param string $field_id Dotted path, such as `general.breadcrumbs`
+         */
+        public static function get_settings(string $field_id = '', mixed $default_value = false): mixed {}
+    }
+}
+
+namespace RankMath\Frontend {
+    class Breadcrumbs
+    {
+        /**
+         * The instance, or false when the breadcrumbs are off.
+         */
+        public static function get(): self|false {}
+
+        /**
+         * Each item is `[label, url, 'hide_in_schema' => bool]`.
+         *
+         * @return array<int, array<array-key, mixed>>
+         */
+        public function get_crumbs(): array {}
     }
 }
 
