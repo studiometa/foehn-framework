@@ -24,7 +24,7 @@ use Studiometa\Foehn\PageCache\Invalidator;
     Part of the documented deploy sequence, after `composer install` has replaced the
     code the stored pages were rendered by:
 
-        composer install && wp foehn cache:config --write && wp foehn cache:clear
+        composer install && wp foehn cache:config --server=nginx --write && wp foehn cache:clear
 
     ## EXAMPLES
 
