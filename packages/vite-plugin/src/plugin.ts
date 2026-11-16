@@ -42,7 +42,7 @@ export function foehn(options: FoehnPluginOptions): Plugin[] {
         name: "foehn",
         enforce: "pre",
 
-        async config(userConfig) {
+        async config(userConfig, { command }) {
             const entries = await resolveGlobPatterns(
                 resolvedOptions.input,
                 resolvedOptions.themeDir,
@@ -53,6 +53,11 @@ export function foehn(options: FoehnPluginOptions): Plugin[] {
             const proxyTarget = ddevConfig ? getDdevSiteUrl(ddevConfig) : undefined;
 
             return {
+                // WordPress serves the build from the theme, not from the site root. A
+                // relative base makes Vite load the chunks of a dynamic import, and their
+                // `modulepreload` hints, from the URL of the bundle that imports them.
+                // `ViteManifest` builds the URLs of the entries itself.
+                base: userConfig.base ?? (command === "build" ? "./" : undefined),
                 build: {
                     manifest: true,
                     outDir,

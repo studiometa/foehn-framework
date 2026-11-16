@@ -39,6 +39,8 @@ Entry names are the paths given to the plugin's `input` in `vite.config.js`, bec
 
 **Browser errors.** With Vite 8, the plugin turns on `server.forwardConsole`: the page sends its console errors and warnings and its uncaught errors to the dev server, which prints them in its terminal and the plugin writes them to `theme/dist/browser-errors.jsonl`. `wp foehn errors --browser` prints them, with the source file and line. See [Browser errors](/guide/troubleshooting#browser-errors).
 
+**The base URL of the build.** WordPress serves the build from the theme (`/wp-content/themes/<theme>/dist/`), not from the site root. In a build, the plugin sets Vite's `base` to `'./'`, so the chunks of a dynamic `import()` and their `<link rel="modulepreload">` hints load from the URL of the bundle that imports them. With Vite's default `base: '/'`, they pointed at the site root and answered 404. Do not set `base` yourself: a `base` in `vite.config.js` replaces this value.
+
 **The CSS a script imported.** A Vite JavaScript chunk carries the stylesheets it imported in a `css` array, separate from its own `file`. Enqueue the script and miss that array and the page loads with no styles and no error anywhere — so `enqueue()` always registers both.
 
 **The module type.** Vite emits ES modules, and a classic `<script>` tag will not parse one. `wp_script_add_data($handle, 'type', 'module')` looks like the way to say so and is not: `WP_Scripts` reads `strategy`, `before`, `after` and `data`, never `type`. `ViteManifest` rewrites the tag through `script_loader_tag`, and only for the handles it enqueued.
