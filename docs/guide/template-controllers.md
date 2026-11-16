@@ -295,6 +295,21 @@ final class HomeController implements TemplateControllerInterface {}
 
 An oEmbed request, such as `/my-post/embed/`, goes to the embed template of WordPress. Other sites show this template in an iframe when they embed a link to your post, so the full page of the theme is not rendered there. `is_embed()` is true for these requests.
 
+### Skipping the Controllers for One Request
+
+Return `true` from the `foehn/template_controller/skip` filter to leave a request to the template file that WordPress chose, for example a page that a plugin renders with its own PHP template:
+
+```php
+add_filter(
+    'foehn/template_controller/skip',
+    static fn(bool $skip, string $template, string $controller): bool => $skip || is_singular('event'),
+    10,
+    3,
+);
+```
+
+The filter runs only when a controller claims the request. It receives `false`, the template name that matched (`single-event`) and the class name of the controller. Do not remove the `template_include` callback of Føhn: the filter is the supported way.
+
 ## Returning Null
 
 Return `null` to let WordPress handle the template normally:

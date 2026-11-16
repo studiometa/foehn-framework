@@ -59,6 +59,31 @@ describe('TemplateControllerDiscovery apply', function () {
             ->toBe('/wp/wp-includes/theme-compat/embed.php');
     });
 
+    it('lets a project skip the controllers for one request with a filter', function () {
+        $this->discovery->discover(
+            $this->location,
+            new \Tempest\Reflection\ClassReflector(TemplateControllerFixture::class),
+        );
+        $this->discovery->apply();
+
+        $GLOBALS['wp_stub_template'] = 'page';
+        $seen = [];
+        add_filter(
+            'foehn/template_controller/skip',
+            function (bool $skip, string $template, string $controller) use (&$seen): bool {
+                $seen = [$skip, $template, $controller];
+
+                return true;
+            },
+            10,
+            3,
+        );
+
+        // Without the filter, the controller would run and need Timber::context().
+        expect($this->discovery->handleTemplateInclude('/theme/page.php'))->toBe('/theme/page.php');
+        expect($seen)->toBe([false, 'page', TemplateControllerFixture::class]);
+    });
+
     it('registers filter even when no items discovered', function () {
         $this->discovery->apply();
 
