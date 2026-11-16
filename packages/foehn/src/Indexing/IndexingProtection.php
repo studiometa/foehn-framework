@@ -88,6 +88,9 @@ final readonly class IndexingProtection
         }
 
         add_filter('wp_robots', $this->robots(...), self::PRIORITY);
+        // Rank Math removes every `wp_robots` filter and prints its own tag from this
+        // array. Yoast goes through `wp_robots`, where the filter above runs last.
+        add_filter('rank_math/frontend/robots', $this->rankMathRobots(...), self::PRIORITY);
         add_action('send_headers', $this->sendHeader(...), self::PRIORITY);
         add_filter('robots_txt', $this->robotsTxt(...), self::PRIORITY);
         add_filter('wp_sitemaps_enabled', $this->sitemapsEnabled(...), self::PRIORITY);
@@ -119,6 +122,23 @@ final readonly class IndexingProtection
     /**
      * @codeCoverageIgnore Cannot test header() in CLI environment
      */
+    /**
+     * Rank Math's robots directives, with `noindex` and `nofollow`.
+     *
+     * Rank Math keys them by name (`index` => `index`, `follow` => `follow`) and keeps
+     * the other directives, such as `max-snippet:-1`, under their own keys.
+     *
+     * @param array<string, string> $robots
+     * @return array<string, string>
+     */
+    public function rankMathRobots(array $robots): array
+    {
+        $robots['index'] = 'noindex';
+        $robots['follow'] = 'nofollow';
+
+        return $robots;
+    }
+
     public function sendHeader(): void
     {
         header(self::HEADER);

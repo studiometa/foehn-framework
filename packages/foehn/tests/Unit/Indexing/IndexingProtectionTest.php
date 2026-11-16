@@ -65,6 +65,19 @@ describe('outside production', function () {
         expect(apply_filters('wp_robots', []))->toBe(['noindex' => true, 'nofollow' => true]);
     })->with(['staging', 'development', 'local']);
 
+    it('forces noindex and nofollow into the robots meta tag of Rank Math', function () {
+        // Rank Math removes every `wp_robots` filter and prints its own tag from this array.
+        $GLOBALS['wp_stub_environment_type'] = 'staging';
+
+        new IndexingProtection()->register();
+
+        expect(apply_filters('rank_math/frontend/robots', [
+            'index' => 'index',
+            'follow' => 'follow',
+            'max-snippet' => 'max-snippet:-1',
+        ]))->toBe(['index' => 'noindex', 'follow' => 'nofollow', 'max-snippet' => 'max-snippet:-1']);
+    });
+
     it('disallows the whole host in robots.txt', function (string $environment) {
         $GLOBALS['wp_stub_environment_type'] = $environment;
 
