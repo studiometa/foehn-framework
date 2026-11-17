@@ -104,6 +104,17 @@ function runWpConfig(string $root, array $environment = []): string
 }
 
 /**
+ * Run the generated `maintenance.php` drop-in and return what it printed.
+ */
+function runMaintenanceDropIn(string $root): string
+{
+    $output = [];
+    exec('php ' . escapeshellarg($root . '/web/wp-content/maintenance.php') . ' 2>&1', $output);
+
+    return implode("\n", $output);
+}
+
+/**
  * An IO that records what the installer reported, so tests can assert on the
  * warnings a silent skip would otherwise hide.
  */

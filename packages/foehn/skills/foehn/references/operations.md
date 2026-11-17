@@ -253,6 +253,10 @@ The `production` profile has a `public-files` check: each file of `public/` (`ex
 
 `wp foehn salts:generate` writes the eight WordPress keys to `.env` when they are missing. `--force` rotates them and logs out every user. `--dry-run` names the file and the keys it would replace, and prints no key. The generated `wp-config.php` refuses a production request without keys.
 
+## Maintenance page
+
+The installer writes `web/wp-content/maintenance.php`. While `.maintenance` exists (`wp maintenance-mode activate`, or an update), WordPress loads it before the theme, the plugins and the database. It sends a `503` with `Retry-After: 600` and prints `theme/maintenance.php`, or a plain page when the theme has none. `theme/maintenance.php` is plain PHP or HTML: no WordPress function, no Twig, no database. Do not edit the drop-in in `web/`; `composer install` writes it again.
+
 ## Database export
 
 ```bash

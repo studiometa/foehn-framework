@@ -16,7 +16,8 @@ On `composer install` and `composer update`, this plugin automatically:
 4. Symlinks `theme/` → `web/wp-content/themes/{name}`
 5. Symlinks `mu-plugins/` → `web/wp-content/mu-plugins/_custom`
 6. Generates the mu-plugin loader
-7. Copies the content of `public/` into `web/`
+7. Generates the page cache drop-in and the maintenance page drop-in
+8. Copies the content of `public/` into `web/`
 
 ## Installation
 
@@ -71,7 +72,31 @@ web/                            ← Document root (nginx/apache)
     ├── mu-plugins/
     │   ├── 00-loader.php       ← Generated loader
     │   └── _custom → ../../mu-plugins/
+    ├── advanced-cache.php      ← Generated page cache drop-in
+    ├── maintenance.php         ← Generated maintenance page drop-in
     └── uploads/
+```
+
+## Maintenance page
+
+While `.maintenance` exists (`wp maintenance-mode activate`, or a core, plugin or theme update), WordPress loads `wp-content/maintenance.php` and stops, before the theme, the plugins and the database. The generated drop-in sends a `503` with `Retry-After: 600`, then prints `theme/maintenance.php` when the theme has one, and a plain page when it does not.
+
+`theme/maintenance.php` is a plain PHP or HTML file. WordPress functions, Twig and the database are not available. Link the styles with a path, or put them inline:
+
+```php
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Maintenance</title>
+  </head>
+  <body>
+    <h1>Site en maintenance</h1>
+    <p>Revenez dans quelques minutes.</p>
+  </body>
+</html>
 ```
 
 ## Public files
