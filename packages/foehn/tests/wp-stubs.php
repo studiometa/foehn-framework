@@ -44,18 +44,19 @@ function wp_stub_reset(): void
     $GLOBALS['wp_stub_post_fields'] = [];
     $GLOBALS['wp_stub_terms'] = [];
     $GLOBALS['wp_stub_query_posts'] = [];
+    $GLOBALS['wp_stub_block_supports'] = [];
     unset($GLOBALS['wp_stub_get_posts'], $GLOBALS['wp_stub_insert_post'], $GLOBALS['wp_stub_home_url']);
     if (!function_exists('wp_get_additional_image_sizes')) {
-    /**
-     * @return array<string, array<string, mixed>>
-     */
-    function wp_get_additional_image_sizes(): array
-    {
-        return $GLOBALS['_wp_additional_image_sizes'] ?? [];
+        /**
+         * @return array<string, array<string, mixed>>
+         */
+        function wp_get_additional_image_sizes(): array
+        {
+            return $GLOBALS['_wp_additional_image_sizes'] ?? [];
+        }
     }
-}
 
-if (!function_exists('wp_get_environment_type')) {
+    if (!function_exists('wp_get_environment_type')) {
         function wp_get_environment_type(): string
         {
             return $GLOBALS['wp_stub_environment_type'] ?? 'production';
@@ -437,6 +438,30 @@ if (!class_exists('WP_Customize_Manager')) {
         public function add_control(string $id, array $args = []): void
         {
             $this->controls[$id] = $args;
+        }
+    }
+}
+
+if (!class_exists('WP_Block_Supports')) {
+    /**
+     * Answers no support attributes, as core does outside a block render. A test sets
+     * `$GLOBALS['wp_stub_block_supports']` to answer others. Each call is recorded.
+     */
+    class WP_Block_Supports
+    {
+        public static function get_instance(): self
+        {
+            return new self();
+        }
+
+        /**
+         * @return array<string, string>
+         */
+        public function apply_block_supports(): array
+        {
+            wp_stub_record('apply_block_supports', []);
+
+            return $GLOBALS['wp_stub_block_supports'] ?? [];
         }
     }
 }
