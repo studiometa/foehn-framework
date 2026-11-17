@@ -52,6 +52,7 @@ my-project/
 │   │   └── page-cache.config.php   # static page cache, production only
 │   ├── assets/
 │   │   ├── css/app.css             # Tailwind entry point
+│   │   ├── icons/                  # SVG icons, printed with icon()
 │   │   └── js/app.js               # js-toolkit entry point
 │   ├── templates/
 │   │   ├── layouts/base.twig
