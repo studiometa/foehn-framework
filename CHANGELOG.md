@@ -5,6 +5,52 @@ All notable changes to this project will be documented in this file. Each pull r
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.11.0 - 2026-11-17
+
+### Added
+
+- `breadcrumbs()`, a Twig function and a PHP helper (`Studiometa\Foehn\breadcrumbs()`), gives the breadcrumb trail of the current request as a list of `{label, url}` items, so the theme writes its own markup. The current page, the last item, has no URL. The items come from Rank Math. The list is empty when Rank Math or its breadcrumbs are off ([#305])
+- `Hooks\Security\DisableAuthorSitemap`, an opt-in hook, removes the author sitemaps, which list user slugs: the core one (`/wp-sitemap-users-1.xml`) and the one of Rank Math (`/author-sitemap.xml`, which then answers 404, also from the cache of Rank Math). Add it to `hooks` in `foehn.config.php`. The starter names it in its list of opt-in hooks ([#307])
+- With the redirections module of Rank Math on, a redirection that is created, changed or turned on purges the stored page of its source. A source that is a pattern (contains, starts with, ends with, regex, or exact that ignores case) empties the whole page cache. Before, a page stored before the redirection hid it ([#303])
+- A new docs page, Rank Math, lists what Føhn does when Rank Math is active ([#303])
+- `#[AsCustomizerSection]` adds a section to the Customizer with a native control for each setting it declares, stored as an option and read with `Settings::get()`. The id of a section that exists, such as `title_tagline`, adds the fields to that section ([#313])
+- `wp foehn inspect settings` gives the admin screen of each settings page and Customizer section ([#313])
+- The installer writes a `wp-content/maintenance.php` drop-in. During maintenance it sends a `503` with `Retry-After` and prints the theme's `maintenance.php`, or a plain page when the theme has none ([#315])
+
+### Changed
+
+- Without `PageCacheConfig::$warmSitemap`, the page cache warm-up reads the sitemap index of Rank Math when its sitemap module is on. Before, it read the core sitemap, which Rank Math turns off, and warmed only the home page. A project that set `warmSitemap: '/sitemap_index.xml'` for Rank Math can remove it ([#303])
+- **Breaking:** `CleanImageSizes` keeps `thumbnail` as the only core image size WordPress writes on upload. It also removes `medium` and `large`, so a theme that prints these sizes without an image transformer gets the full image. The sizes a theme adds stay ([#314])
+- **Breaking:** `SettingsPageInterface` is renamed `SettingsInterface`, because a Customizer section implements it too. Rename it in each settings page class ([#313])
+- **Breaking:** `#[AsSettingsPage]` draws its form with `add_settings_field()`, a native field for each setting, so the page looks like the WordPress settings screens. The `template` argument and `SettingsFormInterface` are removed: give each `Setting` a `label`, a `description` and a control instead, and delete the Twig form ([#312])
+- `Setting::string()` takes `control` (`text`, `textarea`, `email`, `url` or `tel`), and `Setting::string()` and `Setting::int()` take `options` for a `<select>`. Every factory takes `label`. The control sets the default sanitizer, and a select keeps one of its options ([#312])
+- `wp foehn inspect settings` gives the label and the control of each setting ([#312])
+
+### Removed
+
+- The starter no longer ships `CLAUDE.md`. It only imported `AGENTS.md`, and Claude Code now reads `AGENTS.md` itself. A project created from an earlier starter can delete its `CLAUDE.md` when it holds only `@AGENTS.md` ([#298])
+
+### Fixed
+
+- A container template that prints `content` twice mounts its inner blocks once in the editor, at the first place, and the editor warns in the console. It mounted two `InnerBlocks` in one block, which WordPress does not support. ([#301])
+- A discovery cache that names a deleted class no longer stops WordPress from booting. Føhn empties the cache and discovers again. Before, every request and every WP-CLI command, `wp foehn discovery:clear` too, failed with a `ReflectionException`, and the cache folder had to be deleted by hand ([#309])
+- A full flush of the page cache (`wp foehn cache:clear`, the dashboard, the admin bar) no longer queues the sitemap warm-up in an environment that `PageCacheConfig::$environments` does not list. Before, with `warmAfterPurge` on, it queued `WarmSitemap` jobs where the cache is off ([#308])
+- `wp foehn verify --output=<path>` resolves a relative path from the directory where the command runs. Before, it resolved it from `ABSPATH`, often `web/wp`, so `mkdir -p build && wp foehn verify --output=build/report.json` did not write the report in that `build` directory. A CI job that read the report under `ABSPATH` must read it from the working directory, or give an absolute path ([#310])
+- A change to a setting that a `#[AsSettingsPage]` declares empties the page cache, as a change to the site title does. The pages kept the old value until their TTL expired ([#312])
+
+[#298]: https://github.com/studiometa/foehn-framework/pull/298
+[#301]: https://github.com/studiometa/foehn-framework/pull/301
+[#303]: https://github.com/studiometa/foehn-framework/pull/303
+[#305]: https://github.com/studiometa/foehn-framework/pull/305
+[#307]: https://github.com/studiometa/foehn-framework/pull/307
+[#308]: https://github.com/studiometa/foehn-framework/pull/308
+[#309]: https://github.com/studiometa/foehn-framework/pull/309
+[#310]: https://github.com/studiometa/foehn-framework/pull/310
+[#312]: https://github.com/studiometa/foehn-framework/pull/312
+[#313]: https://github.com/studiometa/foehn-framework/pull/313
+[#314]: https://github.com/studiometa/foehn-framework/pull/314
+[#315]: https://github.com/studiometa/foehn-framework/pull/315
+
 ## 0.10.2 - 2026-11-16
 
 ### Added
