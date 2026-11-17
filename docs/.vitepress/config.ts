@@ -48,6 +48,7 @@ export default defineConfig({
             { text: "Hooks", link: "/guide/hooks" },
             { text: "Assets", link: "/guide/assets" },
             { text: "Images", link: "/guide/images" },
+            { text: "SVG Icons", link: "/guide/svg-icons" },
             { text: "Post Types", link: "/guide/post-types" },
             { text: "Querying Posts", link: "/guide/querying-posts" },
             { text: "Taxonomies", link: "/guide/taxonomies" },

@@ -67,6 +67,7 @@ theme/
 ├── assets/                       # Source assets
 │   ├── css/
 │   │   └── blocks/               # Block styles, loaded with the block
+│   ├── icons/                    # SVG icons, printed with icon()
 │   └── js/
 │       └── blocks/               # Block scripts, loaded with the block
 ├── dist/                         # Compiled assets
@@ -567,143 +568,149 @@ excludes = ["cache/**", "var/**", "node_modules/**"]
 # Blocks: Must be final readonly, named *Block, implement interface
 # -----------------------------------------------------------------------------
 [[guard.structural.rules]]
-on               = "App\\Blocks\\**"
-target           = "class"
-must-be-named    = "*Block"
-must-be-final    = true
+on = "App\\Blocks\\**"
+target = "class"
+must-be-named = "*Block"
+must-be-final = true
 must-be-readonly = true
-reason           = "Block classes must be final readonly and named *Block."
+reason = "Block classes must be final readonly and named *Block."
 
 [[guard.structural.rules]]
-on               = "App\\Blocks\\**"
-target           = "class"
-must-implement   = [
-    ["Studiometa\\Foehn\\Contracts\\AcfBlockInterface"],
-    ["Studiometa\\Foehn\\Contracts\\BlockInterface"],
-    ["Studiometa\\Foehn\\Contracts\\InteractiveBlockInterface"],
+on = "App\\Blocks\\**"
+target = "class"
+must-implement = [
+  [
+    "Studiometa\\Foehn\\Contracts\\AcfBlockInterface",
+  ],
+  [
+    "Studiometa\\Foehn\\Contracts\\BlockInterface",
+  ],
+  [
+    "Studiometa\\Foehn\\Contracts\\InteractiveBlockInterface",
+  ],
 ]
-reason           = "Block classes must implement AcfBlockInterface, BlockInterface, or InteractiveBlockInterface."
+reason = "Block classes must implement AcfBlockInterface, BlockInterface, or InteractiveBlockInterface."
 
 # -----------------------------------------------------------------------------
 # Hooks: Must be final and named *Hooks
 # -----------------------------------------------------------------------------
 [[guard.structural.rules]]
-on            = "App\\Hooks\\**"
-target        = "class"
+on = "App\\Hooks\\**"
+target = "class"
 must-be-named = "*Hooks"
 must-be-final = true
-reason        = "Hook classes must be final and named *Hooks."
+reason = "Hook classes must be final and named *Hooks."
 
 # -----------------------------------------------------------------------------
 # Models (Post Types): Must be final and extend Foehn\Models\Post
 # -----------------------------------------------------------------------------
 [[guard.structural.rules]]
-on            = "App\\Models\\**"
-target        = "class"
+on = "App\\Models\\**"
+target = "class"
 must-be-final = true
-must-extend   = "Studiometa\\Foehn\\Models\\Post"
-not-on        = "App\\Models\\**Interface"
-reason        = "Model classes must be final and extend Studiometa\\Foehn\\Models\\Post."
+must-extend = "Studiometa\\Foehn\\Models\\Post"
+not-on = "App\\Models\\**Interface"
+reason = "Model classes must be final and extend Studiometa\\Foehn\\Models\\Post."
 
 # -----------------------------------------------------------------------------
 # Taxonomies: Must be final and extend Timber\Term
 # -----------------------------------------------------------------------------
 [[guard.structural.rules]]
-on            = "App\\Taxonomies\\**"
-target        = "class"
+on = "App\\Taxonomies\\**"
+target = "class"
 must-be-final = true
-must-extend   = "Timber\\Term"
-reason        = "Taxonomy classes must be final and extend Timber\\Term."
+must-extend = "Timber\\Term"
+reason = "Taxonomy classes must be final and extend Timber\\Term."
 
 # -----------------------------------------------------------------------------
 # Patterns: Must be final readonly, named *Pattern, implement interface
 # -----------------------------------------------------------------------------
 [[guard.structural.rules]]
-on               = "App\\Patterns\\**"
-target           = "class"
-must-be-named    = "*Pattern"
-must-be-final    = true
+on = "App\\Patterns\\**"
+target = "class"
+must-be-named = "*Pattern"
+must-be-final = true
 must-be-readonly = true
-reason           = "Pattern classes must be final readonly and named *Pattern."
+reason = "Pattern classes must be final readonly and named *Pattern."
 
 [[guard.structural.rules]]
-on             = "App\\Patterns\\**"
-target         = "class"
+on = "App\\Patterns\\**"
+target = "class"
 must-implement = "Studiometa\\Foehn\\Contracts\\BlockPatternInterface"
-reason         = "Pattern classes must implement BlockPatternInterface."
+reason = "Pattern classes must implement BlockPatternInterface."
 
 # -----------------------------------------------------------------------------
 # REST Endpoints: Must be final and named *Endpoint
 # -----------------------------------------------------------------------------
 [[guard.structural.rules]]
-on            = "App\\Rest\\**"
-target        = "class"
+on = "App\\Rest\\**"
+target = "class"
 must-be-named = "*Endpoint"
 must-be-final = true
-reason        = "REST endpoint classes must be final and named *Endpoint."
+reason = "REST endpoint classes must be final and named *Endpoint."
 
 # -----------------------------------------------------------------------------
 # Services: Must be final readonly and named *Service
 # -----------------------------------------------------------------------------
 [[guard.structural.rules]]
-on               = "App\\Services\\**"
-target           = "class"
-must-be-named    = "*Service"
-must-be-final    = true
+on = "App\\Services\\**"
+target = "class"
+must-be-named = "*Service"
+must-be-final = true
 must-be-readonly = true
-reason           = "Service classes must be final readonly and named *Service."
+reason = "Service classes must be final readonly and named *Service."
 
 # -----------------------------------------------------------------------------
 # Shortcodes: Must be final and named *Shortcode
 # -----------------------------------------------------------------------------
 [[guard.structural.rules]]
-on            = "App\\Shortcodes\\**"
-target        = "class"
+on = "App\\Shortcodes\\**"
+target = "class"
 must-be-named = "*Shortcode"
 must-be-final = true
-reason        = "Shortcode classes must be final and named *Shortcode."
+reason = "Shortcode classes must be final and named *Shortcode."
 
 # -----------------------------------------------------------------------------
 # Context Providers: Must be final, named *ContextProvider, implement interface
 # -----------------------------------------------------------------------------
 [[guard.structural.rules]]
-on            = "App\\ContextProviders\\**"
-target        = "class"
+on = "App\\ContextProviders\\**"
+target = "class"
 must-be-named = "*ContextProvider"
 must-be-final = true
-reason        = "Context provider classes must be final and named *ContextProvider."
+reason = "Context provider classes must be final and named *ContextProvider."
 
 [[guard.structural.rules]]
-on             = "App\\ContextProviders\\**"
-target         = "class"
+on = "App\\ContextProviders\\**"
+target = "class"
 must-implement = "Studiometa\\Foehn\\Contracts\\ContextProviderInterface"
-reason         = "Context provider classes must implement ContextProviderInterface."
+reason = "Context provider classes must implement ContextProviderInterface."
 
 # -----------------------------------------------------------------------------
 # CLI Commands: Must be final and named *Command
 # -----------------------------------------------------------------------------
 [[guard.structural.rules]]
-on            = "App\\Console\\**"
-target        = "class"
+on = "App\\Console\\**"
+target = "class"
 must-be-named = "*Command"
 must-be-final = true
-reason        = "CLI command classes must be final and named *Command."
+reason = "CLI command classes must be final and named *Command."
 
 # -----------------------------------------------------------------------------
 # Template Controllers: Must be final, named *Controller, implement interface
 # -----------------------------------------------------------------------------
 [[guard.structural.rules]]
-on            = "App\\Controllers\\**"
-target        = "class"
+on = "App\\Controllers\\**"
+target = "class"
 must-be-named = "*Controller"
 must-be-final = true
-reason        = "Template controller classes must be final and named *Controller."
+reason = "Template controller classes must be final and named *Controller."
 
 [[guard.structural.rules]]
-on             = "App\\Controllers\\**"
-target         = "class"
+on = "App\\Controllers\\**"
+target = "class"
 must-implement = "Studiometa\\Foehn\\Contracts\\TemplateControllerInterface"
-reason         = "Template controller classes must implement TemplateControllerInterface."
+reason = "Template controller classes must implement TemplateControllerInterface."
 ```
 
 </details>
@@ -743,12 +750,12 @@ You can adjust the rules to match your team's conventions:
 ```toml
 # Example: Allow non-readonly services
 [[guard.structural.rules]]
-on            = "App\\Services\\**"
-target        = "class"
+on = "App\\Services\\**"
+target = "class"
 must-be-named = "*Service"
 must-be-final = true
 # must-be-readonly = true  # Commented out to allow mutable services
-reason        = "Service classes must be final and named *Service."
+reason = "Service classes must be final and named *Service."
 ```
 
 ### CI Integration

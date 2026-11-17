@@ -317,6 +317,17 @@ A YouTube URL must contain a video ID of 11 characters. Other URLs give `null`. 
 
 See [Images](/guide/images).
 
+### IconExtension
+
+`icon()` prints a registered SVG icon with `wp_get_icon()` (WordPress 7.1). A name without a collection is an icon of the theme, from `assets/icons/`:
+
+```twig
+{{ icon('arrow-right', { size: 16, class: 'button__icon' }) }}
+{{ icon('core/search', { label: 'Search' }) }}
+```
+
+See [SVG Icons](/guide/svg-icons).
+
 ### BreadcrumbsExtension
 
 `breadcrumbs()` gives the breadcrumb trail of the current request as a list of items, each with a `label` and a `url`. The current page, the last item, has no URL. You write the markup:

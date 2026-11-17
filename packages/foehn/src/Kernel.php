@@ -34,6 +34,7 @@ use Studiometa\Foehn\Errors\EntryBuilder;
 use Studiometa\Foehn\Errors\ErrorLog;
 use Studiometa\Foehn\Errors\ErrorRecorder;
 use Studiometa\Foehn\Errors\SourcePaths;
+use Studiometa\Foehn\Icons\ThemeIcons;
 use Studiometa\Foehn\Images\NullTransformer;
 use Studiometa\Foehn\Indexing\IndexingProtection;
 use Studiometa\Foehn\Integrations\RankMath\RankMath;
@@ -601,6 +602,9 @@ final class Kernel
         // Not opt-in either: production verification fails a site whose heartbeat is
         // missing, and this event is what writes it. See HeartbeatEvent.
         new HeartbeatEvent()->register();
+
+        // Not opt-in: a theme that has `assets/icons/` has asked for its icons. See ThemeIcons.
+        $this->container->get(ThemeIcons::class)->register();
 
         $this->registerAdminControls();
         $this->registerPageCache();
