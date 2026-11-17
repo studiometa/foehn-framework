@@ -83,6 +83,40 @@ describe('WebRootGenerator', function () {
             ->toContain("dirname(__DIR__, 2) . '/src/app'");
     });
 
+    it('writes the maintenance drop-in, which sends a 503 and prints the theme page', function () {
+        ($this->generate)();
+
+        expect(file_get_contents($this->root . '/web/wp-content/maintenance.php'))
+            ->toContain('http_response_code(503);')
+            ->toContain("header('Retry-After: 600');")
+            ->toContain("dirname(__DIR__, 2) . '/theme/maintenance.php'");
+    });
+
+    it('prints the theme maintenance page with a 503', function () {
+        file_put_contents($this->root . '/theme/maintenance.php', '<p>Back soon</p>');
+
+        ($this->generate)();
+
+        expect(runMaintenanceDropIn($this->root))->toBe('<p>Back soon</p>');
+    });
+
+    it('prints a plain maintenance page when the theme has none', function () {
+        ($this->generate)();
+
+        expect(runMaintenanceDropIn($this->root))
+            ->toContain('<h1>Briefly unavailable</h1>')
+            ->toContain('<meta name="robots" content="noindex" />');
+    });
+
+    it('points the maintenance drop-in at the configured theme directory', function () {
+        $config = InstallerConfig::fromArray(['theme-dir' => 'src'], $this->root);
+
+        ($this->generate)(null, $config);
+
+        expect(file_get_contents($this->root . '/web/wp-content/maintenance.php'))
+            ->toContain("dirname(__DIR__, 2) . '/src/maintenance.php'");
+    });
+
     it('defines WP_CACHE, without which WordPress never loads the drop-in', function () {
         ($this->generate)();
 
@@ -105,9 +139,12 @@ describe('WebRootGenerator', function () {
     it('produces a web root whose PHP parses', function () {
         ($this->generate)();
 
-        // These three files are written as strings and never executed by any other
+        // These four files are written as strings and never executed by any other
         // test; a syntax error in them would only show up on a real install.
-        foreach (['/web/index.php', '/web/wp-config.php', '/web/wp-content/advanced-cache.php'] as $file) {
+        foreach (
+            ['/web/index.php', '/web/wp-config.php', '/web/wp-content/advanced-cache.php', '/web/wp-content/maintenance.php']
+            as $file
+        ) {
             $output = [];
             $status = 0;
             exec('php -l ' . escapeshellarg($this->root . $file) . ' 2>&1', $output, $status);
