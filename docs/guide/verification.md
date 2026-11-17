@@ -20,7 +20,7 @@ The profile is required. There is no default, because a release gate that quietl
 | Option                 | Rule                                                                                                                                                                    |
 | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `--profile=<name>`     | Required, `updates` or `production`. A missing or unknown name exits `2`.                                                                                               |
-| `--output=<path>`      | Required for `updates`, optional for `production`. Relative paths resolve from `ABSPATH`, not the working directory. Written atomically, on a pass and a failure alike. |
+| `--output=<path>`      | Required for `updates`, optional for `production`. Relative paths resolve from the working directory. Written atomically, on a pass and a failure alike.                |
 | `--format=table\|json` | Terminal output only. Default `table`. `--format=json` prints the same bytes the report file holds, so a line copied out of a log matches a later grep of the artifact. |
 
 There is no flag to select or skip individual checks. The profile owns what it runs.

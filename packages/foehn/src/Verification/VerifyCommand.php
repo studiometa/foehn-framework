@@ -30,7 +30,7 @@ use Studiometa\Foehn\Verification\Updates\UpdatesChecks;
 
         [--output=<path>]
         : Where to write the JSON report. Required for `updates`, optional for
-        `production`. Relative paths resolve from ABSPATH. The file is written
+        `production`. Relative paths resolve from the working directory. The file is written
         atomically, on a pass and on a failure alike.
 
         [--format=<format>]

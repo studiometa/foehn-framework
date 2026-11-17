@@ -41,11 +41,25 @@ describe('ReportWriter: where the report lands', function () {
         expect(file_get_contents($path))->toBe($this->report->toJson());
     });
 
-    it('resolves a relative path from ABSPATH rather than the working directory', function () {
-        // A deployment script and a CI job run from wherever they happen to be, so the
-        // report has to land in the same place either way.
-        expect($this->writer->resolve('build/foehn-verification.json'))
-            ->toBe(constant('ABSPATH') . 'build/foehn-verification.json');
+    it('resolves a relative path from the working directory, not from ABSPATH', function () {
+        // WP-CLI runs from the directory the user is in, while ABSPATH is the WordPress
+        // directory, often `web/wp`. A CI job that ran `mkdir -p build` has to find the
+        // report there.
+        $previous = (string) getcwd();
+        chdir($this->directory);
+
+        try {
+            expect($this->writer->resolve('build/foehn-verification.json'))
+                ->toBe((string) getcwd() . '/build/foehn-verification.json');
+
+            mkdir('build');
+
+            expect($this->writer->write('build/foehn-verification.json', $this->report))
+                ->toBe((string) getcwd() . '/build/foehn-verification.json');
+            expect(is_file($this->directory . '/build/foehn-verification.json'))->toBeTrue();
+        } finally {
+            chdir($previous);
+        }
     });
 
     it('leaves an absolute path alone', function () {

@@ -18,11 +18,11 @@ use Studiometa\Foehn\Smoke\Support\Site;
  * run is asserted twice. Whichever state the machine was in is put back afterwards.
  */
 
-/** Where the report is asked for, relative to ABSPATH — the invocation the docs show. */
+/** Where the report is asked for, relative to the working directory — the invocation the docs show. */
 const VERIFY_OUTPUT = 'build/foehn-verification.json';
 
-/** The same file on the host. The starter installs WordPress in `web/wp`, so ABSPATH is that. */
-const VERIFY_REPORT = 'web/wp/' . VERIFY_OUTPUT;
+/** The same file on the host. The command runs from the project root, not from ABSPATH (`web/wp`). */
+const VERIFY_REPORT = VERIFY_OUTPUT;
 
 /** A mu-plugin the deprecation test writes and removes. */
 const VERIFY_MU_PLUGIN = 'web/wp-content/mu-plugins/foehn-verify-smoke.php';
