@@ -100,6 +100,8 @@ final readonly class HeroBlock implements AcfBlockInterface
 </section>
 ```
 
+On the site, Føhn puts the block supports on the first tag of the rendered markup, as the editor does: the classes and inline styles of the alignment, colors, spacing, typography and border supports, the anchor `id` and the custom class. The template keeps its own classes, a support style comes after its own style, and the anchor replaces its `id`. Do not print these attributes in the template, and do not call `get_block_wrapper_attributes()`. In the editor preview ACF puts them on its own wrapper, so the template is rendered unchanged there.
+
 ## Field Values
 
 `$fields` holds what [`get_fields()`](https://www.advancedcustomfields.com/resources/get_fields/) returns for the block. ACF loads the block's data before it calls the render callback, so the values are formatted and nested like the values of a post:
