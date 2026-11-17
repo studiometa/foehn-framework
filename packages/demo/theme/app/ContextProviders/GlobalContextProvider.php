@@ -35,6 +35,16 @@ final class GlobalContextProvider implements ContextProviderInterface
             ->with('contact_email', Settings::get('demo_contact_email'))
             ->with('show_banner', Settings::get('demo_show_banner'))
             ->with('banner_text', Settings::get('demo_banner_text'))
-            ->with('posts_per_archive', Settings::get('demo_posts_per_archive'));
+            ->with('posts_per_archive', Settings::get('demo_posts_per_archive'))
+            // From the Customizer: Demo\Settings\StudioSettings and IdentitySettings.
+            ->with('studio', [
+                'address' => Settings::get('demo_studio_address'),
+                'phone' => Settings::get('demo_studio_phone'),
+                // A `tel:` link keeps the digits and the `+` of the country code.
+                'phone_link' => preg_replace('/[^\d+]/', '', (string) Settings::get('demo_studio_phone')),
+                'instagram' => Settings::get('demo_instagram'),
+                'show_credits' => Settings::get('demo_show_credits'),
+                'signature' => Settings::get('demo_signature'),
+            ]);
     }
 }

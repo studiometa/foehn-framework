@@ -251,7 +251,7 @@ An admin screen on the WordPress Settings API, for a few site-wide values. `sett
 namespace App\Settings;
 
 use Studiometa\Foehn\Attributes\AsSettingsPage;
-use Studiometa\Foehn\Contracts\SettingsPageInterface;
+use Studiometa\Foehn\Contracts\SettingsInterface;
 use Studiometa\Foehn\Settings\Setting;
 
 #[AsSettingsPage(
@@ -259,7 +259,7 @@ use Studiometa\Foehn\Settings\Setting;
     title: 'Theme settings',
     parent: 'themes.php',               // default 'options-general.php'; null = top-level menu
 )]
-final readonly class ThemeSettings implements SettingsPageInterface
+final readonly class ThemeSettings implements SettingsInterface
 {
     /** @return array<string, Setting> */
     public static function settings(): array
@@ -282,6 +282,7 @@ final readonly class ThemeSettings implements SettingsPageInterface
 - Read values with `Studiometa\Foehn\Settings\Settings::get('theme_show_banner')`, not `get_option()`. `Settings::get()` returns the declared default before the first save, and casts to the declared type (a checkbox is `true` or `false`, not `''` or `'1'`). Also `Settings::has()` and `Settings::all()`.
 - Option names are global. Prefix them.
 - A change to a declared setting empties the whole page cache.
+- The same `settings()` goes in the Customizer with `#[AsCustomizerSection(id: 'theme_contact', title: 'Contact', priority: 30)]` on a class that implements `SettingsInterface`. Føhn adds a native control for each setting, stored as an option, so `Settings::get()` reads it the same way. Use it for values that change how the site looks (contact details, social links). `id: 'title_tagline'` adds the fields to Site Identity, next to the logo.
 - Put settings in Twig through a context provider:
 
 ```php

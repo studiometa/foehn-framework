@@ -372,6 +372,65 @@ if (!class_exists('WP_User')) {
     }
 }
 
+if (!class_exists('WP_Customize_Manager')) {
+    /**
+     * Records the sections, settings and controls added to it.
+     */
+    class WP_Customize_Manager
+    {
+        /** @var array<string, array<string, mixed>> */
+        public array $sections = [];
+
+        /** @var array<string, array<string, mixed>> */
+        public array $settings = [];
+
+        /** @var array<string, array<string, mixed>> */
+        public array $controls = [];
+
+        /**
+         * @param list<string> $sections Ids of the sections that already exist
+         */
+        public function __construct(array $sections = [])
+        {
+            foreach ($sections as $id) {
+                $this->sections[$id] = ['core' => true];
+            }
+        }
+
+        /**
+         * @param array<string, mixed> $args
+         */
+        public function add_section(string $id, array $args = []): void
+        {
+            $this->sections[$id] = $args;
+        }
+
+        /**
+         * @return array<string, mixed>|null
+         */
+        public function get_section(string $id): ?array
+        {
+            return $this->sections[$id] ?? null;
+        }
+
+        /**
+         * @param array<string, mixed> $args
+         */
+        public function add_setting(string $id, array $args = []): void
+        {
+            $this->settings[$id] = $args;
+        }
+
+        /**
+         * @param array<string, mixed> $args
+         */
+        public function add_control(string $id, array $args = []): void
+        {
+            $this->controls[$id] = $args;
+        }
+    }
+}
+
 if (!class_exists('WP_REST_Request')) {
     class WP_REST_Request
     {

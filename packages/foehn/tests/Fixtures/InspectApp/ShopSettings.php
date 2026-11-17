@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace Tests\Fixtures\InspectApp;
 
 use Studiometa\Foehn\Attributes\AsSettingsPage;
-use Studiometa\Foehn\Contracts\SettingsPageInterface;
+use Studiometa\Foehn\Contracts\SettingsInterface;
 use Studiometa\Foehn\Settings\Setting;
 
 /**
  * A settings page with a declared sanitizer, a type default one, and one of its own.
  */
 #[AsSettingsPage(slug: 'shop-settings', title: 'Shop settings')]
-final class ShopSettings implements SettingsPageInterface
+final class ShopSettings implements SettingsInterface
 {
     public static function settings(): array
     {

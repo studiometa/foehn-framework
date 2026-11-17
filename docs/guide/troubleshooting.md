@@ -13,7 +13,7 @@ A class that carries an attribute but breaks the contract of that attribute is n
 | `#[AsTimberModel]`                                              | The class extends neither `Timber\Post` nor `Timber\Term`                                           |
 | `#[AsBlock]`, `#[AsContextProvider]`, `#[AsTemplateController]` | The class does not implement the interface of the attribute                                         |
 | `#[AsBlockBinding]`                                             | The class does not implement the interface, or the source name has no namespace                     |
-| `#[AsSettingsPage]`                                             | The class does not implement the interface                                                          |
+| `#[AsSettingsPage]`, `#[AsCustomizerSection]`                   | The class does not implement `SettingsInterface`                                                    |
 | `#[AsCliCommand]`, `#[AsSeeder]`                                | The class does not implement the interface of the attribute                                         |
 | `#[AsTwigExtension]`                                            | The class does not extend `Twig\Extension\AbstractExtension`                                        |
 | `#[AsCron]`                                                     | The class has no public `__invoke()` method, or the cron expression is not valid                    |

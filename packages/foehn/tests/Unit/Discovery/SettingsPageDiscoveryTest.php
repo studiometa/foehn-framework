@@ -59,12 +59,12 @@ describe('SettingsPageDiscovery', function () {
         );
 
         expect($problems[0]['reason'])
-            ->toContain('does not implement Studiometa\\Foehn\\Contracts\\SettingsPageInterface');
+            ->toContain('does not implement Studiometa\\Foehn\\Contracts\\SettingsInterface');
         expect($problems[0]['fix'])
             ->toBe(
                 'Declare '
                 . InterfacelessSettingsFixture::class
-                . ' with `implements \\Studiometa\\Foehn\\Contracts\\SettingsPageInterface`.',
+                . ' with `implements \\Studiometa\\Foehn\\Contracts\\SettingsInterface`.',
             );
     });
 

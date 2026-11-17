@@ -6,7 +6,7 @@ namespace Studiometa\Foehn\Discovery;
 
 use Studiometa\Foehn\Attributes\AsDiscovery;
 use Studiometa\Foehn\Attributes\AsSettingsPage;
-use Studiometa\Foehn\Contracts\SettingsPageInterface;
+use Studiometa\Foehn\Contracts\SettingsInterface;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
 use Studiometa\Foehn\Settings\Setting;
 use Studiometa\Foehn\Settings\SettingField;
@@ -51,7 +51,7 @@ final class SettingsPageDiscovery implements Discovery
         // Checked before the settings are read: a class carrying the attribute
         // without the interface has no settings() to call, and the error it
         // would produce names the wrong thing.
-        if (!$class->implements(SettingsPageInterface::class)) {
+        if (!$class->implements(SettingsInterface::class)) {
             $this->problems->report(
                 $location,
                 $class->getName(),
@@ -59,9 +59,9 @@ final class SettingsPageDiscovery implements Discovery
                 sprintf(
                     '%s has #[AsSettingsPage] but does not implement %s, so the settings page is not registered.',
                     $class->getName(),
-                    SettingsPageInterface::class,
+                    SettingsInterface::class,
                 ),
-                sprintf('Declare %s with `implements \\%s`.', $class->getName(), SettingsPageInterface::class),
+                sprintf('Declare %s with `implements \\%s`.', $class->getName(), SettingsInterface::class),
             );
 
             return;
@@ -92,7 +92,10 @@ final class SettingsPageDiscovery implements Discovery
         }
 
         foreach ($items as $item) {
-            $this->registerSettings($item);
+            /** @var AsSettingsPage $attribute */
+            $attribute = $item['attribute'];
+
+            Settings::register($attribute->slug, $item['settings'], $item['className']);
         }
 
         add_action('admin_menu', function () use ($items): void {
@@ -101,35 +104,6 @@ final class SettingsPageDiscovery implements Discovery
                 $this->registerFields($item);
             }
         });
-    }
-
-    /**
-     * Register each of a page's settings with WordPress.
-     *
-     * @param array<string, mixed> $item
-     */
-    private function registerSettings(array $item): void
-    {
-        /** @var AsSettingsPage $attribute */
-        $attribute = $item['attribute'];
-        /** @var class-string $className */
-        $className = $item['className'];
-        /** @var array<string, Setting> $settings */
-        $settings = $item['settings'];
-
-        foreach ($settings as $name => $setting) {
-            register_setting($attribute->slug, $name, [
-                'type' => $setting->type,
-                'default' => $setting->default,
-                'description' => $setting->description,
-                'show_in_rest' => $setting->showInRest,
-                'sanitize_callback' => $setting->sanitizer($className),
-            ]);
-        }
-
-        // So Settings::get() can answer with the declared default and type
-        // rather than with whatever get_option() found.
-        Settings::declare($settings);
     }
 
     /**

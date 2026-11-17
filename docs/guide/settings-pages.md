@@ -1,6 +1,6 @@
 # Settings Pages
 
-An admin screen for the handful of values a theme needs: a contact address, a feature toggle, an API key. `#[AsSettingsPage]` puts it on the WordPress Settings API.
+An admin screen for the handful of values a theme needs: a contact address, a feature toggle, an API key. `#[AsSettingsPage]` puts it on the WordPress Settings API, and [`#[AsCustomizerSection]`](#in-the-customizer) puts the same declaration in the Customizer.
 
 Named for the API it wraps. WordPress uses both words — `add_options_page()` registers the menu entry, while everything that does the work is `register_setting()`, `add_settings_section()` and `settings_fields()`.
 
@@ -13,7 +13,7 @@ Named for the API it wraps. WordPress uses both words — `add_options_page()` r
 namespace App\Settings;
 
 use Studiometa\Foehn\Attributes\AsSettingsPage;
-use Studiometa\Foehn\Contracts\SettingsPageInterface;
+use Studiometa\Foehn\Contracts\SettingsInterface;
 use Studiometa\Foehn\Settings\Setting;
 
 #[AsSettingsPage(
@@ -21,7 +21,7 @@ use Studiometa\Foehn\Settings\Setting;
     title: 'Theme settings',
     parent: 'themes.php',
 )]
-final readonly class ThemeSettings implements SettingsPageInterface
+final readonly class ThemeSettings implements SettingsInterface
 {
     /** @return array<string, Setting> */
     public static function settings(): array
@@ -147,6 +147,47 @@ Føhn registers the settings on `init`, so the sanitizer also runs under WP-CLI.
 
 `capability` defaults to `manage_options` and is what WordPress checks before showing the page at all.
 
+## In the Customizer
+
+Values that change how the site looks — a phone number in the footer, social links, a baseline — are better next to the live preview. `#[AsCustomizerSection]` takes the same `settings()` as a page and adds a section to Appearance → Customize:
+
+```php
+<?php
+// app/Settings/ContactSettings.php
+
+namespace App\Settings;
+
+use Studiometa\Foehn\Attributes\AsCustomizerSection;
+use Studiometa\Foehn\Contracts\SettingsInterface;
+use Studiometa\Foehn\Settings\Setting;
+
+#[AsCustomizerSection(id: 'theme_contact', title: 'Contact', priority: 30)]
+final readonly class ContactSettings implements SettingsInterface
+{
+    /** @return array<string, Setting> */
+    public static function settings(): array
+    {
+        return [
+            'theme_phone' => Setting::string(label: 'Phone', control: 'tel'),
+            'theme_address' => Setting::string(label: 'Address', control: 'textarea'),
+        ];
+    }
+}
+```
+
+Each setting gets a native Customizer control of its control type, with its label, description and options. The values are stored as options, not theme mods, so `Settings::get()` reads them as it reads a settings page, and a save empties the page cache.
+
+**An id that exists adds the fields to that section.** `id: 'title_tagline'` puts them in Site Identity, next to the site title and the logo. The other arguments are then not used.
+
+| Argument      | Default                | Description                                      |
+| ------------- | ---------------------- | ------------------------------------------------ |
+| `id`          | _required_             | The section id, and the option group             |
+| `title`       | _required_             | The section heading                              |
+| `description` | `''`                   | Shown at the top of the section                  |
+| `panel`       | `null`                 | The id of the panel the section sits in          |
+| `priority`    | `160`                  | Where in the Customizer. Site Identity is `20`   |
+| `capability`  | `'edit_theme_options'` | What a user needs to see the section and save it |
+
 ## Migrating from an ACF options page
 
 Declare each ACF field as a `Setting` with the control that matches it. ACF stores an options field as the option `<post id>_<name>` (`options_phone` by default), so give the setting that name, or copy the values with `wp option update`. Fields with no native control (repeaters, flexible content, images) are the signal to keep [the ACF package](/guide/acf-options-pages) for that page.
@@ -154,5 +195,6 @@ Declare each ACF field as a `Setting` with the control that matches it. ACF stor
 ## Related
 
 - [#[AsSettingsPage]](/api/as-settings-page)
+- [#[AsCustomizerSection]](/api/as-customizer-section)
 - [#[AsPostMeta]](/api/as-post-meta) — for values that belong to a post rather than to the site
 - [ACF Options Pages](/guide/acf-options-pages)

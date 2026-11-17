@@ -41,6 +41,10 @@ final class SettingsSeeder implements SeederInterface
             'A demonstration of the Føhn framework. The photographer, the clients and the testimonials are invented.',
         );
         update_option('demo_posts_per_archive', 3);
+        // The Customizer sections, Demo\Settings\StudioSettings and IdentitySettings.
+        update_option('demo_studio_address', "12 rue des Photographes\n67000 Strasbourg");
+        update_option('demo_studio_phone', '+33 3 88 00 00 00');
+        update_option('demo_instagram', 'https://www.instagram.com/');
 
         flush_rewrite_rules(false);
     }

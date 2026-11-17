@@ -8,6 +8,7 @@ use Studiometa\Foehn\Attributes\AsBlock;
 use Studiometa\Foehn\Attributes\AsBlockBinding;
 use Studiometa\Foehn\Attributes\AsBlockPattern;
 use Studiometa\Foehn\Attributes\AsCliCommand;
+use Studiometa\Foehn\Attributes\AsCustomizerSection;
 use Studiometa\Foehn\Attributes\AsImageSize;
 use Studiometa\Foehn\Attributes\AsMenu;
 use Studiometa\Foehn\Attributes\AsRestRoute;
@@ -17,6 +18,7 @@ use Studiometa\Foehn\Discovery\BlockBindingDiscovery;
 use Studiometa\Foehn\Discovery\BlockDiscovery;
 use Studiometa\Foehn\Discovery\BlockPatternDiscovery;
 use Studiometa\Foehn\Discovery\CliCommandDiscovery;
+use Studiometa\Foehn\Discovery\CustomizerSectionDiscovery;
 use Studiometa\Foehn\Discovery\ImageSizeDiscovery;
 use Studiometa\Foehn\Discovery\MenuDiscovery;
 use Studiometa\Foehn\Discovery\RestRouteDiscovery;
@@ -91,12 +93,12 @@ final readonly class Registrations
     }
 
     /**
-     * Settings pages and the options each one stores.
+     * Settings pages and Customizer sections, and the options each one stores.
      *
      * Every setting is saved through a sanitizer: the one the page declares, or the
-     * one its type implies. `register_setting()` runs in the main discovery phase, on
-     * `init`, which WordPress fires under WP-CLI too, so `wp option update` saves
-     * through the same sanitizer as the admin form.
+     * one its control implies. `register_setting()` runs in the main discovery phase,
+     * on `init`, which WordPress fires under WP-CLI too, so `wp option update` saves
+     * through the same sanitizer as the admin form and the Customizer.
      *
      * @return list<array<string, mixed>>
      */
@@ -107,36 +109,66 @@ final readonly class Registrations
         foreach ($this->items->of(SettingsPageDiscovery::class) as $item) {
             /** @var AsSettingsPage $attribute */
             $attribute = $item['attribute'];
-            /** @var class-string $className */
-            $className = $item['className'];
-            /** @var array<string, Setting> $settings */
-            $settings = $item['settings'];
-            $options = [];
-
-            foreach ($settings as $name => $setting) {
-                $options[] = [
-                    'option' => $name,
-                    'type' => $setting->type,
-                    'label' => $setting->label($name),
-                    'control' => $setting->control,
-                    'default' => $setting->default,
-                    'sanitize' => $setting->sanitizerName($className),
-                    'sanitizeDeclared' => $setting->sanitize !== null,
-                    'sanitizeOnWpCli' => true,
-                    'showInRest' => $setting->showInRest,
-                ];
-            }
 
             $rows[] = [
                 'page' => $attribute->slug,
                 'title' => $attribute->title,
-                'class' => $className,
+                'screen' => sprintf(
+                    '%s?page=%s',
+                    $attribute->parent !== null && str_ends_with($attribute->parent, '.php')
+                        ? $attribute->parent
+                        : 'admin.php',
+                    $attribute->slug,
+                ),
+                'class' => $item['className'],
                 'optionGroup' => $attribute->slug,
-                'settings' => $options,
+                'settings' => self::settingRows($item['settings'], $item['className']),
+            ];
+        }
+
+        foreach ($this->items->of(CustomizerSectionDiscovery::class) as $item) {
+            /** @var AsCustomizerSection $attribute */
+            $attribute = $item['attribute'];
+
+            $rows[] = [
+                'page' => $attribute->id,
+                'title' => $attribute->title,
+                'screen' => sprintf('customize.php?autofocus[section]=%s', $attribute->id),
+                'class' => $item['className'],
+                'optionGroup' => $attribute->id,
+                'settings' => self::settingRows($item['settings'], $item['className']),
             ];
         }
 
         return Rows::sortedBy($rows, 'page');
+    }
+
+    /**
+     * One row for each setting of a page or a section.
+     *
+     * @param array<string, Setting> $settings
+     * @param class-string $className
+     * @return list<array<string, mixed>>
+     */
+    private static function settingRows(array $settings, string $className): array
+    {
+        $rows = [];
+
+        foreach ($settings as $name => $setting) {
+            $rows[] = [
+                'option' => $name,
+                'type' => $setting->type,
+                'label' => $setting->label($name),
+                'control' => $setting->control,
+                'default' => $setting->default,
+                'sanitize' => $setting->sanitizerName($className),
+                'sanitizeDeclared' => $setting->sanitize !== null,
+                'sanitizeOnWpCli' => true,
+                'showInRest' => $setting->showInRest,
+            ];
+        }
+
+        return $rows;
     }
 
     /**

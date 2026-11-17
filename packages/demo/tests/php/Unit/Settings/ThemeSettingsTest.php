@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 use Demo\Settings\ThemeSettings;
 use Studiometa\Foehn\Attributes\AsSettingsPage;
-use Studiometa\Foehn\Contracts\SettingsPageInterface;
+use Studiometa\Foehn\Contracts\SettingsInterface;
 use Studiometa\Foehn\Settings\Setting;
 
 describe('ThemeSettings', function () {
-    it('implements SettingsPageInterface', function () {
-        expect(is_subclass_of(ThemeSettings::class, SettingsPageInterface::class))->toBeTrue();
+    it('implements SettingsInterface', function () {
+        expect(is_subclass_of(ThemeSettings::class, SettingsInterface::class))->toBeTrue();
     });
 
     it('has AsSettingsPage attribute with correct config', function () {
