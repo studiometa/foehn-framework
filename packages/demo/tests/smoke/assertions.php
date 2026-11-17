@@ -452,6 +452,14 @@ $results->same(
     $customizer->get_setting('demo_instagram')?->type,
 );
 
+// CleanImageSizes: of the core sizes, WordPress writes only the thumbnail on upload.
+$imageSizes = get_intermediate_image_sizes();
+
+$results->true(
+    'the thumbnail is the only core image size written on upload',
+    in_array('thumbnail', $imageSizes, true) && array_intersect(['medium', 'medium_large', 'large'], $imageSizes) === [],
+);
+
 // ──────────────────────────────────────────────
 // Block bindings
 // ──────────────────────────────────────────────

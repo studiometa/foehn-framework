@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Studiometa\Foehn\Config\FoehnConfig;
 use Studiometa\Foehn\Hooks\Cleanup\CleanContent;
 use Studiometa\Foehn\Hooks\Cleanup\CleanHeadTags;
+use Studiometa\Foehn\Hooks\Cleanup\CleanImageSizes;
 use Studiometa\Foehn\Hooks\Cleanup\DisableEmoji;
 use Studiometa\Foehn\Hooks\Cleanup\DisableGlobalStyles;
 use Studiometa\Foehn\Hooks\Cleanup\DisableOembed;
@@ -31,6 +32,10 @@ return new FoehnConfig(
         // prefixes from archive titles: the archive template prints the name alone.
         CleanContent::class,
         CleanHeadTags::class,
+        // Glide sizes the plates from the original, so of the core sizes WordPress
+        // writes only the thumbnail the media library shows. The card and hero
+        // sizes of Demo\ImageSizes stay.
+        CleanImageSizes::class,
         DisableEmoji::class,
         // The theme ships no theme.json, so the inline global styles WordPress prints
         // from its defaults style nothing of ours.
