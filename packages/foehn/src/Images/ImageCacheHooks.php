@@ -48,12 +48,28 @@ final readonly class ImageCacheHooks
         $this->forget($attachmentId);
     }
 
+    /**
+     * Forget the transforms of the attached file, and of the full-size original
+     * when WordPress keeps one beside it.
+     *
+     * A large upload is scaled down to `-scaled`, which becomes the attached file;
+     * the upload itself stays as `original_image`. With client-side media
+     * processing (WordPress 7.1), the file is swapped only after the upload, so a
+     * transform asked for in between is cached under the original's path — and
+     * would never be forgotten through the attached file's URL alone.
+     */
     private function forget(int $attachmentId): void
     {
         $src = wp_get_attachment_url($attachmentId);
 
         if (is_string($src) && $src !== '') {
             $this->transformer->forget($src);
+        }
+
+        $original = wp_get_original_image_url($attachmentId);
+
+        if (is_string($original) && $original !== '' && $original !== $src) {
+            $this->transformer->forget($original);
         }
     }
 }
