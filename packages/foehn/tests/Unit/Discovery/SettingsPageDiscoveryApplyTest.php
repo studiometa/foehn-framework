@@ -2,11 +2,9 @@
 
 declare(strict_types=1);
 
-use Studiometa\Foehn\Contracts\ViewEngineInterface;
 use Studiometa\Foehn\Discovery\DiscoveryProblems;
 use Studiometa\Foehn\Discovery\SettingsPageDiscovery;
 use Studiometa\Foehn\Settings\Settings;
-use Tempest\Container\GenericContainer;
 use Tests\Fixtures\Settings\ThemeSettingsFixture;
 use Tests\Fixtures\Settings\TopLevelSettingsFixture;
 
@@ -38,53 +36,21 @@ function runAdminMenu(): void
 }
 
 /**
- * A view engine that records what it was asked to render.
+ * The HTML the page callback prints.
  */
-function recordingViewEngine(): ViewEngineInterface
+function renderedPage(string $menu = 'add_submenu_page'): string
 {
-    return new class implements ViewEngineInterface {
-        /** @var list<array{template: string, context: array<string, mixed>|object}> */
-        public static array $rendered = [];
+    ob_start();
+    wp_stub_get_calls($menu)[0]['args']['callback']();
 
-        public function render(string $template, array|object $context = []): string
-        {
-            self::$rendered[] = ['template' => $template, 'context' => $context];
-
-            return '<p class="twig">rendered ' . $template . '</p>';
-        }
-
-        public function renderFirst(array $templates, array|object $context = []): string
-        {
-            return $this->render($templates[0] ?? '', $context);
-        }
-
-        public function exists(string $template): bool
-        {
-            return true;
-        }
-
-        public function share(string $key, mixed $value): void {}
-
-        public function getShared(): array
-        {
-            return [];
-        }
-    };
+    return (string) ob_get_clean();
 }
 
 beforeEach(function () {
     wp_stub_reset();
     Settings::clear();
 
-    ThemeSettingsFixture::$rendered = 0;
-
-    $this->view = recordingViewEngine();
-    $this->view::$rendered = [];
-
-    $this->container = new GenericContainer();
-    $this->container->singleton(ViewEngineInterface::class, fn() => $this->view);
-
-    $this->discovery = new SettingsPageDiscovery($this->container, new DiscoveryProblems());
+    $this->discovery = new SettingsPageDiscovery(new DiscoveryProblems());
 });
 
 describe('SettingsPageDiscovery::apply', function () {
@@ -97,6 +63,7 @@ describe('SettingsPageDiscovery::apply', function () {
             'foehn_show_banner',
             'foehn_posts_per_page',
             'foehn_ratio',
+            'foehn_layout',
         ]);
     });
 
@@ -143,13 +110,17 @@ describe('SettingsPageDiscovery::apply', function () {
         // A setting with no sanitiser stores whatever was posted.
         expect(registeredSettings()['foehn_show_banner']['sanitize_callback'])->toBe('rest_sanitize_boolean');
         expect(registeredSettings()['foehn_posts_per_page']['sanitize_callback'])->toBe('absint');
+        expect(registeredSettings()['foehn_contact_email']['sanitize_callback'])->toBe('sanitize_email');
     });
 
-    it('takes a declared function name over the default', function () {
+    it('keeps a select to one of its options', function () {
         discoverFixture($this->discovery, ThemeSettingsFixture::class);
         $this->discovery->apply();
 
-        expect(registeredSettings()['foehn_contact_email']['sanitize_callback'])->toBe('sanitize_email');
+        $callback = registeredSettings()['foehn_layout']['sanitize_callback'];
+
+        expect($callback('list'))->toBe('list');
+        expect($callback('<script>'))->toBe('grid');
     });
 
     it('resolves a sanitiser named on the page class', function () {
@@ -193,108 +164,60 @@ describe('SettingsPageDiscovery::apply', function () {
     });
 });
 
-describe('SettingsPageDiscovery form body', function () {
-    it('renders a declared template through the view engine', function () {
-        discoverFixture($this->discovery, TopLevelSettingsFixture::class);
+describe('SettingsPageDiscovery form', function () {
+    it('adds one field for each setting, on admin_menu, in one untitled section', function () {
+        discoverFixture($this->discovery, ThemeSettingsFixture::class);
         $this->discovery->apply();
+
+        expect(wp_stub_get_calls('add_settings_field'))->toBeEmpty();
+
         runAdminMenu();
 
-        ob_start();
-        wp_stub_get_calls('add_menu_page')[0]['args']['callback']();
-        $html = (string) ob_get_clean();
+        $section = wp_stub_get_calls('add_settings_section')[0]['args'];
+        $fields = array_column(wp_stub_get_calls('add_settings_field'), 'args');
 
-        expect($this->view::$rendered[0]['template'])->toBe('settings/shop');
-        expect($html)->toContain('rendered settings/shop');
+        expect($section['page'])->toBe('theme-settings');
+        expect($section['title'])->toBe('');
+        expect(array_column($fields, 'id'))->toBe(array_keys(ThemeSettingsFixture::settings()));
+        expect(array_column($fields, 'page'))->each->toBe('theme-settings');
     });
 
-    it('gives the template the current values, typed as the page declared them', function () {
-        update_option('foehn_currency', 'GBP');
-
-        discoverFixture($this->discovery, TopLevelSettingsFixture::class);
-        $this->discovery->apply();
-        runAdminMenu();
-
-        ob_start();
-        wp_stub_get_calls('add_menu_page')[0]['args']['callback']();
-        ob_end_clean();
-
-        $context = $this->view::$rendered[0]['context'];
-
-        expect($context['settings'])->toBe(['foehn_currency' => 'GBP']);
-        expect($context['page'])->toBe(['slug' => 'shop-settings', 'title' => 'Shop']);
-    });
-
-    it('gives the template the declared default before anything is saved', function () {
-        discoverFixture($this->discovery, TopLevelSettingsFixture::class);
-        $this->discovery->apply();
-        runAdminMenu();
-
-        ob_start();
-        wp_stub_get_calls('add_menu_page')[0]['args']['callback']();
-        ob_end_clean();
-
-        expect($this->view::$rendered[0]['context']['settings'])->toBe(['foehn_currency' => 'EUR']);
-    });
-
-    it('asks the page rather than the view engine when it builds its own form', function () {
+    it('labels each field, with the option name when no label was declared', function () {
         discoverFixture($this->discovery, ThemeSettingsFixture::class);
         $this->discovery->apply();
         runAdminMenu();
 
-        ob_start();
-        wp_stub_get_calls('add_submenu_page')[0]['args']['callback']();
-        $html = (string) ob_get_clean();
+        $titles = array_column(array_column(wp_stub_get_calls('add_settings_field'), 'args'), 'title', 'id');
 
-        expect($html)->toContain('the form fields');
-        expect(ThemeSettingsFixture::$rendered)->toBe(1);
-        expect($this->view::$rendered)->toBe([]);
+        expect($titles['foehn_contact_email'])->toBe('Contact email');
+        expect($titles['foehn_posts_per_page'])->toBe('foehn_posts_per_page');
     });
-});
 
-describe('SettingsPageDiscovery page shell', function () {
-    it('wraps the page own fields in a form options.php accepts', function () {
+    it('ties the row label to the field, except for a checkbox that labels itself', function () {
         discoverFixture($this->discovery, ThemeSettingsFixture::class);
         $this->discovery->apply();
         runAdminMenu();
 
-        ob_start();
-        wp_stub_get_calls('add_submenu_page')[0]['args']['callback']();
-        $html = (string) ob_get_clean();
+        $args = array_column(array_column(wp_stub_get_calls('add_settings_field'), 'args'), 'args', 'id');
 
-        expect($html)->toContain('<form action="options.php" method="post">');
-        expect($html)->toContain('<h1>Theme settings</h1>');
-        expect($html)->toContain('the form fields');
-        expect(ThemeSettingsFixture::$rendered)->toBe(1);
+        expect($args['foehn_contact_email'])->toBe(['label_for' => 'foehn_contact_email']);
+        expect($args['foehn_show_banner'])->toBe([]);
     });
 
-    it('prints the nonce the page cannot forget because it never writes it', function () {
+    it('draws each field with its current value', function () {
+        update_option('foehn_contact_email', 'hello@example.com');
+        update_option('foehn_layout', 'list');
+
         discoverFixture($this->discovery, ThemeSettingsFixture::class);
         $this->discovery->apply();
         runAdminMenu();
 
-        ob_start();
-        wp_stub_get_calls('add_submenu_page')[0]['args']['callback']();
-        ob_end_clean();
+        $html = renderedPage();
 
-        // Without settings_fields() the save is rejected, and the page would
-        // look like it simply did not work.
-        expect(wp_stub_get_calls('settings_fields')[0]['args']['optionGroup'])->toBe('theme-settings');
-        expect(wp_stub_get_calls('do_settings_sections'))->toHaveCount(1);
-        expect(wp_stub_get_calls('submit_button'))->toHaveCount(1);
-        expect(wp_stub_get_calls('settings_errors'))->toHaveCount(1);
-    });
-
-    it('escapes the title it prints', function () {
-        discoverFixture($this->discovery, ThemeSettingsFixture::class);
-        $this->discovery->apply();
-        runAdminMenu();
-
-        ob_start();
-        wp_stub_get_calls('add_submenu_page')[0]['args']['callback']();
-        $html = (string) ob_get_clean();
-
-        expect($html)->not->toContain('<h1><script');
-        expect($html)->toContain(esc_html('Theme settings'));
+        expect($html)
+            ->toContain('<input type="email" id="foehn_contact_email" name="foehn_contact_email" value="hello@example.com" class="regular-text" />')
+            ->toContain('<option value="list" selected="selected">List</option>')
+            ->toContain('value="1.5" step="any" class="small-text"');
     });
 });
 

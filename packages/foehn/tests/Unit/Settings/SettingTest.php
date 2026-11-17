@@ -58,7 +58,51 @@ describe('Setting', function () {
         expect(Setting::class)->toBeReadonlyClass();
     });
 
-    it('carries a description, which only shows through REST', function () {
-        expect(Setting::string(showInRest: true, description: 'Who to write to')->description)->toBe('Who to write to');
+    it('carries a description, shown under the field and in REST', function () {
+        expect(Setting::string(description: 'Who to write to')->description)->toBe('Who to write to');
+    });
+
+    it('labels its field with the declared label, or the option name', function () {
+        expect(Setting::string(label: 'Phone')->label('theme_phone'))->toBe('Phone');
+        expect(Setting::string()->label('theme_phone'))->toBe('theme_phone');
+    });
+
+    it('picks the native control each type is edited with', function () {
+        expect(Setting::string()->control)->toBe('text');
+        expect(Setting::string(control: 'textarea')->control)->toBe('textarea');
+        expect(Setting::bool()->control)->toBe('checkbox');
+        expect(Setting::int()->control)->toBe('number');
+        expect(Setting::number()->control)->toBe('number');
+    });
+
+    it('becomes a select when it offers options', function () {
+        expect(Setting::string(options: ['a' => 'A'])->control)->toBe('select');
+        expect(Setting::int(options: [3 => 'Three'])->control)->toBe('select');
+    });
+
+    it('refuses a control a string cannot use', function () {
+        Setting::string(control: 'checkbox');
+    })->throws(InvalidArgumentException::class, 'Unknown control "checkbox"');
+
+    it('falls back to a sanitiser its control implies', function () {
+        expect(Setting::string(control: 'email')->sanitizer())->toBe('sanitize_email');
+        expect(Setting::string(control: 'url')->sanitizer())->toBe('esc_url_raw');
+        expect(Setting::string(control: 'textarea')->sanitizer())->toBe('sanitize_textarea_field');
+        expect(Setting::string(control: 'tel')->sanitizer())->toBe('sanitize_text_field');
+    });
+
+    it('keeps a select to one of its options, or the default', function () {
+        $sanitize = Setting::int(default: 3, options: [3 => '3', 6 => '6'])->sanitizer();
+
+        expect($sanitize('6'))->toBe(6);
+        expect($sanitize('7'))->toBe(3);
+        expect($sanitize(['6']))->toBe(3);
+    });
+
+    it('names its sanitiser for inspect', function () {
+        expect(Setting::string()->sanitizerName())->toBe('sanitize_text_field');
+        expect(Setting::string(options: ['a' => 'A'])->sanitizerName())->toBe('one of the options');
+        expect(Setting::number(sanitize: 'clampRatio')->sanitizerName(ThemeSettingsFixture::class))
+            ->toBe(ThemeSettingsFixture::class . '::clampRatio');
     });
 });

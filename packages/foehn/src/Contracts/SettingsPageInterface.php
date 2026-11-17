@@ -9,9 +9,8 @@ use Studiometa\Foehn\Settings\Setting;
 /**
  * What a settings page stores.
  *
- * Implemented alongside #[AsSettingsPage]. How the form looks is a separate
- * question, answered either by a Twig template named on the attribute or by
- * SettingsFormInterface.
+ * Implemented alongside #[AsSettingsPage]. Each Setting also says which field
+ * edits it, and Føhn draws the form from them.
  */
 interface SettingsPageInterface
 {

@@ -114,13 +114,13 @@ final readonly class Registrations
             $options = [];
 
             foreach ($settings as $name => $setting) {
-                $sanitizer = $setting->sanitizer($className);
-
                 $options[] = [
                     'option' => $name,
                     'type' => $setting->type,
+                    'label' => $setting->label($name),
+                    'control' => $setting->control,
                     'default' => $setting->default,
-                    'sanitize' => is_array($sanitizer) ? implode('::', $sanitizer) : $sanitizer,
+                    'sanitize' => $setting->sanitizerName($className),
                     'sanitizeDeclared' => $setting->sanitize !== null,
                     'sanitizeOnWpCli' => true,
                     'showInRest' => $setting->showInRest,

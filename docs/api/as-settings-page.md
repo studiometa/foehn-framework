@@ -22,7 +22,6 @@ final readonly class AsSettingsPage
         public string $capability = 'manage_options',
         public ?string $icon = null,
         public ?int $position = null,
-        public ?string $template = null,
     ) {}
 
     public function menuTitle(): string;
@@ -40,7 +39,6 @@ final readonly class AsSettingsPage
 | `capability` | `string`  | `'manage_options'`      | What a user needs to reach the page                                   |
 | `icon`       | `?string` | `null`                  | Dashicon, URL or base64 SVG. Top-level pages only                     |
 | `position`   | `?int`    | `null`                  | Where in the menu. Top-level pages only                               |
-| `template`   | `?string` | `null`                  | A Twig template rendered as the body of the form                      |
 
 ## SettingsPageInterface
 
@@ -60,51 +58,37 @@ interface SettingsPageInterface
 
 Required. A class carrying the attribute without it is refused during discovery, because there is nothing to register.
 
-## The form body
+## The form
 
-A page supplies it in one of two ways, and discovery refuses a page that supplies neither.
-
-### A Twig template
-
-`template: 'settings/theme-settings'` on the attribute. The template is rendered through `ViewEngineInterface` and receives:
-
-| Variable   | Contents                                                      |
-| ---------- | ------------------------------------------------------------- |
-| `settings` | The current value of each declared setting, typed as declared |
-| `page`     | `slug` and `title`                                            |
-
-### SettingsFormInterface
-
-```php
-<?php
-
-namespace Studiometa\Foehn\Contracts;
-
-interface SettingsFormInterface
-{
-    public function form(): string;
-}
-```
-
-For a form that needs more than the page's own values. Returns the HTML rather than echoing it, like `TemplateControllerInterface::handle()`; the page is resolved from the container, so a `ViewEngineInterface` in its constructor renders Twig here too. Implementing it takes precedence over a `template`.
+Føhn draws it. On `admin_menu` it adds one untitled section to the page and one `add_settings_field()` for each setting, with the label in the row header (`label_for`, except for a checkbox, which labels itself). Each field shows the value `Settings::get()` answers. See [Fields](/guide/settings-pages#fields).
 
 ## Setting
 
 ```php
-Setting::string(string $default = '', ?string $sanitize = null, bool $showInRest = false, string $description = '')
-Setting::bool(bool $default = false, …)
-Setting::int(int $default = 0, …)
-Setting::number(float $default = 0.0, …)
+Setting::string(string $default = '', string $label = '', string $description = '', string $control = 'text', array $options = [], ?string $sanitize = null, bool $showInRest = false)
+Setting::bool(bool $default = false, string $label = '', string $description = '', ?string $sanitize = null, bool $showInRest = false)
+Setting::int(int $default = 0, string $label = '', string $description = '', array $options = [], ?string $sanitize = null, bool $showInRest = false)
+Setting::number(float $default = 0.0, string $label = '', string $description = '', ?string $sanitize = null, bool $showInRest = false)
 ```
 
-| Type      | Default sanitiser       |
-| --------- | ----------------------- |
-| `string`  | `sanitize_text_field`   |
-| `boolean` | `rest_sanitize_boolean` |
-| `integer` | `absint`                |
-| `number`  | `floatval`              |
+| Parameter     | Description                                                                                    |
+| ------------- | ---------------------------------------------------------------------------------------------- |
+| `label`       | The field label. The option name when it is empty                                              |
+| `description` | The help text under the field, and the REST schema description when `showInRest` is on         |
+| `control`     | `text`, `textarea`, `email`, `url` or `tel`. Any other value throws `InvalidArgumentException` |
+| `options`     | value => label. Makes the field a `<select>`                                                   |
+| `sanitize`    | A function name, or the name of a public static method on the page class — never a closure     |
+| `showInRest`  | Off by default, unlike `#[AsPostMeta]`                                                         |
 
-`sanitize` takes a function name, or the name of a public static method on the page class — never a closure. `showInRest` is off by default, unlike `#[AsPostMeta]`; `description` only has an effect when it is on.
+| Control                        | Default sanitiser                                   |
+| ------------------------------ | --------------------------------------------------- |
+| `text`, `tel`                  | `sanitize_text_field`                               |
+| `textarea`                     | `sanitize_textarea_field`                           |
+| `email`                        | `sanitize_email`                                    |
+| `url`                          | `esc_url_raw`                                       |
+| `checkbox` (`bool()`)          | `rest_sanitize_boolean`                             |
+| `number` (`int()`, `number()`) | `absint`, `floatval`                                |
+| `select` (`options`)           | Keeps one of the options, and the default otherwise |
 
 ## Settings
 
@@ -118,9 +102,10 @@ Studiometa\Foehn\Settings\Settings::all(): array;
 
 ## Notes
 
-- **Two hooks.** `register_setting()` runs on `init`; the menu entry is added on `admin_menu`, which the discovery hooks itself.
+- **Two hooks.** `register_setting()` runs on `init`; the menu entry and the fields are added on `admin_menu`, which the discovery hooks itself.
+- **The page cache.** A change to a declared setting empties the whole page cache.
 - **Option names are global.** The Settings API has no namespacing, so prefix them.
-- **No field abstraction**, by decision. See the [guide](/guide/settings-pages#what-the-framework-gives-you-and-what-it-does-not).
+- **Native controls only.** No media picker, repeater or conditional field. See the [guide](/guide/settings-pages#fields).
 
 ## Related
 

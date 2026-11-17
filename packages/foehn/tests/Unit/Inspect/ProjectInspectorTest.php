@@ -229,7 +229,7 @@ describe('ProjectInspector', function () {
             ->toBe(array_keys(inspectedRow($rows, 'name', 'brand')));
     });
 
-    it('reports settings pages with the option, type, default and sanitizer of each setting', function () {
+    it('reports settings pages with the option, type, field, default and sanitizer of each setting', function () {
         expect(inspector()->section('settings'))->toBe([
             [
                 'page' => 'shop-settings',
@@ -240,6 +240,8 @@ describe('ProjectInspector', function () {
                     [
                         'option' => 'shop_contact_email',
                         'type' => 'string',
+                        'label' => 'shop_contact_email',
+                        'control' => 'text',
                         'default' => '',
                         'sanitize' => 'sanitize_email',
                         'sanitizeDeclared' => true,
@@ -249,6 +251,8 @@ describe('ProjectInspector', function () {
                     [
                         'option' => 'shop_show_banner',
                         'type' => 'boolean',
+                        'label' => 'shop_show_banner',
+                        'control' => 'checkbox',
                         'default' => true,
                         // None declared: the type's own sanitizer still runs.
                         'sanitize' => 'rest_sanitize_boolean',
@@ -259,6 +263,8 @@ describe('ProjectInspector', function () {
                     [
                         'option' => 'shop_currency',
                         'type' => 'string',
+                        'label' => 'shop_currency',
+                        'control' => 'text',
                         'default' => 'EUR',
                         'sanitize' => ShopSettings::class . '::normalizeCurrency',
                         'sanitizeDeclared' => true,

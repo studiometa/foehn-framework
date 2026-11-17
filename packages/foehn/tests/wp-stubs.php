@@ -1449,10 +1449,53 @@ if (!function_exists('settings_fields')) {
     }
 }
 
+if (!function_exists('add_settings_section')) {
+    /**
+     * @param array<string, mixed> $args
+     */
+    function add_settings_section(string $id, string $title, ?callable $callback, string $page, array $args = []): void
+    {
+        wp_stub_record('add_settings_section', compact('id', 'title', 'callback', 'page', 'args'));
+    }
+}
+
+if (!function_exists('add_settings_field')) {
+    /**
+     * @param array<string, mixed> $args
+     */
+    function add_settings_field(
+        string $id,
+        string $title,
+        callable $callback,
+        string $page,
+        string $section = 'default',
+        array $args = [],
+    ): void {
+        wp_stub_record('add_settings_field', compact('id', 'title', 'callback', 'page', 'section', 'args'));
+    }
+}
+
 if (!function_exists('do_settings_sections')) {
+    /**
+     * Print the fields added to the page as rows, as WordPress does.
+     */
     function do_settings_sections(string $page): void
     {
         wp_stub_record('do_settings_sections', compact('page'));
+
+        echo '<table class="form-table" role="presentation">';
+
+        foreach (wp_stub_get_calls('add_settings_field') as $call) {
+            if ($call['args']['page'] !== $page) {
+                continue;
+            }
+
+            echo '<tr><th scope="row">' . $call['args']['title'] . '</th><td>';
+            $call['args']['callback']();
+            echo '</td></tr>';
+        }
+
+        echo '</table>';
     }
 }
 
