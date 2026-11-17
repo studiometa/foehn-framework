@@ -14,7 +14,6 @@ declare(strict_types=1);
 
 use Studiometa\Foehn\Config\FoehnConfig;
 use Studiometa\Foehn\Contracts\ImageTransformer;
-use Studiometa\Foehn\Contracts\ViewEngineInterface;
 use Studiometa\Foehn\Discovery;
 use Studiometa\Foehn\Discovery\CliCommandDiscovery;
 use Studiometa\Foehn\Discovery\DiscoveryRunner;
@@ -377,6 +376,9 @@ $results->same(
 // its own. WP-CLI also runs with no user, and add_submenu_page() refuses a page
 // the current user cannot see — so this asks as an administrator.
 require_once ABSPATH . 'wp-admin/includes/plugin.php';
+// add_settings_field() and do_settings_sections(), which the admin loads before
+// `admin_menu`.
+require_once ABSPATH . 'wp-admin/includes/template.php';
 
 wp_set_current_user(1);
 
@@ -391,23 +393,30 @@ $results->true('the settings page is added under Appearance', in_array(
     true,
 ));
 
-// The form is a Twig template, like every other view in the theme. Rendering it
-// through the real view engine is the only way to know the template resolves
-// and its context reaches it — the unit suite renders through a fake.
-$results->true('the settings form renders from its Twig template', str_contains(
-    Kernel::get(ViewEngineInterface::class)->render('settings/theme-settings', [
-        'settings' => ['demo_contact_email' => 'hello@example.com'],
-    ]),
-    'hello@example.com',
-));
+// Føhn draws the form with add_settings_field(), and do_settings_sections() is
+// what the page prints. Drawing it here is the only way to know the fields reach
+// WordPress's own table — the unit suite draws through stubs.
+// The value is filtered, not saved: a save would empty the page cache.
+$bannerText = static fn(): string => 'A "demo" site';
+add_filter('pre_option_demo_banner_text', $bannerText);
 
-// Timber's autoescape is off, so the template escapes each value itself. A quote in
-// the banner text that reached the attribute raw would end it, and the next save
-// would store the text cut at the quote.
+ob_start();
+do_settings_sections('theme-settings');
+$settingsForm = (string) ob_get_clean();
+
+remove_filter('pre_option_demo_banner_text', $bannerText);
+
+$results->true(
+    'the settings form draws a native field for each setting',
+    str_contains($settingsForm, '<input type="email" id="demo_contact_email" name="demo_contact_email"')
+        && str_contains($settingsForm, '<select id="demo_posts_per_archive" name="demo_posts_per_archive">')
+        && str_contains($settingsForm, '<label for="demo_banner_text">Banner text</label>'),
+);
+
+// A quote in the banner text that reached the attribute raw would end it, and the
+// next save would store the text cut at the quote.
 $results->true('the settings form escapes a quote in a text value', str_contains(
-    Kernel::get(ViewEngineInterface::class)->render('settings/theme-settings', [
-        'settings' => ['demo_banner_text' => 'A "demo" site'],
-    ]),
+    $settingsForm,
     'value="A &quot;demo&quot; site"',
 ));
 

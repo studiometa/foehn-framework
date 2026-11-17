@@ -6,6 +6,7 @@ namespace Studiometa\Foehn\PageCache;
 
 use Studiometa\Foehn\Config\PageCacheConfig;
 use Studiometa\Foehn\Contracts\JobDispatcher;
+use Studiometa\Foehn\Settings\Settings;
 use WP_Post;
 use WP_Term;
 
@@ -297,10 +298,13 @@ final class Purger
 
     /**
      * Full-flush the cache when an option the whole site renders from changed.
+     *
+     * The settings a theme declares count as such options: a phone number or a
+     * social link is in the header or the footer of every page.
      */
     private function onUpdatedOption(string $option): void
     {
-        if (!in_array($option, self::FLUSHING_OPTIONS, true)) {
+        if (!in_array($option, self::FLUSHING_OPTIONS, true) && !Settings::has($option)) {
             return;
         }
 

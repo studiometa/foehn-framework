@@ -6,24 +6,23 @@ namespace Studiometa\Foehn\Discovery;
 
 use Studiometa\Foehn\Attributes\AsDiscovery;
 use Studiometa\Foehn\Attributes\AsSettingsPage;
-use Studiometa\Foehn\Contracts\SettingsFormInterface;
 use Studiometa\Foehn\Contracts\SettingsPageInterface;
-use Studiometa\Foehn\Contracts\ViewEngineInterface;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
 use Studiometa\Foehn\Settings\Setting;
+use Studiometa\Foehn\Settings\SettingField;
 use Studiometa\Foehn\Settings\Settings;
-use Tempest\Container\Container;
 use Tempest\Discovery\Discovery;
 use Tempest\Discovery\DiscoveryLocation;
 use Tempest\Reflection\ClassReflector;
 
 /**
- * Discovers classes marked with #[AsSettingsPage] and registers their settings
- * and their admin page.
+ * Discovers classes marked with #[AsSettingsPage] and registers their settings,
+ * their admin page and its form.
  *
  * Two hooks, not one. `register_setting()` belongs on `init`, which is this
- * phase; the menu entry belongs on `admin_menu`, which apply() hooks itself —
- * one discovery wanting a different hook is not a reason for a fourth phase.
+ * phase; the menu entry and the fields belong on `admin_menu`, which apply()
+ * hooks itself — one discovery wanting a different hook is not a reason for a
+ * fourth phase.
  */
 #[AsDiscovery(phase: DiscoveryPhase::Main)]
 final class SettingsPageDiscovery implements Discovery
@@ -31,7 +30,6 @@ final class SettingsPageDiscovery implements Discovery
     use IsWpDiscovery;
 
     public function __construct(
-        private readonly Container $container,
         private readonly DiscoveryProblems $problems,
     ) {}
 
@@ -69,26 +67,6 @@ final class SettingsPageDiscovery implements Discovery
             return;
         }
 
-        $buildsItsOwnForm = $class->implements(SettingsFormInterface::class);
-
-        // Without one or the other there is nothing between the heading and the
-        // submit button, and the page renders as an empty form.
-        if ($attribute->template === null && !$buildsItsOwnForm) {
-            $this->problems->report(
-                $location,
-                $class->getName(),
-                '#[AsSettingsPage]',
-                sprintf('%s declares no form, so the settings page would render an empty form.', $class->getName()),
-                sprintf(
-                    'Name a `template` on #[AsSettingsPage], or declare %s with `implements \\%s`.',
-                    $class->getName(),
-                    SettingsFormInterface::class,
-                ),
-            );
-
-            return;
-        }
-
         /** @var array<string, Setting> $settings */
         $settings = $class->getName()::settings();
 
@@ -99,7 +77,6 @@ final class SettingsPageDiscovery implements Discovery
             // declares, and the declaration belongs in the cache with the rest
             // of the item.
             'settings' => $settings,
-            'buildsItsOwnForm' => $buildsItsOwnForm,
         ]);
     }
 
@@ -118,11 +95,10 @@ final class SettingsPageDiscovery implements Discovery
             $this->registerSettings($item);
         }
 
-        $container = $this->container;
-
-        add_action('admin_menu', function () use ($items, $container): void {
+        add_action('admin_menu', function () use ($items): void {
             foreach ($items as $item) {
-                $this->registerPage($item, $container);
+                $this->registerPage($item);
+                $this->registerFields($item);
             }
         });
     }
@@ -161,13 +137,13 @@ final class SettingsPageDiscovery implements Discovery
      *
      * @param array<string, mixed> $item
      */
-    private function registerPage(array $item, Container $container): void
+    private function registerPage(array $item): void
     {
         /** @var AsSettingsPage $attribute */
         $attribute = $item['attribute'];
 
-        $render = function () use ($attribute, $container, $item): void {
-            $this->renderPage($attribute, $this->form($attribute, $container, $item));
+        $render = function () use ($attribute): void {
+            $this->renderPage($attribute);
         };
 
         if ($attribute->parent !== null) {
@@ -215,62 +191,46 @@ final class SettingsPageDiscovery implements Discovery
     }
 
     /**
-     * The body of the form, from whichever of the two places supplies it.
+     * Add a field for each setting, in one untitled section of the page.
      *
-     * The page wins when it implements SettingsFormInterface: a class that went
-     * to the trouble of building its form means it, and a template left on the
-     * attribute is likely to be the one it renders itself.
+     * `do_settings_sections()` prints them as the rows of a `form-table`, with
+     * the label in the row header, as on the WordPress settings screens. A
+     * checkbox gets no `label_for`: its own label holds the box and its text.
      *
      * @param array<string, mixed> $item
      */
-    private function form(AsSettingsPage $attribute, Container $container, array $item): string
+    private function registerFields(array $item): void
     {
-        /** @var class-string $className */
-        $className = $item['className'];
+        /** @var AsSettingsPage $attribute */
+        $attribute = $item['attribute'];
+        /** @var array<string, Setting> $settings */
+        $settings = $item['settings'];
 
-        if ($item['buildsItsOwnForm']) {
-            /** @var SettingsFormInterface $page */
-            $page = $container->get($className);
+        // No title and nothing printed above the fields: the page heading names them.
+        add_settings_section('default', '', static function (): void {}, $attribute->slug);
 
-            return $page->form();
+        foreach ($settings as $name => $setting) {
+            add_settings_field(
+                $name,
+                esc_html($setting->label($name)),
+                static function () use ($name, $setting): void {
+                    echo SettingField::render($name, $setting, Settings::get($name));
+                },
+                $attribute->slug,
+                'default',
+                $setting->control === 'checkbox' ? [] : ['label_for' => $name],
+            );
         }
-
-        /** @var ViewEngineInterface $view */
-        $view = $container->get(ViewEngineInterface::class);
-
-        return $view->render((string) $attribute->template, [
-            'page' => ['slug' => $attribute->slug, 'title' => $attribute->title],
-            // The current values, typed as the page declared them, so a template
-            // reads `settings.show_banner` and gets a boolean.
-            'settings' => self::values($item['settings']),
-        ]);
     }
 
     /**
-     * The current value of each of a page's settings.
-     *
-     * @param array<string, Setting> $settings
-     * @return array<string, mixed>
-     */
-    private static function values(array $settings): array
-    {
-        $values = [];
-
-        foreach (array_keys($settings) as $name) {
-            $values[$name] = Settings::get($name);
-        }
-
-        return $values;
-    }
-
-    /**
-     * The page shell WordPress expects, around the page's own form fields.
+     * The page WordPress expects: the heading, the notices and the form.
      *
      * `settings_fields()` prints the nonce and the option group without which
-     * `options.php` rejects the save; the page cannot forget it because it never
-     * writes it.
+     * `options.php` rejects the save, and `do_settings_sections()` prints the
+     * fields registerFields() added.
      */
-    private function renderPage(AsSettingsPage $attribute, string $form): void
+    private function renderPage(AsSettingsPage $attribute): void
     {
         echo '<div class="wrap">';
         echo '<h1>' . esc_html($attribute->title) . '</h1>';
@@ -281,9 +241,6 @@ final class SettingsPageDiscovery implements Discovery
 
         settings_fields($attribute->slug);
         do_settings_sections($attribute->slug);
-
-        echo $form;
-
         submit_button();
 
         echo '</form>';

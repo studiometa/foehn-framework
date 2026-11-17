@@ -11,7 +11,7 @@ use Studiometa\Foehn\Settings\Setting;
 /**
  * A settings page with a declared sanitizer, a type default one, and one of its own.
  */
-#[AsSettingsPage(slug: 'shop-settings', title: 'Shop settings', template: 'settings/shop')]
+#[AsSettingsPage(slug: 'shop-settings', title: 'Shop settings')]
 final class ShopSettings implements SettingsPageInterface
 {
     public static function settings(): array

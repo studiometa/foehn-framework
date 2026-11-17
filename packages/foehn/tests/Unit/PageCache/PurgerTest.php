@@ -231,6 +231,26 @@ describe('Purger: batching', function () {
         expect($this->purger->isFlushQueued())->toBeTrue();
     });
 
+    it('flushes when a site option or a declared setting changes, and not for another option', function () {
+        \Studiometa\Foehn\Settings\Settings::clear();
+        \Studiometa\Foehn\Settings\Settings::declare(['theme_phone' => \Studiometa\Foehn\Settings\Setting::string()]);
+        $this->purger->register();
+
+        $onUpdatedOption = array_values(array_filter(
+            wp_stub_get_calls('add_action'),
+            static fn(array $call): bool => $call['args']['hook'] === 'updated_option',
+        ))[0]['args']['callback'];
+
+        $onUpdatedOption('some_plugin_state');
+        expect($this->purger->isFlushQueued())->toBeFalse();
+
+        // A phone number or a social link is in the header or the footer of every page.
+        $onUpdatedOption('theme_phone');
+        expect($this->purger->isFlushQueued())->toBeTrue();
+
+        \Studiometa\Foehn\Settings\Settings::clear();
+    });
+
     it('queues nothing more once a flush is queued', function () {
         $this->purger->queueFlush();
         $this->purger->purgePost(pageCachePost(12)->ID);

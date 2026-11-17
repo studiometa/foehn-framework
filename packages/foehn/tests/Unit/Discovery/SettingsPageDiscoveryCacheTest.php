@@ -7,16 +7,14 @@ use Studiometa\Foehn\Discovery\DiscoveryProblems;
 use Studiometa\Foehn\Discovery\SettingsPageDiscovery;
 use Studiometa\Foehn\Settings\Setting;
 use Studiometa\Foehn\Settings\Settings;
-use Tempest\Container\GenericContainer;
 use Tests\Fixtures\Settings\ThemeSettingsFixture;
 
 beforeEach(function () {
     wp_stub_reset();
     Settings::clear();
 
-    $this->container = new GenericContainer();
     $this->location = testDiscoveryLocation();
-    $this->discovery = new SettingsPageDiscovery($this->container, new DiscoveryProblems());
+    $this->discovery = new SettingsPageDiscovery(new DiscoveryProblems());
 });
 
 describe('SettingsPageDiscovery caching', function () {
@@ -31,7 +29,7 @@ describe('SettingsPageDiscovery caching', function () {
 
         $restored = restoreThroughCacheFile(
             $this->discovery,
-            new SettingsPageDiscovery($this->container, new DiscoveryProblems()),
+            new SettingsPageDiscovery(new DiscoveryProblems()),
         );
 
         expect(iterator_to_array($restored->getItems()))->toEqual(iterator_to_array($this->discovery->getItems()));
@@ -44,7 +42,7 @@ describe('SettingsPageDiscovery caching', function () {
 
         $item = restoreThroughCacheFile(
             $this->discovery,
-            new SettingsPageDiscovery($this->container, new DiscoveryProblems()),
+            new SettingsPageDiscovery(new DiscoveryProblems()),
         )
             ->getItems()
             ->getForLocation($this->location)[0];
@@ -59,10 +57,10 @@ describe('SettingsPageDiscovery caching', function () {
 
         restoreThroughCacheFile(
             $this->discovery,
-            new SettingsPageDiscovery($this->container, new DiscoveryProblems()),
+            new SettingsPageDiscovery(new DiscoveryProblems()),
         )->apply();
 
-        expect(wp_stub_get_calls('register_setting'))->toHaveCount(4);
+        expect(wp_stub_get_calls('register_setting'))->toHaveCount(5);
         expect(Settings::get('foehn_posts_per_page'))->toBe(10);
     });
 });

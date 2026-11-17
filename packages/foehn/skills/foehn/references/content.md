@@ -245,7 +245,7 @@ There is no `add-*` command for a post type archive: add its URL with `add-custo
 
 ## Settings pages
 
-An admin screen on the WordPress Settings API, for a few site-wide values. `settings()` declares what is stored. A Twig template is the form body. Føhn adds the page shell: heading, `<form>`, `settings_fields()` (the nonce), and the submit button.
+An admin screen on the WordPress Settings API, for a few site-wide values. `settings()` declares what is stored and which native field edits each value. Føhn draws the page.
 
 ```php
 namespace App\Settings;
@@ -258,7 +258,6 @@ use Studiometa\Foehn\Settings\Setting;
     slug: 'theme-settings',
     title: 'Theme settings',
     parent: 'themes.php',               // default 'options-general.php'; null = top-level menu
-    template: 'settings/theme-settings',
 )]
 final readonly class ThemeSettings implements SettingsPageInterface
 {
@@ -266,29 +265,23 @@ final readonly class ThemeSettings implements SettingsPageInterface
     public static function settings(): array
     {
         return [
-            'theme_contact_email' => Setting::string(sanitize: 'sanitize_email'),
-            'theme_show_banner' => Setting::bool(default: false),
-            'theme_posts_per_archive' => Setting::int(default: 12),
+            'theme_contact_email' => Setting::string(label: 'Contact email', control: 'email'),
+            'theme_show_banner' => Setting::bool(label: 'Banner', description: 'Show the banner'),
+            'theme_posts_per_archive' => Setting::int(default: 12, label: 'Projects per page', options: [6 => '6', 12 => '12']),
         ];
     }
 }
 ```
 
-```twig
-{# templates/settings/theme-settings.twig — receives `settings` and `page` #}
-<table class="form-table" role="presentation">
-  <tr>
-    <th scope="row"><label for="theme_contact_email">Contact email</label></th>
-    <td><input type="email" id="theme_contact_email" name="theme_contact_email" value="{{ settings.theme_contact_email }}" /></td>
-  </tr>
-</table>
-```
-
-- Factories: `Setting::string()`, `Setting::bool()`, `Setting::int()`, `Setting::number()`. Each takes `default`, `sanitize` (a function name or a public static method on the page class), `showInRest` (`false`) and `description`.
+- Føhn draws the whole page with native APIs: a `form-table` row for each setting through `add_settings_field()`, the nonce and the submit button. There is no template to write.
+- Factories: `Setting::string()`, `Setting::bool()`, `Setting::int()`, `Setting::number()`. Each takes `default`, `label` (the row label; the option name when empty), `description` (help text under the field), `sanitize` (a function name or a public static method on the page class) and `showInRest` (`false`).
+- Controls: `string()` takes `control: 'text'|'textarea'|'email'|'url'|'tel'`. `string()` and `int()` take `options` (value => label) for a `<select>`. `bool()` is a checkbox; `int()` and `number()` are number fields. The control also sets the default sanitizer (`sanitize_email`, `esc_url_raw`, `sanitize_textarea_field`; a select keeps one of its options).
+- There is no media picker, repeater or conditional field. Use an ACF options page (`foehn-acf`) for those.
+- Labels are plain text: `settings()` is cached with discovery, so `__()` there keeps one language.
 - Other attribute arguments: `menuTitle`, `capability` (`manage_options`), `icon`, `position`.
-- A page with no template must implement `Studiometa\Foehn\Contracts\SettingsFormInterface` and return the form HTML from `form()`. With neither, discovery refuses the page.
 - Read values with `Studiometa\Foehn\Settings\Settings::get('theme_show_banner')`, not `get_option()`. `Settings::get()` returns the declared default before the first save, and casts to the declared type (a checkbox is `true` or `false`, not `''` or `'1'`). Also `Settings::has()` and `Settings::all()`.
 - Option names are global. Prefix them.
+- A change to a declared setting empties the whole page cache.
 - Put settings in Twig through a context provider:
 
 ```php

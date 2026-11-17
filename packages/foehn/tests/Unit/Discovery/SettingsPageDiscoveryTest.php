@@ -6,9 +6,7 @@ use Studiometa\Foehn\Attributes\AsSettingsPage;
 use Studiometa\Foehn\Discovery\DiscoveryProblems;
 use Studiometa\Foehn\Discovery\SettingsPageDiscovery;
 use Studiometa\Foehn\Settings\Setting;
-use Tempest\Container\GenericContainer;
 use Tests\Fixtures\PostTypeFixture;
-use Tests\Fixtures\Settings\FormlessSettingsFixture;
 use Tests\Fixtures\Settings\InterfacelessSettingsFixture;
 use Tests\Fixtures\Settings\ThemeSettingsFixture;
 use Tests\Fixtures\Settings\TopLevelSettingsFixture;
@@ -18,7 +16,7 @@ use Tests\Fixtures\Settings\TopLevelSettingsFixture;
  */
 function discoveredPages(string $fixture): array
 {
-    $discovery = new SettingsPageDiscovery(new GenericContainer(), new DiscoveryProblems());
+    $discovery = new SettingsPageDiscovery(new DiscoveryProblems());
 
     discoverFixture($discovery, $fixture);
 
@@ -44,6 +42,7 @@ describe('SettingsPageDiscovery', function () {
             'foehn_show_banner',
             'foehn_posts_per_page',
             'foehn_ratio',
+            'foehn_layout',
         ]);
         expect($settings['foehn_show_banner'])->toBeInstanceOf(Setting::class);
         expect($settings['foehn_show_banner']->type)->toBe('boolean');
@@ -55,7 +54,7 @@ describe('SettingsPageDiscovery', function () {
 
     it('reports a page that cannot say what it stores, and skips it', function () {
         $problems = rejectedProblems(
-            fn(DiscoveryProblems $problems) => new SettingsPageDiscovery(new GenericContainer(), $problems),
+            fn(DiscoveryProblems $problems) => new SettingsPageDiscovery($problems),
             InterfacelessSettingsFixture::class,
         );
 
@@ -69,29 +68,11 @@ describe('SettingsPageDiscovery', function () {
             );
     });
 
-    it('reports a page that declares no form at all, and skips it', function () {
-        // Without a template or a form() there is nothing between the heading
-        // and the submit button, and the page renders as an empty form.
-        $problems = rejectedProblems(
-            fn(DiscoveryProblems $problems) => new SettingsPageDiscovery(new GenericContainer(), $problems),
-            FormlessSettingsFixture::class,
-        );
-
-        expect($problems[0]['reason'])->toContain('declares no form');
-        expect($problems[0]['fix'])->toStartWith('Name a `template` on #[AsSettingsPage], or declare');
-    });
-
-    it('records which of the two ways a page builds its form', function () {
-        expect(discoveredPages(ThemeSettingsFixture::class)[0]['buildsItsOwnForm'])->toBeTrue();
-        expect(discoveredPages(TopLevelSettingsFixture::class)[0]['buildsItsOwnForm'])->toBeFalse();
-    });
-
     it('discovers a top-level page', function () {
         $attribute = discoveredPages(TopLevelSettingsFixture::class)[0]['attribute'];
 
         expect($attribute->parent)->toBeNull();
         expect($attribute->menuTitle())->toBe('Shop settings');
         expect($attribute->icon)->toBe('dashicons-cart');
-        expect($attribute->template)->toBe('settings/shop');
     });
 });
