@@ -261,7 +261,7 @@ The suffix comes from `wp_get_environment_type()`: `.local` for `local`, `.dev` 
 
 3. **Warming**: a request that had to scan a location writes what it found, so the next one does not. Under `partial`, only vendor locations are written, because the app is rescanned every request anyway and the file would never be read. A cache that cannot be written — a read-only `wp-content` — is not an error: the page is served, and the scan happens again next time.
 
-4. **Invalidation**: `composer install` and `composer update` delete the cache, through the same installer plugin that generates the web root. That is the deploy hook, and it needs no database and no WP-CLI. A cache written by a version of Føhn whose attributes have a different shape is ignored rather than half-restored.
+4. **Invalidation**: `composer install` and `composer update` delete the cache, through the same installer plugin that generates the web root. That is the deploy hook, and it needs no database and no WP-CLI. A cache written by a version of Føhn whose attributes have a different shape is ignored rather than half-restored. A cache that names a class that no longer exists, for example a class you deleted, is emptied, and discovery scans again.
 
 ::: warning
 Two cases invalidation does not cover. A project that sets `FoehnConfig::$discoveryCachePath` puts the cache somewhere the installer cannot find, and owns clearing it. And editing a class on a live server without running Composer leaves the cache describing the previous code — run `wp foehn discovery:clear`.

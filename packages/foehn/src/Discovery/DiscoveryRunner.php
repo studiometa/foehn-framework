@@ -138,7 +138,7 @@ final class DiscoveryRunner
 
         $this->discovered = true;
 
-        foreach ($this->build($this->cache) as $discovery) {
+        foreach ($this->build($this->usableCache()) as $discovery) {
             // Tempest's own DiscoveryDiscovery is the first pass, not something Foehn
             // applies at a WordPress phase: its apply() only fills the list of
             // discovery classes the second pass then resolves.
@@ -155,6 +155,26 @@ final class DiscoveryRunner
         foreach ($this->problems() as $problem) {
             $this->warn(sprintf('[Foehn] %s', DiscoveryProblems::format($problem)));
         }
+    }
+
+    /**
+     * The cache to build with, once a stale cache is out of the way.
+     *
+     * A cache that names a class the project deleted cannot be applied: every
+     * discovery reflects its classes, and the missing one throws a
+     * ReflectionException before `wp foehn discovery:clear` has a chance to run.
+     * Such a cache is emptied, and discovery scans again and writes a new one. When
+     * the pool cannot be emptied, this request scans without the cache.
+     */
+    private function usableCache(): DiscoveryCache
+    {
+        if (!$this->cache->enabled || !StaleDiscoveryCache::namesMissingClass($this->pool, $this->locations->all())) {
+            return $this->cache;
+        }
+
+        $this->warn('[Foehn] The discovery cache names a class that does not exist. Discovery runs again.');
+
+        return $this->pool->clear() ? $this->cache : $this->cache->withStrategy(DiscoveryCacheStrategy::NONE);
     }
 
     /**
