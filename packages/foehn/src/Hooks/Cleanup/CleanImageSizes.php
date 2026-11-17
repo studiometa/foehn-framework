@@ -7,29 +7,33 @@ namespace Studiometa\Foehn\Hooks\Cleanup;
 use Studiometa\Foehn\Attributes\AsFilter;
 
 /**
- * Remove unnecessary intermediate image sizes.
+ * Keep `thumbnail` as the only core image size WordPress writes.
  *
- * WordPress generates several intermediate sizes that are rarely used
- * in custom themes:
- * - medium_large (768px wide)
- * - 1536x1536 (added in WP 5.3)
- * - 2048x2048 (added in WP 5.3)
+ * WordPress writes a file for each intermediate size on every upload: medium,
+ * medium_large, large, 1536x1536 and 2048x2048. A theme that sizes its images
+ * with an image transformer (Glide) reads the original and uses none of them.
+ * `thumbnail` stays, because the media library and the admin show it.
  *
- * Removing them saves disk space and speeds up image uploads.
+ * The sizes a theme adds with `add_image_size()` or #[AsImageSize] stay too.
+ * Removing the sizes also removes them from the size list of the image block.
  */
 final class CleanImageSizes
 {
     /**
-     * Filter intermediate image sizes to remove unnecessary ones.
-     *
+     * The core sizes that are not written.
+     */
+    public const array REMOVED_SIZES = ['medium', 'medium_large', 'large', '1536x1536', '2048x2048'];
+
+    /**
      * @param list<string> $sizes
      * @return list<string>
      */
     #[AsFilter('intermediate_image_sizes')]
     public function removeUnnecessarySizes(array $sizes): array
     {
-        $remove = ['medium_large', '1536x1536', '2048x2048'];
-
-        return array_values(array_filter($sizes, static fn(string $size): bool => !in_array($size, $remove, true)));
+        return array_values(array_filter(
+            $sizes,
+            static fn(string $size): bool => !in_array($size, self::REMOVED_SIZES, true),
+        ));
     }
 }

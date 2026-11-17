@@ -5,20 +5,20 @@ declare(strict_types=1);
 use Studiometa\Foehn\Hooks\Cleanup\CleanImageSizes;
 
 describe('CleanImageSizes', function () {
-    it('removes medium_large, 1536x1536 and 2048x2048 sizes', function () {
+    it('keeps thumbnail as the only core size', function () {
         $hooks = new CleanImageSizes();
 
         $sizes = ['thumbnail', 'medium', 'medium_large', 'large', '1536x1536', '2048x2048'];
 
-        expect($hooks->removeUnnecessarySizes($sizes))->toBe(['thumbnail', 'medium', 'large']);
+        expect($hooks->removeUnnecessarySizes($sizes))->toBe(['thumbnail']);
     });
 
-    it('returns all sizes when none match', function () {
+    it('keeps the sizes a theme adds', function () {
         $hooks = new CleanImageSizes();
 
-        $sizes = ['thumbnail', 'medium', 'large', 'custom-size'];
+        $sizes = ['thumbnail', 'medium', 'card', 'large', 'hero'];
 
-        expect($hooks->removeUnnecessarySizes($sizes))->toBe($sizes);
+        expect($hooks->removeUnnecessarySizes($sizes))->toBe(['thumbnail', 'card', 'hero']);
     });
 
     it('handles empty sizes array', function () {
