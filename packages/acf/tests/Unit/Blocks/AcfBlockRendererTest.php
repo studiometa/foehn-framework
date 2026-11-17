@@ -305,3 +305,44 @@ describe('AcfBlockRenderer field transformation', function () {
         ]);
     });
 });
+
+describe('AcfBlockRenderer and the block supports', function () {
+    /**
+     * A block that renders a fixed root element.
+     */
+    function supportsAcfBlock(): AcfBlockInterface
+    {
+        return new class implements AcfBlockInterface {
+            public static function fields(): \StoutLogic\AcfBuilder\FieldsBuilder
+            {
+                return new \StoutLogic\AcfBuilder\FieldsBuilder('test');
+            }
+
+            public function compose(array $block, array $fields): array
+            {
+                return [];
+            }
+
+            public function render(array $context, bool $isPreview = false): string
+            {
+                return '<section>Hero</section>';
+            }
+        };
+    }
+
+    it('asks core for the support attributes of a block rendered on the site', function () {
+        $html = new AcfBlockRenderer()->render(supportsAcfBlock(), ['name' => 'acf/hero'], false);
+
+        expect(wp_stub_get_calls('apply_block_supports'))->toHaveCount(1);
+        expect($html)->toBe('<section>Hero</section>');
+    });
+
+    it('leaves the support attributes to the ACF wrapper in the editor preview', function () {
+        $GLOBALS['wp_stub_block_supports'] = ['class' => 'alignwide'];
+
+        $html = new AcfBlockRenderer()->render(supportsAcfBlock(), ['name' => 'acf/hero'], true);
+
+        expect($html)->toBe('<section>Hero</section>');
+        expect(wp_stub_get_calls('apply_block_supports'))->toBeEmpty();
+    });
+});

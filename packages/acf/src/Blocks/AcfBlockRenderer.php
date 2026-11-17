@@ -45,8 +45,10 @@ final class AcfBlockRenderer
         // Add common block data to context
         $context = $this->enrichContext($context, $blockData, $isPreview);
 
-        // Render the block
-        return $block->render($context, $isPreview);
+        $html = $block->render($context, $isPreview);
+
+        // In the editor preview, ACF puts the support attributes on its own wrapper.
+        return $isPreview ? $html : BlockSupports::merge($html);
     }
 
     /**
