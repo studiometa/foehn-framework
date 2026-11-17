@@ -10,6 +10,14 @@ on:
   # merged down. `docker.yml` beside this file never had the filter, which is why
   # its checks were the only ones a stacked branch ever got.
   pull_request:
+  # Once a week, with no change here. No lockfile pins the PHP dependencies, and the
+  # framework end-to-end suite installs Rank Math from wordpress.org: a new release of
+  # WordPress, Timber, Tempest or a plugin can break a check that passed on the last
+  # pull request. `RedirectionPurger` reads Rank Math's own SQL, so a change of its
+  # redirections table must fail here before a project sees it.
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
 
 jobs:
   lint:
