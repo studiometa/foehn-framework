@@ -251,7 +251,8 @@ check_page "/projects/corridors/" 'href="https://example.com/contrejour/corridor
 check_page "/about/" "prose" "the about page renders its copy"
 # The blocks, the binding and the pattern are only worth registering if a visitor
 # sees them: PageSeeder writes the About page as block markup.
-check_page "/about/" 'class="hero hero--small"' "the about page opens with the hero block"
+# No closing quote: the block supports add their classes after the template's own.
+check_page "/about/" 'class="hero hero--small' "the about page opens with the hero block"
 check_page "/about/" 'callout callout--success' "the about page holds the commission pattern, callout included"
 check_page "/about/" 'minute read' "the reading-time binding computes its value on the about page"
 check_page "/projects/corridors/" '<p class="wp-block-paragraph">Hasselblad 500C/M' "core/post-meta binds the camera meta in a project's content"
