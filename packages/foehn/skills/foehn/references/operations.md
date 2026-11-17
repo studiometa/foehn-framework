@@ -37,6 +37,7 @@ These classes are in the framework, but discovery skips them until `FoehnConfig:
 | `Hooks\Cleanup\DisableFeeds`              | Removes the feed links from `wp_head`. The feeds still answer.                                                                                |
 | `Hooks\Cleanup\DisableGlobalStyles`       | Removes the inline `theme.json` styles. The starter enables it because it ships no `theme.json`. Remove it if you adopt `theme.json` presets. |
 | `Hooks\Cleanup\DisableOembed`             | Removes the oEmbed discovery links from `wp_head`                                                                                             |
+| `Hooks\Security\DisableAuthorSitemap`     | Removes the core and Rank Math author sitemaps, which list user slugs                                                                         |
 | `Hooks\Security\DisableFileEditor`        | Defines `DISALLOW_FILE_EDIT`, which turns off the theme and plugin editors                                                                    |
 | `Hooks\Security\DisableVersionDisclosure` | Removes the WordPress version                                                                                                                 |
 | `Hooks\Security\DisableXmlRpc`            | Turns off XML-RPC                                                                                                                             |

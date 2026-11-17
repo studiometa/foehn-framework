@@ -90,6 +90,7 @@ function wp_stub_reset(): void
     $GLOBALS['rank_math_stub_modules'] = [];
     $GLOBALS['rank_math_stub_settings'] = [];
     $GLOBALS['rank_math_stub_crumbs'] = null;
+    $GLOBALS['rank_math_stub_loaded'] = null;
     $GLOBALS['wp_stub_current_time'] = '2026-11-16 10:00:00';
 
     // The admin controls read all four. A referer left behind would make a redirect land

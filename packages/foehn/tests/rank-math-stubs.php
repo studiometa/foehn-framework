@@ -29,6 +29,28 @@ namespace RankMath {
     }
 }
 
+namespace RankMath {
+    if (!class_exists(Settings::class)) {
+        /**
+         * The loaded settings, kept in `$GLOBALS['rank_math_stub_loaded']` once read.
+         */
+        class Settings
+        {
+            public function get(string $field_id = '', mixed $default_value = false): mixed
+            {
+                $GLOBALS['rank_math_stub_loaded'] ??= $GLOBALS['rank_math_stub_settings'] ?? [];
+
+                return $GLOBALS['rank_math_stub_loaded'][$field_id] ?? $default_value;
+            }
+
+            public function set(string $group, string $id, mixed $value): void
+            {
+                $GLOBALS['rank_math_stub_loaded'][$group . '.' . $id] = $value;
+            }
+        }
+    }
+}
+
 namespace RankMath\Frontend {
     if (!class_exists(Breadcrumbs::class)) {
         class Breadcrumbs
@@ -47,6 +69,20 @@ namespace RankMath\Frontend {
 }
 
 namespace {
+    if (!function_exists('rank_math')) {
+        function rank_math(): object
+        {
+            return new class {
+                public \RankMath\Settings $settings;
+
+                public function __construct()
+                {
+                    $this->settings = new \RankMath\Settings();
+                }
+            };
+        }
+    }
+
     if (!function_exists('rank_math_get_sitemap_url')) {
         function rank_math_get_sitemap_url(): string
         {

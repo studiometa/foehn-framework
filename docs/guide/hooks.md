@@ -260,6 +260,7 @@ Located in `Studiometa\Foehn\Hooks\Security`:
 
 | Class                      | Description                                                                                          |
 | -------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `DisableAuthorSitemap`     | Remove the author sitemaps (core and Rank Math), which list user slugs                               |
 | `DisableFileEditor`        | Disable theme/plugin editor in admin                                                                 |
 | `DisableVersionDisclosure` | Remove WordPress version from head, feeds, and scripts                                               |
 | `DisableXmlRpc`            | Disable XML-RPC completely                                                                           |

@@ -25,6 +25,15 @@ namespace RankMath {
     }
 }
 
+namespace RankMath {
+    class Settings
+    {
+        public function get(string $field_id = '', mixed $default_value = false): mixed {}
+
+        public function set(string $group, string $id, mixed $value): void {}
+    }
+}
+
 namespace RankMath\Frontend {
     class Breadcrumbs
     {
@@ -43,6 +52,19 @@ namespace RankMath\Frontend {
 }
 
 namespace {
+    /**
+     * The plugin instance. Its services, such as `settings`, are read as properties.
+     */
+    function rank_math(): RankMathInstance {}
+
+    /**
+     * Not a class of Rank Math: the shape of the object `rank_math()` returns.
+     */
+    class RankMathInstance
+    {
+        public \RankMath\Settings $settings;
+    }
+
     /**
      * The URL of the sitemap index.
      */
