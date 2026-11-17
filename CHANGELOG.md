@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file. Each pull r
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.11.1 - 2026-11-17
+
+### Added
+
+- Each SVG file in the theme's `assets/icons/` is registered with the WordPress 7.1 Icons API, as `<theme directory>/<file name>`. The `icon()` Twig function prints a registered icon with `wp_get_icon()`, and a name without a collection is an icon of the theme: `{{ icon('arrow-right', { size: 16 }) }}`. Before WordPress 7.1, no icon is registered and `icon()` prints nothing ([#318])
+- The starter's pagination shows the `arrow-left` and `arrow-right` icons of its `assets/icons/` ([#318])
+
+### Fixed
+
+- The block supports of a Føhn block now reach the front end: the alignment, the colors, the spacing, the typography, the border, the anchor and the custom class render on the first tag of the template, as they do in the editor. A template that prints these attributes itself now gets them twice: remove them from the template. ([#316])
+- `ImageCacheHooks` now also clears the transformer cache of the full-size original image (`original_image`) when an attachment is updated or deleted. A large image is scaled to `-scaled`, and with the client-side media processing of WordPress 7.1 a transform asked for before that swap was cached under the original path and was never cleared. ([#317])
+- The block supports of an ACF block now reach the front end: the alignment, the colors, the spacing, the typography, the border, the anchor and the custom class render on the first tag of the template, as they do in the editor preview. A template that calls `get_block_wrapper_attributes()` or prints these styles itself now gets them twice: remove them from the template. ([#320])
+
+[#316]: https://github.com/studiometa/foehn-framework/pull/316
+[#317]: https://github.com/studiometa/foehn-framework/pull/317
+[#318]: https://github.com/studiometa/foehn-framework/pull/318
+[#320]: https://github.com/studiometa/foehn-framework/pull/320
+
 ## 0.11.0 - 2026-11-17
 
 ### Added
