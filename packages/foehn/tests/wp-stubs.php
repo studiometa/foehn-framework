@@ -1880,6 +1880,21 @@ if (!function_exists('wp_get_attachment_url')) {
     }
 }
 
+if (!function_exists('wp_get_original_image_url')) {
+    /**
+     * WordPress answers with the attachment URL when no `original_image` is
+     * recorded, and so does the stub without an `original` entry.
+     */
+    function wp_get_original_image_url(int $attachmentId): string|false
+    {
+        wp_stub_record('wp_get_original_image_url', compact('attachmentId'));
+
+        $attachment = $GLOBALS['wp_stub_attachments'][$attachmentId] ?? [];
+
+        return $attachment['original'] ?? $attachment['url'] ?? false;
+    }
+}
+
 if (!function_exists('wp_get_attachment_metadata')) {
     /**
      * @return array<string, mixed>|false
