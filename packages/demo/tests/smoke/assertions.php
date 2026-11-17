@@ -420,6 +420,38 @@ $results->true('the settings form escapes a quote in a text value', str_contains
     'value="A &quot;demo&quot; site"',
 ));
 
+// A Customizer section registers its settings on `init`, as a settings page does,
+// under the section id. Its controls are added on `customize_register`, which only
+// the Customizer fires: firing it here with a real manager is the only way to know
+// the section, the settings and the controls reach WordPress's own classes.
+$results->same(
+    'Customizer settings are grouped under the section id',
+    'demo_studio',
+    $registered['demo_studio_address']['group'] ?? null,
+);
+
+require_once ABSPATH . WPINC . '/class-wp-customize-manager.php';
+
+$customizer = new WP_Customize_Manager();
+do_action('customize_register', $customizer);
+
+$results->true('the Studio section is added to the Customizer', $customizer->get_section('demo_studio') !== null);
+$results->same(
+    'a Customizer control has the type of its setting',
+    'textarea',
+    $customizer->get_control('demo_studio_address')?->type,
+);
+$results->same(
+    'a field for an existing section goes in that section',
+    'title_tagline',
+    $customizer->get_control('demo_signature')?->section,
+);
+$results->same(
+    'a Customizer setting is stored as an option',
+    'option',
+    $customizer->get_setting('demo_instagram')?->type,
+);
+
 // ──────────────────────────────────────────────
 // Block bindings
 // ──────────────────────────────────────────────
