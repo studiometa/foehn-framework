@@ -92,7 +92,7 @@ Or read [the demo](https://github.com/studiometa/foehn-demo), which has one of e
 
 ## AI agents
 
-`AGENTS.md` tells a coding agent how to work in this project, and `CLAUDE.md` imports it for Claude Code. In short: read the Føhn [Agent Skills](https://agentskills.io/) at the versions the project has installed, then read what the project declares, before writing code:
+`AGENTS.md` tells a coding agent (Claude Code, Codex…) how to work in this project. In short: read the Føhn [Agent Skills](https://agentskills.io/) at the versions the project has installed, then read what the project declares, before writing code:
 
 ```bash
 ddev wp foehn skill                       # the skills of the installed packages

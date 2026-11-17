@@ -100,14 +100,14 @@ describe('starter packaging', function () {
         }
     });
 
-    // Un agent de code lit AGENTS.md (Claude Code lit CLAUDE.md, qui l'importe)
+    // Un agent de code (Claude Code, Codex…) lit AGENTS.md
     // dans le projet créé : le fichier doit partir dans l'archive et renvoyer
     // aux skills installés et à `wp foehn inspect`.
     it('livre les instructions pour les agents de code', function () use ($racine) {
         $attributs = (string) file_get_contents($racine . '/.gitattributes');
         $agents = (string) file_get_contents($racine . '/AGENTS.md');
 
-        expect($attributs)->not->toContain('AGENTS.md')->not->toContain('CLAUDE.md');
+        expect($attributs)->not->toContain('AGENTS.md');
         expect($agents)
             ->toContain('wp foehn skill')
             ->toContain('wp foehn inspect')
@@ -115,7 +115,7 @@ describe('starter packaging', function () {
             ->toContain('wp foehn seed')
             ->toContain('vendor/studiometa/foehn/skills/foehn/SKILL.md')
             ->toContain('node_modules/@studiometa/foehn-vite-plugin/skills');
-        expect((string) file_get_contents($racine . '/CLAUDE.md'))->toBe("@AGENTS.md\n");
+        expect($racine . '/CLAUDE.md')->not->toBeFile();
     });
 
     // L'installeur copie `public/` dans la racine web. Le répertoire part vide
