@@ -452,6 +452,14 @@ $results->same(
     $customizer->get_setting('demo_instagram')?->type,
 );
 
+// CleanImageSizes: of the core sizes, WordPress writes only the thumbnail on upload.
+$imageSizes = get_intermediate_image_sizes();
+
+$results->true(
+    'the thumbnail is the only core image size written on upload',
+    in_array('thumbnail', $imageSizes, true) && array_intersect(['medium', 'medium_large', 'large'], $imageSizes) === [],
+);
+
 // ──────────────────────────────────────────────
 // Block bindings
 // ──────────────────────────────────────────────
@@ -519,26 +527,26 @@ if ($attachmentId > 0) {
         $uploadsBase,
     ));
 
-    // srcset builds its own URLs from the uploads base rather than from the filter
-    // above, which is why it gets asked separately: a half-rewritten srcset is the
-    // likely first bug, and it looks fine until a wide viewport asks for the 1024.
-    $srcset = wp_get_attachment_image_srcset($attachmentId, 'medium');
-    $sources = $srcset === false ? [] : explode(', ', $srcset);
+    // A sub-size builds its URL from the uploads base rather than from the filter
+    // above, which is why it gets asked separately.
+    $results->true('a generated size is served from the site itself', str_starts_with(
+        (string) wp_get_attachment_image_url($attachmentId, 'card'),
+        $uploadsBase,
+    ));
 
-    $results->same('the srcset offers every size', 4, count($sources));
-
-    $results->true(
-        'every srcset candidate is served from the site itself',
-        $sources !== [] && array_all($sources, fn(string $source): bool => str_starts_with($source, $uploadsBase)),
-    );
-
-    // #[AsImageSize] on CardImageSize registers `card` at 400x300, so its presence
-    // beside a core size is what proves a Føhn-declared size offloads like any other
-    // — the sub-sizes are written through the stream wrapper as they are generated.
+    // #[AsImageSize] on CardImageSize registers `card` at 800x600, so its presence is
+    // what proves a Føhn-declared size offloads like any other — the sub-sizes are
+    // written through the stream wrapper as they are generated. CleanImageSizes keeps
+    // the thumbnail as the only core size: Glide sizes the plates from the original.
     $metadata = wp_get_attachment_metadata($attachmentId);
     $keys = array_keys($metadata['sizes'] ?? []);
 
-    $results->containsAll('the declared image sizes were generated', ['medium', 'card'], $keys);
+    $results->containsAll('the declared image sizes were generated', ['thumbnail', 'card'], $keys);
+    $results->same(
+        'no other core size was generated',
+        [],
+        array_values(array_intersect(['medium', 'medium_large', 'large'], $keys)),
+    );
 
     $s3 = S3_Uploads\Plugin::get_instance()->s3();
     $listing = $s3->listObjectsV2(['Bucket' => S3_UPLOADS_BUCKET, 'Prefix' => 'uploads/']);

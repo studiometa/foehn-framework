@@ -45,7 +45,17 @@ function wp_stub_reset(): void
     $GLOBALS['wp_stub_terms'] = [];
     $GLOBALS['wp_stub_query_posts'] = [];
     unset($GLOBALS['wp_stub_get_posts'], $GLOBALS['wp_stub_insert_post'], $GLOBALS['wp_stub_home_url']);
-    if (!function_exists('wp_get_environment_type')) {
+    if (!function_exists('wp_get_additional_image_sizes')) {
+    /**
+     * @return array<string, array<string, mixed>>
+     */
+    function wp_get_additional_image_sizes(): array
+    {
+        return $GLOBALS['_wp_additional_image_sizes'] ?? [];
+    }
+}
+
+if (!function_exists('wp_get_environment_type')) {
         function wp_get_environment_type(): string
         {
             return $GLOBALS['wp_stub_environment_type'] ?? 'production';

@@ -243,16 +243,16 @@ return new FoehnConfig(
 
 Located in `Studiometa\Foehn\Hooks\Cleanup`:
 
-| Class                 | Description                                                               |
-| --------------------- | ------------------------------------------------------------------------- |
-| `CleanContent`        | Remove empty `<p>` tags and archive title prefixes                        |
-| `CleanHeadTags`       | Remove wlwmanifest, RSD, shortlink, REST discovery links                  |
-| `CleanImageSizes`     | Remove default WordPress image sizes (medium_large, 1536x1536, 2048x2048) |
-| `DisableBlockStyles`  | Dequeue Gutenberg block styles (for themes not using blocks)              |
-| `DisableEmoji`        | Remove emoji scripts, styles, and TinyMCE plugin                          |
-| `DisableFeeds`        | Disable RSS/Atom feeds                                                    |
-| `DisableGlobalStyles` | Remove global styles and SVG filters from wp_head                         |
-| `DisableOembed`       | Disable oEmbed discovery and related scripts                              |
+| Class                 | Description                                                             |
+| --------------------- | ----------------------------------------------------------------------- |
+| `CleanContent`        | Remove empty `<p>` tags and archive title prefixes                      |
+| `CleanHeadTags`       | Remove wlwmanifest, RSD, shortlink, REST discovery links                |
+| `CleanImageSizes`     | Keep `thumbnail` as the only core image size WordPress writes on upload |
+| `DisableBlockStyles`  | Dequeue Gutenberg block styles (for themes not using blocks)            |
+| `DisableEmoji`        | Remove emoji scripts, styles, and TinyMCE plugin                        |
+| `DisableFeeds`        | Disable RSS/Atom feeds                                                  |
+| `DisableGlobalStyles` | Remove global styles and SVG filters from wp_head                       |
+| `DisableOembed`       | Disable oEmbed discovery and related scripts                            |
 
 ### Security Hooks
 

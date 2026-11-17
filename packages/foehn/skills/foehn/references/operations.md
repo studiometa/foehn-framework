@@ -31,7 +31,7 @@ These classes are in the framework, but discovery skips them until `FoehnConfig:
 | ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
 | `Hooks\Cleanup\CleanContent`              | Removes empty `<p>` and archive title prefixes                                                                                                |
 | `Hooks\Cleanup\CleanHeadTags`             | Removes wlwmanifest, RSD, shortlink and REST discovery links                                                                                  |
-| `Hooks\Cleanup\CleanImageSizes`           | Removes `medium_large`, `1536x1536`, `2048x2048`                                                                                              |
+| `Hooks\Cleanup\CleanImageSizes`           | Keeps `thumbnail` as the only core size WordPress writes: removes `medium`, `medium_large`, `large`, `1536x1536`, `2048x2048`. Theme sizes stay |
 | `Hooks\Cleanup\DisableBlockStyles`        | Dequeues core block styles. Do not use it when editors write content with blocks.                                                             |
 | `Hooks\Cleanup\DisableEmoji`              | Removes emoji scripts and styles                                                                                                              |
 | `Hooks\Cleanup\DisableFeeds`              | Removes the feed links from `wp_head`. The feeds still answer.                                                                                |
