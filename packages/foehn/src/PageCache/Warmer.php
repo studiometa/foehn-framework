@@ -6,6 +6,7 @@ namespace Studiometa\Foehn\PageCache;
 
 use Studiometa\Foehn\Attributes\AsJob;
 use Studiometa\Foehn\Config\PageCacheConfig;
+use Studiometa\Foehn\Integrations\RankMath\RankMath;
 
 /**
  * Fill the cache by requesting pages, so the first visitor after a deploy is not the one
@@ -75,14 +76,16 @@ final readonly class Warmer
      *
      * The sitemap is the list the site already publishes for crawlers, which makes it the
      * right list to warm: no separate notion of "important pages" to keep in step with
-     * the one search engines are given. It is the core WordPress sitemap, or the one
-     * `warmSitemap` names when a plugin replaces it: a full URL, or a path on the site.
+     * the one search engines are given. It is the one `warmSitemap` names: a full URL, or
+     * a path on the site. Without it, it is the sitemap index of Rank Math when its
+     * sitemap module is on, because Rank Math turns the core sitemap off, and the core
+     * WordPress sitemap otherwise.
      *
      * @return list<string>
      */
     public function urls(): array
     {
-        $sitemap = $this->config->warmSitemap;
+        $sitemap = $this->config->warmSitemap ?? RankMath::sitemapUrl();
         $listed = $sitemap === null ? $this->coreSitemapUrls() : $this->remoteSitemapUrls(self::absolute($sitemap));
 
         return $this->warmable([home_url('/'), ...$listed]);

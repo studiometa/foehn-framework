@@ -5,6 +5,7 @@ declare(strict_types=1);
 // Load WordPress function stubs before autoload so they're available
 // when discovery classes are loaded.
 require_once __DIR__ . '/wp-stubs.php';
+require_once __DIR__ . '/rank-math-stubs.php';
 
 // Load Composer autoloader
 // In monorepo: vendor/ is at the repository root

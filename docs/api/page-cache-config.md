@@ -179,7 +179,7 @@ excludeWhenBodyContains: ['name="_wpnonce"'],
 
 ### `warmAfterPurge`, `warmSitemap`, `warmExclude`
 
-The warm-up settings. See [Warming](/guide/page-cache#warming) in the guide.
+The warm-up settings. Without `warmSitemap`, the warm-up reads the sitemap index of Rank Math when its sitemap module is on, and the core WordPress sitemap otherwise. See [Warming](/guide/page-cache#warming) in the guide.
 
 ```php
 warmAfterPurge: true,

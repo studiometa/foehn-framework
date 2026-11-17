@@ -36,6 +36,8 @@ use Studiometa\Foehn\Errors\ErrorRecorder;
 use Studiometa\Foehn\Errors\SourcePaths;
 use Studiometa\Foehn\Images\NullTransformer;
 use Studiometa\Foehn\Indexing\IndexingProtection;
+use Studiometa\Foehn\Integrations\RankMath\RankMath;
+use Studiometa\Foehn\Integrations\RankMath\RedirectionPurger;
 use Studiometa\Foehn\Jobs\ActionSchedulerJobDispatcher;
 use Studiometa\Foehn\Jobs\JobRegistry;
 use Studiometa\Foehn\PageCache\BucketStore;
@@ -653,6 +655,11 @@ final class Kernel
         /** @var Purger $purger */
         $purger = $this->container->get(Purger::class);
         $purger->register();
+
+        // Rank Math redirects in PHP, which a stored page skips. See RedirectionPurger.
+        if (RankMath::isModuleActive('redirections')) {
+            new RedirectionPurger($this->container->get(Invalidator::class))->register();
+        }
     }
 
     /**

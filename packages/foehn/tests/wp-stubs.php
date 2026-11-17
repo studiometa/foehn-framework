@@ -86,6 +86,10 @@ function wp_stub_reset(): void
         $GLOBALS['wp_stub_num_queries'],
     );
 
+    // Rank Math, as tests/rank-math-stubs.php answers for it: no module on.
+    $GLOBALS['rank_math_stub_modules'] = [];
+    $GLOBALS['wp_stub_current_time'] = '2026-11-16 10:00:00';
+
     // The admin controls read all four. A referer left behind would make a redirect land
     // somewhere a later test never set up, and a leaked screen, queried object or global
     // post would make the admin bar's current-item entry appear for a request that has no
@@ -491,6 +495,16 @@ if (!class_exists('wpdb')) {
             $this->queries[] = $query;
 
             return 0;
+        }
+
+        /** The column the next `get_col()` returns, set by a test. */
+        public array $column = [];
+
+        public function get_col(string $query): array
+        {
+            $this->queries[] = $query;
+
+            return $this->column;
         }
 
         public function esc_like(string $text): string
@@ -1532,6 +1546,26 @@ if (!function_exists('get_bloginfo')) {
             'version' => '6.0',
             default => '',
         };
+    }
+}
+
+if (!function_exists('current_time')) {
+    function current_time(string $type, bool $gmt = false): string|int
+    {
+        return $GLOBALS['wp_stub_current_time'] ?? '2026-11-16 10:00:00';
+    }
+}
+
+if (!function_exists('maybe_unserialize')) {
+    function maybe_unserialize(mixed $data): mixed
+    {
+        if (!is_string($data)) {
+            return $data;
+        }
+
+        $value = @unserialize(trim($data), ['allowed_classes' => false]);
+
+        return $value === false && $data !== 'b:0;' ? $data : $value;
     }
 }
 
