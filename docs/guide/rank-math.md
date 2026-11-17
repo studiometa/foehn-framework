@@ -40,3 +40,42 @@ With the redirections module of Rank Math on, Føhn purges the stored page of ea
 A redirection that is deleted or turned off needs no purge. The cache never stores a redirect, so the next request renders the page and the cache stores it.
 
 **How Føhn finds the change.** Rank Math does not fire an action for each change, so Føhn watches the database queries of the request. When a query writes the redirections table, Føhn reads on `shutdown` the active redirections that were updated during the request. Requests that do not write a redirection read nothing.
+
+## What a project turns on
+
+### Breadcrumbs
+
+`breadcrumbs()` gives the breadcrumb trail of the current request, so the theme writes its own markup. It exists in Twig and in PHP (`Studiometa\Foehn\breadcrumbs()`). Each item has a plain-text `label` and a `url`:
+
+```php
+[
+    ['label' => 'Home', 'url' => 'https://example.com'],
+    ['label' => 'News', 'url' => 'https://example.com/news/'],
+    ['label' => 'Hello world!', 'url' => null],
+]
+```
+
+The items come from Rank Math, so its settings apply: the home label, the archive formats, the primary term of a post, and the "remove post title" setting. The current page, the last item, has no URL, as in the markup of Rank Math. When the "remove post title" setting removes the current post, the last item is its parent, with its URL.
+
+The list is empty when Rank Math is not active, or when its breadcrumbs are off (Rank Math > General Settings > Breadcrumbs). Turn them on to use the function. The theme prints nothing when the list is empty.
+
+```twig
+{% set items = breadcrumbs() %}
+{% if items %}
+    <nav aria-label="Breadcrumb">
+        <ol>
+            {% for item in items %}
+                <li>
+                    {% if item.url %}
+                        <a href="{{ item.url }}">{{ item.label }}</a>
+                    {% else %}
+                        <span aria-current="page">{{ item.label }}</span>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ol>
+    </nav>
+{% endif %}
+```
+
+Labels are plain text: Twig escapes them. Rank Math also adds a `BreadcrumbList` to its schema. The function does not change it.

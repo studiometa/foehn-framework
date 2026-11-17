@@ -184,6 +184,7 @@ This renders `templates/sections/posts.twig` inside `<div id="foehn-section-post
 | `wp_block_start`, `wp_block_end`, `wp_block`                                                                                                            | `BlockMarkupExtension`    | Block comment markup in patterns                                                 |
 | `query_get`, `query_has`, `query_contains`, `query_all`, `query_url`, `query_url_without`, `query_url_toggle`, `query_url_clear`, `query_hidden_inputs` | `QueryExtension`          | Filter UIs from the URL query                                                    |
 | `facet(taxonomy)`                                                                                                                                       | `FacetExtension`          | Filter options for a taxonomy (a list of `FacetOption`)                          |
+| `breadcrumbs()`                                                                                                                                         | `BreadcrumbsExtension`    | Breadcrumb trail as `{label, url}` items, from Rank Math. Empty when it is off   |
 | `video_embed`, `video_id`, `video_platform`, `video_is_supported` (functions and filters)                                                               | `VideoEmbedExtension`     | YouTube and Vimeo embed URLs                                                     |
 
 Timber's own functions stay available: `function('wp_head')`, `post.thumbnail.src('large')`, `post.terms('category')`, and so on.
