@@ -66,8 +66,9 @@ final readonly class Invalidator
      *
      * With `PageCacheConfig::$warmAfterPurge` on, it then queues one {@see WarmSitemap}
      * job, whoever asked for the flush: the purger, `wp foehn cache:clear` or the
-     * dashboard. Nothing is queued while the cache is disabled, or without Action
-     * Scheduler.
+     * dashboard. Nothing is queued while the cache is disabled, in an environment
+     * `PageCacheConfig::$environments` does not list, or without Action Scheduler: the
+     * same rule that wires the purger.
      *
      * @return int Stored response bodies removed.
      */
@@ -77,7 +78,12 @@ final readonly class Invalidator
 
         $this->recordFlush();
 
-        if ($this->config->enabled && $this->config->warmAfterPurge && $this->dispatcher->isAvailable()) {
+        if (
+            $this->config->enabled
+            && $this->config->allowsEnvironment()
+            && $this->config->warmAfterPurge
+            && $this->dispatcher->isAvailable()
+        ) {
             $this->dispatcher->dispatch(new WarmSitemap());
         }
 
