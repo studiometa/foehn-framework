@@ -58,7 +58,11 @@ describe('EditorCanvas::capture', function () {
         expect(EditorCanvas::capture('response', [], $request))->toBe('response');
     });
 
-    it('is a canvas render for a flagged block-renderer request only', function (string $route, mixed $flag, bool $expected) {
+    it('is a canvas render for a flagged block-renderer request only', function (
+        string $route,
+        mixed $flag,
+        bool $expected,
+    ) {
         captureCanvasRequest($route, $flag);
 
         $active = EditorCanvas::render(static fn(bool $canvas): bool => $canvas);
@@ -114,7 +118,14 @@ describe('BlockRenderer on the editor canvas', function () {
         captureCanvasRequest('/wp/v2/block-renderer/test/section', '1');
 
         $renderer = new BlockRenderer();
-        $nested = static fn(): string => $renderer->render(canvasProbe(), [], '<p>Nested</p>', new WP_Block(), null, true);
+        $nested = static fn(): string => $renderer->render(
+            canvasProbe(),
+            [],
+            '<p>Nested</p>',
+            new WP_Block(),
+            null,
+            true,
+        );
 
         $html = $renderer->render(canvasProbe($nested), [], '', new WP_Block(), null, true);
 
@@ -130,5 +141,33 @@ describe('BlockRenderer on the editor canvas', function () {
         }
 
         expect(EditorCanvas::render(static fn(bool $canvas): bool => $canvas))->toBeTrue();
+    });
+});
+
+describe('BlockRenderer and the block supports', function () {
+    beforeEach(function () {
+        wp_stub_reset();
+    });
+
+    it('asks core for the support attributes of a block rendered on the site', function () {
+        new BlockRenderer()->render(canvasProbe(), [], '', new WP_Block());
+
+        expect(wp_stub_get_calls('apply_block_supports'))->toHaveCount(1);
+    });
+
+    it('leaves the markup untouched when the block has no support attributes', function () {
+        $html = new BlockRenderer()->render(canvasProbe(), [], 'Inner', new WP_Block());
+
+        expect($html)->toBe('[site|Inner]');
+    });
+
+    it('leaves the support attributes to useBlockProps on the editor canvas', function () {
+        captureCanvasRequest('/wp/v2/block-renderer/test/hero', '1');
+        $GLOBALS['wp_stub_block_supports'] = ['class' => 'alignwide'];
+
+        $html = new BlockRenderer()->render(canvasProbe(), [], 'Inner', new WP_Block());
+
+        expect($html)->toBe('[canvas|Inner]');
+        expect(wp_stub_get_calls('apply_block_supports'))->toBeEmpty();
     });
 });

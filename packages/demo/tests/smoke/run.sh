@@ -251,7 +251,8 @@ check_page "/projects/corridors/" 'href="https://example.com/contrejour/corridor
 check_page "/about/" "prose" "the about page renders its copy"
 # The blocks, the binding and the pattern are only worth registering if a visitor
 # sees them: PageSeeder writes the About page as block markup.
-check_page "/about/" 'class="hero hero--small"' "the about page opens with the hero block"
+# No closing quote: the block supports add their classes after the template's own.
+check_page "/about/" 'class="hero hero--small' "the about page opens with the hero block"
 check_page "/about/" 'callout callout--success' "the about page holds the commission pattern, callout included"
 check_page "/about/" 'minute read' "the reading-time binding computes its value on the about page"
 check_page "/projects/corridors/" '<p class="wp-block-paragraph">Hasselblad 500C/M' "core/post-meta binds the camera meta in a project's content"
@@ -262,8 +263,8 @@ check_page "/legal/" "Unsplash licence" "the legal page the footer links to exis
 # markup, so a block that rendered nothing fails here.
 check_page "/notes-on-corridors/" 'data-wp-interactive="theme/contact-sheet"' "a journal post holds the interactive contact sheet"
 check_page "/notes-on-corridors/" "data-wp-context=" "the contact sheet carries its per-instance context"
-check_page "/notes-on-corridors/" 'class="facts__row"' "a journal post holds a facts block with its fact rows"
-check_page "/notes-on-corridors/" 'class="related-projects"' "a journal post links projects picked with a posts control"
+check_page "/notes-on-corridors/" 'class="facts__row' "a journal post holds a facts block with its fact rows"
+check_page "/notes-on-corridors/" 'class="related-projects' "a journal post links projects picked with a posts control"
 check_page "/editions-press-kit/" '\.pdf" download' "a journal post links the PDF picked with a file control"
 # ContentImageHooks rewrites the srcset of an image in content to transformer URLs.
 check_page "/notes-on-corridors/" 'srcset="[^"]*/_image/' "an image in content gets its srcset from the transformer"
