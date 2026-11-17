@@ -155,6 +155,7 @@ export default defineConfig({
             { text: "#[AsRestRoute]", link: "/api/as-rest-route" },
             { text: "#[AsRewriteRule]", link: "/api/as-rewrite-rule" },
             { text: "#[AsSettingsPage]", link: "/api/as-settings-page" },
+            { text: "#[AsCustomizerSection]", link: "/api/as-customizer-section" },
             { text: "#[AsShortcode]", link: "/api/as-shortcode" },
             { text: "#[AsCliCommand]", link: "/api/as-cli-command" },
             { text: "#[AsCron]", link: "/api/as-cron" },

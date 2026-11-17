@@ -184,27 +184,27 @@ wp foehn inspect --all --format=json
 
 With no section, `inspect` prints a summary: each section with the names of its rows (post type names, WordPress templates, Twig views, menu locations, command names…). It is short enough to read whole. It starts with `problems`; `wp foehn inspect problems` gives the reason and the fix of each one (see [Problems and Errors](/guide/troubleshooting)). Name one or more sections to print them in full, or pass `--all` for every section. `--all` cannot be combined with section names.
 
-| Section             | What it lists                                                                                                                              |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `problems`          | What will not register: the classes discovery skipped and the type links that point at nothing, with the fix                               |
-| `post-types`        | Post types: the Timber model class, the arguments of `#[AsPostType]`, the taxonomies and the `#[AsPostMeta]` fields                        |
-| `taxonomies`        | Taxonomies: the Timber model class, the arguments of `#[AsTaxonomy]`, the post types and the term meta fields                              |
-| `settings`          | `#[AsSettingsPage]` pages and the options they store: option name, type, default and sanitizer                                             |
-| `blocks`            | `#[AsBlock]` blocks: name, title, class, category, and each attribute with its type, default and allowed values                            |
-| `patterns`          | `#[AsBlockPattern]` patterns: name, title, class and Twig template                                                                         |
-| `bindings`          | `#[AsBlockBinding]` sources: name, label, class and the block context they use                                                             |
-| `templates`         | Each WordPress template a controller claims: the controller that renders it, a URL to test it with, and its context keys                   |
-| `views`             | Each Twig file of the theme: the context providers its view name matches, and its context keys                                             |
-| `context-providers` | Context providers, the view names they match, and the keys each one adds                                                                   |
-| `menus`             | Menu locations and the Twig variable of each one (`menus.<location>`)                                                                      |
-| `image-sizes`       | Image sizes, with the name WordPress registers them under                                                                                  |
-| `rewrite-rules`     | `#[AsRewriteRule]` rules: regex, query, query vars and class                                                                               |
-| `rest-routes`       | `#[AsRestRoute]` routes: path, HTTP method, permission and handler method                                                                  |
-| `cli-commands`      | Every WP-CLI command that discovery registered, with the full line that runs it: `wp app <name>`, `wp foehn <name>`, `wp foehn-acf <name>` |
-| `seeders`           | `#[AsSeeder]` seeders, in the order `wp foehn seed` runs them: class, order and description                                                |
-| `plugins`           | Active, network-activated and must-use plugins, with their versions                                                                        |
-| `theme-supports`    | Every `add_theme_support()` feature, with its arguments                                                                                    |
-| `vite`              | The entry points of the theme build (`dist/.vite/manifest.json`), and the dev server URL while `npm run dev` runs                          |
+| Section             | What it lists                                                                                                                                                                |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `problems`          | What will not register: the classes discovery skipped and the type links that point at nothing, with the fix                                                                 |
+| `post-types`        | Post types: the Timber model class, the arguments of `#[AsPostType]`, the taxonomies and the `#[AsPostMeta]` fields                                                          |
+| `taxonomies`        | Taxonomies: the Timber model class, the arguments of `#[AsTaxonomy]`, the post types and the term meta fields                                                                |
+| `settings`          | `#[AsSettingsPage]` pages, `#[AsCustomizerSection]` sections, the admin screen of each, and the options they store: option name, type, label, control, default and sanitizer |
+| `blocks`            | `#[AsBlock]` blocks: name, title, class, category, and each attribute with its type, default and allowed values                                                              |
+| `patterns`          | `#[AsBlockPattern]` patterns: name, title, class and Twig template                                                                                                           |
+| `bindings`          | `#[AsBlockBinding]` sources: name, label, class and the block context they use                                                                                               |
+| `templates`         | Each WordPress template a controller claims: the controller that renders it, a URL to test it with, and its context keys                                                     |
+| `views`             | Each Twig file of the theme: the context providers its view name matches, and its context keys                                                                               |
+| `context-providers` | Context providers, the view names they match, and the keys each one adds                                                                                                     |
+| `menus`             | Menu locations and the Twig variable of each one (`menus.<location>`)                                                                                                        |
+| `image-sizes`       | Image sizes, with the name WordPress registers them under                                                                                                                    |
+| `rewrite-rules`     | `#[AsRewriteRule]` rules: regex, query, query vars and class                                                                                                                 |
+| `rest-routes`       | `#[AsRestRoute]` routes: path, HTTP method, permission and handler method                                                                                                    |
+| `cli-commands`      | Every WP-CLI command that discovery registered, with the full line that runs it: `wp app <name>`, `wp foehn <name>`, `wp foehn-acf <name>`                                   |
+| `seeders`           | `#[AsSeeder]` seeders, in the order `wp foehn seed` runs them: class, order and description                                                                                  |
+| `plugins`           | Active, network-activated and must-use plugins, with their versions                                                                                                          |
+| `theme-supports`    | Every `add_theme_support()` feature, with its arguments                                                                                                                      |
+| `vite`              | The entry points of the theme build (`dist/.vite/manifest.json`), and the dev server URL while `npm run dev` runs                                                            |
 
 A post type or taxonomy that Føhn does not register, such as `post`, `category` or a plugin's post type, is listed when a `#[AsTimberModel]` maps it to a class or a `#[AsPostMeta]` names it as its subtype. Its `declared` field is then `false`, `model` is `null` when no Timber model maps it, and the arguments only the registering code knows are `null`. A `#[AsPostMeta]` field with no subtype applies to every post type or taxonomy, so it is listed on each of them.
 
@@ -213,7 +213,7 @@ A post type or taxonomy that Føhn does not register, such as `post`, `category`
 Three sections say where content goes, so you can write it with core WP-CLI commands instead of guessing keys:
 
 - `post-types` and `taxonomies`: each `#[AsPostMeta]` field gives its `key`, `type`, `default` and `single` (`false` means one row per value). Write it with `wp post meta update <id> <key> <value>` or `wp term meta update`.
-- `settings`: each setting gives its `option` name, `type`, `default` and `sanitize` callback. Write it with `wp option update <option> <value>`. Every setting has a sanitizer: the one the page declares (`sanitizeDeclared: true`) or the one its type implies, such as `sanitize_text_field` for a string. Føhn calls `register_setting()` on `init`, and WP-CLI fires `init` before it runs a command, so `wp option update` saves through the same sanitizer as the admin form (`sanitizeOnWpCli: true`). A command run with `--skip-themes` does not load Føhn, and then no sanitizer runs.
+- `settings`: each page or section gives its `screen`, the admin URL that edits it. Each setting gives its `option` name, `type`, `label`, `control`, `default` and `sanitize` callback. Write it with `wp option update <option> <value>`. Every setting has a sanitizer: the one the page declares (`sanitizeDeclared: true`) or the one its control implies, such as `sanitize_text_field` for a text field. Føhn calls `register_setting()` on `init`, and WP-CLI fires `init` before it runs a command, so `wp option update` saves through the same sanitizer as the admin form and the Customizer (`sanitizeOnWpCli: true`). A command run with `--skip-themes` does not load Føhn, and then no sanitizer runs.
 - `blocks`: each attribute gives its `name`, `type`, `default` and `enum`, which is what a block comment such as `<!-- wp:theme/hero {"align":"center"} /-->` in `post_content` may hold. The editor-only keys (`control`, `label`, …) are left out.
 
 #### Template context

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Demo\Settings;
 
 use Studiometa\Foehn\Attributes\AsSettingsPage;
-use Studiometa\Foehn\Contracts\SettingsPageInterface;
+use Studiometa\Foehn\Contracts\SettingsInterface;
 use Studiometa\Foehn\Settings\Setting;
 
 /**
@@ -21,7 +21,7 @@ use Studiometa\Foehn\Settings\Setting;
     title: 'Theme settings',
     parent: 'themes.php',
 )]
-final readonly class ThemeSettings implements SettingsPageInterface
+final readonly class ThemeSettings implements SettingsInterface
 {
     /**
      * The page sizes the projects archive offers, the first one being the default.

@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace Tests\Fixtures\Settings;
 
 use Studiometa\Foehn\Attributes\AsSettingsPage;
-use Studiometa\Foehn\Contracts\SettingsPageInterface;
+use Studiometa\Foehn\Contracts\SettingsInterface;
 use Studiometa\Foehn\Settings\Setting;
 
 #[AsSettingsPage(slug: 'theme-settings', title: 'Theme settings', parent: 'themes.php')]
-final class ThemeSettingsFixture implements SettingsPageInterface
+final class ThemeSettingsFixture implements SettingsInterface
 {
     /**
      * @return array<string, Setting>

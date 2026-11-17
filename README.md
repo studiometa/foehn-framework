@@ -77,6 +77,7 @@ Kernel::boot(__DIR__ . '/app');
 | `#[AsRestRoute]`          | Register a REST API endpoint                          |
 | `#[AsRewriteRule]`        | Register a rewrite rule and the class that answers    |
 | `#[AsSettingsPage]`       | Register an admin page with the Settings API          |
+| `#[AsCustomizerSection]`  | Add a section with native fields to the Customizer    |
 | `#[AsMenu]`               | Register a navigation menu                            |
 | `#[AsImageSize]`          | Register a custom image size                          |
 | `#[AsCliCommand]`         | Register a WP-CLI command                             |

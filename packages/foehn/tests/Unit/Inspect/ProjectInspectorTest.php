@@ -26,6 +26,7 @@ use Tests\Fixtures\InspectApp\ProductCardContext;
 use Tests\Fixtures\InspectApp\ProductController;
 use Tests\Fixtures\InspectApp\ProductsEndpoint;
 use Tests\Fixtures\InspectApp\SampleProductsSeeder;
+use Tests\Fixtures\InspectApp\ContactSection;
 use Tests\Fixtures\InspectApp\ShopSettings;
 use Tests\Fixtures\InspectApp\StockBinding;
 use Tests\Fixtures\InspectApp\StripeWebhook;
@@ -229,11 +230,12 @@ describe('ProjectInspector', function () {
             ->toBe(array_keys(inspectedRow($rows, 'name', 'brand')));
     });
 
-    it('reports settings pages with the option, type, field, default and sanitizer of each setting', function () {
+    it('reports settings pages and Customizer sections with the option, type, field, default and sanitizer of each setting', function () {
         expect(inspector()->section('settings'))->toBe([
             [
                 'page' => 'shop-settings',
                 'title' => 'Shop settings',
+                'screen' => 'options-general.php?page=shop-settings',
                 'class' => ShopSettings::class,
                 'optionGroup' => 'shop-settings',
                 'settings' => [
@@ -268,6 +270,26 @@ describe('ProjectInspector', function () {
                         'default' => 'EUR',
                         'sanitize' => ShopSettings::class . '::normalizeCurrency',
                         'sanitizeDeclared' => true,
+                        'sanitizeOnWpCli' => true,
+                        'showInRest' => false,
+                    ],
+                ],
+            ],
+            [
+                'page' => 'theme_contact',
+                'title' => 'Contact',
+                'screen' => 'customize.php?autofocus[section]=theme_contact',
+                'class' => ContactSection::class,
+                'optionGroup' => 'theme_contact',
+                'settings' => [
+                    [
+                        'option' => 'theme_phone',
+                        'type' => 'string',
+                        'label' => 'Phone',
+                        'control' => 'tel',
+                        'default' => '',
+                        'sanitize' => 'sanitize_text_field',
+                        'sanitizeDeclared' => false,
                         'sanitizeOnWpCli' => true,
                         'showInRest' => false,
                     ],

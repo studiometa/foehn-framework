@@ -27,7 +27,7 @@ use Attribute;
  *     title: 'Theme settings',
  *     parent: 'themes.php',
  * )]
- * final readonly class ThemeSettings implements SettingsPageInterface
+ * final readonly class ThemeSettings implements SettingsInterface
  * {
  *     public static function settings(): array
  *     {
@@ -39,7 +39,7 @@ use Attribute;
  * }
  * ```
  *
- * @see \Studiometa\Foehn\Contracts\SettingsPageInterface
+ * @see \Studiometa\Foehn\Contracts\SettingsInterface
  * @see \Studiometa\Foehn\Settings\Setting
  */
 #[Attribute(Attribute::TARGET_CLASS)]

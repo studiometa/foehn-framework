@@ -62,9 +62,10 @@ Attributes are PHP 8 annotations that enable auto-discovery and registration of 
 
 ### Settings
 
-| Attribute                                 | Description                                 |
-| ----------------------------------------- | ------------------------------------------- |
-| [`#[AsSettingsPage]`](./as-settings-page) | An admin page on the WordPress Settings API |
+| Attribute                                           | Description                                    |
+| --------------------------------------------------- | ---------------------------------------------- |
+| [`#[AsSettingsPage]`](./as-settings-page)           | An admin page on the WordPress Settings API    |
+| [`#[AsCustomizerSection]`](./as-customizer-section) | A section with native fields in the Customizer |
 
 ### Jobs & Content
 

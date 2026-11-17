@@ -40,7 +40,7 @@ final readonly class AsSettingsPage
 | `icon`       | `?string` | `null`                  | Dashicon, URL or base64 SVG. Top-level pages only                     |
 | `position`   | `?int`    | `null`                  | Where in the menu. Top-level pages only                               |
 
-## SettingsPageInterface
+## SettingsInterface
 
 ```php
 <?php
@@ -49,7 +49,7 @@ namespace Studiometa\Foehn\Contracts;
 
 use Studiometa\Foehn\Settings\Setting;
 
-interface SettingsPageInterface
+interface SettingsInterface
 {
     /** @return array<string, Setting> */
     public static function settings(): array;

@@ -1,6 +1,6 @@
 ---
 name: foehn
-description: 'Build WordPress themes with studiometa/foehn, the attribute-based framework on Tempest discovery and Timber/Twig. Load it when code in a theme made from studiometa/foehn-starter uses Studiometa\Foehn classes or attributes such as #[AsAction], #[AsFilter], #[AsPostType], #[AsTaxonomy], #[AsPostMeta], #[AsBlock], #[AsBlockPattern], #[AsBlockBinding], #[AsTemplateController], #[AsContextProvider], #[AsMenu], #[AsImageSize], #[AsSettingsPage], #[AsRewriteRule], #[AsRestRoute], #[AsShortcode], #[AsCliCommand], #[AsSeeder], #[AsJob], #[AsCron] or #[AsTwigExtension]; TemplateContext, ViewEngineInterface, BlockInterface, FoehnConfig, PageCacheConfig, ViteManifest or foehn_section(); or the wp foehn inspect, skill, agents-md, seed, make:*, discovery:*, cache:*, verify and salts:generate commands.'
+description: 'Build WordPress themes with studiometa/foehn, the attribute-based framework on Tempest discovery and Timber/Twig. Load it when code in a theme made from studiometa/foehn-starter uses Studiometa\Foehn classes or attributes such as #[AsAction], #[AsFilter], #[AsPostType], #[AsTaxonomy], #[AsPostMeta], #[AsBlock], #[AsBlockPattern], #[AsBlockBinding], #[AsTemplateController], #[AsContextProvider], #[AsMenu], #[AsImageSize], #[AsSettingsPage], #[AsCustomizerSection], #[AsRewriteRule], #[AsRestRoute], #[AsShortcode], #[AsCliCommand], #[AsSeeder], #[AsJob], #[AsCron] or #[AsTwigExtension]; TemplateContext, ViewEngineInterface, BlockInterface, FoehnConfig, PageCacheConfig, ViteManifest or foehn_section(); or the wp foehn inspect, skill, agents-md, seed, make:*, discovery:*, cache:*, verify and salts:generate commands.'
 ---
 
 # Føhn
@@ -264,7 +264,7 @@ final class HeaderMenu {}            // Twig: menus.header
 final class CardImageSize {}         // size name "card", derived from the class name; or name: 'card'
 ```
 
-Settings pages (`#[AsSettingsPage]` + `SettingsPageInterface` + `Setting::string()/bool()/int()/number()`, read with `Settings::get()`), rewrite rules (`#[AsRewriteRule]` + `RewriteHandlerInterface`), REST routes (`#[AsRestRoute]`), shortcodes (`#[AsShortcode]`), WP-CLI commands (`#[AsCliCommand]` + `CliCommandInterface`), background jobs (`#[AsJob]`, `dispatch()`) and recurring jobs (`#[AsCron]`): [references/content.md](references/content.md) and [references/routes-and-commands.md](references/routes-and-commands.md).
+Settings pages and Customizer sections (`#[AsSettingsPage]` or `#[AsCustomizerSection]` + `SettingsInterface` + `Setting::string()/bool()/int()/number()`, read with `Settings::get()`), rewrite rules (`#[AsRewriteRule]` + `RewriteHandlerInterface`), REST routes (`#[AsRestRoute]`), shortcodes (`#[AsShortcode]`), WP-CLI commands (`#[AsCliCommand]` + `CliCommandInterface`), background jobs (`#[AsJob]`, `dispatch()`) and recurring jobs (`#[AsCron]`): [references/content.md](references/content.md) and [references/routes-and-commands.md](references/routes-and-commands.md).
 
 ## Configuration
 

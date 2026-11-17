@@ -7,15 +7,15 @@ namespace Studiometa\Foehn\Contracts;
 use Studiometa\Foehn\Settings\Setting;
 
 /**
- * What a settings page stores.
+ * What a settings page or a Customizer section stores.
  *
- * Implemented alongside #[AsSettingsPage]. Each Setting also says which field
- * edits it, and Føhn draws the form from them.
+ * Implemented alongside #[AsSettingsPage] or #[AsCustomizerSection]. Each
+ * Setting also says which field edits it, and Føhn draws the fields from them.
  */
-interface SettingsPageInterface
+interface SettingsInterface
 {
     /**
-     * What this page stores, keyed by option name.
+     * What this page or section stores, keyed by option name.
      *
      * Each key becomes a WordPress option of that exact name — the Settings API
      * has no namespacing, so name them as you would name an option.
