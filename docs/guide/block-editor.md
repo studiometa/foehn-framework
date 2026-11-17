@@ -192,6 +192,8 @@ The rest of the render follows the editor's rules for its own blocks:
 - **Images have a toolbar button.** Each `image` attribute adds a replace button to the block toolbar, as on core's image block. The sidebar control stays.
 - **A change re-renders.** A sidebar change asks for a new render after a short pause. Typing in an editable element does not: `RichText` already shows the text.
 
+On the front end, the block supports land on the same root element. Føhn adds what `get_block_wrapper_attributes()` would print to the first tag of the template: the `wp-block-<name>` class, the alignment, the custom class and the anchor, and the classes and inline styles of the colors, spacing, typography and border supports. The template keeps its own classes, and its own `style` comes first, so a support style wins. Core adds the layout and state classes, such as the `@mobile` styles of WordPress 7.1, to the same tag. Do not print these attributes in the template: they would appear twice. A template with several root nodes gets the supports on its first tag only, where the editor puts them on a wrapper around all the nodes.
+
 Use inner blocks for free-form prose: several paragraphs, headings, lists and buttons, in an order the author chooses. Use `block_editable()` for text the template places itself: a section title, a caption, an item label. Use sidebar controls for the data around them: an image, a variant, a link target.
 
 ## Blocks are dynamic by construction
