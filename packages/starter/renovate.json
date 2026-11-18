@@ -1,0 +1,18 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["github>studiometa/renovate-config"],
+  "vulnerabilityAlerts": {
+    "minimumReleaseAge": null
+  },
+  "packageRules": [
+    {
+      "description": "Every Føhn package carries the same version and requires the others at that exact version, so they move together",
+      "matchPackageNames": ["studiometa/foehn*", "@studiometa/foehn-*"],
+      "groupName": "Føhn",
+      "groupSlug": "foehn",
+      "major": {
+        "enabled": true
+      }
+    }
+  ]
+}

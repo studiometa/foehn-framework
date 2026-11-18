@@ -118,6 +118,26 @@ describe('starter packaging', function () {
         expect($racine . '/CLAUDE.md')->not->toBeFile();
     });
 
+    // Un projet créé reçoit les mises à jour de Renovate avec les règles de Føhn :
+    // celles du preset partagé, les correctifs de sécurité sans attente, et les
+    // paquets Føhn ensemble, puisqu'ils portent tous la même version exacte.
+    it('livre une configuration Renovate', function () use ($racine) {
+        $attributs = (string) file_get_contents($racine . '/.gitattributes');
+        $renovate = json_decode((string) file_get_contents($racine . '/renovate.json'), true);
+
+        expect($attributs)->not->toContain('renovate.json');
+        expect($renovate['extends'] ?? [])->toContain('github>studiometa/renovate-config');
+        expect($renovate['vulnerabilityAlerts'] ?? [])->toHaveKey('minimumReleaseAge', null);
+
+        $groupes = array_values(array_filter(
+            $renovate['packageRules'] ?? [],
+            static fn(array $regle): bool => ($regle['groupName'] ?? null) === 'Føhn',
+        ));
+
+        expect($groupes)->toHaveCount(1);
+        expect($groupes[0]['matchPackageNames'])->toBe(['studiometa/foehn*', '@studiometa/foehn-*']);
+    });
+
     // L'installeur copie `public/` dans la racine web. Le répertoire part vide
     // dans l'archive, pour qu'un projet sache où mettre `robots.txt` ou
     // `.well-known/` sans lire la documentation.
