@@ -152,7 +152,179 @@ $result->bounds;       // [[west, south], [east, north]] to frame, or null
 
 Each facet is counted with the text and position scope and the other facet groups, and without its own group.
 
-Position requests are not page cached: `near`, `radius` and `bbox` are not cache query arguments.
+## Archive page
+
+The package renders the fragments of the archive. The theme owns the page: a template controller for `archive-place`, a page template, and four section wrappers.
+
+```php
+use Studiometa\Foehn\Attributes\AsTemplateController;
+use Studiometa\Foehn\Contracts\TemplateControllerInterface;
+use Studiometa\Foehn\Contracts\ViewEngineInterface;
+use Studiometa\Foehn\Places\Search\PlaceSearch;
+use Studiometa\Foehn\Places\View\PlacesView;
+use Studiometa\Foehn\Views\TemplateContext;
+
+#[AsTemplateController('archive-place', priority: 5)]
+final readonly class PlaceArchiveController implements TemplateControllerInterface
+{
+    public function __construct(
+        private ViewEngineInterface $view,
+        private PlacesView $places,
+    ) {}
+
+    public function handle(TemplateContext $context): string
+    {
+        return $this->view->render(
+            'pages/archive-place',
+            $context->with('result', PlaceSearch::current())->with('places', $this->places),
+        );
+    }
+}
+```
+
+`PlaceSearch::current()` runs once. Every template receives the same `result`, and `places` (`PlacesView`): the configuration, the resolved Mapbox token and style, the section names, and the URLs that keep the request.
+
+```twig
+{# templates/pages/archive-place.twig #}
+{% extends 'layouts/base.twig' %}
+
+{% block content %}
+  {{ foehn_section('place-summary', { result, places }) }}
+
+  {% include '@places/Geocoder.twig' with { result, places } only %}
+  {{ foehn_section('place-filters', { result, places }) }}
+
+  {% if result.request.view == 'map' and not result.invalid %}
+    {% embed '@places/Map.twig' with { result, places } only %}
+      {% block items %}
+        {{ foehn_section('place-results', { result, places }) }}
+      {% endblock %}
+    {% endembed %}
+  {% else %}
+    {{ foehn_section('place-results', { result, places }) }}
+  {% endif %}
+
+  {{ foehn_section('place-pagination', { result, places }) }}
+{% endblock %}
+```
+
+Each section wrapper includes its package template:
+
+```twig
+{# templates/sections/place-filters.twig #}
+{% include '@places/Filters.twig' with { result, places } only %}
+```
+
+| Section            | Package template  |
+| ------------------ | ----------------- |
+| `place-filters`    | `Filters.twig`    |
+| `place-summary`    | `Summary.twig`    |
+| `place-results`    | `Results.twig`    |
+| `place-pagination` | `Pagination.twig` |
+
+The geocoder and the map shell are never inside a section: a Fetch update morphs the four sections, never the Mapbox input or the map canvas.
+
+## Templates
+
+| Template          | Renders                                                                                       |
+| ----------------- | --------------------------------------------------------------------------------------------- |
+| `Filters.twig`    | The GET form: text, facets, the position controls of the features that are on, Clear position |
+| `Facet.twig`      | One facet group: a checkbox per term, with its count                                          |
+| `Geocoder.twig`   | The address search. Nothing when `nearSearch` is off or there is no token                     |
+| `Summary.twig`    | The total, the position scope, the view switch and the status region                          |
+| `ViewSwitch.twig` | The list and map links, with the current request                                              |
+| `Results.twig`    | `PlaceList.twig` or `MapItems.twig`, the refine-search state, and `data-bounds`               |
+| `PlaceList.twig`  | The places of the current page                                                                |
+| `MapItems.twig`   | The map places, each a `MapboxClusterItem` with `id="place-{ID}"`                             |
+| `PlaceItem.twig`  | One place: title, distance, types, address, contact                                           |
+| `PlacePopup.twig` | The popup of a selected marker                                                                |
+| `Map.twig`        | `StoreLocator`, `MapboxMap`, `MapboxCluster`, the navigation control, Search this area        |
+| `Pagination.twig` | The pages of the list. Nothing in the map view                                                |
+| `Empty.twig`      | No match, or an invalid request, with a link to the unfiltered archive                        |
+
+The templates escape every value. The theme owns the layout, the map height and the CSS.
+
+### Overrides
+
+`PlacesHooks` registers two Twig namespaces on `timber/locations`:
+
+| Namespace     | Looks in                                                                           |
+| ------------- | ---------------------------------------------------------------------------------- |
+| `@places`     | `templates/places/` of the child theme, then of the parent theme, then the package |
+| `@places-pkg` | The package only                                                                   |
+
+A file in `templates/places/` replaces the package template of the same name. To add to a template without copying it, include the package one through `@places-pkg`. Every package template reaches the others through `@places`, so an override applies everywhere:
+
+```twig
+{# templates/places/PlaceItem.twig: the package item, then a project field #}
+{% include '@places-pkg/PlaceItem.twig' %}
+{% if place.openingHours() %}
+  <p class="places-item__hours">{{ place.openingHours()|e }}</p>
+{% endif %}
+```
+
+## Browser integration
+
+The package ships no front-end script. The templates emit declarative markup for `@studiometa/ui` and `@studiometa/ui-mapbox`, on the `next` release line:
+
+```bash
+npm install @studiometa/js-toolkit@next @studiometa/ui@next @studiometa/ui-mapbox@next mapbox-gl @mapbox/mapbox-gl-geocoder
+```
+
+```js
+import "@studiometa/ui/autoload";
+import "@studiometa/ui-mapbox/autoload";
+import "mapbox-gl/dist/mapbox-gl.css";
+import "@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css";
+```
+
+- The filter form is a GET form with `Action Fetch`. A change submits it after 300 ms. `Fetch` requests the four sections in one request, morphs them (`mode="morph"`, `selector="[data-foehn-section]"`), and writes the archive URL with the form fields to the history, never `?foehn_sections=`. Back and forward update the sections only.
+- An empty position control is disabled, so the form never submits `near=` or `bbox=`.
+- A geocoder result writes `near` into the form, turns `bbox` off and submits. The radius control appears with `near`; without one, the server applies `defaultRadius`.
+- The map frames `result.bounds` on the first load (`bounds` and `fitBoundsOptions` of the map options) and after each update (the `data-bounds` of the results). A `bbox` request has no bounds, so the map keeps the area the visitor chose.
+- Search this area shows only after a move made by the visitor (`map-moveend` with an `originalEvent`), never after a `fitBounds()`. It submits the raw map bounds; the server normalizes them.
+- The form sets `aria-busy` and writes a loading text, then an error text, into the `place-status` region of the summary. A failed request (a `400` included) keeps the last sections.
+- Each map item is the sidebar row and the map feature: `StoreLocator` selects it from a click in the list or on a marker. `id="place-{ID}"` keeps the node of a place that stays after a morph.
+
+In an `Action` effect with a target, such as `MapboxMap(#place-map) -> …`, `$el` is the element of the target. The element of the action is `action.$el`.
+
+### Without JavaScript, token or network
+
+- Without JavaScript, the form reloads the archive with the search: text, facets, pagination and the view switch work. The geocoder and Search this area need JavaScript.
+- Without a token, the geocoder is not rendered and the map view says the map is not available, then lists the places.
+- Without coordinates, a place is in no result.
+- Without Mapbox network access, the server-rendered list and links stay.
+
+## Page cache
+
+Position requests are not page cached: `near`, `radius` and `bbox` are not cache query arguments, so every positioned page and section request is a bypass. Key the other arguments, so an unpositioned search is a cached page and a cached section response:
+
+```php
+// app/page-cache.config.php
+return new PageCacheConfig(
+    // …
+    cacheQueryArgs: [
+        'q' => '^[A-Za-z0-9-]{1,100}
+
+Each single place page gets a node of the type `schemaType`, with `name`, `url`, `description`, `image`, a `PostalAddress`, `GeoCoordinates` when the place has coordinates, and `telephone`, `email` and `sameAs` when contact fields are on and filled. See [JSON-LD](/guide/json-ld).
+,
+        'view' => ['list', 'map'],
+        'place_type' => '^[a-z0-9-]+(?:,[a-z0-9-]+)*
+
+Each single place page gets a node of the type `schemaType`, with `name`, `url`, `description`, `image`, a `PostalAddress`, `GeoCoordinates` when the place has coordinates, and `telephone`, `email` and `sameAs` when contact fields are on and filled. See [JSON-LD](/guide/json-ld).
+,
+    ],
+);
+```
+
+Add one entry per facet taxonomy. Pagination is a path and needs no entry. An empty `q`, as the form submits it, is absent from the key. A text with a space or an accent is outside the characters the cache writes to a file name, so it is a bypass.
+
+## Limits
+
+- The search loads the places of the current language in PHP. It targets about 250 places. Above that, or for typo-tolerant search, move the search to `studiometa/foehn-search`.
+- The map shows at most `mapResultLimit` places, one DOM node each. Above it, the map asks to refine the search.
+- The list is paginated with `listPageSize`, without upper limit.
+- Facets are taxonomies. An address field is not a facet: a project that filters by country uses a taxonomy.
 
 ## JSON-LD
 
