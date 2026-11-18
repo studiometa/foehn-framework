@@ -128,7 +128,7 @@ A change to a declared setting empties the whole [page cache](/guide/page-cache)
 
 ## Translatable settings
 
-On a site with [Polylang](/guide/polylang), `Setting::string(translatable: true)` stores one value for each language: `{name}` for the default language and `{name}_{lang}` for the others. Other settings keep one value for all languages.
+On a site with [Polylang](/guide/polylang), `Setting::string(translatable: true)` stores one value for each language: `{name}` for the default language and `{name}_{lang}` for the others. Other settings keep one value for all languages. A select (`options`) cannot be translatable.
 
 ```php
 'theme_tagline' => Setting::string(label: 'Tagline', translatable: true),

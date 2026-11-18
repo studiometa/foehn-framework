@@ -78,7 +78,7 @@ final readonly class Setting
      * @param string $control One of STRING_CONTROLS. Ignored when $options is given
      * @param array<string, string> $options The values a select offers, as value => label
      * @param bool $translatable One value for each language, on a site with Polylang.
-     *   An empty translation reads the value of the default language
+     *   An empty translation reads the value of the default language. Not with $options
      */
     public static function string(
         string $default = '',
@@ -96,6 +96,12 @@ final readonly class Setting
                 $control,
                 implode(', ', self::STRING_CONTROLS),
             ));
+        }
+
+        if ($translatable && $options !== []) {
+            throw new InvalidArgumentException(
+                'A translatable string setting cannot have options: a select posts one of them for an empty translation, so the translation never reads the default language.',
+            );
         }
 
         return new self(

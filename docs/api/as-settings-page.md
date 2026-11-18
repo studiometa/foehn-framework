@@ -71,15 +71,15 @@ Setting::int(int $default = 0, string $label = '', string $description = '', arr
 Setting::number(float $default = 0.0, string $label = '', string $description = '', ?string $sanitize = null, bool $showInRest = false)
 ```
 
-| Parameter      | Description                                                                                                                |
-| -------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `label`        | The field label. The option name when it is empty                                                                          |
-| `description`  | The help text under the field, and the REST schema description when `showInRest` is on                                     |
-| `control`      | `text`, `textarea`, `email`, `url` or `tel`. Any other value throws `InvalidArgumentException`                             |
-| `options`      | value => label. Makes the field a `<select>`                                                                               |
-| `sanitize`     | A function name, or the name of a public static method on the page class — never a closure                                 |
-| `showInRest`   | Off by default, unlike `#[AsPostMeta]`                                                                                     |
-| `translatable` | `string()` only. One value for each language on a multilingual site. See [Polylang](/guide/polylang#translatable-settings) |
+| Parameter      | Description                                                                                                                                    |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `label`        | The field label. The option name when it is empty                                                                                              |
+| `description`  | The help text under the field, and the REST schema description when `showInRest` is on                                                         |
+| `control`      | `text`, `textarea`, `email`, `url` or `tel`. Any other value throws `InvalidArgumentException`                                                 |
+| `options`      | value => label. Makes the field a `<select>`                                                                                                   |
+| `sanitize`     | A function name, or the name of a public static method on the page class — never a closure                                                     |
+| `showInRest`   | Off by default, unlike `#[AsPostMeta]`                                                                                                         |
+| `translatable` | `string()` only, not with `options`. One value for each language on a multilingual site. See [Polylang](/guide/polylang#translatable-settings) |
 
 | Control                        | Default sanitiser                                   |
 | ------------------------------ | --------------------------------------------------- |

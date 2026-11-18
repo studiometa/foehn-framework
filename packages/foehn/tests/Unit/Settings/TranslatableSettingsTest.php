@@ -31,6 +31,11 @@ describe('Settings, translatable', function () {
         expect(Setting::string(translatable: true)->translatable)->toBeTrue();
     });
 
+    it('refuses a translatable select, which cannot leave a translation empty', function () {
+        expect(fn() => Setting::string(options: ['a' => 'A', 'b' => 'B'], translatable: true))
+            ->toThrow(InvalidArgumentException::class);
+    });
+
     it('stores the default language in {name} and the others in {name}_{lang}', function () {
         expect(Settings::option('tagline', null))->toBe('tagline');
         expect(Settings::option('tagline', 'fr'))->toBe('tagline_fr');
