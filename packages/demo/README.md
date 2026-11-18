@@ -31,27 +31,25 @@ ddev launch /wp/wp-admin # the admin
 
 ### Use the monorepo packages
 
-From `packages/demo`, a normal demo install uses the released `studiometa/foehn` packages. To test changes from this monorepo, first run `ddev start` once so Composer installs all dependencies. Then enable the local sync hook and restart:
-
-```bash
-cp .ddev/config.local.example.yaml .ddev/config.local.yaml
-ddev restart
-```
-
-The hook mirrors `packages/foehn`, `packages/installer` and `packages/acf` into `vendor/`, regenerates the editor entry, and clears the full discovery cache. Run `ddev restart` after framework source changes. Without the hook, the demo can run an older released framework even while its theme uses code from the current branch.
-
-The hook copies source only. If a package changes its Composer dependencies, resolve them through temporary path repositories before restarting. Each path repository gives its package the version the demo pins, the version of the root `package.json`: `studiometa/foehn-acf` requires that exact framework version, which a `@dev` branch is not. These commands need PHP 8.5 and Composer on the host because DDEV mounts `packages/demo` without its sibling packages:
+A normal demo install uses the released `studiometa/foehn` packages. To run the demo on the packages of this monorepo, install the dependencies on the host before the first `ddev start`, as CI does. DDEV mounts `packages/demo` without its sibling packages, so Composer in the container cannot read `../foehn`. You need PHP 8.5 and Composer on the host. From `packages/demo`:
 
 ```bash
 cp composer.json composer.monorepo.json
-cp composer.lock composer.monorepo.lock
 version="$(node -p 'require("../../package.json").version')"
 for package in foehn:foehn foehn-installer:installer foehn-acf:acf; do
   COMPOSER=composer.monorepo.json composer config "repositories.${package%%:*}" \
     "{\"type\":\"path\",\"url\":\"../${package##*:}\",\"options\":{\"symlink\":false,\"versions\":{\"studiometa/${package%%:*}\":\"$version\"}}}"
 done
-COMPOSER=composer.monorepo.json composer update 'studiometa/*' --with-dependencies
-rm composer.monorepo.json composer.monorepo.lock
+COMPOSER=composer.monorepo.json composer update
+ddev start
+```
+
+`composer.monorepo.json` and its lock file are ignored. Each path repository gives its package the version the demo pins, the version of the root `package.json`: `studiometa/foehn-acf` requires that exact framework version, which a `@dev` branch is not. The command is `composer update` and not `composer install`, so the dependencies always come from the current `composer.json` and packages, never from a lock file of an earlier run. `ddev start` finds `vendor/` and does not run Composer. Run all the commands again when `composer.json` or the dependencies of a package change.
+
+Composer copies the packages into `vendor/` (`symlink: false`), because a symlink would point outside the directory that DDEV mounts. After a change to the source of a package, copy it again. This also regenerates `web/` and clears the discovery cache:
+
+```bash
+COMPOSER=composer.monorepo.json composer reinstall 'studiometa/foehn*'
 ```
 
 ### Seeded content

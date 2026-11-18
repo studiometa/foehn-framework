@@ -40,7 +40,6 @@ composer.lock
 /.ddev/web-build/*
 !/.ddev/web-build/prepend.Dockerfile.wp-cli
 !/.ddev/web-build/Dockerfile.wp-cli
-!/.ddev/config.local.example.yaml
 !/.ddev/docker-compose.minio.yaml
 !/.ddev/nginx/
 !/.ddev/nginx/*.conf

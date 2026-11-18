@@ -17,7 +17,7 @@ ddev launch
 
 Admin at `/wp/wp-admin`, with `admin` / `admin`.
 
-A normal install uses released Føhn packages. In a monorepo checkout, run `ddev start` once, then copy `.ddev/config.local.example.yaml` to `.ddev/config.local.yaml` and run `ddev restart`. This mirrors the local framework packages and clears discovery. Restart again after framework source changes.
+A normal install uses released Føhn packages. In a monorepo checkout, install the dependencies on the host from the monorepo packages before the first `ddev start`: see [Use the monorepo packages](https://github.com/studiometa/foehn-framework/tree/main/packages/demo#use-the-monorepo-packages) in the README of the demo.
 
 ## What is demonstrated where
 

@@ -31,8 +31,12 @@ fail() {
 [ -e "$local_config" ] && fail "$local_config already exists — this run would replace it"
 [ -e "$include" ] && fail "$include already exists — this run would replace it"
 
+# As the web user, never with sudo. nginx runs as that user and has no `user`
+# directive, so `nginx -t` as root gives its temporary directories to `nobody`,
+# and every request body too large for memory, such as an upload, then fails
+# with a 500 until the web container is created again.
 reload_nginx() {
-	ddev exec 'sudo nginx -t && sudo nginx -s reload' >/dev/null 2>&1 || fail 'nginx refused the configuration'
+	ddev exec 'nginx -t && nginx -s reload' >/dev/null 2>&1 || fail 'nginx refused the configuration'
 	sleep 1
 }
 
@@ -41,7 +45,7 @@ cleanup() {
 	ddev exec 'cd /var/www/html && wp foehn cache:clear' >/dev/null 2>&1 || true
 	rm -f "$local_config" "$include" "$written"
 	rmdir config/nginx config 2>/dev/null || true
-	ddev exec 'sudo nginx -s reload' >/dev/null 2>&1 || true
+	ddev exec 'nginx -s reload' >/dev/null 2>&1 || true
 }
 
 trap cleanup EXIT
