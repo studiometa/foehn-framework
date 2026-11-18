@@ -9,10 +9,12 @@ Føhn needs no library. A node is an array, a `JsonSerializable` object or an ob
 
 ## Where Føhn prints the nodes
 
-| Nodes       | Rank Math with its Schema module on                               | No SEO plugin, or the Schema module of Rank Math off     |
+| Nodes       | Rank Math prints its graph                                        | No SEO plugin, or Rank Math prints no graph              |
 | ----------- | ----------------------------------------------------------------- | -------------------------------------------------------- |
 | Page nodes  | In the graph of Rank Math, through the `rank_math/json_ld` filter | In one `<script type="application/ld+json">` in `<head>` |
 | Block nodes | In a second `<script type="application/ld+json">` on `wp_footer`  | The same                                                 |
+
+Føhn does not read the settings of Rank Math: on `wp_head`, it prints its own script when Rank Math did not apply the `rank_math/json_ld` filter. Rank Math prints no graph while its Schema module is off, and while its registration is not done or skipped: it then does not load its front end.
 
 Rank Math prints its graph in `<head>`, before the blocks render. Thus the block nodes always go in the footer. The theme must call `wp_footer()`, as the starter layout does.
 

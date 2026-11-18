@@ -52,7 +52,7 @@ final class EventJsonLd implements JsonLdProviderInterface
 }
 ```
 
-With the Schema module of Rank Math on, the nodes go in the graph of Rank Math. Else Føhn prints them in one `<script type="application/ld+json">` in `<head>`.
+When Rank Math prints its graph, the nodes go in it. Else Føhn prints them in one `<script type="application/ld+json">` in `<head>`.
 
 A class that has the attribute but does not implement `JsonLdProviderInterface` is skipped and reported: see `wp foehn discovery:status`.
 

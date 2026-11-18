@@ -175,9 +175,11 @@ describe('JsonLdDiscovery without an SEO plugin', function () {
         expect(jsonLdOutput(appliedJsonLdDiscovery()->printPageGraph(...)))->toBe('');
     });
 
-    it('prints its own script when the Schema module of Rank Math is off', function () {
+    it('prints its own script when Rank Math is loaded but does not apply its filter', function () {
+        // The Schema module is in the option, but Rank Math has not loaded its front end:
+        // its registration is not done or skipped.
         jsonLdSingle('event');
-        $GLOBALS['rank_math_stub_modules'] = ['sitemap'];
+        $GLOBALS['rank_math_stub_modules'] = ['rich-snippet'];
 
         expect(jsonLdGraph(jsonLdOutput(appliedJsonLdDiscovery()->printPageGraph(...))))->toHaveCount(2);
     });
@@ -210,10 +212,12 @@ describe('JsonLdDiscovery with Rank Math', function () {
         expect(apply_filters('rank_math/json_ld', $graph))->toBe($graph);
     });
 
-    it('does not print a second graph in <head>', function () {
+    it('does not print a second graph in <head> once Rank Math applied its filter', function () {
         jsonLdSingle('event');
+        $discovery = appliedJsonLdDiscovery();
+        apply_filters('rank_math/json_ld', []);
 
-        expect(jsonLdOutput(appliedJsonLdDiscovery()->printPageGraph(...)))->toBe('');
+        expect(jsonLdOutput($discovery->printPageGraph(...)))->toBe('');
     });
 });
 

@@ -39,16 +39,6 @@ final class RankMath
     }
 
     /**
-     * Whether Rank Math prints a JSON-LD graph: its Schema module (`rich-snippet`) is on.
-     *
-     * Rank Math builds that graph through the `rank_math/json_ld` filter.
-     */
-    public static function printsJsonLd(): bool
-    {
-        return self::isModuleActive('rich-snippet');
-    }
-
-    /**
      * The URL of the sitemap index of Rank Math, or null when its sitemap module is off.
      */
     public static function sitemapUrl(): ?string

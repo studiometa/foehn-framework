@@ -8,7 +8,6 @@ use Studiometa\Foehn\Attributes\AsDiscovery;
 use Studiometa\Foehn\Attributes\AsJsonLd;
 use Studiometa\Foehn\Contracts\JsonLdProviderInterface;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
-use Studiometa\Foehn\Integrations\RankMath\RankMath;
 use Studiometa\Foehn\JsonLd\JsonLd;
 use Tempest\Discovery\Discovery;
 use Tempest\Discovery\DiscoveryLocation;
@@ -21,10 +20,10 @@ use function Tempest\Container\get;
  * Discovers classes marked with #[AsJsonLd] and prints the schema.org JSON-LD graph of
  * the page.
  *
- * With the Schema module of Rank Math on, the nodes of a page go in the graph of Rank
- * Math, through `rank_math/json_ld`. Else Føhn prints its own graph in `<head>`. The
- * nodes that blocks add with JsonLd::add() go in a second graph in the footer, with or
- * without Rank Math.
+ * When Rank Math prints its graph, the nodes of a page go in it, through
+ * `rank_math/json_ld`. Else Føhn prints its own graph in `<head>`. The nodes that
+ * blocks add with JsonLd::add() go in a second graph in the footer, with or without
+ * Rank Math.
  */
 #[AsDiscovery(phase: DiscoveryPhase::Late)]
 final class JsonLdDiscovery implements Discovery
@@ -37,6 +36,12 @@ final class JsonLdDiscovery implements Discovery
      * @var array<string, list<class-string<JsonLdProviderInterface>>>
      */
     private array $providers = [];
+
+    /**
+     * Whether Rank Math applied `rank_math/json_ld` during the request: then the nodes of
+     * the page are in its graph.
+     */
+    private bool $mergedIntoRankMath = false;
 
     public function __construct(
         private readonly DiscoveryProblems $problems,
@@ -141,13 +146,16 @@ final class JsonLdDiscovery implements Discovery
      * Add the nodes of the page to the graph of Rank Math.
      *
      * Rank Math keys its nodes by name and prints the values, so the keys of Føhn only
-     * have to be unique.
+     * have to be unique. Rank Math applies the filter on `rank_math/head`, which runs on
+     * `wp_head` before printPageGraph().
      */
     public function mergeIntoRankMath(mixed $data): mixed
     {
         if (!is_array($data)) {
             return $data;
         }
+
+        $this->mergedIntoRankMath = true;
 
         foreach ($this->pageNodes() as $index => $node) {
             $data['foehn-' . $index] = $node;
@@ -157,11 +165,16 @@ final class JsonLdDiscovery implements Discovery
     }
 
     /**
-     * Print the graph of the page in `<head>`, when Rank Math does not print one.
+     * Print the graph of the page in `<head>`, when the nodes are not in the graph of
+     * Rank Math.
+     *
+     * Decided from what Rank Math did, and not from its settings: Rank Math does not load
+     * its front end, and prints no graph, while its Schema module is off or its
+     * registration is not done or skipped.
      */
     public function printPageGraph(): void
     {
-        if (RankMath::printsJsonLd()) {
+        if ($this->mergedIntoRankMath) {
             return;
         }
 

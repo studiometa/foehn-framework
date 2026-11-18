@@ -50,6 +50,24 @@ it('adds the nodes of the post to the graph of Rank Math, and prints no graph of
     expect($ids)->toContain($url . '#article', $url . '#webpage');
 });
 
+it('prints its own graph in <head> while Rank Math does not load its front end', function () {
+    // The Schema module is on, but Rank Math loads no front end before its registration
+    // is done or skipped, so it prints no graph.
+    Site::wp('wp option delete rank_math_registration_skip');
+
+    try {
+        $body = Client::get(smokeJsonLdPostUrl() . '?smoke-json-ld-unregistered=1')->body;
+    } finally {
+        Site::wp('wp option update rank_math_registration_skip 1');
+    }
+
+    $scripts = smokeJsonLd($body);
+
+    expect(array_column($scripts, 'class'))->toBe(['foehn-json-ld']);
+    expect($scripts[0]['offset'])->toBeLessThan((int) strpos($body, '</head>'));
+    expect(smokeJsonLdTypes($scripts[0]['json']))->toContain('BlogPosting');
+});
+
 it('prints the nodes that a block adds in a second script, in the footer', function () {
     $body = smokeJsonLdWithBlock(smokeJsonLdPostUrl());
     $scripts = smokeJsonLd($body);

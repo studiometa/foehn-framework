@@ -22,14 +22,6 @@ describe('RankMath', function () {
         expect(RankMath::sitemapUrl())->toBe('http://example.com/sitemap_index.xml');
     });
 
-    it('prints JSON-LD only when its Schema module is on', function () {
-        expect(RankMath::printsJsonLd())->toBeFalse();
-
-        $GLOBALS['rank_math_stub_modules'] = ['rich-snippet'];
-
-        expect(RankMath::printsJsonLd())->toBeTrue();
-    });
-
     it('gives no sitemap URL when the sitemap module is off', function () {
         expect(RankMath::sitemapUrl())->toBeNull();
     });
