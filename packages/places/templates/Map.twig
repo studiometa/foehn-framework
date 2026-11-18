@@ -11,7 +11,8 @@
     {% endembed %}
 
   The map frames `result.bounds` on the first load. Search this area shows only after
-  a move made by the visitor: a move from `fitBounds()` has no `originalEvent`.
+  a move made by the visitor: a move from `fitBounds()` has no `originalEvent`. In an
+  effect with a target, `$el` is the target's element: the button is `action.$el`.
 
   Without a token, the items render as a list after an unavailable notice.
 
@@ -50,7 +51,8 @@
             hidden
             data-component="Action"
             data-on:click="MapboxMap(#place-map) -> () => {
-              const { near, radius, bbox } = $el.form.elements;
+              const { form } = action.$el;
+              const { near, radius, bbox } = form.elements;
               const bounds = target.map.getBounds();
               bbox.value = [
                 bounds.getWest(),
@@ -64,8 +66,8 @@
                 near.disabled = true;
               }
               if (radius) radius.disabled = true;
-              $el.hidden = true;
-              $el.form.requestSubmit();
+              action.$el.hidden = true;
+              form.requestSubmit();
             }">
             {{ __('Search this area', 'foehn-places')|esc_html }}
           </button>

@@ -122,7 +122,8 @@ final readonly class PlacesView
     public function taxonomyLabel(string $taxonomy): string
     {
         $object = get_taxonomy($taxonomy);
-        $label = is_object($object) && isset($object->labels->name) ? $object->labels->name : null;
+        $labels = is_object($object) ? $object->labels ?? null : null;
+        $label = is_object($labels) ? $labels->name ?? null : null;
 
         return is_string($label) && $label !== '' ? $label : $taxonomy;
     }
@@ -149,6 +150,7 @@ final readonly class PlacesView
             return $archive;
         }
 
+        // @mago-expect lint:no-global
         $rewrite = $GLOBALS['wp_rewrite'] ?? null;
 
         if ($rewrite instanceof WP_Rewrite && $rewrite->using_permalinks()) {
