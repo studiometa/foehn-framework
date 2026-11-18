@@ -14,24 +14,31 @@ namespace Studiometa\Foehn\Settings;
  */
 final class SettingField
 {
+    /** The help text of a field whose value the code configuration sets. */
+    public const string READONLY_NOTE = 'The configuration sets this value, so it cannot be changed here.';
+
     /**
      * The field, filled with the current value.
+     *
+     * A read-only field shows a value the code sets, with a note that says so. A text
+     * field is `readonly`, so it still posts the value it shows. A checkbox and a select
+     * have no read-only state: they are `disabled`.
      */
-    public static function render(string $name, Setting $setting, mixed $value): string
+    public static function render(string $name, Setting $setting, mixed $value, bool $readonly = false): string
     {
-        $describedBy = $setting->description !== ''
-            ? sprintf(' aria-describedby="%s-description"', esc_attr($name))
+        $description = $readonly ? trim($setting->description . ' ' . self::READONLY_NOTE) : $setting->description;
+        $describedBy = $description !== '' ? sprintf(' aria-describedby="%s-description"', esc_attr($name)) : '';
+        $help = $description !== ''
+            ? sprintf('<p class="description" id="%s-description">%s</p>', esc_attr($name), esc_html($description))
             : '';
-        $help = $setting->description !== ''
-            ? sprintf(
-                '<p class="description" id="%s-description">%s</p>',
-                esc_attr($name),
-                esc_html($setting->description),
-            )
-            : '';
+        $describedBy .= match (true) {
+            !$readonly => '',
+            in_array($setting->control, ['checkbox', 'select'], true) => ' disabled="disabled"',
+            default => ' readonly="readonly"',
+        };
 
         if ($setting->control === 'checkbox') {
-            return self::checkbox($name, $setting, (bool) $value);
+            return self::checkbox($name, $setting, (bool) $value, $readonly) . ($readonly ? $help : '');
         }
 
         $field = match ($setting->control) {
@@ -65,7 +72,7 @@ final class SettingField
      * A checkbox, as WordPress draws one: the box and its text in one label, and
      * the field label repeated for screen readers.
      */
-    private static function checkbox(string $name, Setting $setting, bool $checked): string
+    private static function checkbox(string $name, Setting $setting, bool $checked, bool $readonly = false): string
     {
         $label = $setting->label($name);
 
@@ -74,7 +81,7 @@ final class SettingField
             . '<label for="%2$s"><input type="checkbox" id="%2$s" name="%2$s" value="1"%3$s /> %4$s</label></fieldset>',
             esc_html($label),
             esc_attr($name),
-            $checked ? ' checked="checked"' : '',
+            ($checked ? ' checked="checked"' : '') . ($readonly ? ' disabled="disabled"' : ''),
             esc_html($setting->description !== '' ? $setting->description : $label),
         );
     }
