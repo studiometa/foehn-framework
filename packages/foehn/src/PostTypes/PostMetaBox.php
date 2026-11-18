@@ -120,7 +120,8 @@ final readonly class PostMetaBox
                 $value = call_user_func(self::setting($field)->sanitizer(), $value);
             }
 
-            update_post_meta($postId, $field->key, $value);
+            // update_post_meta() unslashes its value, as WordPress expects slashed data there.
+            update_post_meta($postId, $field->key, wp_slash($value));
         }
     }
 

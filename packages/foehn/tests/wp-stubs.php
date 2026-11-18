@@ -1982,7 +1982,8 @@ if (!function_exists('update_post_meta')) {
     {
         wp_stub_record('update_post_meta', compact('postId', 'key', 'value'));
 
-        $GLOBALS['wp_stub_post_meta'][$postId][$key] = $value;
+        // WordPress expects slashed data here: update_metadata() unslashes it.
+        $GLOBALS['wp_stub_post_meta'][$postId][$key] = wp_unslash($value);
 
         return true;
     }
@@ -2707,6 +2708,13 @@ if (!function_exists('wp_unslash')) {
     function wp_unslash(mixed $value): mixed
     {
         return is_string($value) ? stripslashes($value) : $value;
+    }
+}
+
+if (!function_exists('wp_slash')) {
+    function wp_slash(mixed $value): mixed
+    {
+        return is_string($value) ? addslashes($value) : $value;
     }
 }
 

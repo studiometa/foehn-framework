@@ -163,6 +163,14 @@ describe('PostMetaBox saving', function () {
         expect($GLOBALS['wp_stub_post_meta'][7]['code'])->toBe(' <ab> ');
     });
 
+    it('keeps the backslashes of a posted value', function () {
+        // update_post_meta() unslashes its value, so the posted value must reach it slashed.
+        eventMetaBox()->save(7, metaBoxRequest(['subtitle' => 'C:\\path', 'code' => 'C:\\path']));
+
+        expect($GLOBALS['wp_stub_post_meta'][7]['subtitle'])->toBe('C:\\path');
+        expect($GLOBALS['wp_stub_post_meta'][7]['code'])->toBe('C:\\path');
+    });
+
     it('does not touch a key absent from the request', function () {
         $GLOBALS['wp_stub_post_meta'][7] = ['subtitle' => 'Kept', 'featured' => true];
 
