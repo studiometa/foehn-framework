@@ -243,16 +243,17 @@ return new FoehnConfig(
 
 Located in `Studiometa\Foehn\Hooks\Cleanup`:
 
-| Class                 | Description                                                             |
-| --------------------- | ----------------------------------------------------------------------- |
-| `CleanContent`        | Remove empty `<p>` tags and archive title prefixes                      |
-| `CleanHeadTags`       | Remove wlwmanifest, RSD, shortlink, REST discovery links                |
-| `CleanImageSizes`     | Keep `thumbnail` as the only core image size WordPress writes on upload |
-| `DisableBlockStyles`  | Dequeue Gutenberg block styles (for themes not using blocks)            |
-| `DisableEmoji`        | Remove emoji scripts, styles, and TinyMCE plugin                        |
-| `DisableFeeds`        | Disable RSS/Atom feeds                                                  |
-| `DisableGlobalStyles` | Remove global styles and SVG filters from wp_head                       |
-| `DisableOembed`       | Disable oEmbed discovery and related scripts                            |
+| Class                       | Description                                                                       |
+| --------------------------- | --------------------------------------------------------------------------------- |
+| `CleanContent`              | Remove empty `<p>` tags and archive title prefixes                                |
+| `CleanHeadTags`             | Remove wlwmanifest, RSD, shortlink, REST discovery links                          |
+| `CleanImageSizes`           | Keep `thumbnail` as the only core image size WordPress writes on upload           |
+| `DisableBlockStyles`        | Dequeue Gutenberg block styles (for themes not using blocks)                      |
+| `DisableEmoji`              | Remove emoji scripts, styles, and TinyMCE plugin                                  |
+| `DisableFeeds`              | Disable RSS/Atom feeds                                                            |
+| `DisableGlobalStyles`       | Remove global styles and SVG filters from wp_head                                 |
+| `DisableOembed`             | Disable oEmbed discovery and related scripts                                      |
+| `DisableStyleStatesEditing` | Turn off the WordPress 7.1 responsive and state style editing in the block editor |
 
 ### Security Hooks
 
