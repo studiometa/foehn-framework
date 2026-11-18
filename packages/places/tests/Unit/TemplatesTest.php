@@ -10,6 +10,8 @@ use Studiometa\Foehn\Places\Tests\Fixtures\TestPlace;
 use Studiometa\Foehn\Places\View\PlacesView;
 use Studiometa\Foehn\Query\FacetOption;
 use Twig\Environment;
+use Twig\Loader\ArrayLoader;
+use Twig\Loader\ChainLoader;
 use Twig\Loader\FilesystemLoader;
 use Twig\TwigFilter;
 use Twig\TwigFunction;
@@ -431,5 +433,115 @@ describe('PlacesView', function () {
         $view = new PlacesView(new PlacesConfig(geocoderOptions: ['language' => 'de']));
 
         expect($view->geocoderOptions())->toBe(['language' => 'de']);
+    });
+});
+
+/**
+ * The HTML of the demo venue page that the browser tests in
+ * packages/demo/tests/js/places mount. It is the demo page template, its section
+ * templates and the package templates, rendered here so the browser tests run the shipped markup. A template
+ * change that is not rendered again fails this test: run it with
+ * UPDATE_BROWSER_FIXTURES=1 to write the files again.
+ */
+describe('Browser fixtures', function () {
+    $fixtures = dirname(__DIR__, 3) . '/demo/tests/js/places/fixtures';
+
+    /**
+     * The demo page, with a layout that renders the content block only, and sections
+     * that render their template in the wrapper SectionRenderer writes.
+     */
+    $renderPage = static function (PlaceSearchResult $result, PlacesConfig $config): string {
+        $theme = dirname(__DIR__, 3) . '/demo/theme';
+        $loader = new FilesystemLoader();
+        // The package templates without the demo's PlaceItem override, whose
+        // `openingHours` reads post meta through Timber.
+        $locations = PlacesHooks::locations([0 => [$theme . '/templates']], '/nonexistent', '/nonexistent');
+
+        foreach ($locations as $namespace => $paths) {
+            foreach ($paths as $path) {
+                $loader->addPath($path, $namespace === 0 ? FilesystemLoader::MAIN_NAMESPACE : (string) $namespace);
+            }
+        }
+
+        $twig = placesTwig();
+        $twig->setLoader(new ChainLoader([
+            new ArrayLoader(['layouts/base.twig' => '{% block content %}{% endblock %}']),
+            $loader,
+        ]));
+        $twig->addFunction(new TwigFunction(
+            'foehn_section',
+            static fn(array $context, string $name, array $sectionContext = []): string => sprintf(
+                '<div id="foehn-section-%s" data-foehn-section="%s">%s</div>',
+                $name,
+                $name,
+                $twig->render('sections/' . $name . '.twig', [...$context, ...$sectionContext]),
+            ),
+            ['needs_context' => true, 'is_safe' => ['html']],
+        ));
+
+        return $twig->render('pages/archive-place.twig', [
+            'result' => $result,
+            'places' => new PlacesView($config),
+        ]);
+    };
+
+    $place = static fn(int $id, string $city, float $lat, float $lng): TestPlace => TestPlace::with($id, [
+        'title' => $city,
+        'link' => '/venues/' . strtolower($city) . '/',
+        'latitude' => (string) $lat,
+        'longitude' => (string) $lng,
+        'city' => $city,
+    ]);
+
+    $option = static function (string $slug, string $name): FacetOption {
+        $term = new WP_Term();
+        $term->term_id = crc32($slug);
+        $term->slug = $slug;
+        $term->name = $name;
+        $term->taxonomy = 'place_type';
+
+        return new FacetOption($term, 1, false);
+    };
+
+    it('matches the rendered demo venue page in each state', function () use ($fixtures, $renderPage, $place, $option) {
+        $GLOBALS['wp_stub_archive_links']['place'] = '/venues/';
+        $config = new PlacesConfig(accessToken: 'pk.test');
+        $paris = $place(1, 'Paris', 48.8566, 2.3522);
+        $lyon = $place(2, 'Lyon', 45.764, 4.8357);
+        $arles = $place(3, 'Arles', 43.6767, 4.6278);
+        $facets = ['place_type' => [$option('gallery', 'Gallery'), $option('bookshop', 'Bookshop')]];
+        $request = static fn(string $query): PlaceSearchRequest => PlaceSearchRequest::fromQueryString(
+            $query,
+            $config,
+            ['place_type'],
+        );
+        $states = [
+            'list-page-1' => ['request' => $request(''), 'places' => [$paris, $lyon], 'total' => 3, 'pages' => 2],
+            'list-page-2' => ['request' => $request(''), 'places' => [$arles], 'total' => 3, 'page' => 2, 'pages' => 2],
+            'list-lyon' => ['request' => $request('q=lyon'), 'places' => [$lyon], 'total' => 1, 'pages' => 1],
+            'map' => [
+                'request' => $request('view=map'),
+                'places' => [$paris, $lyon],
+                'total' => 2,
+                'bounds' => [[2.3522, 45.764], [4.8357, 48.8566]],
+            ],
+            'map-south' => [
+                'request' => $request('view=map&q=south'),
+                'places' => [$lyon, $arles],
+                'total' => 2,
+                'bounds' => [[4.6278, 43.6767], [4.8357, 45.764]],
+            ],
+        ];
+
+        foreach ($states as $name => $state) {
+            $html = $renderPage(placesResult([...$state, 'facets' => $facets], $config), $config);
+            $path = $fixtures . '/' . $name . '.html';
+
+            if (getenv('UPDATE_BROWSER_FIXTURES') === '1') {
+                file_put_contents($path, $html);
+            }
+
+            expect(is_file($path) ? file_get_contents($path) : null)->toBe($html, $name . '.html is out of date');
+        }
     });
 });

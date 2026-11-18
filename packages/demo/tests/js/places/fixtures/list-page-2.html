@@ -1,0 +1,172 @@
+  <section class="shell masthead">
+    <p class="label label--ink">
+      Where to see the work
+    </p>
+    <h1 class="title" style="margin-top: 0.75rem">Venues</h1>
+    <div id="foehn-section-place-summary" data-foehn-section="place-summary"><div class="places-summary">
+      <p class="places-summary__total">
+              3 places
+                </p>
+    <nav class="places-view-switch" aria-label="Result view">
+      <a
+      class="places-view-switch__link"
+      href="/venues/"
+      aria-current="page">
+      List
+    </a>
+      <a
+      class="places-view-switch__link"
+      href="/venues/?view=map"
+      >
+      Map
+    </a>
+  </nav>
+    <p id="place-status" class="places-summary__status" role="status" aria-live="polite"></p>
+</div>
+</div>
+  </section>
+
+  <div class="shell places places--list">
+    <aside class="places__filters">
+        <div class="places-geocoder">
+    <p class="places-geocoder__label" id="place-geocoder-label">
+      Search near an address
+    </p>
+    <div
+      class="places-geocoder__control"
+      aria-labelledby="place-geocoder-label"
+      data-component="Action MapboxGeocoder"
+      data-option-access-token="pk.test"
+      data-option-options="{&quot;language&quot;:&quot;en&quot;}"
+      data-on:map-result="Fetch(#place-search) -> () => {
+        const [lng, lat] = event.detail.result.center;
+        const { near, bbox } = target.$el.elements;
+        near.value = `${lat},${lng}`;
+        near.disabled = false;
+        if (bbox) {
+          bbox.value = '';
+          bbox.disabled = true;
+        }
+        target.$el.requestSubmit();
+      }"></div>
+  </div>
+      <div id="foehn-section-place-filters" data-foehn-section="place-filters"><form
+  id="place-search"
+  class="places-filters"
+  action="/venues/"
+  method="get"
+  role="search"
+  data-component="Action Fetch"
+  data-option-history
+  data-option-mode="morph"
+  data-option-selector="[data-foehn-section]"
+  data-option-params="{&quot;foehn_sections&quot;:&quot;place-filters,place-summary,place-results,place-pagination&quot;}"
+  data-loading-text="Loading places…"
+  data-error-text="The places could not be loaded. The previous result is still shown."
+  data-on:change.debounce300="() => $el.requestSubmit()"
+  data-on:fetch-before="() => {
+    const status = document.getElementById('place-status');
+    if (status) status.textContent = $el.dataset.loadingText;
+    $el.setAttribute('aria-busy', 'true');
+  }"
+  data-on:fetch-error="() => {
+    const status = document.getElementById('place-status');
+    if (status) status.textContent = $el.dataset.errorText;
+  }"
+  data-on:fetch-after="() => $el.removeAttribute('aria-busy')"
+  data-on:fetch-update-after="MapboxMap(#place-map) -> () => {
+    const bounds = document.querySelector('#foehn-section-place-results [data-bounds]')?.dataset.bounds;
+    if (bounds) target.map.fitBounds(JSON.parse(bounds), { padding: 60, maxZoom: 12 });
+  }">
+  <div class="places-filters__search">
+    <label for="place-search-q">Search</label>
+    <input
+      id="place-search-q"
+      type="search"
+      name="q"
+      maxlength="100"
+      value="">
+  </div>
+
+  
+      <input
+      type="hidden"
+      name="near"
+      value=""
+      disabled>
+      
+      <input
+      type="hidden"
+      name="bbox"
+      value=""
+      disabled>
+  
+        <fieldset class="places-facet" data-taxonomy="place_type">
+    <legend>place_type</legend>
+          <label class="places-facet__option">
+        <input
+          type="checkbox"
+          name="place_type[]"
+          value="gallery"
+                    >
+        <span class="places-facet__name">Gallery</span>
+                  <span class="places-facet__count">1</span>
+              </label>
+          <label class="places-facet__option">
+        <input
+          type="checkbox"
+          name="place_type[]"
+          value="bookshop"
+                    >
+        <span class="places-facet__name">Bookshop</span>
+                  <span class="places-facet__count">1</span>
+              </label>
+      </fieldset>
+  
+  <div class="places-filters__actions">
+    <button type="submit">Search</button>
+      </div>
+</form>
+</div>
+    </aside>
+
+    <div class="places__results">
+              <div id="foehn-section-place-results" data-foehn-section="place-results"><div
+  class="places-results places-results--list"
+  >
+        <ol class="places-list">
+          <li id="place-3" class="places-list__item">
+        <article class="places-item">
+  <h3 class="places-item__title">
+    <a href="/venues/arles/">Arles</a>
+  </h3>
+          <address class="places-item__address">
+              Arles          </address>
+    </article>
+      </li>
+      </ol>
+  </div>
+</div>
+      
+      <div id="foehn-section-place-pagination" data-foehn-section="place-pagination">  <nav class="places-pagination" aria-label="Pages">
+    <ul class="places-pagination__pages">
+              <li>
+                                  <a
+              class="places-pagination__page"
+              href="/venues/"
+              data-component="Fetch"
+              data-option-history
+              data-option-mode="morph"
+              data-option-selector="[data-foehn-section]"
+              data-option-params="{&quot;foehn_sections&quot;:&quot;place-filters,place-summary,place-results,place-pagination&quot;}">
+              1
+            </a>
+                  </li>
+              <li>
+                      <span class="places-pagination__page" aria-current="page">2</span>
+                  </li>
+          </ul>
+  </nav>
+</div>
+    </div>
+  </div>
