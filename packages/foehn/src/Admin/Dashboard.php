@@ -135,8 +135,7 @@ final readonly class Dashboard
                     'Clearing works even while the page cache is switched off, so files an earlier release left behind can still be removed.',
                     'foehn',
                 )
-                . '</p>'
-        ;
+                . '</p>';
 
         foreach ([
             CacheActions::FLUSH => __('Clear the whole page cache', 'foehn'),
@@ -145,8 +144,7 @@ final readonly class Dashboard
             echo
                 '<form method="post" action="'
                     . esc_url(CacheActions::endpoint())
-                    . '" style="display:inline-block;margin-right:.5em">'
-            ;
+                    . '" style="display:inline-block;margin-right:.5em">';
             echo '<input type="hidden" name="action" value="' . esc_attr($action) . '">';
             wp_nonce_field(CacheActions::nonceAction($action));
             echo '<button type="submit" class="button">' . esc_html($label) . '</button>';

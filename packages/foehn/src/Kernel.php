@@ -546,8 +546,7 @@ final class Kernel
         if (!class_exists(Timber::class)) {
             add_action('admin_notices', static function (): void {
                 echo
-                    '<div class="error"><p><strong>Foehn:</strong> Timber plugin is required but not active.</p></div>'
-                ;
+                    '<div class="error"><p><strong>Foehn:</strong> Timber plugin is required but not active.</p></div>';
             });
 
             if (!is_admin()) {

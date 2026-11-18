@@ -98,8 +98,7 @@ final readonly class AdminBar
                     . esc_attr(self::formId($action))
                     . '" action="'
                     . esc_url(CacheActions::endpoint())
-                    . '">'
-            ;
+                    . '">';
             echo '<input type="hidden" name="action" value="' . esc_attr($action) . '">';
 
             if ($action === CacheActions::FORGET_POST && $postId !== null) {
@@ -108,8 +107,7 @@ final readonly class AdminBar
                         . esc_attr(CacheActions::POST_ID_FIELD)
                         . '" value="'
                         . esc_attr((string) $postId)
-                        . '">'
-                ;
+                        . '">';
             }
 
             // Each form carries a token minted for its own action, so the markup of one

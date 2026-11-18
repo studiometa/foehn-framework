@@ -100,7 +100,7 @@ final readonly class TemplateContext implements ArrayAccess
      *
      * @template T of Post
      * @param class-string<T>|null $class Expected post class for type validation
-     * @return PostCollectionInterface<T>|null
+     * @return (PostCollectionInterface&\Traversable<int, T>)|null
      */
     public function posts(?string $class = null): ?PostCollectionInterface
     {
