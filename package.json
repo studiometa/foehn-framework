@@ -5,11 +5,13 @@
   "workspaces": [
     "packages/vite-plugin",
     "packages/starter",
-    "packages/demo"
+    "packages/demo",
+    "packages/places"
   ],
   "scripts": {
     "lint:editor": "node --check packages/foehn/resources/js/editor.js && node --check packages/foehn/resources/js/schedule.js && node --check packages/foehn/resources/js/prepublish-checks.js",
     "test:editor": "node --test \"packages/foehn/tests/js/*.test.mjs\"",
+    "test:places": "node --test \"packages/places/tests/js/*.test.mjs\"",
     "fmt": "oxfmt --write README.md packages/*/README.md",
     "fmt:check": "oxfmt --check README.md packages/*/README.md",
     "docs:dev": "npm run --prefix docs dev",
