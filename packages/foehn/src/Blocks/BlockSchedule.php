@@ -92,9 +92,11 @@ final class BlockSchedule
      *
      * Handler for the `render_block` filter.
      *
+     * Null content passes through: a plugin can apply the filter to a block it did not render.
+     *
      * @param array<string, mixed> $block
      */
-    public function render(string $content, array $block): string
+    public function render(?string $content, array $block): ?string
     {
         $attributes = is_array($block['attrs'] ?? null) ? $block['attrs'] : [];
         $from = self::moment($attributes[self::FROM] ?? null);

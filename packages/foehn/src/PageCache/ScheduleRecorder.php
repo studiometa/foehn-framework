@@ -23,16 +23,26 @@ final readonly class ScheduleRecorder
 
     public function register(): void
     {
-        add_action('shutdown', $this->record(...));
+        add_action('shutdown', $this->record(...), 10, 0);
     }
 
     /**
-     * Record the current URL when the page has a scheduled change.
+     * Record the URL of the current request when its page has a scheduled change.
      *
-     * @param array<string, mixed>|null $server
-     * @param array<string, mixed>|null $cookies
+     * Handler for the `shutdown` action, which passes an empty string: nothing is read from it.
      */
-    public function record(?array $server = null, ?array $cookies = null): void
+    public function record(): void
+    {
+        $this->recordFor($_SERVER, $_COOKIE);
+    }
+
+    /**
+     * Record the URL of a request when its page has a scheduled change.
+     *
+     * @param array<string, mixed> $server
+     * @param array<string, mixed> $cookies
+     */
+    public function recordFor(array $server, array $cookies): void
     {
         $at = $this->schedule->nextChange();
 
@@ -40,9 +50,7 @@ final readonly class ScheduleRecorder
             return;
         }
 
-        $server ??= $_SERVER;
-
-        if ($this->bypass->forContext($server, $cookies ?? $_COOKIE) !== null) {
+        if ($this->bypass->forContext($server, $cookies) !== null) {
             return;
         }
 
