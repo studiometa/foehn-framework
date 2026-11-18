@@ -1,0 +1,16 @@
+{#
+  The list and the map are two pages of one URL state: two normal links, with the
+  current request and the other `view`.
+
+  Context: `result` (PlaceSearchResult), `places` (PlacesView).
+#}
+<nav class="places-view-switch" aria-label="{{ __('Result view', 'foehn-places')|e }}">
+  {% for view, label in { list: __('List', 'foehn-places'), map: __('Map', 'foehn-places') } %}
+    <a
+      class="places-view-switch__link"
+      href="{{ places.url(result.request, { view }) |esc_url }}"
+      {% if result.request.view == view %}aria-current="page"{% endif %}>
+      {{ label|esc_html }}
+    </a>
+  {% endfor %}
+</nav>

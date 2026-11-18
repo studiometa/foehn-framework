@@ -1,0 +1,81 @@
+{#
+  The map shell: StoreLocator, MapboxMap, MapboxNavigationControl, MapboxCluster, and
+  the Search this area button. It is never inside a section, so a Fetch update or a
+  back and forward navigation never rebuilds the map.
+
+  The theme fills the `items` block with the `place-results` section, which sits
+  inside MapboxCluster:
+
+    {% embed '@places/Map.twig' with { result, places } only %}
+      {% block items %}{{ foehn_section('place-results', { result, places }) }}{% endblock %}
+    {% endembed %}
+
+  The map frames `result.bounds` on the first load. Search this area shows only after
+  a move made by the visitor: a move from `fitBounds()` has no `originalEvent`.
+
+  Without a token, the items render as a list after an unavailable notice.
+
+  Context: `result` (PlaceSearchResult), `places` (PlacesView).
+#}
+{% set access_token = places.accessToken() %}
+<div class="places-map">
+  {% if access_token %}
+    <div class="places-map__locator" data-component="StoreLocator">
+      <div
+        id="place-map"
+        class="places-map__map"
+        data-component="MapboxMap Action"
+        data-option-access-token="{{ access_token|e }}"
+        data-option-center="{{ places.config.center|json_encode|e }}"
+        data-option-zoom="{{ places.config.zoom|e }}"
+        data-option-map-options="{{ places.mapOptions(result)|json_encode|e }}"
+        {% if result.features.area %}
+          data-on:map-moveend="() => {
+            if (event.detail.event.originalEvent) {
+              document.getElementById('place-search-area').hidden = false;
+            }
+          }"
+        {% endif %}>
+        <div class="places-map__items" data-component="MapboxCluster">
+          {% block items %}{% endblock %}
+        </div>
+        <div class="places-map__canvas" data-ref="container"></div>
+        <div data-component="MapboxNavigationControl"></div>
+        {% if result.features.area %}
+          <button
+            id="place-search-area"
+            class="places-map__search-area"
+            type="button"
+            form="place-search"
+            hidden
+            data-component="Action"
+            data-on:click="MapboxMap(#place-map) -> () => {
+              const { near, radius, bbox } = $el.form.elements;
+              const bounds = target.map.getBounds();
+              bbox.value = [
+                bounds.getWest(),
+                bounds.getSouth(),
+                bounds.getEast(),
+                bounds.getNorth()
+              ].join(',');
+              bbox.disabled = false;
+              if (near) {
+                near.value = '';
+                near.disabled = true;
+              }
+              if (radius) radius.disabled = true;
+              $el.hidden = true;
+              $el.form.requestSubmit();
+            }">
+            {{ __('Search this area', 'foehn-places')|esc_html }}
+          </button>
+        {% endif %}
+      </div>
+    </div>
+  {% else %}
+    <p class="places-map__unavailable">
+      {{ unavailable|default(__('The map is not available. The places are listed below.', 'foehn-places'))|esc_html }}
+    </p>
+    {{ block('items') }}
+  {% endif %}
+</div>

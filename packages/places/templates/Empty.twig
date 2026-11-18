@@ -1,0 +1,17 @@
+{#
+  No place: an invalid request, or a search with no match. Both link back to the
+  unfiltered archive.
+
+  Context: `result` (PlaceSearchResult), `places` (PlacesView).
+#}
+<div class="places-empty">
+  {% if result.invalid %}
+    <p>{{ __('This search cannot be read: a value is not valid.', 'foehn-places')|esc_html }}</p>
+    <a href="{{ places.archiveUrl()|esc_url }}">{{ __('Show every place', 'foehn-places')|esc_html }}</a>
+  {% else %}
+    <p>{{ __('No place matches this search.', 'foehn-places')|esc_html }}</p>
+    {% if result.request.toQueryArgs() is not empty %}
+      <a href="{{ places.archiveUrl()|esc_url }}">{{ __('Clear the search', 'foehn-places')|esc_html }}</a>
+    {% endif %}
+  {% endif %}
+</div>

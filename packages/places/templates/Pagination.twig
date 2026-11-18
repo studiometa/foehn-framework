@@ -1,0 +1,31 @@
+{#
+  The pages of the list. Each link keeps the whole request, works without JavaScript,
+  and with it fetches the four sections. Nothing renders in the map view.
+
+  Context: `result` (PlaceSearchResult), `places` (PlacesView).
+#}
+{% if not result.invalid and result.request.view == 'list' and result.pages > 1 %}
+  <nav class="places-pagination" aria-label="{{ __('Pages', 'foehn-places')|e }}">
+    <ul class="places-pagination__pages">
+      {% for page in 1..result.pages %}
+        <li>
+          {% if page == result.page %}
+            <span class="places-pagination__page" aria-current="page">{{ page }}</span>
+          {% else %}
+            {% set link = places.url(result.request, {}, page) %}
+            <a
+              class="places-pagination__page"
+              href="{{ link|esc_url }}"
+              data-component="Fetch"
+              data-option-history
+              data-option-mode="morph"
+              data-option-selector="[data-foehn-section]"
+              data-option-src="{{ foehn_section_url(places.sections(), link)|esc_url }}">
+              {{ page }}
+            </a>
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  </nav>
+{% endif %}

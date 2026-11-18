@@ -1,0 +1,31 @@
+{#
+  The number of places, the position scope, the view switch, and the status region
+  that the form fills while a request runs. Inside the `place-summary` section, so a
+  successful update writes the new total and empties the status.
+
+  Context: `result` (PlaceSearchResult), `places` (PlacesView).
+#}
+{% set request = result.request %}
+<div class="places-summary">
+  {% if result.invalid %}
+    <p class="places-summary__invalid">
+      {{ __('This search cannot be read.', 'foehn-places')|esc_html }}
+      <a href="{{ places.archiveUrl()|esc_url }}">{{ __('Show every place', 'foehn-places')|esc_html }}</a>
+    </p>
+  {% else %}
+    <p class="places-summary__total">
+      {% if result.total == 1 %}
+        {{ __('1 place', 'foehn-places')|esc_html }}
+      {% else %}
+        {{ __('%d places', 'foehn-places')|format(result.total)|esc_html }}
+      {% endif %}
+      {% if request.near %}
+        {{ __('within %d km of the chosen address', 'foehn-places')|format(request.radius)|esc_html }}
+      {% elseif request.bbox %}
+        {{ __('in the selected map area', 'foehn-places')|esc_html }}
+      {% endif %}
+    </p>
+    {% include '@places/ViewSwitch.twig' with { result, places } only %}
+  {% endif %}
+  <p id="place-status" class="places-summary__status" role="status" aria-live="polite"></p>
+</div>

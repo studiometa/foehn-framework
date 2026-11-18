@@ -1,0 +1,36 @@
+{#
+  The address search of the locator: a standalone MapboxGeocoder, outside the form and
+  outside every section, so a morph never reaches the input Mapbox renders. It is the
+  same element in the list view and the map view.
+
+  A result writes `near` into the form, turns `bbox` off and submits: the four
+  sections update with a radius scope. Nothing renders when `nearSearch` is off or
+  there is no token.
+
+  Context: `result` (PlaceSearchResult), `places` (PlacesView).
+#}
+{% set access_token = places.accessToken() %}
+{% if result.features.near and access_token %}
+  <div class="places-geocoder">
+    <p class="places-geocoder__label" id="place-geocoder-label">
+      {{ __('Search near an address', 'foehn-places')|esc_html }}
+    </p>
+    <div
+      class="places-geocoder__control"
+      aria-labelledby="place-geocoder-label"
+      data-component="Action MapboxGeocoder"
+      data-option-access-token="{{ access_token|e }}"
+      data-option-options="{{ places.geocoderOptions()|json_encode|e }}"
+      data-on:map-result="Fetch(#place-search) -> () => {
+        const [lng, lat] = event.detail.result.center;
+        const { near, bbox } = target.$el.elements;
+        near.value = `${lat},${lng}`;
+        near.disabled = false;
+        if (bbox) {
+          bbox.value = '';
+          bbox.disabled = true;
+        }
+        target.$el.requestSubmit();
+      }"></div>
+  </div>
+{% endif %}
