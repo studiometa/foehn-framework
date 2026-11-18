@@ -18,6 +18,11 @@ $GLOBALS['wp_stub_filters'] = [];
 function wp_stub_reset(): void
 {
     $GLOBALS['wp_stub_calls'] = [];
+    // A status a test set stays set for the rest of the PHP process, as the status of a
+    // request does: start each test from the status a request starts with.
+    if (!headers_sent()) {
+        http_response_code(200);
+    }
     // Registered filter callbacks run for real, so they have to be cleared: one left
     // behind would rewrite a value in a later, unrelated test.
     $GLOBALS['wp_stub_filters'] = [];

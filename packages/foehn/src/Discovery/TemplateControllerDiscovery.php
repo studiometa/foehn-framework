@@ -216,6 +216,11 @@ final class TemplateControllerDiscovery implements Discovery
      *
      * An `int` is a status to answer with instead — the response itself is built by the
      * caller, outside the window where the control parameter is hidden.
+     *
+     * A controller, or a `template_redirect` hook before it, can set an error status
+     * (`status_header(400)` for a search it refuses). The full page keeps that status, so
+     * its sections answer it too: a section request that said `200` for the same URL
+     * would disagree with the page and be stored by the page cache.
      */
     private function renderSelectedSections(TemplateControllerInterface $controller): string|int
     {
@@ -247,6 +252,12 @@ final class TemplateControllerDiscovery implements Discovery
         }
 
         $this->discardBuffersSince($bufferLevel);
+
+        $status = http_response_code();
+
+        if (is_int($status) && $status >= 400) {
+            return $status;
+        }
 
         return $html;
     }
