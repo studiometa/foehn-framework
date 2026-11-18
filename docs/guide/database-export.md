@@ -61,6 +61,8 @@ A preset applies only when one of its tables exists.
 
 WooCommerce orders in the legacy storage (posts of type `shop_order`) are kept whatever their date. Only their address meta is removed.
 
+Polylang needs no preset: it has no tables of its own, and keeps its languages and translations in the core term tables and in options. See [Polylang](/guide/polylang#database-export).
+
 ### Every other table: structure only
 
 A table that no rule covers is exported **without rows**: the table exists locally, empty. This is fail-closed. A plugin you add tomorrow cannot leak its data into an export because nobody wrote a rule for it.

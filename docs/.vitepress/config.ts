@@ -106,7 +106,10 @@ export default defineConfig({
         },
         {
           text: "Plugins",
-          items: [{ text: "Rank Math", link: "/guide/rank-math" }],
+          items: [
+            { text: "Rank Math", link: "/guide/rank-math" },
+            { text: "Polylang", link: "/guide/polylang" },
+          ],
         },
         {
           text: "Deployment",

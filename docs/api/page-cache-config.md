@@ -35,6 +35,7 @@ final readonly class PageCacheConfig
         public bool $warmAfterPurge = false,
         public ?string $warmSitemap = null,
         public array $warmExclude = [],
+        public array $hosts = [],
     );
 }
 ```
@@ -61,6 +62,7 @@ final readonly class PageCacheConfig
 | `warmAfterPurge`          | `bool`                                              | `false`                  | Queue the warm-up of the pages a purge removed.                                  |
 | `warmSitemap`             | `string\|null`                                      | `null`                   | Sitemap or sitemap index to warm from: a path on the site, or a full URL.        |
 | `warmExclude`             | `list<string>`                                      | `[]`                     | Regular expressions, matched in the full URL, of URLs never warmed.              |
+| `hosts`                   | `list<string>`                                      | `[]`                     | Other hosts the site answers on, such as language subdomains.                    |
 
 ## Usage
 
@@ -185,6 +187,14 @@ The warm-up settings. Without `warmSitemap`, the warm-up reads the sitemap index
 warmAfterPurge: true,
 warmSitemap: '/sitemap_index.xml',
 warmExclude: ['/test-form/'],
+```
+
+### `hosts`
+
+The cache stores and serves a request only for the host of `home_url()`, so a forged `Host` header cannot write a file. A site that answers on more hosts, such as the language subdomains or domains of [Polylang](/guide/polylang#page-cache), lists them here. Each host has its own directory in the cache.
+
+```php
+hosts: ['fr.example.com', 'de.example.com'],
 ```
 
 ### `debugHeaders`
