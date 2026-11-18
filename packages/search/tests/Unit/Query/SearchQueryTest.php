@@ -30,12 +30,15 @@ beforeEach(function () {
     $this->index->saveMany('en', [
         ['id' => 1, 'post_type' => 'post', 'title' => 'Croissants', 'content' => 'With sourdough.'],
         ['id' => 2, 'post_type' => 'post', 'title' => 'Sourdough'],
+        ['id' => 4, 'post_type' => 'post', 'title' => "L'atelier du pain"],
+        ['id' => 5, 'post_type' => 'post', 'title' => 'Crème brûlée'],
     ]);
     $this->index->save('fr', ['id' => 3, 'post_type' => 'post', 'title' => 'Levain']);
     $this->hook = new SearchQuery($this->index, new Languages(), $documents);
 });
 
 afterEach(function () {
+    unset($_GET['s']);
     removeDirectory($this->directory ?? null);
 });
 
@@ -48,6 +51,24 @@ it('gives the main search query every match in order of relevance', function () 
     expect($query->get('orderby'))->toBe('post__in');
     expect($query->get('post_type'))->toBe(['post', 'event']);
     expect($query->get(SearchQuery::QUERY_VAR))->toBeTrue();
+});
+
+it('reads a search from the query string without the slashes WordPress adds', function () {
+    // WordPress adds slashes to $_GET, and the query var keeps them until parse_search().
+    $_GET['s'] = "l\\'atelier";
+    $query = searchMainQuery("l\\'atelier");
+
+    $this->hook->onPreGetPosts($query);
+
+    expect($query->get('post__in'))->toBe([4]);
+});
+
+it('decodes a search from a /search/<term>/ URL', function () {
+    $query = searchMainQuery('cr%C3%A8me%20br%C3%BBl%C3%A9e');
+
+    $this->hook->onPreGetPosts($query);
+
+    expect($query->get('post__in'))->toBe([5]);
 });
 
 it('keeps the post type a visitor asked for', function () {

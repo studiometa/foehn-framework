@@ -42,7 +42,7 @@ final readonly class SearchQuery
         }
 
         // An empty search is no text match, not every post: no result.
-        $ids = $this->index->ids($this->languages->current(), (string) $query->get('s'));
+        $ids = $this->index->ids($this->languages->current(), self::searchTerms($query));
 
         $query->set('post__in', $ids === [] ? [0] : $ids);
         $query->set('orderby', 'post__in');
@@ -53,6 +53,25 @@ final readonly class SearchQuery
         if ($postType === '' || $postType === 'any' || $postType === []) {
             $query->set('post_type', $this->documents->postTypes());
         }
+    }
+
+    /**
+     * The search as the visitor typed it, cleaned as `WP_Query::parse_search()` does.
+     *
+     * That clean-up runs after `pre_get_posts`: here, `s` still has the slashes WordPress
+     * adds to `$_GET`, and on a `/search/<term>/` URL it is still URL-encoded. A slash
+     * left in `l\'atelier` loses the match.
+     */
+    private static function searchTerms(WP_Query $query): string
+    {
+        $s = stripslashes((string) $query->get('s'));
+
+        // Not from `$_GET`: from the rewrite rule of a `/search/<term>/` URL.
+        if (($_GET['s'] ?? '') === '') {
+            $s = urldecode($s);
+        }
+
+        return $s;
     }
 
     /**
