@@ -17,6 +17,7 @@ use Tests\Fixtures\InspectApp\Brand;
 use Tests\Fixtures\InspectApp\BrandController;
 use Tests\Fixtures\InspectApp\CallToActionPattern;
 use Tests\Fixtures\InspectApp\CardImageSize;
+use Tests\Fixtures\InspectApp\ContactSection;
 use Tests\Fixtures\InspectApp\GlobalContext;
 use Tests\Fixtures\InspectApp\HeroBlock;
 use Tests\Fixtures\InspectApp\LegacyProductController;
@@ -26,7 +27,6 @@ use Tests\Fixtures\InspectApp\ProductCardContext;
 use Tests\Fixtures\InspectApp\ProductController;
 use Tests\Fixtures\InspectApp\ProductsEndpoint;
 use Tests\Fixtures\InspectApp\SampleProductsSeeder;
-use Tests\Fixtures\InspectApp\ContactSection;
 use Tests\Fixtures\InspectApp\ShopSettings;
 use Tests\Fixtures\InspectApp\StockBinding;
 use Tests\Fixtures\InspectApp\StripeWebhook;
@@ -231,7 +231,13 @@ describe('ProjectInspector', function () {
     });
 
     it('reports settings pages and Customizer sections with the option, type, field, default and sanitizer of each setting', function () {
-        expect(inspector()->section('settings'))->toBe([
+        // Without the settings page of foehn-places, which the monorepo installs.
+        $settings = array_values(array_filter(
+            inspector()->section('settings'),
+            static fn(array $page): bool => !str_starts_with((string) $page['class'], 'Studiometa\\Foehn\\Places\\'),
+        ));
+
+        expect($settings)->toBe([
             [
                 'page' => 'shop-settings',
                 'title' => 'Shop settings',

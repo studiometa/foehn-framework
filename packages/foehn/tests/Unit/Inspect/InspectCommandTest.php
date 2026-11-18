@@ -178,8 +178,9 @@ describe('wp foehn inspect', function () {
         $output = inspectOutput();
 
         // product, core post through its Timber model, the framework's own page model,
-        // and product_variation through a meta field.
-        expect($output)->toContain('post-types — 4');
+        // product_variation through a meta field, and place from foehn-places, which
+        // the monorepo installs.
+        expect($output)->toContain('post-types — 5');
         expect($output)->toMatch('/name\s+model\s+taxonomies\s+meta/');
         expect($output)->toMatch(
             '/product\s+' . preg_quote(Product::class, '/') . '\s+category, brand\s+featured, price, sku/',
