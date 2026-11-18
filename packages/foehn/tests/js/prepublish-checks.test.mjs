@@ -64,8 +64,15 @@ function load(config, content = {}) {
             },
         },
         plugins: {
+            // As Gutenberg does: a name with other characters is refused.
             registerPlugin(name, settings) {
+                if (!/^[a-z][a-z0-9-]*$/.test(name)) {
+                    return null;
+                }
+
                 plugins[name] = settings;
+
+                return settings;
             },
         },
     };
@@ -78,7 +85,7 @@ function load(config, content = {}) {
         delete globalThis.window;
     }
 
-    const plugin = plugins['foehn/prepublish-checks'];
+    const plugin = plugins['foehn-prepublish-checks'];
 
     return { plugin, filters, styles, selected, panel: plugin ? plugin.render() : null };
 }
@@ -246,6 +253,12 @@ test('the blockPublication option publishes accessible content', () => {
     );
 
     assert.equal(filters['editor.preSavePost'](edits, {}), edits);
+});
+
+test('the plugin has a name that registerPlugin accepts', () => {
+    const { plugin } = load(HERO);
+
+    assert.equal(typeof plugin.render, 'function');
 });
 
 test('without the pre-publish panel API the script does nothing', () => {

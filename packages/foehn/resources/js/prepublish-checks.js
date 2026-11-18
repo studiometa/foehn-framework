@@ -32,8 +32,11 @@
     const PluginPrePublishPanel = wp.editor.PluginPrePublishPanel;
     const Button = wp.components && wp.components.Button;
 
-    // Must match the namespace of the plugin and of the filter, so a project can
-    // remove them by name.
+    // The name of the plugin, for `wp.plugins.unregisterPlugin()`. A plugin name only
+    // takes lowercase letters, digits and dashes.
+    const PLUGIN_NAME = 'foehn-prepublish-checks';
+
+    // The namespace of the filter, for `wp.hooks.removeFilter()`.
     const NAMESPACE = 'foehn/prepublish-checks';
 
     // The style that marks an image as decorative: its empty alternative text is
@@ -354,7 +357,7 @@
         wp.blocks.registerBlockStyle('core/image', { name: DECORATIVE_STYLE, label: 'Decorative' });
     }
 
-    wp.plugins.registerPlugin(NAMESPACE, { render: PrepublishChecksPanel });
+    wp.plugins.registerPlugin(PLUGIN_NAME, { render: PrepublishChecksPanel });
 
     if (config.blockPublication && wp.hooks) {
         wp.hooks.addFilter('editor.preSavePost', NAMESPACE, refuseInaccessiblePublication);

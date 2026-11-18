@@ -256,6 +256,8 @@ The editor then refuses a save that publishes or schedules the post, or that upd
 
 The checks read the block attributes in the editor. They do not check the rendered HTML or the color contrast.
 
+To remove the checks in a project, unregister the `foehn-prepublish-checks` plugin with `wp.plugins.unregisterPlugin()`, and remove the `editor.preSavePost` filter of the `foehn/prepublish-checks` namespace with `wp.hooks.removeFilter()`.
+
 Like the registrar, the script is generic. The installer copies it to `wp-content/foehn/prepublish-checks.js`. When the file is missing, Føhn skips the checks and, in debug mode, raises a warning that tells you to run `composer install`.
 
 ## Where the registrar comes from
