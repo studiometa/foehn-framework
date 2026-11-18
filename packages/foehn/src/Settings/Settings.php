@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\Settings;
 
+use function Studiometa\Foehn\multilingual;
+
 /**
  * Registers and reads the settings a #[AsSettingsPage] or a
  * #[AsCustomizerSection] declared.
@@ -15,11 +17,25 @@ namespace Studiometa\Foehn\Settings;
  *
  * Populated by SettingsPageDiscovery and CustomizerSectionDiscovery when they
  * apply.
+ *
+ * **Translatable settings.** On a multilingual site, a setting declared
+ * `translatable` stores one value for each language, as ACF does for options
+ * pages: `{name}` for the default language and `{name}_{lang}` for the others.
+ * A settings page saves each language in its own option group, `{slug}_{lang}`,
+ * because `options.php` empties every option of the group that the form does
+ * not post.
  */
 final class Settings
 {
     /** @var array<string, Setting> */
     private static array $declared = [];
+
+    /**
+     * The option of each translation of a translatable setting => the setting.
+     *
+     * @var array<string, string>
+     */
+    private static array $translations = [];
 
     /**
      * Register settings with WordPress, and record them.
@@ -35,14 +51,40 @@ final class Settings
      */
     public static function register(string $group, array $settings, string $className): void
     {
+        $multilingual = multilingual();
+        $languages = $multilingual === null ? [] : array_keys($multilingual->languages());
+        $languages = array_diff($languages, [$multilingual?->defaultLanguage()]);
+
         foreach ($settings as $name => $setting) {
-            register_setting($group, $name, [
+            $args = [
                 'type' => $setting->type,
                 'default' => $setting->default,
                 'description' => $setting->description,
                 'show_in_rest' => $setting->showInRest,
                 'sanitize_callback' => $setting->sanitizer($className),
-            ]);
+            ];
+
+            register_setting($group, $name, $args);
+
+            // The page of each other language saves every setting: its own translation
+            // of a translatable one, the shared value of the others.
+            foreach ($languages as $language) {
+                if (!$setting->translatable) {
+                    register_setting(self::group($group, $language), $name, $args);
+
+                    continue;
+                }
+
+                $option = self::option($name, $language);
+                self::$translations[$option] = $name;
+
+                // No default: an empty translation reads the default language.
+                register_setting(self::group($group, $language), $option, [
+                    ...$args,
+                    'default' => '',
+                    'show_in_rest' => false,
+                ]);
+            }
         }
 
         // So Settings::get() can answer with the declared default and type
@@ -76,16 +118,75 @@ final class Settings
         }
 
         $value = get_option($name, $default ?? $setting->default);
+        $language = $setting->translatable ? self::language() : null;
+
+        if ($language !== null) {
+            $translation = get_option(self::option($name, $language), '');
+            $value = $translation === '' || $translation === false || $translation === null ? $value : $translation;
+        }
 
         return self::cast($value, $setting->type);
     }
 
     /**
-     * Whether a setting was declared by a page.
+     * The stored value of a setting in a language, without the fallback of get().
+     *
+     * What the settings page shows in the field of a translation.
+     */
+    public static function stored(string $name, ?string $language): mixed
+    {
+        if ($language === null) {
+            return self::get($name);
+        }
+
+        return get_option(self::option($name, $language), '');
+    }
+
+    /**
+     * The language a translatable setting is read and edited in, or null for the
+     * default language.
+     *
+     * The language of the request on the front end. In the admin, the language
+     * selected in the admin bar, and the default language when "all languages" is
+     * selected. Null on a site with one language.
+     */
+    public static function language(): ?string
+    {
+        $multilingual = multilingual();
+
+        if ($multilingual === null) {
+            return null;
+        }
+
+        $language = is_admin() ? $multilingual->adminLanguage() : $multilingual->currentLanguage();
+
+        return $language === null || $language === $multilingual->defaultLanguage() ? null : $language;
+    }
+
+    /**
+     * The option that stores a setting in a language: `{name}` for the default
+     * language (null), `{name}_{lang}` for the others.
+     */
+    public static function option(string $name, ?string $language): string
+    {
+        return $language === null ? $name : $name . '_' . $language;
+    }
+
+    /**
+     * The option group that saves a page in a language: `{slug}` for the default
+     * language (null), `{slug}_{lang}` for the others.
+     */
+    public static function group(string $group, ?string $language): string
+    {
+        return $language === null ? $group : $group . '_' . $language;
+    }
+
+    /**
+     * Whether a setting, or the translation of a setting, was declared by a page.
      */
     public static function has(string $name): bool
     {
-        return array_key_exists($name, self::$declared);
+        return array_key_exists($name, self::$declared) || array_key_exists($name, self::$translations);
     }
 
     /**
@@ -106,6 +207,7 @@ final class Settings
     public static function clear(): void
     {
         self::$declared = [];
+        self::$translations = [];
     }
 
     /**

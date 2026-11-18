@@ -15,6 +15,8 @@ use Tempest\Discovery\Discovery;
 use Tempest\Discovery\DiscoveryLocation;
 use Tempest\Reflection\ClassReflector;
 
+use function Studiometa\Foehn\multilingual;
+
 /**
  * Discovers classes marked with #[AsSettingsPage] and registers their settings,
  * their admin page and its form.
@@ -116,8 +118,12 @@ final class SettingsPageDiscovery implements Discovery
         /** @var AsSettingsPage $attribute */
         $attribute = $item['attribute'];
 
-        $render = function () use ($attribute): void {
-            $this->renderPage($attribute);
+        /** @var array<string, Setting> $settings */
+        $settings = $item['settings'];
+        $translatable = array_any($settings, static fn(Setting $setting): bool => $setting->translatable);
+
+        $render = function () use ($attribute, $translatable): void {
+            $this->renderPage($attribute, $translatable);
         };
 
         if ($attribute->parent !== null) {
@@ -171,6 +177,9 @@ final class SettingsPageDiscovery implements Discovery
      * the label in the row header, as on the WordPress settings screens. A
      * checkbox gets no `label_for`: its own label holds the box and its text.
      *
+     * A translatable setting edits its translation in the language of the admin
+     * bar, so its field carries the name of that option.
+     *
      * @param array<string, mixed> $item
      */
     private function registerFields(array $item): void
@@ -183,16 +192,21 @@ final class SettingsPageDiscovery implements Discovery
         // No title and nothing printed above the fields: the page heading names them.
         add_settings_section('default', '', static function (): void {}, $attribute->slug);
 
+        $language = Settings::language();
+
         foreach ($settings as $name => $setting) {
+            $fieldLanguage = $setting->translatable ? $language : null;
+            $option = Settings::option($name, $fieldLanguage);
+
             add_settings_field(
-                $name,
+                $option,
                 esc_html($setting->label($name)),
-                static function () use ($name, $setting): void {
-                    echo SettingField::render($name, $setting, Settings::get($name));
+                static function () use ($name, $option, $setting, $fieldLanguage): void {
+                    echo SettingField::render($option, $setting, Settings::stored($name, $fieldLanguage));
                 },
                 $attribute->slug,
                 'default',
-                $setting->control === 'checkbox' ? [] : ['label_for' => $name],
+                $setting->control === 'checkbox' ? [] : ['label_for' => $option],
             );
         }
     }
@@ -202,22 +216,64 @@ final class SettingsPageDiscovery implements Discovery
      *
      * `settings_fields()` prints the nonce and the option group without which
      * `options.php` rejects the save, and `do_settings_sections()` prints the
-     * fields registerFields() added.
+     * fields registerFields() added. A page with translatable settings saves in
+     * the option group of the language it edits.
      */
-    private function renderPage(AsSettingsPage $attribute): void
+    private function renderPage(AsSettingsPage $attribute, bool $translatable = false): void
     {
         echo '<div class="wrap">';
         echo '<h1>' . esc_html($attribute->title) . '</h1>';
 
         settings_errors();
 
+        if ($translatable) {
+            $this->renderLanguageNotice();
+        }
+
         echo '<form action="options.php" method="post">';
 
-        settings_fields($attribute->slug);
+        settings_fields(Settings::group($attribute->slug, $translatable ? Settings::language() : null));
         do_settings_sections($attribute->slug);
         submit_button();
 
         echo '</form>';
         echo '</div>';
+    }
+
+    /**
+     * Say which language the translatable fields edit.
+     *
+     * With "all languages" selected in the admin bar, the page edits the default
+     * language, and asks to select a language to edit another one.
+     */
+    private function renderLanguageNotice(): void
+    {
+        $multilingual = multilingual();
+
+        if ($multilingual === null) {
+            return;
+        }
+
+        $default = $multilingual->defaultLanguage();
+        $languages = $multilingual->languages();
+        $selected = $multilingual->adminLanguage();
+        $name = $languages[$selected ?? $default] ?? $selected ?? $default;
+
+        if ($selected === null) {
+            printf(
+                '<div class="notice notice-warning inline"><p>%s</p></div>',
+                esc_html(sprintf(
+                    'All languages are selected: the translatable fields show the %s values. Select a language in the admin bar to edit its values.',
+                    $name,
+                )),
+            );
+
+            return;
+        }
+
+        printf(
+            '<div class="notice notice-info inline"><p>%s</p></div>',
+            esc_html(sprintf('The translatable fields show the %s values.', $name)),
+        );
     }
 }

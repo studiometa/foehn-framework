@@ -7,6 +7,7 @@ use Studiometa\Foehn\Discovery\SettingsPageDiscovery;
 use Studiometa\Foehn\Settings\Settings;
 use Tests\Fixtures\Settings\ThemeSettingsFixture;
 use Tests\Fixtures\Settings\TopLevelSettingsFixture;
+use Tests\Fixtures\Settings\TranslatableSettingsFixture;
 
 /**
  * The arguments register_setting() was called with, keyed by option name.
@@ -215,7 +216,9 @@ describe('SettingsPageDiscovery form', function () {
         $html = renderedPage();
 
         expect($html)
-            ->toContain('<input type="email" id="foehn_contact_email" name="foehn_contact_email" value="hello@example.com" class="regular-text" />')
+            ->toContain(
+                '<input type="email" id="foehn_contact_email" name="foehn_contact_email" value="hello@example.com" class="regular-text" />',
+            )
             ->toContain('<option value="list" selected="selected">List</option>')
             ->toContain('value="1.5" step="any" class="small-text"');
     });
@@ -267,5 +270,64 @@ describe('Settings::get', function () {
 
         expect(array_keys(Settings::all()))->toContain('foehn_ratio');
         expect(Settings::has('foehn_ratio'))->toBeTrue();
+    });
+});
+
+describe('SettingsPageDiscovery::apply, with translatable settings', function () {
+    beforeEach(function () {
+        $GLOBALS['pll_stub_languages'] = ['en' => 'English', 'fr' => 'Français', 'de' => 'Deutsch'];
+        $GLOBALS['wp_stub_is_admin'] = true;
+        discoverFixture($this->discovery, TranslatableSettingsFixture::class);
+        $this->discovery->apply();
+    });
+
+    afterEach(function () {
+        unset($GLOBALS['wp_stub_is_admin']);
+    });
+
+    it('saves each other language in its own option group', function () {
+        $groups = [];
+
+        foreach (array_column(wp_stub_get_calls('register_setting'), 'args') as $call) {
+            $groups[$call['optionGroup']][] = $call['optionName'];
+        }
+
+        expect($groups)->toBe([
+            'site-texts' => ['foehn_tagline', 'foehn_phone'],
+            'site-texts_fr' => ['foehn_tagline_fr', 'foehn_phone'],
+            'site-texts_de' => ['foehn_tagline_de', 'foehn_phone'],
+        ]);
+    });
+
+    it('edits the translation of the language selected in the admin bar', function () {
+        $GLOBALS['pll_stub_current'] = 'fr';
+        $GLOBALS['wp_stub_options'] = ['foehn_tagline' => 'Hello', 'foehn_tagline_fr' => 'Bonjour'];
+        runAdminMenu();
+
+        $html = renderedPage();
+
+        expect($html)->toContain('name="option_page" value="site-texts_fr"');
+        expect($html)->toContain('name="foehn_tagline_fr" value="Bonjour"');
+        expect($html)->toContain('name="foehn_phone"');
+        expect($html)->toContain('The translatable fields show the Français values.');
+    });
+
+    it('edits the default language and asks to select a language when all languages are selected', function () {
+        $GLOBALS['wp_stub_options'] = ['foehn_tagline' => 'Hello'];
+        runAdminMenu();
+
+        $html = renderedPage();
+
+        expect($html)->toContain('name="option_page" value="site-texts"');
+        expect($html)->toContain('name="foehn_tagline" value="Hello"');
+        expect($html)->toContain('Select a language in the admin bar');
+    });
+
+    it('shows an empty field for a translation that was never saved', function () {
+        $GLOBALS['pll_stub_current'] = 'de';
+        $GLOBALS['wp_stub_options'] = ['foehn_tagline' => 'Hello'];
+        runAdminMenu();
+
+        expect(renderedPage())->toContain('name="foehn_tagline_de" value=""');
     });
 });
