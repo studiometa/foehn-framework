@@ -340,6 +340,8 @@ if (!class_exists('WP_Query')) {
         public array $query_vars = [];
         public array $posts = [];
         public int $post_count = 0;
+        public int $found_posts = 0;
+        public int $max_num_pages = 0;
 
         /**
          * A secondary query, as `new WP_Query($vars)` builds in `Query\Facets`.

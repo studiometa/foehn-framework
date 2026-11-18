@@ -1,0 +1,53 @@
+{
+    "name": "studiometa/foehn-places",
+    "description": "Place locator for Foehn — a place post type with native fields, an address geocoder, spatial search and facets.",
+    "type": "library",
+    "license": "GPL-3.0-or-later",
+    "authors": [
+        {
+            "name": "Studio Meta",
+            "email": "agence@studiometa.fr",
+            "homepage": "https://www.studiometa.fr"
+        }
+    ],
+    "keywords": [
+        "wordpress",
+        "foehn",
+        "store-locator",
+        "places",
+        "map",
+        "mapbox"
+    ],
+    "homepage": "https://github.com/studiometa/foehn-framework",
+    "support": {
+        "issues": "https://github.com/studiometa/foehn-framework/issues",
+        "source": "https://github.com/studiometa/foehn-framework"
+    },
+    "require": {
+        "php": "^8.5",
+        "studiometa/foehn": "0.11.4",
+        "timber/timber": "^2.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "Studiometa\\Foehn\\Places\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Studiometa\\Foehn\\Places\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "tempest": {
+            "//": "DiscoveryLocations only scans a package that requires a tempest/* package or opts in here. This package requires none directly, so the flag is what makes its post type, hooks and settings page discovered.",
+            "can-discover": true
+        }
+    },
+    "config": {
+        "sort-packages": true,
+        "optimize-autoloader": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

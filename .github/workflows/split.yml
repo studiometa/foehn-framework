@@ -52,6 +52,7 @@ jobs:
         package:
           - { name: "foehn", local: "packages/foehn", remote: "foehn" }
           - { name: "acf", local: "packages/acf", remote: "foehn-acf" }
+          - { name: "places", local: "packages/places", remote: "foehn-places" }
           - { name: "installer", local: "packages/installer", remote: "foehn-installer" }
           # The starter ships a `renovate.json` for the projects created from it, so its
           # mirror has one on `main`, and Renovate onboards any repository whose default

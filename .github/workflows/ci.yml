@@ -131,6 +131,10 @@ jobs:
       - name: Run the ACF test suite with coverage
         run: composer test:coverage:acf
 
+      # The place locator is its own package too, measured the same way.
+      - name: Run the places test suite with coverage
+        run: composer test:coverage:places
+
       # The starter's own suite covers the theme skeleton, and the demo's covers
       # the features. Both have to stay green.
       - name: Run the starter test suite
@@ -150,7 +154,7 @@ jobs:
         uses: codecov/codecov-action@0fb7174895f61a3b6b78fc075e0cd60383518dac # v5.5.5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage/clover.xml,./coverage/clover-acf.xml,./coverage/clover-installer.xml
+          files: ./coverage/clover.xml,./coverage/clover-acf.xml,./coverage/clover-places.xml,./coverage/clover-installer.xml
           fail_ci_if_error: false
           flags: unittests
           name: codecov-foehn
@@ -175,6 +179,31 @@ jobs:
 
       - name: Test editor registrar
         run: npm run test:editor
+
+  places-admin-script:
+    name: Places - Admin Script
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "24"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test the geocoder fill
+        run: npm run test:places
+
+      # The admin geocoder is committed prebuilt in packages/places/dist: the Packagist
+      # mirror has no build step. A source change without a new build fails here.
+      - name: Check that the committed build is up to date
+        run: |
+          npm run -w @studiometa/foehn-places-admin build
+          git diff --exit-code -- packages/places/dist
 
   vite-plugin-lint:
     name: Vite Plugin - Lint
