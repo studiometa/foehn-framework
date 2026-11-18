@@ -1,0 +1,58 @@
+{
+    "name": "studiometa/foehn-search",
+    "description": "Native search for Foehn — typo tolerance and relevance with Loupe, in SQLite, with no licence and no external service.",
+    "type": "library",
+    "license": "GPL-3.0-or-later",
+    "authors": [
+        {
+            "name": "Studio Meta",
+            "email": "agence@studiometa.fr",
+            "homepage": "https://www.studiometa.fr"
+        }
+    ],
+    "keywords": [
+        "wordpress",
+        "search",
+        "loupe",
+        "sqlite",
+        "foehn",
+        "attributes",
+        "discovery"
+    ],
+    "homepage": "https://github.com/studiometa/foehn-framework",
+    "support": {
+        "issues": "https://github.com/studiometa/foehn-framework/issues",
+        "source": "https://github.com/studiometa/foehn-framework"
+    },
+    "require": {
+        "php": "^8.5",
+        "ext-intl": "*",
+        "ext-pdo_sqlite": "*",
+        "loupe/loupe": "^1.1",
+        "studiometa/foehn": "0.11.4",
+        "tempest/container": "^3.18",
+        "tempest/discovery": "^3.18"
+    },
+    "autoload": {
+        "psr-4": {
+            "Studiometa\\Foehn\\Search\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Studiometa\\Foehn\\Search\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "tempest": {
+            "//": "DiscoveryLocations only scans a package that requires a tempest/* package or opts in here. The flag says this one is meant to be scanned: without it, no search document, hook, job, command or route of the package is found.",
+            "can-discover": true
+        }
+    },
+    "config": {
+        "sort-packages": true,
+        "optimize-autoloader": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

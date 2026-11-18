@@ -298,6 +298,11 @@ if (!class_exists('WP_Post')) {
         public string $post_status = 'publish';
         public int $post_author = 1;
         public string $post_date = '2026-08-19 12:00:00';
+        public string $post_date_gmt = '';
+        public string $post_title = '';
+        public string $post_content = '';
+        public string $post_excerpt = '';
+        public string $post_password = '';
     }
 }
 
@@ -343,6 +348,7 @@ if (!class_exists('WP_Query')) {
         public int $post_count = 0;
         public int $found_posts = 0;
         public int $max_num_pages = 0;
+        public bool $is_search = false;
 
         /**
          * A secondary query, as `new WP_Query($vars)` builds in `Query\Facets`.
@@ -368,6 +374,11 @@ if (!class_exists('WP_Query')) {
         public function is_main_query(): bool
         {
             return $this->is_main;
+        }
+
+        public function is_search(): bool
+        {
+            return $this->is_search;
         }
 
         public function set_main_query(bool $is_main): void
