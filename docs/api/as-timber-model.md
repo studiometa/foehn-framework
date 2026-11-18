@@ -195,6 +195,17 @@ Once mapped, Timber automatically uses your class:
 {% endfor %}
 ```
 
+## Override the model of a post type
+
+A Timber model wins over the class of an `#[AsPostType]` with the same name. A package can register a post type with its own model, and a project can map a subclass to it:
+
+```php
+#[AsTimberModel('place')]
+final class Place extends \Studiometa\Foehn\Places\Models\Place {}
+```
+
+Timber then builds every `place` post with the project class, in `Timber::get_posts()` and in `Place::query()` on either class. The rule does not depend on the order of discovery, and it is the same with the discovery cache.
+
 ## Parameters
 
 | Parameter | Type     | Required | Description                       |

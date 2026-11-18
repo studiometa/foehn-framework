@@ -24,6 +24,9 @@ final class PostTypeDiscovery implements Discovery
 {
     use IsWpDiscovery;
 
+    /** The priority of the class map filter: before #[AsTimberModel], which wins. */
+    public const int CLASSMAP_PRIORITY = 5;
+
     public function __construct(
         private readonly DiscoveryProblems $problems,
     ) {}
@@ -116,15 +119,26 @@ final class PostTypeDiscovery implements Discovery
     /**
      * Register the Timber class map for this post type.
      *
+     * At priority 5, before the #[AsTimberModel] mappings at the default priority, so a
+     * Timber model declared for the same post type wins. A package that registers a post
+     * type with its own model class (`place` in studiometa/foehn-places) leaves the
+     * project free to map a subclass. Without the rule, the winner would follow the order
+     * the discoveries apply in: post types apply on `init`, after the Timber models of
+     * `after_setup_theme`, so the package class would always win.
+     *
      * @param string $postType
      * @param class-string $className
      */
     private function registerTimberClassMap(string $postType, string $className): void
     {
-        add_filter('timber/post/classmap', static function (array $map) use ($postType, $className): array {
-            $map[$postType] = $className;
+        add_filter(
+            'timber/post/classmap',
+            static function (array $map) use ($postType, $className): array {
+                $map[$postType] = $className;
 
-            return $map;
-        });
+                return $map;
+            },
+            self::CLASSMAP_PRIORITY,
+        );
     }
 }
