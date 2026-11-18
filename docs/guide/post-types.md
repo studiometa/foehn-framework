@@ -197,12 +197,50 @@ Two rules worth knowing before you write one:
 
 ### Editing the values
 
-`#[AsPostMeta]` registers the key. It adds no field, meta box or form to the admin. WordPress puts `meta` in a post type's REST response only when the type supports `custom-fields`, so add `'custom-fields'` to `supports` for the block editor to read and save the key. With that support:
+#### The Fields meta box
+
+Give a key a `control` and Føhn adds a field for it to a "Fields" meta box on the edit screen of its post type. The fields are the native ones a [settings page](/guide/settings-pages) draws, in the same `form-table`, so the two forms look the same. Keys without a `control` get no field.
+
+```php
+#[AsPostType(name: 'event', singular: 'Event', plural: 'Events')]
+#[AsPostMeta(key: 'subtitle', control: 'text', label: 'Subtitle', description: 'Shown under the title')]
+#[AsPostMeta(key: 'contact', control: 'email', label: 'Contact')]
+#[AsPostMeta(key: 'seats', type: 'integer', control: 'number', label: 'Seats')]
+#[AsPostMeta(key: 'room', control: 'select', label: 'Room', options: ['main' => 'Main hall', 'small' => 'Small hall'])]
+#[AsPostMeta(key: 'featured', type: 'boolean', control: 'checkbox', label: 'Featured')]
+final class Event extends Post {}
+```
+
+| `control`                                  | `type`                | Saved through                                                   |
+| ------------------------------------------ | --------------------- | --------------------------------------------------------------- |
+| `text`, `tel`                              | `string`              | `sanitize_text_field()`                                         |
+| `textarea`                                 | `string`              | `sanitize_textarea_field()`                                     |
+| `email`                                    | `string`              | `sanitize_email()`                                              |
+| `url`                                      | `string`              | `esc_url_raw()`                                                 |
+| `number`                                   | `integer` or `number` | `absint()` or `floatval()`                                      |
+| `select`, with `options` as value => label | `string` or `integer` | Keeps one of the options                                        |
+| `checkbox`                                 | `boolean`             | `rest_sanitize_boolean()`: an unchecked box is saved as `false` |
+
+`label` is the field label (the key when it is empty), and `description` is the help text under the field. A key with a `sanitize` method is saved through that method instead.
+
+The meta box works in the classic editor and in the block editor, which shows meta boxes below the content. A save:
+
+- needs the meta box nonce, the right to edit the post, and the `capability` of each key. The meta box does not show a field the user cannot write;
+- changes only the keys in the request. A REST client, an import or `wp post meta update` saves the post without the form, and the values stay;
+- deletes a key whose field is empty, so the registered `default` applies again.
+
+Føhn reports a `control` it cannot draw for the key's `type`, a `select` without `options`, a key that is not single post meta, and a key with no post type, and does not register that key.
+
+For repeaters, flexible content, conditional logic, relations or a media picker, use ACF.
+
+#### Without a control
+
+Without a `control`, `#[AsPostMeta]` registers the key and adds no field to the admin. WordPress puts `meta` in a post type's REST response only when the type supports `custom-fields`, so add `'custom-fields'` to `supports` for the block editor to read and save the key. With that support:
 
 - the Custom Fields panel (Preferences > General > Advanced) lists the keys that do not start with `_`, as text;
 - a block bound to the key through `core/post-meta` shows the value in the editor and saves an edit to the meta.
 
-Without it, a bound block still prints the value on the front end. For a real form (date picker, select, repeater), use an ACF field group on the same key. `wp post meta update <id> <key> <value>` writes a value from the command line; the `sanitize` method runs there too.
+Without it, a bound block still prints the value on the front end. For a form with more than the controls above (date picker, repeater), use an ACF field group on the same key. `wp post meta update <id> <key> <value>` writes a value from the command line; the `sanitize` method runs there too.
 
 Declaring a key that ACF also manages is fine, and is the migration path: ACF keeps the editing UI, the declaration adds the REST schema. See [#[AsPostMeta]](/api/as-post-meta) for every parameter.
 

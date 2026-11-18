@@ -1,6 +1,6 @@
 # #[AsPostMeta]
 
-Registers a meta key with WordPress through `register_meta()`, which is what puts a custom field in the REST API — and therefore in the block editor and in block bindings. The REST response and the block editor include the key only when the post type supports `custom-fields`; the attribute adds no form to the admin. See [Editing the values](/guide/post-types#editing-the-values).
+Registers a meta key with WordPress through `register_meta()`, which is what puts a custom field in the REST API — and therefore in the block editor and in block bindings. The REST response and the block editor include the key only when the post type supports `custom-fields`. A key with a `control` also gets a field in the post type's "Fields" meta box. See [Editing the values](/guide/post-types#editing-the-values).
 
 The attribute is repeatable and goes on the model that owns the field, because that model already declares its post type and already holds the accessors that read the key.
 
@@ -28,25 +28,31 @@ final readonly class AsPostMeta
         public string $capability = 'edit_posts',
         public ?string $sanitize = null,
         public array $schema = [],
+        public ?string $control = null,
+        public string $label = '',
+        public array $options = [],
     ) {}
 }
 ```
 
 ## Parameters
 
-| Parameter       | Type                | Default        | Description                                                                                   |
-| --------------- | ------------------- | -------------- | --------------------------------------------------------------------------------------------- |
-| `key`           | `string`            | _required_     | The meta key                                                                                  |
-| `type`          | `string`            | `'string'`     | `string`, `boolean`, `integer`, `number`, `array` or `object`                                 |
-| `single`        | `bool`              | `true`         | `false` registers a repeatable field                                                          |
-| `showInRest`    | `bool`              | `true`         | On by default: without REST the field is invisible to the editor and to bindings              |
-| `description`   | `string`            | `''`           | Surfaces in the REST schema                                                                   |
-| `default`       | scalar/array/`null` | `null`         | Must survive `var_export()`. Omitted entirely when `null`                                     |
-| `objectType`    | `string`            | `'post'`       | `post`, `term`, `user` or `comment`                                                           |
-| `objectSubtype` | `?string`           | inferred       | The post type or taxonomy. Inferred from the class's own attributes; `''` means every subtype |
-| `capability`    | `string`            | `'edit_posts'` | Becomes `auth_callback`                                                                       |
-| `sanitize`      | `?string`           | `null`         | The name of a **public static** method on the declaring class, not a closure                  |
-| `schema`        | `array`             | `[]`           | The REST schema. Required for `array` and `object`: WordPress cannot describe their contents  |
+| Parameter       | Type                | Default        | Description                                                                                                                  |
+| --------------- | ------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `key`           | `string`            | _required_     | The meta key                                                                                                                 |
+| `type`          | `string`            | `'string'`     | `string`, `boolean`, `integer`, `number`, `array` or `object`                                                                |
+| `single`        | `bool`              | `true`         | `false` registers a repeatable field                                                                                         |
+| `showInRest`    | `bool`              | `true`         | On by default: without REST the field is invisible to the editor and to bindings                                             |
+| `description`   | `string`            | `''`           | Surfaces in the REST schema, and as the help text under the field                                                            |
+| `default`       | scalar/array/`null` | `null`         | Must survive `var_export()`. Omitted entirely when `null`                                                                    |
+| `objectType`    | `string`            | `'post'`       | `post`, `term`, `user` or `comment`                                                                                          |
+| `objectSubtype` | `?string`           | inferred       | The post type or taxonomy. Inferred from the class's own attributes; `''` means every subtype                                |
+| `capability`    | `string`            | `'edit_posts'` | Becomes `auth_callback`                                                                                                      |
+| `sanitize`      | `?string`           | `null`         | The name of a **public static** method on the declaring class, not a closure                                                 |
+| `schema`        | `array`             | `[]`           | The REST schema. Required for `array` and `object`: WordPress cannot describe their contents                                 |
+| `control`       | `?string`           | `null`         | The field in the meta box: `text`, `textarea`, `email`, `url`, `tel`, `number`, `select` or `checkbox`. No field when `null` |
+| `label`         | `string`            | `''`           | The field label. The key when it is empty                                                                                    |
+| `options`       | `array`             | `[]`           | The values a `select` offers, as value => label                                                                              |
 
 ## Usage
 
@@ -93,6 +99,15 @@ final class Product extends Post
 Term meta needs `objectType: 'term'`. With the default `objectType: 'post'`, a key declared on a taxonomy class registers for every post type.
 
 `objectType: 'user'` and `objectType: 'comment'` have no subtypes in WordPress and are always registered globally. An explicit `objectSubtype` always wins.
+
+## A field in the meta box
+
+```php
+#[AsPostMeta(key: 'subtitle', control: 'text', label: 'Subtitle', description: 'Shown under the title')]
+#[AsPostMeta(key: 'featured', type: 'boolean', control: 'checkbox', label: 'Featured')]
+```
+
+Each control edits some types only: the text controls a `string`, `number` an `integer` or a `number`, `select` a `string` or an `integer`, `checkbox` a `boolean`. The key must be single post meta with a post type. Føhn reports any other declaration and does not register the key. See [The Fields meta box](/guide/post-types#the-fields-meta-box) for the save rules.
 
 ## Sanitisers are method names, never closures
 
