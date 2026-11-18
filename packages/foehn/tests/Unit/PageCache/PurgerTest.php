@@ -40,6 +40,16 @@ describe('Purger: what a post invalidates', function () {
         expect($this->purger->targets())->toContain('http://example.com/2024/03/');
     });
 
+    it('takes the translations of the post, and the home page of their languages', function () {
+        $GLOBALS['pll_stub_languages'] = ['en' => 'English', 'fr' => 'Français'];
+        $GLOBALS['pll_stub_post_translations'][12] = ['en' => 12, 'fr' => 13];
+        $GLOBALS['wp_stub_permalinks'][13] = 'http://example.com/fr/bonjour/';
+
+        $this->purger->purgePost(pageCachePost(12)->ID);
+
+        expect($this->purger->targets())->toContain('http://example.com/fr/bonjour/', 'http://example.com/fr/');
+    });
+
     it('takes the post type archive when the type has one', function () {
         $GLOBALS['wp_stub_archive_links']['product'] = 'http://example.com/products/';
 

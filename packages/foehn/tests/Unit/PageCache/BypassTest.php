@@ -297,7 +297,8 @@ describe('Bypass: the response', function () {
             200,
             [],
             pageCacheServer(['REQUEST_URI' => '/blog/?foehn_sections=listing']),
-        ))->toBe(BypassReason::BodyIncomplete);
+        ))
+            ->toBe(BypassReason::BodyIncomplete);
     });
 
     it('refuses a body holding a substring the config excluded', function () {
@@ -324,5 +325,13 @@ describe('Bypass: the key', function () {
 
     it('hands back nothing for a host that is not the site', function () {
         expect(pageCacheBypass()->key(pageCacheServer(['HTTP_HOST' => 'evil.test'])))->toBeNull();
+    });
+
+    it('keys a host of the config, such as a language subdomain, in its own directory', function () {
+        $bypass = pageCacheBypass(new PageCacheConfig(enabled: true, hosts: ['FR.example.com']));
+
+        expect($bypass->key(pageCacheServer(['HTTP_HOST' => 'fr.example.com']))?->relativePath())
+            ->toBe('fr.example.com/blog/index.html');
+        expect($bypass->key(pageCacheServer(['HTTP_HOST' => 'de.example.com'])))->toBeNull();
     });
 });

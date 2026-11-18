@@ -357,7 +357,7 @@ final readonly class Bypass
     }
 
     /**
-     * Whether the request host is the site's own.
+     * Whether the request host is the site's own, or one of `PageCacheConfig::$hosts`.
      *
      * @param array<string, mixed> $server
      */
@@ -371,7 +371,12 @@ final readonly class Bypass
             return false;
         }
 
-        return CacheKey::normalizeHost($this->requestHost($server)) === $site;
+        $host = CacheKey::normalizeHost($this->requestHost($server));
+
+        return (
+            $host !== null
+            && ($host === $site || in_array($host, array_map(CacheKey::normalizeHost(...), $this->config->hosts), true))
+        );
     }
 
     /**

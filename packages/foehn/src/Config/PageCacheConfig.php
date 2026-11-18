@@ -227,6 +227,17 @@ final readonly class PageCacheConfig
          * @var list<string>
          */
         public array $warmExclude = [],
+
+        /**
+         * Other hosts the site answers on, besides the host of `home_url()`, such as the
+         * language subdomains or domains of Polylang (`fr.example.com`).
+         *
+         * A request for any other host is a bypass, so a forged `Host` header cannot
+         * write a file. Each host gets its own directory in the cache.
+         *
+         * @var list<string>
+         */
+        public array $hosts = [],
     ) {}
 
     /**
