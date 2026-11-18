@@ -29,6 +29,7 @@
 
     const el = wp.element.createElement;
     const useSelect = wp.data.useSelect;
+    const useEffect = wp.element.useEffect;
     const PluginPrePublishPanel = wp.editor.PluginPrePublishPanel;
     const Button = wp.components && wp.components.Button;
 
@@ -231,6 +232,16 @@
     }
 
     /**
+     * The arguments of the `getEntityRecords` query of the given attachments.
+     *
+     * @param {Array} ids Attachment ids.
+     * @return {Array} Selector arguments.
+     */
+    function attachmentQuery(ids) {
+        return ['postType', 'attachment', { include: ids, per_page: ids.length }];
+    }
+
+    /**
      * The attachment records of the given ids, as far as the store has them.
      *
      * @param {Function} select Store selector.
@@ -242,10 +253,26 @@
             return [];
         }
 
-        return select('core').getEntityRecords('postType', 'attachment', {
-            include: ids,
-            per_page: ids.length,
-        });
+        const core = select('core');
+
+        return core.getEntityRecords.apply(core, attachmentQuery(ids));
+    }
+
+    /**
+     * Drop the cached attachment records of the given ids, so the next read fetches
+     * them again.
+     *
+     * The media modal of the `image` and `gallery` controls saves the alternative
+     * text through the media models, which do not update the `core` store: without
+     * this, an alternative text added in the media library stays unknown until a
+     * reload.
+     *
+     * @param {Array} ids Attachment ids.
+     */
+    function invalidateAttachments(ids) {
+        if (ids.length) {
+            wp.data.dispatch('core').invalidateResolution('getEntityRecords', attachmentQuery(ids));
+        }
     }
 
     /**
@@ -259,6 +286,20 @@
             return select('core/block-editor').getBlocks();
         }, []);
         const ids = attachmentIds(flatten(blocks, []));
+        const isOpened = useSelect(function (select) {
+            return select('core/editor').isPublishSidebarOpened();
+        }, []);
+
+        // Each opening of the pre-publish sidebar reads the alternative texts again.
+        useEffect(
+            function () {
+                if (isOpened) {
+                    invalidateAttachments(ids);
+                }
+            },
+            [isOpened, ids.join(',')],
+        );
+
         const attachments = useSelect(
             function (select) {
                 return selectAttachments(select, ids);
@@ -317,15 +358,17 @@
     /**
      * Refuse a save that makes the post public while the content has issues.
      *
-     * Handler of the `editor.preSavePost` filter. A draft, an autosave and a preview
-     * still save. The editor shows the error message in its "Publishing failed"
-     * notice.
+     * Handler of the `editor.preSavePost` filter, which the editor runs with
+     * `applyFiltersAsync`. A draft, an autosave and a preview still save. The
+     * attachment records are fetched again, so an alternative text added in the
+     * media library counts. The editor shows the error message in its "Publishing
+     * failed" notice.
      *
      * @param {Object} edits   Edits about to be saved.
      * @param {Object} options Save options.
-     * @return {Object} The edits, unchanged.
+     * @return {Promise<Object>} The edits, unchanged.
      */
-    function refuseInaccessiblePublication(edits, options) {
+    async function refuseInaccessiblePublication(edits, options) {
         if (options && (options.isAutosave || options.isPreview)) {
             return edits;
         }
@@ -337,11 +380,15 @@
         }
 
         const blocks = select('core/block-editor').getBlocks();
-        const issues = findIssues(blocks, selectAttachments(select, attachmentIds(flatten(blocks, []))));
+        const ids = attachmentIds(flatten(blocks, []));
+
+        invalidateAttachments(ids);
+
+        const issues = findIssues(blocks, await selectAttachments(wp.data.resolveSelect, ids));
 
         if (issues.length) {
             throw new Error(
-                'Fix the accessibility issues of the pre-publish panel first: ' +
+                'Fix these accessibility issues to publish: ' +
                     issues
                         .map(function (issue) {
                             return issue.message;

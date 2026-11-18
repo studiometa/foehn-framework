@@ -242,7 +242,7 @@ public static function attributes(): array
 
 An image that has no meaning, for example an ornament, needs no alternative text. Apply the **Decorative** style to the `core/image` block: the checks then ignore it. The style adds the `is-style-decorative` class.
 
-Each issue has a **Select the block** button. The panel shows nothing when the content has no issue.
+Each issue has a **Select the block** button. The panel shows nothing when the content has no issue. Each time the pre-publish sidebar opens, the checks read the alternative texts of the media library again, so an alternative text added there counts without a reload.
 
 The issues are warnings by default: the post can still be published. To refuse publication while the content has issues, set `blockPublicationOnAccessibilityIssues` in `foehn.config.php`:
 
@@ -254,7 +254,7 @@ return new FoehnConfig(
 
 The editor then refuses a save that publishes or schedules the post, or that updates a published post, and shows the issues in the "Publishing failed" notice. Drafts, autosaves and previews still save.
 
-The checks read the block attributes in the editor. They do not check the rendered HTML or the color contrast.
+The checks read the block attributes in the editor. They do not check the rendered HTML or the color contrast. They load only in the block post editor, not on the block widgets screen or in the Customizer.
 
 To remove the checks in a project, unregister the `foehn-prepublish-checks` plugin with `wp.plugins.unregisterPlugin()`, and remove the `editor.preSavePost` filter of the `foehn/prepublish-checks` namespace with `wp.hooks.removeFilter()`.
 

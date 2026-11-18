@@ -28,11 +28,16 @@ function load(config, content = {}) {
     const filters = {};
     const styles = [];
     const selected = [];
+    const invalidated = [];
+    const effects = [];
     const attachments = content.attachments || [];
 
     const stores = {
         'core/block-editor': { getBlocks: () => content.blocks || [] },
-        'core/editor': { getEditedPostAttribute: (name) => (name === 'status' ? content.status || 'draft' : null) },
+        'core/editor': {
+            getEditedPostAttribute: (name) => (name === 'status' ? content.status || 'draft' : null),
+            isPublishSidebarOpened: () => Boolean(content.opened),
+        },
         core: {
             getEntityRecords(kind, type, query) {
                 if (content.loading) {
@@ -44,13 +49,22 @@ function load(config, content = {}) {
         },
     };
     const select = (store) => stores[store];
+    // The records the server has: an invalidated query reads these, not the cache.
+    const resolveSelect = (store) => ({
+        getEntityRecords: async (kind, type, query) =>
+            (content.fresh || attachments).filter((attachment) => query.include.includes(attachment.id)),
+    });
 
     const wp = {
-        element: { createElement },
+        element: { createElement, useEffect: (callback, deps) => effects.push({ callback, deps }) },
         data: {
             select,
+            resolveSelect,
             useSelect: (callback) => callback(select),
-            dispatch: () => ({ selectBlock: (clientId) => selected.push(clientId) }),
+            dispatch: () => ({
+                selectBlock: (clientId) => selected.push(clientId),
+                invalidateResolution: (selector, args) => invalidated.push({ selector, args }),
+            }),
         },
         blocks: {
             getBlockType: (name) => (name === 'theme/hero' ? { title: 'Hero' } : null),
@@ -86,8 +100,11 @@ function load(config, content = {}) {
     }
 
     const plugin = plugins['foehn-prepublish-checks'];
+    const panel = plugin ? plugin.render() : null;
 
-    return { plugin, filters, styles, selected, panel: plugin ? plugin.render() : null };
+    effects.forEach((effect) => effect.callback());
+
+    return { plugin, filters, styles, selected, invalidated, panel };
 }
 
 /**
@@ -232,33 +249,71 @@ test('the blockPublication option refuses to publish content with issues', async
     );
 
     assert.equal(panel.children[0].children[0], 'Fix these issues to publish:');
-    assert.throws(() => filters['editor.preSavePost']({ id: 1 }, {}), /An image has no alternative text/);
+    await assert.rejects(filters['editor.preSavePost']({ id: 1 }, {}), /An image has no alternative text/);
 });
 
-test('the blockPublication option still saves a draft, an autosave and a preview', () => {
+test('the blockPublication option still saves a draft, an autosave and a preview', async () => {
     const edits = { id: 1 };
     const draft = load({ ...HERO, blockPublication: true }, { blocks: [block('core/image')], status: 'draft' });
     const published = load({ ...HERO, blockPublication: true }, { blocks: [block('core/image')], status: 'publish' });
 
-    assert.equal(draft.filters['editor.preSavePost'](edits, {}), edits);
-    assert.equal(published.filters['editor.preSavePost'](edits, { isAutosave: true }), edits);
-    assert.equal(published.filters['editor.preSavePost'](edits, { isPreview: true }), edits);
+    assert.equal(await draft.filters['editor.preSavePost'](edits, {}), edits);
+    assert.equal(await published.filters['editor.preSavePost'](edits, { isAutosave: true }), edits);
+    assert.equal(await published.filters['editor.preSavePost'](edits, { isPreview: true }), edits);
 });
 
-test('the blockPublication option publishes accessible content', () => {
+test('the blockPublication option publishes accessible content', async () => {
     const edits = { id: 1 };
     const { filters } = load(
         { ...HERO, blockPublication: true },
         { blocks: [block('core/image', { alt: 'A cat' })], status: 'future' },
     );
 
-    assert.equal(filters['editor.preSavePost'](edits, {}), edits);
+    assert.equal(await filters['editor.preSavePost'](edits, {}), edits);
 });
 
 test('the plugin has a name that registerPlugin accepts', () => {
     const { plugin } = load(HERO);
 
     assert.equal(typeof plugin.render, 'function');
+});
+
+test('the blockPublication option reads the alternative texts again before it refuses', async () => {
+    const hero = block('theme/hero', { image: 12 });
+    const edits = { id: 1 };
+    const stale = load(
+        { ...HERO, blockPublication: true },
+        {
+            blocks: [hero],
+            status: 'publish',
+            attachments: [{ id: 12, alt_text: '' }],
+            fresh: [{ id: 12, alt_text: 'A mountain' }],
+        },
+    );
+
+    assert.equal(messages(stale.panel).length, 1);
+    assert.equal(await stale.filters['editor.preSavePost'](edits, {}), edits);
+    assert.deepEqual(stale.invalidated, [
+        { selector: 'getEntityRecords', args: ['postType', 'attachment', { include: [12], per_page: 1 }] },
+    ]);
+
+    const missing = load(
+        { ...HERO, blockPublication: true },
+        { blocks: [hero], status: 'publish', loading: true, fresh: [{ id: 12, alt_text: '' }] },
+    );
+
+    await assert.rejects(missing.filters['editor.preSavePost'](edits, {}), /"Background" field of the "Hero" block/);
+});
+
+test('each opening of the pre-publish sidebar reads the alternative texts again', () => {
+    const blocks = [block('theme/hero', { image: 12 })];
+    const closed = load(HERO, { blocks, attachments: [{ id: 12, alt_text: 'A cat' }] });
+    const opened = load(HERO, { blocks, attachments: [{ id: 12, alt_text: 'A cat' }], opened: true });
+
+    assert.deepEqual(closed.invalidated, []);
+    assert.deepEqual(opened.invalidated, [
+        { selector: 'getEntityRecords', args: ['postType', 'attachment', { include: [12], per_page: 1 }] },
+    ]);
 });
 
 test('without the pre-publish panel API the script does nothing', () => {
