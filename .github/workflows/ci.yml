@@ -314,7 +314,7 @@ jobs:
         working-directory: packages/demo
         run: |
           version="$(node -p 'require("../../package.json").version')"
-          for package in foehn:foehn foehn-installer:installer foehn-acf:acf; do
+          for package in foehn:foehn foehn-installer:installer foehn-acf:acf foehn-places:places; do
             name="${package%%:*}"
             directory="${package##*:}"
             composer config "repositories.$name" "{\"type\":\"path\",\"url\":\"../$directory\",\"options\":{\"symlink\":false,\"versions\":{\"studiometa/$name\":\"$version\"}}}"
