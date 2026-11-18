@@ -90,6 +90,7 @@ function wp_stub_reset(): void
     $GLOBALS['wp_stub_archive_links'] = [];
     $GLOBALS['wp_stub_author_slugs'] = [];
     $GLOBALS['wp_stub_object_taxonomies'] = [];
+    $GLOBALS['wp_stub_private_taxonomies'] = [];
     $GLOBALS['wp_stub_post_terms'] = [];
     $GLOBALS['wp_stub_post_ancestors'] = [];
     $GLOBALS['wp_stub_adjacent_posts'] = [];
@@ -267,8 +268,10 @@ if (!class_exists('WP_Taxonomy')) {
     {
         public string $name;
 
-        public function __construct(string $name = '')
-        {
+        public function __construct(
+            string $name = '',
+            public bool $public = true,
+        ) {
             $this->name = $name;
         }
     }
@@ -2544,8 +2547,23 @@ if (!function_exists('get_object_taxonomies')) {
     function get_object_taxonomies(mixed $object, string $output = 'names'): array
     {
         $type = is_string($object) ? $object : $object->post_type ?? 'post';
+        $names = $GLOBALS['wp_stub_object_taxonomies'][$type] ?? [];
 
-        return $GLOBALS['wp_stub_object_taxonomies'][$type] ?? [];
+        if ($output !== 'objects') {
+            return $names;
+        }
+
+        // Public, unless a test names it in $GLOBALS['wp_stub_private_taxonomies'].
+        $objects = [];
+
+        foreach ($names as $name) {
+            $objects[$name] = new WP_Taxonomy(
+                $name,
+                !in_array($name, $GLOBALS['wp_stub_private_taxonomies'] ?? [], true),
+            );
+        }
+
+        return $objects;
     }
 }
 

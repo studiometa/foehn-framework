@@ -48,6 +48,18 @@ it('gives the names of the terms of every taxonomy of the post, once', function 
     expect(Document::fromPost(searchPost(2))['terms'])->toBe(['Bread', 'Morning']);
 });
 
+it('leaves out the terms of a private taxonomy, such as the language of Polylang', function () {
+    $GLOBALS['wp_stub_object_taxonomies']['post'] = ['category', 'language'];
+    $GLOBALS['wp_stub_private_taxonomies'] = ['language'];
+    $bread = new WP_Term();
+    $bread->name = 'Bread';
+    $english = new WP_Term();
+    $english->name = 'English';
+    $GLOBALS['wp_stub_post_terms'][2] = ['category' => [$bread], 'language' => [$english]];
+
+    expect(Document::fromPost(searchPost(2))['terms'])->toBe(['Bread']);
+});
+
 it('adds the id and the post type to the fields of the document class', function () {
     $document = $this->indexer->document(searchPost(3, ['post_title' => 'Hello']));
 

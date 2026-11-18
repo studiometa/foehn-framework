@@ -23,7 +23,7 @@ Loupe is made for fewer than about 50,000 documents. Above that, use a search se
 
 ## Make a post type searchable
 
-Add a class with `#[AsSearchDocument]` that implements `SearchDocumentInterface`. It turns one published post into the fields of a search document. `Document::fromPost()` gives the default fields: the title, the excerpt and the content as plain text, the names of the terms of the post, and the date.
+Add a class with `#[AsSearchDocument]` that implements `SearchDocumentInterface`. It turns one published post into the fields of a search document. `Document::fromPost()` gives the default fields: the title, the excerpt and the content as plain text, the names of the terms of its public taxonomies (not the `language` of Polylang, for example), and the date.
 
 ```php
 <?php

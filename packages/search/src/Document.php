@@ -14,7 +14,7 @@ final class Document
 {
     /**
      * The title, the excerpt and the content as plain text, the names of the terms of
-     * every taxonomy of the post, and the publication date as a timestamp.
+     * every public taxonomy of the post, and the publication date as a timestamp.
      *
      * @return array{title: string, excerpt: string, content: string, terms: list<string>, date: int}
      */
@@ -46,9 +46,15 @@ final class Document
     {
         $names = [];
 
-        foreach (get_object_taxonomies($post->post_type) as $taxonomy) {
+        foreach (get_object_taxonomies($post->post_type, 'objects') as $taxonomy) {
+            // Not a private taxonomy, such as the `language` of Polylang: a search for
+            // "english" would find every post in English.
+            if (!$taxonomy->public) {
+                continue;
+            }
+
             // A WP_Error, for a taxonomy that is gone, holds no WP_Term.
-            foreach (wp_get_post_terms($post->ID, $taxonomy) as $term) {
+            foreach (wp_get_post_terms($post->ID, $taxonomy->name) as $term) {
                 if (!$term instanceof WP_Term) {
                     continue;
                 }
