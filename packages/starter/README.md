@@ -46,6 +46,7 @@ my-project/
 │   │   ├── ContextProviders/       # GlobalContextProvider — data every template gets
 │   │   ├── Controllers/            # single, page, archive, search, 404, and the password form
 │   │   ├── Hooks/                  # AssetHooks (Vite build), ThemeHooks (theme supports, excerpt)
+│   │   ├── JsonLd/                 # PostJsonLd — the schema.org BlogPosting node of a post
 │   │   ├── Menus/                  # header, footer, legal
 │   │   ├── Seeders/                # MenusSeeder — the three menus, for `wp foehn seed`
 │   │   ├── foehn.config.php        # discovery cache, opt-in cleanup and security hooks

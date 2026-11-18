@@ -36,6 +36,66 @@ function smokeGetTwice(string $path = '/'): array
 }
 
 /**
+ * Every `<script type="application/ld+json">` of a page, decoded, with its class and
+ * where it starts. A script that is not valid JSON fails the test.
+ *
+ * @return list<array{class: string, offset: int, json: array<string, mixed>}>
+ */
+function smokeJsonLd(string $html): array
+{
+    preg_match_all(
+        '#<script type="application/ld\+json"(?: class="([^"]*)")?[^>]*>(.*?)</script>#s',
+        $html,
+        $matches,
+        PREG_SET_ORDER | PREG_OFFSET_CAPTURE,
+    );
+
+    return array_map(static fn(array $match): array => [
+        'class' => $match[1][0] ?? '',
+        'offset' => $match[0][1],
+        'json' => json_decode($match[2][0], true, flags: JSON_THROW_ON_ERROR),
+    ], $matches);
+}
+
+/**
+ * The `@type` values of the graph of a decoded JSON-LD script.
+ *
+ * @param array<string, mixed> $json
+ * @return list<string>
+ */
+function smokeJsonLdTypes(array $json): array
+{
+    return array_merge(...array_map(
+        static fn(array $node): array => (array) ($node['@type'] ?? []),
+        $json['@graph'] ?? [$json],
+    ));
+}
+
+/**
+ * The URL of the post the starter installs, which the starter's PostJsonLd describes.
+ */
+function smokeJsonLdPostUrl(): string
+{
+    return (string) Site::wp('wp post list --post_type=post --name=hello-world --field=url');
+}
+
+/**
+ * The body of a URL requested with a mu-plugin that adds a node, as a block does when
+ * it renders.
+ */
+function smokeJsonLdWithBlock(string $url): string
+{
+    $plugin = Site::path('web/wp-content/mu-plugins/smoke-json-ld-block.php');
+    copy(__DIR__ . '/fixtures/json-ld-block.php', $plugin);
+
+    try {
+        return Client::get($url . '?smoke-json-ld-block=1')->body;
+    } finally {
+        unlink($plugin);
+    }
+}
+
+/**
  * Fill the cache for a path and hand back the stored response.
  */
 function smokeWarm(string $path = '/'): Response

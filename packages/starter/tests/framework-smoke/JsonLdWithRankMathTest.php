@@ -1,0 +1,60 @@
+<?php
+
+declare(strict_types=1);
+
+use Studiometa\Foehn\Smoke\Support\Client;
+use Studiometa\Foehn\Smoke\Support\Site;
+
+/**
+ * The JSON-LD of a page with Rank Math: the nodes of the starter's PostJsonLd go in the
+ * graph of Rank Math, and the nodes of blocks in a second script in the footer.
+ *
+ * The plugin is installed from wordpress.org for this file and removed afterwards.
+ */
+
+beforeAll(function () {
+    if (!Site::isRunning()) {
+        return;
+    }
+
+    Site::wp('wp plugin install seo-by-rank-math --activate');
+    // Rank Math loads its front end only once the registration is done or skipped.
+    Site::wp('wp option update rank_math_registration_skip 1');
+});
+
+afterAll(function () {
+    if (!Site::isRunning()) {
+        return;
+    }
+
+    Site::wp('wp plugin uninstall seo-by-rank-math --deactivate');
+    Site::wp('wp option delete rank_math_registration_skip');
+});
+
+beforeEach(function () {
+    Site::isRunning() || $this->markTestSkipped('ddev is not running — run `ddev start` and try again.');
+});
+
+it('adds the nodes of the post to the graph of Rank Math, and prints no graph of its own', function () {
+    $url = smokeJsonLdPostUrl();
+    $scripts = smokeJsonLd(Client::get($url)->body);
+
+    expect(array_column($scripts, 'class'))->toBe(['rank-math-schema']);
+
+    $types = smokeJsonLdTypes($scripts[0]['json']);
+
+    expect($types)->toContain('WebPage', 'BlogPosting');
+
+    $ids = array_column($scripts[0]['json']['@graph'], '@id');
+
+    expect($ids)->toContain($url . '#article', $url . '#webpage');
+});
+
+it('prints the nodes that a block adds in a second script, in the footer', function () {
+    $body = smokeJsonLdWithBlock(smokeJsonLdPostUrl());
+    $scripts = smokeJsonLd($body);
+
+    expect(array_column($scripts, 'class'))->toBe(['rank-math-schema', 'foehn-json-ld']);
+    expect($scripts[1]['offset'])->toBeGreaterThan((int) strpos($body, '</head>'));
+    expect(smokeJsonLdTypes($scripts[1]['json']))->toBe(['FAQPage']);
+});
