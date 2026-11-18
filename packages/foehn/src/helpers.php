@@ -38,6 +38,61 @@ if (!function_exists('Studiometa\Foehn\dispatch')) {
     }
 }
 
+if (!function_exists('Studiometa\Foehn\multilingual')) {
+    /**
+     * The adapter of the multilingual plugin of the site, or null on a site with one
+     * language.
+     *
+     * Polylang now. The WPML adapter takes its place here when WPML is active.
+     */
+    function multilingual(): ?Contracts\Multilingual
+    {
+        return Integrations\Polylang\Polylang::isActive() ? new Integrations\Polylang\Polylang() : null;
+    }
+}
+
+if (!function_exists('Studiometa\Foehn\languages')) {
+    /**
+     * The language switcher of the current request, for the theme to write its own markup.
+     *
+     * One item for each language: its `code`, its `name`, the `url` of the translation
+     * of the current page, whether it is the `current` language and whether the page is
+     * `translated` in it. A language without a translation links to its home page. Empty
+     * on a site with one language.
+     *
+     * @return list<array{code: string, name: string, url: string, current: bool, translated: bool}>
+     */
+    function languages(): array
+    {
+        $multilingual = multilingual();
+
+        if ($multilingual === null) {
+            return [];
+        }
+
+        $object = get_queried_object();
+        $object = $object instanceof \WP_Post || $object instanceof \WP_Term ? $object : null;
+        $translations = $object === null ? [] : $multilingual->translations($object);
+        $current = $multilingual->currentLanguage();
+        $items = [];
+
+        foreach ($multilingual->languages() as $code => $name) {
+            // Without an object, only the front page is the same page in every language.
+            $translated = $object === null ? is_front_page() : array_key_exists($code, $translations);
+
+            $items[] = [
+                'code' => $code,
+                'name' => $name,
+                'url' => $multilingual->url($code, $translated ? $object : null),
+                'current' => $code === $current,
+                'translated' => $translated,
+            ];
+        }
+
+        return $items;
+    }
+}
+
 if (!function_exists('Studiometa\Foehn\breadcrumbs')) {
     /**
      * The breadcrumb trail of the current request, for the theme to write its own markup.
