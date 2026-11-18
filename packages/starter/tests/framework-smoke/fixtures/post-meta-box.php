@@ -27,6 +27,7 @@ use Tempest\Reflection\ClassReflector;
 #[AsPostMeta(key: 'smoke_subtitle', control: 'text', label: 'Subtitle')]
 #[AsPostMeta(key: 'smoke_featured', type: 'boolean', control: 'checkbox', label: 'Featured')]
 #[AsPostMeta(key: 'smoke_code', control: 'text', sanitize: 'upper')]
+#[AsPostMeta(key: 'smoke_path', control: 'text', label: 'Path')]
 final class SmokeMetaBoxModel
 {
     public static function upper(mixed $value): string
@@ -66,7 +67,8 @@ $_POST = wp_slash([
     PostMetaBox::FIELD => [
         'smoke_subtitle' => "It's <b>on</b>",
         'smoke_featured' => '0',
-        'smoke_code' => 'ab-1',
+        'smoke_code' => 'ab\\1',
+        'smoke_path' => 'C:\\path',
     ],
 ]);
 wp_update_post(['ID' => $postId]);
@@ -74,6 +76,7 @@ $saved = [
     'subtitle' => get_post_meta($postId, 'smoke_subtitle', true),
     'featured' => get_post_meta($postId, 'smoke_featured', true),
     'code' => get_post_meta($postId, 'smoke_code', true),
+    'path' => get_post_meta($postId, 'smoke_path', true),
 ];
 
 // A save without the meta box, as a REST client or an import makes one.
