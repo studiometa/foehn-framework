@@ -6,8 +6,7 @@ declare(strict_types=1);
  * The search package with Polylang, set up and read for `SearchTest`, through
  * `wp eval-file`.
  *
- * Each run registers a search document for posts through `SearchDocumentDiscovery`,
- * as a theme class is, so the index and query hooks are the real ones.
+ * Each run registers the search document of `search-document.php`.
  *
  * - `installed`: 1 when studiometa/foehn-search is installed, else 0.
  * - `setup`: English (default) and French, three posts with a category each, and the
@@ -23,12 +22,8 @@ declare(strict_types=1);
 
 use Studiometa\Foehn\Query\Facets;
 use Studiometa\Foehn\Search\Config\SearchConfig;
-use Studiometa\Foehn\Search\Contracts\SearchDocumentInterface;
 use Studiometa\Foehn\Search\Discovery\SearchDocumentDiscovery;
-use Studiometa\Foehn\Search\Document;
 use Studiometa\Foehn\Search\Indexer;
-use Tempest\Discovery\DiscoveryLocation;
-use Tempest\Reflection\ClassReflector;
 
 use function Tempest\Container\get;
 
@@ -39,17 +34,7 @@ if (($args[0] ?? '') === 'installed') {
     return;
 }
 
-final class SmokeSearchDocument implements SearchDocumentInterface
-{
-    public function toDocument(WP_Post $post): ?array
-    {
-        return str_starts_with($post->post_name, 'smoke-search-') ? Document::fromPost($post) : null;
-    }
-}
-
-$discovery = get(SearchDocumentDiscovery::class);
-$discovery->discover(new DiscoveryLocation('Smoke\\', __DIR__), new ClassReflector(SmokeSearchDocument::class));
-$discovery->apply();
+require __DIR__ . '/search-document.php';
 
 $model = PLL()->model;
 $posts = [

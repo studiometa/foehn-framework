@@ -2,12 +2,14 @@
 
 declare(strict_types=1);
 
+use Studiometa\Foehn\Smoke\Support\Client;
 use Studiometa\Foehn\Smoke\Support\Site;
 
 /**
  * studiometa/foehn-search in a real WordPress, with Polylang: a typo still finds the
  * post, a category filter and its counts work on the search page, each language
- * searches its own index, and a save reaches the index.
+ * searches its own index, a save reaches the index, `wp foehn-search reindex` rebuilds
+ * the indexes, and the REST endpoint suggests titles.
  *
  * The starter does not ship the package: CI adds it for this suite. Without it, or
  * without ddev, every test is skipped. Polylang is installed from wordpress.org for
@@ -77,6 +79,23 @@ it('searches the index of each language', function () {
 
 it('gives an empty search no result', function () {
     expect(smokeSearch('en', '')['titles'])->toBe([]);
+});
+
+it('rebuilds the indexes with wp foehn-search reindex', function () {
+    $result = Site::run('wp --require=tests/framework-smoke/fixtures/search-cli.php foehn-search reindex');
+
+    expect($result['status'])->toBe(0, $result['output']);
+    expect($result['output'])->toContain('Search indexes rebuilt.');
+});
+
+it('suggests titles through the REST endpoint, with a short Cache-Control', function () {
+    $response = Client::get(Site::url() . '/wp-json/foehn-search/v1/suggestions?q=sourdouhg&lang=en');
+    $suggestions = json_decode($response->body, true);
+
+    expect($response->status)->toBe(200, $response->body);
+    expect(array_column(is_array($suggestions) ? $suggestions : [], 'title'))
+        ->toContain('Smoke sourdough starter', 'Smoke sourdough crackers');
+    expect($response->header('Cache-Control'))->toBe('public, max-age=300');
 });
 
 it('indexes a post again when it is saved', function () {
