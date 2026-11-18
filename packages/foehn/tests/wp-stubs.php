@@ -2835,7 +2835,13 @@ if (!class_exists('WP_Screen')) {
         public function __construct(
             public string $base = '',
             public string $action = '',
+            public bool $blockEditor = false,
         ) {}
+
+        public function is_block_editor(): bool
+        {
+            return $this->blockEditor;
+        }
     }
 }
 

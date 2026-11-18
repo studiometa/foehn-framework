@@ -51,11 +51,17 @@ final readonly class PrepublishChecks
     /**
      * Enqueue the checks with their configuration inlined before them.
      *
-     * Handler for the `enqueue_block_editor_assets` action. A missing script is
-     * skipped, with a warning in debug mode.
+     * Handler for the `enqueue_block_editor_assets` action. WordPress also fires it
+     * on the block widgets screen and in the Customizer, where `wp-editor` must not
+     * load: only the block post editor gets the checks. A missing script is skipped,
+     * with a warning in debug mode.
      */
     public function enqueue(): void
     {
+        if (!$this->isPostEditor()) {
+            return;
+        }
+
         $path = constant('WP_CONTENT_DIR') . '/' . self::SCRIPT_PATH;
 
         if (!is_file($path)) {
@@ -89,6 +95,22 @@ final readonly class PrepublishChecks
             true,
         );
         wp_add_inline_script(self::HANDLE, 'window.foehnPrepublishChecks = ' . $json . ';', 'before');
+    }
+
+    /**
+     * Whether the current screen is the block post editor.
+     *
+     * `get_current_screen()` is only defined in the admin, so its absence is a "no".
+     */
+    private function isPostEditor(): bool
+    {
+        if (!function_exists('get_current_screen')) {
+            return false;
+        }
+
+        $screen = get_current_screen();
+
+        return $screen !== null && $screen->base === 'post' && $screen->is_block_editor();
     }
 
     /**

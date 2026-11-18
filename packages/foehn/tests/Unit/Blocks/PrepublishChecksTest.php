@@ -14,6 +14,8 @@ use Tests\Fixtures\PrepublishBlockFixture;
 beforeEach(function () {
     wp_stub_reset();
 
+    $GLOBALS['wp_stub_current_screen'] = new WP_Screen('post', '', true);
+
     $this->scriptPath = WP_CONTENT_DIR . '/foehn/prepublish-checks.js';
 
     $this->discovery = new BlockDiscovery(new DiscoveryProblems());
@@ -74,6 +76,26 @@ describe('PrepublishChecks', function () {
         expect($scripts[0]['args']['deps'])->toContain('wp-plugins', 'wp-editor', 'wp-hooks', 'wp-data');
         expect($scripts[0]['args']['ver'])->toBe((string) filemtime($this->scriptPath));
         expect($scripts[0]['args']['in_footer'])->toBeTrue();
+    });
+
+    it('skips the screens that are not the block post editor', function (WP_Screen $screen) {
+        $GLOBALS['wp_stub_current_screen'] = $screen;
+
+        ($this->makeChecks)()->enqueue();
+
+        expect(wp_stub_get_calls('wp_enqueue_script'))->toBeEmpty();
+        expect(wp_stub_get_calls('wp_add_inline_script'))->toBeEmpty();
+    })->with([
+        'block widgets screen' => [new WP_Screen('widgets', '', true)],
+        'classic post editor' => [new WP_Screen('post', '', false)],
+    ]);
+
+    it('skips a request with no current screen', function () {
+        unset($GLOBALS['wp_stub_current_screen']);
+
+        ($this->makeChecks)()->enqueue();
+
+        expect(wp_stub_get_calls('wp_enqueue_script'))->toBeEmpty();
     });
 
     it('lists the image and heading level attributes of each Føhn block', function () {
