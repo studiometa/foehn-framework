@@ -9,6 +9,7 @@ use Studiometa\Foehn\PageCache\ScheduleStore;
 
 beforeEach(function () {
     wp_stub_reset();
+    $GLOBALS['wpdb'] = scheduleStoreDatabase();
     $this->schedule = new BlockSchedule(new FoehnConfig());
     $this->store = new ScheduleStore();
     $this->recorder = new ScheduleRecorder($this->schedule, $this->store, pageCacheBypass());

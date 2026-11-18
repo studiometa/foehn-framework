@@ -42,11 +42,13 @@ final readonly class ScheduledPurge
             return 0;
         }
 
+        // The records go first. A render that ends after this records its next date
+        // again, and the page it stores is then purged on a later run if it must be.
+        $this->store->forget($urls);
+
         foreach ($urls as $url) {
             $this->invalidator->forgetUrl($url);
         }
-
-        $this->store->forget($urls, $now);
 
         return count($urls);
     }

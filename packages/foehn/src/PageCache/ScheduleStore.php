@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Studiometa\Foehn\PageCache;
 
+use Studiometa\Foehn\Helpers\WP;
+
 /**
  * The pages that go stale at a known date, and that date.
  *
@@ -12,31 +14,39 @@ namespace Studiometa\Foehn\PageCache;
  * No content edit happens at that moment, so no purge hook fires. This keeps the URL and
  * the date, and {@see ScheduledPurge} deletes the stored page when the date has passed.
  *
- * One option, URL => Unix timestamp, not autoloaded: only the recorder and the job read it.
+ * One non-autoloaded option for each URL, named after a hash of the URL, with the URL and
+ * its date as value. Not one shared array: two renders that read and write back the same
+ * array at the same time keep only the last write, and a URL lost that way is never
+ * purged, because its stored page is then served with no render to record it again.
  */
 final readonly class ScheduleStore
 {
-    public const string OPTION = 'foehn_page_cache_schedule';
+    /** The start of the name of each option. */
+    public const string PREFIX = 'foehn_page_cache_schedule_';
 
     /**
      * Keep the date at which a URL goes stale.
      *
-     * A URL keeps its earliest date, unless that date has passed: then the page was
-     * purged or is about to be, and the new date is the one that matters next. Nothing is
-     * written when the stored date already covers the new one, so a page rendered again
-     * and again costs one option read.
+     * A URL keeps its earliest date, also when that date has passed: the purge is then
+     * pending, and the stored page stays wrong until {@see ScheduledPurge} runs. The job
+     * removes the record before it deletes the page, so a render after that records its
+     * next date again. Nothing is written when the stored date already covers the new
+     * one, so a page rendered again and again costs one option read.
      */
-    public function record(string $url, int $at, ?int $now = null): void
+    public function record(string $url, int $at): void
     {
-        $entries = $this->all();
-        $stored = $entries[$url] ?? null;
-
-        if ($stored !== null && $stored > ($now ?? time()) && $stored <= $at) {
+        if (!function_exists('get_option')) {
             return;
         }
 
-        $entries[$url] = $at;
-        $this->save($entries);
+        $option = self::option($url);
+        $stored = self::entry(get_option($option));
+
+        if ($stored !== null && $stored['at'] <= $at) {
+            return;
+        }
+
+        update_option($option, ['url' => $url, 'at' => $at], false);
     }
 
     /**
@@ -47,82 +57,98 @@ final readonly class ScheduleStore
     public function due(?int $now = null): array
     {
         $now ??= time();
+        $urls = [];
 
-        $urls = array_keys(array_filter($this->all(), static fn(int $at): bool => $at <= $now));
+        foreach ($this->all() as $url => $at) {
+            if ($at > $now) {
+                continue;
+            }
+
+            $urls[] = $url;
+        }
+
         sort($urls);
 
         return $urls;
     }
 
     /**
-     * Remove the URLs whose date has passed, and keep the others.
+     * Remove the records of these URLs.
      *
-     * Only the due ones: a URL rendered again since {@see self::due()} has a new, later
-     * date, and that one must stay.
+     * A due record is never written again (see {@see self::record()}), so the record
+     * removed here is the one {@see self::due()} read.
      *
      * @param list<string> $urls
      */
-    public function forget(array $urls, ?int $now = null): void
+    public function forget(array $urls): void
     {
-        $now ??= time();
-        $entries = $this->all();
-
-        foreach ($urls as $url) {
-            if (($entries[$url] ?? null) === null || $entries[$url] > $now) {
-                continue;
-            }
-
-            unset($entries[$url]);
+        if (!function_exists('delete_option')) {
+            return;
         }
 
-        $this->save($entries);
+        foreach ($urls as $url) {
+            delete_option(self::option($url));
+        }
     }
 
     /**
-     * Every recorded URL and its date.
+     * Every recorded URL and its date, read with one query.
      *
      * @return array<string, int>
      */
     public function all(): array
     {
-        if (!function_exists('get_option')) {
+        if (!function_exists('maybe_unserialize') || !isset($GLOBALS['wpdb'])) {
             return [];
         }
 
-        $value = get_option(self::OPTION, []);
-
-        if (!is_array($value)) {
-            return [];
-        }
+        $wpdb = WP::db();
+        $values = $wpdb->get_col($wpdb->prepare(
+            "SELECT option_value FROM {$wpdb->options} WHERE option_name LIKE %s",
+            $wpdb->esc_like(self::PREFIX) . '%',
+        ));
 
         $entries = [];
 
-        foreach ($value as $url => $at) {
-            if (!(is_string($url) && is_numeric($at))) {
+        foreach ($values as $value) {
+            $entry = self::entry(maybe_unserialize($value));
+
+            if ($entry === null) {
                 continue;
             }
 
-            $entries[$url] = (int) $at;
+            $entries[$entry['url']] = $entry['at'];
         }
 
         return $entries;
     }
 
     /**
-     * @param array<string, int> $entries
+     * The name of the option that holds the record of a URL.
      */
-    private function save(array $entries): void
+    public static function option(string $url): string
     {
-        if (!function_exists('update_option')) {
-            return;
+        return self::PREFIX . md5($url);
+    }
+
+    /**
+     * A stored record, or null when the value is not one.
+     *
+     * @return array{url: string, at: int}|null
+     */
+    private static function entry(mixed $value): ?array
+    {
+        if (!is_array($value)) {
+            return null;
         }
 
-        if ($entries === []) {
-            delete_option(self::OPTION);
+        $url = $value['url'] ?? null;
+        $at = $value['at'] ?? null;
 
-            return;
+        if (!(is_string($url) && is_numeric($at))) {
+            return null;
         }
 
-        update_option(self::OPTION, $entries, false);
+        return ['url' => $url, 'at' => (int) $at];
     }
 }

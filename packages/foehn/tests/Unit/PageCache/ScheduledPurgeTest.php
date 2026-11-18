@@ -12,6 +12,7 @@ use Studiometa\Foehn\PageCache\Store;
 
 beforeEach(function () {
     wp_stub_reset();
+    $GLOBALS['wpdb'] = scheduleStoreDatabase();
     $this->root = pageCacheRoot();
     $this->scheduleStore = new ScheduleStore();
 
@@ -42,8 +43,8 @@ describe('ScheduledPurge', function () {
     });
 
     it('purges each page whose date has passed, and only those', function () {
-        $this->scheduleStore->record('http://example.com/', time() - 10, now: 0);
-        $this->scheduleStore->record('http://example.com/offers/', time() + 3600, now: 0);
+        $this->scheduleStore->record('http://example.com/', time() - 10);
+        $this->scheduleStore->record('http://example.com/offers/', time() + 3600);
 
         expect(($this->purge)())->toBe(1);
         expect($this->pages->has(CacheKey::create('example.com', '/')))->toBeFalse();
@@ -54,14 +55,14 @@ describe('ScheduledPurge', function () {
     });
 
     it('does nothing when no date has passed', function () {
-        $this->scheduleStore->record('http://example.com/', time() + 3600, now: 0);
+        $this->scheduleStore->record('http://example.com/', time() + 3600);
 
         expect(($this->purge)())->toBe(0);
         expect($this->pages->has(CacheKey::create('example.com', '/')))->toBeTrue();
     });
 
     it('stays inert on a site without the page cache', function () {
-        $this->scheduleStore->record('http://example.com/', time() - 10, now: 0);
+        $this->scheduleStore->record('http://example.com/', time() - 10);
 
         expect(($this->purge)(enabled: false))->toBe(0);
         expect($this->pages->has(CacheKey::create('example.com', '/')))->toBeTrue();

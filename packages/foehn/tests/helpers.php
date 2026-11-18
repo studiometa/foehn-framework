@@ -489,8 +489,9 @@ function makeCommandContractSuite(array $contracts): void
 /**
  * A verification report of the `updates` profile, holding the checks a test cares about.
  */
-function testVerificationReport(\Studiometa\Foehn\Verification\VerificationResult ...$checks): \Studiometa\Foehn\Verification\VerificationReport
-{
+function testVerificationReport(
+    \Studiometa\Foehn\Verification\VerificationResult ...$checks,
+): \Studiometa\Foehn\Verification\VerificationReport {
     return new \Studiometa\Foehn\Verification\VerificationReport(
         \Studiometa\Foehn\Verification\VerificationProfile::Updates,
         array_values($checks),
@@ -848,4 +849,36 @@ function pageCacheBucketEnv(array $variables = []): void
     foreach ($variables as $name => $value) {
         putenv($name . '=' . $value);
     }
+}
+
+/**
+ * A `wpdb` whose `get_col()` reads the stubbed options, for {@see \Studiometa\Foehn\PageCache\ScheduleStore}.
+ *
+ * It answers the one query the store makes: the values of the options whose name starts
+ * with a prefix, serialized as the database holds them.
+ */
+function scheduleStoreDatabase(): wpdb
+{
+    return new class extends wpdb {
+        public function prepare(string $query, mixed ...$args): string
+        {
+            return str_replace('%s', "'" . (string) $args[0] . "'", $query);
+        }
+
+        public function get_col(string $query): array
+        {
+            $this->queries[] = $query;
+            preg_match("/LIKE '(.*)%'/", $query, $match);
+            $prefix = stripslashes($match[1] ?? '');
+            $values = [];
+
+            foreach ($GLOBALS['wp_stub_options'] ?? [] as $name => $value) {
+                if (str_starts_with((string) $name, $prefix)) {
+                    $values[] = serialize($value);
+                }
+            }
+
+            return $values;
+        }
+    };
 }

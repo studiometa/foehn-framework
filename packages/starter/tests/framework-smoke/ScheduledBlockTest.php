@@ -60,7 +60,9 @@ it('hides a scheduled block before its date, and shows it after the job purged t
     expect($before->body)->toContain('smoke-always-block')->not->toContain('smoke-scheduled-block');
 
     // The render recorded the page and the date its output changes.
-    expect((string) Site::wp('wp option get ' . ScheduleStore::OPTION . ' --format=json'))
+    expect((string) Site::wp(
+        'wp option list --search=' . ScheduleStore::PREFIX . '* --fields=option_value --format=json',
+    ))
         ->toContain(str_replace('/', '\\/', $path));
 
     // After the date, the stored page is stale until the job runs.
