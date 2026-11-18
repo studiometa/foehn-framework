@@ -438,6 +438,7 @@ Use a consistent namespace structure:
 | `app/ContextProviders/` | `App\ContextProviders` |
 | `app/Controllers/`      | `App\Controllers`      |
 | `app/Hooks/`            | `App\Hooks`            |
+| `app/JsonLd/`           | `App\JsonLd`           |
 | `app/Menus/`            | `App\Menus`            |
 | `app/Models/`           | `App\Models`           |
 | `app/Patterns/`         | `App\Patterns`         |

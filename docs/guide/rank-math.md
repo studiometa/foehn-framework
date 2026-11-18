@@ -10,6 +10,7 @@
 | Database export             | `wp foehn db:export` keeps the redirections, and exports the 404 log and the analytics as structure only. | [Database Export](/guide/database-export#plugin-presets) |
 | Page cache warm-up          | Without `warmSitemap`, the warm-up reads the sitemap index of Rank Math.                                  | [Sitemap warm-up](#sitemap-warm-up)                      |
 | Page cache and redirections | A redirection that is created, changed or turned on purges the stored page of its source.                 | [Redirections](#redirections)                            |
+| JSON-LD                     | With the Schema module on, the nodes of `#[AsJsonLd]` classes go in the graph of Rank Math.               | [JSON-LD](/guide/json-ld)                                |
 
 ## Sitemap warm-up
 

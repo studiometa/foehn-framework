@@ -63,6 +63,7 @@ export default defineConfig({
             { text: "Template Controllers", link: "/guide/template-controllers" },
             { text: "Twig Extensions", link: "/guide/twig-extensions" },
             { text: "Query Filters", link: "/guide/query-filters" },
+            { text: "JSON-LD", link: "/guide/json-ld" },
           ],
         },
         {
@@ -149,6 +150,7 @@ export default defineConfig({
             { text: "#[AsTimberModel]", link: "/api/as-timber-model" },
             { text: "#[AsContextProvider]", link: "/api/as-context-provider" },
             { text: "#[AsTemplateController]", link: "/api/as-template-controller" },
+            { text: "#[AsJsonLd]", link: "/api/as-json-ld" },
             { text: "#[AsBlock]", link: "/api/as-block" },
             { text: "#[AsAcfBlock]", link: "/api/as-acf-block" },
             { text: "#[AsAcfFieldGroup]", link: "/api/as-acf-field-group" },
@@ -180,6 +182,7 @@ export default defineConfig({
             { text: "AcfOptionsPageInterface", link: "/api/acf-options-page-interface" },
             { text: "ContextProviderInterface", link: "/api/context-provider-interface" },
             { text: "TemplateControllerInterface", link: "/api/template-controller-interface" },
+            { text: "JsonLdProviderInterface", link: "/api/json-ld-provider-interface" },
             { text: "BlockPatternInterface", link: "/api/block-pattern-interface" },
             { text: "Arrayable", link: "/api/arrayable" },
             { text: "CacheInterface", link: "/api/cache-interface" },

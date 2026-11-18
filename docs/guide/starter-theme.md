@@ -56,6 +56,7 @@ my-project/
 │   │   ├── ContextProviders/       # GlobalContextProvider — data every template gets
 │   │   ├── Controllers/            # single, page, archive, search, 404, and the password form
 │   │   ├── Hooks/                  # AssetHooks (Vite build), ThemeHooks (theme supports, excerpt)
+│   │   ├── JsonLd/                 # PostJsonLd — the schema.org BlogPosting node of a post
 │   │   ├── Menus/                  # header, footer, legal
 │   │   ├── Seeders/                # MenusSeeder — the three menus, for `wp foehn seed`
 │   │   ├── foehn.config.php        # Framework configuration
@@ -93,16 +94,17 @@ Do not put files in `web/`: the next `composer install` does not keep them. Put 
 
 Every class in `theme/app/` is one a theme needs before it renders anything:
 
-| Class                   | Why it is here                                                                       |
-| ----------------------- | ------------------------------------------------------------------------------------ |
-| `Controllers/`          | Answer WordPress's template hierarchy — single, page, archive, search, 404           |
-| `Menus/`                | The three locations `header.twig` and `footer.twig` read                             |
-| `Seeders/MenusSeeder`   | Creates the three menus with a Home link, so `wp foehn seed` fills an empty database |
-| `ContextProviders/`     | Puts `current_year` and `is_home` in every template                                  |
-| `Hooks/AssetHooks`      | Enqueues the Vite build                                                              |
-| `Hooks/ThemeHooks`      | Theme supports, excerpt length and more                                              |
-| `foehn.config.php`      | The discovery cache, and the framework's cleanup and security hooks                  |
-| `page-cache.config.php` | The [static page cache](./page-cache.md), on in production only                      |
+| Class                   | Why it is here                                                                                           |
+| ----------------------- | -------------------------------------------------------------------------------------------------------- |
+| `Controllers/`          | Answer WordPress's template hierarchy — single, page, archive, search, 404                               |
+| `Menus/`                | The three locations `header.twig` and `footer.twig` read                                                 |
+| `Seeders/MenusSeeder`   | Creates the three menus with a Home link, so `wp foehn seed` fills an empty database                     |
+| `ContextProviders/`     | Puts `current_year` and `is_home` in every template                                                      |
+| `Hooks/AssetHooks`      | Enqueues the Vite build                                                                                  |
+| `Hooks/ThemeHooks`      | Theme supports, excerpt length and more                                                                  |
+| `JsonLd/PostJsonLd`     | The schema.org `BlogPosting` node of a post, built with `spatie/schema-org`: see [JSON-LD](./json-ld.md) |
+| `foehn.config.php`      | The discovery cache, and the framework's cleanup and security hooks                                      |
+| `page-cache.config.php` | The [static page cache](./page-cache.md), on in production only                                          |
 
 There are no post types, blocks, taxonomies, settings pages or bindings. Add your own with the [`make:` commands](/guide/cli-commands), or copy one from [the demo](/guide/demo).
 

@@ -32,10 +32,11 @@ Attributes are PHP 8 annotations that enable auto-discovery and registration of 
 
 ### Views
 
-| Attribute                                             | Description                    |
-| ----------------------------------------------------- | ------------------------------ |
-| [`#[AsContextProvider]`](./as-context-provider)       | Add data to specific templates |
-| [`#[AsTemplateController]`](./as-template-controller) | Handle template rendering      |
+| Attribute                                             | Description                                        |
+| ----------------------------------------------------- | -------------------------------------------------- |
+| [`#[AsContextProvider]`](./as-context-provider)       | Add data to specific templates                     |
+| [`#[AsTemplateController]`](./as-template-controller) | Handle template rendering                          |
+| [`#[AsJsonLd]`](./as-json-ld)                         | Add schema.org JSON-LD to the pages of a post type |
 
 ### Twig
 
@@ -97,6 +98,7 @@ Interfaces define contracts for classes used with specific attributes.
 | [`SeederInterface`](./as-seeder)                                       | `#[AsSeeder]`                    |
 | [`ContextProviderInterface`](./context-provider-interface)             | `#[AsContextProvider]`           |
 | [`TemplateControllerInterface`](./template-controller-interface)       | `#[AsTemplateController]`        |
+| [`JsonLdProviderInterface`](./json-ld-provider-interface)              | `#[AsJsonLd]`                    |
 | [`RewriteHandlerInterface`](./as-rewrite-rule#rewritehandlerinterface) | `#[AsRewriteRule]` (optional)    |
 | [`BlockPatternInterface`](./block-pattern-interface)                   | `#[AsBlockPattern]` (optional)   |
 

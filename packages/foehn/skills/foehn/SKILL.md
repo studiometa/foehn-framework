@@ -1,6 +1,6 @@
 ---
 name: foehn
-description: 'Build WordPress themes with studiometa/foehn, the attribute-based framework on Tempest discovery and Timber/Twig. Load it when code in a theme made from studiometa/foehn-starter uses Studiometa\Foehn classes or attributes such as #[AsAction], #[AsFilter], #[AsPostType], #[AsTaxonomy], #[AsPostMeta], #[AsBlock], #[AsBlockPattern], #[AsBlockBinding], #[AsTemplateController], #[AsContextProvider], #[AsMenu], #[AsImageSize], #[AsSettingsPage], #[AsCustomizerSection], #[AsRewriteRule], #[AsRestRoute], #[AsShortcode], #[AsCliCommand], #[AsSeeder], #[AsJob], #[AsCron] or #[AsTwigExtension]; TemplateContext, ViewEngineInterface, BlockInterface, FoehnConfig, PageCacheConfig, ViteManifest or foehn_section(); or the wp foehn inspect, skill, agents-md, seed, make:*, discovery:*, cache:*, verify and salts:generate commands.'
+description: 'Build WordPress themes with studiometa/foehn, the attribute-based framework on Tempest discovery and Timber/Twig. Load it when code in a theme made from studiometa/foehn-starter uses Studiometa\Foehn classes or attributes such as #[AsAction], #[AsFilter], #[AsPostType], #[AsTaxonomy], #[AsPostMeta], #[AsBlock], #[AsBlockPattern], #[AsBlockBinding], #[AsTemplateController], #[AsContextProvider], #[AsJsonLd], #[AsMenu], #[AsImageSize], #[AsSettingsPage], #[AsCustomizerSection], #[AsRewriteRule], #[AsRestRoute], #[AsShortcode], #[AsCliCommand], #[AsSeeder], #[AsJob], #[AsCron] or #[AsTwigExtension]; TemplateContext, ViewEngineInterface, BlockInterface, FoehnConfig, PageCacheConfig, ViteManifest or foehn_section(); or the wp foehn inspect, skill, agents-md, seed, make:*, discovery:*, cache:*, verify and salts:generate commands.'
 ---
 
 # Føhn
@@ -43,6 +43,7 @@ theme/
 │   ├── Controllers/       # #[AsTemplateController]
 │   ├── ContextProviders/  # #[AsContextProvider]
 │   ├── Hooks/             # #[AsAction] / #[AsFilter]
+│   ├── JsonLd/            # #[AsJsonLd]
 │   ├── Menus/             # #[AsMenu]
 │   └── …                  # not in the starter: Models/ (#[AsPostType]), Taxonomies/, Blocks/, Settings/, Routes/, Seeders/ (#[AsSeeder])… as in the demo
 ├── templates/             # Twig root (TimberConfig::templatesDir defaults to ['templates'])
