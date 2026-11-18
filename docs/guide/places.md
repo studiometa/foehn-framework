@@ -278,7 +278,7 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import "@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css";
 ```
 
-- The filter form is a GET form with `Action Fetch`. A change submits it after 300 ms. `Fetch` requests the four sections in one request, morphs them (`mode="morph"`, `selector="[data-foehn-section]"`), and writes the archive URL with the form fields to the history, never `?foehn_sections=`. Back and forward update the sections only.
+- The filter form is a GET form with `Action Fetch`. A change submits it after 300 ms. `Fetch` requests the four sections in one request: its `params` option adds `foehn_sections` to the destination URL, so back and forward also request the sections of the URL they restore. It morphs them (`mode="morph"`, `selector="[data-foehn-section]"`), and writes the archive URL with the form fields to the history, never `?foehn_sections=`. Back and forward update the sections only.
 - An empty position control is disabled, so the form never submits `near=` or `bbox=`.
 - A geocoder result writes `near` into the form, turns `bbox` off and submits. The radius control appears with `near`; without one, the server applies `defaultRadius`.
 - The map frames `result.bounds` on the first load (`bounds` and `fitBoundsOptions` of the map options) and after each update (the `data-bounds` of the results). A `bbox` request has no bounds, so the map keeps the area the visitor chose.

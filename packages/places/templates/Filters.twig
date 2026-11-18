@@ -27,7 +27,7 @@
   data-option-history
   data-option-mode="morph"
   data-option-selector="[data-foehn-section]"
-  data-option-src="{{ foehn_section_url(places.sections(), archive_url)|esc_url }}"
+  data-option-params="{{ {foehn_sections: places.sections()}|json_encode|e }}"
   data-loading-text="{{ __('Loading places…', 'foehn-places')|e }}"
   data-error-text="{{ __('The places could not be loaded. The previous result is still shown.', 'foehn-places')|e }}"
   data-on:change.debounce300="() => $el.requestSubmit()"
@@ -106,7 +106,7 @@
         data-option-history
         data-option-mode="morph"
         data-option-selector="[data-foehn-section]"
-        data-option-src="{{ foehn_section_url(places.sections(), clear_url)|esc_url }}">
+        data-option-params="{{ {foehn_sections: places.sections()}|json_encode|e }}">
         {{ __('Clear position', 'foehn-places')|esc_html }}
       </a>
     {% endif %}

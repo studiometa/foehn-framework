@@ -33,14 +33,6 @@ function placesTwig(array $locations = []): Environment
 
     $twig = new Environment($loader, ['autoescape' => false, 'strict_variables' => true]);
     $twig->addFunction(new TwigFunction('__', static fn(string $text): string => $text));
-    $twig->addFunction(
-        new TwigFunction(
-            'foehn_section_url',
-            static fn(string $names, string $url): string => (
-                $url . (str_contains($url, '?') ? '&' : '?') . 'foehn_sections=' . $names
-            ),
-        ),
-    );
 
     foreach (['esc_url', 'esc_html', 'esc_attr'] as $filter) {
         $twig->addFilter(new TwigFilter($filter, $filter));
@@ -197,7 +189,8 @@ describe('Filters', function () {
             ->toContain('<button type="submit">')
             ->toContain('data-option-selector="[data-foehn-section]"')
             ->toContain('data-option-mode="morph"')
-            ->toContain('foehn_sections=' . PlacesView::SECTIONS);
+            ->toContain('data-option-params="{&quot;foehn_sections&quot;:&quot;' . PlacesView::SECTIONS . '&quot;}"')
+            ->not->toContain('data-option-src');
     });
 
     it('keeps empty position controls disabled, so an unpositioned form submits none', function () {
@@ -220,7 +213,8 @@ describe('Filters', function () {
             ->toContain('<option value="50" selected>')
             ->toContain('name="view" value="map"')
             ->toContain('href="https://example.com/place/?view=map"')
-            ->toContain('Clear position');
+            ->toContain('Clear position')
+            ->not->toContain('data-option-src');
     });
 
     it('renders no position control when both position features are off', function () {
@@ -361,8 +355,9 @@ describe('Summary and pagination', function () {
         expect($html)
             ->toContain('<span class="places-pagination__page" aria-current="page">1</span>')
             ->toContain('q=lyon')
-            ->toContain('paged=2')
-            ->toContain('foehn_sections=' . PlacesView::SECTIONS);
+            ->toContain('href="https://example.com/place/?paged=2&amp;q=lyon"')
+            ->toContain('data-option-params="{&quot;foehn_sections&quot;:&quot;' . PlacesView::SECTIONS . '&quot;}"')
+            ->not->toContain('data-option-src');
     });
 
     it('renders no pagination in the map view', function () {

@@ -20,7 +20,7 @@
               data-option-history
               data-option-mode="morph"
               data-option-selector="[data-foehn-section]"
-              data-option-src="{{ foehn_section_url(places.sections(), link)|esc_url }}">
+              data-option-params="{{ {foehn_sections: places.sections()}|json_encode|e }}">
               {{ page }}
             </a>
           {% endif %}

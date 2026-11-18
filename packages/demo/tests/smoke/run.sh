@@ -318,6 +318,9 @@ check_page "/venues/?q=lyon" "Halle aux photographies" "a text search finds a ve
 check_page "/venues/?near=45.764,4.8357&radius=10" "places-item__distance" "a radius search shows distances"
 check_page "/venues/" "places-item__hours" "the theme override of PlaceItem shows the project field"
 check_page "/venues/?view=map" "places-map" "the map view renders the map shell, or its unavailable state"
+# The Fetch elements add the section selection to their own destination with `params`,
+# never with a `src` that would carry one page's path into every history entry.
+check_page "/venues/" 'data-option-params="{&quot;foehn_sections&quot;:&quot;place-filters,place-summary,place-results,place-pagination&quot;}"' "the venue locator requests its sections through params"
 check_page "/venues/?q=lyon&foehn_sections=place-filters,place-summary,place-results,place-pagination" 'data-foehn-section="place-pagination"' "a section request answers the four place sections"
 
 # A request that breaks the contract answers 400, for the page and for its sections.
