@@ -10,6 +10,7 @@ use Studiometa\Foehn\Admin\AdminBar;
 use Studiometa\Foehn\Admin\CacheActions;
 use Studiometa\Foehn\Admin\Dashboard;
 use Studiometa\Foehn\Blocks\BlockEditorAssets;
+use Studiometa\Foehn\Blocks\BlockSchedule;
 use Studiometa\Foehn\Cache\TransientCache;
 use Studiometa\Foehn\Config\ConfigLoader;
 use Studiometa\Foehn\Config\DatabaseExportConfig;
@@ -48,6 +49,8 @@ use Studiometa\Foehn\PageCache\Invalidator;
 use Studiometa\Foehn\PageCache\PageStore;
 use Studiometa\Foehn\PageCache\Purger;
 use Studiometa\Foehn\PageCache\Recorder;
+use Studiometa\Foehn\PageCache\ScheduleRecorder;
+use Studiometa\Foehn\PageCache\ScheduleStore;
 use Studiometa\Foehn\PageCache\Store;
 use Studiometa\Foehn\PageCache\Warmer;
 use Studiometa\Foehn\Trace\RequestTrace;
@@ -602,6 +605,13 @@ final class Kernel
         // missing, and this event is what writes it. See HeartbeatEvent.
         new HeartbeatEvent()->register();
 
+        // Not opt-in: block dates apply to every block, core blocks included. One instance,
+        // because the render filter collects the next date a scheduled block changes state
+        // and the page cache reads it on `shutdown`. See BlockSchedule.
+        $schedule = new BlockSchedule($this->foehnConfig);
+        $this->container->singleton(BlockSchedule::class, $schedule);
+        $schedule->register();
+
         // Not opt-in: a theme that has `assets/icons/` has asked for its icons. See ThemeIcons.
         $this->container->get(ThemeIcons::class)->register();
 
@@ -658,6 +668,13 @@ final class Kernel
         /** @var Purger $purger */
         $purger = $this->container->get(Purger::class);
         $purger->register();
+
+        // A scheduled block changes a page with no edit to purge on. See ScheduledPurge.
+        new ScheduleRecorder(
+            $this->container->get(BlockSchedule::class),
+            new ScheduleStore(),
+            $this->container->get(Bypass::class),
+        )->register();
 
         // Rank Math redirects in PHP, which a stored page skips. See RedirectionPurger.
         if (RankMath::isModuleActive('redirections')) {

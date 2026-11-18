@@ -8,7 +8,7 @@
     "packages/demo"
   ],
   "scripts": {
-    "lint:editor": "node --check packages/foehn/resources/js/editor.js",
+    "lint:editor": "node --check packages/foehn/resources/js/editor.js && node --check packages/foehn/resources/js/schedule.js",
     "test:editor": "node --test \"packages/foehn/tests/js/*.test.mjs\"",
     "fmt": "oxfmt --write README.md packages/*/README.md",
     "fmt:check": "oxfmt --check README.md packages/*/README.md",
@@ -30,7 +30,7 @@
     "*.md": [
       "oxfmt --write"
     ],
-    "packages/foehn/resources/js/editor.js": [
+    "packages/foehn/resources/js/*.js": [
       "node --check"
     ]
   },
