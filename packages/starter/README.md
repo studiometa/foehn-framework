@@ -71,7 +71,8 @@ my-project/
 ├── web/                            # generated document root (gitignored)
 ├── .env                            # environment variables, written from .env.example
 ├── composer.json
-└── package.json
+├── package.json
+└── renovate.json                 # dependency updates
 ```
 
 Every class here is one a theme needs before it renders anything: the controllers that answer WordPress's template hierarchy, the menus the header and footer templates read, the context provider that puts `current_year` in the footer, the theme supports and the asset hooks. `MenusSeeder` fills the three menus, so an empty database gets them back with `wp foehn seed`.
@@ -120,6 +121,10 @@ npm run fix
 ```
 
 There is no JavaScript test setup here, because there is no JavaScript to test yet. [The demo](https://github.com/studiometa/foehn-demo) has one configured with Vitest and Playwright, ready to copy.
+
+## Dependency updates
+
+`renovate.json` configures [Renovate](https://docs.renovatebot.com/). It extends the shared preset [`studiometa/renovate-config`](https://github.com/studiometa/renovate-config): an update waits 3 days after its release, merges automatically when all checks pass, and the dependency dashboard lists what is pending. Security updates do not wait. The Føhn packages (`studiometa/foehn*` and `@studiometa/foehn-*`) update together in one pull request, because each requires the others at the same exact version.
 
 ## Tests
 
