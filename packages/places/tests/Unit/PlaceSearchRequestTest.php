@@ -110,6 +110,8 @@ describe('PlaceSearchRequest', function () {
         'a radius that is not a number' => ['near=45,4&radius=ten'],
         'a malformed near' => ['near=45'],
         'a near that is not numbers' => ['near=north,east'],
+        'a near number too long' => ['near=45.' . str_repeat('1', 40) . ',4'],
+        'a near in hexadecimal' => ['near=0x2D,4'],
         'a latitude out of range' => ['near=91,4'],
         'a longitude out of range' => ['near=45,181'],
         'a malformed bbox' => ['bbox=4,45,5'],
@@ -133,7 +135,42 @@ describe('PlaceSearchRequest', function () {
             'view' => 'map',
             'near' => '45.764,4.8357',
             'radius' => '25',
-            'place_type' => ['agency'],
+            'place_type' => 'agency',
         ]);
+    });
+
+    it('reads its own query arguments back through http_build_query()', function () {
+        $request = placeRequest('q=lyon&near=0.00001,-0.000004&place_type=agency,shop&place_service=parking');
+        $again = placeRequest(http_build_query($request->toQueryArgs()));
+
+        expect($request->toQueryArgs())
+            ->toBe([
+                'q' => 'lyon',
+                'near' => '0.00001,0',
+                'radius' => '25',
+                'place_type' => 'agency,shop',
+                'place_service' => 'parking',
+            ])
+            ->and($again)
+            ->toEqual($request);
+    });
+
+    it('writes a bounding box without an exponent', function () {
+        $request = placeRequest('bbox=0.00001,-0.00002,0.5,0.00003');
+
+        expect((string) $request->bbox)->toBe('0.00001,-0.00002,0.5,0.00003');
+        expect(placeRequest(http_build_query($request->toQueryArgs())))->toEqual($request);
+    });
+
+    it('reads the full precision doubles of a map', function () {
+        $near = placeRequest('near=0.30000000000000004,2.3522219999999876');
+        $bbox = placeRequest('bbox=-4.795789999999987,1e-7,8.123456789012345,0.30000000000000004');
+
+        expect((string) $near->near)->toBe('0.3,2.35222');
+        expect((string) $bbox->bbox)->toBe('-4.79579,0,8.12346,0.3');
+        expect((string) placeRequest(
+            'bbox=-4.795789999999987,0.30000000000000004,8.123456789012345,51.08912345678901',
+        )->bbox)
+            ->toBe('-4.79579,0.3,8.12346,51.08912');
     });
 });

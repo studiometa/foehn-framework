@@ -96,6 +96,17 @@ final readonly class PlaceCoordinates
      */
     public function __toString(): string
     {
-        return $this->latitude . ',' . $this->longitude;
+        return self::decimal($this->latitude) . ',' . self::decimal($this->longitude);
+    }
+
+    /**
+     * A coordinate in plain decimal notation, to ten decimals at most.
+     *
+     * PHP prints a small float with an exponent (`1.0E-5`), which is not the plain
+     * number a request parameter or a data attribute needs.
+     */
+    public static function decimal(float $value): string
+    {
+        return rtrim(rtrim(sprintf('%.10F', $value), '0'), '.');
     }
 }

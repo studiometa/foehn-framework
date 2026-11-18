@@ -21,6 +21,9 @@ final readonly class PlaceSearchRequest
 
     public const int MAX_TERMS = 20;
 
+    /** The length of one number of `near` or `bbox`: a JavaScript double fits. */
+    public const int MAX_NUMBER_LENGTH = 32;
+
     public const array VIEWS = ['list', 'map'];
 
     private const array SCALARS = ['q', 'view', 'near', 'radius', 'bbox'];
@@ -145,7 +148,11 @@ final readonly class PlaceSearchRequest
     /**
      * The request as query arguments, for links that keep it.
      *
-     * @return array<string, string|list<string>>
+     * The terms of a taxonomy are one comma-separated value (`place_type=a,b`), the form
+     * the page cache keys: `http_build_query()` and `add_query_arg()` write a list as
+     * `place_type[0]=a`, which the parser does not read.
+     *
+     * @return array<string, string>
      */
     public function toQueryArgs(): array
     {
@@ -168,7 +175,11 @@ final readonly class PlaceSearchRequest
             $args['bbox'] = (string) $this->bbox;
         }
 
-        return [...$args, ...$this->terms];
+        foreach ($this->terms as $taxonomy => $slugs) {
+            $args[$taxonomy] = implode(',', $slugs);
+        }
+
+        return $args;
     }
 
     /**
@@ -239,6 +250,11 @@ final readonly class PlaceSearchRequest
     }
 
     /**
+     * The numbers of a comma-separated list.
+     *
+     * A number is any decimal form, so the raw doubles of a map (`0.30000000000000004`,
+     * `1e-7` from JavaScript) are read. They are rounded later.
+     *
      * @return list<float>
      */
     private static function numbers(string $value, int $count, string $name): array
@@ -252,17 +268,13 @@ final readonly class PlaceSearchRequest
         $numbers = [];
 
         foreach ($parts as $part) {
-            if (preg_match('/^-?\d{1,3}(\.\d{1,15})?$/', trim($part)) !== 1) {
+            $part = trim($part);
+
+            if (strlen($part) > self::MAX_NUMBER_LENGTH || !is_numeric($part)) {
                 throw new InvalidPlaceSearch(sprintf('"%s" is not a list of numbers.', $name));
             }
 
-            $number = filter_var(trim($part), FILTER_VALIDATE_FLOAT);
-
-            if ($number === false) {
-                throw new InvalidPlaceSearch(sprintf('"%s" is not a list of numbers.', $name));
-            }
-
-            $numbers[] = $number;
+            $numbers[] = (float) $part;
         }
 
         return $numbers;

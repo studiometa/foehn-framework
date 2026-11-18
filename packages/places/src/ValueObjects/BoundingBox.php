@@ -66,7 +66,12 @@ final readonly class BoundingBox
      */
     public function __toString(): string
     {
-        return implode(',', [$this->west, $this->south, $this->east, $this->north]);
+        return implode(',', array_map(PlaceCoordinates::decimal(...), [
+            $this->west,
+            $this->south,
+            $this->east,
+            $this->north,
+        ]));
     }
 
     /**

@@ -128,7 +128,9 @@ The archive reads one GET contract:
 
 An empty value is absent. `near` and `bbox` together, a repeated parameter, an unknown `view`, a radius outside the options, a coordinate out of range, a malformed value, an unknown term, and a `near`, `radius` or `bbox` whose feature is off answer `400`, for the page and for its sections. An unknown term never turns the archive into a `404`.
 
-`bbox` longitudes can come from raw map bounds: a span of 360° or more removes the longitude constraint, and an area across the antimeridian works.
+`near` and `bbox` can come from raw map values: a number keeps the full precision JavaScript prints (`0.30000000000000004`, `1e-7`), and the server rounds it to five decimals. `bbox` longitudes can come from raw map bounds: a span of 360° or more removes the longitude constraint, and an area across the antimeridian works.
+
+`PlaceSearchRequest::toQueryArgs()` gives the request as query arguments, for a link that keeps it (pagination, the view switch). Each taxonomy is one comma-separated value (`place_type=a,b`), so `add_query_arg()` and `http_build_query()` write the form that the parser and the page cache read.
 
 With `near`, places within the radius come nearest first (Haversine distance). Without it, places come by title. On a multilingual site, a place of another language is never in the result or the facet counts.
 
