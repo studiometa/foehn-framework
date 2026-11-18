@@ -54,6 +54,14 @@ describe('FoehnConfig', function () {
         expect($path)->toContain('foehn/discovery');
     });
 
+    it('only warns about accessibility issues by default', function () {
+        expect(new FoehnConfig()->blockPublicationOnAccessibilityIssues)->toBeFalse();
+        expect(FoehnConfig::fromArray([])->blockPublicationOnAccessibilityIssues)->toBeFalse();
+        expect(FoehnConfig::fromArray([
+            'block_publication_on_accessibility_issues' => true,
+        ])->blockPublicationOnAccessibilityIssues)->toBeTrue();
+    });
+
     describe('fromArray', function () {
         it('creates config from empty array', function () {
             $config = FoehnConfig::fromArray([]);
@@ -152,7 +160,9 @@ describe('FoehnConfig', function () {
             expect(FoehnConfig::fromArray(['cli_namespace' => 'site'])->cliNamespace)->toBe('site');
         });
 
-        it('refuses a cli namespace that WP-CLI cannot reach or that is the framework one', function (string $namespace) {
+        it('refuses a cli namespace that WP-CLI cannot reach or that is the framework one', function (
+            string $namespace,
+        ) {
             expect(fn() => new FoehnConfig(cliNamespace: $namespace))
                 ->toThrow(InvalidArgumentException::class, sprintf('"%s" is not a valid cliNamespace', $namespace));
         })->with(['empty' => [''], 'space' => ['my site'], 'uppercase' => ['App'], 'framework' => ['foehn']]);

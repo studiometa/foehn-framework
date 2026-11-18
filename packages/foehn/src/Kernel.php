@@ -11,6 +11,7 @@ use Studiometa\Foehn\Admin\CacheActions;
 use Studiometa\Foehn\Admin\Dashboard;
 use Studiometa\Foehn\Blocks\BlockEditorAssets;
 use Studiometa\Foehn\Blocks\BlockSchedule;
+use Studiometa\Foehn\Blocks\PrepublishChecks;
 use Studiometa\Foehn\Cache\TransientCache;
 use Studiometa\Foehn\Config\ConfigLoader;
 use Studiometa\Foehn\Config\DatabaseExportConfig;
@@ -341,7 +342,6 @@ final class Kernel
             BlockEditorAssets::class,
             fn() => new BlockEditorAssets($this->container->get(DiscoveryRunner::class), $this->foehnConfig),
         );
-
         // A singleton because it is one process's record: the collector the kernel starts
         // has to be the collector `wp foehn verify` reads back.
         $this->container->singleton(DiagnosticsCollector::class, static fn() => new DiagnosticsCollector());
@@ -589,8 +589,8 @@ final class Kernel
         // Late phase: wp_loaded
         add_action('wp_loaded', $this->onWpLoaded(...), 1);
 
-        // Editor phase: ship the block editor registrar and the block definitions.
-        // Always on — block authoring must not be opt-in like the classes in src/Hooks/.
+        // Editor phase: ship the block editor registrar and the block definitions, and
+        // the accessibility checks of the pre-publish panel. Always on — block authoring must not be opt-in like the classes in src/Hooks/.
         add_action('enqueue_block_editor_assets', $this->onEnqueueBlockEditorAssets(...));
 
         // Not part of registerPageCache(), and not gated on it: the framework emits URLs
@@ -717,14 +717,19 @@ final class Kernel
 
     /**
      * Handle enqueue_block_editor_assets hook.
-     * Ship the generic registrar and the discovered block definitions to the editor.
+     * Ship the generic registrar and the discovered block definitions to the editor,
+     * and the accessibility checks of the pre-publish panel.
      *
-     * BlockEditorAssets is resolved lazily: discoveries have not run at bootstrap time.
+     * BlockEditorAssets and PrepublishChecks are resolved lazily: discoveries have not run at bootstrap time.
      */
     public function onEnqueueBlockEditorAssets(): void
     {
         /** @var BlockEditorAssets $assets */
         $assets = $this->container->get(BlockEditorAssets::class);
         $assets->enqueue();
+
+        /** @var PrepublishChecks $checks */
+        $checks = $this->container->get(PrepublishChecks::class);
+        $checks->enqueue();
     }
 }

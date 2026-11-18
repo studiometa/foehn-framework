@@ -94,6 +94,13 @@ final readonly class FoehnConfig
          * letters, digits, `-` and `_`, and not `foehn`: see CliNamespace::isValid().
          */
         public string $cliNamespace = 'app',
+
+        /**
+         * Refuse to publish a post while the pre-publish accessibility checks find
+         * an issue: an image with no alternative text, a second level 1 heading or
+         * a jump in heading levels. False shows the issues as warnings only.
+         */
+        public bool $blockPublicationOnAccessibilityIssues = false,
     ) {
         if (!CliNamespace::isValid($cliNamespace)) {
             throw new InvalidArgumentException(sprintf(
@@ -135,6 +142,9 @@ final readonly class FoehnConfig
             recordErrors: ($config['record_errors'] ?? null) === null ? null : (bool) $config['record_errors'],
             traceRequests: ($config['trace_requests'] ?? null) === null ? null : (bool) $config['trace_requests'],
             cliNamespace: $config['cli_namespace'] ?? 'app',
+            blockPublicationOnAccessibilityIssues: (bool) (
+                $config['block_publication_on_accessibility_issues'] ?? false
+            ),
         );
     }
 
