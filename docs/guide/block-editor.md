@@ -39,6 +39,17 @@ With no `theme.json`, those are core's own defaults — including `body { paddin
 
 `Hooks\Cleanup\DisableGlobalStyles` removes them. The starter enables it, because it ships no `theme.json`; drop it from `foehn.config.php` if you adopt `theme.json` presets for colours, typography, spacing or duotone filters.
 
+## Responsive and state styles
+
+WordPress 7.1 lets editors set block styles per viewport and per state (`:hover`, `:focus`, ...), in the block inspector and in Global Styles. When the theme's stylesheet owns these styles, add `Hooks\Cleanup\DisableStyleStatesEditing` to the `hooks` of `foehn.config.php`. It sets two editor settings to `false` through the `block_editor_settings_all` filter:
+
+| Setting                     | Removes                                                                                                    |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `responsiveEditingEnabled`  | The responsive styles toggle of the View menu, and the Viewport group of the Global Styles States dropdown |
+| `blockStatesEditingEnabled` | The state dropdown of the block inspector, and the pseudo-state options of Global Styles                   |
+
+Styles that are already saved still render on the front end. Before WordPress 7.1 the hook has no effect.
+
 ## Controls
 
 The control for an attribute is derived from its `type`, with an optional `control` override for cases the type alone cannot express:

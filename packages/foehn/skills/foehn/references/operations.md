@@ -27,28 +27,29 @@ Read configuration in code with constructor injection (`public function __constr
 
 These classes are in the framework, but discovery skips them until `FoehnConfig::hooks` names them.
 
-| Class                                     | Effect                                                                                                                                        |
-| ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Hooks\Cleanup\CleanContent`              | Removes empty `<p>` and archive title prefixes                                                                                                |
-| `Hooks\Cleanup\CleanHeadTags`             | Removes wlwmanifest, RSD, shortlink and REST discovery links                                                                                  |
+| Class                                     | Effect                                                                                                                                          |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Hooks\Cleanup\CleanContent`              | Removes empty `<p>` and archive title prefixes                                                                                                  |
+| `Hooks\Cleanup\CleanHeadTags`             | Removes wlwmanifest, RSD, shortlink and REST discovery links                                                                                    |
 | `Hooks\Cleanup\CleanImageSizes`           | Keeps `thumbnail` as the only core size WordPress writes: removes `medium`, `medium_large`, `large`, `1536x1536`, `2048x2048`. Theme sizes stay |
-| `Hooks\Cleanup\DisableBlockStyles`        | Dequeues core block styles. Do not use it when editors write content with blocks.                                                             |
-| `Hooks\Cleanup\DisableEmoji`              | Removes emoji scripts and styles                                                                                                              |
-| `Hooks\Cleanup\DisableFeeds`              | Removes the feed links from `wp_head`. The feeds still answer.                                                                                |
-| `Hooks\Cleanup\DisableGlobalStyles`       | Removes the inline `theme.json` styles. The starter enables it because it ships no `theme.json`. Remove it if you adopt `theme.json` presets. |
-| `Hooks\Cleanup\DisableOembed`             | Removes the oEmbed discovery links from `wp_head`                                                                                             |
-| `Hooks\Security\DisableAuthorSitemap`     | Removes the core and Rank Math author sitemaps, which list user slugs                                                                         |
-| `Hooks\Security\DisableFileEditor`        | Defines `DISALLOW_FILE_EDIT`, which turns off the theme and plugin editors                                                                    |
-| `Hooks\Security\DisableVersionDisclosure` | Removes the WordPress version                                                                                                                 |
-| `Hooks\Security\DisableXmlRpc`            | Turns off XML-RPC                                                                                                                             |
-| `Hooks\Security\GenericLoginErrors`       | One login error message for every failure                                                                                                     |
-| `Hooks\Security\RestApiAuth`              | Removes the `/wp/v2/users` endpoints for anonymous requests. Other endpoints stay public.                                                     |
-| `Hooks\Security\SecurityHeaders`          | Sends `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` and `Permissions-Policy`                                                 |
-| `Hooks\QueryFiltersHook`                  | Applies `query-filters.config.php`                                                                                                            |
-| `Hooks\YouTubeNoCookieHooks`              | Rewrites YouTube embeds to youtube-nocookie.com                                                                                               |
-| `Hooks\StudiometaUi`                      | Registers the `@ui` and `@svg` Twig namespaces of `studiometa/ui`                                                                             |
-| `Hooks\S3UploadsEndpoint`                 | Points `humanmade/s3-uploads` at a non-AWS endpoint                                                                                           |
-| `Images\ImageCacheHooks`                  | Forgets an image's transforms when the image changes                                                                                          |
+| `Hooks\Cleanup\DisableBlockStyles`        | Dequeues core block styles. Do not use it when editors write content with blocks.                                                               |
+| `Hooks\Cleanup\DisableEmoji`              | Removes emoji scripts and styles                                                                                                                |
+| `Hooks\Cleanup\DisableFeeds`              | Removes the feed links from `wp_head`. The feeds still answer.                                                                                  |
+| `Hooks\Cleanup\DisableGlobalStyles`       | Removes the inline `theme.json` styles. The starter enables it because it ships no `theme.json`. Remove it if you adopt `theme.json` presets.   |
+| `Hooks\Cleanup\DisableOembed`             | Removes the oEmbed discovery links from `wp_head`                                                                                               |
+| `Hooks\Cleanup\DisableStyleStatesEditing` | Turns off the WordPress 7.1 per-viewport and per-state block styles in the editor. Saved styles still render                                    |
+| `Hooks\Security\DisableAuthorSitemap`     | Removes the core and Rank Math author sitemaps, which list user slugs                                                                           |
+| `Hooks\Security\DisableFileEditor`        | Defines `DISALLOW_FILE_EDIT`, which turns off the theme and plugin editors                                                                      |
+| `Hooks\Security\DisableVersionDisclosure` | Removes the WordPress version                                                                                                                   |
+| `Hooks\Security\DisableXmlRpc`            | Turns off XML-RPC                                                                                                                               |
+| `Hooks\Security\GenericLoginErrors`       | One login error message for every failure                                                                                                       |
+| `Hooks\Security\RestApiAuth`              | Removes the `/wp/v2/users` endpoints for anonymous requests. Other endpoints stay public.                                                       |
+| `Hooks\Security\SecurityHeaders`          | Sends `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` and `Permissions-Policy`                                                   |
+| `Hooks\QueryFiltersHook`                  | Applies `query-filters.config.php`                                                                                                              |
+| `Hooks\YouTubeNoCookieHooks`              | Rewrites YouTube embeds to youtube-nocookie.com                                                                                                 |
+| `Hooks\StudiometaUi`                      | Registers the `@ui` and `@svg` Twig namespaces of `studiometa/ui`                                                                               |
+| `Hooks\S3UploadsEndpoint`                 | Points `humanmade/s3-uploads` at a non-AWS endpoint                                                                                             |
+| `Images\ImageCacheHooks`                  | Forgets an image's transforms when the image changes                                                                                            |
 
 All are under `Studiometa\Foehn\`. Do not copy their code into the theme. Add the class to `hooks`.
 
