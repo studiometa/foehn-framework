@@ -39,6 +39,21 @@ final class BlockAttributeSchema
         'gallery',
         'file',
         'posts',
+        // A heading level, 1 to 6, as a select. Also what the pre-publish
+        // accessibility checks read as the level of a heading the block renders.
+        'headingLevel',
+    ];
+
+    /**
+     * Choices of a `headingLevel` control whose schema gives none.
+     */
+    private const array HEADING_LEVELS = [
+        ['label' => 'H1', 'value' => 1],
+        ['label' => 'H2', 'value' => 2],
+        ['label' => 'H3', 'value' => 3],
+        ['label' => 'H4', 'value' => 4],
+        ['label' => 'H5', 'value' => 5],
+        ['label' => 'H6', 'value' => 6],
     ];
 
     /**
@@ -93,7 +108,12 @@ final class BlockAttributeSchema
                 'help' => is_string($schema['help'] ?? null) ? $schema['help'] : null,
                 // Shown in an empty in-place editor on the canvas.
                 'placeholder' => is_string($schema['placeholder'] ?? null) ? $schema['placeholder'] : null,
-                'options' => $control === 'select' ? self::resolveOptions($schema) : null,
+                'options' => match ($control) {
+                    'select' => self::resolveOptions($schema),
+                    // `options` or `enum` can restrict the levels, for example to 2 and 3.
+                    'headingLevel' => self::resolveOptions($schema) ?? self::HEADING_LEVELS,
+                    default => null,
+                },
                 // Which media the picker offers, for `file` and `gallery`. Null lets
                 // the editor apply its own default — images for a gallery, anything
                 // for a file.

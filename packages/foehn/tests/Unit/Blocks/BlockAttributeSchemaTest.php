@@ -278,6 +278,28 @@ describe('BlockAttributeSchema::toEditorFields', function () {
 });
 
 describe('BlockAttributeSchema media and relation controls', function () {
+    it('offers the six heading levels to a headingLevel control', function () {
+        $fields = BlockAttributeSchema::toEditorFields([
+            'titleLevel' => ['type' => 'integer', 'control' => 'headingLevel', 'default' => 2],
+        ]);
+
+        expect($fields['titleLevel']['control'])->toBe('headingLevel');
+        expect($fields['titleLevel']['options'])->toHaveCount(6);
+        expect($fields['titleLevel']['options'][0])->toBe(['label' => 'H1', 'value' => 1]);
+        expect($fields['titleLevel']['options'][5])->toBe(['label' => 'H6', 'value' => 6]);
+    });
+
+    it('lets the schema restrict the levels of a headingLevel control', function () {
+        $fields = BlockAttributeSchema::toEditorFields([
+            'titleLevel' => ['type' => 'integer', 'control' => 'headingLevel', 'enum' => [2, 3]],
+        ]);
+
+        expect($fields['titleLevel']['options'])->toBe([
+            ['label' => '2', 'value' => 2],
+            ['label' => '3', 'value' => 3],
+        ]);
+    });
+
     it('honours the gallery, file and posts controls', function () {
         $fields = BlockAttributeSchema::toEditorFields([
             'images' => ['type' => 'array', 'control' => 'gallery'],

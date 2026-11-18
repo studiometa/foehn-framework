@@ -204,6 +204,11 @@
             });
         },
 
+        // A heading level is a select of integers: the PHP side resolves the choices.
+        headingLevel(field, value, setValue) {
+            return CONTROLS.select(field, value, setValue);
+        },
+
         image(field, value, setValue) {
             if (!MediaUpload || !MediaUploadCheck) {
                 return null;
