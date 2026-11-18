@@ -235,6 +235,37 @@ DISABLE_WP_CRON=false
 
 The generated `wp-config.php` turns the WordPress pseudo-cron off unless `DISABLE_WP_CRON=false`. `.env.example` sets it to `false`, so cron runs in a local project. In production, remove the line and run a real cron (see [Deployment](#deployment)).
 
+## Dependency Updates
+
+The starter ships a `renovate.json` for [Renovate](https://docs.renovatebot.com/):
+
+```json
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["github>studiometa/renovate-config"],
+  "vulnerabilityAlerts": {
+    "minimumReleaseAge": null
+  },
+  "packageRules": [
+    {
+      "description": "Every Føhn package carries the same version and requires the others at that exact version, so they move together",
+      "matchPackageNames": ["studiometa/foehn*", "@studiometa/foehn-*"],
+      "groupName": "Føhn",
+      "groupSlug": "foehn",
+      "major": {
+        "enabled": true
+      }
+    }
+  ]
+}
+```
+
+- The shared preset [`studiometa/renovate-config`](https://github.com/studiometa/renovate-config) sets the rules: an update waits 3 days after its release (`minimumReleaseAge`), merges automatically when all checks pass, and the dependency dashboard lists what is pending.
+- `vulnerabilityAlerts` removes the 3-day wait from security updates.
+- The `Føhn` group puts `studiometa/foehn`, `studiometa/foehn-installer` and `@studiometa/foehn-vite-plugin` in one pull request, also for a major version. Each Føhn package requires the others at the same exact version, so one package alone cannot update.
+
+To use it, install the [Renovate GitHub App](https://github.com/apps/renovate) on the repository of the project. The shared preset sets `"platform": "github"`.
+
 ## Deployment
 
 For each release in production:
