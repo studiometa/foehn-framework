@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Studiometa\Foehn\Cron\HeartbeatEvent;
 use Studiometa\Foehn\PageCache\ScheduleStore;
 use Studiometa\Foehn\Smoke\Support\Site;
 
@@ -10,8 +11,8 @@ use Studiometa\Foehn\Smoke\Support\Site;
  *
  * The unit suite proves the render filter and the schedule store on stubs. Only a real
  * site shows the three parts together: core passes the attribute to the `render_block`
- * filter of a core block, the page cache records the URL of the page, and the cron job
- * deletes the stored page once the date has passed, so the next request shows the block.
+ * filter of a core block, the page cache records the URL of the page, and the heartbeat
+ * cron event deletes the stored page once the date has passed, so the next request shows the block.
  */
 
 /** Seconds from now at which the scheduled block shows. */
@@ -71,10 +72,8 @@ it('hides a scheduled block before its date, and shows it after the job purged t
     expectCache($stale, 'HIT');
     expect($stale->body)->not->toContain('smoke-scheduled-block');
 
-    $purged = Site::wp(
-        'wp eval "echo Studiometa\\Foehn\\Kernel::get(Studiometa\\Foehn\\PageCache\\ScheduledPurge::class)();"',
-    );
-    expect((int) $purged)->toBeGreaterThanOrEqual(1);
+    // The real cron runs the heartbeat event, and the purge with it: no Action Scheduler.
+    Site::wp('wp cron event run ' . HeartbeatEvent::HOOK);
 
     $after = smokeGet($path);
     expectCache($after, 'MISS');

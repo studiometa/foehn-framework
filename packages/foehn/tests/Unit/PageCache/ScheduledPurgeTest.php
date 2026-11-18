@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use Studiometa\Foehn\Attributes\AsCron;
 use Studiometa\Foehn\Config\PageCacheConfig;
+use Studiometa\Foehn\Cron\HeartbeatEvent;
 use Studiometa\Foehn\PageCache\CacheKey;
 use Studiometa\Foehn\PageCache\Invalidator;
 use Studiometa\Foehn\PageCache\ScheduledPurge;
@@ -16,17 +16,13 @@ beforeEach(function () {
     $this->root = pageCacheRoot();
     $this->scheduleStore = new ScheduleStore();
 
-    $this->purge = function (bool $enabled = true): int {
-        $config = new PageCacheConfig(enabled: $enabled, path: $this->root, environments: ['production']);
+    $config = new PageCacheConfig(enabled: true, path: $this->root);
+    $this->job = new ScheduledPurge(
+        new Invalidator($config, new Store($config), pageCacheJobs()),
+        $this->scheduleStore,
+    );
 
-        return new ScheduledPurge(
-            $config,
-            new Invalidator($config, new Store($config), pageCacheJobs()),
-            $this->scheduleStore,
-        )();
-    };
-
-    $this->pages = new Store(new PageCacheConfig(enabled: true, path: $this->root));
+    $this->pages = new Store($config);
     $this->pages->put(CacheKey::create('example.com', '/'), '<html>home</html>');
     $this->pages->put(CacheKey::create('example.com', '/offers/'), '<html>offers</html>');
 });
@@ -36,17 +32,27 @@ afterEach(function () {
 });
 
 describe('ScheduledPurge', function () {
-    it('runs from Action Scheduler every five minutes', function () {
-        $attribute = new ReflectionClass(ScheduledPurge::class)->getAttributes(AsCron::class)[0]->newInstance();
+    it('runs on the cron heartbeat event, which needs no Action Scheduler', function () {
+        $this->job->register();
+        $calls = array_values(array_filter(
+            array_column(wp_stub_get_calls('add_action'), 'args'),
+            static fn(array $call): bool => $call['hook'] === HeartbeatEvent::HOOK,
+        ));
 
-        expect($attribute->intervalSeconds)->toBe(300);
+        expect($calls)->toHaveCount(1);
+        expect($calls[0]['acceptedArgs'])->toBe(0);
+
+        $this->scheduleStore->record('http://example.com/', time() - 10);
+        call_user_func($calls[0]['callback']);
+
+        expect($this->pages->has(CacheKey::create('example.com', '/')))->toBeFalse();
     });
 
     it('purges each page whose date has passed, and only those', function () {
         $this->scheduleStore->record('http://example.com/', time() - 10);
         $this->scheduleStore->record('http://example.com/offers/', time() + 3600);
 
-        expect(($this->purge)())->toBe(1);
+        expect(($this->job)())->toBe(1);
         expect($this->pages->has(CacheKey::create('example.com', '/')))->toBeFalse();
         expect($this->pages->has(CacheKey::create('example.com', '/offers/')))->toBeTrue();
         expect($this->scheduleStore->all())
@@ -57,14 +63,7 @@ describe('ScheduledPurge', function () {
     it('does nothing when no date has passed', function () {
         $this->scheduleStore->record('http://example.com/', time() + 3600);
 
-        expect(($this->purge)())->toBe(0);
-        expect($this->pages->has(CacheKey::create('example.com', '/')))->toBeTrue();
-    });
-
-    it('stays inert on a site without the page cache', function () {
-        $this->scheduleStore->record('http://example.com/', time() - 10);
-
-        expect(($this->purge)(enabled: false))->toBe(0);
+        expect(($this->job)())->toBe(0);
         expect($this->pages->has(CacheKey::create('example.com', '/')))->toBeTrue();
     });
 });

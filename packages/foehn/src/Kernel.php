@@ -49,6 +49,7 @@ use Studiometa\Foehn\PageCache\Invalidator;
 use Studiometa\Foehn\PageCache\PageStore;
 use Studiometa\Foehn\PageCache\Purger;
 use Studiometa\Foehn\PageCache\Recorder;
+use Studiometa\Foehn\PageCache\ScheduledPurge;
 use Studiometa\Foehn\PageCache\ScheduleRecorder;
 use Studiometa\Foehn\PageCache\ScheduleStore;
 use Studiometa\Foehn\PageCache\Store;
@@ -669,6 +670,9 @@ final class Kernel
         /** @var Purger $purger */
         $purger = $this->container->get(Purger::class);
         $purger->register();
+
+        // A scheduled block changes a page with no edit to purge on. See ScheduledPurge.
+        new ScheduledPurge($this->container->get(Invalidator::class), new ScheduleStore())->register();
 
         // Rank Math redirects in PHP, which a stored page skips. See RedirectionPurger.
         if (RankMath::isModuleActive('redirections')) {

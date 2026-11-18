@@ -29,12 +29,10 @@ A hidden block renders nothing, its inner blocks included.
 
 A stored page does not change when a date passes, because no content edit happens. Føhn keeps the [page cache](./page-cache) correct with two parts:
 
-1. When a page renders a scheduled block, Føhn records the URL of the page and the next date at which the output of one of its blocks changes. The record is the non-autoloaded option `foehn_page_cache_schedule`. A request that the page cache does not store records nothing.
-2. The `PageCache\ScheduledPurge` job (`#[AsCron(300)]`, from Action Scheduler) deletes the stored page of each URL whose date has passed. The next visit renders the page again and records its next date, if it has one.
+1. When the page cache stores a page that renders a scheduled block, Føhn records the URL of the page and the next date at which the output of one of its blocks changes. Each URL has its own non-autoloaded option, `foehn_page_cache_schedule_<md5 of the URL>`, and keeps its earliest date. A response that the page cache does not store (a 404 with `cacheNotFound` off, a redirect, an incomplete page) records nothing.
+2. `PageCache\ScheduledPurge` runs on the `foehn_cron_heartbeat` WordPress cron event and deletes the stored page of each URL whose date has passed. The next visit renders the page again and records its next date, if it has one.
 
-The job runs from Action Scheduler, which the real cron runs on each pass (`wp cron event run --due-now`, see [Cron Jobs](./cron)). So the maximum delay between a date and the change on a cached page is the longer of five minutes and the step of the real cron. The Docker image runs the cron every 15 minutes by default: a block scheduled at 09:00 can show on a cached page at up to 09:15. Set a shorter cron step when the delay must be shorter.
-
-Without Action Scheduler, nothing purges the page at the date. A [TTL](./page-cache#ttl-and-the-sweep) is then the only bound.
+The heartbeat event is a WordPress cron event, not an Action Scheduler job, so the purge works without Action Scheduler. The real cron runs it on each pass (`wp cron event run --due-now`, see [The real cron](./verification#the-real-cron)). So the maximum delay between a date and the change on a cached page is one step of the real cron. The Docker image runs the cron every 15 minutes by default: a block scheduled at 09:00 can show on a cached page at up to 09:15. Set a shorter cron step when the delay must be shorter.
 
 ## Out of scope
 
