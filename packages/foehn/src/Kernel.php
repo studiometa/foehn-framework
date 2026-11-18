@@ -453,6 +453,7 @@ final class Kernel
                 $this->container->get(PageCacheConfig::class),
                 $this->container->get(PageStore::class),
                 $this->container->get(Bypass::class),
+                new ScheduleRecorder($this->container->get(BlockSchedule::class), new ScheduleStore()),
             ),
         );
 
@@ -668,13 +669,6 @@ final class Kernel
         /** @var Purger $purger */
         $purger = $this->container->get(Purger::class);
         $purger->register();
-
-        // A scheduled block changes a page with no edit to purge on. See ScheduledPurge.
-        new ScheduleRecorder(
-            $this->container->get(BlockSchedule::class),
-            new ScheduleStore(),
-            $this->container->get(Bypass::class),
-        )->register();
 
         // Rank Math redirects in PHP, which a stored page skips. See RedirectionPurger.
         if (RankMath::isModuleActive('redirections')) {

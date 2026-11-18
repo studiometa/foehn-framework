@@ -7,42 +7,24 @@ namespace Studiometa\Foehn\PageCache;
 use Studiometa\Foehn\Blocks\BlockSchedule;
 
 /**
- * Records the URL of a page that renders a scheduled block, with the date it goes stale.
+ * Records the URL of a stored page that renders a scheduled block, with the date it goes stale.
  *
- * Wired with the page cache, on `shutdown`: the page is rendered by then, and
- * {@see BlockSchedule} knows the earliest date at which one of its blocks shows or hides.
- * A request the page cache would not store records nothing.
+ * Called by {@see Recorder} when it stores a page, and only then: the page is rendered by
+ * that time, and {@see BlockSchedule} knows the earliest date at which one of its blocks
+ * shows or hides. A response the page cache refuses (a 404 it does not keep, a redirect,
+ * an incomplete body) records nothing, so a URL that a scanner probes adds no record.
  */
 final readonly class ScheduleRecorder
 {
     public function __construct(
         private BlockSchedule $schedule,
         private ScheduleStore $store,
-        private Bypass $bypass,
     ) {}
 
-    public function register(): void
-    {
-        add_action('shutdown', $this->record(...), 10, 0);
-    }
-
     /**
-     * Record the URL of the current request when its page has a scheduled change.
-     *
-     * Handler for the `shutdown` action, which passes an empty string: nothing is read from it.
+     * Record the URL of a stored page when the page has a scheduled change.
      */
-    public function record(): void
-    {
-        $this->recordFor($_SERVER, $_COOKIE);
-    }
-
-    /**
-     * Record the URL of a request when its page has a scheduled change.
-     *
-     * @param array<string, mixed> $server
-     * @param array<string, mixed> $cookies
-     */
-    public function recordFor(array $server, array $cookies): void
+    public function record(CacheKey $key): void
     {
         $at = $this->schedule->nextChange();
 
@@ -50,18 +32,10 @@ final readonly class ScheduleRecorder
             return;
         }
 
-        if ($this->bypass->forContext($server, $cookies) !== null) {
-            return;
-        }
+        // The key holds the decoded path. Encoded again, so a `?` or a `#` in a segment
+        // stays in the path when the job reads the URL back.
+        $path = implode('/', array_map(rawurlencode(...), explode('/', $key->path)));
 
-        $key = $this->bypass->key($server);
-
-        if ($key === null) {
-            return;
-        }
-
-        $path = parse_url((string) ($server['REQUEST_URI'] ?? '/'), PHP_URL_PATH);
-
-        $this->store->record((is_ssl() ? 'https://' : 'http://') . $key->host . (is_string($path) ? $path : '/'), $at);
+        $this->store->record((is_ssl() ? 'https://' : 'http://') . $key->host . $path, $at);
     }
 }

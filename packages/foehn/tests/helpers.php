@@ -882,3 +882,15 @@ function scheduleStoreDatabase(): wpdb
         }
     };
 }
+
+/**
+ * The schedule recorder the page cache recorder calls, on a schedule with no scheduled block by default.
+ */
+function pageCacheSchedule(
+    ?\Studiometa\Foehn\Blocks\BlockSchedule $schedule = null,
+): \Studiometa\Foehn\PageCache\ScheduleRecorder {
+    return new \Studiometa\Foehn\PageCache\ScheduleRecorder(
+        $schedule ?? new \Studiometa\Foehn\Blocks\BlockSchedule(new \Studiometa\Foehn\Config\FoehnConfig()),
+        new \Studiometa\Foehn\PageCache\ScheduleStore(),
+    );
+}

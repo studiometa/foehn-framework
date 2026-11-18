@@ -32,6 +32,7 @@ final class Recorder
         private readonly PageCacheConfig $config,
         private readonly PageStore $store,
         private readonly Bypass $bypass,
+        private readonly ScheduleRecorder $schedule,
     ) {}
 
     /**
@@ -97,6 +98,9 @@ final class Recorder
         // status came back as a 200, which is a soft 404 that nothing downstream can see
         // — and a page's own headers vanished on every hit.
         $this->write(fn(): bool => $this->store->put($key, $body, $status, $headers));
+
+        // A page with a scheduled block goes stale at a date, with no edit to purge on.
+        $this->schedule->record($key);
 
         DebugHeaders::send($this->config, DebugHeaders::STATE_MISS);
 
