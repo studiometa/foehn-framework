@@ -1988,6 +1988,31 @@ if (!function_exists('update_post_meta')) {
     }
 }
 
+if (!function_exists('delete_post_meta')) {
+    function delete_post_meta(int $postId, string $key, mixed $value = ''): bool
+    {
+        wp_stub_record('delete_post_meta', compact('postId', 'key', 'value'));
+
+        unset($GLOBALS['wp_stub_post_meta'][$postId][$key]);
+
+        return true;
+    }
+}
+
+if (!function_exists('add_meta_box')) {
+    function add_meta_box(
+        string $id,
+        string $title,
+        callable $callback,
+        string|array|null $screen = null,
+        string $context = 'advanced',
+        string $priority = 'default',
+        ?array $callbackArgs = null,
+    ): void {
+        wp_stub_record('add_meta_box', compact('id', 'title', 'callback', 'screen', 'context', 'priority'));
+    }
+}
+
 if (!function_exists('get_posts')) {
     /**
      * Answers with `$GLOBALS['wp_stub_get_posts']`, whatever the arguments, or with

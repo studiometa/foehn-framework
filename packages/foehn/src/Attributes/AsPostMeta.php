@@ -29,6 +29,13 @@ use Attribute;
  * }
  * ```
  *
+ * A key with a `control` also gets a field in the post type's "Fields" meta box,
+ * drawn with the same native field as a setting on #[AsSettingsPage]:
+ * ```php
+ * #[AsPostMeta(key: 'subtitle', control: 'text', label: 'Subtitle')]
+ * #[AsPostMeta(key: 'featured', type: 'boolean', control: 'checkbox', label: 'Featured')]
+ * ```
+ *
  * It does not conflict with ACF, which stores its values in ordinary post meta:
  * declaring a key ACF also manages leaves ACF the editing UI and gives the key a
  * REST schema.
@@ -42,13 +49,26 @@ final readonly class AsPostMeta
     /** The object types meta can be registered against. */
     public const array OBJECT_TYPES = ['post', 'term', 'user', 'comment'];
 
+    /** The controls the meta box draws, and the types each one edits. */
+    public const array CONTROLS = [
+        'text' => ['string'],
+        'textarea' => ['string'],
+        'email' => ['string'],
+        'url' => ['string'],
+        'tel' => ['string'],
+        'number' => ['integer', 'number'],
+        'select' => ['string', 'integer'],
+        'checkbox' => ['boolean'],
+    ];
+
     /**
      * @param string $key The meta key
      * @param string $type One of self::TYPES
      * @param bool $single Whether one value is stored rather than a list
      * @param bool $showInRest Whether to expose the key in the REST API. On by
      *   default: without REST the field is invisible to the editor and to bindings
-     * @param string $description Surfaces in the REST schema
+     * @param string $description Surfaces in the REST schema, and as the help
+     *   text under the field when the key has a control
      * @param scalar|array<array-key, mixed>|null $default Must survive var_export()
      * @param string $objectType One of self::OBJECT_TYPES
      * @param string|null $objectSubtype The post type or taxonomy the key belongs
@@ -61,6 +81,11 @@ final readonly class AsPostMeta
      *   through var_export()
      * @param array<string, mixed> $schema The REST schema, required for the array
      *   and object types: WordPress cannot describe their contents on its own
+     * @param string|null $control The field that edits the key in the post type's
+     *   meta box, one of the keys of self::CONTROLS. No field when null
+     * @param string $label The field label. The key when it is empty
+     * @param array<string|int, string> $options The values a `select` offers, as
+     *   value => label
      */
     public function __construct(
         public string $key,
@@ -74,5 +99,8 @@ final readonly class AsPostMeta
         public string $capability = 'edit_posts',
         public ?string $sanitize = null,
         public array $schema = [],
+        public ?string $control = null,
+        public string $label = '',
+        public array $options = [],
     ) {}
 }
