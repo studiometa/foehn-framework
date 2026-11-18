@@ -1,0 +1,77 @@
+<?php
+
+declare(strict_types=1);
+
+use Studiometa\Foehn\Smoke\Support\Site;
+
+/**
+ * Føhn with Polylang active: the language switcher, the purge of the translations of a
+ * post, and a translatable setting.
+ *
+ * The plugin is installed from wordpress.org for this file and removed afterwards. The
+ * URLs use the default mode of Polylang: the language in a folder, none for the default
+ * language.
+ */
+
+const POLYLANG = 'wp eval-file tests/framework-smoke/fixtures/polylang.php';
+
+beforeAll(function () {
+    if (!Site::isRunning()) {
+        return;
+    }
+
+    Site::wp('wp plugin install polylang --activate');
+    Site::wp(POLYLANG . ' setup');
+    Site::wp('wp rewrite flush');
+    Site::enableCache();
+});
+
+afterAll(function () {
+    if (!Site::isRunning()) {
+        return;
+    }
+
+    Site::wp(POLYLANG . ' teardown');
+    Site::wp('wp plugin uninstall polylang --deactivate');
+    Site::wp('wp rewrite flush');
+    Site::disableCache();
+    Site::clearCache();
+});
+
+beforeEach(function () {
+    Site::isRunning() || $this->markTestSkipped('ddev is not running — run `ddev start` and try again.');
+
+    Site::clearCache();
+});
+
+it('gives each language with the URL of the translation of the page', function () {
+    $switcher = json_decode((string) Site::wp(POLYLANG . ' switcher name=hello-world'), true);
+
+    expect(array_column($switcher ?? [], 'code'))->toBe(['en', 'fr']);
+    expect($switcher[0]['url'])->toEndWith('/hello-world/');
+    expect($switcher[1]['url'])->toEndWith('/fr/bonjour/');
+    expect(array_column($switcher, 'translated'))->toBe([true, true]);
+});
+
+it('links a language without a translation to its home page', function () {
+    $switcher = json_decode((string) Site::wp(POLYLANG . ' switcher pagename=sample-page'), true);
+
+    expect($switcher[1]['url'] ?? null)->toEndWith('/fr/');
+    expect($switcher[1]['translated'] ?? null)->toBeFalse();
+});
+
+it('purges the translations of a saved post', function () {
+    smokeWarm('/fr/bonjour/');
+    expect(is_file(Site::cacheFile('/fr/bonjour/')))->toBeTrue('nothing was stored to purge');
+
+    $id = (string) Site::wp(POLYLANG . ' setup');
+    Site::wp('wp post update ' . $id . ' --post_title="Hello world!"');
+
+    expect(is_file(Site::cacheFile('/fr/bonjour/')))->toBeFalse('the French translation is still stored');
+});
+
+it('reads a translatable setting in each language, and the default one for an empty translation', function () {
+    expect(Site::wp(POLYLANG . ' setting en Bonjour'))->toBe('Hello');
+    expect(Site::wp(POLYLANG . ' setting fr Bonjour'))->toBe('Bonjour');
+    expect(Site::wp(POLYLANG . " setting fr ''"))->toBe('Hello');
+});
