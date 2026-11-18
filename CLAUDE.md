@@ -88,18 +88,35 @@ npm run fmt:check          # Check markdown formatting
 - Use constructor property promotion
 - Run `composer fix` before committing
 
-## Planning Documents
+## Planning
 
-See `.planning/` for current and proposed work:
-
-- `roadmap.md` - Current status, delivery order, and recorded decisions
-- `abilities_spec.md` - Undecided WordPress Abilities API proposal
+Plans, specs and proposals live in GitHub issues on `studiometa/foehn-framework`, never in files (no `.planning/`, no planning pages in `docs/`). A large feature gets a parent spec issue with sub-issues. Milestones are weekly, named after the ISO week (`2026-W47`). Undecided ideas are issues with the `question` label.
 
 Implemented behavior is documented in `docs/`. Maintained examples live in `packages/starter/` and `packages/demo/`.
 
-## Current Phase
+### Rules for every feature
 
-Check `.planning/roadmap.md` for current implementation status.
+Written once here because every spec depends on them.
+
+- **No closures in attribute arguments.** Discovery items reach the cache through `var_export`, so a callback is a method name resolved when `apply()` runs. A closure works in development and fails only in production, where caching is on.
+- **Register on the hook that owns the API**, through the discovery phase — never at boot.
+- **A missing platform function is a skip, not a fatal**, with a notice when `FoehnConfig::debug` is on.
+- **Unit tests over stubs are load-bearing but not sufficient.** The 2026-08-19 fatal error passed 1409 of them. Anything that registers with WordPress needs a line in `packages/starter/tests/framework-smoke/` (the framework suite, run against the starter, not shipped to projects).
+
+### Rejected, with reasons
+
+Recorded so the questions are not reopened without new information.
+
+| Rejected                                 | Because                                                                                                                                                                                                                                                                                                                                                                                             |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| An ORM or DB layer                       | `PostQueryBuilder` and Timber models cover the WordPress data model. A second ORM over `wp_posts` fights the platform.                                                                                                                                                                                                                                                                              |
+| A full router                            | Template hierarchy, `#[AsTemplateController]`, `#[AsRestRoute]`, and the shipped `#[AsRewriteRule]` cover it.                                                                                                                                                                                                                                                                                       |
+| Service providers                        | Discovery is the provider mechanism. Two ways to register one thing is worse than one.                                                                                                                                                                                                                                                                                                              |
+| Sessions, broadcasting, mail, validation | WordPress or a plugin owns each; REST already validates through `args` schemas.                                                                                                                                                                                                                                                                                                                     |
+| A testing package, in any form           | `brain/monkey` (2.7.0, maintained) and `10up/wp_mock` already mock WordPress functions; `php-stubs/wordpress-stubs` covers static analysis. The Føhn-specific helpers stay in `packages/foehn/tests/`, private, where they already work — publishing sixty lines to serve people writing custom discoveries is a public API surface bought for a niche. Revisit if that niche turns out to be real. |
+| Wrapping the WordPress AI Client         | `wp_ai_client_prompt()` is already provider-agnostic. Guardrails yes, a wrapper no. See [#109](https://github.com/studiometa/foehn-framework/issues/109).                                                                                                                                                                                                                                           |
+| An MCP server                            | `WordPress/mcp-adapter` is that, maintained by the WordPress project. Abilities are the seam.                                                                                                                                                                                                                                                                                                       |
+| A different ACF storage engine           | ACF Extended Performance Mode, custom tables or a Føhn storage helper. With the static page cache and a persistent object cache, the `wp_postmeta` cost is not an issue for these sites (decided 2026-11-18).                                                                                                                                                                                       |
 
 ## Commit Guidelines
 
