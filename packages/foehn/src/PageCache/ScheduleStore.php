@@ -98,7 +98,7 @@ final readonly class ScheduleStore
      */
     public function all(): array
     {
-        if (!function_exists('maybe_unserialize') || !isset($GLOBALS['wpdb'])) {
+        if (!function_exists('maybe_unserialize')) {
             return [];
         }
 

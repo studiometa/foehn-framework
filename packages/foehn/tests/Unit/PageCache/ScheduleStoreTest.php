@@ -93,10 +93,4 @@ describe('ScheduleStore', function () {
 
         expect($this->store->all())->toBe(['https://example.com/a/' => 1200]);
     });
-
-    it('reads nothing without a database', function () {
-        unset($GLOBALS['wpdb']);
-
-        expect($this->store->all())->toBe([]);
-    });
 });
