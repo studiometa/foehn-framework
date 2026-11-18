@@ -42,6 +42,12 @@ interface Multilingual
     public function languages(): array;
 
     /**
+     * The code of the language of a post or a term, whatever its status, or null when
+     * it has none.
+     */
+    public function language(WP_Post|WP_Term $object): ?string;
+
+    /**
      * The published translations of a post or a term, the object itself included, as
      * code => id.
      *

@@ -70,6 +70,20 @@ it('purges the translations of a saved post', function () {
     expect(is_file(Site::cacheFile('/fr/bonjour/')))->toBeFalse('the French translation is still stored');
 });
 
+it('purges the home page of the language of an unpublished post', function () {
+    smokeWarm('/fr/');
+    expect(is_file(Site::cacheFile('/fr/')))->toBeTrue('nothing was stored to purge');
+
+    $id = (string) Site::wp('wp post list --post_type=post --name=bonjour --field=ID');
+    Site::wp('wp post update ' . $id . ' --post_status=draft');
+
+    try {
+        expect(is_file(Site::cacheFile('/fr/')))->toBeFalse('the French home page is still stored');
+    } finally {
+        Site::wp('wp post update ' . $id . ' --post_status=publish');
+    }
+});
+
 it('reads a translatable setting in each language, and the default one for an empty translation', function () {
     expect(Site::wp(POLYLANG . ' setting en Bonjour'))->toBe('Hello');
     expect(Site::wp(POLYLANG . ' setting fr Bonjour'))->toBe('Bonjour');

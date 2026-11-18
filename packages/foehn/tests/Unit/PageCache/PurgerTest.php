@@ -50,6 +50,18 @@ describe('Purger: what a post invalidates', function () {
         expect($this->purger->targets())->toContain('http://example.com/fr/bonjour/', 'http://example.com/fr/');
     });
 
+    it('takes the home page of the language of a post that is unpublished', function () {
+        $GLOBALS['pll_stub_languages'] = ['en' => 'English', 'fr' => 'Français'];
+        $GLOBALS['pll_stub_post_translations'][12] = ['en' => 12, 'fr' => 13];
+        $GLOBALS['pll_stub_post_translations'][13] = ['en' => 12, 'fr' => 13];
+        $post = pageCachePost(13, 'post', 'bonjour');
+        $post->post_status = 'draft';
+
+        $this->purger->purgePost($post->ID);
+
+        expect($this->purger->targets())->toContain('http://example.com/fr/');
+    });
+
     it('takes the post type archive when the type has one', function () {
         $GLOBALS['wp_stub_archive_links']['product'] = 'http://example.com/products/';
 

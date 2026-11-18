@@ -59,6 +59,23 @@ describe('Polylang', function () {
         expect($this->polylang->translations($post))->toBe(['en' => 10, 'fr' => 11]);
     });
 
+    it('gives the language of a post or a term, whatever its status', function () {
+        $draft = new WP_Post();
+        $draft->ID = 13;
+        $draft->post_status = 'draft';
+        $GLOBALS['wp_stub_posts'][13] = $draft;
+        $GLOBALS['pll_stub_post_translations'][13] = ['en' => 10, 'fr' => 13];
+        $GLOBALS['pll_stub_term_translations'][6] = ['en' => 5, 'fr' => 6];
+        $term = new WP_Term();
+        $term->term_id = 6;
+        $untranslated = new WP_Post();
+        $untranslated->ID = 20;
+
+        expect($this->polylang->language($draft))->toBe('fr');
+        expect($this->polylang->language($term))->toBe('fr');
+        expect($this->polylang->language($untranslated))->toBeNull();
+    });
+
     it('gives the translations of a term', function () {
         $GLOBALS['pll_stub_term_translations'][5] = ['en' => 5, 'fr' => 6];
         $term = new WP_Term();

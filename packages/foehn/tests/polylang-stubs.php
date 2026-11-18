@@ -10,7 +10,8 @@ declare(strict_types=1);
  * `$GLOBALS['pll_stub_languages']` (code => name). The first language is the default.
  * `pll_stub_current` is the current language (null: none, "all languages" in the
  * admin), `pll_stub_post_translations` and `pll_stub_term_translations` map an id to
- * its translations (code => id). `wp_stub_reset()` empties them all.
+ * its translations (code => id), the object itself included, which also gives its
+ * language. `wp_stub_reset()` empties them all.
  */
 
 if (!function_exists('pll_languages_list')) {
@@ -39,6 +40,24 @@ if (!function_exists('pll_current_language')) {
     function pll_current_language(string $field = 'slug'): string|false
     {
         return $GLOBALS['pll_stub_current'] ?? false;
+    }
+}
+
+if (!function_exists('pll_get_post_language')) {
+    function pll_get_post_language(int $post_id, string $field = 'slug'): string|false
+    {
+        $language = array_search($post_id, $GLOBALS['pll_stub_post_translations'][$post_id] ?? [], true);
+
+        return is_string($language) ? $language : false;
+    }
+}
+
+if (!function_exists('pll_get_term_language')) {
+    function pll_get_term_language(int $term_id, string $field = 'slug'): string|false
+    {
+        $language = array_search($term_id, $GLOBALS['pll_stub_term_translations'][$term_id] ?? [], true);
+
+        return is_string($language) ? $language : false;
     }
 }
 

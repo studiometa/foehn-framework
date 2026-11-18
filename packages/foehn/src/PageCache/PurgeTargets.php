@@ -188,6 +188,10 @@ final readonly class PurgeTargets
      * of its language lists it. The home page of the default language is already one of
      * the front pages.
      *
+     * The home page of the language of the post itself is taken whatever its status:
+     * a post that is unpublished drops out of its published translations, but the home
+     * page of its language still lists it until it is purged.
+     *
      * @return array<string, bool>
      */
     private function translations(WP_Post $post): array
@@ -199,6 +203,11 @@ final readonly class PurgeTargets
         }
 
         $urls = [];
+        $language = $multilingual->language($post);
+
+        if ($language !== null) {
+            $this->add($urls, $multilingual->url($language));
+        }
 
         foreach ($multilingual->translations($post) as $language => $id) {
             if ($id !== $post->ID) {

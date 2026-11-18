@@ -15,6 +15,7 @@ $multilingual?->defaultLanguage();          // 'en'
 $multilingual?->currentLanguage();          // 'fr', the language of the request
 $multilingual?->adminLanguage();            // 'fr', or null for "all languages" in the admin bar
 $multilingual?->languages();                // ['en' => 'English', 'fr' => 'Français']
+$multilingual?->language($post);            // 'fr', whatever the status of the post
 $multilingual?->translations($post);        // ['en' => 12, 'fr' => 13], published only
 $multilingual?->url('fr', $post);           // the URL of the French translation
 $multilingual?->url('fr');                  // the French home page
@@ -26,6 +27,7 @@ $multilingual?->url('fr');                  // the French home page
 | `currentLanguage()` | The code of the language of the request. The default language before the plugin has found it.              |
 | `adminLanguage()`   | The code of the language selected in the admin bar, or `null` when "all languages" is selected.            |
 | `languages()`       | Every language, as code => name.                                                                           |
+| `language()`        | The code of the language of a `WP_Post` or a `WP_Term`, whatever its status, or `null` when it has none.   |
 | `translations()`    | The translations of a `WP_Post` or a `WP_Term`, the object included, as code => id. Posts: published only. |
 | `url()`             | The URL of the translation of an object in a language, or the home page of the language when it has none.  |
 
@@ -72,7 +74,8 @@ The current page is the queried post or term. On another page (an archive, a sea
 The language switcher of a translation links to the post, so a saved post also purges:
 
 - the page of each published translation;
-- the home page of the language of each translation.
+- the home page of the language of each translation;
+- the home page of the language of the post, also when the post is unpublished.
 
 The three URL modes of Polylang work with the [page cache](/guide/page-cache):
 
@@ -109,7 +112,7 @@ public static function settings(): array
 - **Editing.** The settings page edits the language selected in the admin bar. With "all languages" selected, it edits the default language and shows a notice that asks to select a language.
 - **Reading.** `Settings::get('theme_tagline')` reads the language of the request. An empty translation reads the value of the default language.
 
-Only `Setting::string()` takes `translatable`. A Customizer section ignores it. Without Polylang, a translatable setting has one value, `theme_tagline`.
+Only `Setting::string()` takes `translatable`, and not with `options`: a select always posts one of its options, so its translation could never read the default language. A Customizer section ignores it. Without Polylang, a translatable setting has one value, `theme_tagline`.
 
 ## Database export
 
