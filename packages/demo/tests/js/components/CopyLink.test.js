@@ -32,7 +32,7 @@ describe('CopyLink', () => {
 
     expect(writeText).toHaveBeenCalledWith('https://foehn.test/projects/corridors/');
 
-    component.$destroy();
+    component.$unmount();
   });
 
   it('copies the page address when no URL is given', async () => {
@@ -44,7 +44,7 @@ describe('CopyLink', () => {
     el.click();
     await vi.waitFor(() => expect(writeText).toHaveBeenCalledWith(window.location.href));
 
-    component.$destroy();
+    component.$unmount();
   });
 
   it('keeps its label when the clipboard refuses', async () => {
@@ -58,6 +58,6 @@ describe('CopyLink', () => {
 
     expect(el.textContent).toBe('Copy link');
 
-    component.$destroy();
+    component.$unmount();
   });
 });
