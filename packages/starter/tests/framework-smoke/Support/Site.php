@@ -412,12 +412,18 @@ final readonly class Site
         return false;
     }
 
+    /**
+     * As the web user, never with sudo. nginx runs as that user and has no `user`
+     * directive, so `nginx -t` as root gives its temporary directories to `nobody`, and
+     * every request body too large for memory, such as an upload, then fails with a 500
+     * until the web container is created again.
+     */
     private static function reloadNginx(): void
     {
         exec(sprintf(
             'cd %s && ddev exec %s >/dev/null 2>&1',
             escapeshellarg(self::root()),
-            escapeshellarg('sudo nginx -t && sudo nginx -s reload'),
+            escapeshellarg('nginx -t && nginx -s reload'),
         ));
     }
 }
