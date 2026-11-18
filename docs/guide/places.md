@@ -304,15 +304,9 @@ Position requests are not page cached: `near`, `radius` and `bbox` are not cache
 return new PageCacheConfig(
     // …
     cacheQueryArgs: [
-        'q' => '^[A-Za-z0-9-]{1,100}
-
-Each single place page gets a node of the type `schemaType`, with `name`, `url`, `description`, `image`, a `PostalAddress`, `GeoCoordinates` when the place has coordinates, and `telephone`, `email` and `sameAs` when contact fields are on and filled. See [JSON-LD](/guide/json-ld).
-,
+        'q' => '^[A-Za-z0-9-]{1,100}$',
         'view' => ['list', 'map'],
-        'place_type' => '^[a-z0-9-]+(?:,[a-z0-9-]+)*
-
-Each single place page gets a node of the type `schemaType`, with `name`, `url`, `description`, `image`, a `PostalAddress`, `GeoCoordinates` when the place has coordinates, and `telephone`, `email` and `sameAs` when contact fields are on and filled. See [JSON-LD](/guide/json-ld).
-,
+        'place_type' => '^[a-z0-9-]+(?:,[a-z0-9-]+)*$',
     ],
 );
 ```
