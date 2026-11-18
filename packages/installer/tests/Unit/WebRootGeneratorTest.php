@@ -253,6 +253,23 @@ describe('WebRootGenerator', function () {
         }
     });
 
+    it('copies the pre-publish checks out of the framework package', function () {
+        $package = makeProjectRoot('resources/js');
+        file_put_contents($package . '/resources/js/editor.js', "console.log('registrar');\n");
+        file_put_contents($package . '/resources/js/prepublish-checks.js', "console.log('checks');\n");
+
+        try {
+            ($this->generate)($package);
+
+            $target = $this->root . '/web/wp-content/foehn/prepublish-checks.js';
+
+            expect($target)->toBeFile();
+            expect(file_get_contents($target))->toContain("console.log('checks');")->toContain('DO NOT EDIT');
+        } finally {
+            removeDirectory($package);
+        }
+    });
+
     it('reports a registrar it cannot resolve', function () {
         ($this->generate)();
 
