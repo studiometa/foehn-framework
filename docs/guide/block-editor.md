@@ -218,6 +218,46 @@ It is also what makes the rest of this page possible. The canvas can show the re
 
 Every Foehn block also gets `supports.html` set to `false` by default, for the same reason: "Edit as HTML" lets an author hand-edit the serialized block markup, which only makes sense for a block with real saved output to edit. A dynamic block has none, so the option can only ever produce an invalid block. An explicit `supports: ['html' => true]` on a block still wins if a project genuinely needs it.
 
+## Accessibility checks before publication
+
+Føhn adds an **Accessibility** panel to the pre-publish sidebar of the editor. It helps contributors keep the content accessible (RGAA). It lists:
+
+- each `core/image` block with no alternative text;
+- each image of a Føhn block attribute with the `image` or `gallery` control whose attachment has no alternative text in the media library;
+- a second level 1 heading;
+- a jump in heading levels, for example from H2 to H4.
+
+The headings are read in document order from the `core/heading` blocks and from the attributes of Føhn blocks with the [`headingLevel` control](#controls). Inner blocks are included. Give each heading level that a template prints the `headingLevel` control, so the checks see the heading:
+
+```php
+public static function attributes(): array
+{
+    return [
+        'title' => ['type' => 'string'],
+        'titleLevel' => ['type' => 'integer', 'control' => 'headingLevel', 'default' => 2],
+        'imageId' => ['type' => 'integer', 'control' => 'image', 'label' => 'Background'],
+    ];
+}
+```
+
+An image that has no meaning, for example an ornament, needs no alternative text. Apply the **Decorative** style to the `core/image` block: the checks then ignore it. The style adds the `is-style-decorative` class.
+
+Each issue has a **Select the block** button. The panel shows nothing when the content has no issue.
+
+The issues are warnings by default: the post can still be published. To refuse publication while the content has issues, set `blockPublicationOnAccessibilityIssues` in `foehn.config.php`:
+
+```php
+return new FoehnConfig(
+    blockPublicationOnAccessibilityIssues: true,
+);
+```
+
+The editor then refuses a save that publishes or schedules the post, or that updates a published post, and shows the issues in the "Publishing failed" notice. Drafts, autosaves and previews still save.
+
+The checks read the block attributes in the editor. They do not check the rendered HTML or the color contrast.
+
+Like the registrar, the script is generic. The installer copies it to `wp-content/foehn/prepublish-checks.js`. When the file is missing, Føhn skips the checks and, in debug mode, raises a warning that tells you to run `composer install`.
+
 ## Where the registrar comes from
 
 The editor script that reads block schemas and builds sidebar controls is a single generic file, identical for every Foehn project. It is generated into the web root — `wp-content/foehn/editor.js` — when you run `composer install` or `composer update`, the same way Foehn already generates `wp-config.php`, `index.php`, and the mu-plugin loader.

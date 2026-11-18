@@ -24,6 +24,7 @@ final readonly class FoehnConfig
         public ?bool $recordErrors = null,
         public ?bool $traceRequests = null,
         public string $cliNamespace = 'app',
+        public bool $blockPublicationOnAccessibilityIssues = false,
     );
 
     public static function fromArray(array $config): self;
@@ -37,16 +38,17 @@ final readonly class FoehnConfig
 
 ## Properties
 
-| Property                 | Type                     | Default | Description                                                                                                                                              |
-| ------------------------ | ------------------------ | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `discoveryCacheStrategy` | `DiscoveryCacheStrategy` | `NONE`  | Cache strategy for discoveries                                                                                                                           |
-| `discoveryCachePath`     | `string\|null`           | `null`  | Custom path for cache files                                                                                                                              |
-| `hooks`                  | `class-string[]`         | `[]`    | Opt-in hook classes to activate                                                                                                                          |
-| `imageTransformer`       | `class-string\|null`     | `null`  | The `ImageTransformer` class `image_url()` uses, for example `GlideTransformer::class`. `null` gives back the URL unchanged. See [Images](/guide/images) |
-| `debug`                  | `bool`                   | `false` | Raise PHP warnings: each class discovery skips, a discovery cache it cannot write, a missing block editor registrar                                      |
-| `recordErrors`           | `bool\|null`             | `null`  | Write errors to the log `wp foehn errors` reads. `null` records them in the `local` and `development` environments                                       |
-| `traceRequests`          | `bool\|null`             | `null`  | Store a trace of each front-end request for `wp foehn trace`. `null` traces them in `local` and `development`                                            |
-| `cliNamespace`           | `string`                 | `'app'` | The WP-CLI command the project's `#[AsCliCommand]` classes go under: `wp app <name>`                                                                     |
+| Property                                | Type                     | Default | Description                                                                                                                                                                                 |
+| --------------------------------------- | ------------------------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `discoveryCacheStrategy`                | `DiscoveryCacheStrategy` | `NONE`  | Cache strategy for discoveries                                                                                                                                                              |
+| `discoveryCachePath`                    | `string\|null`           | `null`  | Custom path for cache files                                                                                                                                                                 |
+| `hooks`                                 | `class-string[]`         | `[]`    | Opt-in hook classes to activate                                                                                                                                                             |
+| `imageTransformer`                      | `class-string\|null`     | `null`  | The `ImageTransformer` class `image_url()` uses, for example `GlideTransformer::class`. `null` gives back the URL unchanged. See [Images](/guide/images)                                    |
+| `debug`                                 | `bool`                   | `false` | Raise PHP warnings: each class discovery skips, a discovery cache it cannot write, a missing block editor registrar or pre-publish checks script                                            |
+| `recordErrors`                          | `bool\|null`             | `null`  | Write errors to the log `wp foehn errors` reads. `null` records them in the `local` and `development` environments                                                                          |
+| `traceRequests`                         | `bool\|null`             | `null`  | Store a trace of each front-end request for `wp foehn trace`. `null` traces them in `local` and `development`                                                                               |
+| `cliNamespace`                          | `string`                 | `'app'` | The WP-CLI command the project's `#[AsCliCommand]` classes go under: `wp app <name>`                                                                                                        |
+| `blockPublicationOnAccessibilityIssues` | `bool`                   | `false` | Refuse to publish a post while the [pre-publish accessibility checks](/guide/block-editor#accessibility-checks-before-publication) find an issue. `false` shows the issues as warnings only |
 
 ## Usage
 
@@ -145,6 +147,8 @@ The default is `false`. To follow `WP_DEBUG`, write `debug: WP_DEBUG` in `foehn.
 `traceRequests` decides when each front-end request sends its id in the `X-Foehn-Trace` header and stores what it ran for `wp foehn trace`. `null`, the default, traces them when the environment is `local` or `development`; `tracesRequests()` gives the answer. The array config takes `'trace_requests' => true`. See [Request Trace](/guide/request-trace).
 
 ### CLI Namespace
+
+`blockPublicationOnAccessibilityIssues` makes the issues of the pre-publish accessibility checks block publication: the editor refuses a save that publishes or schedules the post while the content has an image with no alternative text, more than one level 1 heading or a jump in heading levels. Drafts, autosaves and previews still save. `false`, the default, shows the issues as warnings in the pre-publish panel. The array config takes `'block_publication_on_accessibility_issues' => true`. See [Accessibility checks before publication](/guide/block-editor#accessibility-checks-before-publication).
 
 `cliNamespace` is the WP-CLI command the `#[AsCliCommand]` classes of the project go under: `wp app <name>` by default. The commands of Føhn stay under `wp foehn <name>`, and the commands of each other package go under the namespace of that package. It is one word of lowercase letters, digits, `-` and `_`, and not `foehn`: another value throws an `InvalidArgumentException`. The array config takes `'cli_namespace' => 'site'`. See [Command Namespace](/guide/cli-commands#command-namespace).
 
