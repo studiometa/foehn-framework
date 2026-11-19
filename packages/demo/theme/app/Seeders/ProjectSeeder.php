@@ -27,6 +27,9 @@ final class ProjectSeeder implements SeederInterface
             'camera' => 'Hasselblad 500C/M — Ilford HP5+',
             'category' => 'Architecture',
             'tags' => ['film', 'self-initiated'],
+            'format' => 'medium',
+            'credits' => "Prints: Atelier Lumière\nScans: Studio Halde",
+            'prints' => true,
         ],
         'silhouettes' => [
             'title' => 'Silhouettes',
@@ -38,6 +41,7 @@ final class ProjectSeeder implements SeederInterface
             'camera' => 'Nikon FM2 — Kodak Tri-X 400',
             'category' => 'Portrait',
             'tags' => ['film', 'commission'],
+            'format' => '35mm',
         ],
         'winter' => [
             'title' => 'Winter',
@@ -49,6 +53,8 @@ final class ProjectSeeder implements SeederInterface
             'camera' => 'Mamiya 7 — Fuji Acros 100',
             'category' => 'Landscape',
             'tags' => ['film', 'self-initiated'],
+            'format' => 'medium',
+            'prints' => true,
         ],
         'objects' => [
             'title' => 'Objects',
@@ -60,6 +66,8 @@ final class ProjectSeeder implements SeederInterface
             'camera' => 'Digital — 100 mm macro',
             'category' => 'Still life',
             'tags' => ['digital', 'commission'],
+            'format' => 'digital',
+            'credits' => "Set design: Clara Weiss\nAssistant: Hugo Martin",
         ],
         'osaka' => [
             'title' => 'Osaka',
@@ -71,6 +79,7 @@ final class ProjectSeeder implements SeederInterface
             'camera' => 'Leica M6 — Kodak Tri-X 400',
             'category' => 'Documentary',
             'tags' => ['film', 'self-initiated'],
+            'format' => '35mm',
         ],
         'editions' => [
             'title' => 'Editions',
@@ -82,10 +91,16 @@ final class ProjectSeeder implements SeederInterface
             'camera' => 'Digital — copy stand',
             'category' => 'Still life',
             'tags' => ['digital', 'commission'],
+            'format' => 'digital',
             // A stand-in: Big Buck Bunny, by the Blender Foundation, under CC BY 3.0.
             'film' => 'https://www.youtube.com/watch?v=aqz-KE-bpKQ',
         ],
     ];
+
+    /** Where a visitor asks for a print, on every project. */
+    private const string PRINTS_EMAIL = 'prints@example.com';
+
+    private const string PRINTS_PHONE = '+33 3 88 00 00 01';
 
     /**
      * A paragraph bound to the `camera` meta through core's `core/post-meta` source.
@@ -118,6 +133,12 @@ final class ProjectSeeder implements SeederInterface
                     'camera' => $project['camera'],
                     'gallery' => $gallery,
                     'film' => $project['film'] ?? '',
+                    'format' => $project['format'],
+                    'credits' => $project['credits'] ?? '',
+                    // The checkbox stores `1` or nothing, as the meta box does.
+                    'prints' => $project['prints'] ?? false ? '1' : '',
+                    'prints_email' => self::PRINTS_EMAIL,
+                    'prints_phone' => self::PRINTS_PHONE,
                 ],
             );
 

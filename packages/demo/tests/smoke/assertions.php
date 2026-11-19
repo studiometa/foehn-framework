@@ -285,9 +285,21 @@ $results->containsAll(
 // than the key alone.
 $results->containsAll(
     'demo post meta is registered against its post type',
-    ['client', 'year', 'location', 'camera', 'film'],
+    ['client', 'year', 'location', 'camera', 'format', 'film', 'credits', 'prints', 'prints_email', 'prints_phone'],
     array_keys(get_registered_meta_keys('post', 'project')),
 );
+
+// The keys with a control get a field in the "Fields" meta box of the edit screen.
+// add_meta_box() is in the admin includes, and the box is only added for a user who
+// can edit its fields — WP-CLI runs with none, so this asks as an administrator.
+require_once ABSPATH . 'wp-admin/includes/template.php';
+wp_set_current_user(1);
+$projectId = (int) (get_posts(['post_type' => 'project', 'name' => 'corridors', 'fields' => 'ids'])[0] ?? 0);
+do_action('add_meta_boxes_project', get_post($projectId));
+$metaBox =
+    $GLOBALS['wp_meta_boxes']['project']['advanced']['default'][Studiometa\Foehn\PostTypes\PostMetaBox::ID] ?? null;
+$results->true('a project has the Fields meta box', is_array($metaBox));
+wp_set_current_user(0);
 
 $results->containsAll(
     'testimonial meta is registered against its post type',
@@ -409,8 +421,8 @@ remove_filter('pre_option_demo_banner_text', $bannerText);
 $results->true(
     'the settings form draws a native field for each setting',
     str_contains($settingsForm, '<input type="email" id="demo_contact_email" name="demo_contact_email"')
-        && str_contains($settingsForm, '<select id="demo_posts_per_archive" name="demo_posts_per_archive">')
-        && str_contains($settingsForm, '<label for="demo_banner_text">Banner text</label>'),
+    && str_contains($settingsForm, '<select id="demo_posts_per_archive" name="demo_posts_per_archive">')
+    && str_contains($settingsForm, '<label for="demo_banner_text">Banner text</label>'),
 );
 
 // A quote in the banner text that reached the attribute raw would end it, and the
@@ -457,7 +469,8 @@ $imageSizes = get_intermediate_image_sizes();
 
 $results->true(
     'the thumbnail is the only core image size written on upload',
-    in_array('thumbnail', $imageSizes, true) && array_intersect(['medium', 'medium_large', 'large'], $imageSizes) === [],
+    in_array('thumbnail', $imageSizes, true)
+    && array_intersect(['medium', 'medium_large', 'large'], $imageSizes) === [],
 );
 
 // ──────────────────────────────────────────────
