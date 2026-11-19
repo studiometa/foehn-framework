@@ -143,6 +143,43 @@ describe('PlaceSearch eligible places', function () {
     });
 });
 
+describe('PlaceSearch facet taxonomies', function () {
+    it('skips a configured taxonomy that is not a taxonomy of place', function () {
+        $search = new PlaceSearch(
+            new PlacesConfig(facetTaxonomies: ['place_type', 'category', 'missing']),
+            new FoehnConfig(),
+            new Facets(),
+        );
+
+        expect($search->facetTaxonomies())->toBe(['place_type']);
+    });
+
+    it('names each skipped taxonomy in a notice in debug mode', function () {
+        $GLOBALS['wp_stub_taxonomies'][] = 'category';
+        $notices = [];
+        set_error_handler(static function (int $level, string $message) use (&$notices): bool {
+            $notices[] = $message;
+
+            return true;
+        }, E_USER_NOTICE);
+
+        try {
+            $taxonomies = new PlaceSearch(
+                new PlacesConfig(facetTaxonomies: ['place_type', 'category']),
+                new FoehnConfig(debug: true),
+                new Facets(),
+            )->facetTaxonomies();
+        } finally {
+            restore_error_handler();
+        }
+
+        expect($taxonomies)->toBe(['place_type']);
+        expect($notices)->toBe([
+            '[foehn-places] The facet taxonomy "category" is not a taxonomy of "place": it is skipped.',
+        ]);
+    });
+});
+
 describe('PlaceSearch main query', function () {
     it('narrows the main query to the eligible places, ordered by title', function () {
         $search = placeSearch();

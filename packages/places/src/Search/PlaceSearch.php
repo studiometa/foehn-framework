@@ -105,7 +105,7 @@ final class PlaceSearch
                 continue;
             }
 
-            if ($this->foehn->isDebug()) {
+            if ($this->foehn->isDebugEnabled()) {
                 trigger_error(
                     sprintf(
                         '[foehn-places] The facet taxonomy "%s" is not a taxonomy of "place": it is skipped.',
@@ -131,7 +131,6 @@ final class PlaceSearch
     {
         $ids = [];
         $this->distances = [];
-
         foreach ($this->candidates() as $candidate) {
             if ($request->q !== null && !str_contains($candidate['text'], mb_strtolower($request->q))) {
                 continue;
