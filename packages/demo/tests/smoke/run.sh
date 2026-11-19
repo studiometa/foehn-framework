@@ -686,3 +686,11 @@ after="$(content_counts)"
   after:  $after"
 
 printf '✓ wp foehn seed runs again and duplicates nothing\n'
+
+# The seed above wrote the About page again, with its two scheduled paragraphs: one
+# shows between its two dates, the other only from 2099. Checked after the seed
+# because demo.sql.gz was dumped before PageSeeder wrote them.
+about="$(curl -sk "$url/about/")"
+grep -q 'Open studio on the first Saturday' <<<"$about" || fail "the about page does not show the paragraph scheduled for now"
+grep -q 'The retrospective opens' <<<"$about" && fail "the about page shows the paragraph scheduled from 2099"
+printf '✓ %s\n' "a scheduled block shows only between its dates"
