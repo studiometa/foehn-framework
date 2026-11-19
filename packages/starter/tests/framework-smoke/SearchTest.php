@@ -12,8 +12,9 @@ use Studiometa\Foehn\Smoke\Support\Site;
  * the indexes, and the REST endpoint suggests titles.
  *
  * The starter does not ship the package: CI adds it for this suite. Without it, or
- * without ddev, every test is skipped. Polylang is installed from wordpress.org for
- * this file and removed afterwards.
+ * without ddev, every test is skipped. Polylang comes from Composer, as for
+ * `PolylangTest`: this file activates it with smokeActivatePlugin() and uninstalls it
+ * afterwards, files kept.
  */
 
 const SEARCH = 'wp eval-file tests/framework-smoke/fixtures/search.php';
@@ -35,7 +36,7 @@ beforeAll(function () {
         return;
     }
 
-    Site::wp('wp plugin install polylang --activate');
+    smokeActivatePlugin('polylang');
 
     if (Site::wp(SEARCH . ' installed') === '1') {
         Site::wp(SEARCH . ' setup');
@@ -51,7 +52,7 @@ afterAll(function () {
         Site::wp(SEARCH . ' teardown');
     }
 
-    Site::wp('wp plugin uninstall polylang --deactivate');
+    smokeUninstallPlugin('polylang');
     Site::wp('wp rewrite flush');
 });
 
