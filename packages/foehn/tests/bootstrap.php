@@ -6,6 +6,7 @@ declare(strict_types=1);
 // when discovery classes are loaded.
 require_once __DIR__ . '/wp-stubs.php';
 require_once __DIR__ . '/rank-math-stubs.php';
+require_once __DIR__ . '/polylang-stubs.php';
 
 // Load Composer autoloader
 // In monorepo: vendor/ is at the repository root

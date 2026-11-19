@@ -54,7 +54,7 @@ COMPOSER=composer.monorepo.json composer reinstall 'studiometa/foehn*'
 
 ### Seeded content
 
-`wp foehn seed` writes the whole site: thirty photographs, six projects, three testimonials, the Home, About and Legal pages, three journal posts in the Notes category, the menus and the theme settings. The journal post "Contact sheets for the studio" is protected by the password `foehn`.
+`wp foehn seed` writes the whole site: thirty photographs, six projects, three testimonials, the Home, About and Legal pages, three journal posts in the Notes category, the menus, the theme settings, and English and French with Polylang. The journal post "Contact sheets for the studio" is protected by the password `foehn`.
 
 ## Where it runs
 
@@ -82,6 +82,7 @@ The paths are relative to `packages/demo`. The links go to the guide.
 | [`#[AsBlockBinding]`](https://studiometa.github.io/foehn-framework/api/as-block-binding)                               | `theme/app/Bindings/ReadingTime.php`; each project also binds its `camera` meta through `core/post-meta`                                                                                                                                                                                              |
 | [`#[AsShortcode]`](https://studiometa.github.io/foehn-framework/api/as-shortcode)                                      | `theme/app/Shortcodes/EditionShortcode.php`, on the About page                                                                                                                                                                                                                                        |
 | [`#[AsSettingsPage]`](https://studiometa.github.io/foehn-framework/api/as-settings-page)                               | `theme/app/Settings/ThemeSettings.php`, with native fields: the banner and the page size                                                                                                                                                                                                              |
+| [Polylang](https://studiometa.github.io/foehn-framework/guide/polylang)                                                | `languages()` in `theme/templates/components/header.twig`, a translatable banner in `ThemeSettings.php`, `theme/app/Seeders/LanguageSeeder.php`                                                                                                                                                       |
 | [`#[AsCustomizerSection]`](https://studiometa.github.io/foehn-framework/api/as-customizer-section)                     | `theme/app/Settings/StudioSettings.php`, a Studio section for the footer details, and `IdentitySettings.php`, a field in Site Identity                                                                                                                                                                |
 | [Maintenance page](https://github.com/studiometa/foehn-framework/tree/main/packages/installer#maintenance-page)        | `theme/maintenance.php`, which the installer's drop-in prints with a 503 during `wp maintenance-mode activate`                                                                                                                                                                                        |
 | [`#[AsRewriteRule]`](https://studiometa.github.io/foehn-framework/api/as-rewrite-rule)                                 | `theme/app/Routes/HealthCheckRoute.php`: `GET /_health`                                                                                                                                                                                                                                               |
@@ -123,6 +124,8 @@ Both ways of sizing an image are here, because they answer different questions. 
 ACF runs on the free plugin, `wpackagist-plugin/advanced-custom-fields`, which CI can install. `theme/app/Fields/ProjectPressFields.php` is a `#[AsAcfFieldGroup]` on projects, with the `ButtonLinkBuilder` fragment of [`studiometa/foehn-acf`](https://github.com/studiometa/foehn-acf), and a project page prints its press quote. ACF blocks and options pages need ACF Pro, so they are not here.
 
 The cron jobs, the jobs and the warm-up of the page cache run on Action Scheduler, from the plugin `wpackagist-plugin/action-scheduler`. ddev and the image entrypoint activate it. Without it, Føhn schedules nothing and dispatches nothing. Locally, `DISABLE_WP_CRON` is on and nothing runs the real cron: run `ddev wp cron event run --due-now` or `ddev wp action-scheduler run` to run what is due.
+
+The site is in English and French with Polylang, from the plugin `wpackagist-plugin/polylang`. ddev and the image entrypoint activate it, and `LanguageSeeder` adds the two languages. The French home page is at `/fr/`. The other pages are in English only, so the switcher links French to the French home page. The banner text is translatable: Appearance > Theme settings edits the language selected in the admin bar.
 
 ## Try the CLI
 

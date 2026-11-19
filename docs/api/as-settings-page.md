@@ -65,20 +65,21 @@ Føhn draws it. On `admin_menu` it adds one untitled section to the page and one
 ## Setting
 
 ```php
-Setting::string(string $default = '', string $label = '', string $description = '', string $control = 'text', array $options = [], ?string $sanitize = null, bool $showInRest = false)
+Setting::string(string $default = '', string $label = '', string $description = '', string $control = 'text', array $options = [], ?string $sanitize = null, bool $showInRest = false, bool $translatable = false)
 Setting::bool(bool $default = false, string $label = '', string $description = '', ?string $sanitize = null, bool $showInRest = false)
 Setting::int(int $default = 0, string $label = '', string $description = '', array $options = [], ?string $sanitize = null, bool $showInRest = false)
 Setting::number(float $default = 0.0, string $label = '', string $description = '', ?string $sanitize = null, bool $showInRest = false)
 ```
 
-| Parameter     | Description                                                                                    |
-| ------------- | ---------------------------------------------------------------------------------------------- |
-| `label`       | The field label. The option name when it is empty                                              |
-| `description` | The help text under the field, and the REST schema description when `showInRest` is on         |
-| `control`     | `text`, `textarea`, `email`, `url` or `tel`. Any other value throws `InvalidArgumentException` |
-| `options`     | value => label. Makes the field a `<select>`                                                   |
-| `sanitize`    | A function name, or the name of a public static method on the page class — never a closure     |
-| `showInRest`  | Off by default, unlike `#[AsPostMeta]`                                                         |
+| Parameter      | Description                                                                                                                                    |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `label`        | The field label. The option name when it is empty                                                                                              |
+| `description`  | The help text under the field, and the REST schema description when `showInRest` is on                                                         |
+| `control`      | `text`, `textarea`, `email`, `url` or `tel`. Any other value throws `InvalidArgumentException`                                                 |
+| `options`      | value => label. Makes the field a `<select>`                                                                                                   |
+| `sanitize`     | A function name, or the name of a public static method on the page class — never a closure                                                     |
+| `showInRest`   | Off by default, unlike `#[AsPostMeta]`                                                                                                         |
+| `translatable` | `string()` only, not with `options`. One value for each language on a multilingual site. See [Polylang](/guide/polylang#translatable-settings) |
 
 | Control                        | Default sanitiser                                   |
 | ------------------------------ | --------------------------------------------------- |
@@ -96,9 +97,11 @@ Setting::number(float $default = 0.0, string $label = '', string $description = 
 Studiometa\Foehn\Settings\Settings::get(string $name, mixed $default = null): mixed;
 Studiometa\Foehn\Settings\Settings::has(string $name): bool;
 Studiometa\Foehn\Settings\Settings::all(): array;
+Studiometa\Foehn\Settings\Settings::language(): ?string;
+Studiometa\Foehn\Settings\Settings::option(string $name, ?string $language): string;
 ```
 
-`get()` answers with the declared default before the option has ever been saved — which `get_option()` does not — and applies the declared type to what was stored.
+`get()` answers with the declared default before the option has ever been saved — which `get_option()` does not — and applies the declared type to what was stored. For a translatable setting, it reads the language of the request, and the default language when the translation is empty. `language()` gives that language (`null` for the default language), and `option()` the option that stores a setting in a language.
 
 ## Notes
 

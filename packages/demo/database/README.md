@@ -19,7 +19,7 @@ ddev start
 | `restore.sh`        | The steps, in order                                                    |
 | `fetch-media.py`    | How `media/` was produced, so the set is reproducible                  |
 
-The content itself is written by the seeders in `theme/app/Seeders/` — photographs, projects, press quotes (in ACF fields), pages, journal posts, testimonials, settings and menus, in that order. `wp foehn seed` runs them and builds the same site from nothing; they find what they write by slug or by Unsplash id, so a second run updates the content instead of duplicating it. `wp foehn seed --dry-run` lists them.
+The content itself is written by the seeders in `theme/app/Seeders/` — photographs, projects, press quotes (in ACF fields), pages, journal posts, testimonials, settings, menus and languages, in that order. `wp foehn seed` runs them and builds the same site from nothing; they find what they write by slug or by Unsplash id, so a second run updates the content instead of duplicating it. `wp foehn seed --dry-run` lists them.
 
 ## Why three steps and not one
 
@@ -88,7 +88,7 @@ exactly this way. `restore.sh` falls back to it when the dump is missing.
 ```bash
 ddev exec 'cd /var/www/html && wp db reset --yes'
 ddev exec 'cd /var/www/html && wp core install --url="$DDEV_PRIMARY_URL" --title="Foehn Demo" --admin_user=admin --admin_password=admin --admin_email=admin@example.com --skip-email'
-ddev exec 'cd /var/www/html && wp theme activate demo-theme && wp plugin activate s3-uploads advanced-custom-fields action-scheduler'
+ddev exec 'cd /var/www/html && wp theme activate demo-theme && wp plugin activate s3-uploads advanced-custom-fields action-scheduler polylang'
 ddev exec 'cd /var/www/html && wp foehn seed && wp foehn rewrite:flush'
 ddev exec 'cd /var/www/html && wp foehn db:export database/demo.sql.gz'
 ```

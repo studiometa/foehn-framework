@@ -414,5 +414,11 @@ jobs:
       - name: Install monorepo dependencies
         run: composer install --prefer-dist --no-progress --no-interaction
 
+      # The plugins the suite activates, from Composer. Not in the starter's own
+      # require: a project created from it does not get them.
+      - name: Install the plugins of the framework end-to-end suite
+        working-directory: packages/starter
+        run: composer require --no-progress --no-interaction wpackagist-plugin/polylang:^3.9
+
       - name: Run the framework end-to-end suite
         run: composer test:smoke

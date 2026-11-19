@@ -112,12 +112,14 @@
   text-transform: uppercase;
 }
 
-.site-header__nav ul {
+.site-header__nav ul,
+.site-header__languages ul {
   display: flex;
   gap: 1.5rem;
 }
 
-.site-header__nav a {
+.site-header__nav a,
+.site-header__languages a {
   font-size: var(--text-small);
   letter-spacing: 0.02em;
   padding-bottom: 2px;
@@ -125,7 +127,9 @@
 }
 
 .site-header__nav a:hover,
-.site-header__nav .current-menu-item > a {
+.site-header__nav .current-menu-item > a,
+.site-header__languages a:hover,
+.site-header__languages [aria-current] {
   border-bottom-color: var(--color-ink);
 }
 

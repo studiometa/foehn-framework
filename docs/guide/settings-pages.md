@@ -86,7 +86,7 @@ The controls are the ones WordPress draws without a script. Repeaters, condition
 | `Setting::number()`                    | `number`  | `floatval`                                          |
 | any factory with `options`             | its type  | keeps one of the options, and the default otherwise |
 
-Each takes `default`, `label`, `description`, `sanitize` and `showInRest`. `string()` also takes `control` and `options`, and `int()` takes `options`.
+Each takes `default`, `label`, `description`, `sanitize` and `showInRest`. `string()` also takes `control`, `options` and [`translatable`](#translatable-settings), and `int()` takes `options`.
 
 `sanitize` is a **function name**, or the name of a public static method on the page class — never a closure, because a discovery item reaches the cache through `var_export()`:
 
@@ -125,6 +125,16 @@ Read through `Settings::get()` rather than `get_option()`. Two reasons, both of 
 In Twig, read them through a [context provider](/guide/context-providers) rather than reaching for a global.
 
 A change to a declared setting empties the whole [page cache](/guide/page-cache), as a change to the site title does: a phone number or a social link is on every page.
+
+## Translatable settings
+
+On a site with [Polylang](/guide/polylang), `Setting::string(translatable: true)` stores one value for each language: `{name}` for the default language and `{name}_{lang}` for the others. Other settings keep one value for all languages. A select (`options`) cannot be translatable.
+
+```php
+'theme_tagline' => Setting::string(label: 'Tagline', translatable: true),
+```
+
+The page edits the language selected in the admin bar. With "all languages" selected, it edits the default language and shows a notice that asks to select a language. `Settings::get()` reads the language of the request, and the value of the default language when the translation is empty. See [Translatable settings](/guide/polylang#translatable-settings).
 
 ## From the command line
 

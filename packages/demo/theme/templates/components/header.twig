@@ -26,4 +26,24 @@
       </ul>
     </nav>
   {% endif %}
+
+  {# languages() is empty without Polylang. A page without a translation links to the home page of the language. #}
+  {% set languages = languages() %}
+  {% if languages %}
+    <nav class="site-header__languages" aria-label="Languages">
+      <ul>
+        {% for language in languages %}
+          <li>
+            <a
+              href="{{ language.url }}"
+              hreflang="{{ language.code }}"
+              lang="{{ language.code }}"
+              {% if language.current %}aria-current="true"{% endif %}>
+              {{ language.code|upper }}
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    </nav>
+  {% endif %}
 </header>

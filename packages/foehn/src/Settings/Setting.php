@@ -57,6 +57,8 @@ final readonly class Setting
      *   cache through var_export()
      * @param bool $showInRest Off by default, unlike post meta. Settings are
      *   configuration and sometimes credentials, so exposure is opt-in
+     * @param bool $translatable One value for each language of a multilingual site,
+     *   instead of one value for all. String settings only
      */
     private function __construct(
         public string $type,
@@ -67,6 +69,7 @@ final readonly class Setting
         public array $options,
         public ?string $sanitize,
         public bool $showInRest,
+        public bool $translatable = false,
     ) {}
 
     /**
@@ -74,6 +77,8 @@ final readonly class Setting
      *
      * @param string $control One of STRING_CONTROLS. Ignored when $options is given
      * @param array<string, string> $options The values a select offers, as value => label
+     * @param bool $translatable One value for each language, on a site with Polylang.
+     *   An empty translation reads the value of the default language. Not with $options
      */
     public static function string(
         string $default = '',
@@ -83,6 +88,7 @@ final readonly class Setting
         array $options = [],
         ?string $sanitize = null,
         bool $showInRest = false,
+        bool $translatable = false,
     ): self {
         if (!in_array($control, self::STRING_CONTROLS, true)) {
             throw new InvalidArgumentException(sprintf(
@@ -90,6 +96,12 @@ final readonly class Setting
                 $control,
                 implode(', ', self::STRING_CONTROLS),
             ));
+        }
+
+        if ($translatable && $options !== []) {
+            throw new InvalidArgumentException(
+                'A translatable string setting cannot have options: a select posts one of them for an empty translation, so the translation never reads the default language.',
+            );
         }
 
         return new self(
@@ -101,6 +113,7 @@ final readonly class Setting
             $options,
             $sanitize,
             $showInRest,
+            $translatable,
         );
     }
 

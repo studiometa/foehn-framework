@@ -40,6 +40,11 @@ final class SettingsSeeder implements SeederInterface
             'demo_banner_text',
             'A demonstration of the Føhn framework. The photographer, the clients and the testimonials are invented.',
         );
+        // The French text of the translatable banner, which /fr/ shows.
+        update_option(
+            'demo_banner_text_fr',
+            'Une démonstration du framework Føhn. Le photographe, les clients et les témoignages sont inventés.',
+        );
         update_option('demo_posts_per_archive', 3);
         // The Customizer sections, Demo\Settings\StudioSettings and IdentitySettings.
         update_option('demo_studio_address', "12 rue des Photographes\n67000 Strasbourg");

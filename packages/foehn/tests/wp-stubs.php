@@ -102,6 +102,12 @@ function wp_stub_reset(): void
     $GLOBALS['rank_math_stub_settings'] = [];
     $GLOBALS['rank_math_stub_crumbs'] = null;
     $GLOBALS['rank_math_stub_loaded'] = null;
+
+    // Polylang, as tests/polylang-stubs.php answers for it: no language, so not active.
+    $GLOBALS['pll_stub_languages'] = [];
+    $GLOBALS['pll_stub_current'] = null;
+    $GLOBALS['pll_stub_post_translations'] = [];
+    $GLOBALS['pll_stub_term_translations'] = [];
     $GLOBALS['wp_stub_current_time'] = '2026-11-16 10:00:00';
 
     // The admin controls read all four. A referer left behind would make a redirect land
@@ -2453,6 +2459,16 @@ if (!function_exists('get_permalink')) {
         $name = $post instanceof WP_Post ? $post->post_name : $GLOBALS['wp_stub_posts'][$id]->post_name ?? '';
 
         return $GLOBALS['wp_stub_permalinks'][$id] ?? home_url('/' . $name . '/');
+    }
+}
+
+if (!function_exists('get_post_status')) {
+    function get_post_status(mixed $post = null): string|false
+    {
+        $id = $post instanceof WP_Post ? $post->ID : (int) $post;
+        $stored = $GLOBALS['wp_stub_posts'][$id] ?? null;
+
+        return $stored instanceof WP_Post ? $stored->post_status : 'publish';
     }
 }
 

@@ -16,11 +16,7 @@ use Studiometa\Foehn\Settings\Setting;
  * for each setting and the submit button. So this class has no PHP of its own
  * beyond the declaration, and the page looks like the WordPress screens around it.
  */
-#[AsSettingsPage(
-    slug: 'theme-settings',
-    title: 'Theme settings',
-    parent: 'themes.php',
-)]
+#[AsSettingsPage(slug: 'theme-settings', title: 'Theme settings', parent: 'themes.php')]
 final readonly class ThemeSettings implements SettingsInterface
 {
     /**
@@ -40,7 +36,8 @@ final readonly class ThemeSettings implements SettingsInterface
         return [
             'demo_contact_email' => Setting::string(label: 'Contact email', control: 'email'),
             'demo_show_banner' => Setting::bool(label: 'Banner', description: 'Show the announcement banner'),
-            'demo_banner_text' => Setting::string(label: 'Banner text'),
+            // One text for each language with Polylang: demo_banner_text_fr holds the French one.
+            'demo_banner_text' => Setting::string(label: 'Banner text', translatable: true),
             'demo_posts_per_archive' => Setting::int(
                 default: self::PAGE_SIZES[0],
                 label: 'Projects per page',

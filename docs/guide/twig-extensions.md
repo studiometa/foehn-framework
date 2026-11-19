@@ -353,6 +353,18 @@ See [SVG Icons](/guide/svg-icons).
 
 The items come from Rank Math. The list is empty when Rank Math or its breadcrumbs are off. See [Rank Math](/guide/rank-math#breadcrumbs).
 
+### LanguagesExtension
+
+`languages()` gives the language switcher of the current page: one item for each language, with its `code`, `name`, `url`, and whether it is `current` and `translated`. A language without a translation links to its home page. You write the markup:
+
+```twig
+{% for item in languages() %}
+    <a href="{{ item.url }}" hreflang="{{ item.code }}"{% if item.current %} aria-current="true"{% endif %}>{{ item.name }}</a>
+{% endfor %}
+```
+
+The list is empty on a site with one language. See [Polylang](/guide/polylang#language-switcher).
+
 ### FacetExtension
 
 `facet()` gives the options of a taxonomy filter, with the number of results for each term:

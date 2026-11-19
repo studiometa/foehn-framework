@@ -8,6 +8,8 @@ use Studiometa\Foehn\Helpers\WP;
 use WP_Post;
 use WP_Term;
 
+use function Studiometa\Foehn\multilingual;
+
 /**
  * Which URLs one change makes stale.
  *
@@ -90,6 +92,10 @@ final readonly class PurgeTargets
             $this->add($urls, $url, $paginated);
         }
 
+        foreach ($this->translations($post) as $url => $paginated) {
+            $this->add($urls, $url, $paginated);
+        }
+
         $terms = $this->termArchives($post);
 
         if ($terms === null) {
@@ -169,6 +175,46 @@ final readonly class PurgeTargets
             }
 
             $this->add($urls, self::permalink($adjacent), paginated: false);
+        }
+
+        return $urls;
+    }
+
+    /**
+     * The translations of a post on a multilingual site, and the home page of each of
+     * their languages.
+     *
+     * The language switcher of each translation links to this post, and the home page
+     * of its language lists it. The home page of the default language is already one of
+     * the front pages.
+     *
+     * The home page of the language of the post itself is taken whatever its status:
+     * a post that is unpublished drops out of its published translations, but the home
+     * page of its language still lists it until it is purged.
+     *
+     * @return array<string, bool>
+     */
+    private function translations(WP_Post $post): array
+    {
+        $multilingual = multilingual();
+
+        if ($multilingual === null) {
+            return [];
+        }
+
+        $urls = [];
+        $language = $multilingual->language($post);
+
+        if ($language !== null) {
+            $this->add($urls, $multilingual->url($language));
+        }
+
+        foreach ($multilingual->translations($post) as $language => $id) {
+            if ($id !== $post->ID) {
+                $this->add($urls, self::permalinkOf($id), paginated: false);
+            }
+
+            $this->add($urls, $multilingual->url($language));
         }
 
         return $urls;
