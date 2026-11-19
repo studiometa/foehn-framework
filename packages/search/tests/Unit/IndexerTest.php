@@ -49,6 +49,16 @@ it('moves a post to the index of its new language', function () {
     expect($this->index->ids('fr', 'bread'))->toBe([1]);
 });
 
+it('indexes a post in every index when its post type is not translated', function () {
+    $GLOBALS['pll_stub_untranslated_post_types'] = ['post'];
+    searchPost(3, ['post_title' => 'Corridors']);
+
+    $this->indexer->index(3);
+
+    expect($this->index->ids('en', 'corridors'))->toBe([3]);
+    expect($this->index->ids('fr', 'corridors'))->toBe([3]);
+});
+
 it('takes a post out of every index when it is unpublished or deleted', function () {
     searchPost(1, ['post_title' => 'Bread']);
     $this->indexer->index(1);
@@ -80,4 +90,14 @@ it('rebuilds every index from the published posts of every language', function (
     ));
     $args = $calls[0]['args']['args'] ?? [];
     expect($args)->toMatchArray(['post_type' => ['post'], 'post_status' => 'publish', 'lang' => '']);
+});
+
+it('rebuilds a post of a post type that is not translated into every index', function () {
+    $GLOBALS['pll_stub_untranslated_post_types'] = ['post'];
+    $GLOBALS['wp_stub_get_posts'] = static fn(array $args): array => (
+        $args['paged'] === 1 ? [searchPost(3, ['post_title' => 'Corridors'])] : []
+    );
+
+    expect($this->indexer->rebuild())->toBe(['en' => 1, 'fr' => 1]);
+    expect($this->index->ids('fr', 'corridors'))->toBe([3]);
 });

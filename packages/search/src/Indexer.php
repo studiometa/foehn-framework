@@ -12,8 +12,10 @@ use function Tempest\Container\get;
  * Keeps the indexes in step with the posts.
  *
  * A post goes into the index of its language when it is published, its post type has
- * an #[AsSearchDocument] class and that class gives a document. In every other case
- * (draft, trash, deleted, password, another language) it leaves every index.
+ * an #[AsSearchDocument] class and that class gives a document, and into the index of
+ * every language when the multilingual plugin does not translate its post type. In
+ * every other case (draft, trash, deleted, password, another language) it leaves
+ * every index.
  */
 final readonly class Indexer
 {
@@ -45,18 +47,21 @@ final readonly class Indexer
     }
 
     /**
-     * Index a post again, in its language, and take it out of the other indexes.
+     * Index a post again, in its languages, and take it out of the other indexes.
      */
     public function index(int $postId): void
     {
         $post = get_post($postId);
         $document = $post instanceof WP_Post ? $this->document($post) : null;
-        $language = $document !== null ? $this->languages->of($post) : null;
-        $languages = $this->languages->all();
+        $languages = $document !== null ? $this->languages->of($post) : [];
 
-        $this->index->delete($postId, array_values(array_diff($languages, [$language])));
+        $this->index->delete($postId, array_values(array_diff($this->languages->all(), $languages)));
 
-        if ($document !== null && $language !== null && in_array($language, $languages, true)) {
+        if ($document === null) {
+            return;
+        }
+
+        foreach ($languages as $language) {
             $this->index->save($language, $document);
         }
     }
@@ -96,9 +101,12 @@ final readonly class Indexer
 
             foreach ($posts as $post) {
                 $document = $post instanceof WP_Post ? $this->document($post) : null;
-                $language = $document !== null ? $this->languages->of($post) : null;
 
-                if ($language !== null && array_key_exists($language, $counts)) {
+                if ($document === null) {
+                    continue;
+                }
+
+                foreach ($this->languages->of($post) as $language) {
                     $batch[$language][] = $document;
                     $counts[$language]++;
                 }

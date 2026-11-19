@@ -14,8 +14,14 @@ use WP_Query;
  *
  * The index does the text match only, and gives every matching id in order of
  * relevance. The main query gets them as `post__in`, ordered by `post__in`, and
- * WordPress does the rest as on any archive: the taxonomy filters, the language,
- * the pages, and the facet counts of {@see \Studiometa\Foehn\Query\Facets}.
+ * WordPress does the rest as on any archive: the taxonomy filters, the pages, and the
+ * facet counts of {@see \Studiometa\Foehn\Query\Facets}.
+ *
+ * The language is the index's: the index of the current language holds its posts
+ * and the posts of the post types the multilingual plugin does not translate. The
+ * language clause of the plugin is lifted, since it would drop those posts: they
+ * have no language. Polylang sets it as the `lang` query var, or as a `language`
+ * clause of the tax query on the default language.
  *
  * {@see \Studiometa\Foehn\Search\Discovery\SearchDocumentDiscovery} adds these methods
  * to `pre_get_posts` and `posts_search`.
@@ -47,11 +53,28 @@ final readonly class SearchQuery
         $query->set('post__in', $ids === [] ? [0] : $ids);
         $query->set('orderby', 'post__in');
         $query->set(self::QUERY_VAR, true);
+        self::withoutLanguage($query);
 
         $postType = $query->get('post_type');
 
         if ($postType === '' || $postType === 'any' || $postType === []) {
             $query->set('post_type', $this->documents->postTypes());
+        }
+    }
+
+    /**
+     * Lift the language clause a multilingual plugin added to the query.
+     */
+    private static function withoutLanguage(WP_Query $query): void
+    {
+        $query->set('lang', '');
+        $taxQuery = $query->get('tax_query');
+
+        if (is_array($taxQuery)) {
+            $query->set('tax_query', array_filter(
+                $taxQuery,
+                static fn(mixed $clause): bool => !is_array($clause) || ($clause['taxonomy'] ?? null) !== 'language',
+            ));
         }
     }
 

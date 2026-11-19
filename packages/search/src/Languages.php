@@ -37,13 +37,27 @@ final class Languages
     }
 
     /**
-     * The language of a post, or null when the post has none on a multilingual site.
+     * The languages whose index holds a post: its own language, every language when the
+     * multilingual plugin does not translate its post type, none when a translated post
+     * has no language.
+     *
+     * @return list<string>
      */
-    public function of(WP_Post $post): ?string
+    public function of(WP_Post $post): array
     {
         $multilingual = multilingual();
 
-        return $multilingual === null ? $this->siteLanguage() : $multilingual->language($post);
+        if ($multilingual === null) {
+            return [$this->siteLanguage()];
+        }
+
+        if (!$multilingual->isTranslatedPostType($post->post_type)) {
+            return $this->all();
+        }
+
+        $language = $multilingual->language($post);
+
+        return $language !== null && $this->has($language) ? [$language] : [];
     }
 
     /**

@@ -97,6 +97,20 @@ it('searches the index of the current language', function () {
     expect($query->get('post__in'))->toBe([3]);
 });
 
+it('lifts the language clause of the multilingual plugin, and keeps the other clauses', function () {
+    $GLOBALS['pll_stub_languages'] = ['en' => 'English', 'fr' => 'Français'];
+    $series = ['taxonomy' => 'series', 'field' => 'slug', 'terms' => ['architecture']];
+    $query = searchMainQuery('sourdough', [
+        'lang' => 'en',
+        'tax_query' => [['taxonomy' => 'language', 'field' => 'term_taxonomy_id', 'terms' => [25]], $series],
+    ]);
+
+    $this->hook->onPreGetPosts($query);
+
+    expect($query->get('lang'))->toBe('');
+    expect(array_values($query->get('tax_query')))->toBe([$series]);
+});
+
 it('leaves alone a query that is not the main search query', function (bool $admin, bool $main, bool $search) {
     $GLOBALS['wp_stub_is_admin'] = $admin;
     $query = searchMainQuery('sourdough');
