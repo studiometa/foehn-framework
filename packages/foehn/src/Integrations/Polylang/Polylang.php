@@ -64,6 +64,11 @@ final readonly class Polylang implements Multilingual
         return array_combine($codes, count($names) === count($codes) ? $names : $codes);
     }
 
+    public function isTranslatedPostType(string $postType): bool
+    {
+        return pll_is_translated_post_type($postType);
+    }
+
     public function language(WP_Post|WP_Term $object): ?string
     {
         $language = $object instanceof WP_Term

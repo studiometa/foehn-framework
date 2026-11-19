@@ -86,6 +86,10 @@ export default defineConfig({
           ],
         },
         {
+          text: "Place locator (optional package)",
+          items: [{ text: "Place Locator", link: "/guide/places" }],
+        },
+        {
           text: "Advanced",
           items: [
             { text: "REST API", link: "/guide/rest-api" },

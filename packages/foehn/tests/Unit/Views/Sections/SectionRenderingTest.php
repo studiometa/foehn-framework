@@ -494,6 +494,72 @@ describe('TemplateControllerDiscovery section responses', function () {
         expect($_SERVER['REQUEST_URI'])->toBe('/?type=project&foehn_sections=results');
     });
 
+    it('answers the error status the controller set, as the full page does', function () {
+        wp_stub_reset();
+        $GLOBALS['wp_stub_template'] = 'index';
+        $container = bootTestContainer();
+        $request = new SectionRequest('GET', '/?foehn_sections=results');
+        $collector = new SectionCollector();
+        $renderer = new SectionRenderer(new SectionTestViewEngine());
+        $controller = new SectionTestController(sectionExtension($request, $collector, $renderer));
+        $controller->onHandle = static fn() => status_header(400);
+        $_GET = [SectionRequest::PARAMETER => 'results'];
+        $_SERVER['REQUEST_URI'] = '/?foehn_sections=results';
+        $container->singleton(SectionRenderer::class, static fn() => $renderer);
+        $container->singleton(SectionTestController::class, static fn() => $controller);
+        $discovery = testTemplateControllerDiscovery($request, $collector);
+        $discovery->discover(
+            testDiscoveryLocation(),
+            new \Tempest\Reflection\ClassReflector(SectionTestController::class),
+        );
+        $discovery->apply();
+
+        try {
+            ob_start();
+            $template = $discovery->handleTemplateInclude('/index.php');
+            $body = (string) ob_get_clean();
+        } finally {
+            tearDownTestContainer();
+        }
+
+        expect($template)->toBe('');
+        expect(http_response_code())->toBe(400);
+        expect($body)->toContain('<h1>Invalid section request</h1>')->not->toContain('sections/results');
+    });
+
+    it('keeps the error status a controller set on the full page', function () {
+        wp_stub_reset();
+        $GLOBALS['wp_stub_template'] = 'index';
+        $container = bootTestContainer();
+        $request = new SectionRequest('GET', '/');
+        $collector = new SectionCollector();
+        $renderer = new SectionRenderer(new SectionTestViewEngine());
+        $controller = new SectionTestController(sectionExtension($request, $collector, $renderer));
+        $controller->onHandle = static fn() => status_header(400);
+        $_GET = [];
+        $_SERVER['REQUEST_URI'] = '/';
+        $container->singleton(SectionRenderer::class, static fn() => $renderer);
+        $container->singleton(SectionTestController::class, static fn() => $controller);
+        $discovery = testTemplateControllerDiscovery($request, $collector);
+        $discovery->discover(
+            testDiscoveryLocation(),
+            new \Tempest\Reflection\ClassReflector(SectionTestController::class),
+        );
+        $discovery->apply();
+
+        try {
+            $discovery->handleTemplateInclude('/index.php');
+            ob_start();
+            \Studiometa\Foehn\Discovery\TemplateControllerDiscovery::renderPending();
+            $body = (string) ob_get_clean();
+        } finally {
+            tearDownTestContainer();
+        }
+
+        expect(http_response_code())->toBe(400);
+        expect($body)->toContain('Full page');
+    });
+
     it('emits no partial HTML or exception details when one selected render fails', function () {
         wp_stub_reset();
         $GLOBALS['wp_stub_template'] = 'index';

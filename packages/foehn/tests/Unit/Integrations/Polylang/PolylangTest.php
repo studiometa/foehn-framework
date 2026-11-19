@@ -59,6 +59,13 @@ describe('Polylang', function () {
         expect($this->polylang->translations($post))->toBe(['en' => 10, 'fr' => 11]);
     });
 
+    it('tells whether Polylang translates a post type', function () {
+        $GLOBALS['pll_stub_untranslated_post_types'] = ['place'];
+
+        expect($this->polylang->isTranslatedPostType('post'))->toBeTrue();
+        expect($this->polylang->isTranslatedPostType('place'))->toBeFalse();
+    });
+
     it('gives the language of a post or a term, whatever its status', function () {
         $draft = new WP_Post();
         $draft->ID = 13;

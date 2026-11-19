@@ -75,6 +75,8 @@ jobs:
             $current = json_decode(file_get_contents("package.json"), true, flags: JSON_THROW_ON_ERROR)["version"];
             $required = [
               "packages/acf/composer.json studiometa/foehn",
+              "packages/places/composer.json studiometa/foehn",
+              "packages/places/package.json version",
               "packages/starter/composer.json studiometa/foehn",
               "packages/starter/composer.json studiometa/foehn-installer",
               "packages/demo/composer.json studiometa/foehn",

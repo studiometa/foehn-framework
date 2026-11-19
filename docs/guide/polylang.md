@@ -15,21 +15,23 @@ $multilingual?->defaultLanguage();          // 'en'
 $multilingual?->currentLanguage();          // 'fr', the language of the request
 $multilingual?->adminLanguage();            // 'fr', or null for "all languages" in the admin bar
 $multilingual?->languages();                // ['en' => 'English', 'fr' => 'Français']
+$multilingual?->isTranslatedPostType('post'); // true when the posts of the type have a language
 $multilingual?->language($post);            // 'fr', whatever the status of the post
 $multilingual?->translations($post);        // ['en' => 12, 'fr' => 13], published only
 $multilingual?->url('fr', $post);           // the URL of the French translation
 $multilingual?->url('fr');                  // the French home page
 ```
 
-| Method              | Returns                                                                                                    |
-| ------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `defaultLanguage()` | The code of the default language.                                                                          |
-| `currentLanguage()` | The code of the language of the request. The default language before the plugin has found it.              |
-| `adminLanguage()`   | The code of the language selected in the admin bar, or `null` when "all languages" is selected.            |
-| `languages()`       | Every language, as code => name.                                                                           |
-| `language()`        | The code of the language of a `WP_Post` or a `WP_Term`, whatever its status, or `null` when it has none.   |
-| `translations()`    | The translations of a `WP_Post` or a `WP_Term`, the object included, as code => id. Posts: published only. |
-| `url()`             | The URL of the translation of an object in a language, or the home page of the language when it has none.  |
+| Method                   | Returns                                                                                                              |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| `defaultLanguage()`      | The code of the default language.                                                                                    |
+| `currentLanguage()`      | The code of the language of the request. The default language before the plugin has found it.                        |
+| `adminLanguage()`        | The code of the language selected in the admin bar, or `null` when "all languages" is selected.                      |
+| `languages()`            | Every language, as code => name.                                                                                     |
+| `isTranslatedPostType()` | Whether the posts of a post type have a language. The posts of a type that is not translated show in every language. |
+| `language()`             | The code of the language of a `WP_Post` or a `WP_Term`, whatever its status, or `null` when it has none.             |
+| `translations()`         | The translations of a `WP_Post` or a `WP_Term`, the object included, as code => id. Posts: published only.           |
+| `url()`                  | The URL of the translation of an object in a language, or the home page of the language when it has none.            |
 
 ## What Føhn does automatically
 

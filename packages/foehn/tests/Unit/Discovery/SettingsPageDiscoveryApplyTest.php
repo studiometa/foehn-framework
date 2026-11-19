@@ -183,6 +183,26 @@ describe('SettingsPageDiscovery form', function () {
         expect(array_column($fields, 'page'))->each->toBe('theme-settings');
     });
 
+    it('shows the value a pre_option filter sets, read-only', function () {
+        discoverFixture($this->discovery, ThemeSettingsFixture::class);
+        $this->discovery->apply();
+        add_filter('pre_option_foehn_contact_email', static fn(): string => 'config@example.com');
+        runAdminMenu();
+
+        $fields = array_column(array_column(wp_stub_get_calls('add_settings_field'), 'args'), 'callback', 'id');
+
+        ob_start();
+        $fields['foehn_contact_email']();
+        $html = (string) ob_get_clean();
+
+        expect($html)->toContain('value="config@example.com"')->toContain('readonly="readonly"');
+
+        ob_start();
+        $fields['foehn_posts_per_page']();
+
+        expect((string) ob_get_clean())->not->toContain('readonly');
+    });
+
     it('labels each field, with the option name when no label was declared', function () {
         discoverFixture($this->discovery, ThemeSettingsFixture::class);
         $this->discovery->apply();

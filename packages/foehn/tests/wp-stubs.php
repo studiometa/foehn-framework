@@ -18,6 +18,11 @@ $GLOBALS['wp_stub_filters'] = [];
 function wp_stub_reset(): void
 {
     $GLOBALS['wp_stub_calls'] = [];
+    // A status a test set stays set for the rest of the PHP process, as the status of a
+    // request does: start each test from the status a request starts with.
+    if (!headers_sent()) {
+        http_response_code(200);
+    }
     // Registered filter callbacks run for real, so they have to be cleared: one left
     // behind would rewrite a value in a later, unrelated test.
     $GLOBALS['wp_stub_filters'] = [];
@@ -109,6 +114,7 @@ function wp_stub_reset(): void
     $GLOBALS['pll_stub_current'] = null;
     $GLOBALS['pll_stub_post_translations'] = [];
     $GLOBALS['pll_stub_term_translations'] = [];
+    $GLOBALS['pll_stub_untranslated_post_types'] = [];
     $GLOBALS['wp_stub_current_time'] = '2026-11-16 10:00:00';
 
     // The admin controls read all four. A referer left behind would make a redirect land
@@ -335,6 +341,8 @@ if (!class_exists('WP_Query')) {
         public array $query_vars = [];
         public array $posts = [];
         public int $post_count = 0;
+        public int $found_posts = 0;
+        public int $max_num_pages = 0;
 
         /**
          * A secondary query, as `new WP_Query($vars)` builds in `Query\Facets`.

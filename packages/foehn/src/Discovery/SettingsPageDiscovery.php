@@ -180,6 +180,10 @@ final class SettingsPageDiscovery implements Discovery
      * A translatable setting edits its translation in the language of the admin
      * bar, so its field carries the name of that option.
      *
+     * A `pre_option_{$option}` filter that answers a value means the code sets the
+     * option: a package config that wins over the option, for one. The field then shows
+     * that value, read-only.
+     *
      * @param array<string, mixed> $item
      */
     private function registerFields(array $item): void
@@ -202,7 +206,12 @@ final class SettingsPageDiscovery implements Discovery
                 $option,
                 esc_html($setting->label($name)),
                 static function () use ($name, $option, $setting, $fieldLanguage): void {
-                    echo SettingField::render($option, $setting, Settings::stored($name, $fieldLanguage));
+                    $forced = apply_filters('pre_option_' . $option, false, $option, false);
+
+                    echo
+                        $forced === false
+                            ? SettingField::render($option, $setting, Settings::stored($name, $fieldLanguage))
+                            : SettingField::render($option, $setting, $forced, readonly: true);
                 },
                 $attribute->slug,
                 'default',

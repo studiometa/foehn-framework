@@ -11,7 +11,8 @@ declare(strict_types=1);
  * `pll_stub_current` is the current language (null: none, "all languages" in the
  * admin), `pll_stub_post_translations` and `pll_stub_term_translations` map an id to
  * its translations (code => id), the object itself included, which also gives its
- * language. `wp_stub_reset()` empties them all.
+ * language. Every post type is translated, except those in
+ * `pll_stub_untranslated_post_types`. `wp_stub_reset()` empties them all.
  */
 
 if (!function_exists('pll_languages_list')) {
@@ -40,6 +41,13 @@ if (!function_exists('pll_current_language')) {
     function pll_current_language(string $field = 'slug'): string|false
     {
         return $GLOBALS['pll_stub_current'] ?? false;
+    }
+}
+
+if (!function_exists('pll_is_translated_post_type')) {
+    function pll_is_translated_post_type(string $post_type): bool
+    {
+        return !in_array($post_type, $GLOBALS['pll_stub_untranslated_post_types'] ?? [], true);
     }
 }
 

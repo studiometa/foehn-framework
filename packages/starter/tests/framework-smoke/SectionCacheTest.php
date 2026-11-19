@@ -83,6 +83,28 @@ beforeEach(function () {
     Site::clearCache();
 });
 
+describe('an error status', function () {
+    it('answers the error status of the page for its sections, and stores neither', function () {
+        // A controller that refuses a search sets `status_header(400)`. A section of
+        // that page that answered `200` would disagree with the page and be stored.
+        $plugin = Site::path('web/wp-content/mu-plugins/smoke-section-error-status.php');
+        copy(__DIR__ . '/fixtures/section-error-status.php', $plugin);
+
+        try {
+            [$page, $pageAgain] = smokeGetTwice('/');
+            [$section, $sectionAgain] = smokeGetTwice('/?foehn_sections=posts');
+        } finally {
+            unlink($plugin);
+        }
+
+        expect([$page->status, $pageAgain->status])->toBe([400, 400], $page->describe());
+        expect([$section->status, $sectionAgain->status])->toBe([400, 400], $section->describe());
+        expectRendered($pageAgain, 'a page answered 400 came from the cache');
+        expectRendered($sectionAgain, 'a section answered 400 came from the cache');
+        expect(Site::cachedPages())->toBe([]);
+    });
+});
+
 describe('cached section responses', function () {
     it('stores a section response and serves the second hit from nginx', function () {
         [$first, $second] = smokeGetTwice('/?foehn_sections=posts');

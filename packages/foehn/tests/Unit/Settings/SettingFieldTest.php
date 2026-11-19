@@ -13,7 +13,11 @@ describe('SettingField', function () {
 
     it('draws a textarea as large-text', function () {
         expect(SettingField::render('theme_address', Setting::string(control: 'textarea'), "1 rue\nParis"))
-            ->toBe('<textarea id="theme_address" name="theme_address" rows="5" class="large-text">1 rue' . "\n" . 'Paris</textarea>');
+            ->toBe(
+                '<textarea id="theme_address" name="theme_address" rows="5" class="large-text">1 rue'
+                . "\n"
+                . 'Paris</textarea>',
+            );
     });
 
     it('draws a number as small-text, stepping by one for an integer', function () {
@@ -48,7 +52,28 @@ describe('SettingField', function () {
     });
 
     it('escapes the value', function () {
-        expect(SettingField::render('theme_x', Setting::string(), '"><script>'))
-            ->not->toContain('<script>');
+        expect(SettingField::render('theme_x', Setting::string(), '"><script>'))->not->toContain('<script>');
+    });
+
+    it('draws a read-only field with a note that the configuration sets it', function () {
+        $html = SettingField::render(
+            'theme_token',
+            Setting::string(description: 'Public token.'),
+            'pk.1',
+            readonly: true,
+        );
+
+        expect($html)
+            ->toContain('value="pk.1"')
+            ->toContain('readonly="readonly"')
+            ->toContain('Public token. ' . SettingField::READONLY_NOTE);
+    });
+
+    it('disables a read-only checkbox and select, which have no read-only state', function () {
+        expect(SettingField::render('theme_flag', Setting::bool(label: 'Flag'), true, readonly: true))
+            ->toContain('disabled="disabled"')
+            ->toContain(SettingField::READONLY_NOTE);
+        expect(SettingField::render('theme_layout', Setting::string(options: ['a' => 'A']), 'a', readonly: true))
+            ->toContain('disabled="disabled"');
     });
 });

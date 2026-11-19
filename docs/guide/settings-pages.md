@@ -136,6 +136,14 @@ On a site with [Polylang](/guide/polylang), `Setting::string(translatable: true)
 
 The page edits the language selected in the admin bar. With "all languages" selected, it edits the default language and shows a notice that asks to select a language. `Settings::get()` reads the language of the request, and the value of the default language when the translation is empty. See [Translatable settings](/guide/polylang#translatable-settings).
 
+## A value set by the code
+
+WordPress lets code set an option with the `pre_option_{$option}` filter. When that filter answers a value, the page shows the value in a read-only field, with a note that the configuration sets it. A text field is `readonly`. A checkbox and a select are `disabled`. A package uses this to let a config value win over the option, per environment:
+
+```php
+add_filter('pre_option_foehn_places_mapbox_access_token', fn() => getenv('MAPBOX_TOKEN') ?: false);
+```
+
 ## From the command line
 
 `wp foehn inspect settings` lists each `#[AsSettingsPage]` with the options it stores: option name, type, label, control, default and sanitizer.

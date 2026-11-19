@@ -55,7 +55,9 @@ describe('discovery:list', function () {
 
         // "PostTypeDiscovery — 0 items" is the answer to most "why is my post type
         // missing" questions, and a listing that omits it answers nothing.
-        expect(listedOutput())->toContain('PostTypeDiscovery (main) — 0 items');
+        // The packages installed in the monorepo (foehn-places registers a post type)
+        // change which discoveries find nothing, so any one of them shows the rule.
+        expect(listedOutput())->toMatch('/\w+Discovery \((early|main|late)\) — 0 items/');
     });
 
     it('reports how many discoveries found something', function () {
@@ -82,7 +84,7 @@ describe('discovery:list', function () {
 
         $runner = new DiscoveryRunner(bootTestContainer(), $cache, $pool, $locations);
 
-        (new DiscoveryListCommand(new WpCli(), $runner, $locations))([], []);
+        new DiscoveryListCommand(new WpCli(), $runner, $locations)([], []);
 
         expect(listedOutput())->toContain('(cached)');
         expect(listedOutput())->not->toContain('(scanned)');
@@ -172,7 +174,7 @@ describe('discovery:list', function () {
             $locations,
         );
 
-        (new DiscoveryListCommand(new WpCli(), $runner, $locations))([], ['discovery' => 'ScalarItem']);
+        new DiscoveryListCommand(new WpCli(), $runner, $locations)([], ['discovery' => 'ScalarItem']);
 
         expect(listedOutput())->toContain(ScalarItemDiscovery::class);
     });
