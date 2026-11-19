@@ -85,7 +85,8 @@ switch ($args[0] ?? '') {
 
     case 'search':
         PLL()->curlang = $model->get_language($args[1] ?? 'en');
-        wp(array_filter(['s' => $args[2] ?? '', 'category_name' => $args[3] ?? null]));
+        // `s` even when empty: WordPress reads `?s=` as a search, an empty one.
+        wp(['s' => $args[2] ?? ''] + array_filter(['category_name' => $args[3] ?? null]));
 
         $counts = [];
 
