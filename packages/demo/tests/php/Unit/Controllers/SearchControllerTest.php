@@ -6,6 +6,7 @@ use Demo\Controllers\SearchController;
 use Studiometa\Foehn\Attributes\AsTemplateController;
 use Studiometa\Foehn\Contracts\TemplateControllerInterface;
 use Studiometa\Foehn\Contracts\ViewEngineInterface;
+use Studiometa\Foehn\Search\Query\SearchGroups;
 
 describe('SearchController', function () {
     it('implements TemplateControllerInterface', function () {
@@ -20,12 +21,12 @@ describe('SearchController', function () {
         expect($attrs[0]->newInstance()->templates)->toBe('search');
     });
 
-    it('requires ViewEngineInterface via constructor', function () {
+    it('requires the view engine and the search groups via constructor', function () {
         $ref = new ReflectionClass(SearchController::class);
-        $constructor = $ref->getConstructor();
-        $params = $constructor->getParameters();
+        $params = $ref->getConstructor()->getParameters();
 
-        expect($params)->toHaveCount(1);
-        expect($params[0]->getType()->getName())->toBe(ViewEngineInterface::class);
+        expect(array_map(static fn(ReflectionParameter $param): string => $param
+            ->getType()
+            ->getName(), $params))->toBe([ViewEngineInterface::class, SearchGroups::class]);
     });
 });

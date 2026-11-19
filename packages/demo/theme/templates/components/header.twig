@@ -27,6 +27,12 @@
     </nav>
   {% endif %}
 
+  {% include 'components/search-form.twig' with {
+    id: 'site-search',
+    label_class: 'screen-reader-text',
+    value: search_query|default('')
+  } %}
+
   {# languages() is empty without Polylang. A page without a translation links to the home page of the language. #}
   {% set languages = languages() %}
   {% if languages %}

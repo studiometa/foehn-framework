@@ -1,0 +1,9 @@
+{# One row of the search page. `loop` is the loop of the list that includes it. #}
+<a class="index-row" href="{{ post.link }}">
+  <span class="label index-number">{{ '%02d'|format(loop.index) }}</span>
+  <span>
+    <span class="index-row__title">{{ post.title }}</span>
+    <span class="label" style="display: block; margin-top: 0.5rem">{{ post.post_type }}</span>
+  </span>
+  <span class="index-row__aside label index-number">{{ post.date('Y') }}</span>
+</a>
