@@ -60,10 +60,18 @@ function smokeActivatePlugin(string $slug): void
 /**
  * Deactivate a plugin and run its uninstall routine, so the next file starts from a new
  * install of it. The files stay: Composer owns them.
+ *
+ * Rank Math keeps its options and tables on uninstall unless a filter asks it to remove
+ * them. Kept, a redirection or a module that one file turns on would still act in the
+ * next file that activates the plugin.
  */
 function smokeUninstallPlugin(string $slug): void
 {
-    Site::wp('wp plugin uninstall ' . escapeshellarg($slug) . ' --deactivate --skip-delete');
+    Site::wp(sprintf(
+        'wp plugin uninstall %s --deactivate --skip-delete --exec=%s',
+        escapeshellarg($slug),
+        escapeshellarg("WP_CLI::add_wp_hook('rank_math_clear_data_on_uninstall', '__return_true');"),
+    ));
 }
 
 /**
