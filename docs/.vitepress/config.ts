@@ -72,6 +72,7 @@ export default defineConfig({
             { text: "Arrayable DTOs", link: "/guide/arrayable-dtos" },
             { text: "Native Blocks", link: "/guide/native-blocks" },
             { text: "Block Editor", link: "/guide/block-editor" },
+            { text: "Scheduled Blocks", link: "/guide/scheduled-blocks" },
             { text: "Block Patterns", link: "/guide/block-patterns" },
             { text: "Block Bindings", link: "/guide/block-bindings" },
           ],

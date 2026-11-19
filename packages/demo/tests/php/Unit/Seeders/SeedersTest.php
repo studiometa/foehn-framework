@@ -104,6 +104,12 @@ describe('Seeders', function () {
         expect($about)->toContain('<!-- wp:theme/hero {"title":"About"');
         expect($about)->toContain('"source":"theme/reading-time"');
         expect($about)->toContain('<!-- wp:theme/section /-->');
+
+        // Two scheduled paragraphs: one visible now, one from a date in the future.
+        expect($about)->toContain(
+            '<!-- wp:paragraph {"visibleFrom":"2026-01-01T09:00","visibleUntil":"2099-01-01T09:00"} -->',
+        );
+        expect($about)->toContain('<!-- wp:paragraph {"visibleFrom":"2099-01-01T09:00"} -->');
     });
 
     it('write the testimonials by slug', function () {

@@ -489,8 +489,9 @@ function makeCommandContractSuite(array $contracts): void
 /**
  * A verification report of the `updates` profile, holding the checks a test cares about.
  */
-function testVerificationReport(\Studiometa\Foehn\Verification\VerificationResult ...$checks): \Studiometa\Foehn\Verification\VerificationReport
-{
+function testVerificationReport(
+    \Studiometa\Foehn\Verification\VerificationResult ...$checks,
+): \Studiometa\Foehn\Verification\VerificationReport {
     return new \Studiometa\Foehn\Verification\VerificationReport(
         \Studiometa\Foehn\Verification\VerificationProfile::Updates,
         array_values($checks),
@@ -848,4 +849,82 @@ function pageCacheBucketEnv(array $variables = []): void
     foreach ($variables as $name => $value) {
         putenv($name . '=' . $value);
     }
+}
+
+/**
+ * A `wpdb` over the stubbed options, for {@see \Studiometa\Foehn\PageCache\ScheduleStore}.
+ *
+ * It answers the two queries the store makes. `get_col()` returns the values of the
+ * options whose name starts with a prefix, as the database holds them.
+ * `query()` runs the upsert of a record as MariaDB does: it adds the option, or keeps
+ * the smaller of the stored value and the new one, compared as strings.
+ */
+function scheduleStoreDatabase(): wpdb
+{
+    return new class extends wpdb {
+        public function prepare(string $query, mixed ...$args): string
+        {
+            return preg_replace_callback(
+                '/%s/',
+                static function () use (&$args): string {
+                    return "'" . addslashes((string) array_shift($args)) . "'";
+                },
+                $query,
+            );
+        }
+
+        public function query(string $query): int|bool
+        {
+            $this->queries[] = $query;
+            $quoted = "'((?:[^'\\\\]|\\\\.)*)'";
+
+            if (!preg_match(
+                "/^INSERT INTO .* VALUES \\({$quoted}, {$quoted}, 'off'\\) ON DUPLICATE KEY UPDATE option_value = LEAST\\(option_value, VALUES\\(option_value\\)\\)$/",
+                $query,
+                $match,
+            )) {
+                return false;
+            }
+
+            [, $name, $value] = array_map(stripslashes(...), $match);
+            $stored = $GLOBALS['wp_stub_options'][$name] ?? null;
+
+            if (is_string($stored) && strcmp($stored, $value) <= 0) {
+                return 0;
+            }
+
+            $GLOBALS['wp_stub_options'][$name] = $value;
+
+            return $stored === null ? 1 : 2;
+        }
+
+        public function get_col(string $query): array
+        {
+            $this->queries[] = $query;
+            preg_match("/LIKE '(.*)%'/", $query, $match);
+            // Once for the SQL string, once for the LIKE escapes of esc_like().
+            $prefix = stripslashes(stripslashes($match[1] ?? ''));
+            $values = [];
+
+            foreach ($GLOBALS['wp_stub_options'] ?? [] as $name => $value) {
+                if (str_starts_with((string) $name, $prefix)) {
+                    $values[] = is_string($value) ? $value : serialize($value);
+                }
+            }
+
+            return $values;
+        }
+    };
+}
+
+/**
+ * The schedule recorder the page cache recorder calls, on a schedule with no scheduled block by default.
+ */
+function pageCacheSchedule(
+    ?\Studiometa\Foehn\Blocks\BlockSchedule $schedule = null,
+): \Studiometa\Foehn\PageCache\ScheduleRecorder {
+    return new \Studiometa\Foehn\PageCache\ScheduleRecorder(
+        $schedule ?? new \Studiometa\Foehn\Blocks\BlockSchedule(new \Studiometa\Foehn\Config\FoehnConfig()),
+        new \Studiometa\Foehn\PageCache\ScheduleStore(),
+    );
 }

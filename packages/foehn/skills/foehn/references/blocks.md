@@ -11,6 +11,7 @@ Docs: [Native blocks](https://studiometa.github.io/foehn-framework/guide/native-
 - Every block is dynamic: it renders through `render_callback` on the front end and in the editor, where the editor draws the block from that Twig output and makes it editable in place (see [The canvas](#the-canvas)). There is no `save()` and no static markup in post content. You can change the Twig template at any time without a block validation error.
 - One generic script, `wp-content/foehn/editor.js`, registers all Føhn blocks in the editor from their schemas. The `studiometa/foehn-installer` Composer plugin copies it there on `composer install`. You write no block JavaScript and no `block.json`.
 - `supports.html` is `false` by default.
+- Every block, core blocks included, has `visibleFrom` and `visibleUntil` attributes, set in the "Schedule" panel of the block inspector (`wp-content/foehn/schedule.js`, copied by `composer install`). Outside these dates, read in the site time zone, the block renders nothing on the front end. The page cache purges the page on the `foehn_cron_heartbeat` WordPress cron event when a date passes, at most one real cron step later; Action Scheduler is not necessary. See [Scheduled blocks](https://studiometa.github.io/foehn-framework/guide/scheduled-blocks.md).
 
 ## `#[AsBlock]` arguments
 

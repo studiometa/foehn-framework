@@ -144,7 +144,16 @@ describe('Kernel block editor assets', function () {
             fn(array $call) => $call['args']['hook'] === 'enqueue_block_editor_assets',
         );
 
-        expect($actions)->toHaveCount(1);
+        // The block registrar, and the "Schedule" panel of BlockSchedule.
+        expect($actions)->toHaveCount(2);
+    });
+
+    it('always registers the block schedule filters', function () {
+        Kernel::boot(dirname(__DIR__, 2) . '/src', []);
+
+        $hooks = array_column(array_column(wp_stub_get_calls('add_filter'), 'args'), 'hook');
+
+        expect($hooks)->toContain('register_block_type_args', 'render_block');
     });
 
     it('always registers the cron heartbeat event', function () {

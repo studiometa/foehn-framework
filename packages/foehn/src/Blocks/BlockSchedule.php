@@ -1,0 +1,230 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Studiometa\Foehn\Blocks;
+
+use DateTimeImmutable;
+use Exception;
+use Studiometa\Foehn\Config\FoehnConfig;
+
+/**
+ * Shows a block only between two dates.
+ *
+ * Every block, core blocks included, gets two attributes: `visibleFrom` and
+ * `visibleUntil`. Each one is a date and time without a time zone, as the
+ * `datetime-local` input of the "Schedule" panel gives it (`2026-12-01T09:00`), and is
+ * read in the site time zone. A block renders to an empty string before `visibleFrom`
+ * and from `visibleUntil` on. An empty or invalid value is no limit.
+ *
+ * The filter applies to the front end only. In the admin and in REST requests the block
+ * renders as usual, so an editor still sees a scheduled block in its preview.
+ *
+ * A rendered page goes stale when one of its scheduled blocks changes state. This class
+ * keeps the earliest such date seen during the request, and
+ * {@see \Studiometa\Foehn\PageCache\ScheduleRecorder} gives it to the page cache.
+ */
+final class BlockSchedule
+{
+    public const string FROM = 'visibleFrom';
+
+    public const string UNTIL = 'visibleUntil';
+
+    /** Script handle of the "Schedule" panel. */
+    public const string HANDLE = 'foehn-schedule';
+
+    /** Path of the panel script, relative to the WordPress content directory. */
+    private const string SCRIPT_PATH = 'foehn/schedule.js';
+
+    /**
+     * WordPress script handles the panel reads its globals from.
+     *
+     * @var list<string>
+     */
+    private const array DEPENDENCIES = [
+        'wp-hooks',
+        'wp-compose',
+        'wp-element',
+        'wp-block-editor',
+        'wp-components',
+    ];
+
+    /** The earliest date, as a timestamp, at which a block rendered in this request changes state. */
+    private ?int $nextChange = null;
+
+    public function __construct(
+        private readonly FoehnConfig $config,
+    ) {}
+
+    /**
+     * Wire the attributes, the render filter and the editor panel.
+     */
+    public function register(): void
+    {
+        add_filter('register_block_type_args', $this->addAttributes(...), 10, 1);
+        add_filter('render_block', $this->render(...), 10, 2);
+        add_action('enqueue_block_editor_assets', $this->enqueue(...));
+    }
+
+    /**
+     * Add the two date attributes to a block type.
+     *
+     * Handler for the `register_block_type_args` filter.
+     *
+     * @param array<string, mixed> $args
+     * @return array<string, mixed>
+     */
+    public function addAttributes(array $args): array
+    {
+        $attributes = is_array($args['attributes'] ?? null) ? $args['attributes'] : [];
+
+        foreach ([self::FROM, self::UNTIL] as $name) {
+            $attributes[$name] ??= ['type' => 'string'];
+        }
+
+        $args['attributes'] = $attributes;
+
+        return $args;
+    }
+
+    /**
+     * Render nothing for a block outside its dates.
+     *
+     * Handler for the `render_block` filter.
+     *
+     * Null content passes through: a plugin can apply the filter to a block it did not render.
+     *
+     * @param array<string, mixed> $block
+     */
+    public function render(?string $content, array $block): ?string
+    {
+        $attributes = is_array($block['attrs'] ?? null) ? $block['attrs'] : [];
+        $from = self::moment($attributes[self::FROM] ?? null);
+        $until = self::moment($attributes[self::UNTIL] ?? null);
+
+        if ($from === null && $until === null) {
+            return $content;
+        }
+
+        if (self::isBackOffice()) {
+            return $content;
+        }
+
+        $now = time();
+        $change = self::nextChangeOf($from, $until, $now);
+
+        if ($change !== null && ($this->nextChange === null || $change < $this->nextChange)) {
+            $this->nextChange = $change;
+        }
+
+        return self::isVisibleAt($from, $until, $now) ? $content : '';
+    }
+
+    /**
+     * The earliest date, as a timestamp, at which a block rendered so far changes state.
+     */
+    public function nextChange(): ?int
+    {
+        return $this->nextChange;
+    }
+
+    /**
+     * Whether a block with these attributes is visible at `$now`.
+     *
+     * @param array<string, mixed> $attributes
+     */
+    public static function isVisible(array $attributes, int $now): bool
+    {
+        return self::isVisibleAt(
+            self::moment($attributes[self::FROM] ?? null),
+            self::moment($attributes[self::UNTIL] ?? null),
+            $now,
+        );
+    }
+
+    /**
+     * Enqueue the "Schedule" panel in the block editor.
+     *
+     * Handler for the `enqueue_block_editor_assets` action. The script is copied into
+     * the web root by `studiometa/foehn-installer` on `composer install`, as the block
+     * registrar is. Without it, the dates still apply but cannot be edited.
+     */
+    public function enqueue(): void
+    {
+        $path = constant('WP_CONTENT_DIR') . '/' . self::SCRIPT_PATH;
+
+        if (!is_file($path)) {
+            if ($this->config->isDebugEnabled()) {
+                trigger_error(
+                    sprintf(
+                        '[Foehn] Block schedule panel not found at "%s". It is generated by `composer install`.',
+                        $path,
+                    ),
+                    E_USER_NOTICE,
+                );
+            }
+
+            return;
+        }
+
+        wp_enqueue_script(
+            self::HANDLE,
+            content_url(self::SCRIPT_PATH),
+            self::DEPENDENCIES,
+            (string) filemtime($path),
+            // In the head: the attribute filter must run before the editor registers blocks.
+            false,
+        );
+    }
+
+    private static function isVisibleAt(?int $from, ?int $until, int $now): bool
+    {
+        return ($from === null || $now >= $from) && ($until === null || $now < $until);
+    }
+
+    /**
+     * The next date after `$now` at which the block shows or hides, or null when it never changes again.
+     */
+    private static function nextChangeOf(?int $from, ?int $until, int $now): ?int
+    {
+        foreach ([$from, $until] as $moment) {
+            if ($moment !== null && $moment > $now) {
+                return $moment;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * A date attribute as a timestamp, read in the site time zone, or null when it is empty or invalid.
+     */
+    private static function moment(mixed $value): ?int
+    {
+        if (!is_string($value) || trim($value) === '') {
+            return null;
+        }
+
+        try {
+            return new DateTimeImmutable(trim($value), wp_timezone())->getTimestamp();
+        } catch (Exception) {
+            return null;
+        }
+    }
+
+    /**
+     * Whether the request renders blocks for an editor rather than for a visitor.
+     */
+    private static function isBackOffice(): bool
+    {
+        if (is_admin()) {
+            return true;
+        }
+
+        if (function_exists('wp_is_serving_rest_request')) {
+            return wp_is_serving_rest_request();
+        }
+
+        return defined('REST_REQUEST') && (bool) constant('REST_REQUEST');
+    }
+}

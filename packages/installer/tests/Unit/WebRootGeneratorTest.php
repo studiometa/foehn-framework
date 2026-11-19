@@ -141,10 +141,12 @@ describe('WebRootGenerator', function () {
 
         // These four files are written as strings and never executed by any other
         // test; a syntax error in them would only show up on a real install.
-        foreach (
-            ['/web/index.php', '/web/wp-config.php', '/web/wp-content/advanced-cache.php', '/web/wp-content/maintenance.php']
-            as $file
-        ) {
+        foreach ([
+            '/web/index.php',
+            '/web/wp-config.php',
+            '/web/wp-content/advanced-cache.php',
+            '/web/wp-content/maintenance.php',
+        ] as $file) {
             $output = [];
             $status = 0;
             exec('php -l ' . escapeshellarg($this->root . $file) . ' 2>&1', $output, $status);
@@ -229,6 +231,23 @@ describe('WebRootGenerator', function () {
 
             expect($target)->toBeFile();
             expect(file_get_contents($target))->toContain("console.log('registrar');")->toContain('DO NOT EDIT');
+        } finally {
+            removeDirectory($package);
+        }
+    });
+
+    it('copies the block schedule panel out of the framework package', function () {
+        $package = makeProjectRoot('resources/js');
+        file_put_contents($package . '/resources/js/editor.js', "console.log('registrar');\n");
+        file_put_contents($package . '/resources/js/schedule.js', "console.log('schedule');\n");
+
+        try {
+            ($this->generate)($package);
+
+            $target = $this->root . '/web/wp-content/foehn/schedule.js';
+
+            expect($target)->toBeFile();
+            expect(file_get_contents($target))->toContain("console.log('schedule');")->toContain('DO NOT EDIT');
         } finally {
             removeDirectory($package);
         }

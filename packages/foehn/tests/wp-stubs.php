@@ -28,6 +28,7 @@ function wp_stub_reset(): void
     $GLOBALS['wp_stub_acf_field_types'] = [];
     $GLOBALS['wp_stub_acf_stores'] = [];
     $GLOBALS['wp_stub_options'] = [];
+    $GLOBALS['wp_stub_object_cache'] = [];
     $GLOBALS['wp_stub_transients'] = [];
     $GLOBALS['wp_stub_ext_object_cache'] = false;
     $GLOBALS['wp_stub_taxonomies'] = [];
@@ -1851,6 +1852,33 @@ if (!function_exists('update_option')) {
     {
         wp_stub_record('update_option', compact('option', 'value', 'autoload'));
         $GLOBALS['wp_stub_options'][$option] = $value;
+
+        return true;
+    }
+}
+
+if (!function_exists('wp_cache_get')) {
+    function wp_cache_get(int|string $key, string $group = ''): mixed
+    {
+        return $GLOBALS['wp_stub_object_cache'][$group][$key] ?? false;
+    }
+}
+
+if (!function_exists('wp_cache_set')) {
+    function wp_cache_set(int|string $key, mixed $data, string $group = '', int $expire = 0): bool
+    {
+        wp_stub_record('wp_cache_set', compact('key', 'data', 'group'));
+        $GLOBALS['wp_stub_object_cache'][$group][$key] = $data;
+
+        return true;
+    }
+}
+
+if (!function_exists('wp_cache_delete')) {
+    function wp_cache_delete(int|string $key, string $group = ''): bool
+    {
+        wp_stub_record('wp_cache_delete', compact('key', 'group'));
+        unset($GLOBALS['wp_stub_object_cache'][$group][$key]);
 
         return true;
     }

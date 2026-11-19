@@ -665,6 +665,21 @@ grep -q '"controller":"Demo\\\\Controllers\\\\PageController"' <<<"$trace" || fa
 $(head -c 400 <<<"$trace")"
 printf '✓ %s\n' "a request trace names the controller that rendered the page"
 
+# PageSeeder writes the About page with two scheduled paragraphs: one shows between
+# its two dates, the other only from 2099. Checked on the site restored from
+# demo.sql.gz, before the seed below, so a dump without them fails here.
+about="$(curl -sk "$url/about/")"
+grep -q 'Open studio on the first Saturday' <<<"$about" || fail "the about page does not show the paragraph scheduled for now"
+grep -q 'The retrospective opens' <<<"$about" && fail "the about page shows the paragraph scheduled from 2099"
+printf '✓ %s\n' "a scheduled block shows only between its dates"
+
+# The editor half: the "Schedule" panel script that composer install copies from
+# studiometa/foehn. Without it, BlockSchedule enqueues nothing and says nothing while
+# debug is off, so editors cannot set the dates.
+schedule_status="$(curl -sk -o /dev/null -w '%{http_code}' "$url/wp-content/foehn/schedule.js")"
+[ "$schedule_status" = "200" ] || fail "GET /wp-content/foehn/schedule.js answered HTTP $schedule_status"
+printf '✓ %s\n' "the Schedule panel script is served"
+
 # The seeders in theme/app/Seeders write the whole portfolio, and they must be
 # idempotent: on a site that already holds it, they find every post by slug and
 # every photograph by its Unsplash id, and write no copy. The site here came from

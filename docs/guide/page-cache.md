@@ -263,6 +263,8 @@ Hooked for you: `save_post`, `deleted_post`, `before_delete_post`, `wp_trash_pos
 
 The whole cache is flushed on `switch_theme`, `customize_save_after`, `wp_update_nav_menu`, `activated_plugin`, `deactivated_plugin`, a permalink structure change, an ACF options save, and an update to `home`, `siteurl`, `blogname`, `blogdescription`, `page_on_front`, `page_for_posts`, `show_on_front` or `posts_per_page`.
 
+A page that renders a [scheduled block](/guide/scheduled-blocks#with-the-page-cache) is purged on the cron heartbeat event once the block's date has passed, at most one real cron step later. This needs no Action Scheduler.
+
 With the redirections module of Rank Math on, a redirection that is created, changed or turned on purges the stored page of its source, or empties the cache when its source is a pattern. See [Rank Math](/guide/rank-math#redirections).
 
 ### Reaching it from your own code

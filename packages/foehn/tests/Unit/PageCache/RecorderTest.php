@@ -20,7 +20,7 @@ describe('Recorder', function () {
         $this->root = pageCacheRoot();
         $this->config = new PageCacheConfig(enabled: true, path: $this->root, debugHeaders: false);
         $this->store = new Store($this->config);
-        $this->recorder = new Recorder($this->config, $this->store, new Bypass($this->config));
+        $this->recorder = new Recorder($this->config, $this->store, new Bypass($this->config), pageCacheSchedule());
 
         $_SERVER = pageCacheServer();
         $_COOKIE = [];
@@ -70,18 +70,14 @@ describe('Recorder', function () {
     });
 
     it('writes to a bucket after the response is sent, so a miss does not wait for the PUT', function () {
-        $config = new PageCacheConfig(
-            enabled: true,
-            storage: PageCacheStorage::Bucket,
-            debugHeaders: false,
-        );
+        $config = new PageCacheConfig(enabled: true, storage: PageCacheStorage::Bucket, debugHeaders: false);
         $bucket = $this->root . '/bucket';
         $store = new BucketStore(
             $config,
             static fn() => new Filesystem(new LocalFilesystemAdapter($bucket)),
             'memory://cache/pages',
         );
-        $recorder = new Recorder($config, $store, new Bypass($config));
+        $recorder = new Recorder($config, $store, new Bypass($config), pageCacheSchedule());
 
         $returned = $recorder->onFlush(pageCacheBody());
 

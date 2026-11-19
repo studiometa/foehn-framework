@@ -65,8 +65,9 @@ final class PageSeeder implements SeederInterface
      * look like on a page an editor wrote.
      *
      * A hero with the studio photograph, a paragraph bound to `theme/reading-time`,
-     * the copy in core blocks, the `theme/commission` pattern as the editor inserts
-     * it, and the `theme/faq` block, which also gives the page its `FAQPage` JSON-LD.
+     * the copy in core blocks, two paragraphs set in the "Schedule" panel, the
+     * `theme/commission` pattern as the editor inserts it, and the `theme/faq`
+     * block, which also gives the page its `FAQPage` JSON-LD.
      */
     private static function aboutContent(?int $background): string
     {
@@ -101,6 +102,18 @@ final class PageSeeder implements SeederInterface
             BlockMarkup::block('heading', ['level' => 2], '<h2 class="wp-block-heading">Selected clients</h2>'),
             BlockMarkup::paragraph(
                 'Water Journal, Grille Editions, Contrejour Review, and several architecture practices across the Rhine valley.',
+            ),
+            // Scheduled blocks: the first shows between its two dates, so a visitor
+            // sees it now. The second shows only from a date in the future.
+            BlockMarkup::block(
+                'paragraph',
+                ['visibleFrom' => '2026-01-01T09:00', 'visibleUntil' => '2099-01-01T09:00'],
+                '<p>Open studio on the first Saturday of each month, by appointment.</p>',
+            ),
+            BlockMarkup::block(
+                'paragraph',
+                ['visibleFrom' => '2099-01-01T09:00'],
+                '<p>The retrospective opens at the studio on 1 January 2099.</p>',
             ),
         ];
 
