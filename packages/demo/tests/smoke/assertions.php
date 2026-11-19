@@ -91,6 +91,10 @@ $results->true('DisableFileEditor turns off the file editor', defined('DISALLOW_
 $results->same('an image transformer is configured', GlideTransformer::class, $config->imageTransformer);
 $results->true('the container resolves it', Kernel::get(ImageTransformer::class) instanceof GlideTransformer);
 
+// foehn.local.config.php copies the option from the shared file, so in ddev too the
+// pre-publish checks refuse to publish a post with an accessibility issue.
+$results->true('accessibility issues block publication', $config->blockPublicationOnAccessibilityIssues);
+
 // ──────────────────────────────────────────────
 // Vendor discovery: the framework's own classes
 // ──────────────────────────────────────────────

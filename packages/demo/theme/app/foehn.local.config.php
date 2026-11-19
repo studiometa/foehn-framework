@@ -28,4 +28,5 @@ return new FoehnConfig(
     recordErrors: true,
     traceRequests: true,
     cliNamespace: $shared->cliNamespace,
+    blockPublicationOnAccessibilityIssues: $shared->blockPublicationOnAccessibilityIssues,
 );
