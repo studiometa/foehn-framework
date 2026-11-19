@@ -233,4 +233,24 @@ foehn_demo_seed() {
     echo "ℹ️ NOTICE ($script_name): the portfolio is up at ${WP_HOME:-the configured URL}."
 }
 
-foehn_demo_require_salts && foehn_demo_seed
+# The search indexes of studiometa/foehn-search, at each boot and not only on the first.
+# They are files in `/app/storage/search/`, not on the volume, so each deploy starts
+# with none. The demo has some forty posts, so this takes a few seconds.
+foehn_demo_reindex() {
+    script_name="demo-seed"
+
+    # `foehn_demo_run` is the helper that `foehn_demo_seed` defines, which has run.
+    # The site the seed left uninstalled, without DEMO_ADMIN_PASSWORD, has nothing to index.
+    if ! foehn_demo_run 'wp core is-installed' >/dev/null 2>&1; then
+        return 0
+    fi
+
+    # Without an index, the search page finds nothing on a site that looks fine. So a
+    # failure fails the boot, as the steps of the seed do.
+    if ! foehn_demo_run 'wp foehn-search reindex'; then
+        echo "🛑 ERROR ($script_name): the search indexes could not be built. The container will not start." >&2
+        return 1
+    fi
+}
+
+foehn_demo_require_salts && foehn_demo_seed && foehn_demo_reindex

@@ -74,6 +74,10 @@ COPY public/ ./public/
 # because a classmap is one file read instead of a directory walk per class, and
 # nothing in a built image is going to add a class.
 #
+# `--ignore-platform-req=ext-intl`, because `studiometa/foehn-search` requires intl and
+# the `composer:2` image does not have it. The runtime image below has it, and this
+# stage runs no code of the packages.
+#
 # The `rm` is part of the same step and not an afterthought. The installer writes
 # the eight WordPress security keys into `.env` when it finds none in the
 # environment — it has to, since a site with guessable keys is a site whose login
@@ -87,6 +91,7 @@ RUN composer install \
         --no-interaction \
         --no-progress \
         --optimize-autoloader \
+        --ignore-platform-req=ext-intl \
     && rm -f .env
 
 ###############################################################################
@@ -117,8 +122,10 @@ COPY database/ ./database/
 COPY docker/entrypoint.d/ /opt/docker/provision/entrypoint.d/
 
 # The code belongs to root and PHP cannot rewrite it: `application` is the user a
-# compromised plugin gets. Only what is written at runtime belongs to it.
+# compromised plugin gets. Only what is written at runtime belongs to it: the caches,
+# the uploads, and the search indexes in `storage/search/`, which the entrypoint
+# rebuilds at each boot.
 RUN chmod +x /opt/docker/provision/entrypoint.d/35-demo-seed.sh \
-    && mkdir -p web/wp-content/cache web/wp-content/uploads \
+    && mkdir -p web/wp-content/cache web/wp-content/uploads storage/search \
     && chown -R root:root /app \
-    && chown -R application:application web/wp-content/cache web/wp-content/uploads
+    && chown -R application:application web/wp-content/cache web/wp-content/uploads storage/search
