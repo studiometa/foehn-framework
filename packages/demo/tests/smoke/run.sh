@@ -545,6 +545,20 @@ printf '✓ a parameter outside the allowlist reaches nothing\n'
 # the package is a `suggest` and absent.
 check_page "/about/" 'data-component="Accordion"' "an @ui component renders through the Twig namespace"
 
+# #[AsJsonLd] and JsonLd::add(), read as a visitor gets them: each script must be
+# valid JSON, and each node where Føhn prints it. A project page gets the node of
+# ProjectJsonLd in <head>. The About page gets the FAQPage that its FAQ block adds while
+# it renders, so in the body: Føhn prints it on wp_footer.
+project_json_ld="$(curl -sk "$url/projects/corridors/" | php tests/smoke/json-ld.php)" ||
+	fail "a project page holds JSON-LD that is not valid JSON"
+[ "$project_json_ld" = "head CreativeWorkSeries" ] || fail "a project page does not hold its CreativeWorkSeries in <head>
+$project_json_ld"
+about_json_ld="$(curl -sk "$url/about/" | php tests/smoke/json-ld.php)" ||
+	fail "the about page holds JSON-LD that is not valid JSON"
+[ "$about_json_ld" = "body FAQPage" ] || fail "the FAQ block of the about page does not add its FAQPage in the footer
+$about_json_ld"
+printf '✓ %s\n' "a project page and the FAQ block print valid JSON-LD, each where Føhn puts it"
+
 # Unsplash asks that photographers be credited. The credit is stored on the
 # attachment at import and printed under every plate, so its absence is a licensing
 # problem rather than a cosmetic one.
