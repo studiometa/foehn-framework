@@ -88,6 +88,18 @@ describe('PlaceSearch eligible places', function () {
         expect(placeSearch()->eligibleIds(new PlaceSearchRequest(q: 'campus')))->toBe([2]);
     });
 
+    it('matches a capitalized query, as typed or parsed from the request', function () {
+        expect(placeSearch()->eligibleIds(new PlaceSearchRequest(q: 'Paris')))->toBe([3]);
+        expect(placeSearch()->eligibleIds(new PlaceSearchRequest(q: 'PARIS Bercy')))->toBe([3]);
+
+        $search = placeSearch();
+        $search->parse('q=Paris');
+        $query = new WP_Query();
+        $search->narrow($query);
+
+        expect($search->request()?->q)->toBe('Paris')->and($query->query_vars['post__in'])->toBe([3]);
+    });
+
     it('keeps places within the radius, nearest first, with their distances', function () {
         $search = placeSearch();
         $request = PlaceSearchRequest::fromQueryString('near=45.7719,4.8902&radius=10', new PlacesConfig());

@@ -131,8 +131,10 @@ final class PlaceSearch
     {
         $ids = [];
         $this->distances = [];
+        $q = $request->q === null ? null : mb_strtolower($request->q);
+
         foreach ($this->candidates() as $candidate) {
-            if ($request->q !== null && !str_contains($candidate['text'], mb_strtolower($request->q))) {
+            if ($q !== null && !str_contains($candidate['text'], $q)) {
                 continue;
             }
 
