@@ -366,6 +366,14 @@ jobs:
           composer config repositories.foehn-installer '{"type":"path","url":"../installer","options":{"symlink":false}}'
           composer require --no-update studiometa/foehn:@dev studiometa/foehn-installer:@dev
 
+      # The plugins the framework end-to-end suite tests Føhn with, installed with
+      # Composer at a fixed version. They stay out of the starter's own composer.json,
+      # so a project created from it does not get them. The suite only activates and
+      # uninstalls them.
+      - name: Add the plugins of the framework end-to-end suite
+        working-directory: packages/starter
+        run: composer require --dev --no-update wpackagist-plugin/polylang:3.9.2 wpackagist-plugin/seo-by-rank-math:1.0.282
+
       - name: Install starter dependencies
         working-directory: packages/starter
         run: |
@@ -413,12 +421,6 @@ jobs:
       # to work: a unit test cannot prove a web server reads the file PHP wrote.
       - name: Install monorepo dependencies
         run: composer install --prefer-dist --no-progress --no-interaction
-
-      # The plugins the suite activates, from Composer. Not in the starter's own
-      # require: a project created from it does not get them.
-      - name: Install the plugins of the framework end-to-end suite
-        working-directory: packages/starter
-        run: composer require --no-progress --no-interaction wpackagist-plugin/polylang:^3.9
 
       - name: Run the framework end-to-end suite
         run: composer test:smoke

@@ -36,6 +36,37 @@ function smokeGetTwice(string $path = '/'): array
 }
 
 /**
+ * Activate a plugin that the suite tests Føhn with.
+ *
+ * The plugins are installed with Composer, never at run time: CI requires them in the
+ * starter before `composer install` (the integration-starter job of
+ * `.github/workflows/ci.yml`, which holds their versions). Require the same ones in a
+ * local install. A plugin that is not there fails the file, rather than skipping it.
+ */
+function smokeActivatePlugin(string $slug): void
+{
+    $result = Site::run('wp plugin activate ' . escapeshellarg($slug));
+
+    if ($result['status'] !== 0) {
+        throw new RuntimeException(sprintf(
+            "Could not activate %s. Install it with Composer in the starter: composer require --dev wpackagist-plugin/%s\n%s",
+            $slug,
+            $slug,
+            $result['output'],
+        ));
+    }
+}
+
+/**
+ * Deactivate a plugin and run its uninstall routine, so the next file starts from a new
+ * install of it. The files stay: Composer owns them.
+ */
+function smokeUninstallPlugin(string $slug): void
+{
+    Site::wp('wp plugin uninstall ' . escapeshellarg($slug) . ' --deactivate --skip-delete');
+}
+
+/**
  * Every `<script type="application/ld+json">` of a page, decoded, with its class and
  * where it starts. A script that is not valid JSON fails the test.
  *

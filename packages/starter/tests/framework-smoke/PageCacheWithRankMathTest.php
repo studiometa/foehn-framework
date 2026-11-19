@@ -14,7 +14,8 @@ use Studiometa\Foehn\Smoke\Support\Site;
  * - its redirections run in PHP, so a page stored before a redirection hides it until the
  *   page is purged.
  *
- * The plugin is installed from wordpress.org for this file and removed afterwards.
+ * The plugin is installed with Composer, active for this file only and uninstalled
+ * afterwards (see smokeActivatePlugin()).
  */
 
 const RANK_MATH_REDIRECTION = 'wp eval-file tests/framework-smoke/fixtures/rank-math-redirection.php';
@@ -24,7 +25,7 @@ beforeAll(function () {
         return;
     }
 
-    Site::wp('wp plugin install seo-by-rank-math --activate');
+    smokeActivatePlugin('seo-by-rank-math');
     // Rank Math loads its front end only once the registration is done or skipped.
     Site::wp('wp option update rank_math_registration_skip 1');
     // The redirections module is off on a new install, and its tables come with it.
@@ -49,7 +50,7 @@ afterAll(function () {
         return;
     }
 
-    Site::wp('wp plugin uninstall seo-by-rank-math --deactivate');
+    smokeUninstallPlugin('seo-by-rank-math');
     Site::wp('wp option delete rank_math_registration_skip');
     Site::wp('wp post delete $(wp post list --post_type=page --name=rank-math-smoke --field=ID) --force');
     Site::wp('wp rewrite flush');

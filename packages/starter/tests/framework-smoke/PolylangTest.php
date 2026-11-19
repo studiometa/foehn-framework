@@ -8,11 +8,10 @@ use Studiometa\Foehn\Smoke\Support\Site;
  * Føhn with Polylang active: the language switcher, the purge of the translations of a
  * post, and a translatable setting.
  *
- * Polylang comes from Composer, not from the starter, which does not ship it. Install it
- * in the starter before the suite, as CI does:
- * `composer require --working-dir=packages/starter wpackagist-plugin/polylang:^3.9`.
- * This file activates it and deactivates it afterwards. The URLs use the default mode of
- * Polylang: the language in a folder, none for the default language.
+ * Polylang comes from Composer, not from the starter, which does not ship it. CI requires
+ * it in the starter before the suite (see the integration-starter job). This file
+ * activates it with smokeActivatePlugin() and uninstalls it afterwards. The URLs use the
+ * default mode of Polylang: the language in a folder, none for the default language.
  */
 
 const POLYLANG = 'wp eval-file tests/framework-smoke/fixtures/polylang.php';
@@ -22,9 +21,7 @@ beforeAll(function () {
         return;
     }
 
-    Site::wp('wp plugin activate polylang') ?? throw new RuntimeException(
-        'Polylang is not installed in the starter. Run `composer require --working-dir=packages/starter wpackagist-plugin/polylang:^3.9` first.',
-    );
+    smokeActivatePlugin('polylang');
     Site::wp(POLYLANG . ' setup');
     Site::wp('wp rewrite flush');
     Site::enableCache();
@@ -36,7 +33,7 @@ afterAll(function () {
     }
 
     Site::wp(POLYLANG . ' teardown');
-    Site::wp('wp plugin deactivate polylang');
+    smokeUninstallPlugin('polylang');
     Site::wp('wp rewrite flush');
     Site::disableCache();
     Site::clearCache();
