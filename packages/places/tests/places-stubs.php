@@ -62,6 +62,13 @@ if (!function_exists('get_user_locale')) {
     }
 }
 
+if (!function_exists('nocache_headers')) {
+    function nocache_headers(): void
+    {
+        $GLOBALS['places_stub_nocache'] = true;
+    }
+}
+
 if (!function_exists('get_the_excerpt')) {
     function get_the_excerpt(mixed $post = null): string
     {

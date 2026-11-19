@@ -215,6 +215,91 @@ describe('PlacesHooks', function () {
         unset($_SERVER['QUERY_STRING']);
     });
 
+    it('keeps the term query vars of a valid request, and leaves other requests alone', function () {
+        $GLOBALS['wp_stub_taxonomies'] = ['place_type'];
+        $agency = new WP_Term();
+        $agency->slug = 'agency';
+        $GLOBALS['wp_stub_terms']['place_type'] = [$agency];
+        $_SERVER['QUERY_STRING'] = 'place_type=Agency';
+        $hooks = ($this->hooks)(new PlacesConfig());
+
+        try {
+            expect($hooks->parseRequest(['post_type' => 'place', 'place_type' => 'Agency']))->toBe([
+                'post_type' => 'place',
+                'place_type' => 'agency',
+            ]);
+            expect($hooks->parseRequest(['post_type' => 'post', 'place_type' => 'x']))->toBe([
+                'post_type' => 'post',
+                'place_type' => 'x',
+            ]);
+        } finally {
+            unset($_SERVER['QUERY_STRING']);
+        }
+    });
+
+    it('narrows the main query of the place archive only, never in the admin', function () {
+        $archive = static fn(bool $main = true, string $type = 'place'): WP_Query => new class($main, $type) extends
+            WP_Query {
+            public function __construct(
+                bool $main,
+                private string $type,
+            ) {
+                parent::__construct();
+                $this->set_main_query($main);
+            }
+
+            public function is_post_type_archive(mixed $postTypes = ''): bool
+            {
+                return $postTypes === $this->type;
+            }
+        };
+        $hooks = ($this->hooks)(new PlacesConfig());
+
+        $GLOBALS['wp_stub_is_admin'] = true;
+        $hooks->narrow($admin = $archive());
+        $GLOBALS['wp_stub_is_admin'] = false;
+        $hooks->narrow($secondary = $archive(false));
+        $hooks->narrow($other = $archive(type: 'post'));
+
+        expect($admin->query_vars)->toBe([])->and($secondary->query_vars)->toBe([])->and($other->query_vars)->toBe([]);
+
+        $hooks->narrow($main = $archive());
+
+        expect($main->query_vars)->toHaveKey('post__in');
+    });
+
+    it('answers 400 and no cache to an invalid search of the place archive only', function () {
+        $config = new PlacesConfig(nearSearch: false);
+        $search = new \Studiometa\Foehn\Places\Search\PlaceSearch(
+            $config,
+            new \Studiometa\Foehn\Config\FoehnConfig(),
+            new \Studiometa\Foehn\Query\Facets(),
+        );
+        $hooks = new PlacesHooks($config, $search, new PlaceMetaBox($config));
+        $GLOBALS['wp_stub_template'] = 'archive';
+
+        $search->parse('');
+        $hooks->sendStatus();
+
+        expect($GLOBALS['wp_stub_status_headers'])->toBe([]);
+
+        $search->parse('near=45,4');
+        $GLOBALS['wp_stub_template'] = 'single';
+        $hooks->sendStatus();
+
+        expect($GLOBALS['wp_stub_status_headers'])->toBe([]);
+
+        $GLOBALS['wp_stub_template'] = 'archive';
+        $hooks->sendStatus();
+
+        expect($GLOBALS['wp_stub_status_headers'])
+            ->toBe([['code' => 400, 'description' => '']])
+            ->and($GLOBALS['places_stub_nocache'] ?? false)
+            ->toBeTrue();
+        http_response_code(200);
+        unset($GLOBALS['places_stub_nocache']);
+    });
+
     it('leaves a single place and other requests alone', function () {
         expect(PlacesHooks::isArchiveRequest(['post_type' => 'place', 'place' => 'lyon']))->toBeFalse();
         expect(PlacesHooks::isArchiveRequest(['post_type' => 'post']))->toBeFalse();

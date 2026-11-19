@@ -6,6 +6,7 @@ use Studiometa\Foehn\Config\FoehnConfig;
 use Studiometa\Foehn\Places\Config\PlacesConfig;
 use Studiometa\Foehn\Places\Search\PlaceSearch;
 use Studiometa\Foehn\Places\Search\PlaceSearchRequest;
+use Studiometa\Foehn\Places\Search\PlaceSearchResult;
 use Studiometa\Foehn\Places\Tests\Fixtures\TestPlace;
 use Studiometa\Foehn\Query\Facets;
 
@@ -303,6 +304,131 @@ describe('PlaceSearch main query', function () {
         $search->narrow($query);
 
         expect($query->query_vars)->toMatchArray(['paged' => 2, 'posts_per_page' => 1, 'post__in' => [2, 1]]);
+    });
+});
+
+describe('PlaceSearch result', function () {
+    beforeEach(function () {
+        $GLOBALS['wpdb'] = new wpdb();
+        $GLOBALS['wpdb']->results = [];
+    });
+
+    afterEach(function () {
+        unset($GLOBALS['wp_query'], $GLOBALS['wpdb']);
+    });
+
+    it('is an empty, invalid result for an invalid request, without reading the main query', function () {
+        $search = placeSearch(new PlacesConfig(nearSearch: false));
+        $search->parse('near=45,4');
+        $result = $search->result();
+
+        expect($result->invalid)
+            ->toBeTrue()
+            ->and($result->total)
+            ->toBe(0)
+            ->and($result->places)
+            ->toBe([])
+            ->and($result->features)
+            ->toBe(['near' => false, 'area' => true]);
+    });
+
+    it('reads the total, the page and the facets of the main query once', function () {
+        $search = placeSearch();
+        $search->parse('q=lyon&place_type=agency');
+        $GLOBALS['wp_query'] = new WP_Query();
+        $search->narrow($GLOBALS['wp_query']);
+        $GLOBALS['wp_query']->set('paged', 2);
+        $GLOBALS['wp_query']->found_posts = 30;
+        $GLOBALS['wp_query']->max_num_pages = 2;
+        $result = $search->result();
+
+        expect($result->invalid)
+            ->toBeFalse()
+            ->and($result->total)
+            ->toBe(30)
+            ->and($result->page)
+            ->toBe(2)
+            ->and($result->pages)
+            ->toBe(2)
+            ->and($result->mapLimitExceeded)
+            ->toBeFalse()
+            ->and(array_keys($result->facets))
+            ->toBe(['place_type'])
+            ->and($result->selected())
+            ->toBe(['place_type' => ['agency']])
+            ->and($search->result())
+            ->toBe($result);
+    });
+
+    it('says when the map view has more places than the map limit, and frames nothing', function () {
+        $search = placeSearch(new PlacesConfig(mapResultLimit: 10));
+        $search->parse('view=map');
+        $GLOBALS['wp_query'] = new WP_Query();
+        $GLOBALS['wp_query']->found_posts = 11;
+        $result = $search->result();
+
+        expect($result->mapLimitExceeded)->toBeTrue()->and($result->bounds)->toBeNull();
+    });
+});
+
+describe('PlaceSearchResult', function () {
+    beforeEach(function () {
+        $this->places = [
+            TestPlace::with(1, ['latitude' => 45.0, 'longitude' => 4.0]),
+            TestPlace::with(2, ['latitude' => '', 'longitude' => '']),
+        ];
+        $this->places[0]->post_title = 'Lyon';
+        $GLOBALS['wp_stub_permalinks'][1] = 'https://example.com/places/lyon/';
+    });
+
+    it('shows the places in the list view only', function () {
+        $features = ['near' => true, 'area' => true];
+        $list = new PlaceSearchResult(new PlaceSearchRequest(), false, $features, places: $this->places);
+        $map = new PlaceSearchResult(new PlaceSearchRequest(view: 'map'), false, $features, places: $this->places);
+
+        expect($list->list())->toBe($this->places)->and($list->map())->toBe([])->and($map->list())->toBe([]);
+    });
+
+    it('has a marker for each map place with coordinates', function () {
+        $result = new PlaceSearchResult(
+            new PlaceSearchRequest(view: 'map'),
+            false,
+            ['near' => true, 'area' => true],
+            places: $this->places,
+        );
+
+        expect($result->map())->toBe($this->places);
+        expect($result->markers())->toBe([
+            ['id' => 1, 'lngLat' => [4.0, 45.0], 'title' => 'Lyon', 'link' => 'https://example.com/places/lyon/'],
+        ]);
+    });
+
+    it('has no map places and no markers above the map limit', function () {
+        $result = new PlaceSearchResult(
+            new PlaceSearchRequest(view: 'map'),
+            false,
+            ['near' => true, 'area' => true],
+            places: $this->places,
+            mapLimitExceeded: true,
+        );
+
+        expect($result->map())->toBe([])->and($result->markers())->toBe([]);
+    });
+
+    it('gives the distance of a place or of its id', function () {
+        $result = new PlaceSearchResult(
+            new PlaceSearchRequest(),
+            false,
+            ['near' => true, 'area' => true],
+            distances: [1 => 1200.5],
+        );
+
+        expect($result->distance($this->places[0]))
+            ->toBe(1200.5)
+            ->and($result->distance(1))
+            ->toBe(1200.5)
+            ->and($result->distance(2))
+            ->toBeNull();
     });
 });
 
