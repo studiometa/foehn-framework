@@ -74,6 +74,15 @@ describe('ThemeSettings', function () {
         ]);
     });
 
+    it('translates the banner text, and nothing else', function () {
+        $translatable = array_keys(array_filter(
+            ThemeSettings::settings(),
+            static fn(Setting $setting): bool => $setting->translatable,
+        ));
+
+        expect($translatable)->toBe(['demo_banner_text']);
+    });
+
     it('keeps every setting out of REST', function () {
         foreach (ThemeSettings::settings() as $setting) {
             expect($setting->showInRest)->toBeFalse();

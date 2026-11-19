@@ -236,6 +236,41 @@ printf '✓ %s\n' "RestApiAuth removes the users route for a visitor"
 check_page "/" '>Environment: local<' "the footer prints the environment"
 # SettingsSeeder turns the banner on, so the public demo says it is one.
 check_page "/" 'class="banner' "the banner from the theme settings is on every page"
+
+# Polylang: English, the default language, and French under /fr/. The header prints
+# the languages() switcher, one link for each language, with no line breaks here.
+switcher() {
+	curl -sk "$url$1" | tr -s '[:space:]' ' ' | sed 's/.*<nav class="site-header__languages"//; s/<\/nav>.*//'
+}
+
+home_switcher="$(switcher /)"
+grep -qF "href=\"$url/\" hreflang=\"en\" lang=\"en\" aria-current=\"true\"" <<<"$home_switcher" ||
+	fail "the switcher of the homepage does not mark English as the current language
+$home_switcher"
+grep -qF "href=\"$url/fr/\" hreflang=\"fr\"" <<<"$home_switcher" ||
+	fail "the switcher of the homepage does not link its French translation at /fr/
+$home_switcher"
+printf '✓ %s\n' "the language switcher of the homepage links its French translation"
+
+french_switcher="$(switcher /fr/)"
+grep -qF "href=\"$url/fr/\" hreflang=\"fr\" lang=\"fr\" aria-current=\"true\"" <<<"$french_switcher" ||
+	fail "the switcher of /fr/ does not mark French as the current language
+$french_switcher"
+grep -qF "href=\"$url/\" hreflang=\"en\"" <<<"$french_switcher" ||
+	fail "the switcher of /fr/ does not link the English homepage
+$french_switcher"
+printf '✓ %s\n' "the language switcher of /fr/ links the English homepage"
+
+# The About page has no French translation, so French links to the French home page.
+about_switcher="$(switcher /about/)"
+grep -qF "href=\"$url/fr/\" hreflang=\"fr\"" <<<"$about_switcher" ||
+	fail "the switcher of a page without a translation does not link the French home page
+$about_switcher"
+printf '✓ %s\n' "a page without a translation links French to the French home page"
+
+# The banner text is a translatable setting: demo_banner_text_fr on /fr/.
+check_page "/" 'A demonstration of the Føhn framework' "the homepage shows the English banner text"
+check_page "/fr/" 'Une démonstration du framework Føhn' "/fr/ shows the French banner text of the translatable setting"
 check_page "/projects/" "index-row__title" "the projects index lists the series"
 check_page "/projects/page/2/" "<html" "project pagination keeps a full-page fallback"
 # /projects/series/<slug>/ was taken by the rule WordPress adds for the attachments
