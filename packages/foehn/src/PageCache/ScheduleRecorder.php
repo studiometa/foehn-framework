@@ -9,7 +9,7 @@ use Studiometa\Foehn\Blocks\BlockSchedule;
 /**
  * Records the URL of a stored page that renders a scheduled block, with the date it goes stale.
  *
- * Called by {@see Recorder} when it stores a page, and only then: the page is rendered by
+ * Called by {@see Recorder} after it stored a page, and only then: the page is rendered by
  * that time, and {@see BlockSchedule} knows the earliest date at which one of its blocks
  * shows or hides. A response the page cache refuses (a 404 it does not keep, a redirect,
  * an incomplete body) records nothing, so a URL that a scanner probes adds no record.

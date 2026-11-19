@@ -97,10 +97,20 @@ final class Recorder
         // The status and the headers travel with the body now. A 404 stored without its
         // status came back as a 200, which is a soft 404 that nothing downstream can see
         // — and a page's own headers vanished on every hit.
-        $this->write(fn(): bool => $this->store->put($key, $body, $status, $headers));
+        // Read now: a bucket write runs at shutdown.
+        $requestUri = $_SERVER['REQUEST_URI'] ?? '';
 
-        // A page with a scheduled block goes stale at a date, with no edit to purge on.
-        $this->schedule->record($key, $_SERVER['REQUEST_URI'] ?? '');
+        $this->write(function () use ($key, $body, $status, $headers, $requestUri): bool {
+            if (!$this->store->put($key, $body, $status, $headers)) {
+                return false;
+            }
+
+            // A page with a scheduled block goes stale at a date, with no edit to purge on.
+            // Recorded only once the page is stored: a record without a stored page purges nothing.
+            $this->schedule->record($key, $requestUri);
+
+            return true;
+        });
 
         DebugHeaders::send($this->config, DebugHeaders::STATE_MISS);
 
