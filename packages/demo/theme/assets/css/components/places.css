@@ -1,0 +1,111 @@
+/*
+ * The venue locator. The package renders the structure; the theme owns the layout,
+ * the map height and the type.
+ */
+
+.places {
+  display: grid;
+  gap: var(--gutter);
+  padding-block: 2rem 4rem;
+}
+
+@media (min-width: 64rem) {
+  .places {
+    grid-template-columns: minmax(0, 20rem) minmax(0, 1fr);
+  }
+}
+
+.places-filters,
+.places-geocoder {
+  display: grid;
+  gap: 1rem;
+}
+
+.places-geocoder {
+  margin-bottom: 1.5rem;
+}
+
+.places-filters[aria-busy='true'] {
+  opacity: 0.6;
+}
+
+.places-facet {
+  display: grid;
+  padding: 0;
+  border: 0;
+  gap: 0.25rem;
+}
+
+.places-facet__option--empty {
+  color: var(--color-mute);
+}
+
+.places-facet__count {
+  margin-left: 0.25rem;
+  color: var(--color-mute);
+}
+
+.places-filters__actions,
+.places-view-switch {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.places-view-switch__link[aria-current='page'] {
+  border-bottom: var(--rule-width) solid var(--color-ink);
+}
+
+.places-list,
+.places-map-items {
+  display: grid;
+  padding: 0;
+  list-style: none;
+  gap: 1rem;
+}
+
+.places-list__item,
+.places-map-items__item {
+  padding-top: 1rem;
+  border-top: var(--rule-width) solid var(--color-rule);
+}
+
+.places-map-items__item[data-active] {
+  border-top-color: var(--color-ink);
+}
+
+.places-item__title {
+  font-size: var(--text-lead);
+}
+
+.places-map__map {
+  display: grid;
+  gap: var(--gutter);
+}
+
+@media (min-width: 64rem) {
+  .places-map__map {
+    grid-template-columns: minmax(0, 18rem) minmax(0, 1fr);
+  }
+}
+
+.places-map__items {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.places-map__canvas {
+  position: relative;
+  min-height: 70vh;
+}
+
+.places-map__search-area {
+  justify-self: start;
+}
+
+.places-pagination__pages {
+  display: flex;
+  padding: 0;
+  list-style: none;
+  gap: 0.75rem;
+}

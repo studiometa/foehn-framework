@@ -79,5 +79,15 @@ return new PageCacheConfig(
         // is a stored file nobody can reach, and a filter the cache does not know is a
         // bypass nobody notices.
         'posts_per_page' => [3, 6, 12],
+        // The venue locator. Text, view and facets are keyed, so an unpositioned search
+        // is a cached page and a cached section response. `near`, `radius` and `bbox`
+        // are left out on purpose: a positioned request is a bypass. The form never
+        // submits them empty, so they never turn an unpositioned search into a bypass.
+        // One word. A text with a space or an accent is outside the characters the
+        // cache writes to a filename, so it is a bypass whatever this pattern says.
+        'q' => '^[A-Za-z0-9-]{1,100}$',
+        'view' => ['list', 'map'],
+        'place_type' => '^[a-z0-9-]+(?:,[a-z0-9-]+)*$',
+        'venue_region' => '^[a-z0-9-]+(?:,[a-z0-9-]+)*$',
     ],
 );

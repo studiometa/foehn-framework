@@ -1,0 +1,32 @@
+{#
+  The map places. Each item is both the sidebar row and the map feature: a
+  MapboxClusterItem with the Mapbox `[lng, lat]` order. `id="place-{ID}"` lets a
+  morph keep the node of a place that stays, and mount or destroy the others.
+
+  The popup is the `popup` ref, read by StoreLocator when the item is selected.
+
+  Context: `result` (PlaceSearchResult), `places` (PlacesView).
+#}
+{% set map_places = result.map() %}
+{% if map_places is empty %}
+  {% include '@places/Empty.twig' with { result, places } only %}
+{% else %}
+  <ul class="places-map-items">
+    {% for place in map_places %}
+      {% set coordinates = place.coordinates() %}
+      {% if coordinates %}
+        <li
+          id="place-{{ place.ID }}"
+          class="places-map-items__item"
+          data-component="MapboxClusterItem"
+          data-option-id="{{ place.ID }}"
+          data-option-lng-lat="{{ coordinates.toLngLat()|json_encode|e }}">
+          {% include '@places/PlaceItem.twig' with { place, result, places } only %}
+          <template data-ref="popup">
+            {% include '@places/PlacePopup.twig' with { place, result, places } only %}
+          </template>
+        </li>
+      {% endif %}
+    {% endfor %}
+  </ul>
+{% endif %}

@@ -1,0 +1,17 @@
+{#
+  The places of the current page of the list.
+
+  Context: `result` (PlaceSearchResult), `places` (PlacesView).
+#}
+{% set list = result.list() %}
+{% if list is empty %}
+  {% include '@places/Empty.twig' with { result, places } only %}
+{% else %}
+  <ol class="places-list">
+    {% for place in list %}
+      <li id="place-{{ place.ID }}" class="places-list__item">
+        {% include '@places/PlaceItem.twig' with { place, result, places } only %}
+      </li>
+    {% endfor %}
+  </ol>
+{% endif %}

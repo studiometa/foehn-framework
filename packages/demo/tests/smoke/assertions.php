@@ -832,6 +832,41 @@ $results->same(
 );
 
 // ──────────────────────────────────────────────
+// Venue locator (studiometa/foehn-places)
+//
+// run.sh seeds the venues with PlaceSeeder before these run. The unit suites render
+// the package templates over stubs; this checks the registration in WordPress.
+// ──────────────────────────────────────────────
+
+$results->true('the place post type is registered', post_type_exists('place'));
+$results->same('its archive is at /venues/', home_url('/venues/'), get_post_type_archive_link('place'));
+$results->true('the project facet taxonomy is attached to place', is_object_in_taxonomy('place', 'venue_region'));
+
+$venues = Studiometa\Foehn\Places\Models\Place::query()->limit(-1)->get();
+
+$results->true('the venues are seeded', count($venues) >= 9);
+$results->true('Place::query() gives the project subclass', ($venues[0] ?? null) instanceof Demo\Models\Venue);
+$results->same(
+    'the venue without coordinates is not locatable',
+    8,
+    count(Studiometa\Foehn\Places\Models\Place::locatable()),
+);
+
+$placesLocations = apply_filters('timber/locations', []);
+
+$results->true('PlacesHooks registers the @places namespace', isset($placesLocations['places']));
+$results->same(
+    'the theme override comes before the package template',
+    get_template_directory() . '/templates/places',
+    $placesLocations['places'][0] ?? null,
+);
+$results->same(
+    'the facet taxonomies of the demo exist on place',
+    ['place_type', 'venue_region'],
+    Studiometa\Foehn\Kernel::get(Studiometa\Foehn\Places\Search\PlaceSearch::class)->facetTaxonomies(),
+);
+
+// ──────────────────────────────────────────────
 // Pre-publish accessibility checks
 //
 // The block post editor gets the checks with their configuration inlined before

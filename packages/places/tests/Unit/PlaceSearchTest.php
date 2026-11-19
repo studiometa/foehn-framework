@@ -383,11 +383,14 @@ describe('PlaceSearch result', function () {
 describe('PlaceSearchResult', function () {
     beforeEach(function () {
         $this->places = [
-            TestPlace::with(1, ['latitude' => 45.0, 'longitude' => 4.0]),
+            TestPlace::with(1, [
+                'latitude' => 45.0,
+                'longitude' => 4.0,
+                'title' => 'Lyon',
+                'link' => 'https://example.com/places/lyon/',
+            ]),
             TestPlace::with(2, ['latitude' => '', 'longitude' => '']),
         ];
-        $this->places[0]->post_title = 'Lyon';
-        $GLOBALS['wp_stub_permalinks'][1] = 'https://example.com/places/lyon/';
     });
 
     it('shows the places in the list view only', function () {

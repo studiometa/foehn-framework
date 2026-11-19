@@ -1,0 +1,90 @@
+{% extends 'layouts/base.twig' %}
+
+{#
+  The venue locator. The package renders the fragments; this page owns the layout.
+
+  The geocoder and the map are outside every section: a Fetch update morphs the four
+  sections, and never the Mapbox input or the map canvas. In the map view the results
+  section sits inside the map shell's MapboxCluster, through the `items` block.
+
+  The list and the map are two pages of one URL: the view switch in the summary is a
+  normal link, so the map scripts load on the map page only.
+#}
+{% block content %}
+  <section class="shell masthead">
+    <p class="label label--ink">
+      Where to see the work
+    </p>
+    <h1 class="title" style="margin-top: 0.75rem">Venues</h1>
+    {{
+      foehn_section(
+        'place-summary',
+        {
+          result,
+          places
+        }
+      )
+    }}
+  </section>
+
+  <div class="shell places places--{{ result.request.view|e }}">
+    <aside class="places__filters">
+      {% include '@places/Geocoder.twig' with {
+        result,
+        places
+      } only %}
+      {{
+        foehn_section(
+          'place-filters',
+          {
+            result,
+            places
+          }
+        )
+      }}
+    </aside>
+
+    <div class="places__results">
+      {% if result.request.view == 'map' and not result.invalid %}
+        {% embed '@places/Map.twig'
+          with {
+            result,
+            places
+          } only
+        %}
+          {% block items %}
+            {{
+              foehn_section(
+                'place-results',
+                {
+                  result,
+                  places
+                }
+              )
+            }}
+          {% endblock %}
+        {% endembed %}
+      {% else %}
+        {{
+          foehn_section(
+            'place-results',
+            {
+              result,
+              places
+            }
+          )
+        }}
+      {% endif %}
+
+      {{
+        foehn_section(
+          'place-pagination',
+          {
+            result,
+            places
+          }
+        )
+      }}
+    </div>
+  </div>
+{% endblock %}

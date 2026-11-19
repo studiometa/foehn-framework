@@ -1,0 +1,27 @@
+{#
+  One facet group: a checkbox per term, with the number of places it gives within the
+  current text and position scope. `name[]` is the taxonomy's own query var.
+
+  An option that gives no place is disabled, unless it is selected, so it can be undone.
+
+  Context: `taxonomy`, `options` (list of FacetOption), `label`.
+#}
+{% if options is not empty %}
+  <fieldset class="places-facet" data-taxonomy="{{ taxonomy|e }}">
+    <legend>{{ label|esc_html }}</legend>
+    {% for option in options %}
+      <label class="places-facet__option{% if option.isEmpty() %} places-facet__option--empty{% endif %}">
+        <input
+          type="checkbox"
+          name="{{ taxonomy|e }}[]"
+          value="{{ option.term.slug|e }}"
+          {% if option.active %}checked{% endif %}
+          {% if option.isEmpty() and not option.active %}disabled{% endif %}>
+        <span class="places-facet__name">{{ option.term.name|esc_html }}</span>
+        {% if option.count is not null %}
+          <span class="places-facet__count">{{ option.count }}</span>
+        {% endif %}
+      </label>
+    {% endfor %}
+  </fieldset>
+{% endif %}

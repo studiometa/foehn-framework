@@ -1,0 +1,40 @@
+{#
+  One place in the list and in the map sidebar. Override it in
+  `templates/places/PlaceItem.twig` to show project fields of a Place subclass.
+
+  Context: `place` (Place), `result` (PlaceSearchResult), `places` (PlacesView).
+#}
+{% set distance = result.distance(place) %}
+{% set types = place.types() %}
+{% set lines = place.addressLines() %}
+<article class="places-item">
+  <h3 class="places-item__title">
+    <a href="{{ place.link()|esc_url }}">{{ place.title()|esc_html }}</a>
+  </h3>
+  {% if distance is not null %}
+    <p class="places-item__distance">{{ places.distance(distance)|esc_html }}</p>
+  {% endif %}
+  {% if types is not empty %}
+    <p class="places-item__types">{{ types|map(type => type.name)|join(', ')|esc_html }}</p>
+  {% endif %}
+  {% if lines is not empty %}
+    <address class="places-item__address">
+      {% for line in lines %}
+        {{ line|esc_html }}{% if not loop.last %}<br>{% endif %}
+      {% endfor %}
+    </address>
+  {% endif %}
+  {% if place.phone() or place.email() or place.website() %}
+    <ul class="places-item__contact">
+      {% if place.phoneUri() %}
+        <li><a href="{{ place.phoneUri()|esc_url }}">{{ place.phone()|esc_html }}</a></li>
+      {% endif %}
+      {% if place.email() %}
+        <li><a href="mailto:{{ place.email()|e }}">{{ place.email()|esc_html }}</a></li>
+      {% endif %}
+      {% if place.website() %}
+        <li><a href="{{ place.website()|esc_url }}" rel="noopener">{{ __('Website', 'foehn-places')|esc_html }}</a></li>
+      {% endif %}
+    </ul>
+  {% endif %}
+</article>

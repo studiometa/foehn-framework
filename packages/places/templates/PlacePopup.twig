@@ -1,0 +1,14 @@
+{#
+  The map popup of a selected place.
+
+  Context: `place` (Place), `result` (PlaceSearchResult), `places` (PlacesView).
+#}
+<div class="places-popup">
+  <p class="places-popup__title">
+    <a href="{{ place.link()|esc_url }}">{{ place.title()|esc_html }}</a>
+  </p>
+  {% set lines = place.addressLines() %}
+  {% if lines is not empty %}
+    <p class="places-popup__address">{{ lines|join(', ')|esc_html }}</p>
+  {% endif %}
+</div>

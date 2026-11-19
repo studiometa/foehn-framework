@@ -7,7 +7,6 @@ namespace Studiometa\Foehn\Places\Hooks;
 use Studiometa\Foehn\Attributes\AsAction;
 use Studiometa\Foehn\Attributes\AsFilter;
 use Studiometa\Foehn\Places\Admin\PlaceMetaBox;
-use Studiometa\Foehn\Places\Admin\PlacesSettings;
 use Studiometa\Foehn\Places\Config\PlacesConfig;
 use Studiometa\Foehn\Places\Models\Place;
 use Studiometa\Foehn\Places\Search\PlaceSearch;
@@ -18,6 +17,9 @@ use WP_Query;
  */
 final readonly class PlacesHooks
 {
+    /** The package templates. */
+    public const string TEMPLATES = __DIR__ . '/../../templates';
+
     public function __construct(
         private PlacesConfig $config,
         private PlaceSearch $search,
@@ -172,10 +174,42 @@ final readonly class PlacesHooks
     }
 
     /**
-     * The resolved Mapbox token, for templates.
+     * Register the `@places` and `@places-pkg` Twig namespaces.
+     *
+     * @param array<int|string, list<string>> $locations
+     * @return array<int|string, list<string>>
      */
-    public function accessToken(): string
+    #[AsFilter('timber/locations')]
+    public function templateLocations(array $locations): array
     {
-        return PlacesSettings::accessToken($this->config);
+        return self::locations($locations, get_stylesheet_directory(), get_template_directory());
+    }
+
+    /**
+     * `@places` looks in `templates/places/` of the child theme, then of the parent
+     * theme, then in the package. `@places-pkg` is the package alone, so an override
+     * can extend or include the template it replaces.
+     *
+     * A theme directory that does not exist is left out: Twig refuses a missing path.
+     *
+     * @param array<int|string, list<string>> $locations
+     * @return array<int|string, list<string>>
+     */
+    public static function locations(array $locations, string $stylesheetDirectory, string $templateDirectory): array
+    {
+        $paths = [];
+
+        foreach (array_unique([$stylesheetDirectory, $templateDirectory]) as $directory) {
+            $path = rtrim($directory, '/') . '/templates/places';
+
+            if (is_dir($path)) {
+                $paths[] = $path;
+            }
+        }
+
+        $locations['places'] = [...$paths, self::TEMPLATES];
+        $locations['places-pkg'] = [self::TEMPLATES];
+
+        return $locations;
     }
 }

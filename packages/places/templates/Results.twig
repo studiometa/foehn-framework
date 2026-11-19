@@ -1,0 +1,25 @@
+{#
+  The result of the request, in its view: the list, or the map items.
+
+  `data-bounds` carries the area to frame, read by the form after a Fetch update. A
+  `bbox` request and an empty result have none, so the map keeps its viewport.
+
+  Context: `result` (PlaceSearchResult), `places` (PlacesView).
+#}
+<div
+  class="places-results places-results--{{ result.request.view|e }}"
+  {% if result.bounds %}data-bounds="{{ result.bounds|json_encode|e }}"{% endif %}>
+  {% if result.invalid %}
+    {% include '@places/Empty.twig' with { result, places } only %}
+  {% elseif result.request.view == 'map' %}
+    {% if result.mapLimitExceeded %}
+      <p class="places-results__refine">
+        {{ __('%d places match: more than a map shows. Refine the search to see them on the map.', 'foehn-places')|format(result.total)|esc_html }}
+      </p>
+    {% else %}
+      {% include '@places/MapItems.twig' with { result, places } only %}
+    {% endif %}
+  {% else %}
+    {% include '@places/PlaceList.twig' with { result, places } only %}
+  {% endif %}
+</div>

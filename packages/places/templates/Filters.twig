@@ -1,0 +1,114 @@
+{#
+  The search form of the place locator, inside the `place-filters` section.
+
+  A plain GET form: without JavaScript it reloads the archive with the search. With
+  JavaScript, `Fetch` requests the four place sections and morphs them, and history
+  receives the archive URL with the form fields, never the section URL.
+
+  `morph` keeps the form node, its Fetch instance and the focused control. The
+  `[data-foehn-section]` selector updates the sections only, so a back or forward
+  navigation, which fetches the full page, never touches the map.
+
+  A position control exists only when its feature is on, and stays disabled while it
+  is empty: the form never submits `near=` or `bbox=`, so an unpositioned search
+  stays cacheable.
+
+  Context: `result` (PlaceSearchResult), `places` (PlacesView).
+#}
+{% set request = result.request %}
+{% set archive_url = places.archiveUrl() %}
+<form
+  id="place-search"
+  class="places-filters"
+  action="{{ archive_url|esc_url }}"
+  method="get"
+  role="search"
+  data-component="Action Fetch"
+  data-option-history
+  data-option-mode="morph"
+  data-option-selector="[data-foehn-section]"
+  data-option-params="{{ {foehn_sections: places.sections()}|json_encode|e }}"
+  data-loading-text="{{ __('Loading places…', 'foehn-places')|e }}"
+  data-error-text="{{ __('The places could not be loaded. The previous result is still shown.', 'foehn-places')|e }}"
+  data-on:change.debounce300="() => $el.requestSubmit()"
+  data-on:fetch-before="() => {
+    const status = document.getElementById('place-status');
+    if (status) status.textContent = $el.dataset.loadingText;
+    $el.setAttribute('aria-busy', 'true');
+  }"
+  data-on:fetch-error="() => {
+    const status = document.getElementById('place-status');
+    if (status) status.textContent = $el.dataset.errorText;
+  }"
+  data-on:fetch-after="() => $el.removeAttribute('aria-busy')"
+  data-on:fetch-update-after="MapboxMap(#place-map) -> () => {
+    const bounds = document.querySelector('#foehn-section-place-results [data-bounds]')?.dataset.bounds;
+    if (bounds) target.map.fitBounds(JSON.parse(bounds), { padding: 60, maxZoom: 12 });
+  }">
+  <div class="places-filters__search">
+    <label for="place-search-q">{{ __('Search', 'foehn-places')|esc_html }}</label>
+    <input
+      id="place-search-q"
+      type="search"
+      name="q"
+      maxlength="100"
+      value="{{ request.q|e }}">
+  </div>
+
+  {% if request.view != 'list' %}
+    <input type="hidden" name="view" value="{{ request.view|e }}">
+  {% endif %}
+
+  {% if result.features.near %}
+    <input
+      type="hidden"
+      name="near"
+      value="{{ request.near|e }}"
+      {% if not request.near %}disabled{% endif %}>
+    {% if request.near %}
+      <div class="places-filters__radius">
+        <label for="place-search-radius">{{ __('Distance', 'foehn-places')|esc_html }}</label>
+        <select id="place-search-radius" name="radius">
+          {% for kilometres in places.config.radiusOptions %}
+            <option value="{{ kilometres }}" {% if kilometres == request.radius %}selected{% endif %}>
+              {{ __('%d km', 'foehn-places')|format(kilometres)|esc_html }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+    {% endif %}
+  {% endif %}
+
+  {% if result.features.area %}
+    <input
+      type="hidden"
+      name="bbox"
+      value="{{ request.bbox|e }}"
+      {% if not request.bbox %}disabled{% endif %}>
+  {% endif %}
+
+  {% for taxonomy, options in result.facets %}
+    {% include '@places/Facet.twig' with {
+      taxonomy,
+      options,
+      label: places.taxonomyLabel(taxonomy),
+    } only %}
+  {% endfor %}
+
+  <div class="places-filters__actions">
+    <button type="submit">{{ __('Search', 'foehn-places')|esc_html }}</button>
+    {% if request.isPositioned() %}
+      {% set clear_url = places.url(request, { near: null, radius: null, bbox: null }) %}
+      <a
+        class="places-filters__clear"
+        href="{{ clear_url|esc_url }}"
+        data-component="Fetch"
+        data-option-history
+        data-option-mode="morph"
+        data-option-selector="[data-foehn-section]"
+        data-option-params="{{ {foehn_sections: places.sections()}|json_encode|e }}">
+        {{ __('Clear position', 'foehn-places')|esc_html }}
+      </a>
+    {% endif %}
+  </div>
+</form>

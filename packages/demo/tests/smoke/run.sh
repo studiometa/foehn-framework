@@ -87,6 +87,11 @@ $(ddev exec 'cd /var/www/html && wp media import tests/smoke/fixtures/uploads-pr
 
 printf '✓ an image imported into the media library (attachment %s)\n' "$attachment"
 
+# The venues of the place locator are not in the database dump: seed them, and flush
+# the rules of the /venues/ archive that the place post type adds.
+ddev exec 'cd /var/www/html && wp foehn seed --class=PlaceSeeder && wp foehn rewrite:flush' >/dev/null ||
+	fail 'could not seed the venues of the place locator'
+
 ddev exec "cd /var/www/html && wp eval-file tests/smoke/assertions.php $attachment" ||
 	fail 'integration assertions failed'
 
@@ -302,6 +307,28 @@ fi
 printf '✓ %s\n' "a project without the prints checkbox prints no contact"
 # The footer links every page to it, so a missing page is a 404 on every page.
 check_page "/legal/" "Unsplash licence" "the legal page the footer links to exists"
+
+# The venue locator. Without JavaScript the archive is a searchable, filterable list:
+# a GET form, the facets, and the server-rendered result.
+check_page "/venues/" 'id="place-search"' "the venue locator renders its search form"
+check_page "/venues/" 'name="place_type\[\]"' "the venue locator renders the place_type facet"
+check_page "/venues/" 'name="venue_region\[\]"' "the venue locator renders the project facet"
+check_page "/venues/" 'id="foehn-section-place-results"' "the venue results are a section"
+check_page "/venues/?q=lyon" "Halle aux photographies" "a text search finds a venue by its city"
+check_page "/venues/?near=45.764,4.8357&radius=10" "places-item__distance" "a radius search shows distances"
+check_page "/venues/" "places-item__hours" "the theme override of PlaceItem shows the project field"
+check_page "/venues/?view=map" "places-map" "the map view renders the map shell, or its unavailable state"
+# The Fetch elements add the section selection to their own destination with `params`,
+# never with a `src` that would carry one page's path into every history entry.
+check_page "/venues/" 'data-option-params="{&quot;foehn_sections&quot;:&quot;place-filters,place-summary,place-results,place-pagination&quot;}"' "the venue locator requests its sections through params"
+check_page "/venues/?q=lyon&foehn_sections=place-filters,place-summary,place-results,place-pagination" 'data-foehn-section="place-pagination"' "a section request answers the four place sections"
+
+# A request that breaks the contract answers 400, for the page and for its sections.
+for path in "/venues/?view=globe" "/venues/?place_type=unknown" "/venues/?view=globe&foehn_sections=place-results"; do
+	status="$(curl -sk -o /dev/null -w '%{http_code}' "$url$path")"
+	[ "$status" = "400" ] || fail "GET $path returned HTTP $status, not 400"
+done
+printf '✓ %s\n' "an invalid venue search answers 400, page and sections"
 
 # The journal is where the content blocks are seen. Each needle is the block's own
 # markup, so a block that rendered nothing fails here.

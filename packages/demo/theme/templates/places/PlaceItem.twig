@@ -1,0 +1,11 @@
+{#
+  A theme override of the package `PlaceItem.twig`: the package item, then the opening
+  hours of the `Venue` subclass. `@places-pkg` reaches the package template, so the
+  override adds to it without copying it.
+#}
+{% include '@places-pkg/PlaceItem.twig' %}
+{% if place.openingHours is defined and place.openingHours() %}
+  <p class="places-item__hours label">
+    {{ place.openingHours()|e }}
+  </p>
+{% endif %}

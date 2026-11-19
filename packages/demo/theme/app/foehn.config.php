@@ -22,6 +22,7 @@ use Studiometa\Foehn\Hooks\YouTubeNoCookieHooks;
 use Studiometa\Foehn\Images\ContentImageHooks;
 use Studiometa\Foehn\Images\GlideTransformer;
 use Studiometa\Foehn\Images\ImageCacheHooks;
+use Studiometa\Foehn\Places\Hooks\PlacesHooks;
 use Tempest\Discovery\DiscoveryCacheStrategy;
 
 return new FoehnConfig(
@@ -79,5 +80,8 @@ return new FoehnConfig(
         // endpoint is the only one its constants can describe.
         S3UploadsEndpoint::class,
         YouTubeNoCookieHooks::class,
+        // The venue locator at /venues/: the place meta box, the search of the
+        // archive, and the @places Twig namespaces. See app/places.config.php.
+        PlacesHooks::class,
     ],
 );
