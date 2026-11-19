@@ -10,6 +10,7 @@ declare(strict_types=1);
  * once WP-CLI has loaded WordPress.
  */
 
+use Studiometa\Foehn\Search\Attributes\AsSearchDocument;
 use Studiometa\Foehn\Search\Contracts\SearchDocumentInterface;
 use Studiometa\Foehn\Search\Discovery\SearchDocumentDiscovery;
 use Studiometa\Foehn\Search\Document;
@@ -18,6 +19,7 @@ use Tempest\Reflection\ClassReflector;
 
 use function Tempest\Container\get;
 
+#[AsSearchDocument(postType: 'post')]
 final class SmokeSearchDocument implements SearchDocumentInterface
 {
     public function toDocument(WP_Post $post): ?array
