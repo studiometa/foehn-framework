@@ -102,6 +102,7 @@ Written once here because every spec depends on them.
 - **Register on the hook that owns the API**, through the discovery phase — never at boot.
 - **A missing platform function is a skip, not a fatal**, with a notice when `FoehnConfig::debug` is on.
 - **Unit tests over stubs are load-bearing but not sufficient.** The 2026-08-19 fatal error passed 1409 of them. Anything that registers with WordPress needs a line in `packages/starter/tests/framework-smoke/` (the framework suite, run against the starter, not shipped to projects).
+- **The demo and the starter follow the framework.** Each addition, refactoring or removal in `packages/foehn` or in an additional package (`foehn-acf`, `foehn-places`, `foehn-search`, and the next ones) updates `packages/demo` and `packages/starter` in the same pull request. The demo uses each new feature, so it is a maintained example of it. The starter uses a new feature when a new project needs it. Neither keeps code for a changed or removed API. A pull request that changes neither says why in its description.
 
 ### Rejected, with reasons
 
