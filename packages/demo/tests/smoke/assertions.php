@@ -399,10 +399,21 @@ $results->containsAll(
     array_keys($registered),
 );
 
-$results->same(
-    'demo settings are grouped under the page slug',
-    'theme-settings',
-    $registered['demo_show_banner']['group'] ?? null,
+// The group is what options.php checks a save against. With Polylang, the page of
+// each other language has its own group, which saves the translation of a
+// translatable setting: demo_banner_text_fr in theme-settings_fr.
+$groups = $GLOBALS['new_allowed_options'] ?? [];
+
+$results->true('demo settings are grouped under the page slug', in_array(
+    'demo_show_banner',
+    $groups['theme-settings'] ?? [],
+    true,
+));
+
+$results->true(
+    'the French page saves the French banner text',
+    in_array('demo_banner_text_fr', $groups['theme-settings_fr'] ?? [], true)
+    && !in_array('demo_banner_text', $groups['theme-settings_fr'] ?? [], true),
 );
 
 // The declared default, which get_option() alone does not answer with until the
@@ -481,11 +492,11 @@ $results->true('the settings form escapes a quote in a text value', str_contains
 // under the section id. Its controls are added on `customize_register`, which only
 // the Customizer fires: firing it here with a real manager is the only way to know
 // the section, the settings and the controls reach WordPress's own classes.
-$results->same(
-    'Customizer settings are grouped under the section id',
-    'demo_studio',
-    $registered['demo_studio_address']['group'] ?? null,
-);
+$results->true('Customizer settings are grouped under the section id', in_array(
+    'demo_studio_address',
+    $groups['demo_studio'] ?? [],
+    true,
+));
 
 require_once ABSPATH . WPINC . '/class-wp-customize-manager.php';
 

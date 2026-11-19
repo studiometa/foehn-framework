@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Demo\Seeders\JournalSeeder;
+use Demo\Seeders\LanguageSeeder;
 use Demo\Seeders\MediaSeeder;
 use Demo\Seeders\MenuSeeder;
 use Demo\Seeders\PageSeeder;
@@ -54,6 +55,7 @@ describe('Seeders', function () {
             TestimonialSeeder::class,
             SettingsSeeder::class,
             MenuSeeder::class,
+            LanguageSeeder::class,
         ];
 
         $orders = [];

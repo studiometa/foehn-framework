@@ -98,7 +98,7 @@ foehn_demo_seed() {
     # volume seeded at an older revision runs them again, which the seeders allow
     # because they find what they wrote by slug or by meta. A deploy that adds a page
     # then reaches the volume already serving the site.
-    foehn_demo_revision=3
+    foehn_demo_revision=4
 
     # The marker, and not `wp core is-installed`. The two answer different
     # questions, and the difference is a state this script reached on its first
@@ -174,6 +174,13 @@ foehn_demo_seed() {
     # warm-up of the page cache. Before the seeders: saving a project queues a job.
     if ! foehn_demo_run 'wp plugin activate action-scheduler'; then
         echo "🛑 ERROR ($script_name): the Action Scheduler plugin could not be activated. The container will not start." >&2
+        return 1
+    fi
+
+    # Polylang, which gives the site English and French. Before the seeders:
+    # LanguageSeeder adds the languages, and writes nothing without the plugin.
+    if ! foehn_demo_run 'wp plugin activate polylang'; then
+        echo "🛑 ERROR ($script_name): the Polylang plugin could not be activated. The container will not start." >&2
         return 1
     fi
 
