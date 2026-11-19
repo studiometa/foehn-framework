@@ -16,8 +16,6 @@ use Studiometa\Foehn\Seeders\Upsert;
  * English, the default language. The French home page "Accueil" is the translation
  * of Home, so the language switcher links the two front pages. The other pages are
  * in English only, and their switcher links French to the French home page.
- *
- * Without Polylang, the site has one language and there is nothing to write.
  */
 #[AsSeeder(order: 70, description: 'English and French with Polylang, and the French home page')]
 final class LanguageSeeder implements SeederInterface
@@ -31,7 +29,7 @@ final class LanguageSeeder implements SeederInterface
     public function run(): void
     {
         if (!function_exists('PLL')) {
-            return;
+            throw new RuntimeException('Polylang is not active. Run `wp plugin activate polylang` first.');
         }
 
         $model = PLL()->model;

@@ -178,7 +178,7 @@ foehn_demo_seed() {
     fi
 
     # Polylang, which gives the site English and French. Before the seeders:
-    # LanguageSeeder adds the languages, and writes nothing without the plugin.
+    # LanguageSeeder adds the languages.
     if ! foehn_demo_run 'wp plugin activate polylang'; then
         echo "🛑 ERROR ($script_name): the Polylang plugin could not be activated. The container will not start." >&2
         return 1
