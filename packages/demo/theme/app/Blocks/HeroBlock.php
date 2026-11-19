@@ -74,14 +74,17 @@ final readonly class HeroBlock implements BlockInterface
                     'full' => 'Full screen',
                 ],
             ],
-            // h1 when the hero opens the page and carries its title, h2 further down.
+            // 1 when the hero opens the page and carries its title, 2 further down. The
+            // `headingLevel` control gives the level to the pre-publish checks, which
+            // refuse a second level 1 heading.
             'headingLevel' => [
-                'type' => 'string',
-                'default' => 'h1',
+                'type' => 'integer',
+                'default' => 1,
+                'control' => 'headingLevel',
                 'label' => 'Heading level',
                 'options' => [
-                    'h1' => 'Page title (h1)',
-                    'h2' => 'Section title (h2)',
+                    1 => 'Page title (H1)',
+                    2 => 'Section title (H2)',
                 ],
             ],
             'ctaLabel' => [
@@ -124,7 +127,7 @@ final readonly class HeroBlock implements BlockInterface
             background: ImageData::fromAttachmentId($attributes['backgroundId'] ?? null, 'hero'),
             cta: self::cta($attributes),
             height: (string) ($attributes['height'] ?? 'medium'),
-            headingLevel: ($attributes['headingLevel'] ?? 'h1') === 'h2' ? 'h2' : 'h1',
+            headingLevel: ($attributes['headingLevel'] ?? 1) === 2 ? 'h2' : 'h1',
         );
     }
 

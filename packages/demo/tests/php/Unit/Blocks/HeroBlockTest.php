@@ -37,6 +37,10 @@ describe('HeroBlock', function () {
         expect($attributes['height']['default'])->toBe('medium');
         expect($attributes['subtitle']['control'])->toBe('textarea');
         expect($attributes['backgroundId']['control'])->toBe('image');
+        // The pre-publish checks read the image and the heading level through these controls.
+        expect($attributes['headingLevel']['control'])->toBe('headingLevel');
+        expect($attributes['headingLevel']['options'])->toHaveKeys([1, 2]);
+        expect($attributes['headingLevel']['default'])->toBe(1);
     });
 
     it('compose() returns a HeroContext DTO', function () {
@@ -50,6 +54,16 @@ describe('HeroBlock', function () {
         expect($result->height)->toBe('full');
         expect($result->headingLevel)->toBe('h1');
     });
+
+    it('renders the heading level as an h1 or an h2', function (mixed $level, string $element) {
+        $result = new HeroBlock(createFakeViewEngine())->compose(['headingLevel' => $level], '', new WP_Block());
+
+        expect($result->headingLevel)->toBe($element);
+    })->with([
+        'level 1' => [1, 'h1'],
+        'level 2' => [2, 'h2'],
+        'any other value' => [3, 'h1'],
+    ]);
 
     it('composes a call to action from the three attributes that replace the link field', function () {
         $block = new HeroBlock(createFakeViewEngine());
