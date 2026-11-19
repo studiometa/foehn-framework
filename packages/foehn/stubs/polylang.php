@@ -20,6 +20,8 @@ function pll_default_language(string $field = 'slug'): string|false {}
 
 function pll_current_language(string $field = 'slug'): string|false {}
 
+function pll_is_translated_post_type(string $post_type): bool {}
+
 function pll_get_post_language(int $post_id, string $field = 'slug'): string|false {}
 
 function pll_get_term_language(int $term_id, string $field = 'slug'): string|false {}

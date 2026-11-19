@@ -285,14 +285,17 @@ final class PlaceSearch
      *
      * A WP_Query with filters on, so a multilingual plugin applies its language
      * clause, and the current language is passed and checked again: the result does
-     * not depend on the settings of the plugin.
+     * not depend on the settings of the plugin. When the plugin does not translate
+     * places, places have no language and every place is a candidate.
      *
      * @return list<array{id: int, text: string, coordinates: PlaceCoordinates}>
      */
     private function candidates(): array
     {
         $multilingual = multilingual();
-        $language = $multilingual?->currentLanguage();
+        $language = $multilingual?->isTranslatedPostType(Place::POST_TYPE) === true
+            ? $multilingual->currentLanguage()
+            : null;
         $args = [
             'post_type' => Place::POST_TYPE,
             'post_status' => 'publish',

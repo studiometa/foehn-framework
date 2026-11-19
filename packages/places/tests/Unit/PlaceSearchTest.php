@@ -154,6 +154,15 @@ describe('PlaceSearch eligible places', function () {
         expect(placeSearch()->eligibleIds(new PlaceSearchRequest()))->toBe([2, 5]);
         expect($GLOBALS['places_stub_candidate_vars']['lang'])->toBe('en');
     });
+
+    it('includes every place when the multilingual plugin does not translate places', function () {
+        $GLOBALS['pll_stub_languages'] = ['fr' => 'Français', 'en' => 'English'];
+        $GLOBALS['pll_stub_current'] = 'en';
+        $GLOBALS['pll_stub_untranslated_post_types'] = ['place'];
+
+        expect(placeSearch()->eligibleIds(new PlaceSearchRequest()))->toBe([1, 2, 3, 5]);
+        expect($GLOBALS['places_stub_candidate_vars'])->not->toHaveKey('lang');
+    });
 });
 
 describe('PlaceSearch facet taxonomies', function () {

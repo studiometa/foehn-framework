@@ -42,6 +42,12 @@ interface Multilingual
     public function languages(): array;
 
     /**
+     * Whether the posts of a post type have a language and translations. The posts of
+     * a post type that is not translated have no language, and show in every language.
+     */
+    public function isTranslatedPostType(string $postType): bool;
+
+    /**
      * The code of the language of a post or a term, whatever its status, or null when
      * it has none.
      */

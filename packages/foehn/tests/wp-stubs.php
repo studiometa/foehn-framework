@@ -114,6 +114,7 @@ function wp_stub_reset(): void
     $GLOBALS['pll_stub_current'] = null;
     $GLOBALS['pll_stub_post_translations'] = [];
     $GLOBALS['pll_stub_term_translations'] = [];
+    $GLOBALS['pll_stub_untranslated_post_types'] = [];
     $GLOBALS['wp_stub_current_time'] = '2026-11-16 10:00:00';
 
     // The admin controls read all four. A referer left behind would make a redirect land
