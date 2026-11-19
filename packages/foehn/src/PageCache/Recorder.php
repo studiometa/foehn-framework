@@ -100,7 +100,7 @@ final class Recorder
         $this->write(fn(): bool => $this->store->put($key, $body, $status, $headers));
 
         // A page with a scheduled block goes stale at a date, with no edit to purge on.
-        $this->schedule->record($key);
+        $this->schedule->record($key, $_SERVER['REQUEST_URI'] ?? '');
 
         DebugHeaders::send($this->config, DebugHeaders::STATE_MISS);
 

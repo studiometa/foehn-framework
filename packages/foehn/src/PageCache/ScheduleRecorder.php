@@ -23,8 +23,12 @@ final readonly class ScheduleRecorder
 
     /**
      * Record the URL of a stored page when the page has a scheduled change.
+     *
+     * The URL is the one the page was requested at, which is its canonical URL: WordPress
+     * redirects any other spelling of a page to that one, and the page cache stores no
+     * redirect. The key has no trailing slash, so it is added back when the request had one.
      */
-    public function record(CacheKey $key): void
+    public function record(CacheKey $key, string $requestUri): void
     {
         $at = $this->schedule->nextChange();
 
@@ -35,6 +39,10 @@ final readonly class ScheduleRecorder
         // The key holds the decoded path. Encoded again, so a `?` or a `#` in a segment
         // stays in the path when the job reads the URL back.
         $path = implode('/', array_map(rawurlencode(...), explode('/', $key->path)));
+
+        if ($path !== '/' && str_ends_with(explode('?', $requestUri, 2)[0], '/')) {
+            $path .= '/';
+        }
 
         $this->store->record((is_ssl() ? 'https://' : 'http://') . $key->host . $path, $at);
     }

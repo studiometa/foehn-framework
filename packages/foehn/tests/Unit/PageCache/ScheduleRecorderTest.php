@@ -56,7 +56,27 @@ describe('ScheduleRecorder', function () {
 
         ($this->recorder)()->onFlush(pageCacheBody());
 
+        expect($this->store->all())->toBe(['http://example.com/offers/' => $this->from->getTimestamp()]);
+    });
+
+    it('records the URL as it was requested, the canonical one, also without a trailing slash', function () {
+        // WordPress redirects any other spelling to the canonical URL, and a redirect is not
+        // stored. So the requested URL is the one the purge and a visitor use.
+        $_SERVER = pageCacheServer(['REQUEST_URI' => '/offers']);
+        ($this->renderScheduled)();
+
+        ($this->recorder)()->onFlush(pageCacheBody());
+
         expect($this->store->all())->toBe(['http://example.com/offers' => $this->from->getTimestamp()]);
+    });
+
+    it('records the home page as the site root', function () {
+        $_SERVER = pageCacheServer(['REQUEST_URI' => '/']);
+        ($this->renderScheduled)();
+
+        ($this->recorder)()->onFlush(pageCacheBody());
+
+        expect($this->store->all())->toBe(['http://example.com/' => $this->from->getTimestamp()]);
     });
 
     it('records an encoded URL, which the invalidator decodes to the same page', function () {
@@ -65,7 +85,7 @@ describe('ScheduleRecorder', function () {
 
         ($this->recorder)()->onFlush(pageCacheBody());
 
-        expect($this->store->all())->toBe(['http://example.com/caf%C3%A9' => $this->from->getTimestamp()]);
+        expect($this->store->all())->toBe(['http://example.com/caf%C3%A9/' => $this->from->getTimestamp()]);
     });
 
     it('records nothing for a page without a scheduled change', function () {
