@@ -40,6 +40,9 @@ final readonly class SearchGroups
         $vars['post_type'] = $this->documents->postTypes();
         $vars['fields'] = 'ids';
         $vars['posts_per_page'] = -1;
+        // The vars of a query that ran hold `nopaging => false`, and WordPress reads -1
+        // as "no limit" only when `nopaging` is not set: it would write `LIMIT 0, -1`.
+        $vars['nopaging'] = true;
         $vars['no_found_rows'] = true;
 
         $ids = array_map(intval(...), new WP_Query($vars)->posts);

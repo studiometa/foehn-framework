@@ -59,6 +59,7 @@ it('counts every searchable post type with the other filters kept', function () 
     $query->set('post_type', 'post');
     $query->set('category_name', 'news');
     $query->set('paged', 3);
+    $query->set('nopaging', false);
     $query->set(SearchQuery::QUERY_VAR, true);
 
     expect($this->groups->for($query))->toBe([]);
@@ -67,6 +68,7 @@ it('counts every searchable post type with the other filters kept', function () 
         'category_name' => 'news',
         'fields' => 'ids',
         'posts_per_page' => -1,
+        'nopaging' => true,
     ]);
     expect($seen)->not->toHaveKey('paged');
 });
