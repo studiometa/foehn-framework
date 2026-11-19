@@ -851,7 +851,12 @@ do_action('enqueue_block_editor_assets');
 
 $prepublishScript = (string) wp_scripts()->get_inline_script_data(PrepublishChecks::HANDLE, 'before');
 $prepublish = json_decode(
-    (string) preg_replace('/^window\.foehnPrepublishChecks = (.*);$/s', '$1', $prepublishScript),
+    // WordPress appends a sourceURL comment to an inline script.
+    (string) preg_replace(
+        '/^window\.foehnPrepublishChecks = (.*?);\s*(?:\/\/# sourceURL=\S*\s*)?$/s',
+        '$1',
+        $prepublishScript,
+    ),
     true,
 );
 
