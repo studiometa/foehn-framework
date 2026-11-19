@@ -7,7 +7,11 @@
 # `ddev wp foehn inspect --format=json | jq` fails, and so does an agent that
 # reads that JSON. This is the phar upstream would build, with those two
 # dependencies moved forward inside the ranges WP-CLI already declares.
-FROM composer:2 AS wp-cli
+FROM php:8.5-cli-alpine AS wp-cli
+
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+RUN apk add --no-cache git unzip
 
 WORKDIR /build
 

@@ -7,7 +7,11 @@
 # `ddev wp foehn inspect --format=json | jq` échoue, et un agent qui lit ce JSON
 # aussi. Ce phar est celui qu'upstream construirait, avec ces deux dépendances
 # avancées dans les plages que WP-CLI déclare déjà.
-FROM composer:2 AS wp-cli
+FROM php:8.5-cli-alpine AS wp-cli
+
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+RUN apk add --no-cache git unzip
 
 WORKDIR /build
 

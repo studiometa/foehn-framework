@@ -48,8 +48,16 @@ ARG PHP_VERSION=8.5
 # `symfony/finder` raises two on PHP 8.5; they are upstream's build tool's, not
 # the phar's, and a log that shows them is a log that hides the line that
 # failed.
+#
+# The stage runs on the PHP of the runtime, not on the `composer:2` image: that
+# image follows the newest PHP, and its PHP 8.6 build (2026-11-19) has no
+# `mbstring`, which Composer needs to edit the bundle.
 ###############################################################################
-FROM composer:2 AS wp-cli
+FROM php:8.5-cli-alpine AS wp-cli
+
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+RUN apk add --no-cache git unzip
 
 WORKDIR /build
 
