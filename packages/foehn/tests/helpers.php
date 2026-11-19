@@ -852,29 +852,63 @@ function pageCacheBucketEnv(array $variables = []): void
 }
 
 /**
- * A `wpdb` whose `get_col()` reads the stubbed options, for {@see \Studiometa\Foehn\PageCache\ScheduleStore}.
+ * A `wpdb` over the stubbed options, for {@see \Studiometa\Foehn\PageCache\ScheduleStore}.
  *
- * It answers the one query the store makes: the values of the options whose name starts
- * with a prefix, serialized as the database holds them.
+ * It answers the two queries the store makes. `get_col()` returns the values of the
+ * options whose name starts with a prefix, as the database holds them.
+ * `query()` runs the upsert of a record as MariaDB does: it adds the option, or keeps
+ * the smaller of the stored value and the new one, compared as strings.
  */
 function scheduleStoreDatabase(): wpdb
 {
     return new class extends wpdb {
         public function prepare(string $query, mixed ...$args): string
         {
-            return str_replace('%s', "'" . (string) $args[0] . "'", $query);
+            return preg_replace_callback(
+                '/%s/',
+                static function () use (&$args): string {
+                    return "'" . addslashes((string) array_shift($args)) . "'";
+                },
+                $query,
+            );
+        }
+
+        public function query(string $query): int|bool
+        {
+            $this->queries[] = $query;
+            $quoted = "'((?:[^'\\\\]|\\\\.)*)'";
+
+            if (!preg_match(
+                "/^INSERT INTO .* VALUES \\({$quoted}, {$quoted}, 'off'\\) ON DUPLICATE KEY UPDATE option_value = LEAST\\(option_value, VALUES\\(option_value\\)\\)$/",
+                $query,
+                $match,
+            )) {
+                return false;
+            }
+
+            [, $name, $value] = array_map(stripslashes(...), $match);
+            $stored = $GLOBALS['wp_stub_options'][$name] ?? null;
+
+            if (is_string($stored) && strcmp($stored, $value) <= 0) {
+                return 0;
+            }
+
+            $GLOBALS['wp_stub_options'][$name] = $value;
+
+            return $stored === null ? 1 : 2;
         }
 
         public function get_col(string $query): array
         {
             $this->queries[] = $query;
             preg_match("/LIKE '(.*)%'/", $query, $match);
-            $prefix = stripslashes($match[1] ?? '');
+            // Once for the SQL string, once for the LIKE escapes of esc_like().
+            $prefix = stripslashes(stripslashes($match[1] ?? ''));
             $values = [];
 
             foreach ($GLOBALS['wp_stub_options'] ?? [] as $name => $value) {
                 if (str_starts_with((string) $name, $prefix)) {
-                    $values[] = serialize($value);
+                    $values[] = is_string($value) ? $value : serialize($value);
                 }
             }
 

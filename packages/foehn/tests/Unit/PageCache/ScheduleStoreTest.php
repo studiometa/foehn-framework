@@ -16,11 +16,9 @@ describe('ScheduleStore', function () {
         $this->store->record('https://example.com/a/', 3000);
 
         expect($this->store->all())->toBe(['https://example.com/' => 2000, 'https://example.com/a/' => 3000]);
-        expect(wp_stub_get_calls('update_option')[0]['args'])->toMatchArray([
-            'option' => ScheduleStore::option('https://example.com/'),
-            'value' => ['url' => 'https://example.com/', 'at' => 2000],
-            'autoload' => false,
-        ]);
+        expect(get_option(ScheduleStore::option('https://example.com/')))
+            ->toBe('0000000000000002000 https://example.com/');
+        expect($GLOBALS['wpdb']->queries[0])->toContain("'off')");
         expect(ScheduleStore::option('https://example.com/'))
             ->not
             ->toBe(ScheduleStore::option('https://example.com/a/'));
@@ -32,7 +30,7 @@ describe('ScheduleStore', function () {
         $this->store->record('https://example.com/', 2000);
         $this->store->record('https://example.com/a/', 3000);
 
-        expect(array_column(array_column(wp_stub_get_calls('update_option'), 'args'), 'option'))->toBe([
+        expect(array_keys($GLOBALS['wp_stub_options']))->toBe([
             ScheduleStore::option('https://example.com/'),
             ScheduleStore::option('https://example.com/a/'),
         ]);
@@ -46,11 +44,56 @@ describe('ScheduleStore', function () {
         expect($this->store->all())->toBe(['https://example.com/' => 2000]);
     });
 
-    it('writes nothing when the stored date already covers the new one', function () {
-        $this->store->record('https://example.com/', 2000);
-        $this->store->record('https://example.com/', 2500);
+    it('never replaces an earlier date with a later one', function (int $first, int $second) {
+        $this->store->record('https://example.com/', $first);
+        $this->store->record('https://example.com/', $second);
 
-        expect(wp_stub_get_calls('update_option'))->toHaveCount(1);
+        expect($this->store->all())->toBe(['https://example.com/' => min($first, $second)]);
+    })->with([
+        'earlier first' => [2000, 3000],
+        'later first' => [3000, 2000],
+        'a date with more digits after' => [999, 1000],
+        'a date with fewer digits after' => [1000, 999],
+        'the same date' => [2000, 2000],
+    ]);
+
+    it('keeps the earlier date when two renders of a URL saw no record and the later one writes last', function () {
+        // The race of a read followed by update_option(): two renders read no record, the
+        // render with the earlier date writes, then the render with the later date writes.
+        // The cache of both still says the option does not exist. No read decides the
+        // write: one upsert per render keeps the smaller value in the database.
+        $option = ScheduleStore::option('https://example.com/');
+        wp_cache_set('notoptions', [$option => true], 'options');
+
+        $this->store->record('https://example.com/', 2000);
+        wp_cache_set('notoptions', [$option => true], 'options');
+        $this->store->record('https://example.com/', 3000);
+
+        expect($GLOBALS['wpdb']->queries)
+            ->toHaveCount(2)
+            ->each->toEndWith('ON DUPLICATE KEY UPDATE option_value = LEAST(option_value, VALUES(option_value))');
+        expect($this->store->all())->toBe(['https://example.com/' => 2000]);
+    });
+
+    it('pads the date so that the database orders the values of a URL by date', function () {
+        // The dates are zero-padded, so the database compares them as strings in date order.
+        expect(strcmp(
+            ScheduleStore::value('https://example.com/', 999),
+            ScheduleStore::value('https://example.com/', 1000),
+        ))
+            ->toBeLessThan(0);
+        expect(ScheduleStore::value('https://example.com/', PHP_INT_MAX))->toStartWith(PHP_INT_MAX . ' ');
+    });
+
+    it('clears what the object cache keeps of the option it writes', function () {
+        $option = ScheduleStore::option('https://example.com/');
+        wp_cache_set($option, '0000000000000009000 https://example.com/', 'options');
+        wp_cache_set('notoptions', [$option => true, 'other' => true], 'options');
+
+        $this->store->record('https://example.com/', 2000);
+
+        expect(wp_cache_get($option, 'options'))->toBeFalse();
+        expect(wp_cache_get('notoptions', 'options'))->toBe(['other' => true]);
     });
 
     it('keeps a date that has passed until the job forgets it', function () {
@@ -86,10 +129,10 @@ describe('ScheduleStore', function () {
     });
 
     it('ignores a malformed option', function () {
-        update_option(ScheduleStore::PREFIX . 'a', ['url' => 'https://example.com/', 'at' => 'soon']);
-        update_option(ScheduleStore::PREFIX . 'b', ['at' => 1000]);
-        update_option(ScheduleStore::PREFIX . 'c', 'garbage');
-        update_option(ScheduleStore::PREFIX . 'd', ['url' => 'https://example.com/a/', 'at' => '1200']);
+        update_option(ScheduleStore::PREFIX . 'a', 'soon https://example.com/');
+        update_option(ScheduleStore::PREFIX . 'b', '0000000000000001000');
+        update_option(ScheduleStore::PREFIX . 'c', ['url' => 'https://example.com/', 'at' => 1000]);
+        update_option(ScheduleStore::PREFIX . 'd', '0000000000000001200 https://example.com/a/');
 
         expect($this->store->all())->toBe(['https://example.com/a/' => 1200]);
     });
