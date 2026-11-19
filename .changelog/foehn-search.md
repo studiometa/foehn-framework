@@ -7,3 +7,7 @@
 - `SearchGroups` gives the results grouped by post type, with a "see all" URL for each
 - `GET /wp-json/foehn-search/v1/suggestions?q=` gives the best five matches in the language of the page, with a short `Cache-Control`
 - Each language has its own index, from the `Multilingual` contract
+
+### Fixed
+
+- `Facets` counts a `category` or `post_tag` facet with its own filter lifted: WordPress keeps the selected category in `cat` (and a tag in `tag_id`), which left every other category of the facet at 0

@@ -56,6 +56,20 @@ final readonly class Facets
     private const OPERATOR_SUFFIXES = ['__in', '__and', '__not_in', '__exists'];
 
     /**
+     * The other query vars WordPress constrains its own taxonomies with.
+     *
+     * Categories and tags predate taxonomies and keep their own vars. `WP_Query` also
+     * writes one of them back: a `category_name` query leaves the term id in `cat`,
+     * and a clone that keeps it is still filtered by the category it is counting.
+     *
+     * @var array<string, list<string>>
+     */
+    private const CORE_QUERY_VARS = [
+        'category' => ['cat', 'category_name', 'category__in', 'category__and', 'category__not_in'],
+        'post_tag' => ['tag', 'tag_id', 'tag__in', 'tag__and', 'tag__not_in', 'tag_slug__in', 'tag_slug__and'],
+    ];
+
+    /**
      * The options for one taxonomy, in the order `get_terms()` returns them.
      *
      * @param string $taxonomy A registered taxonomy name.
@@ -183,6 +197,10 @@ final readonly class Facets
 
         foreach (self::OPERATOR_SUFFIXES as $suffix) {
             unset($vars[$taxonomy . $suffix]);
+        }
+
+        foreach (self::CORE_QUERY_VARS[$taxonomy] ?? [] as $name) {
+            unset($vars[$name]);
         }
 
         // The pair `parse_tax_query()` leaves behind, and the reason the first version of
