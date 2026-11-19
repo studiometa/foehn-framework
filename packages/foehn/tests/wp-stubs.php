@@ -1982,9 +1982,35 @@ if (!function_exists('update_post_meta')) {
     {
         wp_stub_record('update_post_meta', compact('postId', 'key', 'value'));
 
-        $GLOBALS['wp_stub_post_meta'][$postId][$key] = $value;
+        // WordPress expects slashed data here: update_metadata() unslashes it.
+        $GLOBALS['wp_stub_post_meta'][$postId][$key] = wp_unslash($value);
 
         return true;
+    }
+}
+
+if (!function_exists('delete_post_meta')) {
+    function delete_post_meta(int $postId, string $key, mixed $value = ''): bool
+    {
+        wp_stub_record('delete_post_meta', compact('postId', 'key', 'value'));
+
+        unset($GLOBALS['wp_stub_post_meta'][$postId][$key]);
+
+        return true;
+    }
+}
+
+if (!function_exists('add_meta_box')) {
+    function add_meta_box(
+        string $id,
+        string $title,
+        callable $callback,
+        string|array|null $screen = null,
+        string $context = 'advanced',
+        string $priority = 'default',
+        ?array $callbackArgs = null,
+    ): void {
+        wp_stub_record('add_meta_box', compact('id', 'title', 'callback', 'screen', 'context', 'priority'));
     }
 }
 
@@ -2682,6 +2708,13 @@ if (!function_exists('wp_unslash')) {
     function wp_unslash(mixed $value): mixed
     {
         return is_string($value) ? stripslashes($value) : $value;
+    }
+}
+
+if (!function_exists('wp_slash')) {
+    function wp_slash(mixed $value): mixed
+    {
+        return is_string($value) ? addslashes($value) : $value;
     }
 }
 

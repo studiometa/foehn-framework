@@ -10,6 +10,7 @@ use Studiometa\Foehn\Attributes\AsPostType;
 use Studiometa\Foehn\Attributes\AsTaxonomy;
 use Studiometa\Foehn\Attributes\AsTimberModel;
 use Studiometa\Foehn\Discovery\Concerns\IsWpDiscovery;
+use Studiometa\Foehn\PostTypes\PostMetaBox;
 use Tempest\Discovery\Discovery;
 use Tempest\Discovery\DiscoveryLocation;
 use Tempest\Reflection\ClassReflector;
@@ -18,7 +19,10 @@ use Tempest\Reflection\ClassReflector;
  * Discovers classes marked with #[AsPostMeta] attributes and registers the keys
  * with WordPress.
  *
- * `register_meta()` belongs on `init`, so this is a Main phase discovery.
+ * `register_meta()` belongs on `init`, so this is a Main phase discovery. The
+ * keys with a `control` also get a meta box for their post type, added on
+ * `add_meta_boxes_{$postType}` and saved on `save_post_{$postType}`, the hooks
+ * that own those APIs.
  */
 #[AsDiscovery(phase: DiscoveryPhase::Main)]
 final class PostMetaDiscovery implements Discovery
@@ -65,9 +69,38 @@ final class PostMetaDiscovery implements Discovery
      */
     public function apply(): void
     {
+        /** @var array<string, list<AsPostMeta>> $controls */
+        $controls = [];
+
         foreach ($this->getItems() as $item) {
             $this->registerMeta($item);
+
+            /** @var AsPostMeta $attribute */
+            $attribute = $item['attribute'];
+
+            if ($attribute->control !== null) {
+                $controls[(string) $item['objectSubtype']][] = $attribute;
+            }
         }
+
+        foreach ($controls as $postType => $fields) {
+            $this->registerMetaBox(new PostMetaBox($postType, $fields));
+        }
+    }
+
+    /**
+     * Add the meta box on its post type's edit screen, and save it with the post.
+     *
+     * `save_post_{$postType}` never fires for a revision or an autosave of
+     * another type, and the nonce is only in a request the edit form sent.
+     */
+    private function registerMetaBox(PostMetaBox $box): void
+    {
+        add_action('add_meta_boxes_' . $box->postType, $box->add(...));
+        add_action('save_post_' . $box->postType, static function (int $postId) use ($box): void {
+            // The nonce is checked in PostMetaBox::save().
+            $box->save($postId, $_POST);
+        });
     }
 
     /**
@@ -201,11 +234,76 @@ final class PostMetaDiscovery implements Discovery
             ];
         }
 
+        if ($attribute->control !== null) {
+            $problem = $this->controlProblem($class, $attribute, $subject);
+
+            if ($problem !== null) {
+                return $problem;
+            }
+        }
+
         if ($attribute->sanitize === null) {
             return null;
         }
 
         return $this->sanitizerProblem($class, $attribute, $subject);
+    }
+
+    /**
+     * A control needs a field the meta box can draw for the key's type, and a
+     * post type to draw it on: one field edits one value of one post.
+     *
+     * @return array{reason: string, fix: string}|null
+     */
+    private function controlProblem(ClassReflector $class, AsPostMeta $attribute, string $subject): ?array
+    {
+        $control = (string) $attribute->control;
+        $types = AsPostMeta::CONTROLS[$control] ?? null;
+
+        if ($types === null) {
+            return [
+                'reason' => sprintf('%s declares control \'%s\', which the meta box cannot draw.', $subject, $control),
+                'fix' => sprintf('Set control to one of %s.', implode(', ', array_keys(AsPostMeta::CONTROLS))),
+            ];
+        }
+
+        if (!in_array($attribute->type, $types, true)) {
+            return [
+                'reason' => sprintf(
+                    '%s is type \'%s\', which a %s control cannot edit.',
+                    $subject,
+                    $attribute->type,
+                    $control,
+                ),
+                'fix' => sprintf('Set type to %s, or choose another control.', implode(' or ', $types)),
+            ];
+        }
+
+        if ($control === 'select' && $attribute->options === []) {
+            return [
+                'reason' => sprintf('%s is a select with no options.', $subject),
+                'fix' => 'Add `options` as value => label.',
+            ];
+        }
+
+        if (!$attribute->single || $attribute->objectType !== 'post') {
+            return [
+                'reason' => sprintf(
+                    '%s has a control, which edits one value of a post, but the key is not single post meta.',
+                    $subject,
+                ),
+                'fix' => 'Remove `control`, or declare the key with single: true and objectType: \'post\'.',
+            ];
+        }
+
+        if ($this->resolveObjectSubtype($class, $attribute) === '') {
+            return [
+                'reason' => sprintf('%s has a control, but no post type to show the meta box on.', $subject),
+                'fix' => 'Declare the key on a class with #[AsPostType] or #[AsTimberModel], or set objectSubtype.',
+            ];
+        }
+
+        return null;
     }
 
     /**

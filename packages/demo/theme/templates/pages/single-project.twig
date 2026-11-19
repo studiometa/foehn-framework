@@ -25,6 +25,25 @@
                 <span>{{ value }}</span>
               </div>
             {% endfor %}
+
+            {# The textarea, checkbox, email and tel fields of the "Fields" meta box. #}
+            {% if post.credits %}
+              <div class="facts__row">
+                <span class="label">Credits</span>
+                <span>{{ post.credits|e|nl2br }}</span>
+              </div>
+            {% endif %}
+
+            {% if post.prints and (post.printsEmail or post.printsPhone) %}
+              <div class="facts__row">
+                <span class="label">Prints</span>
+                <span>
+                  {%- if post.printsEmail %}<a href="mailto:{{ post.printsEmail|e }}">{{ post.printsEmail|e }}</a>{% endif -%}
+                  {%- if post.printsEmail and post.printsPhone %}<br />{% endif -%}
+                  {%- if post.printsPhone %}<a href="tel:{{ post.printsPhoneLink }}">{{ post.printsPhone|e }}</a>{% endif -%}
+                </span>
+              </div>
+            {% endif %}
           </div>
         {% endif %}
       </div>

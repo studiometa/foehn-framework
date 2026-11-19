@@ -194,7 +194,7 @@ final class Product extends Post
 }
 ```
 
-Arguments: `key`, `type` (`string`, `boolean`, `integer`, `number`, `array`, `object`), `single` (`true`), `showInRest` (`true`), `description`, `default`, `objectType` (`post`, `term`, `user`, `comment`), `objectSubtype`, `capability` (`edit_posts`), `sanitize`, `schema`.
+Arguments: `key`, `type` (`string`, `boolean`, `integer`, `number`, `array`, `object`), `single` (`true`), `showInRest` (`true`), `description`, `default`, `objectType` (`post`, `term`, `user`, `comment`), `objectSubtype`, `capability` (`edit_posts`), `sanitize`, `schema`, `control`, `label`, `options`.
 
 Rules:
 
@@ -210,13 +210,15 @@ Rules:
 
 ### Editing meta values
 
-Føhn registers the key. It adds no field, meta box or form to the admin. What an editor can use:
+What an editor can use:
+
+- **The Fields meta box**: a key with `control` (`text`, `textarea`, `email`, `url`, `tel`, `number`, `select` with `options`, `checkbox`) gets a native field in a "Fields" meta box on its post type, in the classic and the block editor. `label` is the field label and `description` the help text. A save changes only the keys in the request, checks the nonce and the key's `capability`, and runs the `sanitize` method or the control's sanitiser. An empty field deletes the key. A key without `control` gets no field.
 
 - **REST and the block editor**: WordPress puts `meta` in the REST response of a post type only when the type supports `custom-fields`. Add `'custom-fields'` to `supports`. Without it, the key is registered but the editor cannot read or save it.
 - **Custom Fields panel**: with `custom-fields` support, the editor turns on Preferences > General > Advanced > Custom fields. The panel lists keys that do not start with `_`, as text.
 - **Block bindings**: a paragraph, heading, button or image bound to the key with `core/post-meta` shows the value on the front end. With `custom-fields` support, the editor also shows the value in the block and saves an edit to the meta. A key starting with `_` or with `showInRest: false` does not bind.
 - **ACF**: a field group (the `foehn-acf` skill) gives a real form: date picker, select, repeater. `#[AsPostMeta]` on the same key keeps the REST schema.
-- **A custom form**: an `add_meta_box()` call in an `#[AsAction('add_meta_boxes')]` method and a `save_post` action. Føhn has no helper for this.
+- **A custom form**: for anything the controls do not cover, an `add_meta_box()` call in an `#[AsAction('add_meta_boxes')]` method and a `save_post` action.
 
 Scripts and agents write values with `wp post meta update <id> <key> <value>`, or `--meta_input` on `wp post create` (see [Sample content and menus](#sample-content-and-menus-with-wp-cli)). The `sanitize` method runs in both cases.
 

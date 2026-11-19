@@ -8,6 +8,9 @@ use Studiometa\Foehn\Discovery\PostMetaDiscovery;
 use Tests\Fixtures\PostMeta\AbstractBase;
 use Tests\Fixtures\PostMeta\Article;
 use Tests\Fixtures\PostMeta\Book;
+use Tests\Fixtures\PostMeta\ControlTypeMismatch;
+use Tests\Fixtures\PostMeta\ControlWithoutPostType;
+use Tests\Fixtures\PostMeta\Event;
 use Tests\Fixtures\PostMeta\Gallery;
 use Tests\Fixtures\PostMeta\Genre;
 use Tests\Fixtures\PostMeta\InstanceSanitizer;
@@ -15,7 +18,10 @@ use Tests\Fixtures\PostMeta\InvalidObjectType;
 use Tests\Fixtures\PostMeta\InvalidType;
 use Tests\Fixtures\PostMeta\MissingSanitizer;
 use Tests\Fixtures\PostMeta\Product;
+use Tests\Fixtures\PostMeta\RepeatableControl;
 use Tests\Fixtures\PostMeta\SchemalessArray;
+use Tests\Fixtures\PostMeta\SelectWithoutOptions;
+use Tests\Fixtures\PostMeta\UnknownControl;
 use Tests\Fixtures\PostTypeFixture;
 
 /**
@@ -151,4 +157,41 @@ describe('PostMetaDiscovery', function () {
         expect($problems[0]['fix'])
             ->toBe('Declare ' . InstanceSanitizer::class . '::sanitizeSku() as `public static`.');
     });
+    it('accepts a control for each type it edits', function () {
+        expect(discoveredMeta(Event::class))->toHaveCount(7);
+    });
+
+    it('reports a problem with a control, and skips the key', function (string $fixture, string $reason, string $fix) {
+        $problems = rejectedProblems(fn(DiscoveryProblems $problems) => new PostMetaDiscovery($problems), $fixture);
+
+        expect($problems)->toHaveCount(1);
+        expect($problems[0]['reason'])->toContain($reason);
+        expect($problems[0]['fix'])->toBe($fix);
+    })->with([
+        'unknown control' => [
+            UnknownControl::class,
+            "declares control 'date', which the meta box cannot draw",
+            'Set control to one of text, textarea, email, url, tel, number, select, checkbox.',
+        ],
+        'control for another type' => [
+            ControlTypeMismatch::class,
+            "is type 'string', which a checkbox control cannot edit",
+            'Set type to boolean, or choose another control.',
+        ],
+        'select with no options' => [
+            SelectWithoutOptions::class,
+            'is a select with no options',
+            'Add `options` as value => label.',
+        ],
+        'repeatable key' => [
+            RepeatableControl::class,
+            'the key is not single post meta',
+            "Remove `control`, or declare the key with single: true and objectType: 'post'.",
+        ],
+        'no post type' => [
+            ControlWithoutPostType::class,
+            'no post type to show the meta box on',
+            'Declare the key on a class with #[AsPostType] or #[AsTimberModel], or set objectSubtype.',
+        ],
+    ]);
 });

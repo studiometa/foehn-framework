@@ -29,14 +29,67 @@ use Timber\Timber;
 // The accessors below read these keys. Declaring them gives each a REST schema,
 // which makes it bindable through core's `core/post-meta` source — no custom
 // binding required. The `custom-fields` support above puts the keys in the
-// REST response, so the block editor can read and save them.
-#[AsPostMeta(key: 'client', type: 'string', description: 'Who commissioned the series')]
-#[AsPostMeta(key: 'year', type: 'integer', description: 'Year the series was shot')]
-#[AsPostMeta(key: 'location', type: 'string', description: 'Where it was shot')]
+// REST response, so the block editor can read and save them. The `control` of
+// each key gives it a field in the "Fields" meta box of the edit screen, one for
+// each control Føhn draws. `camera` has no control: a `core/post-meta` binding in
+// the content of each project edits it, and a meta box field for the same key
+// would write its old value back when the block editor saves.
+#[AsPostMeta(
+    key: 'client',
+    type: 'string',
+    description: 'Who commissioned the series',
+    control: 'text',
+    label: 'Client',
+)]
+#[AsPostMeta(key: 'year', type: 'integer', description: 'Year the series was shot', control: 'number', label: 'Year')]
+#[AsPostMeta(key: 'location', type: 'string', description: 'Where it was shot', control: 'text', label: 'Location')]
 #[AsPostMeta(key: 'camera', type: 'string', description: 'Camera body and film stock')]
-#[AsPostMeta(key: 'film', type: 'string', description: 'YouTube or Vimeo URL of a film shown with the series')]
+#[AsPostMeta(
+    key: 'capture_format',
+    type: 'string',
+    description: 'The format of the negatives or files',
+    control: 'select',
+    label: 'Format',
+    options: self::FORMATS,
+)]
+#[AsPostMeta(
+    key: 'film',
+    type: 'string',
+    description: 'YouTube or Vimeo URL of a film shown with the series',
+    control: 'url',
+    label: 'Film',
+)]
+#[AsPostMeta(key: 'credits', type: 'string', description: 'One person per line', control: 'textarea', label: 'Credits')]
+#[AsPostMeta(
+    key: 'prints',
+    type: 'boolean',
+    description: 'Prints of the series are for sale',
+    control: 'checkbox',
+    label: 'Prints',
+)]
+#[AsPostMeta(
+    key: 'prints_email',
+    type: 'string',
+    description: 'Where to ask for a print',
+    control: 'email',
+    label: 'Prints email',
+)]
+#[AsPostMeta(
+    key: 'prints_phone',
+    type: 'string',
+    description: 'Who to call for a print',
+    control: 'tel',
+    label: 'Prints phone',
+)]
 final class Project extends Post implements ConfiguresPostType
 {
+    /** The values of the `capture_format` select, as value => label. */
+    public const array FORMATS = [
+        '35mm' => '35 mm film',
+        'medium' => 'Medium format film',
+        'digital' => 'Digital',
+    ];
+
     public static function configurePostType(PostTypeBuilder $builder): PostTypeBuilder
     {
         return $builder->setRewrite(['slug' => 'projects', 'with_front' => false])->setMenuPosition(5);
@@ -81,6 +134,60 @@ final class Project extends Post implements ConfiguresPostType
         $film = $this->meta('film');
 
         return is_string($film) && $film !== '' ? $film : null;
+    }
+
+    /**
+     * The format of the series, as the label the select shows.
+     *
+     * Not `format()`: Timber\Post::format() is the WordPress post format.
+     */
+    public function captureFormat(): ?string
+    {
+        $format = $this->meta('capture_format');
+
+        return is_string($format) ? self::FORMATS[$format] ?? null : null;
+    }
+
+    /**
+     * The people who worked on the series, one per line.
+     */
+    public function credits(): ?string
+    {
+        $credits = $this->meta('credits');
+
+        return is_string($credits) && trim($credits) !== '' ? $credits : null;
+    }
+
+    /**
+     * Whether prints of the series are for sale. The checkbox stores `1` or nothing.
+     */
+    public function prints(): bool
+    {
+        return (bool) $this->meta('prints');
+    }
+
+    public function printsEmail(): ?string
+    {
+        $email = $this->meta('prints_email');
+
+        return is_string($email) && $email !== '' ? $email : null;
+    }
+
+    public function printsPhone(): ?string
+    {
+        $phone = $this->meta('prints_phone');
+
+        return is_string($phone) && $phone !== '' ? $phone : null;
+    }
+
+    /**
+     * The phone number for a `tel:` link: the digits and the `+` of the country code.
+     */
+    public function printsPhoneLink(): ?string
+    {
+        $phone = $this->printsPhone();
+
+        return $phone !== null ? preg_replace('/[^\d+]/', '', $phone) : null;
     }
 
     /**
@@ -137,6 +244,7 @@ final class Project extends Post implements ConfiguresPostType
             'Year' => $this->year() !== null ? (string) $this->year() : null,
             'Location' => $this->location(),
             'Shot on' => $this->camera(),
+            'Format' => $this->captureFormat(),
         ];
 
         return array_filter($facts, static fn(?string $value): bool => $value !== null);

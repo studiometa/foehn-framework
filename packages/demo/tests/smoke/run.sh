@@ -256,6 +256,15 @@ check_page "/about/" 'class="hero hero--small' "the about page opens with the he
 check_page "/about/" 'callout callout--success' "the about page holds the commission pattern, callout included"
 check_page "/about/" 'minute read' "the reading-time binding computes its value on the about page"
 check_page "/projects/corridors/" '<p class="wp-block-paragraph">Hasselblad 500C/M' "core/post-meta binds the camera meta in a project's content"
+# The fields of the "Fields" meta box, one for each control, as ProjectSeeder saves them.
+check_page "/projects/corridors/" '<span>Medium format film</span>' "a project page prints the label of its format select"
+check_page "/projects/corridors/" 'Prints: Atelier Lumière<br />' "a project page prints its credits textarea, line by line"
+check_page "/projects/corridors/" 'href="mailto:prints@example.com"' "a project page links the email of its prints"
+check_page "/projects/corridors/" 'href="tel:+33388000001"' "a project page links the phone of its prints"
+if curl -sk "$url/projects/silhouettes/" | grep -q 'href="mailto:prints@example.com"'; then
+	fail "/projects/silhouettes/ links the prints email, but its prints checkbox is off"
+fi
+printf '✓ %s\n' "a project without the prints checkbox prints no contact"
 # The footer links every page to it, so a missing page is a 404 on every page.
 check_page "/legal/" "Unsplash licence" "the legal page the footer links to exists"
 

@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 use Studiometa\Foehn\Discovery\DiscoveryProblems;
 use Studiometa\Foehn\Discovery\PostMetaDiscovery;
+use Studiometa\Foehn\PostTypes\PostMetaBox;
+use Tests\Fixtures\PostMeta\Event;
+use Tests\Fixtures\PostMeta\EventVenue;
 use Tests\Fixtures\PostMeta\Gallery;
 use Tests\Fixtures\PostMeta\Product;
 
@@ -127,5 +130,76 @@ describe('PostMetaDiscovery::apply', function () {
         $discovery->apply();
 
         expect(registeredMeta()['price'])->not->toHaveKey('sanitize_callback');
+    });
+
+    it('adds no meta box when no key has a control', function () {
+        $discovery = new PostMetaDiscovery(new DiscoveryProblems());
+
+        discoverFixture($discovery, Product::class);
+        $discovery->apply();
+
+        expect(wp_stub_get_calls('add_action'))->toBeEmpty();
+    });
+
+    it('adds the meta box and saves it on the hooks of its post type', function () {
+        $GLOBALS['wp_stub_user_can'] = ['edit_posts' => true, 'edit_post' => true];
+        $discovery = new PostMetaDiscovery(new DiscoveryProblems());
+
+        discoverFixture($discovery, Event::class);
+        $discovery->apply();
+
+        $hooks = array_column(array_column(wp_stub_get_calls('add_action'), 'args'), 'callback', 'hook');
+
+        expect(array_keys($hooks))->toBe(['add_meta_boxes_event', 'save_post_event']);
+
+        $hooks['add_meta_boxes_event']();
+
+        expect(wp_stub_get_calls('add_meta_box')[0]['args']['screen'])->toBe('event');
+
+        $_POST = [
+            PostMetaBox::NONCE => wp_create_nonce(PostMetaBox::ID),
+            PostMetaBox::FIELD => ['subtitle' => 'Saved', 'internal' => 'not a field'],
+        ];
+
+        try {
+            $hooks['save_post_event'](12);
+        } finally {
+            $_POST = [];
+        }
+
+        // A key with no control is no field, even when a request names it.
+        expect($GLOBALS['wp_stub_post_meta'][12])->toBe(['subtitle' => 'Saved']);
+    });
+
+    it('adds one meta box for the fields of every class on a post type', function () {
+        $GLOBALS['wp_stub_user_can'] = ['edit_posts' => true, 'edit_post' => true];
+        $discovery = new PostMetaDiscovery(new DiscoveryProblems());
+
+        discoverFixture($discovery, Event::class);
+        discoverFixture($discovery, EventVenue::class);
+        $discovery->apply();
+
+        $actions = array_column(wp_stub_get_calls('add_action'), 'args');
+
+        // Two boxes would share the foehn-post-meta id, and the second would replace the first.
+        expect(array_column($actions, 'hook'))->toBe(['add_meta_boxes_event', 'save_post_event']);
+
+        $hooks = array_column($actions, 'callback', 'hook');
+        $hooks['add_meta_boxes_event']();
+
+        expect(wp_stub_get_calls('add_meta_box'))->toHaveCount(1);
+
+        $_POST = [
+            PostMetaBox::NONCE => wp_create_nonce(PostMetaBox::ID),
+            PostMetaBox::FIELD => ['subtitle' => 'Opening night', 'venue' => 'Main hall'],
+        ];
+
+        try {
+            $hooks['save_post_event'](12);
+        } finally {
+            $_POST = [];
+        }
+
+        expect($GLOBALS['wp_stub_post_meta'][12])->toBe(['subtitle' => 'Opening night', 'venue' => 'Main hall']);
     });
 });
