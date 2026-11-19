@@ -122,6 +122,25 @@ final readonly class RelatedProjectsProvider implements ContextProviderInterface
 - Use a context provider for data many templates share. Use a controller for data one page owns, and to choose the template.
 - `menus` is filled by `#[AsMenu]`. Read `menus.header.items` in Twig.
 
+## JSON-LD
+
+```php
+#[AsJsonLd(postType: 'event')]
+final class EventJsonLd implements JsonLdProviderInterface
+{
+    public function nodes(WP_Post $post): array
+    {
+        $url = get_permalink($post);
+
+        return [Schema::event()->identifier($url . '#event')->name(get_the_title($post))->url($url)];
+    }
+}
+```
+
+- `#[AsJsonLd]` gives the schema.org nodes of the single pages of its post types. A node is an array, a `JsonSerializable` object (a `spatie/schema-org` type) or an object with `toArray()`. Give each node a stable `@id`: the permalink and a fragment.
+- With the Schema module of Rank Math on, the nodes go in the graph of Rank Math (`rank_math/json_ld`). Else Føhn prints one `<script type="application/ld+json" class="foehn-json-ld">` in `<head>`. Rank Math's `WebPage` is `<permalink>#webpage`, its `Organization` is `<home URL>/#organization`.
+- A block adds a node with `Studiometa\Foehn\JsonLd\JsonLd::add($node)` when it renders. These nodes go in a second script on `wp_footer`, with or without Rank Math.
+
 ## DTOs
 
 A DTO is a `final readonly` class that implements `Studiometa\Foehn\Contracts\Arrayable` and uses `Studiometa\Foehn\Concerns\HasToArray`. `toArray()` gives its public properties with camelCase names converted to snake_case keys (`backgroundImage` becomes `background_image`). Nested `Arrayable` values are converted too.

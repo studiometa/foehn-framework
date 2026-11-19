@@ -11,7 +11,8 @@ use Studiometa\Foehn\Smoke\Support\Site;
  * guard's included. Yoast needs no test of its own: it goes through `wp_robots`, where
  * the guard runs last.
  *
- * The plugin is installed from wordpress.org for this file and removed afterwards.
+ * The plugin is installed with Composer, active for this file only and uninstalled
+ * afterwards (see smokeActivatePlugin()).
  */
 
 beforeAll(function () {
@@ -19,7 +20,7 @@ beforeAll(function () {
         return;
     }
 
-    Site::wp('wp plugin install seo-by-rank-math --activate');
+    smokeActivatePlugin('seo-by-rank-math');
     // Rank Math loads its front end only once the registration is done or skipped.
     Site::wp('wp option update rank_math_registration_skip 1');
 });
@@ -29,7 +30,7 @@ afterAll(function () {
         return;
     }
 
-    Site::wp('wp plugin uninstall seo-by-rank-math --deactivate');
+    smokeUninstallPlugin('seo-by-rank-math');
     Site::wp('wp option delete rank_math_registration_skip');
 });
 

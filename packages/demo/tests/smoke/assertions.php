@@ -224,6 +224,8 @@ $results->containsAll(
         'theme/press-kit',
         'theme/facts',
         'theme/fact',
+        'theme/faq',
+        'theme/faq-question',
     ],
     array_keys(WP_Block_Type_Registry::get_instance()->get_all_registered()),
 );
@@ -235,6 +237,12 @@ $results->same(
     'a fact goes in a facts block only',
     ['theme/facts'],
     $blockTypes->get_registered('theme/fact')?->parent,
+);
+
+$results->same(
+    'a FAQ question goes in a FAQ block only',
+    ['theme/faq'],
+    $blockTypes->get_registered('theme/faq-question')?->parent,
 );
 
 $results->true(

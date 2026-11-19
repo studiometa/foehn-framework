@@ -25,6 +25,7 @@
         "league/flysystem-aws-s3-v3": "^3.0",
         "league/glide": "^4.0",
         "nette/php-generator": "4.2.3 as 4.2.1",
+        "spatie/schema-org": "^5.0",
         "studiometa/foehn": "0.11.4",
         "studiometa/foehn-acf": "0.11.4",
         "studiometa/foehn-installer": "0.11.4",

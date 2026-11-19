@@ -98,7 +98,7 @@ foehn_demo_seed() {
     # volume seeded at an older revision runs them again, which the seeders allow
     # because they find what they wrote by slug or by meta. A deploy that adds a page
     # then reaches the volume already serving the site.
-    foehn_demo_revision=4
+    foehn_demo_revision=5
 
     # The marker, and not `wp core is-installed`. The two answer different
     # questions, and the difference is a state this script reached on its first

@@ -539,6 +539,13 @@
   padding-bottom: 1.25rem;
 }
 
+/* The FAQ block stands apart from the copy above it, as the section it replaced did.
+   Named twice so that it wins over the gap between two blocks of a block page. */
+.faq-block,
+.blocks > .faq-block {
+  margin-top: clamp(3rem, 8vw, 6rem);
+}
+
 /* ── Filters ────────────────────────────────────────────── */
 
 /*

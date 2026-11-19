@@ -72,6 +72,7 @@ Kernel::boot(__DIR__ . '/app');
 | `#[AsBlockPattern]`       | Register a block pattern                              |
 | `#[AsContextProvider]`    | Add data to specific views                            |
 | `#[AsTemplateController]` | Handle template rendering                             |
+| `#[AsJsonLd]`             | Add schema.org JSON-LD to the pages of a post type    |
 | `#[AsTwigExtension]`      | Register a Twig extension                             |
 | `#[AsShortcode]`          | Register a shortcode                                  |
 | `#[AsRestRoute]`          | Register a REST API endpoint                          |

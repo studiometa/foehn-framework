@@ -36,6 +36,105 @@ function smokeGetTwice(string $path = '/'): array
 }
 
 /**
+ * Activate a plugin that the suite tests Føhn with.
+ *
+ * The plugins are installed with Composer, never at run time: CI requires them in the
+ * starter before `composer install` (the integration-starter job of
+ * `.github/workflows/ci.yml`, which holds their versions). Require the same ones in a
+ * local install. A plugin that is not there fails the file, rather than skipping it.
+ */
+function smokeActivatePlugin(string $slug): void
+{
+    $result = Site::run('wp plugin activate ' . escapeshellarg($slug));
+
+    if ($result['status'] !== 0) {
+        throw new RuntimeException(sprintf(
+            "Could not activate %s. Install it with Composer in the starter: composer require --dev wpackagist-plugin/%s\n%s",
+            $slug,
+            $slug,
+            $result['output'],
+        ));
+    }
+}
+
+/**
+ * Deactivate a plugin and run its uninstall routine, so the next file starts from a new
+ * install of it. The files stay: Composer owns them.
+ *
+ * Rank Math keeps its options and tables on uninstall unless a filter asks it to remove
+ * them. Kept, a redirection or a module that one file turns on would still act in the
+ * next file that activates the plugin.
+ */
+function smokeUninstallPlugin(string $slug): void
+{
+    Site::wp(sprintf(
+        'wp plugin uninstall %s --deactivate --skip-delete --exec=%s',
+        escapeshellarg($slug),
+        escapeshellarg("WP_CLI::add_wp_hook('rank_math_clear_data_on_uninstall', '__return_true');"),
+    ));
+}
+
+/**
+ * Every `<script type="application/ld+json">` of a page, decoded, with its class and
+ * where it starts. A script that is not valid JSON fails the test.
+ *
+ * @return list<array{class: string, offset: int, json: array<string, mixed>}>
+ */
+function smokeJsonLd(string $html): array
+{
+    preg_match_all(
+        '#<script type="application/ld\+json"(?: class="([^"]*)")?[^>]*>(.*?)</script>#s',
+        $html,
+        $matches,
+        PREG_SET_ORDER | PREG_OFFSET_CAPTURE,
+    );
+
+    return array_map(static fn(array $match): array => [
+        'class' => $match[1][0] ?? '',
+        'offset' => $match[0][1],
+        'json' => json_decode($match[2][0], true, flags: JSON_THROW_ON_ERROR),
+    ], $matches);
+}
+
+/**
+ * The `@type` values of the graph of a decoded JSON-LD script.
+ *
+ * @param array<string, mixed> $json
+ * @return list<string>
+ */
+function smokeJsonLdTypes(array $json): array
+{
+    return array_merge(...array_map(
+        static fn(array $node): array => (array) ($node['@type'] ?? []),
+        $json['@graph'] ?? [$json],
+    ));
+}
+
+/**
+ * The URL of the post the starter installs, which the starter's PostJsonLd describes.
+ */
+function smokeJsonLdPostUrl(): string
+{
+    return (string) Site::wp('wp post list --post_type=post --name=hello-world --field=url');
+}
+
+/**
+ * The body of a URL requested with a mu-plugin that adds a node, as a block does when
+ * it renders.
+ */
+function smokeJsonLdWithBlock(string $url): string
+{
+    $plugin = Site::path('web/wp-content/mu-plugins/smoke-json-ld-block.php');
+    copy(__DIR__ . '/fixtures/json-ld-block.php', $plugin);
+
+    try {
+        return Client::get($url . '?smoke-json-ld-block=1')->body;
+    } finally {
+        unlink($plugin);
+    }
+}
+
+/**
  * Fill the cache for a path and hand back the stored response.
  */
 function smokeWarm(string $path = '/'): Response

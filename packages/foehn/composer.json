@@ -41,6 +41,7 @@
     "suggest": {
         "league/flysystem-aws-s3-v3": "Lets GlideTransformer read and cache in the same bucket as humanmade/s3-uploads",
         "league/glide": "Self-hosted image transforms for GlideTransformer (with league/flysystem-aws-s3-v3 when uploads live in a bucket)",
+        "spatie/schema-org": "Fluent schema.org types to build the JSON-LD nodes of #[AsJsonLd] classes and JsonLd::add()",
         "studiometa/ui": "Twig UI components, auto-registered under the @ui and @svg namespaces",
         "studiometa/webpack-config": "Required for WebpackManifest asset helper"
     },

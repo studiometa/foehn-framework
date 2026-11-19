@@ -12,7 +12,8 @@ use Studiometa\Foehn\Smoke\Support\Site;
  * it to the hooks of the starter. The core sitemap is off outside production, so only
  * the sitemap of Rank Math is checked here.
  *
- * The plugin is installed from wordpress.org for this file and removed afterwards.
+ * The plugin is installed with Composer, active for this file only and uninstalled
+ * afterwards (see smokeActivatePlugin()).
  */
 
 const AUTHOR_SITEMAP_CONFIG = 'theme/app/foehn.local.config.php';
@@ -28,7 +29,7 @@ beforeAll(function () {
     preg_match('/(\d+)\/(\d+)/', (string) Site::wp('wp foehn discovery:status | grep "Locations cached:"'), $matches);
     $GLOBALS['foehn_author_sitemap_cache_was_warm'] = ($matches[2] ?? '0') !== '0' && $matches[1] === $matches[2];
 
-    Site::wp('wp plugin install seo-by-rank-math --activate');
+    smokeActivatePlugin('seo-by-rank-math');
     // Rank Math loads its front end only once the registration is done or skipped.
     Site::wp('wp option update rank_math_registration_skip 1');
     // Rank Math sets `noindex` on author archives on a new install, which keeps them out
@@ -55,7 +56,7 @@ afterAll(function () {
             ? 'wp foehn discovery:generate'
             : 'wp foehn discovery:clear',
     );
-    Site::wp('wp plugin uninstall seo-by-rank-math --deactivate');
+    smokeUninstallPlugin('seo-by-rank-math');
     Site::wp('wp option delete rank_math_registration_skip');
     Site::wp('wp rewrite flush');
 });

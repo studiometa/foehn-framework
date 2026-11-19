@@ -58,27 +58,6 @@ final class PageSeeder implements SeederInterface
         if ($studio !== []) {
             set_post_thumbnail($about, $studio[0]);
         }
-
-        // Rendered with @ui/Accordion, which is the studiometa/ui component the demo uses
-        // to show the Twig namespace and the JS autoloader working together.
-        update_post_meta($about, 'faq', [
-            [
-                'title' => 'What does a commission cost?',
-                'content' => 'A day rate for architecture and editorial work, a per-image rate for still life and reproduction. Both include a first selection and one round of edits; usage rights are quoted separately because they depend on where the images run.',
-            ],
-            [
-                'title' => 'Do you shoot in colour?',
-                'content' => 'Yes, when the brief asks for it. The personal work is black and white because removing colour removes a variable, not because colour is worse — a commission that needs it gets it.',
-            ],
-            [
-                'title' => 'How long until I see the images?',
-                'content' => 'A contact sheet within a week of the shoot, final files two weeks after selection. Film adds a few days for processing, which is worth saying out loud before a deadline is agreed rather than after.',
-            ],
-            [
-                'title' => 'Are prints available?',
-                'content' => 'From any series, in numbered editions of fifteen, printed on baryta paper at 40x50 cm. Larger formats on request.',
-            ],
-        ]);
     }
 
     /**
@@ -86,8 +65,8 @@ final class PageSeeder implements SeederInterface
      * look like on a page an editor wrote.
      *
      * A hero with the studio photograph, a paragraph bound to `theme/reading-time`,
-     * the copy in core blocks, and the `theme/commission` pattern as the editor
-     * inserts it.
+     * the copy in core blocks, the `theme/commission` pattern as the editor inserts
+     * it, and the `theme/faq` block, which also gives the page its `FAQPage` JSON-LD.
      */
     private static function aboutContent(?int $background): string
     {
@@ -127,6 +106,25 @@ final class PageSeeder implements SeederInterface
 
         $pattern = WP_Block_Patterns_Registry::get_instance()->get_registered('theme/commission');
 
-        return implode("\n\n", [$hero, $readingTime, ...$copy, is_array($pattern) ? $pattern['content'] : '']);
+        $faq = BlockMarkup::block('theme/faq', ['title' => 'Questions'], implode("\n", [
+            BlockMarkup::block('theme/faq-question', [
+                'question' => 'What does a commission cost?',
+                'answer' => 'A day rate for architecture and editorial work, a per-image rate for still life and reproduction. Both include a first selection and one round of edits; usage rights are quoted separately because they depend on where the images run.',
+            ]),
+            BlockMarkup::block('theme/faq-question', [
+                'question' => 'Do you shoot in colour?',
+                'answer' => 'Yes, when the brief asks for it. The personal work is black and white because removing colour removes a variable, not because colour is worse — a commission that needs it gets it.',
+            ]),
+            BlockMarkup::block('theme/faq-question', [
+                'question' => 'How long until I see the images?',
+                'answer' => 'A contact sheet within a week of the shoot, final files two weeks after selection. Film adds a few days for processing, which is worth saying out loud before a deadline is agreed rather than after.',
+            ]),
+            BlockMarkup::block('theme/faq-question', [
+                'question' => 'Are prints available?',
+                'answer' => 'From any series, in numbered editions of fifteen, printed on baryta paper at 40x50 cm. Larger formats on request.',
+            ]),
+        ]));
+
+        return implode("\n\n", [$hero, $readingTime, ...$copy, is_array($pattern) ? $pattern['content'] : '', $faq]);
     }
 }
