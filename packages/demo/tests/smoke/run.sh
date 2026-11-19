@@ -559,6 +559,30 @@ about_json_ld="$(curl -sk "$url/about/" | php tests/smoke/json-ld.php)" ||
 $about_json_ld"
 printf '✓ %s\n' "a project page and the FAQ block print valid JSON-LD, each where Føhn puts it"
 
+# The values of the nodes, not only their type: ProjectJsonLd reads them through the
+# accessors of Demo\Models\Project, so an accessor that returns nothing leaves the
+# type in place and the node empty. One photograph per plate of the page.
+corridors_series="$(curl -sk "$url/projects/corridors/" | php tests/smoke/json-ld.php CreativeWorkSeries)" ||
+	fail "a project page has no CreativeWorkSeries node"
+corridors_plates="$(curl -sk "$url/projects/corridors/" | grep -c 'class="plate ')"
+for line in \
+	"@id $url/projects/corridors/#series" \
+	"url $url/projects/corridors/" \
+	"name Corridors" \
+	"description Six months spent in the circulation spaces of office buildings, photographing what nobody looks at on the way through." \
+	"hasPart $corridors_plates Photograph" \
+	"locationCreated Strasbourg, Basel" \
+	"sponsor Self-initiated"; do
+	grep -qxF "$line" <<<"$corridors_series" || fail "the CreativeWorkSeries of a project page does not hold: $line
+$corridors_series"
+done
+[ "$corridors_plates" -ge 5 ] || fail "the corridors page shows $corridors_plates photographs, expected at least 5"
+about_faq="$(curl -sk "$url/about/" | php tests/smoke/json-ld.php FAQPage)" ||
+	fail "the about page has no FAQPage node"
+grep -qxF "mainEntity 4 Question" <<<"$about_faq" || fail "the FAQPage of the about page does not hold the 4 questions of its block
+$about_faq"
+printf '✓ %s\n' "the JSON-LD of a project holds its photographs, place, client and URL, and the FAQPage its 4 questions"
+
 # Unsplash asks that photographers be credited. The credit is stored on the
 # attachment at import and printed under every plate, so its absence is a licensing
 # problem rather than a cosmetic one.
