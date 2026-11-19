@@ -27,7 +27,7 @@ switch ($args[0] ?? '') {
             ['English',  'en', 'en_US', 'us'],
             ['Français', 'fr', 'fr_FR', 'fr'],
         ] as [$name, $slug, $locale, $flag]) {
-            if ($model->get_language($slug)) {
+            if ($model->languages->get($slug)) {
                 continue;
             }
 
@@ -39,7 +39,7 @@ switch ($args[0] ?? '') {
                 'term_group' => 0,
                 'flag' => $flag,
             ];
-            method_exists($model, 'add_language') ? $model->add_language($language) : $model->languages->add($language);
+            $model->languages->add($language);
         }
 
         $english = get_page_by_path('hello-world', OBJECT, 'post');
@@ -68,7 +68,7 @@ switch ($args[0] ?? '') {
         update_option('smoke_tagline', 'Hello');
         update_option('smoke_tagline_fr', $args[2] ?? '');
         // WP-CLI runs Polylang as in the admin: the language of a front-end request is set by hand.
-        PLL()->curlang = $model->get_language($args[1] ?? 'en');
+        PLL()->curlang = $model->languages->get($args[1] ?? 'en');
 
         echo Settings::get('smoke_tagline');
 
@@ -83,10 +83,8 @@ switch ($args[0] ?? '') {
             wp_delete_post($french->ID, true);
         }
 
-        foreach ($model->get_languages_list() as $language) {
-            method_exists($model, 'delete_language')
-                ? $model->delete_language($language->term_id)
-                : $model->languages->delete($language->term_id);
+        foreach ($model->languages->get_list() as $language) {
+            $model->languages->delete($language->term_id);
         }
 
         echo 'done';
