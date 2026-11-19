@@ -64,8 +64,15 @@ describe('PlaceSearchRequest', function () {
         expect(placeRequest('near=45.764,4.8357&radius=50')->radius)->toBe(50);
     });
 
-    it('drops a radius without near', function () {
-        expect(placeRequest('radius=50')->radius)->toBeNull();
+    it('drops a radius without near, so the search is not positioned', function () {
+        $request = placeRequest('radius=50&q=lyon');
+
+        expect($request->radius)
+            ->toBeNull()
+            ->and($request->isPositioned())
+            ->toBeFalse()
+            ->and($request->toQueryArgs())
+            ->toBe(['q' => 'lyon']);
     });
 
     it('normalizes a bounding box', function (string $bbox, string $expected) {
@@ -108,6 +115,8 @@ describe('PlaceSearchRequest', function () {
         'an unknown view' => ['view=grid'],
         'a radius outside the options' => ['near=45,4&radius=30'],
         'a radius that is not a number' => ['near=45,4&radius=ten'],
+        'a radius outside the options without near' => ['radius=30'],
+        'a radius that is not a number without near' => ['radius=ten'],
         'a malformed near' => ['near=45'],
         'a near that is not numbers' => ['near=north,east'],
         'a near number too long' => ['near=45.' . str_repeat('1', 40) . ',4'],
