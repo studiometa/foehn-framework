@@ -310,7 +310,41 @@ do_action('add_meta_boxes_project', get_post($projectId));
 $metaBox =
     $GLOBALS['wp_meta_boxes']['project']['advanced']['default'][Studiometa\Foehn\PostTypes\PostMetaBox::ID] ?? null;
 $results->true('a project has the Fields meta box', is_array($metaBox));
+
+// Drawn as the edit screen draws it, with the values ProjectSeeder saved.
+ob_start();
+if (is_array($metaBox)) {
+    call_user_func($metaBox['callback'], get_post($projectId));
+}
+$metaBoxForm = (string) ob_get_clean();
 wp_set_current_user(0);
+
+$results->true(
+    'the Fields meta box selects the saved option of the format select',
+    str_contains($metaBoxForm, '<select id="foehn_meta[capture_format]" name="foehn_meta[capture_format]"')
+    && str_contains($metaBoxForm, '<option value="medium" selected="selected">Medium format film</option>'),
+);
+$results->true(
+    'the Fields meta box draws the email, url and tel inputs',
+    str_contains($metaBoxForm, '<input type="email" id="foehn_meta[prints_email]"')
+    && str_contains($metaBoxForm, '<input type="url" id="foehn_meta[film]"')
+    && str_contains(
+        $metaBoxForm,
+        '<input type="tel" id="foehn_meta[prints_phone]" name="foehn_meta[prints_phone]" value="+33 3 88 00 00 01"',
+    ),
+);
+$results->true('the Fields meta box checks the checkbox the seeder saved as 1', str_contains(
+    $metaBoxForm,
+    'name="foehn_meta[prints]" value="1" checked="checked"',
+));
+$results->true(
+    'the Fields meta box puts the credits in a textarea',
+    (bool) preg_match('~<textarea id="foehn_meta\[credits\]"[^>]*>Prints: Atelier Lumière~', $metaBoxForm),
+);
+$results->true(
+    'the Fields meta box draws no field for the camera, which a block binding edits',
+    $metaBoxForm !== '' && !str_contains($metaBoxForm, 'foehn_meta[camera]'),
+);
 
 $results->containsAll(
     'testimonial meta is registered against its post type',

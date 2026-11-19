@@ -264,8 +264,7 @@ check_page "/projects/corridors/" 'href="tel:+33388000001"' "a project page link
 if curl -sk "$url/projects/silhouettes/" | grep -q 'href="mailto:prints@example.com"'; then
 	fail "/projects/silhouettes/ links the prints email, but its prints checkbox is off"
 fi
-printf '✓ %s
-' "a project without the prints checkbox prints no contact"
+printf '✓ %s\n' "a project without the prints checkbox prints no contact"
 # The footer links every page to it, so a missing page is a 404 on every page.
 check_page "/legal/" "Unsplash licence" "the legal page the footer links to exists"
 
