@@ -11,7 +11,7 @@ use WP_Post;
 
 /**
  * A series in the search index: the default fields, and who commissioned it and where
- * it was shot, so a search for "Grille" or "Osaka" finds the series.
+ * it was shot, so a search for "Grille" or "Basel" finds the series.
  *
  * `search.config.php` names the two fields in `searchableAttributes`.
  */

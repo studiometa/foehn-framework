@@ -10,8 +10,9 @@ use Studiometa\Foehn\Search\Document;
 use WP_Post;
 
 /**
- * A journal post in the search index, with the default fields. The protected post
- * stays out: the index never holds a post that has a password.
+ * A journal post in the search index, with the default fields. The indexer of the
+ * package already skips the drafts, the trashed posts and the protected post, so the
+ * class does not check for them.
  */
 #[AsSearchDocument(postType: 'post')]
 final class PostDocument implements SearchDocumentInterface

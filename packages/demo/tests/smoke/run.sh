@@ -343,6 +343,17 @@ check_page "/?s=coridors" 'id="search-group-project"' "the search page groups th
 check_page "/?s=coridors" 'search-group__all" href="[^"]*post_type=project' "a group links to all its results"
 # ProjectDocument adds the client of a series to its document.
 check_page "/?s=grille" '<span class="index-row__title">Objects</span>' "a search finds a project by its client"
+# ... and its location: "Basel" is in no title, excerpt or content.
+check_page "/?s=basel" '<span class="index-row__title">Corridors</span>' "a search finds a project by its location"
+
+# PageDocument keeps the Home and Journal listings out of the index, and only them:
+# About mentions Water Journal, so it is still found.
+pages="$(curl -sk "$url/?s=journal&post_type=page")"
+grep -q '<span class="index-row__title">About</span>' <<<"$pages" || fail "a search for journal does not find the About page"
+if grep -q '<span class="index-row__title">Journal</span>' <<<"$pages"; then
+	fail "the Journal listing page is in the search index"
+fi
+printf '✓ %s\n' "the listing pages stay out of the search index"
 
 # The post type facet keeps the journal post and drops the project of the same name.
 facet="$(curl -sk "$url/?s=corridors&post_type=post")"
