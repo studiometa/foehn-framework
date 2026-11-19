@@ -31,7 +31,9 @@ use Timber\Timber;
 // binding required. The `custom-fields` support above puts the keys in the
 // REST response, so the block editor can read and save them. The `control` of
 // each key gives it a field in the "Fields" meta box of the edit screen, one for
-// each control Føhn draws.
+// each control Føhn draws. `camera` has no control: a `core/post-meta` binding in
+// the content of each project edits it, and a meta box field for the same key
+// would write its old value back when the block editor saves.
 #[AsPostMeta(
     key: 'client',
     type: 'string',
@@ -41,15 +43,9 @@ use Timber\Timber;
 )]
 #[AsPostMeta(key: 'year', type: 'integer', description: 'Year the series was shot', control: 'number', label: 'Year')]
 #[AsPostMeta(key: 'location', type: 'string', description: 'Where it was shot', control: 'text', label: 'Location')]
+#[AsPostMeta(key: 'camera', type: 'string', description: 'Camera body and film stock')]
 #[AsPostMeta(
-    key: 'camera',
-    type: 'string',
-    description: 'Camera body and film stock',
-    control: 'text',
-    label: 'Shot on',
-)]
-#[AsPostMeta(
-    key: 'format',
+    key: 'capture_format',
     type: 'string',
     description: 'The format of the negatives or files',
     control: 'select',
@@ -87,7 +83,7 @@ use Timber\Timber;
 )]
 final class Project extends Post implements ConfiguresPostType
 {
-    /** The values of the `format` select, as value => label. */
+    /** The values of the `capture_format` select, as value => label. */
     public const array FORMATS = [
         '35mm' => '35 mm film',
         'medium' => 'Medium format film',
@@ -142,10 +138,12 @@ final class Project extends Post implements ConfiguresPostType
 
     /**
      * The format of the series, as the label the select shows.
+     *
+     * Not `format()`: Timber\Post::format() is the WordPress post format.
      */
-    public function format(): ?string
+    public function captureFormat(): ?string
     {
-        $format = $this->meta('format');
+        $format = $this->meta('capture_format');
 
         return is_string($format) ? self::FORMATS[$format] ?? null : null;
     }
@@ -246,7 +244,7 @@ final class Project extends Post implements ConfiguresPostType
             'Year' => $this->year() !== null ? (string) $this->year() : null,
             'Location' => $this->location(),
             'Shot on' => $this->camera(),
-            'Format' => $this->format(),
+            'Format' => $this->captureFormat(),
         ];
 
         return array_filter($facts, static fn(?string $value): bool => $value !== null);

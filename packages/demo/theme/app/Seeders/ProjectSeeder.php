@@ -133,7 +133,7 @@ final class ProjectSeeder implements SeederInterface
                     'camera' => $project['camera'],
                     'gallery' => $gallery,
                     'film' => $project['film'] ?? '',
-                    'format' => $project['format'],
+                    'capture_format' => $project['format'],
                     'credits' => $project['credits'] ?? '',
                     // The checkbox stores `1` or nothing, as the meta box does.
                     'prints' => $project['prints'] ?? false ? '1' : '',

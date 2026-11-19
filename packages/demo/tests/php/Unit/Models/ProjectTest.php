@@ -59,7 +59,7 @@ describe('Project', function () {
             'year',
             'location',
             'camera',
-            'format',
+            'capture_format',
             'film',
             'credits',
             'prints',
@@ -69,12 +69,29 @@ describe('Project', function () {
     });
 
     it('gives its meta box a field of each control', function () {
-        $controls = array_map(
+        $controls = array_filter(array_map(
             static fn(ReflectionAttribute $attribute): ?string => $attribute->newInstance()->control,
             new ReflectionClass(Project::class)->getAttributes(AsPostMeta::class),
-        );
+        ));
 
         expect(array_values(array_unique($controls)))->toEqualCanonicalizing(array_keys(AsPostMeta::CONTROLS));
+    });
+
+    it('gives no meta box field to the camera, which a block binding edits', function () {
+        $camera = array_values(array_filter(
+            array_map(
+                static fn(ReflectionAttribute $attribute): AsPostMeta => $attribute->newInstance(),
+                new ReflectionClass(Project::class)->getAttributes(AsPostMeta::class),
+            ),
+            static fn(AsPostMeta $meta): bool => $meta->key === 'camera',
+        ))[0];
+
+        expect($camera->control)->toBeNull();
+    });
+
+    it('does not override the post format of Timber', function () {
+        expect(new ReflectionMethod(Project::class, 'format')->getDeclaringClass()->getName())
+            ->toBe(Timber\Post::class);
     });
 
     it('offers the formats in its select', function () {
@@ -83,7 +100,7 @@ describe('Project', function () {
                 static fn(ReflectionAttribute $attribute): AsPostMeta => $attribute->newInstance(),
                 new ReflectionClass(Project::class)->getAttributes(AsPostMeta::class),
             ),
-            static fn(AsPostMeta $meta): bool => $meta->key === 'format',
+            static fn(AsPostMeta $meta): bool => $meta->key === 'capture_format',
         ))[0];
 
         expect($format->options)->toBe(Project::FORMATS);

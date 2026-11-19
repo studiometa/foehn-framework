@@ -109,6 +109,8 @@ Term meta needs `objectType: 'term'`. With the default `objectType: 'post'`, a k
 
 Each control edits some types only: the text controls a `string`, `number` an `integer` or a `number`, `select` a `string` or an `integer`, `checkbox` a `boolean`. The key must be single post meta with a post type. Føhn reports any other declaration and does not register the key. See [The Fields meta box](/guide/post-types#the-fields-meta-box) for the save rules.
 
+Do not give a `control` to a key that a block edits through a `core/post-meta` binding. The block editor saves the bound value through REST, then posts the meta box form, which still holds the value from page load: the save writes the old value back, and the change made in the block is lost. Edit such a key in one place only.
+
 ## Sanitisers are method names, never closures
 
 A discovery item reaches the cache through `var_export()`, so an attribute cannot hold a closure — it would work in development and fail only once caching is on, which is to say only in production. `sanitize` therefore names a method, resolved when `apply()` runs.
