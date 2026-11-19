@@ -42,6 +42,14 @@ if (!function_exists('get_page_by_path')) {
     }
 }
 
+// PageSeeder sets the About thumbnail when it finds the studio photographs.
+if (!function_exists('set_post_thumbnail')) {
+    function set_post_thumbnail(int $post, int $thumbnailId): bool
+    {
+        return true;
+    }
+}
+
 beforeEach(fn() => wp_stub_reset());
 
 describe('Seeders', function () {
@@ -95,7 +103,7 @@ describe('Seeders', function () {
 
         $posts = array_column(array_column(wp_stub_get_calls('wp_insert_post'), 'args'), 'postarr');
 
-        expect(array_column($posts, 'post_name'))->toBe(['home', 'about', 'journal', 'legal']);
+        expect(array_column($posts, 'post_name'))->toBe(['home', 'about', 'journal', 'legal', 'accessibility-draft']);
 
         // The About page is block markup: the hero, the reading-time binding and the
         // commission pattern are on a page a visitor sees.
@@ -110,6 +118,41 @@ describe('Seeders', function () {
             '<!-- wp:paragraph {"visibleFrom":"2026-01-01T09:00","visibleUntil":"2099-01-01T09:00"} -->',
         );
         expect($about)->toContain('<!-- wp:paragraph {"visibleFrom":"2099-01-01T09:00"} -->');
+    });
+
+    it('write a draft that the pre-publish checks refuse to publish', function () {
+        // The photographs of the studio, found by their Unsplash id; no page exists yet.
+        $GLOBALS['wp_stub_get_posts'] = static fn(array $args): array => (
+            ($args['post_type'] ?? '') === 'attachment' ? [7] : []
+        );
+        $GLOBALS['wp_stub_attachments'][7] = ['url' => 'https://example.test/studio.jpg'];
+
+        try {
+            new PageSeeder()->run();
+        } finally {
+            unset($GLOBALS['wp_stub_get_posts']);
+            $GLOBALS['wp_stub_attachments'] = [];
+        }
+
+        $posts = array_column(array_column(wp_stub_get_calls('wp_insert_post'), 'args'), 'postarr');
+        $draft = array_values(array_filter(
+            $posts,
+            static fn(array $post): bool => $post['post_name'] === 'accessibility-draft',
+        ))[0];
+
+        expect($draft['post_status'])->toBe('draft');
+
+        $content = $draft['post_content'];
+
+        // Two level 1 headings: the hero and a core heading.
+        expect($content)->toContain('<!-- wp:theme/hero {"title":"Accessibility draft","headingLevel":1');
+        expect($content)->toContain('<!-- wp:heading {"level":1} -->');
+        // A jump from h2 to h4.
+        expect($content)->toContain('<!-- wp:heading {"level":2} -->');
+        expect($content)->toContain('<!-- wp:heading {"level":4} -->');
+        // An image with no alternative text.
+        expect($content)->toContain('<!-- wp:image {"id":7,"sizeSlug":"large"} -->');
+        expect($content)->toContain('<img src="https://example.test/studio.jpg" alt="" class="wp-image-7"/>');
     });
 
     it('write the testimonials by slug', function () {
