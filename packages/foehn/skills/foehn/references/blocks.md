@@ -31,32 +31,34 @@ public function render(array $attributes, string $content, WP_Block $block): str
 
 The control comes from `type`, or from an explicit `control`:
 
-| Schema                                        | Control                                                   |
-| --------------------------------------------- | --------------------------------------------------------- |
-| `'type' => 'string'`                          | text field                                                |
-| `'type' => 'string'` with `options` or `enum` | select                                                    |
-| `'type' => 'boolean'`                         | toggle                                                    |
-| `'type' => 'number'` or `'integer'`           | number field (an `integer` is rounded before it is saved) |
-| `'type' => 'string', 'control' => 'textarea'` | textarea                                                  |
-| `'type' => 'string', 'control' => 'richtext'` | formatted text, edited on the canvas (HTML value)         |
-| `'type' => 'integer', 'control' => 'image'`   | media picker, stores the attachment ID                    |
-| `'type' => 'array', 'control' => 'gallery'`   | multiple media picker                                     |
-| `'type' => 'integer', 'control' => 'file'`    | any file                                                  |
-| `'type' => 'array', 'control' => 'posts'`     | ordered post picker                                       |
+| Schema                                             | Control                                                   |
+| -------------------------------------------------- | --------------------------------------------------------- |
+| `'type' => 'string'`                               | text field                                                |
+| `'type' => 'string'` with `options` or `enum`      | select                                                    |
+| `'type' => 'boolean'`                              | toggle                                                    |
+| `'type' => 'number'` or `'integer'`                | number field (an `integer` is rounded before it is saved) |
+| `'type' => 'string', 'control' => 'textarea'`      | textarea                                                  |
+| `'type' => 'string', 'control' => 'richtext'`      | formatted text, edited on the canvas (HTML value)         |
+| `'type' => 'integer', 'control' => 'image'`        | media picker, stores the attachment ID                    |
+| `'type' => 'array', 'control' => 'gallery'`        | multiple media picker                                     |
+| `'type' => 'integer', 'control' => 'file'`         | any file                                                  |
+| `'type' => 'array', 'control' => 'posts'`          | ordered post picker                                       |
+| `'type' => 'integer', 'control' => 'headingLevel'` | heading level select, H1 to H6                            |
 
 Extra keys, removed before the schema goes to WordPress:
 
-| Key            | Use                                                                                               |
-| -------------- | ------------------------------------------------------------------------------------------------- |
-| `control`      | `text`, `textarea`, `richtext`, `toggle`, `number`, `select`, `image`, `gallery`, `file`, `posts` |
-| `label`        | Field label. Default: the humanized key (`ctaLabel` gives "Cta label").                           |
-| `help`         | Help text under the field.                                                                        |
-| `placeholder`  | Text an empty in-place field shows on the canvas. Default: the label.                             |
-| `options`      | Select choices: a list of values, a `value => label` map, or a list of `{label, value}`.          |
-| `allowedTypes` | MIME or top-level types for `file` and `gallery`, for example `['audio']`.                        |
-| `postTypes`    | Post types the `posts` control searches. Default: every viewable type.                            |
+| Key            | Use                                                                                                               |
+| -------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `control`      | `text`, `textarea`, `richtext`, `toggle`, `number`, `select`, `image`, `gallery`, `file`, `posts`, `headingLevel` |
+| `label`        | Field label. Default: the humanized key (`ctaLabel` gives "Cta label").                                           |
+| `help`         | Help text under the field.                                                                                        |
+| `placeholder`  | Text an empty in-place field shows on the canvas. Default: the label.                                             |
+| `options`      | Select choices: a list of values, a `value => label` map, or a list of `{label, value}`.                          |
+| `allowedTypes` | MIME or top-level types for `file` and `gallery`, for example `['audio']`.                                        |
+| `postTypes`    | Post types the `posts` control searches. Default: every viewable type.                                            |
 
 - `array`, `object` or untyped attributes without a `control` get no sidebar field. They still reach `compose()`.
+- Give each heading level a block template prints the `headingLevel` control. The pre-publish accessibility checks read it, with the `core/heading` blocks, to find a second `h1` or a skipped level. `'enum' => [2, 3]` restricts the levels.
 - Declare `gallery` and `posts` as arrays: `['type' => 'array', 'items' => ['type' => 'integer'], 'default' => []]`. As a scalar, WordPress keeps only the first value.
 
 ## Containers and prose

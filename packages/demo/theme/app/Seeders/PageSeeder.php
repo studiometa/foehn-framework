@@ -10,12 +10,12 @@ use Studiometa\Foehn\Seeders\Upsert;
 use WP_Block_Patterns_Registry;
 
 /**
- * The Home, About, Journal and Legal pages.
+ * The Home, About, Journal and Legal pages, and a draft with accessibility issues.
  *
  * No "Projects" page: the post type archive at /projects/ is the listing, and a page
  * with that title would take the URL from it through WordPress's canonical redirect.
  */
-#[AsSeeder(order: 30, description: 'The Home, About, Journal and Legal pages')]
+#[AsSeeder(order: 30, description: 'The Home, About, Journal and Legal pages, and a draft with accessibility issues')]
 final class PageSeeder implements SeederInterface
 {
     private const string ABOUT_EXCERPT = 'Independent photographer, Strasbourg. Architecture, portraiture and still life, mostly on black and white film.';
@@ -53,6 +53,14 @@ final class PageSeeder implements SeederInterface
         Upsert::post('page', 'legal', [
             'post_title' => 'Legal',
             'post_content' => "<p>This site is a demonstration of the Føhn framework. The photographer, the clients and the testimonials are invented.</p>\n<h2>Publisher</h2>\n<p>Føhn demo, studio@foehn.test.</p>\n<h2>Photographs</h2>\n<p>The photographs come from Unsplash and are published under the Unsplash licence. Each one is credited to its author under the image.</p>\n<h2>Personal data</h2>\n<p>The site sets no tracking cookie and keeps no visitor data.</p>",
+        ]);
+
+        // A draft, so the site stays as it is. Its Publish button opens the
+        // Accessibility panel of the pre-publish checks, which refuse to publish it.
+        Upsert::post('page', 'accessibility-draft', [
+            'post_title' => 'Accessibility draft',
+            'post_status' => 'draft',
+            'post_content' => self::accessibilityDraftContent($studio[1] ?? null),
         ]);
 
         if ($studio !== []) {
@@ -139,5 +147,42 @@ final class PageSeeder implements SeederInterface
         ]));
 
         return implode("\n\n", [$hero, $readingTime, ...$copy, is_array($pattern) ? $pattern['content'] : '', $faq]);
+    }
+
+    /**
+     * Content that the pre-publish checks refuse: a hero at level 1 and a second
+     * level 1 heading, a jump from h2 to h4, and an image with no alternative text.
+     */
+    private static function accessibilityDraftContent(?int $image): string
+    {
+        $blocks = [
+            BlockMarkup::block('theme/hero', [
+                'title' => 'Accessibility draft',
+                'headingLevel' => 1,
+                'height' => 'small',
+            ]),
+            BlockMarkup::paragraph(
+                'This draft has accessibility issues on purpose. Click Publish: the Accessibility panel lists them, and the editor refuses to publish until they are fixed.',
+            ),
+            BlockMarkup::block('heading', ['level' => 1], '<h1 class="wp-block-heading">A second level 1 heading</h1>'),
+            BlockMarkup::block('heading', ['level' => 2], '<h2 class="wp-block-heading">A level 2 heading</h2>'),
+            BlockMarkup::block(
+                'heading',
+                ['level' => 4],
+                '<h4 class="wp-block-heading">A level 4 heading after a level 2</h4>',
+            ),
+        ];
+
+        if ($image !== null) {
+            $src = (string) wp_get_attachment_url($image);
+
+            $blocks[] = BlockMarkup::block(
+                'image',
+                ['id' => $image, 'sizeSlug' => 'large'],
+                "<figure class=\"wp-block-image size-large\"><img src=\"{$src}\" alt=\"\" class=\"wp-image-{$image}\"/></figure>",
+            );
+        }
+
+        return implode("\n\n", $blocks);
     }
 }

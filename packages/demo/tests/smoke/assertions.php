@@ -12,6 +12,7 @@ declare(strict_types=1);
  * Exits non-zero on the first failure so CI stops with a readable message.
  */
 
+use Studiometa\Foehn\Blocks\PrepublishChecks;
 use Studiometa\Foehn\Config\FoehnConfig;
 use Studiometa\Foehn\Contracts\ImageTransformer;
 use Studiometa\Foehn\Discovery;
@@ -828,6 +829,62 @@ $results->same(
             ->get_date()
             ?->setTimezone(wp_timezone())
             ->format('m-d H:i e'),
+);
+
+// ──────────────────────────────────────────────
+// Pre-publish accessibility checks
+//
+// The block post editor gets the checks with their configuration inlined before
+// them. The configuration must name the image and heading level attributes of the
+// demo blocks: a block it leaves out is a block the checks do not see. Last, because
+// the current screen it sets makes is_admin() true.
+// ──────────────────────────────────────────────
+
+require_once ABSPATH . 'wp-admin/includes/class-wp-screen.php';
+require_once ABSPATH . 'wp-admin/includes/screen.php';
+
+$editorScreen = WP_Screen::get('post');
+$editorScreen->is_block_editor(true);
+$editorScreen->set_current_screen();
+
+do_action('enqueue_block_editor_assets');
+
+$prepublishScript = (string) wp_scripts()->get_inline_script_data(PrepublishChecks::HANDLE, 'before');
+$prepublish = json_decode(
+    // WordPress appends a sourceURL comment to an inline script.
+    (string) preg_replace(
+        '/^window\.foehnPrepublishChecks = (.*?);\s*(?:\/\/# sourceURL=\S*\s*)?$/s',
+        '$1',
+        $prepublishScript,
+    ),
+    true,
+);
+
+$results->true('the pre-publish checks are enqueued in the block editor', wp_script_is(
+    PrepublishChecks::HANDLE,
+    'enqueued',
+));
+
+// foehn.local.config.php copies the option from the shared file, so in ddev too the
+// checks refuse to publish a post with an accessibility issue.
+$results->same('accessibility issues block publication', true, $prepublish['blockPublication'] ?? null);
+
+$results->same(
+    'the checks read the hero background image and heading level',
+    ['images' => ['backgroundId' => 'Background image'], 'headings' => ['headingLevel']],
+    $prepublish['blocks']['theme/hero'] ?? null,
+);
+
+$results->same(
+    'the checks read the callout icon',
+    ['images' => ['iconId' => 'Icon'], 'headings' => []],
+    $prepublish['blocks']['theme/callout'] ?? null,
+);
+
+$results->same(
+    'the checks read the contact sheet photographs',
+    ['images' => ['imageIds' => 'Photographs'], 'headings' => []],
+    $prepublish['blocks']['theme/contact-sheet'] ?? null,
 );
 
 // ──────────────────────────────────────────────

@@ -27,6 +27,11 @@ use Tempest\Discovery\DiscoveryCacheStrategy;
 return new FoehnConfig(
     discoveryCacheStrategy: DiscoveryCacheStrategy::FULL,
     imageTransformer: GlideTransformer::class,
+    // The pre-publish checks refuse to publish a post with an image that has no
+    // alternative text, a second level 1 heading or a jump in heading levels. Drafts
+    // still save. The demo blocks give their images and heading levels to the checks
+    // through the `image`, `gallery` and `headingLevel` controls.
+    blockPublicationOnAccessibilityIssues: true,
     hooks: [
         // Removes empty paragraphs from content, and the "Category:" and "Series:"
         // prefixes from archive titles: the archive template prints the name alone.

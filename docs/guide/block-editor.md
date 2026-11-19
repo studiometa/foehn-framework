@@ -54,24 +54,27 @@ Styles that are already saved still render on the front end. Before WordPress 7.
 
 The control for an attribute is derived from its `type`, with an optional `control` override for cases the type alone cannot express:
 
-| Schema                                                        | Control    | Component                                |
-| ------------------------------------------------------------- | ---------- | ---------------------------------------- |
-| `'type' => 'string'`                                          | `text`     | `TextControl`                            |
-| `'type' => 'string', 'options' => [...]` or `'enum' => [...]` | `select`   | `SelectControl`                          |
-| `'type' => 'boolean'`                                         | `toggle`   | `ToggleControl`                          |
-| `'type' => 'number'` or `'type' => 'integer'`                 | `number`   | `TextControl` (`type="number"`)          |
-| `'type' => 'string', 'control' => 'textarea'`                 | `textarea` | `TextareaControl`                        |
-| `'type' => 'string', 'control' => 'richtext'`                 | `richtext` | `RichText`, [on the canvas](#the-canvas) |
-| `'type' => 'integer', 'control' => 'image'`                   | `image`    | `MediaUpload`                            |
-| `'type' => 'array', 'control' => 'gallery'`                   | `gallery`  | `MediaUpload` (`multiple`)               |
-| `'type' => 'integer', 'control' => 'file'`                    | `file`     | `MediaUpload` (any type)                 |
-| `'type' => 'array', 'control' => 'posts'`                     | `posts`    | `ComboboxControl` + core-data            |
+| Schema                                                        | Control        | Component                                |
+| ------------------------------------------------------------- | -------------- | ---------------------------------------- |
+| `'type' => 'string'`                                          | `text`         | `TextControl`                            |
+| `'type' => 'string', 'options' => [...]` or `'enum' => [...]` | `select`       | `SelectControl`                          |
+| `'type' => 'boolean'`                                         | `toggle`       | `ToggleControl`                          |
+| `'type' => 'number'` or `'type' => 'integer'`                 | `number`       | `TextControl` (`type="number"`)          |
+| `'type' => 'string', 'control' => 'textarea'`                 | `textarea`     | `TextareaControl`                        |
+| `'type' => 'string', 'control' => 'richtext'`                 | `richtext`     | `RichText`, [on the canvas](#the-canvas) |
+| `'type' => 'integer', 'control' => 'image'`                   | `image`        | `MediaUpload`                            |
+| `'type' => 'array', 'control' => 'gallery'`                   | `gallery`      | `MediaUpload` (`multiple`)               |
+| `'type' => 'integer', 'control' => 'file'`                    | `file`         | `MediaUpload` (any type)                 |
+| `'type' => 'array', 'control' => 'posts'`                     | `posts`        | `ComboboxControl` + core-data            |
+| `'type' => 'integer', 'control' => 'headingLevel'`            | `headingLevel` | `SelectControl` (H1 to H6)               |
 
 A string or number attribute gets a control from `type` alone; nothing else is required. `number` and `integer` share the same component, but the declared type still matters: an `integer` field rounds its value before calling `setAttributes`, because WordPress rejects a float against an `integer` schema and silently falls back to the default.
 
 An attribute of a type with no derived control — `array`, `object`, or no `type` at all — gets no sidebar field. It still exists in the schema and reaches the template; it is simply not editable from the sidebar, which is the right outcome for data a block computes or receives from elsewhere rather than data an author sets.
 
-`gallery`, `file` and `posts` are never derived from a type: an `array` says nothing about whether it holds attachment ids or post ids, so each has to be asked for by name.
+`headingLevel` is a select of the levels 1 to 6. `options` or `enum` can restrict them, for example `'enum' => [2, 3]`. The [pre-publish checks](#accessibility-checks-before-publication) read the attribute as the level of a heading the block renders.
+
+`gallery`, `file`, `posts` and `headingLevel` are never derived from a type: an `array` says nothing about whether it holds attachment ids or post ids, so each has to be asked for by name.
 
 `gallery` and `posts` store a list, so declare them as arrays — `['type' => 'array', 'items' => ['type' => 'integer'], 'default' => []]`. Declared as a scalar, WordPress validates every selection but the first away, and debug mode warns about it.
 
@@ -79,15 +82,15 @@ An attribute of a type with no derived control — `array`, `object`, or no `typ
 
 Seven keys beyond the WordPress ones (`type`, `default`, `enum`, ...) describe how the attribute shows up in the sidebar:
 
-| Key            | Description                                                                                                                                                                                                                                                                                         |
-| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `control`      | Explicit control name: `text`, `textarea`, `richtext`, `toggle`, `number`, `select`, `image`, `gallery`, `file`, `posts`. Overrides the type-derived choice. An unsupported value falls back to the type-derived control and logs a warning in debug mode, rather than silently dropping the field. |
-| `label`        | Field label in the sidebar. Defaults to a humanized version of the attribute key — `ctaLabel` becomes "Cta label".                                                                                                                                                                                  |
-| `help`         | Help text shown under the field.                                                                                                                                                                                                                                                                    |
-| `placeholder`  | Text an empty [in-place field](#the-canvas) shows. Defaults to the label.                                                                                                                                                                                                                           |
-| `options`      | Choices for a `select` control: a list of raw values, a `value => label` map, or an already normalized list of `{label, value}` pairs.                                                                                                                                                              |
-| `allowedTypes` | Media types the `file` or `gallery` picker offers, as MIME types or top-level types — `['audio']`, `['image']`. Omit it and a `gallery` offers images while a `file` offers anything.                                                                                                               |
-| `postTypes`    | Post types the `posts` control searches — `['termes', 'liens']`. Omit it and every viewable post type is searched.                                                                                                                                                                                  |
+| Key            | Description                                                                                                                                                                                                                                                                                                         |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `control`      | Explicit control name: `text`, `textarea`, `richtext`, `toggle`, `number`, `select`, `image`, `gallery`, `file`, `posts`, `headingLevel`. Overrides the type-derived choice. An unsupported value falls back to the type-derived control and logs a warning in debug mode, rather than silently dropping the field. |
+| `label`        | Field label in the sidebar. Defaults to a humanized version of the attribute key — `ctaLabel` becomes "Cta label".                                                                                                                                                                                                  |
+| `help`         | Help text shown under the field.                                                                                                                                                                                                                                                                                    |
+| `placeholder`  | Text an empty [in-place field](#the-canvas) shows. Defaults to the label.                                                                                                                                                                                                                                           |
+| `options`      | Choices for a `select` or `headingLevel` control: a list of raw values, a `value => label` map, or an already normalized list of `{label, value}` pairs.                                                                                                                                                            |
+| `allowedTypes` | Media types the `file` or `gallery` picker offers, as MIME types or top-level types — `['audio']`, `['image']`. Omit it and a `gallery` offers images while a `file` offers anything.                                                                                                                               |
+| `postTypes`    | Post types the `posts` control searches — `['termes', 'liens']`. Omit it and every viewable post type is searched.                                                                                                                                                                                                  |
 
 ```php
 public static function attributes(): array
@@ -214,6 +217,48 @@ A Foehn block has no `save` parameter, and there is no static-block code path an
 It is also what makes the rest of this page possible. The canvas can show the real markup because every block re-renders through PHP on every request, in the editor and on the front end alike. And because there is no serialized markup to keep in sync, a Twig template can be rewritten years from now — new markup, new class names, an entirely different structure — without invalidating a single piece of existing content. The post content stores attributes, not HTML.
 
 Every Foehn block also gets `supports.html` set to `false` by default, for the same reason: "Edit as HTML" lets an author hand-edit the serialized block markup, which only makes sense for a block with real saved output to edit. A dynamic block has none, so the option can only ever produce an invalid block. An explicit `supports: ['html' => true]` on a block still wins if a project genuinely needs it.
+
+## Accessibility checks before publication
+
+Føhn adds an **Accessibility** panel to the pre-publish sidebar of the editor. It helps contributors keep the content accessible (RGAA). It lists:
+
+- each `core/image` block with no alternative text;
+- each image of a Føhn block attribute with the `image` or `gallery` control whose attachment has no alternative text in the media library;
+- a second level 1 heading;
+- a jump in heading levels, for example from H2 to H4.
+
+The headings are read in document order from the `core/heading` blocks and from the attributes of Føhn blocks with the [`headingLevel` control](#controls). Inner blocks are included. Give each heading level that a template prints the `headingLevel` control, so the checks see the heading:
+
+```php
+public static function attributes(): array
+{
+    return [
+        'title' => ['type' => 'string'],
+        'titleLevel' => ['type' => 'integer', 'control' => 'headingLevel', 'default' => 2],
+        'imageId' => ['type' => 'integer', 'control' => 'image', 'label' => 'Background'],
+    ];
+}
+```
+
+An image that has no meaning, for example an ornament, needs no alternative text. Apply the **Decorative** style to the `core/image` block: the checks then ignore it. The style adds the `is-style-decorative` class.
+
+Each issue has a **Select the block** button. The panel shows nothing when the content has no issue. Each time the pre-publish sidebar opens, the checks read the alternative texts of the media library again, so an alternative text added there counts without a reload.
+
+The issues are warnings by default: the post can still be published. To refuse publication while the content has issues, set `blockPublicationOnAccessibilityIssues` in `foehn.config.php`:
+
+```php
+return new FoehnConfig(
+    blockPublicationOnAccessibilityIssues: true,
+);
+```
+
+The editor then refuses a save that publishes or schedules the post, or that updates a published post, and shows the issues in the "Publishing failed" notice. Drafts, autosaves and previews still save.
+
+The checks read the block attributes in the editor. They do not check the rendered HTML or the color contrast. They load only in the block post editor, not on the block widgets screen or in the Customizer.
+
+To remove the checks in a project, unregister the `foehn-prepublish-checks` plugin with `wp.plugins.unregisterPlugin()`, and remove the `editor.preSavePost` filter of the `foehn/prepublish-checks` namespace with `wp.hooks.removeFilter()`.
+
+Like the registrar, the script is generic. The installer copies it to `wp-content/foehn/prepublish-checks.js`. When the file is missing, Føhn skips the checks and, in debug mode, raises a warning that tells you to run `composer install`.
 
 ## Where the registrar comes from
 

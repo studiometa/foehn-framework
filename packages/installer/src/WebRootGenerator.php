@@ -21,7 +21,7 @@ use SplFileInfo;
  * - web/wp-content/mu-plugins/_custom → symlink to ../../mu-plugins/
  * - web/wp-content/advanced-cache.php ← the page cache drop-in
  * - web/wp-content/maintenance.php ← the maintenance page drop-in
- * - web/wp-content/foehn/editor.js, schedule.js ← copied from the studiometa/foehn package
+ * - web/wp-content/foehn/editor.js, schedule.js, prepublish-checks.js ← copied from the studiometa/foehn package
  * - web/{file} ← copied from the project's public directory, see {@see PublicFiles}
  *
  * Generates the WordPress security keys into .env on a first install, and removes
@@ -31,6 +31,13 @@ use SplFileInfo;
 final class WebRootGenerator
 {
     /**
+     * The editor scripts copied from `resources/js/` of the studiometa/foehn package.
+     *
+     * @var list<string>
+     */
+    private const EDITOR_SCRIPTS = ['editor.js', 'schedule.js', 'prepublish-checks.js'];
+
+    /**
      * The keys WordPress signs authentication cookies and nonces with.
      *
      * The same list as `Studiometa\Foehn\Security\Salts::NAMES`, repeated because a
@@ -38,13 +45,6 @@ final class WebRootGenerator
      *
      * @var list<string>
      */
-    /**
-     * The block editor scripts copied from `studiometa/foehn` into `web/wp-content/foehn/`.
-     *
-     * @var list<string>
-     */
-    private const EDITOR_SCRIPTS = ['editor.js', 'schedule.js'];
-
     private const SALT_NAMES = [
         'AUTH_KEY',
         'SECURE_AUTH_KEY',
@@ -617,8 +617,9 @@ final class WebRootGenerator
      *
      * `vendor/studiometa/foehn/` sits outside the document root, so each script is copied
      * into `web/wp-content/foehn/`, giving it a real, cacheable URL such as
-     * `content_url('foehn/editor.js')`: `editor.js` registers the Føhn blocks, and
-     * `schedule.js` adds the "Schedule" panel to every block.
+     * `content_url('foehn/editor.js')`: `editor.js` registers the Føhn blocks,
+     * `schedule.js` adds the "Schedule" panel to every block, and `prepublish-checks.js`
+     * adds the accessibility checks of the pre-publish panel.
      */
     private function generateEditorScripts(): void
     {
@@ -635,6 +636,10 @@ final class WebRootGenerator
         }
     }
 
+    /**
+     * Copy one editor script into `web/wp-content/foehn/`, with a header that says it
+     * is generated.
+     */
     private function copyEditorScript(string $source, string $name): void
     {
         if (!file_exists($source)) {

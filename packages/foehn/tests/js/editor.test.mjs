@@ -610,6 +610,32 @@ test('a select writes back the value the schema declared, not the stringified on
     assert.deepEqual(changes, [{ level: 3 }]);
 });
 
+test('a heading level is a select that writes back an integer', () => {
+    const { registered } = register([
+        {
+            name: 'test/hero',
+            attributes: {
+                titleLevel: field('headingLevel', 'integer', {
+                    options: [
+                        { label: 'H2', value: 2 },
+                        { label: 'H3', value: 3 },
+                    ],
+                }),
+            },
+            innerBlocks: null,
+        },
+    ]);
+    const { elements, changes } = edit(registered['test/hero'], { titleLevel: 2 });
+
+    const control = elements.find((element) => element.type === 'SelectControl');
+
+    assert.equal(control.props.value, '2');
+
+    control.props.onChange('3');
+
+    assert.deepEqual(changes, [{ titleLevel: 3 }]);
+});
+
 test('an attribute with no supported control is skipped without a sidebar', () => {
     const { registered } = register([
         { name: 'test/hero', attributes: { meta: field(null, 'object') }, innerBlocks: null },
