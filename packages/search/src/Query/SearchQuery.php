@@ -1,0 +1,107 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Studiometa\Foehn\Search\Query;
+
+use Studiometa\Foehn\Search\Languages;
+use Studiometa\Foehn\Search\SearchDocuments;
+use Studiometa\Foehn\Search\SearchIndex;
+use WP_Query;
+
+/**
+ * The search page, answered by the index.
+ *
+ * The index does the text match only, and gives every matching id in order of
+ * relevance. The main query gets them as `post__in`, ordered by `post__in`, and
+ * WordPress does the rest as on any archive: the taxonomy filters, the pages, and the
+ * facet counts of {@see \Studiometa\Foehn\Query\Facets}.
+ *
+ * The language is the index's: the index of the current language holds its posts
+ * and the posts of the post types the multilingual plugin does not translate. The
+ * language clause of the plugin is lifted, since it would drop those posts: they
+ * have no language. Polylang sets it as the `lang` query var, or as a `language`
+ * clause of the tax query on the default language.
+ *
+ * {@see \Studiometa\Foehn\Search\Discovery\SearchDocumentDiscovery} adds these methods
+ * to `pre_get_posts` and `posts_search`.
+ */
+final readonly class SearchQuery
+{
+    /**
+     * The query var that marks a query whose text match the index did.
+     *
+     * A query var, so it stays on the copies of the query that Facets makes.
+     */
+    public const string QUERY_VAR = 'foehn_search';
+
+    public function __construct(
+        private SearchIndex $index,
+        private Languages $languages,
+        private SearchDocuments $documents,
+    ) {}
+
+    public function onPreGetPosts(WP_Query $query): void
+    {
+        if (is_admin() || !$query->is_main_query() || !$query->is_search() || $this->documents->postTypes() === []) {
+            return;
+        }
+
+        // An empty search is no text match, not every post: no result.
+        $ids = $this->index->ids($this->languages->current(), self::searchTerms($query));
+
+        $query->set('post__in', $ids === [] ? [0] : $ids);
+        $query->set('orderby', 'post__in');
+        $query->set(self::QUERY_VAR, true);
+        self::withoutLanguage($query);
+
+        $postType = $query->get('post_type');
+
+        if ($postType === '' || $postType === 'any' || $postType === []) {
+            $query->set('post_type', $this->documents->postTypes());
+        }
+    }
+
+    /**
+     * Lift the language clause a multilingual plugin added to the query.
+     */
+    private static function withoutLanguage(WP_Query $query): void
+    {
+        $query->set('lang', '');
+        $taxQuery = $query->get('tax_query');
+
+        if (is_array($taxQuery)) {
+            $query->set('tax_query', array_filter(
+                $taxQuery,
+                static fn(mixed $clause): bool => !is_array($clause) || ($clause['taxonomy'] ?? null) !== 'language',
+            ));
+        }
+    }
+
+    /**
+     * The search as the visitor typed it, cleaned as `WP_Query::parse_search()` does.
+     *
+     * That clean-up runs after `pre_get_posts`: here, `s` still has the slashes WordPress
+     * adds to `$_GET`, and on a `/search/<term>/` URL it is still URL-encoded. A slash
+     * left in `l\'atelier` loses the match.
+     */
+    private static function searchTerms(WP_Query $query): string
+    {
+        $s = stripslashes((string) $query->get('s'));
+
+        // Not from `$_GET`: from the rewrite rule of a `/search/<term>/` URL.
+        if (($_GET['s'] ?? '') === '') {
+            $s = urldecode($s);
+        }
+
+        return $s;
+    }
+
+    /**
+     * No `LIKE` search of WordPress on top of the index: the ids are the match.
+     */
+    public function withoutLikeSearch(string $search, WP_Query $query): string
+    {
+        return $query->get(self::QUERY_VAR) === true ? '' : $search;
+    }
+}

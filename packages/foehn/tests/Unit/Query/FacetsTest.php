@@ -109,6 +109,43 @@ it('drops the taxonomy and term pair WordPress records the queried object under'
     expect($seen)->not->toHaveKey('term');
 });
 
+it('drops the vars WordPress keeps for categories and tags', function (string $taxonomy, array $vars) {
+    // A real `category_name` query leaves the term id in `cat`. Kept, the count of the
+    // category facet stays filtered by the selected category: every other one says 0.
+    $seen = null;
+    $GLOBALS['wp_stub_query_posts'] = function (array $vars) use (&$seen): array {
+        $seen = $vars;
+
+        return [10];
+    };
+    $GLOBALS['wp_stub_terms'][$taxonomy] = [facetTerm(4, 'bread')];
+
+    $this->facets->for($taxonomy, facetQuery([...$vars, 'year' => '2026']));
+
+    foreach (array_keys($vars) as $name) {
+        expect($seen)->not->toHaveKey($name);
+    }
+
+    expect($seen)->toHaveKey('year');
+})->with([
+    'category' => ['category', ['category_name' => 'bread', 'cat' => 4, 'category__in' => [4]]],
+    'post_tag' => ['post_tag', ['tag' => 'rye', 'tag_id' => 7, 'tag_slug__in' => ['rye']]],
+]);
+
+it('leaves the category vars alone when counting another taxonomy', function () {
+    $seen = null;
+    $GLOBALS['wp_stub_query_posts'] = function (array $vars) use (&$seen): array {
+        $seen = $vars;
+
+        return [10];
+    };
+
+    $this->facets->for('genre', facetQuery(['category_name' => 'bread', 'cat' => 4]));
+
+    expect($seen['category_name'])->toBe('bread');
+    expect($seen['cat'])->toBe(4);
+});
+
 it('leaves another taxonomy queried object alone', function () {
     $seen = null;
     $GLOBALS['wp_stub_query_posts'] = function (array $vars) use (&$seen): array {

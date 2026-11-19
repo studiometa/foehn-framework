@@ -118,6 +118,10 @@ export default defineConfig({
           ],
         },
         {
+          text: "Search (optional package)",
+          items: [{ text: "Search", link: "/guide/search" }],
+        },
+        {
           text: "Deployment",
           items: [
             { text: "Docker Image", link: "/guide/docker-image" },

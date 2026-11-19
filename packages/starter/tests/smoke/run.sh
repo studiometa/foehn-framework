@@ -62,11 +62,11 @@ printf '✓ homepage returns 200 with no PHP error\n'
 # whole pipeline as failed even though the match succeeded.
 cache_status="$(ddev exec 'cd /var/www/html && wp foehn discovery:status' 2>/dev/null || true)"
 
-case "$cache_status" in
-*"Locations cached: 2/2"*) ;;
-*) fail "the request did not warm the discovery cache
-$cache_status" ;;
-esac
+# Every location: the framework, the theme, and each package that brings its own
+# discoveries. Counted rather than named, so a package added to a project does not
+# make this a false failure.
+grep -qE 'Locations cached: ([0-9]+)/\1$' <<<"$(tr -d '\r' <<<"$cache_status")" || fail "the request did not warm the discovery cache
+$cache_status"
 
 printf '✓ the request warmed the discovery cache\n'
 

@@ -1,0 +1,41 @@
+{#
+  A search field with suggestions.
+
+  The SearchSuggestions component asks the suggestions endpoint of
+  studiometa/foehn-search for the best matches while a visitor types, and lists them
+  as links. Without JavaScript, the form goes to the search page.
+
+  - id: the id of the field, unique on the page
+  - label: the text of the label
+  - label_class: the classes of the label
+  - value: the text of the field
+  - keep_query: keep the other arguments of the URL, such as the post type
+#}
+<form
+  class="search-form"
+  role="search"
+  method="get"
+  action="{{ site.url }}/"
+  data-component="SearchSuggestions"
+  data-option-endpoint="{{ function('rest_url', 'foehn-search/v1/suggestions') }}">
+  <label class="{{ label_class|default('label label--ink') }}" for="{{ id }}">
+    {{ label|default('Search') }}
+  </label>
+  <input
+    id="{{ id }}"
+    data-ref="input"
+    type="search"
+    name="s"
+    value="{{ value|default('') }}"
+    autocomplete="off"
+    aria-controls="{{ id }}-suggestions" />
+  {#
+    A new search keeps the other arguments of the URL: query_hidden_inputs() writes
+    them as hidden fields, all but `s`, which the text field carries.
+  #}
+  {% if keep_query|default(false) %}
+    {{ query_hidden_inputs(['s', 'paged']) }}
+  {% endif %}
+  <button type="submit">Search</button>
+  <ul id="{{ id }}-suggestions" class="search-form__suggestions" data-ref="list" hidden></ul>
+</form>

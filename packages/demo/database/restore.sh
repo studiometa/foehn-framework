@@ -14,6 +14,8 @@
 #                   because the demo offloads uploads to object storage
 #   rewrite rules   never dumped, since they are derived from what is registered
 #
+# and the search indexes, which are files derived from the content.
+#
 # Whatever the URL of the site the dump came from, the site is served at whatever
 # this ddev configuration answers on, so both `.env` and the database are moved onto
 # it first.
@@ -78,6 +80,11 @@ ddev exec 'cd /var/www/html && wp eval-file database/restore-media.php'
 # imported database has whatever the dump's site had.
 ddev exec 'cd /var/www/html && wp foehn rewrite:flush' >/dev/null
 printf '✓ rewrite rules flushed\n'
+
+# The search indexes are files beside the web root, not in the database: an import
+# saves no post, so nothing has indexed the content yet.
+ddev exec 'cd /var/www/html && wp foehn-search reindex' >/dev/null
+printf '✓ search indexes rebuilt\n'
 
 url="$(ddev exec 'cd /var/www/html && wp option get home' 2>/dev/null | tail -n1 | tr -d '\r')"
 printf '\n  %s\n' "$url"

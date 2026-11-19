@@ -9,6 +9,9 @@ composer.lock
 # Generated web root
 /web/
 
+# The search indexes of studiometa/foehn-search, rebuilt by `wp foehn-search reindex`
+/storage/
+
 # Build output — vite now writes into the theme, which is what gets symlinked
 # into the web root; only files under theme/ are ever served.
 /dist/

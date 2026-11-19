@@ -135,6 +135,10 @@ jobs:
       - name: Run the places test suite with coverage
         run: composer test:coverage:places
 
+      # The search package, with Loupe over SQLite: setup-php has pdo_sqlite and intl.
+      - name: Run the search test suite with coverage
+        run: composer test:coverage:search
+
       # The starter's own suite covers the theme skeleton, and the demo's covers
       # the features. Both have to stay green.
       - name: Run the starter test suite
@@ -154,7 +158,7 @@ jobs:
         uses: codecov/codecov-action@0fb7174895f61a3b6b78fc075e0cd60383518dac # v5.5.5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage/clover.xml,./coverage/clover-acf.xml,./coverage/clover-places.xml,./coverage/clover-installer.xml
+          files: ./coverage/clover.xml,./coverage/clover-acf.xml,./coverage/clover-places.xml,./coverage/clover-search.xml,./coverage/clover-installer.xml
           fail_ci_if_error: false
           flags: unittests
           name: codecov-foehn
@@ -314,7 +318,7 @@ jobs:
         working-directory: packages/demo
         run: |
           version="$(node -p 'require("../../package.json").version')"
-          for package in foehn:foehn foehn-installer:installer foehn-acf:acf foehn-places:places; do
+          for package in foehn:foehn foehn-installer:installer foehn-acf:acf foehn-places:places foehn-search:search; do
             name="${package%%:*}"
             directory="${package##*:}"
             composer config "repositories.$name" "{\"type\":\"path\",\"url\":\"../$directory\",\"options\":{\"symlink\":false,\"versions\":{\"studiometa/$name\":\"$version\"}}}"
@@ -388,12 +392,19 @@ jobs:
           php-version: "8.5"
           tools: composer:v2
 
+      # Each path repository says it is the version the starter pins, as for the demo:
+      # foehn-search requires the exact framework version. The search package is added
+      # for the framework end-to-end suite only; the starter does not ship it.
       - name: Point the starter at this checkout of the packages
         working-directory: packages/starter
         run: |
-          composer config repositories.foehn '{"type":"path","url":"../foehn","options":{"symlink":false}}'
-          composer config repositories.foehn-installer '{"type":"path","url":"../installer","options":{"symlink":false}}'
-          composer require --no-update studiometa/foehn:@dev studiometa/foehn-installer:@dev
+          version="$(node -p 'require("../../package.json").version')"
+          for package in foehn:foehn foehn-installer:installer foehn-search:search; do
+            name="${package%%:*}"
+            directory="${package##*:}"
+            composer config "repositories.$name" "{\"type\":\"path\",\"url\":\"../$directory\",\"options\":{\"symlink\":false,\"versions\":{\"studiometa/$name\":\"$version\"}}}"
+          done
+          composer require --no-update "studiometa/foehn-search:$version"
 
       # The plugins the framework end-to-end suite tests Føhn with, installed with
       # Composer at a fixed version. They stay out of the starter's own composer.json,

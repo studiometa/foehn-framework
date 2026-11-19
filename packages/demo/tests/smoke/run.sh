@@ -330,6 +330,48 @@ for path in "/venues/?view=globe" "/venues/?place_type=unknown" "/venues/?view=g
 done
 printf '✓ %s\n' "an invalid venue search answers 400, page and sections"
 
+# The search (studiometa/foehn-search). The indexes are files, not in the database
+# dump: rebuild them, as restore.sh and the image entrypoint do.
+reindex="$(ddev exec 'cd /var/www/html && wp foehn-search reindex' 2>&1 | tr -d '\r' || true)"
+grep -q 'Search indexes rebuilt\.' <<<"$reindex" || fail "wp foehn-search reindex did not rebuild the indexes
+$(grep -v Deprecated <<<"$reindex" | tail -8)"
+printf '✓ %s\n' "wp foehn-search reindex rebuilds the indexes"
+
+# A typo still finds the series, and the page groups the results by post type.
+check_page "/?s=coridors" '<span class="index-row__title">Corridors</span>' "a search with a typo finds the project"
+check_page "/?s=coridors" 'id="search-group-project"' "the search page groups the results by post type"
+check_page "/?s=coridors" 'search-group__all" href="[^"]*post_type=project' "a group links to all its results"
+# ProjectDocument adds the client of a series to its document.
+check_page "/?s=grille" '<span class="index-row__title">Objects</span>' "a search finds a project by its client"
+# ... and its location: "Basel" is in no title, excerpt or content.
+check_page "/?s=basel" '<span class="index-row__title">Corridors</span>' "a search finds a project by its location"
+
+# PageDocument keeps the Home and Journal listings out of the index, and only them:
+# About mentions Water Journal, so it is still found.
+pages="$(curl -sk "$url/?s=journal&post_type=page")"
+grep -q '<span class="index-row__title">About</span>' <<<"$pages" || fail "a search for journal does not find the About page"
+if grep -q '<span class="index-row__title">Journal</span>' <<<"$pages"; then
+	fail "the Journal listing page is in the search index"
+fi
+printf '✓ %s\n' "the listing pages stay out of the search index"
+
+# The post type facet keeps the journal post and drops the project of the same name.
+facet="$(curl -sk "$url/?s=corridors&post_type=post")"
+grep -q '<span class="index-row__title">Notes on Corridors</span>' <<<"$facet" ||
+	fail "the post type facet lost the journal post"
+if grep -q '<span class="index-row__title">Corridors</span>' <<<"$facet"; then
+	fail "the post type facet kept a project in the journal results"
+fi
+grep -q '<span aria-current="true">Posts (' <<<"$facet" || fail "the post type facet does not mark the current type"
+printf '✓ %s\n' "the post type facet filters the results"
+
+# The suggestions of the search field, from the REST endpoint of the package.
+suggestions="$(curl -sk "$url/wp-json/foehn-search/v1/suggestions?q=coridors")"
+grep -q '"title":"Corridors"' <<<"$suggestions" || fail "the suggestions endpoint did not suggest Corridors
+$(head -c 400 <<<"$suggestions")"
+printf '✓ %s\n' "the suggestions endpoint suggests a project from a typo"
+check_page "/" 'data-component="SearchSuggestions"' "the header search field mounts the suggestions"
+
 # The journal is where the content blocks are seen. Each needle is the block's own
 # markup, so a block that rendered nothing fails here.
 check_page "/notes-on-corridors/" 'data-wp-interactive="theme/contact-sheet"' "a journal post holds the interactive contact sheet"

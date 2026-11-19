@@ -77,6 +77,7 @@ jobs:
               "packages/acf/composer.json studiometa/foehn",
               "packages/places/composer.json studiometa/foehn",
               "packages/places/package.json version",
+              "packages/search/composer.json studiometa/foehn",
               "packages/starter/composer.json studiometa/foehn",
               "packages/starter/composer.json studiometa/foehn-installer",
               "packages/demo/composer.json studiometa/foehn",

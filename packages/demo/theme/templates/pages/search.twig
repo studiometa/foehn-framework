@@ -1,6 +1,8 @@
 {% extends 'layouts/base.twig' %}
 
 {% block content %}
+  {% set current_type = query_get('post_type') %}
+
   <section class="shell masthead">
     <p class="label label--ink">Search</p>
     <h1 class="title" style="margin-top: 0.75rem">« {{ search_query }} »</h1>
@@ -8,47 +10,66 @@
       {{ found_posts|plural('result') }}
     </p>
 
-    {#
-      A new search keeps the other arguments of the URL: query_hidden_inputs() writes
-      them as hidden fields, all but `s`, which the text field carries.
-    #}
-    <form class="search-form" method="get" action="{{ site.url }}/" style="margin-top: 1.5rem">
-      <label class="label label--ink" for="search-again">Search again</label>
-      <input id="search-again" type="search" name="s" value="{{ search_query }}" />
-      {{ query_hidden_inputs(['s', 'paged']) }}
-      <button type="submit">Search</button>
-    </form>
+    <div style="margin-top: 1.5rem">
+      {% include 'components/search-form.twig' with {
+        id: 'search-again',
+        label: 'Search again',
+        value: search_query,
+        keep_query: true
+      } %}
+    </div>
 
-    {# Narrow to one type with query_url(), widen again with query_url_without(). #}
-    <p class="label" style="margin-top: 1rem">
-      {% for type, label in { project: 'Projects', post: 'Journal', page: 'Pages' } %}
-        {% if query_get('post_type') == type %}
-          <span aria-current="true">{{ label }}</span>
+    {#
+      The post type facet. The groups count each searchable post type with the other
+      filters of the URL applied, also when the page shows one type only. Narrow to one
+      type with query_url(), widen again with query_url_without().
+    #}
+    <p class="label search-facet" style="margin-top: 1rem">
+      {% for group in groups %}
+        {% if current_type == group.post_type %}
+          <span aria-current="true">{{ group.label }} ({{ group.count }})</span>
         {% else %}
-          <a href="{{ query_url({ post_type: type }) }}">{{ label }}</a>
+          <a href="{{ query_url({ post_type: group.post_type }) }}">{{ group.label }} ({{ group.count }})</a>
         {% endif %}
         /
       {% endfor %}
-      <a href="{{ query_url_without('post_type') }}">All types</a>
+      {% if current_type %}
+        <a href="{{ query_url_without('post_type') }}">All types</a>
+      {% else %}
+        <span aria-current="true">All types</span>
+      {% endif %}
     </p>
   </section>
 
-  <section class="shell">
-    {% for post in posts %}
-      <a class="index-row" href="{{ post.link }}">
-        <span class="label index-number">{{ '%02d'|format(loop.index) }}</span>
-        <span>
-          <span class="index-row__title">{{ post.title }}</span>
-          <span class="label" style="display: block; margin-top: 0.5rem">{{ post.post_type }}</span>
-        </span>
-        <span class="index-row__aside label index-number">{{ post.date('Y') }}</span>
-      </a>
-    {% else %}
-      <p>No results.</p>
-    {% endfor %}
+  {% if current_type or not groups %}
+    <section class="shell">
+      {% for post in posts %}
+        {% include 'components/search-result.twig' %}
+      {% else %}
+        <p>No results.</p>
+      {% endfor %}
 
-    {% if pagination %}
-      {% include 'components/pagination.twig' %}
-    {% endif %}
-  </section>
+      {% if pagination %}
+        {% include 'components/pagination.twig' %}
+      {% endif %}
+    </section>
+  {% else %}
+    {# Each post type with its best results, the most relevant type first. #}
+    {% for group in groups %}
+      <section
+        class="shell search-group"
+        id="search-group-{{ group.post_type }}"
+        aria-labelledby="search-group-{{ group.post_type }}-title">
+        <h2 class="label label--ink search-group__title" id="search-group-{{ group.post_type }}-title">
+          {{ group.label }} ({{ group.count }})
+        </h2>
+        {% for post in group.posts %}
+          {% include 'components/search-result.twig' %}
+        {% endfor %}
+        <a class="label label--ink search-group__all" href="{{ group.url }}">
+          See all {{ group.label|lower }}
+        </a>
+      </section>
+    {% endfor %}
+  {% endif %}
 {% endblock %}

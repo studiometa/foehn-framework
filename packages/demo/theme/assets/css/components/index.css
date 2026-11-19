@@ -133,6 +133,57 @@
   border-bottom-color: var(--color-ink);
 }
 
+/* ── Search ─────────────────────────────────────────────── */
+
+/* The field and its suggestions, in the header and on the search page. The list sits
+   under the field, over the page. */
+.search-form {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 1rem;
+}
+
+.search-form input {
+  min-width: 12rem;
+  padding-bottom: 2px;
+  border-bottom: var(--rule-width) solid var(--color-ink);
+}
+
+.search-form__suggestions {
+  z-index: 20;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 100%;
+  margin-top: 0.5rem;
+  background: var(--color-paper);
+  border: var(--rule-width) solid var(--color-ink);
+}
+
+.search-form__suggestion {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.search-form__suggestion:hover,
+.search-form__suggestion:focus-visible {
+  background: var(--color-tint);
+}
+
+.search-group {
+  margin-top: 3rem;
+}
+
+.search-group__all {
+  display: inline-block;
+  margin-top: 1rem;
+  border-bottom: var(--rule-width) solid var(--color-ink);
+}
+
 /* ── Footer ─────────────────────────────────────────────── */
 
 .site-footer {

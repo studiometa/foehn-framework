@@ -56,6 +56,7 @@ jobs:
           # Packagist. studiometa/foehn-places must exist, accept MONOREPO_SPLIT_TOKEN and be
           # registered on Packagist before this reaches main.
           - { name: "places", local: "packages/places", remote: "foehn-places" }
+          - { name: "search", local: "packages/search", remote: "foehn-search" }
           - { name: "installer", local: "packages/installer", remote: "foehn-installer" }
           # The starter ships a `renovate.json` for the projects created from it, so its
           # mirror has one on `main`, and Renovate onboards any repository whose default
